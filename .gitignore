@@ -1,0 +1,6 @@
+*.o
+*.pdf
+*.fig
+*.dat
+fort.*
+*.go3
