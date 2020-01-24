@@ -6,9 +6,9 @@ FMM-accelerated boundary integral equation solvers
 Currently only supports high-order triangulation of smooth surfaces
 
 Upcoming support for: 
-*.  High order triangulation of surfaces with edges
-*.  High order triangulation of surfaces with edges and corners
-*.  High order quadrilaterization versions of the above routines 
+    *  High order triangulation of surfaces with edges
+    *  High order triangulation of surfaces with edges and corners
+    *  High order quadrilaterization versions of the above routines 
 
 
 This repository has two external dependencies - FMM3D (enter link here)
