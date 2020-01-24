@@ -26,9 +26,15 @@ c                  of patches, determine a pointer
 c                  array for where quadrature for an interaction
 c                  starts
 c
-c              setsub - find set subtractions of two sets
+c              get_rfacs - get default 
+c                factors for defining the near-field
+c                and region inside near-field for using
+c                adaptive integration as a function of order
 c
-c              cumsum - routine for computing cumulative sum
+c              get_quadparams_adap - get various parameters
+c                when computing nearly-singular integrals
+c                using adaptive integration
+c
 c
 c-------------------------------------------------------------------
       subroutine findnearslow(xyzs,ns,rads,targets,nt,row_ptr,col_ind)
@@ -690,4 +696,147 @@ c
 
       return
       end
+c
+c
+c
+c
+c
+      subroutine get_rfacs(norder,iptype,rfac,rfac0)
+c
+c
+c       this subroutine gets the factors for defining
+c       the two regions of the near field as function
+c       of patch type and order
+c
+c       If h is the radius of the bounding sphere,
+c       centered at the centroid of the patch,
+c       the near-field for storing quadrature
+c       should be defined by h*rfac,
+c       the subsection for which adaptive integration
+c       should be used is defined by h*rfac0 
+c
+c        Note that these are recommended parameters 
+c        based on empirical testing,
+c        and should be appropriately used when
+c        calling findnear (rfac), and in the 
+c        getnearquad routines (rfac0)
+c
+c      input:
+c        norder - order of discretization
+c        iptype - type of patch
+c      output:
+c        rfac - factor for defining near field for precomputing 
+c               quadrature
+c        rfac0 - factor for defining near field for using
+c              adaptive integration 
+c
 
+      implicit none
+      integer norder,iptype
+      real *8 rfac,rfac0
+
+      rfac = 1.25d0
+      rfac0 = 1.25d0
+
+
+      if(iptype.eq.1) then
+
+        if(norder.le.3) rfac = 2.75d0
+        if(norder.le.6.and.norder.gt.3) rfac = 2.0d0
+        if(norder.gt.6) rfac = 1.25d0
+        rfac0 = 1.25d0
+      endif
+
+      
+
+      return
+      end
+
+c
+c
+c
+c
+c
+c
+c
+
+      subroutine get_quadparams_adap(eps,nqorder,eps_adap,nlev,
+     1   nqorder_f)
+c
+c
+c
+c         This subroutine returns the quadrature parameters
+c         for computing integrals using adaptive integration
+c
+c        input:
+c          eps - real *8
+c             tolerance
+c        outputs:
+c          nqorder - integer
+c             order of XG nodes to use on each triangle in the
+c             adaptive integration strategy
+c          eps_adap - real *8
+c             stopping criterion for adaptive integration
+c          nlev - integer
+c             number of uniform levels for using oversampled 
+c             quadrature in the near-field
+c          nqorder_f - order of XG nodes to use in each of
+c            triangles when using oversampled quadrature in
+c            the near field
+c
+      implicit none
+      real *8 eps,eps_adap,eps0
+      integer norder,nqorder,i,iprec
+      integer nlev,nqorder_f
+      
+
+      iprec = 0
+      if(eps.lt.0.5d-2) iprec = 1
+      if(eps.lt.0.5d-3) iprec = 2
+      if(eps.lt.0.5d-6) iprec = 3
+      if(eps.lt.0.5d-9) iprec = 4
+
+
+      nqorder = 10
+      eps_adap = eps
+      
+      nlev = 1
+
+      if(iprec.eq.0) then
+        nqorder = 6
+        eps_adap = 0.9d-2
+        nqorder_f = 4
+      endif
+
+      if(iprec.eq.1) then
+        nqorder= 7
+        eps_adap = 0.5d-2
+        nqorder_f = 4
+      endif
+
+      if(iprec.eq.2) then
+        nqorder = 12
+        eps_adap = 0.5d-4
+        nqorder_f = 7
+      endif
+
+      if(iprec.eq.3) then
+        nqorder = 25
+        eps_adap = 3.0d-7
+        nqorder_f = 12
+      endif
+
+      if(iprec.eq.4) then
+        nqorder = 30
+        eps_adap = 3.0d-10
+        nqorder_f = 15
+      endif
+      
+      return
+      end
+c
+c
+
+
+
+      

@@ -66,7 +66,7 @@ MEXLIBS += $(OMPLIBS)
 endif
 
 
-LIBNAME=libfmm3d_ndiv
+LIBNAME=libfmm3d
 DYNAMICLIB = $(LIBNAME).so
 STATICLIB = $(LIBNAME).a
 
@@ -88,14 +88,14 @@ COMOBJS = $(COM)/besseljs3d.o $(COM)/cdjseval3d.o $(COM)/dfft.o \
 # Helmholtz objects
 HELM = $(FMM_DIR)/src/Helmholtz
 HOBJS = $(HELM)/h3dcommon.o $(HELM)/h3dterms.o $(HELM)/h3dtrans.o \
-	$(HELM)/helmrouts3d.o $(FMMLOCSRC)/hfmm3d_ndiv.o \
+	$(HELM)/helmrouts3d.o $(HELM)/hfmm3d.o \
 	$(HELM)/hpwrouts.o \
 	$(HELM)/hwts3e.o $(HELM)/hnumphys.o $(HELM)/hnumfour.o $(HELM)/projections.o 
 
 # Laplace objects
 LAP = $(FMM_DIR)/src/Laplace
 LOBJS = $(LAP)/lwtsexp_sep1.o $(LAP)/l3dterms.o $(LAP)/l3dtrans.o \
-	$(LAP)/laprouts3d.o $(FMMLOCSRC)/lfmm3d_ndiv.o \
+	$(LAP)/laprouts3d.o $(LAP)/lfmm3d.o \
 	$(LAP)/lwtsexp_sep2.o \
 	$(LAP)/lpwrouts.o
 
