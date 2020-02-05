@@ -10,8 +10,8 @@
       integer, allocatable :: iquad(:)
       real *8, allocatable :: srcover(:,:),wover(:)
       complex *16, allocatable :: uval(:),dudnval(:)
-      complex *16, allocatable :: sigmaover(:),slp_near(:)
-      complex *16, allocatable :: pot(:)
+      complex *16, allocatable :: sigmaover(:),slp_near(:),dlp_near(:)
+      complex *16, allocatable :: pot(:),potslp(:),potdlp(:)
 
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
       integer, allocatable :: ixyzso(:),nfars(:)
@@ -22,8 +22,6 @@
       complex *16, allocatable :: sigma(:)
       complex * 16 zpars(3)
 
-      real *8 epss(4)
-      integer norder_list(5)
 
       external h3d_ggq_comb,h3d_ggq_slp
 
@@ -36,7 +34,8 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 2
-      ipars(1) = 20
+      if(igeomtype.eq.1) ipars(1) = 3
+      if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
         npatches = 12*(4**ipars(1))
@@ -52,7 +51,17 @@ c
       zpars(2) = 1.0d0
       zpars(3) = 0.0d0
 
-      call get_exterior_pt(igeomtype,xyz_out)
+      if(igeomtype.eq.1) then
+        xyz_out(1) = 3.17d0
+        xyz_out(2) = -0.03d0
+        xyz_out(3) = 3.15d0
+      endif
+
+      if(igeomtype.eq.2) then
+        xyz_out(1) = -3.5d0
+        xyz_out(2) = 3.1d0
+        xyz_out(3) = 20.1d0
+      endif
 
       norder = 4 
       npols = (norder+1)*(norder+2)/2
@@ -81,21 +90,21 @@ c
 
 
       allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
-      allocate(pot(npts))
+      allocate(pot(npts),potslp(npts),potdlp(npts))
 
       call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
      1     srccoefs,cms,rads)
 
 
-      allocate(sigma(npts))
+      allocate(sigma(npts),uval(npts),dudnval(npts))
 
       do i=1,npts
-        call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,sigma(i))
+        call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,uval(i))
+        call h3d_sprime(xyz_out,srcvals(1,i),dpars,zpars,ipars,
+     1     dudnval(i))
       enddo
 
       ndtarg = 3
-
-
      
       do i=1,npts
         targs(1,i) = srcvals(1,i)
@@ -137,7 +146,7 @@ c
      1         iquad)
 
       nquad = iquad(nnz+1)-1
-      allocate(slp_near(nquad))
+      allocate(slp_near(nquad),dlp_near(nquad))
 
 
       ndtarg = 3
@@ -170,13 +179,9 @@ cc          call prinf('ixyzso=*',ixyzso,npatches+1)
      1        srcover,wover)
 
 
-      nd = 2
-      call oversample_fun_surf(nd,npatches,norders,ixyzs,iptype, 
-     1      npts,sigma,nfars,ixyzso,npts_over,sigmaover)
-
-
       do i=1,nquad
         slp_near(i) = 0
+        dlp_near(i) = 0
       enddo
 
 
@@ -186,16 +191,26 @@ cc          call prinf('ixyzso=*',ixyzso,npatches+1)
       zpars(2) = 1.0d0
       zpars(3) = 0.0d0
 
-      call getnearquad_helm_comb_dir_bdry(npatches,norders,
+      call getnearquad_helm_comb_dir(npatches,norders,
      1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      1      ipatch_id,uvs_targ,eps,zpars,nnz,row_ptr,col_ind,iquad,
      1      rfac0,nquad,slp_near)
 
-            
+      
+      zpars(2) = 0.0d0
+      zpars(3) = 1.0d0
+      call getnearquad_helm_comb_dir(npatches,norders,
+     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     1      ipatch_id,uvs_targ,eps,zpars,nnz,row_ptr,col_ind,iquad,
+     1      rfac0,nquad,dlp_near)
+      
       call cpu_time(t2)
       tquadgen = t2-t1
 
-      ifinout = 1      
+      ifinout = 1     
+
+      zpars(2) = 1.0d0
+      zpars(3) = 0.0d0
 
 
       call cpu_time(t1)
