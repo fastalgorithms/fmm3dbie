@@ -2,14 +2,8 @@
 !      test_geom_qual - test the quality of the geometry, compute
 !         the error in xyz, dxyz/du, dxyz/dv
 !
-!      surf_fun_error - compute the resolution of a function on
+!      surf_fun_error - estimate the resolution of a function on
 !         a surface
-!
-!      get_exterior_pt - given geometry type (sphere or stellarator)
-!          find a point in the exterior of the object (for testing purposes only)
-!
-!      test_exterior_pt - test whether a point is in the exterior
-!          of a geometry - test gauss' identity (for testing purposes only)
 !
 !      get_centroid_rads - compute the centroid and bounding sphere
 !          radii for a collection of patches

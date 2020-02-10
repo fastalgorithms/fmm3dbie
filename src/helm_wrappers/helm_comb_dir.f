@@ -24,7 +24,7 @@ c       setparams0_fmm_helm_comb_dir
 c
 c       setparams_fmm_helm_comb_dir
 c
-c       helm_comb_dir_mv
+c       helm_comb_dir_apply
 c
 c       helm_comb_dir_solver
 c
