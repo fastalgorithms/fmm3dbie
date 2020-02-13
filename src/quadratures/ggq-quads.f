@@ -3,12 +3,12 @@ c
 c
 c     This file has the following user callable routines
 c
-c        getnearquad_compact_guru - guru interface for 
+c        getnearquad_ggq_compact_guru - guru interface for 
 c         computing near field quadrature for a compact kernel
 c         (for e.g. single layer potentials,
 c            double layer potentials for smooth domains)
 c        
-c        getnearquad_pv_guru - guru interface for computing near
+c        getnearquad_ggq_pv_guru - guru interface for computing near
 c          field quadrature for principal value kernels
 c          (for e.g. tangential derivatives of single layer potentials)
 c
@@ -17,7 +17,7 @@ c
 c
 c
 
-      subroutine getnearquad_compact_guru(npatches,norders,
+      subroutine getnearquad_ggq_compact_guru(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targvals,
      2   ipatch_id,uvs_targ,eps,fker,dpars,zpars,ipars,nnz,row_ptr,
      3   col_ind,iquad,rfac0,nquad,wnear)
@@ -268,7 +268,9 @@ c
       
       lrad = 0
       ilrad(1) = 1
+
       call radial_init_mem(4,lrad)
+
       nlrad(1) = lrad
       ilrad(2) = ilrad(1) + lrad
 
@@ -288,6 +290,7 @@ c
       jer0 = 0
       lkeep = 0
       call radial_init(jer0,4,rad(ilrad(1)),nlrad(1),lkeep)
+
 
       jer0 = 0
       lkeep = 0
@@ -458,7 +461,7 @@ c
 c
 c
 
-      subroutine getnearquad_pv_guru(npatches,norders,
+      subroutine getnearquad_ggq_pv_guru(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targvals,
      2   ipatch_id,uvs_targ,eps,fker,dpars,zpars,ipars,nnz,row_ptr,
      3   col_ind,iquad,rfac0,nquad,wnear)

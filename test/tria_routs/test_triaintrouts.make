@@ -35,19 +35,19 @@ endif
 
 
 TRIA = ../../src/tria_routs
-UTILS_DIR = ../../../utils
+COM = ../../src/common
 
 
 .PHONY: all clean list
 
 SOURCES =  test_triaintrouts.f \
-  $(UTILS_DIR)/prini_new.f \
+  $(COM)/prini_new.f \
   $(TRIA)/koornexps.f90 \
   $(TRIA)/ortho2eva.f \
-  $(UTILS_DIR)/dotcross3d.f \
+  $(COM)/dotcross3d.f \
   $(TRIA)/ortho2exps.f \
-  $(UTILS_DIR)/lapack_wrap.f90 \
-  $(UTILS_DIR)/orthom.f \
+  $(COM)/lapack_wrap.f90 \
+  $(COM)/orthom.f \
   $(TRIA)/triasymq.f \
   $(TRIA)/ctriaints_main.f \
   $(TRIA)/triatreerouts.f \

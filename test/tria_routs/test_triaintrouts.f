@@ -258,7 +258,7 @@ c
 
       erra = 0
       ra = 0
-      ifprint = 1
+      ifprint = 0
       do i=1,ntarg
         if(ifprint.ge.1) call prinf('itarg=*',i,1)
         if(ifprint.ge.1) call prin2('cintex=*',cintex(1,i),6)
@@ -425,7 +425,6 @@ c
       erra = 0
       ra = 0
 
-      ifprint = 1
       do i=1,ntarg
         if(ifprint.ge.1) call prinf('itarg=*',i,1)
         if(ifprint.ge.1) call prin2('cintex=*',cintex(1,i),6)

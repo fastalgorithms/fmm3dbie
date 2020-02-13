@@ -39,7 +39,7 @@ c
 
       subroutine getnearquad_helm_comb_dir(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
-     2   ipatch_id,uvs_targ,eps,zpars,nnz,row_ptr,col_ind,
+     2   ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
      3   iquad,rfac0,nquad,wnear)
 c
 c       this subroutine generates the near field quadrature
@@ -119,6 +119,12 @@ c              zpars(1) = k
 c              zpars(2) = alpha
 c              zpars(3) = beta
 c
+c           iquadtype - integer
+c              quadrature type
+c              iquadtype = 1, use ggq for self + adaptive integration
+c                 for rest
+c 
+c
 c           nnz - integer
 c             number of source patch-> target interactions in the near field
 c 
@@ -152,9 +158,10 @@ c
       integer ixyzs(npatches+1),iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,rfac0
       integer ndtarg,ntarg
+      integer iquadtype
       real *8 targs(ndtarg,ntarg)
       complex *16 zpars(3)
-      integer nnz,ndtarg,ipars
+      integer nnz,ipars
       real *8 dpars
       integer row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
       complex *16 wnear(nquad)
@@ -165,27 +172,43 @@ c
       complex *16 alpha,beta
       integer i,j
 
+      integer ipv
+
       procedure (), pointer :: fker
-      external h3d_ggq_slp, h3d_ggq_dlp, h3d_ggq_comb
+      external h3d_slp, h3d_dlp, h3d_comb
 
 c
 c
 c        initialize the appropriate kernel function
 c
-      alpha = zpars(2)
-      beta = zpars(3)
-      fker => h3d_ggq_comb
-      if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
-        fker=>h3d_ggq_slp
-      else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
-        fker=>h3d_ggq_dlp
-      endif
 
-      call getnearquad_compact_guru(npatches,norders,ixyzs,
-     1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
-     1   ipatch_id,uvs_targ,
-     1   eps,fker,dpars,zpars,ipars,nnz,row_ptr,col_ind,iquad,
-     1   rfac0,nquad,wnear)
+      if(iquadtype.eq.1) then
+        alpha = zpars(2)
+        beta = zpars(3)
+        fker => h3d_comb
+        ipv = 1
+        if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
+          fker=>h3d_slp
+          ipv = 0 
+        else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
+          fker=>h3d_dlp
+        endif
+
+        if(ipv.eq.0) then
+
+          call getnearquad_ggq_compact_guru(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
+     1     ipatch_id,uvs_targ,
+     1     eps,fker,dpars,zpars,ipars,nnz,row_ptr,col_ind,iquad,
+     1     rfac0,nquad,wnear)
+        else
+          call getnearquad_ggq_pv_guru(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
+     1     ipatch_id,uvs_targ,
+     1     eps,fker,dpars,zpars,ipars,nnz,row_ptr,col_ind,iquad,
+     1     rfac0,nquad,wnear)
+        endif
+      endif
 
       return
       end
@@ -197,9 +220,9 @@ c
 c
 c
       subroutine lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
-     1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,inode_id,
+     1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
      2   eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,sigma,novers,
-     3   nptso,ixyzso,srcover,whtsover,ifinout,pot)
+     3   nptso,ixyzso,srcover,whtsover,pot)
 c
 c
 c      this subroutine evaluates the layer potential for
@@ -257,9 +280,6 @@ c
 c         targs - real *8 (ndtarg,ntarg)
 c            target information
 c
-c         ipt_id - integer(ntarg)
-c            id of node of target i, id = -1, if target is off-surface
-c
 c          eps - real *8
 c             precision requested
 c
@@ -311,10 +331,6 @@ c
 c           whtsover - real *8 (nptso)
 c             smooth quadrature weights at oversampled nodes
 c
-c           ifinout - integer
-c              flag for computing interior/exterior limit of layer
-c              potential at boundary target points
-c
 c
 c           
 c               
@@ -326,7 +342,6 @@ c
       integer ixyzso(npatches+1),iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps
       real *8 targs(ndtarg,ntarg)
-      integer inode_id(ntarg)
       complex *16 zpars(3)
       integer nnz,row_ptr(npts+1),col_ind(nnz),nquad
       integer iquad(nnz+1)
@@ -345,13 +360,15 @@ c
       integer ifpgh,ifpghtarg
       complex *16 tmp(10),val
 
+      real *8 xmin,xmax,ymin,ymax,zmin,zmax,sizey,sizez,boxsize
+
 
       integer i,j,jpatch,jquadstart,jstart
 
 
       integer ifaddsub
 
-      integer ntarg,ntj
+      integer ntj
       
       complex *16 zdotu,pottmp
       complex *16, allocatable :: ctmp2(:),dtmp2(:,:)
@@ -363,7 +380,8 @@ c
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp2(:,:)
       real *8 thresh,ra
-      integer nss
+      real *8 rr,rmin
+      integer nss,ii,l,npover
 
       integer nd,ntarg0
 
@@ -441,13 +459,52 @@ C$      t2 = omp_get_wtime()
 
       timeinfo(1) = t2-t1
 
+
+c
+c        compute threshold for ignoring local computation
+c
+      
+      xmin = sources(1,1)
+      xmax = sources(1,1)
+      ymin = sources(2,1)
+      ymax = sources(2,1)
+      zmin = sources(3,1)
+      zmax = sources(3,1)
+
+      do i=1,ns
+        if(sources(1,i).lt.xmin) xmin = sources(1,i)
+        if(sources(1,i).gt.xmax) xmax = sources(1,i)
+        if(sources(2,i).lt.ymin) ymin = sources(2,i)
+        if(sources(2,i).gt.ymax) ymax = sources(2,i)
+        if(sources(3,i).lt.zmin) zmin = sources(3,i)
+        if(sources(3,i).gt.zmax) zmax = sources(3,i)
+      enddo
+
+      do i=1,ntarg
+        if(targvals(1,i).lt.xmin) xmin = targvals(1,i)
+        if(targvals(1,i).gt.xmax) xmax = targvals(1,i)
+        if(targvals(2,i).lt.ymin) ymin = targvals(2,i)
+        if(targvals(2,i).gt.ymax) ymax = targvals(2,i)
+        if(targvals(3,i).lt.zmin) zmin = targvals(3,i)
+        if(targvals(3,i).gt.zmax) zmax = targvals(3,i)
+      enddo
+      
+      boxsize = xmax-xmin
+      sizey = ymax - ymin
+      sizez = zmax - zmin
+
+      if(sizey.gt.boxsize) boxsize = sizey
+      if(sizez.gt.boxsize) boxsize = sizez
+
+      thresh = 2.0d0**(-51)*boxsize
       
 c
 c
 c       add in precomputed quadrature
 c
 
-      thresh = 1.0d-16
+
+
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()
 
@@ -463,12 +520,6 @@ C$OMP$PRIVATE(jstart,pottmp,npols)
             pot(i) = pot(i) + wnear(jquadstart+l-1)*sigma(jstart+l-1)
           enddo
         enddo
-c
-c
-c         check sign of identity term
-c
-        if(inode_id(i).gt.0) pot(i) = pot(i) - 
-     1      (-1)**(ifinout)*sigma(inode_id(i))/2/pi*zpars(3)
       enddo
 C$OMP END PARALLEL DO
 
@@ -484,6 +535,8 @@ C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,ii,val,npover)
           nss = nss + ixyzso(jpatch+1)-ixyzso(jpatch)
         enddo
         allocate(srctmp2(3,nss),ctmp2(nss),dtmp2(3,nss))
+
+        rmin = 1.0d6
         ii = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -551,9 +604,9 @@ c
 c
 c
       subroutine lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
-     1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,inode_id,
+     1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
      2   eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,sigma,novers,
-     3   nptso,ixyzso,srcover,whtsover,ifinout,pot)
+     3   nptso,ixyzso,srcover,whtsover,pot)
 c
 c
 c      this subroutine evaluates the layer potential for
@@ -607,9 +660,6 @@ c
 c         targs - real *8 (ndtarg,ntarg)
 c            target information
 c
-c         ipt_id - integer(ntarg)
-c            id of node of target i, id = -1, if target is off-surface
-c
 c          eps - real *8
 c             precision requested
 c
@@ -661,11 +711,6 @@ c
 c           whtsover - real *8 (nptso)
 c             smooth quadrature weights at oversampled nodes
 c
-c           ifinout - integer
-c              flag for computing interior/exterior limit of layer
-c              potential at boundary target points
-c
-c
 c           
 c               
 c
@@ -676,7 +721,6 @@ c
       integer ixyzso(npatches+1),iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps
       real *8 targs(ndtarg,ntarg)
-      integer inode_id(ntarg)
       complex *16 zpars(3)
       integer nnz,row_ptr(npts+1),col_ind(nnz),nquad
       integer iquad(nnz+1)
@@ -712,7 +756,7 @@ c
       integer isstart,itarg,itend,itstart,itt,jbox,jpt,mhung,mnbors
       integer iss,l,lpt,mnlist1,mnlist2,mnlist3,mnlist4
       integer n1m2,n2m1,nadd,nbmax,nboxes,nchild,ndiv,nl2,nlevels
-      integer nlist1,nlmax,npover,nl1,ntarg,ntj
+      integer nlist1,nlmax,npover,nl1,ntj
       
       complex *16 zdotu,pottmp
       complex *16, allocatable :: ctmp1(:),ctmp2(:),dtmp1(:,:),
@@ -885,7 +929,7 @@ c
 c       add in precomputed quadrature
 c
 
-      thresh = 1.0d-16
+      thresh = 2.0d0**(-51)*boxsize(0)
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()
 
@@ -901,12 +945,6 @@ C$OMP$PRIVATE(jstart,pottmp,npols)
             pot(i) = pot(i) + wnear(jquadstart+l-1)*sigma(jstart+l-1)
           enddo
         enddo
-c
-c
-c         check sign of identity term
-c
-        if(inode_id(i).gt.0) pot(i) = pot(i) - 
-     1      (-1)**(ifinout)*sigma(inode_id(i))/2/pi*zpars(3)
       enddo
 C$OMP END PARALLEL DO
 

@@ -289,8 +289,6 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
    call sortr(ntarg,dd,indd)
 
 
-   ndtarg0 = max(12,ndtarg)
-
 
 
    i0 = min(10,ntarg/2)

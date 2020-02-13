@@ -52,7 +52,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         dimension rs(2,1000),ts(2,1000)
 
 c
- 0050 format ("./ggq-self-quads/radquads",I2.2,
+ 0050 format ("../../src/quadratures/ggq-self-quads/radquads",I2.2,
      1   ".txt")
  0100 format (I3.3)
  0200 format (D44.36)
@@ -64,9 +64,13 @@ c
 c
         write(filename,0050) norder
 
+
 c
         iw = 101
         open(iw,FILE=filename,STATUS='old',ERR=1000)
+
+
+
 c
 c       Grab the header data.        
 c
@@ -149,7 +153,7 @@ c   rad - on return, this user-supplied array will contain a quadrature
 c       table and a structure header describing the quadratures
 c
 c
- 0050 format ("../../3dquadratures/src/ggq/self-quads/radquads",I2.2,
+ 0050 format ("../../src/quadratures/ggq-self-quads/radquads",I2.2,
      1   ".txt")
  0100 format (I3.3)
  0200 format (D44.36)
@@ -163,6 +167,8 @@ c
 c
         iw = 101
         open(iw,FILE=filename,STATUS='old',ERR=1000)
+
+
 c
 c       Grab the header data.        
 c

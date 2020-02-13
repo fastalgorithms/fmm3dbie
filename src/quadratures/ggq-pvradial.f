@@ -33,7 +33,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         character *56 filename
         dimension rs(2,1000),ts(2,1000)
 
- 0050 format ("../../3dquadratures/src/ggq/self-quads/pvradquads",
+ 0050 format ("../../src/quadratures/ggq-self-quads/pvradquads",
      1  I2.2,".txt")
  0100 format (I3.3)
  0200 format (D44.36)
@@ -129,7 +129,7 @@ c   rad - on return, this user-supplied array will contain a quadrature
 c       table and a structure header describing the quadratures
 c
 c
- 0050 format ("./ggq-self-quads/pvradquads",
+ 0050 format ("../../src/quadratures/ggq-self-quads/pvradquads",
      1  I2.2,".txt")
 
  0100 format (I3.3)

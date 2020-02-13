@@ -27,14 +27,17 @@
 
       call prini(6,13)
 
+      done = 1
+      pi = atan(done)*4
+
 
 c
 c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 2
-      if(igeomtype.eq.1) ipars(1) = 3
+      igeomtype = 1
+      if(igeomtype.eq.1) ipars(1) = 4
       if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
@@ -70,6 +73,7 @@ c
       allocate(srcvals(12,npts),srccoefs(9,npts))
       allocate(targs(3,npts))
       ifplot = 0
+
 
 
       call setup_geom(igeomtype,norder,npatches,ipars, 
@@ -117,7 +121,6 @@ c
         ipatch_id(i) = -1
         uvs_targ(1,i) = 0
         uvs_targ(2,i) = 0
-        inode_id(i) = i
       enddo
 
       call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, 
@@ -134,11 +137,11 @@ c
       enddo
       
 
-      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+      call findnearslowmem(cms,npatches,rad_near,targs,npts,nnz)
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
-      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+      call findnearslow(cms,npatches,rad_near,targs,npts,row_ptr, 
      1        col_ind)
 
       allocate(iquad(nnz+1)) 
@@ -155,6 +158,7 @@ c
 
       ikerorder = -1
 
+
       call cpu_time(t1)
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
      1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zk,
@@ -162,7 +166,10 @@ c
       call cpu_time(t2)
       tfar = t2-t1
 
-cc          call prinf('ixyzso=*',ixyzso,npatches+1)
+      do i=1,npatches
+        write(47,*) nfars(i),ixyzso(i),ixyzso(i+1)
+      enddo
+
 
 
       npts_over = ixyzso(npatches+1)-1
@@ -185,15 +192,21 @@ cc          call prinf('ixyzso=*',ixyzso,npatches+1)
       enddo
 
 
+
       call cpu_time(t1)
 
       zpars(1) = zk
       zpars(2) = 1.0d0
       zpars(3) = 0.0d0
 
+      iquadtype = 1
+
+cc      goto 1111
+
       call getnearquad_helm_comb_dir(npatches,norders,
      1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,zpars,nnz,row_ptr,col_ind,iquad,
+     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     1      iquad,
      1      rfac0,nquad,slp_near)
 
       
@@ -201,11 +214,14 @@ cc          call prinf('ixyzso=*',ixyzso,npatches+1)
       zpars(3) = 1.0d0
       call getnearquad_helm_comb_dir(npatches,norders,
      1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,zpars,nnz,row_ptr,col_ind,iquad,
+     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,
+     1      nnz,row_ptr,col_ind,iquad,
      1      rfac0,nquad,dlp_near)
       
       call cpu_time(t2)
       tquadgen = t2-t1
+
+
 
       ifinout = 1     
 
@@ -214,14 +230,154 @@ cc          call prinf('ixyzso=*',ixyzso,npatches+1)
 
 
       call cpu_time(t1)
-      call lpcomp_helm_comb_dir_bdry(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,inode_id,
+
+      call lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,slp_near,
-     2  sigma,nfars,npts_over,ixyzso,srcover,wover,ifinout,pot)
+     3  dudnval,nfars,npts_over,ixyzso,srcover,wover,potslp)
+
+
+      zpars(2) = 0.0d0
+      zpars(3) = 1.0d0
+
+
+      call lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
+     3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)
+
+
       call cpu_time(t2)
       tlpcomp = t2-t1
 
 
+c
+c
+c      compute error
+c
+      errl2 = 0
+      rl2 = 0
+      do i=1,npts
+        pot(i) = (potslp(i) - potdlp(i))/2/pi
+        errl2 = errl2 + abs(uval(i)-pot(i))**2*wts(i)
+        rl2 = rl2 + abs(uval(i))**2*wts(i)
+      enddo
+
+
+      err = sqrt(errl2/rl2)
+
+      call prin2('error in greens identity=*',err,1)
+      
+
+
+
+
       stop
+      end
+
+
+
+
+      subroutine setup_geom(igeomtype,norder,npatches,ipars, 
+     1    srcvals,srccoefs,ifplot,fname)
+      implicit real *8 (a-h,o-z)
+      integer igeomtype,norder,npatches,ipars(*),ifplot
+      character (len=*) fname
+      real *8 srcvals(12,*), srccoefs(9,*)
+      real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
+
+      real *8, pointer :: ptr1,ptr2,ptr3,ptr4
+      integer, pointer :: iptr1,iptr2,iptr3,iptr4
+      real *8, target :: p1(10),p2(10),p3(10),p4(10)
+      real *8, allocatable, target :: triaskel(:,:,:)
+      real *8, allocatable, target :: deltas(:,:)
+      integer, allocatable :: isides(:)
+      integer, target :: nmax,mmax
+
+      procedure (), pointer :: xtri_geometry
+
+
+      external xtri_stell_eval,xtri_sphere_eval
+      
+      npols = (norder+1)*(norder+2)/2
+      allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
+      allocate(wts(npols))
+
+      call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
+
+      if(igeomtype.eq.1) then
+        itype = 2
+        allocate(triaskel(3,3,npatches))
+        allocate(isides(npatches))
+        npmax = npatches
+        ntri = 0
+        call xtri_platonic(itype, ipars(1), npmax, ntri, 
+     1      triaskel, isides)
+
+        xtri_geometry => xtri_sphere_eval
+        ptr1 => triaskel(1,1,1)
+        ptr2 => p2(1)
+        ptr3 => p3(1)
+        ptr4 => p4(1)
+
+
+        if(ifplot.eq.1) then
+           call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2, 
+     1         ptr3,ptr4, norder,'Triangulated surface of the sphere')
+        endif
+
+
+        call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,ptr3,ptr4,
+     1     npols,uvs,umatr,srcvals,srccoefs)
+      endif
+
+      if(igeomtype.eq.2) then
+        done = 1
+        pi = atan(done)*4
+        umin = 0
+        umax = 2*pi
+        vmin = 0
+        vmax = 2*pi
+        allocate(triaskel(3,3,npatches))
+        nover = 0
+        call xtri_rectmesh_ani(umin,umax,vmin,vmax,ipars(1),ipars(2),
+     1     nover,npatches,npatches,triaskel)
+
+        mmax = 2
+        nmax = 1
+        xtri_geometry => xtri_stell_eval
+
+        allocate(deltas(-1:mmax,-1:nmax))
+        deltas(-1,-1) = 0.17d0
+        deltas(0,-1) = 0
+        deltas(1,-1) = 0
+        deltas(2,-1) = 0
+
+        deltas(-1,0) = 0.11d0
+        deltas(0,0) = 1
+        deltas(1,0) = 4.5d0
+        deltas(2,0) = -0.25d0
+
+        deltas(-1,1) = 0
+        deltas(0,1) = 0.07d0
+        deltas(1,1) = 0
+        deltas(2,1) = -0.45d0
+
+        ptr1 => triaskel(1,1,1)
+        ptr2 => deltas(-1,-1)
+        iptr3 => mmax
+        iptr4 => nmax
+
+        if(ifplot.eq.1) then
+           call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2, 
+     1         iptr3,iptr4, norder,
+     2         'Triangulated surface of the stellarator')
+        endif
+
+        call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,iptr3,iptr4,
+     1     npols,uvs,umatr,srcvals,srccoefs)
+      endif
+      
+      return  
       end
 
