@@ -1,9 +1,9 @@
 # solvers3d
 
-FMM-accelerated boundary integral equation solvers
+## FMM-accelerated boundary integral equation solvers
 
 
-Currently only supports high-order triangulation of smooth surfaces
+- Currently only supports high-order triangulation of smooth surfaces
 
 Upcoming support for: 
     *  High order triangulation of surfaces with edges
@@ -19,9 +19,9 @@ run ``make -f make_fmm_lib <options>''  options: "OMP=ON", "FAST_KER=ON"
 
 
 The surface is assumed to given as a collection of high order
-patches S = \cup_{j} \Gamma_{j} with a given parameterization
+patches $`S = \cup_{j} \Gamma_{j}`$ with a given parameterization
 
-xyz_{j}: T_{0} \to \Gamma_{j}
+$`xyz_{j}: T_{0} \to \Gamma_{j}`$
 
 srcvals(12,*) - at each discretization node, stores
   x,y,z,dx/du,dy/du,dz/du,dx/dv,dy/dv,dz/dv,nx,ny,nz
