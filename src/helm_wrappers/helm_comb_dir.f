@@ -8,16 +8,25 @@ c        field quadrature for the Dirichlet data
 c        corresponding to the combined field
 c        representation 
 c
-c       lpcomp_helm_comb_dir_addsub (to be tested) -
+c       lpcomp_helm_comb_dir_addsub 
 c         compute layer potential for the Dirichlet
 c         data corresponding to the combined field representation
 c         using add and subtract
 c 
 c
-c       lpcomp_helm_comb_dir_setsub (to be tested) (OPTIONAL)
+c       lpcomp_helm_comb_dir_setsub 
 c          compute layer potential for Dirichlet data corresponding
 c          to the combined field representation using 
 c          set subtraction and turning off list 1
+c
+c
+c       lpcomp_helm_comb_dir 
+c          simpler version of helmholtz layer potential evaluator
+c          only geometry, targets, representation parameters( alpha,beta,k)
+c          and density sampled at discretization required on input,
+c          output is the layer potential evaluated at the target points
+c          (note that the identity term is not included for targets on
+c           surface)
 c
 c     TO WRITE:
 c       setparams0_fmm_helm_comb_dir
@@ -35,6 +44,7 @@ c
 c       helm_comb_dir_matgen
 c
 c
+
 
 
       subroutine getnearquad_helm_comb_dir(npatches,norders,
@@ -215,6 +225,210 @@ c
 c
 c
 c
+c
+c
+      subroutine lpcomp_helm_comb_dir(npatches,norders,ixyzs,
+     1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
+     2   ipatch_id,uvs_targ,eps,zpars,sigma,pot)
+c
+c      this subroutine evaluates the layer potential for
+c      the representation u = \alpha S_{k} + \beta D_{k} 
+c
+c
+c       input:
+c         npatches - integer
+c            number of patches
+c
+c         norders- integer(npatches)
+c            order of discretization on each patch 
+c
+c         ixyzs - integer(npatches+1)
+c            ixyzs(i) denotes the starting location in srccoefs,
+c               and srcvals array corresponding to patch i
+c   
+c         iptype - integer(npatches)
+c            type of patch
+c             iptype = 1, triangular patch discretized using RV nodes
+c
+c         npts - integer
+c            total number of discretization points on the boundary
+c 
+c         srccoefs - real *8 (9,npts)
+c            koornwinder expansion coefficients of xyz, dxyz/du,
+c            and dxyz/dv on each patch. 
+c            For each point srccoefs(1:3,i) is xyz info
+c                           srccoefs(4:6,i) is dxyz/du info
+c                           srccoefs(7:9,i) is dxyz/dv info
+c
+c         srcvals - real *8 (12,npts)
+c             xyz(u,v) and derivative info sampled at the 
+c             discretization nodes on the surface
+c             srcvals(1:3,i) - xyz info
+c             srcvals(4:6,i) - dxyz/du info
+c             srcvals(7:9,i) - dxyz/dv info
+c 
+c         ndtarg - integer
+c            leading dimension of target array
+c        
+c         ntarg - integer
+c            number of targets
+c
+c         targs - real *8 (ndtarg,ntarg)
+c            target information
+c
+c         ipatch_id - integer(ntarg)
+c            id of patch of target i, id = -1, if target is off-surface
+c
+c         uvs_targ - real *8 (2,ntarg)
+c            local uv coordinates on patch if on surface, otherwise
+c            set to 0 by default
+c          (maybe better to find closest uv on patch using
+c            newton)
+c            
+c          eps - real *8
+c             precision requested
+c
+c          zpars - complex *16 (3)
+c              kernel parameters (Referring to formula (1))
+c              zpars(1) = k 
+c              zpars(2) = alpha
+c              zpars(3) = beta
+c
+c           sigma - complex *16(npts)
+c               density for layer potential
+c
+c         output
+c           pot - complex *16(npts)
+c              layer potential evaluated at the target points
+c
+c
+      implicit none
+      integer npatches,norder,npols,npts
+      integer ndtarg,ntarg
+      integer norders(npatches),ixyzs(npatches+1)
+      integer iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps
+      real *8 targs(ndtarg,ntarg)
+      complex *16 zpars(3)
+      complex *16 sigma(npts)
+      complex *16 pot(npts)
+      integer ipatch_id(ntarg),uvs_targ(2,ntarg)
+
+      integer nover,npolso,nptso
+      integer nnz,nquad
+      integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
+      complex *16, allocatable :: wnear(:)
+
+      real *8, allocatable :: srcover(:,:),wover(:)
+      integer, allocatable :: ixyzso(:),novers(:)
+
+      real *8, allocatable :: cms(:,:),rads(:),rad_near(:) 
+
+      integer i,j,jpatch,jquadstart,jstart
+
+      integer ipars
+      real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
+
+
+      real *8 ttot,done,pi
+      real *8 rfac,rfac0
+      integer iptype_avg,norder_avg
+      integer ikerorder, iquadtype,npts_over
+
+c
+c
+c        this might need fixing
+c
+      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+
+      call get_rfacs(norder_avg,iptype_avg,rfac,rfac0)
+
+
+      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
+     1     srccoefs,cms,rads)
+
+C$OMP PARALLEL DO DEFAULT(SHARED) 
+      do i=1,npatches
+        rad_near(i) = rads(i)*rfac
+      enddo
+C$OMP END PARALLEL DO      
+
+c
+c    find near quadrature correction interactions
+c
+      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+
+      allocate(row_ptr(npts+1),col_ind(nnz))
+      
+      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+     1        col_ind)
+
+      allocate(iquad(nnz+1)) 
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
+     1         iquad)
+
+      ikerorder = -1
+      if(abs(zpars(3)).gt.1.0d-16) ikerorder = 0
+
+c
+c    estimate oversampling for far-field, and oversample geometry
+c
+
+      allocate(novers(npatches),ixyzso(npatches+1))
+
+      call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
+     1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),
+     2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
+
+      npts_over = ixyzso(npatches+1)-1
+
+      allocate(srcover(12,npts_over),wover(npts_over))
+
+      call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
+     1   srccoefs,novers,ixyzso,npts_over,srcover)
+
+      call get_qwts(npatches,novers,ixyzso,iptype,npts_over,
+     1        srcover,wover)
+
+
+c
+c   compute near quadrature correction
+c
+      nquad = iquad(nnz+1)-1
+      allocate(wnear(nquad))
+      
+C$OMP PARALLEL DO DEFAULT(SHARED)      
+      do i=1,nquad
+        wnear(i) = 0
+      enddo
+C$OMP END PARALLEL DO    
+
+
+      iquadtype = 1
+
+      call getnearquad_helm_comb_dir(npatches,norders,
+     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     1      iquad,rfac0,nquad,wnear)
+
+
+c
+c
+c   compute layer potential
+c
+      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,
+     3  sigma,novers,npts_over,ixyzso,srcover,wover,pot)
+
+
+
+      return
+      end
+
 c
 c
 c
@@ -406,7 +620,6 @@ c
 
       call oversample_fun_surf(2,npatches,norders,ixyzs,iptype, 
      1    npts,sigma,novers,ixyzso,ns,sigmaover)
-      call prinf('inside lpcomp, done oversampling density*',i,0)
 
 
       ra = 0
@@ -583,10 +796,10 @@ C$      t2 = omp_get_wtime()
       timeinfo(2) = t2-t1
 
 
-      call prin2('quadrature time=*',timeinfo,2)
+cc      call prin2('quadrature time=*',timeinfo,2)
       
       ttot = timeinfo(1) + timeinfo(2)
-      call prin2('time in lpcomp=*',ttot,1)
+cc      call prin2('time in lpcomp=*',ttot,1)
 
       
       return
@@ -1159,10 +1372,10 @@ C$      t2 = omp_get_wtime()
 
       call dreorderi(2,ntarg,potsort,pot,itree(ipointer(6)))
 
-      call prin2('quadrature time=*',timeinfo,2)
+cc      call prin2('quadrature time=*',timeinfo,2)
       
       ttot = timeinfo(1) + timeinfo(2)
-      call prin2('time in lpcomp=*',ttot,1)
+cc      call prin2('time in lpcomp=*',ttot,1)
 
 cc      call prin2('at end of lpcomp*',i,0)
 cc      call prin2('pot=*',pot,24)

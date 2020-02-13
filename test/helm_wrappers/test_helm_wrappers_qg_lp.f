@@ -12,6 +12,7 @@
       complex *16, allocatable :: uval(:),dudnval(:)
       complex *16, allocatable :: sigmaover(:),slp_near(:),dlp_near(:)
       complex *16, allocatable :: pot(:),potslp(:),potdlp(:)
+      complex *16, allocatable :: potslp2(:)
 
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
       integer, allocatable :: ixyzso(:),nfars(:)
@@ -37,7 +38,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 4
+      if(igeomtype.eq.1) ipars(1) = 2
       if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
@@ -137,11 +138,11 @@ c
       enddo
       
 
-      call findnearslowmem(cms,npatches,rad_near,targs,npts,nnz)
+      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
-      call findnearslow(cms,npatches,rad_near,targs,npts,row_ptr, 
+      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
      1        col_ind)
 
       allocate(iquad(nnz+1)) 
@@ -165,11 +166,6 @@ c
      2    nnz,row_ptr,col_ind,rfac,nfars,ixyzso)
       call cpu_time(t2)
       tfar = t2-t1
-
-      do i=1,npatches
-        write(47,*) nfars(i),ixyzso(i),ixyzso(i+1)
-      enddo
-
 
 
       npts_over = ixyzso(npatches+1)-1
@@ -231,7 +227,7 @@ cc      goto 1111
 
       call cpu_time(t1)
 
-      call lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
+      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,slp_near,
      3  dudnval,nfars,npts_over,ixyzso,srcover,wover,potslp)
@@ -241,7 +237,7 @@ cc      goto 1111
       zpars(3) = 1.0d0
 
 
-      call lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
+      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
      3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)
@@ -267,7 +263,30 @@ c
       err = sqrt(errl2/rl2)
 
       call prin2('error in greens identity=*',err,1)
+
+      allocate(potslp2(npts))
+
+      zpars(2) = 1.0d0
+      zpars(3) = 0.0d0
       
+      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
+     2  uvs_targ,eps,zpars,dudnval,potslp2)
+
+
+      errl2 = 0
+      rl2 = 0
+      do i=1,npts
+
+        errl2 = errl2 + abs(potslp(i)-potslp2(i))**2*wts(i)
+        rl2 = rl2 + abs(potslp(i))**2*wts(i) 
+      enddo
+      errl2 = sqrt(errl2/rl2)
+
+      call prin2('error in simpler calling interface for lp eval=*',
+     1   errl2,1)
+      
+
 
 
 
