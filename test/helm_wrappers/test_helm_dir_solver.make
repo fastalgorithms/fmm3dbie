@@ -1,9 +1,9 @@
 
-EXEC = helm_wrappers
+EXEC = helm_solver
 
 #HOST = osx-gfortran
 HOST=linux-gfortran
-HOST=linux-gfortran-openmp
+#HOST=linux-gfortran-openmp
 #HOST=linux-ifort
 
 ifeq ($(HOST),osx-gfortran)
@@ -47,7 +47,7 @@ FMM = ../../src/fmm_wrappers
 
 .PHONY: all clean list
 
-SOURCES =  test_helm_wrappers_qg_lp.f \
+SOURCES =  test_helm_dir_solver.f \
   $(COM)/prini_new.f \
   $(COM)/hkrand.f \
   $(COM)/dlaran.f \

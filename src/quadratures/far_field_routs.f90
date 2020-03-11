@@ -247,7 +247,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   real *8, allocatable :: uvs(:,:),wts(:),qwts(:)
   real *8 tmp(3)
   integer nfars(8)
-  integer nmax
+  integer nmax,iseed1,iseed2 
 
   character *1 transa,transb
 
@@ -258,6 +258,9 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   if(ikerorder.eq.-1) fker => h3d_slp
   if(ikerorder.eq.0) fker => h3d_dlp
   if(ikerorder.eq.1) fker => h3d_qlp
+
+  iseed1 = 1001
+  iseed2 = 3042
 
   nfars(1) = 1
   nfars(2) = 2
@@ -302,8 +305,8 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
    enddo
 
    do i=i0+1,nmax
-     phi = hkrand(0)*2*pi
-     thet = hkrand(0)*pi
+     phi = hkrand(iseed1+i)*2*pi
+     thet = hkrand(iseed2+i)*pi
      targtest(1,i) = cm(1) + rad*sin(thet)*cos(phi)
      targtest(2,i) = cm(2) + rad*sin(thet)*sin(phi)
      targtest(3,i) = cm(3) + rad*cos(thet)

@@ -38,7 +38,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 2
+      if(igeomtype.eq.1) ipars(1) = 4
       if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
@@ -169,6 +169,8 @@ c
 
 
       npts_over = ixyzso(npatches+1)-1
+
+      print *, "npts_over=",npts_over
 
 
       allocate(srcover(12,npts_over),sigmaover(npts_over),

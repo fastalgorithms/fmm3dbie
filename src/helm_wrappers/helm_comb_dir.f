@@ -8,6 +8,27 @@ c        field quadrature for the Dirichlet data
 c        corresponding to the combined field
 c        representation 
 c
+c       lpcomp_helm_comb_dir 
+c          simpler version of helmholtz layer potential evaluator
+c          only geometry, targets, representation parameters (alpha,beta,k)
+c          and density sampled at discretization required on input,
+c          output is the layer potential evaluated at the target points
+c          (note that the identity term is not included for targets on
+c           surface)
+c
+c       helm_comb_dir_solver - solves the interior/exterior Dirichlet
+c         problem for Helmholtz equation using the combined field
+c         representation 
+c        
+c
+c    Advanced user interfaces: 
+c*****************************
+c       Note for developers: One of the two advanced user interfaces
+c         is necessary for the easy user interface and
+c         efficient iterative solvers. It seems that the add and subtract
+c         version tends to have better CPU-time performance, but we expect
+c         the setsub version to be more numerically stable
+c**************************************
 c       lpcomp_helm_comb_dir_addsub 
 c         compute layer potential for the Dirichlet
 c         data corresponding to the combined field representation
@@ -20,28 +41,13 @@ c          to the combined field representation using
 c          set subtraction and turning off list 1
 c
 c
-c       lpcomp_helm_comb_dir 
-c          simpler version of helmholtz layer potential evaluator
-c          only geometry, targets, representation parameters( alpha,beta,k)
-c          and density sampled at discretization required on input,
-c          output is the layer potential evaluated at the target points
-c          (note that the identity term is not included for targets on
-c           surface)
 c
 c     TO WRITE:
-c       setparams0_fmm_helm_comb_dir
-c
-c       setparams_fmm_helm_comb_dir
-c
-c       helm_comb_dir_apply
-c
-c       helm_comb_dir_solver
-c
-c       setparams0_fds_helm_comb_dir
+c       setparams_fds_helm_comb_dir_mem
 c 
 c       setparams_fds_helm_comb_dir
 c
-c       helm_comb_dir_matgen
+c       fds_helm_comb_dir_matgen
 c
 c
 
@@ -53,9 +59,12 @@ c
      3   iquad,rfac0,nquad,wnear)
 c
 c       this subroutine generates the near field quadrature
-c       for the representation u = \alpha S_{k}  + \beta D_{k} ---(1)
+c       for the representation u = 4\pi (\alpha S_{k}  + \beta D_{k}) ---(1)
 c       where the near field is specified by the user 
 c       in row sparse compressed format.
+c
+c
+c        Note: the 4 \pi scaling is included to be consistent with the FMM
 c
 c
 c       The quadrature is computed by the following strategy
@@ -192,18 +201,18 @@ c
 c        initialize the appropriate kernel function
 c
 
-      if(iquadtype.eq.1) then
-        alpha = zpars(2)
-        beta = zpars(3)
-        fker => h3d_comb
-        ipv = 1
-        if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
-          fker=>h3d_slp
-          ipv = 0 
-        else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
-          fker=>h3d_dlp
-        endif
+      alpha = zpars(2)
+      beta = zpars(3)
+      fker => h3d_comb
+      ipv = 1
+      if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
+        fker=>h3d_slp
+        ipv = 0 
+      else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
+        fker=>h3d_dlp
+      endif
 
+      if(iquadtype.eq.1) then
         if(ipv.eq.0) then
 
           call getnearquad_ggq_compact_guru(npatches,norders,ixyzs,
@@ -220,6 +229,21 @@ c
         endif
       endif
 
+
+      if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
+C$OMP PARALLEL DO DEFAULT(SHARED)        
+        do i=1,nquad
+          wnear(i) = wnear(i)*alpha
+        enddo
+C$OMP END PARALLEL DO        
+      else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
+C$OMP PARALLEL DO DEFAULT(SHARED)        
+        do i=1,nquad
+          wnear(i) = wnear(i)*beta
+        enddo
+C$OMP END PARALLEL DO        
+      endif
+
       return
       end
 c
@@ -232,7 +256,9 @@ c
      2   ipatch_id,uvs_targ,eps,zpars,sigma,pot)
 c
 c      this subroutine evaluates the layer potential for
-c      the representation u = \alpha S_{k} + \beta D_{k} 
+c      the representation u = 4 \pi(\alpha S_{k} + \beta D_{k})
+c
+c      Note: the 4\pi scaling is included to be consistent with the fmm
 c
 c
 c       input:
@@ -312,7 +338,8 @@ c
       complex *16 zpars(3)
       complex *16 sigma(npts)
       complex *16 pot(npts)
-      integer ipatch_id(ntarg),uvs_targ(2,ntarg)
+      integer ipatch_id(ntarg)
+      real *8 uvs_targ(2,ntarg)
 
       integer nover,npolso,nptso
       integer nnz,nquad
@@ -428,7 +455,7 @@ c
 
       return
       end
-
+c
 c
 c
 c
@@ -440,9 +467,11 @@ c
 c
 c
 c      this subroutine evaluates the layer potential for
-c      the representation u = \alpha S_{k} + \beta D_{k} 
+c      the representation u = 4\pi (\alpha S_{k} + \beta D_{k}) 
 c      where the near field is precomputed and stored
 c      in the row sparse compressed format.
+c
+c       Note the 4\pi scaling is included to be consistent with the FMM
 c
 c
 c     The fmm is used to accelerate the far-field and 
@@ -823,9 +852,12 @@ c
 c
 c
 c      this subroutine evaluates the layer potential for
-c      the representation u = \alpha S_{k} + \beta D_{k} 
+c      the representation u = (\alpha S_{k} + \beta D_{k}) 4 \pi 
 c      where the near field is precomputed and stored
 c      in the row sparse compressed format.
+c
+c
+c          Note the 4\pi scaling is included to be consistent with fmm
 c
 c
 c     The fmm is used to accelerate the far-field and 
@@ -1389,5 +1421,415 @@ c
 c
 c
 c
+c
+c
+c
+c        
+      subroutine helm_comb_dir_solver(npatches,norders,ixyzs,
+     1    iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,
+     2    rhs,niter,errs,rres,soln)
+c
+c
+c        this subroutine solves the helmholtz dirichlet problem
+c     on the interior or exterior of an object where the potential
+c     is represented as a combined field integral equation.
+c
+c
+c     Representation:
+c        u = \alpha S_{k} + \beta D_{k}
+c     
+c     The linear system is solved iteratively using GMRES
+c     until a relative residual of 1e-15 is reached
+c
+c
+c       input:
+c         npatches - integer
+c            number of patches
+c
+c         norders- integer(npatches)
+c            order of discretization on each patch 
+c
+c         ixyzs - integer(npatches+1)
+c            ixyzs(i) denotes the starting location in srccoefs,
+c               and srcvals array corresponding to patch i
+c   
+c         iptype - integer(npatches)
+c            type of patch
+c             iptype = 1, triangular patch discretized using RV nodes
+c
+c         npts - integer
+c            total number of discretization points on the boundary
+c 
+c         srccoefs - real *8 (9,npts)
+c            koornwinder expansion coefficients of xyz, dxyz/du,
+c            and dxyz/dv on each patch. 
+c            For each point srccoefs(1:3,i) is xyz info
+c                           srccoefs(4:6,i) is dxyz/du info
+c                           srccoefs(7:9,i) is dxyz/dv info
+c
+c         srcvals - real *8 (12,npts)
+c             xyz(u,v) and derivative info sampled at the 
+c             discretization nodes on the surface
+c             srcvals(1:3,i) - xyz info
+c             srcvals(4:6,i) - dxyz/du info
+c             srcvals(7:9,i) - dxyz/dv info
+c 
+c          eps - real *8
+c             precision requested for computing quadrature and fmm
+c             tolerance
+c
+c          zpars - complex *16 (3)
+c              kernel parameters (Referring to formula (1))
+c              zpars(1) = k 
+c              zpars(2) = alpha
+c              zpars(3) = beta
+c
+c          ifinout - integer
+c              flag for interior or exterior problems (normals assumed to 
+c                be pointing in exterior of region)
+c              ifinout = 0, interior problem
+c              ifinout = 1, exterior problem
+c
+c           rhs - complex *16(npts)
+c              right hand side
+c
+c           numit - integer
+c              max number of gmres iterations
+c
+c         output
+c           niter - integer
+c              number of gmres iterations required for relative residual
+c               to converge to 1e-15
+c          
+c           errs(1:iter) - relative residual as a function of iteration
+c              number
+c 
+c           rres - real *8
+c              relative residual for computed solution
+c              
+c           soln - complex *16(npts)
+c              density which solves the dirichlet problem
+c
+c
+      implicit none
+      integer npatches,norder,npols,npts
+      integer ifinout
+      integer norders(npatches),ixyzs(npatches+1)
+      integer iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps
+      complex *16 zpars(3)
+      complex *16 rhs(npts)
+      complex *16 soln(npts)
+
+      real *8, allocatable :: targs(:,:)
+      integer, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_targ(:,:)
+      integer ndtarg,ntarg
+
+      real *8 errs(numit+1)
+      real *8 rres
+      integer niter
+
+
+      integer nover,npolso,nptso
+      integer nnz,nquad
+      integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
+      complex *16, allocatable :: wnear(:)
+
+      real *8, allocatable :: srcover(:,:),wover(:)
+      integer, allocatable :: ixyzso(:),novers(:)
+
+      real *8, allocatable :: cms(:,:),rads(:),rad_near(:) 
+
+      integer i,j,jpatch,jquadstart,jstart
+
+      integer ipars
+      real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
+
+
+      real *8 ttot,done,pi
+      real *8 rfac,rfac0
+      integer iptype_avg,norder_avg
+      integer ikerorder, iquadtype,npts_over
+
+c
+c
+c       gmres variables
+c
+      complex *16 zid,ztmp
+      real *8 rb,wnrm2
+      integer numit,it,iind,it1,k,l
+      real *8 rmyerr,eps_gmres
+      complex *16 temp
+      complex *16, allocatable :: vmat(:,:),hmat(:,:)
+      complex *16, allocatable :: cs(:),sn(:)
+      complex *16, allocatable :: svec(:),yvec(:),wtmp(:)
+
+
+      allocate(vmat(npts,numit+1),hmat(numit,numit))
+      allocate(cs(numit),sn(numit))
+      allocate(wtmp(npts),svec(numit+1),yvec(numit+1))
+
+
+      done = 1
+      pi = atan(done)*4
+
+
+c
+c
+c        setup targets as on surface discretization points
+c 
+      ndtarg = 3
+      ntarg = npts
+      allocate(targs(ndtarg,npts),uvs_targ(2,ntarg),ipatch_id(ntarg))
+
+C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        targs(1,i) = srcvals(1,i)
+        targs(2,i) = srcvals(2,i)
+        targs(3,i) = srcvals(3,i)
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
+      enddo
+C$OMP END PARALLEL DO   
+
+
+c
+c    initialize patch_id and uv_targ for on surface targets
+c
+      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts,
+     1  ipatch_id,uvs_targ)
+
+c
+c
+c        this might need fixing
+c
+      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+
+      call get_rfacs(norder_avg,iptype_avg,rfac,rfac0)
+
+
+      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
+     1     srccoefs,cms,rads)
+
+C$OMP PARALLEL DO DEFAULT(SHARED) 
+      do i=1,npatches
+        rad_near(i) = rads(i)*rfac
+      enddo
+C$OMP END PARALLEL DO      
+
+c
+c    find near quadrature correction interactions
+c
+      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+
+      allocate(row_ptr(npts+1),col_ind(nnz))
+      
+      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+     1        col_ind)
+
+      allocate(iquad(nnz+1)) 
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
+     1         iquad)
+
+      ikerorder = -1
+      if(abs(zpars(3)).gt.1.0d-16) ikerorder = 0
+
+
+c
+c    estimate oversampling for far-field, and oversample geometry
+c
+
+      allocate(novers(npatches),ixyzso(npatches+1))
+
+      call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
+     1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),
+     2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
+
+      npts_over = ixyzso(npatches+1)-1
+
+      allocate(srcover(12,npts_over),wover(npts_over))
+
+      call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
+     1   srccoefs,novers,ixyzso,npts_over,srcover)
+
+      call get_qwts(npatches,novers,ixyzso,iptype,npts_over,
+     1        srcover,wover)
+
+
+c
+c   compute near quadrature correction
+c
+      nquad = iquad(nnz+1)-1
+      allocate(wnear(nquad))
+      
+C$OMP PARALLEL DO DEFAULT(SHARED)      
+      do i=1,nquad
+        wnear(i) = 0
+      enddo
+C$OMP END PARALLEL DO    
+
+
+      iquadtype = 1
+
+      call getnearquad_helm_comb_dir(npatches,norders,
+     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     1      iquad,rfac0,nquad,wnear)
+
+
+c
+c
+c     start gmres code here
+c
+c     NOTE: matrix equation should be of the form (z*I + K)x = y
+c       the identity scaling (z) is defined via zid below,
+c       and K represents the action of the principal value 
+c       part of the matvec
+c
+      zid = -(-1)**(ifinout)*2*pi*zpars(3)
+
+
+      niter=0
+      eps_gmres = 1.0d-15
+
+c
+c      compute norm of right hand side and initialize v
+c 
+      rb = 0
+
+      do i=1,numit
+        cs(i) = 0
+        sn(i) = 0
+      enddo
+
+
+c
+      do i=1,npts
+        rb = rb + abs(rhs(i))**2
+      enddo
+      rb = sqrt(rb)
+
+      do i=1,npts
+        vmat(i,1) = rhs(i)/rb
+      enddo
+
+      svec(1) = rb
+
+      do it=1,numit
+        it1 = it + 1
+
+c
+c        NOTE:
+c        replace this routine by appropriate layer potential
+c        evaluation routine  
+c
+
+
+        call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
+     1    iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     2    eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,
+     3    vmat(1,it),novers,npts_over,ixyzso,srcover,wover,wtmp)
+
+        do k=1,it
+          hmat(k,it) = 0
+          do j=1,npts
+            hmat(k,it) = hmat(k,it) + wtmp(j)*conjg(vmat(j,k))
+          enddo
+
+          do j=1,npts
+            wtmp(j) = wtmp(j)-hmat(k,it)*vmat(j,k)
+          enddo
+        enddo
+          
+        hmat(it,it) = hmat(it,it)+zid
+        wnrm2 = 0
+        do j=1,npts
+          wnrm2 = wnrm2 + abs(wtmp(j))**2
+        enddo
+        wnrm2 = sqrt(wnrm2)
+
+        do j=1,npts
+          vmat(j,it1) = wtmp(j)/wnrm2
+        enddo
+
+        do k=1,it-1
+          temp = cs(k)*hmat(k,it)+sn(k)*hmat(k+1,it)
+          hmat(k+1,it) = -sn(k)*hmat(k,it)+cs(k)*hmat(k+1,it)
+          hmat(k,it) = temp
+        enddo
+
+        ztmp = wnrm2
+
+        call zrotmat_gmres(hmat(it,it),ztmp,cs(it),sn(it))
+          
+        hmat(it,it) = cs(it)*hmat(it,it)+sn(it)*wnrm2
+        svec(it1) = -sn(it)*svec(it)
+        svec(it) = cs(it)*svec(it)
+        rmyerr = abs(svec(it1))/rb
+        errs(it) = rmyerr
+
+        if(rmyerr.le.eps_gmres.or.it.eq.numit) then
+
+c
+c            solve the linear system corresponding to
+c            upper triangular part of hmat to obtain yvec
+c
+c            y = triu(H(1:it,1:it))\s(1:it);
+c
+          do j=1,it
+            iind = it-j+1
+            yvec(iind) = svec(iind)
+            do l=iind+1,it
+              yvec(iind) = yvec(iind) - hmat(iind,l)*yvec(l)
+            enddo
+            yvec(iind) = yvec(iind)/hmat(iind,iind)
+          enddo
+
+
+
+c
+c          estimate x
+c
+          do j=1,npts
+            soln(j) = 0
+            do i=1,it
+              soln(j) = soln(j) + yvec(i)*vmat(j,i)
+            enddo
+          enddo
+
+
+          rres = 0
+          do i=1,npts
+            wtmp(i) = 0
+          enddo
+c
+c        NOTE:
+c        replace this routine by appropriate layer potential
+c        evaluation routine  
+c
+
+
+          call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
+     1      iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     2      eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,
+     3      soln,novers,npts_over,ixyzso,srcover,wover,wtmp)
+
+            
+          do i=1,npts
+            rres = rres + abs(zid*soln(i) + wtmp(i)-rhs(i))**2
+          enddo
+          rres = sqrt(rres)/rb
+          niter = it
+          return
+        endif
+      enddo
+c
+      return
+      end
 c
 c
