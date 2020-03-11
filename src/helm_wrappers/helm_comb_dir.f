@@ -18,7 +18,18 @@ c           surface)
 c
 c       helm_comb_dir_solver - solves the interior/exterior Dirichlet
 c         problem for Helmholtz equation using the combined field
-c         representation 
+c         representation
+c
+c       helm_comb_dir_fds_mem - get memory requirements for initialization
+c          routine for subsequent calls to fast direct solver
+c
+c       helm_comb_dir_fds_init - initialize various arrays to be later 
+c          used for fast direct solver
+c
+c       helm_comb_dir_fds_matgen - query entries of the combined field
+c          representation matrix (input indices must be in column 
+c          sparse compressed format, and must be preceeded by a call
+c          to helm_comb_dir_fds_init)
 c        
 c
 c    Advanced user interfaces: 
@@ -1833,3 +1844,119 @@ c
       end
 c
 c
+c
+c
+      subroutine helm_comb_dir_fds_mem(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,nrfds,nzfds)
+c
+c       This subroutine estimates the memory requirements
+c       for the precomputation routine of the fast direct solver
+c 
+c       The precomputation routine computes an integer array (ifds)
+c       a real array (rfds), and complex array (zfds)
+c 
+c       The following quantities will be computed during the 
+c       precomputation phase of the fast direct solver
+c
+c          ifds(1) - npts_over
+c          ifds(2) - nnz
+c          ifds(3) - nquad
+c          ifds(5:5+npts-1) - row_ptr (for near quadrature info)
+c          ifds(5+npts:5+npts+nnz-1) - col_ind
+c          ifds(5+npts+nnz:5+npts+2*nnz-1) - iquad
+c          ifds(5+npts+2*nnz:5+npts+2*nnz+npatches-1) - novers
+c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches-1) - ixyzso
+c
+c          rfds(1:12*npts_over) - srcover
+c          rfds(12*npts_over+1:13*npts_over) - wover
+c
+c          zfds(1:3) - zpars(1:3)
+c          zfds(4:4+nquad-1) - wnear
+c
+c        Thus this subroutine on output returns 
+c          nifds = 4+npts+2*nnz+2*npatches
+c          nrfds = 13*npts_over
+c          nzfds = 3+nquad
+c                 
+
+      
+
+      return
+      end
+c
+c
+c
+c
+c
+
+      subroutine helm_comb_dir_fds_init(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,
+     2     rfds,nzfds,zfds)
+c
+c       This subroutine is the precomputation routine of the fast direct solver
+c 
+c       The precomputation routine computes an integer array (ifds)
+c       a real array (rfds), and complex array (zfds)
+c 
+c       The following quantities will be computed during the 
+c       precomputation phase of the fast direct solver
+c
+c          ifds(1) - npts_over
+c          ifds(2) - nnz
+c          ifds(3) - nquad
+c          ifds(5:5+npts-1) - row_ptr (for near quadrature info)
+c          ifds(5+npts:5+npts+nnz-1) - col_ind
+c          ifds(5+npts+nnz:5+npts+2*nnz-1) - iquad
+c          ifds(5+npts+2*nnz:5+npts+2*nnz+npatches-1) - novers
+c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches-1) - ixyzso
+c
+c          rfds(1:12*npts_over) - srcover
+c          rfds(12*npts_over+1:13*npts_over) - wover
+c
+c          zfds(1:3) - zpars(1:3)
+c          zfds(4:4+nquad-1) - wnear
+c
+        
+      
+
+      return
+      end
+c
+c
+c
+c
+c
+c
+
+      subroutine helm_comb_dir_fds_matgen(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,
+     2     rfds,nzfds,zfds,nent_csc,col_ptr,row_ind,zmatent)
+c
+c       This subroutine is the precomputation routine of the fast direct solver
+c 
+c       The precomputation routine computes an integer array (ifds)
+c       a real array (rfds), and complex array (zfds)
+c 
+c       The following quantities will be computed during the 
+c       precomputation phase of the fast direct solver
+c
+c          ifds(1) - npts_over
+c          ifds(2) - nnz
+c          ifds(3) - nquad
+c          ifds(5:5+npts-1) - row_ptr (for near quadrature info)
+c          ifds(5+npts:5+npts+nnz-1) - col_ind
+c          ifds(5+npts+nnz:5+npts+2*nnz-1) - iquad
+c          ifds(5+npts+2*nnz:5+npts+2*nnz+npatches-1) - novers
+c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches-1) - ixyzso
+c
+c          rfds(1:12*npts_over) - srcover
+c          rfds(12*npts_over+1:13*npts_over) - wover
+c
+c          zfds(1:3) - zpars(1:3)
+c          zfds(4:4+nquad-1) - wnear
+c
+        
+      
+
+      return
+      end
