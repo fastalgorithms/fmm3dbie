@@ -1,5 +1,5 @@
 
-EXEC = helm_solver
+EXEC = helm_iter_solver
 
 #HOST = osx-gfortran
 HOST=linux-gfortran
@@ -47,7 +47,7 @@ FMM = ../../src/fmm_wrappers
 
 .PHONY: all clean list
 
-SOURCES =  test_helm_dir_solver.f \
+SOURCES =  test_helm_dir_iter.f \
   $(COM)/prini_new.f \
   $(COM)/hkrand.f \
   $(COM)/dlaran.f \

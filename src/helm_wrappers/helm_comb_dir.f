@@ -214,16 +214,16 @@ c
 
       alpha = zpars(2)
       beta = zpars(3)
-      fker => h3d_comb
-      ipv = 1
-      if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
-        fker=>h3d_slp
-        ipv = 0 
-      else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
-        fker=>h3d_dlp
-      endif
-
       if(iquadtype.eq.1) then
+        fker => h3d_comb
+        ipv = 1
+        if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
+          fker=>h3d_slp
+          ipv = 0 
+        else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
+          fker=>h3d_dlp
+        endif
+
         if(ipv.eq.0) then
 
           call getnearquad_ggq_compact_guru(npatches,norders,ixyzs,
@@ -1861,11 +1861,11 @@ c
 c          ifds(1) - npts_over
 c          ifds(2) - nnz
 c          ifds(3) - nquad
-c          ifds(4:4+npts-1) - row_ptr (for near quadrature info)
-c          ifds(4+npts:4+npts+nnz-1) - col_ind
-c          ifds(4+npts+nnz:4+npts+2*nnz) - iquad
-c          ifds(5+npts+2*nnz:5+npts+2*nnz+npatches-1) - novers
-c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches) - ixyzso
+c          ifds(4:5+npts-1) - row_ptr (for near quadrature info)
+c          ifds(5+npts:5+npts+nnz-1) - col_ind
+c          ifds(5+npts+nnz:5+npts+2*nnz) - iquad
+c          ifds(6+npts+2*nnz:6+npts+2*nnz+npatches-1) - novers
+c          ifds(6+npts+2*nnz+npatches:6+npts+2*nnz+2*npatches) - ixyzso
 c
 c          rfds(1:12*npts_over) - srcover
 c          rfds(12*npts_over+1:13*npts_over) - wover
@@ -1874,7 +1874,7 @@ c          zfds(1:3) - zpars(1:3)
 c          zfds(4:4+nquad-1) - wnear
 c
 c        Thus this subroutine on output returns 
-c          nifds = 5+npts+2*nnz+2*npatches
+c          nifds = 6+npts+2*nnz+2*npatches
 c          nrfds = 13*npts_over
 c          nzfds = 3+nquad
 c     
@@ -1885,15 +1885,18 @@ c
       real *8 eps
       complex *16 zpars(3)
       integer nifds,nrfds,nzfds
+      integer nnz
 
       real *8, allocatable :: targs(:,:)
       integer iptype_avg,norder_avg
       integer ntarg,ndtarg,ikerorder
       real *8 rfac,rfac0
-      real *8, allocatable :: cms(:,:),rads(:),rads_near(:)
+      real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
       integer, allocatable :: iquad(:),row_ptr(:),col_ind(:)
       integer, allocatable :: novers(:),ixyzso(:)
       integer npts_over,nquad
+
+      integer i
 
 
 c
@@ -1965,7 +1968,7 @@ c
       npts_over = ixyzso(npatches+1)-1
       nquad = iquad(nnz+1)-1
 
-      nifds = 5+npts+2*nnz+2*npatches
+      nifds = 6+npts+2*nnz+2*npatches
       nrfds = 13*npts_over
       nzfds = 3 + nquad
       
@@ -1991,11 +1994,11 @@ c
 c          ifds(1) - npts_over
 c          ifds(2) - nnz
 c          ifds(3) - nquad
-c          ifds(4:4+npts-1) - row_ptr (for near quadrature info)
-c          ifds(4+npts:4+npts+nnz-1) - col_ind
-c          ifds(4+npts+nnz:4+npts+2*nnz) - iquad
-c          ifds(5+npts+2*nnz:5+npts+2*nnz+npatches-1) - novers
-c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches) - ixyzso
+c          ifds(4:5+npts-1) - row_ptr (for near quadrature info)
+c          ifds(5+npts:5+npts+nnz-1) - col_ind
+c          ifds(5+npts+nnz:5+npts+2*nnz) - iquad
+c          ifds(6+npts+2*nnz:6+npts+2*nnz+npatches-1) - novers
+c          ifds(6+npts+2*nnz+npatches:6+npts+2*nnz+2*npatches) - ixyzso
 c
 c          rfds(1:12*npts_over) - srcover
 c          rfds(12*npts_over+1:13*npts_over) - wover
@@ -2004,7 +2007,7 @@ c          zfds(1:3) - zpars(1:3)
 c          zfds(4:4+nquad-1) - wnear
 c
 c        Thus this subroutine on output returns 
-c          nifds = 5+npts+2*nnz+2*npatches
+c          nifds = 6+npts+2*nnz+2*npatches
 c          nrfds = 13*npts_over
 c          nzfds = 3+nquad
 c     
@@ -2014,19 +2017,25 @@ c
       real *8 srccoefs(9,npts),srcvals(12,npts)
       real *8 eps
       complex *16 zpars(3)
+      integer nnz
       integer nifds,nrfds,nzfds
       integer ifds(nifds)
       real *8 rfds(nrfds)
       complex *16 zfds(nzfds)
 
-      real *8, allocatable :: targs(:,:),srcover(:,:),wover(:)
+      real *8, allocatable :: targs(:,:)
+      real *8, allocatable :: uvs_targ(:,:)
+      integer, allocatable :: ipatch_id(:)
       integer iptype_avg,norder_avg
       integer ntarg,ndtarg,ikerorder
       real *8 rfac,rfac0
-      real *8, allocatable :: cms(:,:),rads(:),rads_near(:)
-      integer, allocatable :: iquad(:),row_ptr(:),col_ind(:)
-      integer, allocatable :: novers(:),ixyzso(:)
+      real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
       integer npts_over,nquad
+
+      integer iquadtype,istart,iend,i
+
+      integer irow_ptr,icol_ind,iiquad,inovers,iixyzso
+
 
 
 c
@@ -2072,14 +2081,19 @@ c    find near quadrature correction interactions
 c
       call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
 
-      allocate(row_ptr(npts+1),col_ind(nnz))
-      
-      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
-     1        col_ind)
+      irow_ptr = 4
+      icol_ind = 5+npts
+      iiquad = 5+npts+nnz
+      inovers = iiquad + nnz+1
+      iixyzso = inovers+npatches
 
-      allocate(iquad(nnz+1)) 
-      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
-     1         iquad)
+      
+      call findnear(cms,npatches,rad_near,targs,npts,ifds(irow_ptr), 
+     1        ifds(icol_ind))
+
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,ifds(irow_ptr),
+     1   ifds(icol_ind),ifds(iiquad))
+
 
       ikerorder = -1
       if(abs(zpars(3)).gt.1.0d-16) ikerorder = 0
@@ -2089,35 +2103,42 @@ c
 c    estimate oversampling for far-field, and oversample geometry
 c
 
-      allocate(novers(npatches),ixyzso(npatches+1))
 
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
      1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),
-     2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
+     2    nnz,ifds(irow_ptr),ifds(icol_ind),rfac,ifds(inovers),
+     3    ifds(iixyzso))
 
-      npts_over = ixyzso(npatches+1)-1
-      nquad = iquad(nnz+1)-1
+      npts_over = ifds(iixyzso+npatches)-1
+      nquad = ifds(iiquad+nnz)-1
 
       call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
-     1   srccoefs,novers,ixyzso,npts_over,srcover)
+     1   srccoefs,ifds(inovers),ifds(iixyzso),npts_over,rfds)
 
-      call get_qwts(npatches,novers,ixyzso,iptype,npts_over,
-     1        srcover,wover)
+      call get_qwts(npatches,ifds(inovers),ifds(iixyzso),iptype,
+     1      npts_over,rfds,rfds(12*npts_over+1))
+
       
 
       ifds(1) = npts_over
       ifds(2) = nnz
       ifds(3) = nquad
-      
-c          ifds(1) - npts_over
-c          ifds(2) - nnz
-c          ifds(3) - nquad
-c          ifds(5:5+npts-1) - row_ptr (for near quadrature info)
-c          ifds(5+npts:5+npts+nnz-1) - col_ind
-c          ifds(5+npts+nnz:5+npts+2*nnz) - iquad
-c          ifds(6+npts+2*nnz:6+npts+2*nnz+npatches-1) - novers
-c          ifds(6+npts+2*nnz+npatches:6+npts+2*nnz+2*npatches) - ixyzso
+
+      zfds(1:3) = zpars
+
 c
+c    initialize patch_id and uv_targ for on surface targets
+c
+      allocate(ipatch_id(ntarg),uvs_targ(2,ntarg))
+      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts,
+     1  ipatch_id,uvs_targ)
+
+      iquadtype = 1
+
+      call getnearquad_helm_comb_dir(npatches,norders,
+     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,ifds(irow_ptr),
+     1      ifds(icol_ind),ifds(iiquad),rfac0,nquad,zfds(4))
       
 
       return
@@ -2132,9 +2153,44 @@ c
       subroutine helm_comb_dir_fds_matgen(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,
      2     rfds,nzfds,zfds,nent_csc,col_ptr,row_ind,zmatent)
-c
         
       
+      implicit none
+      integer npatches,norders(npatches),ixyzs(npatches+1)
+      integer iptype(npatches),npts
+      real *8 srccoefs(9,npts),srcvals(12,npts)
+      real *8 eps
+      complex *16 zpars(3)
+      integer nnz
+      integer nifds,nrfds,nzfds
+      integer ifds(nifds)
+      real *8 rfds(nrfds)
+      complex *16 zfds(nzfds)
+      integer nent_csc,col_ptr(npts+1),row_ind(nent_csc)
+      complex *16 zmatent(nent_csc)
+
+      
+
+c
+c        temporary variables
+c
+      complex *16 zid
+      integer i,j,k,l,ipatch,npols
+      integer ilstart,ilend,istart,iend
+
+      do ipatch=1,npatches
+        istart = ixyzs(ipatch)
+        iend = ixyzs(ipatch+1)-1
+        npols= iend-istart+1
+         
+        ilstart = col_ptr(istart)
+        ilend = col_ptr(iend+1)-1
+
+      enddo
+      
+      
+      
+
 
       return
       end
