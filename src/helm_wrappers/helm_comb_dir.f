@@ -1861,11 +1861,11 @@ c
 c          ifds(1) - npts_over
 c          ifds(2) - nnz
 c          ifds(3) - nquad
-c          ifds(5:5+npts-1) - row_ptr (for near quadrature info)
-c          ifds(5+npts:5+npts+nnz-1) - col_ind
-c          ifds(5+npts+nnz:5+npts+2*nnz-1) - iquad
+c          ifds(4:4+npts-1) - row_ptr (for near quadrature info)
+c          ifds(4+npts:4+npts+nnz-1) - col_ind
+c          ifds(4+npts+nnz:4+npts+2*nnz) - iquad
 c          ifds(5+npts+2*nnz:5+npts+2*nnz+npatches-1) - novers
-c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches-1) - ixyzso
+c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches) - ixyzso
 c
 c          rfds(1:12*npts_over) - srcover
 c          rfds(12*npts_over+1:13*npts_over) - wover
@@ -1874,11 +1874,100 @@ c          zfds(1:3) - zpars(1:3)
 c          zfds(4:4+nquad-1) - wnear
 c
 c        Thus this subroutine on output returns 
-c          nifds = 4+npts+2*nnz+2*npatches
+c          nifds = 5+npts+2*nnz+2*npatches
 c          nrfds = 13*npts_over
 c          nzfds = 3+nquad
-c                 
+c     
+      implicit none
+      integer npatches,norders(npatches),ixyzs(npatches+1)
+      integer iptype(npatches),npts
+      real *8 srccoefs(9,npts),srcvals(12,npts)
+      real *8 eps
+      complex *16 zpars(3)
+      integer nifds,nrfds,nzfds
 
+      real *8, allocatable :: targs(:,:)
+      integer iptype_avg,norder_avg
+      integer ntarg,ndtarg,ikerorder
+      real *8 rfac,rfac0
+      real *8, allocatable :: cms(:,:),rads(:),rads_near(:)
+      integer, allocatable :: iquad(:),row_ptr(:),col_ind(:)
+      integer, allocatable :: novers(:),ixyzso(:)
+      integer npts_over,nquad
+
+
+c
+c
+c        setup targets as on surface discretization points
+c 
+      ndtarg = 3
+      ntarg = npts
+      allocate(targs(ndtarg,npts))
+
+C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        targs(1,i) = srcvals(1,i)
+        targs(2,i) = srcvals(2,i)
+        targs(3,i) = srcvals(3,i)
+      enddo
+C$OMP END PARALLEL DO   
+
+
+c
+c
+c        this might need fixing
+c
+      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+
+      call get_rfacs(norder_avg,iptype_avg,rfac,rfac0)
+
+
+      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
+     1     srccoefs,cms,rads)
+
+C$OMP PARALLEL DO DEFAULT(SHARED) 
+      do i=1,npatches
+        rad_near(i) = rads(i)*rfac
+      enddo
+C$OMP END PARALLEL DO      
+
+c
+c    find near quadrature correction interactions
+c
+      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+
+      allocate(row_ptr(npts+1),col_ind(nnz))
+      
+      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+     1        col_ind)
+
+      allocate(iquad(nnz+1)) 
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
+     1         iquad)
+
+      ikerorder = -1
+      if(abs(zpars(3)).gt.1.0d-16) ikerorder = 0
+
+
+c
+c    estimate oversampling for far-field, and oversample geometry
+c
+
+      allocate(novers(npatches),ixyzso(npatches+1))
+
+      call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
+     1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),
+     2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
+
+      npts_over = ixyzso(npatches+1)-1
+      nquad = iquad(nnz+1)-1
+
+      nifds = 5+npts+2*nnz+2*npatches
+      nrfds = 13*npts_over
+      nzfds = 3 + nquad
       
 
       return
@@ -1895,20 +1984,18 @@ c
 c
 c       This subroutine is the precomputation routine of the fast direct solver
 c 
-c       The precomputation routine computes an integer array (ifds)
-c       a real array (rfds), and complex array (zfds)
-c 
 c       The following quantities will be computed during the 
 c       precomputation phase of the fast direct solver
+c
 c
 c          ifds(1) - npts_over
 c          ifds(2) - nnz
 c          ifds(3) - nquad
-c          ifds(5:5+npts-1) - row_ptr (for near quadrature info)
-c          ifds(5+npts:5+npts+nnz-1) - col_ind
-c          ifds(5+npts+nnz:5+npts+2*nnz-1) - iquad
+c          ifds(4:4+npts-1) - row_ptr (for near quadrature info)
+c          ifds(4+npts:4+npts+nnz-1) - col_ind
+c          ifds(4+npts+nnz:4+npts+2*nnz) - iquad
 c          ifds(5+npts+2*nnz:5+npts+2*nnz+npatches-1) - novers
-c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches-1) - ixyzso
+c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches) - ixyzso
 c
 c          rfds(1:12*npts_over) - srcover
 c          rfds(12*npts_over+1:13*npts_over) - wover
@@ -1916,7 +2003,121 @@ c
 c          zfds(1:3) - zpars(1:3)
 c          zfds(4:4+nquad-1) - wnear
 c
-        
+c        Thus this subroutine on output returns 
+c          nifds = 5+npts+2*nnz+2*npatches
+c          nrfds = 13*npts_over
+c          nzfds = 3+nquad
+c     
+      implicit none
+      integer npatches,norders(npatches),ixyzs(npatches+1)
+      integer iptype(npatches),npts
+      real *8 srccoefs(9,npts),srcvals(12,npts)
+      real *8 eps
+      complex *16 zpars(3)
+      integer nifds,nrfds,nzfds
+      integer ifds(nifds)
+      real *8 rfds(nrfds)
+      complex *16 zfds(nzfds)
+
+      real *8, allocatable :: targs(:,:),srcover(:,:),wover(:)
+      integer iptype_avg,norder_avg
+      integer ntarg,ndtarg,ikerorder
+      real *8 rfac,rfac0
+      real *8, allocatable :: cms(:,:),rads(:),rads_near(:)
+      integer, allocatable :: iquad(:),row_ptr(:),col_ind(:)
+      integer, allocatable :: novers(:),ixyzso(:)
+      integer npts_over,nquad
+
+
+c
+c
+c        setup targets as on surface discretization points
+c 
+      ndtarg = 3
+      ntarg = npts
+      allocate(targs(ndtarg,npts))
+
+C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        targs(1,i) = srcvals(1,i)
+        targs(2,i) = srcvals(2,i)
+        targs(3,i) = srcvals(3,i)
+      enddo
+C$OMP END PARALLEL DO   
+
+
+c
+c
+c        this might need fixing
+c
+      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+
+      call get_rfacs(norder_avg,iptype_avg,rfac,rfac0)
+
+
+      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
+     1     srccoefs,cms,rads)
+
+C$OMP PARALLEL DO DEFAULT(SHARED) 
+      do i=1,npatches
+        rad_near(i) = rads(i)*rfac
+      enddo
+C$OMP END PARALLEL DO      
+
+c
+c    find near quadrature correction interactions
+c
+      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+
+      allocate(row_ptr(npts+1),col_ind(nnz))
+      
+      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+     1        col_ind)
+
+      allocate(iquad(nnz+1)) 
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
+     1         iquad)
+
+      ikerorder = -1
+      if(abs(zpars(3)).gt.1.0d-16) ikerorder = 0
+
+
+c
+c    estimate oversampling for far-field, and oversample geometry
+c
+
+      allocate(novers(npatches),ixyzso(npatches+1))
+
+      call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
+     1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),
+     2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
+
+      npts_over = ixyzso(npatches+1)-1
+      nquad = iquad(nnz+1)-1
+
+      call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
+     1   srccoefs,novers,ixyzso,npts_over,srcover)
+
+      call get_qwts(npatches,novers,ixyzso,iptype,npts_over,
+     1        srcover,wover)
+      
+
+      ifds(1) = npts_over
+      ifds(2) = nnz
+      ifds(3) = nquad
+      
+c          ifds(1) - npts_over
+c          ifds(2) - nnz
+c          ifds(3) - nquad
+c          ifds(5:5+npts-1) - row_ptr (for near quadrature info)
+c          ifds(5+npts:5+npts+nnz-1) - col_ind
+c          ifds(5+npts+nnz:5+npts+2*nnz) - iquad
+c          ifds(6+npts+2*nnz:6+npts+2*nnz+npatches-1) - novers
+c          ifds(6+npts+2*nnz+npatches:6+npts+2*nnz+2*npatches) - ixyzso
+c
       
 
       return
@@ -1931,29 +2132,6 @@ c
       subroutine helm_comb_dir_fds_matgen(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,
      2     rfds,nzfds,zfds,nent_csc,col_ptr,row_ind,zmatent)
-c
-c       This subroutine is the precomputation routine of the fast direct solver
-c 
-c       The precomputation routine computes an integer array (ifds)
-c       a real array (rfds), and complex array (zfds)
-c 
-c       The following quantities will be computed during the 
-c       precomputation phase of the fast direct solver
-c
-c          ifds(1) - npts_over
-c          ifds(2) - nnz
-c          ifds(3) - nquad
-c          ifds(5:5+npts-1) - row_ptr (for near quadrature info)
-c          ifds(5+npts:5+npts+nnz-1) - col_ind
-c          ifds(5+npts+nnz:5+npts+2*nnz-1) - iquad
-c          ifds(5+npts+2*nnz:5+npts+2*nnz+npatches-1) - novers
-c          ifds(5+npts+2*nnz+npatches:5+npts+2*nnz+2*npatches-1) - ixyzso
-c
-c          rfds(1:12*npts_over) - srcover
-c          rfds(12*npts_over+1:13*npts_over) - wover
-c
-c          zfds(1:3) - zpars(1:3)
-c          zfds(4:4+nquad-1) - wnear
 c
         
       
