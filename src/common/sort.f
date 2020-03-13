@@ -45,7 +45,7 @@ C     SORTRX -- SORT, integer input, indeX output
 C
 C
 C     Input:  N     INTEGER
-C             DATA  REAL
+C             DATA  INTEGER
 C
 C     Output: INDEX INTEGER (DIMENSION N)
 C
