@@ -77,7 +77,7 @@ SOURCES =  test_helm_dir_iter.f \
   $(HELM)/helm_comb_dir.f \
   $(FMM)/hfmm3d_ndiv.f \
   $(FMM)/lfmm3d_ndiv.f \
-  $(COM)/setsub.f \
+  $(COM)/setops.f \
   $(TRIA)/triasymq.f \
   $(TRIA)/ctriaints_main.f \
   $(TRIA)/triatreerouts.f \

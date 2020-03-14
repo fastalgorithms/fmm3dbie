@@ -27,6 +27,20 @@
 !      get_patch_id_uvs - for all boundary points, get patch id they are on
 !          and u,v location on patch
 !
+!      get_patch_distortion - estimate shape distortion parameter for a given
+!          collection of patches
+!
+!      get_patch_distortion_tri - estimate shape distortion for  
+!        a patch mapped from the standard simplex (0,0),(1,0),(0,1)
+!
+!
+!      get_nximat - estimate number of elements in the union of 
+!        interpolation matrices for all patches
+!
+!      get_ximat_all - get all interpolation matrices for the surface
+!
+!         
+!
 
 
 
@@ -668,3 +682,96 @@ subroutine get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, &
 
 end subroutine get_patch_id_uvs
 
+
+
+
+subroutine get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
+    srccoefs,srcvals,qwts,pdis)
+!
+!   This subroutine estimates the patch distortion for a collection of 
+!   patches:
+!
+!   For the right triangle, the patch distortion is defined as follows:
+!
+!   Let J denote the matrix whose columns are dxyz/du, and dxyz/dv
+!
+!   Let W denote the 2x2 matrix mapping the right triangle to the equilateral
+!   triangle. 
+!
+!   Let s1, s2 denote the largest and smallest singular values of the matrix
+!     J W^{-1}
+!
+!   Then the patch distortion is given by 
+!      \int_{T0} (s1/s2)^2 |det J| du dv
+!
+!
+!   For a square patch, let r1,r2 be the singular values of J, then the patch
+!   distortion is given by
+!
+!      \int_{S0} (r1/r2)^2 |det J| du dv
+!  
+!
+    
+  implicit none
+  integer npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
+  integer npts
+  real *8 srccoefs(9,npts),srcvals(12,npts),qwts(npts),pdis(npatches)
+
+
+end subroutine get_patch_distortion
+
+
+
+subroutine get_nximat(npatches,ixyzs,ixyzso,nximat)
+  implicit none
+  integer npatches,ixyzs(npatches+1),ixyzso(npatches+1),nximat,i
+
+  nximat = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:nximat) 
+  do i=1,npatches
+    nximat = nximat+(ixyzso(i+1)-ixyzso(i))*(ixyzs(i+1)-ixyzs(i))
+  enddo
+!$OMP END PARALLEL DO  
+
+end subroutine get_nximat
+
+
+
+
+subroutine get_ximats(npatches,iptype,norders,ixyzs,novers,ixyzso, &
+  nximat,ximats,iximat)
+  
+  implicit none
+  integer npatches,iptype(npatches),norders(npatches),ixyzs(npatches+1)
+  integer novers(npatches),ixyzso(npatches+1),iximat(npatches),nximat
+  integer, allocatable :: nximats(:)
+  integer i,j,k,l,npols,kpols
+  
+  real *8 ximats(nximat)
+
+  allocate(nximats(npatches))
+
+!$OMP PARALLEL DO DEFAULT(SHARED)
+  do i=1,npatches
+    nximats(i) = (ixyzso(i+1)-ixyzso(i))*(ixyzs(i+1)-ixyzs(i))
+  enddo
+!$OMP END PARALLEL DO
+
+ call cumsum(npatches,nximats,iximat)
+
+
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(kpols,npols)
+
+  do i=1,npatches
+    if(iptype(i).eq.1) then
+       kpols = ixyzs(i+1)-ixyzs(i)
+       npols = ixyzso(i+1)-ixyzso(i)
+       call koorn_oversamp_mat(norders(i),kpols,novers(i),npols, &
+         ximats(iximat(i)))
+    endif
+  enddo
+!$OMP END PARALLEL DO
+
+
+end subroutine get_ximats

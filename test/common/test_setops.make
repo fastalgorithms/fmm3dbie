@@ -1,5 +1,5 @@
 
-EXEC = get_uni
+EXEC = setops
 
 #HOST = osx
 HOST=linux-gfortran
@@ -39,11 +39,11 @@ COM = ../../src/common
 
 .PHONY: all clean list
 
-SOURCES =  test_get_uni.f \
+SOURCES =  test_setops.f \
   $(COM)/prini_new.f \
   $(COM)/hkrand.f \
   $(COM)/sort.f \
-  $(COM)/get_uni_subsets.f \
+  $(COM)/setops.f \
   $(COM)/dlaran.f 
 
 ifeq ($(WITH_SECOND),1)
