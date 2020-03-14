@@ -179,13 +179,34 @@ c
         endif
 
         imatch = 0
-        do j=1,m
+        do j=1,nbuni
           if(buni(j).eq.aintb(i)) imatch = 1
         enddo
 
         if(imatch.eq.0) then
           print *, 'aintb not found in b for i=',i 
           isuccess = 0
+        endif
+      enddo
+
+      do i=1,naintbc
+         
+c
+c        first check location in a array
+c
+        if(auni(iaintbc(i)).ne.aintbc(i)) then
+         isuccess = 1
+         print *, 'location in a array of aintbc incorrect for i=',i
+        endif
+
+        imatch = 0
+        do j=1,nbuni
+          if(buni(j).eq.aintbc(i)) imatch = 1
+        enddo
+
+        if(imatch.eq.1) then
+          print *, 'aintbc found in b for i=',i 
+          isuccess = 2
         endif
       enddo
 
