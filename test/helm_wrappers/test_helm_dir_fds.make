@@ -70,6 +70,7 @@ SOURCES =  test_helm_dir_fds.f \
   $(COM)/orthom.f \
   $(COM)/legeexps.f \
   $(COM)/lapack_slow.f \
+  $(COM)/sparse_reps.f \
   $(COM)/sort.f \
   $(COM)/cumsum.f \
   $(COM)/tree_lr_3d.f \

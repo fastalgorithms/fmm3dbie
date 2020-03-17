@@ -71,6 +71,7 @@ SOURCES =  test_helm_dir_iter.f \
   $(COM)/legeexps.f \
   $(COM)/lapack_slow.f \
   $(COM)/sort.f \
+  $(COM)/sparse_reps.f \
   $(COM)/cumsum.f \
   $(COM)/tree_lr_3d.f \
   $(COM)/rotmat_gmres.f \

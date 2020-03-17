@@ -26,7 +26,7 @@
 
       nmax = n/4
 
-      ifprint = 0
+      ifprint = 1
 
       do i=1,n
         r = hkrand(0)*nmax
@@ -96,7 +96,7 @@
       implicit real *8 (a-h,o-z)
       integer, allocatable :: a(:),iauni(:),auni(:)
       integer, allocatable :: b(:),ibuni(:),buni(:)
-      integer, allocatable :: aintb(:),iaintb(:),aintbc(:)
+      integer, allocatable :: aintb(:),iaintba(:),iaintbb(:),aintbc(:)
       integer, allocatable :: iaintbc(:),binta(:),ibinta(:)
       integer, allocatable :: bintac(:),ibaintac(:)
       integer, allocatable :: itmp1(:),itmp2(:),aunisort(:),bunisort(:)
@@ -153,14 +153,16 @@ c
       endif
 
 
-      allocate(aintb(nauni),iaintb(nauni),aintbc(nauni),iaintbc(nauni))
-      call setdecomp(nauni,auni,nbuni,buni,naintb,aintb,iaintb,naintbc,
-     1      aintbc,iaintbc)
+      allocate(aintb(nauni),iaintba(nauni),aintbc(nauni),iaintbc(nauni))
+      allocate(iaintbb(nauni))
+      call setdecomp(nauni,auni,nbuni,buni,naintb,aintb,iaintba,
+     1     iaintbb,naintbc,aintbc,iaintbc)
       
       if(ifprint.ge.1) then
         call prinf('naintb=*',naintb,1)
         call prinf('aintb=*',aintb,naintb)
-        call prinf('iaintb=*',iaintb,naintb)
+        call prinf('iaintba=*',iaintba,naintb)
+        call prinf('iaintbb=*',iaintbb,naintb)
 
         call prinf('naintbc=*',naintbc,1)
         call prinf('aintbc=*',aintbc,naintbc)
@@ -173,20 +175,16 @@ c
 c
 c        first check location in a array
 c
-        if(auni(iaintb(i)).ne.aintb(i)) then
+        if(auni(iaintba(i)).ne.aintb(i)) then
          isuccess = -1
          print *, 'location in a array of aintb incorrect for i=',i
         endif
 
-        imatch = 0
-        do j=1,nbuni
-          if(buni(j).eq.aintb(i)) imatch = 1
-        enddo
-
-        if(imatch.eq.0) then
-          print *, 'aintb not found in b for i=',i 
-          isuccess = 0
+        if(buni(iaintbb(i)).ne.aintb(i)) then
+         isuccess = 0
+         print *, 'location in b array of aintb incorrect for i=',i
         endif
+
       enddo
 
       do i=1,naintbc

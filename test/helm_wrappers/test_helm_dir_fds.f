@@ -14,6 +14,12 @@
       complex *16, allocatable :: sigma(:),rhs(:)
       real *8, allocatable :: errs(:)
       complex * 16 zpars(3)
+      integer, allocatable :: irand(:),isort(:),isum(:)
+      real *8, allocatable :: rrand(:)
+      complex *16, allocatable :: xmat(:,:)
+      integer, allocatable :: itarg(:),jsrc(:)
+      integer, allocatable :: col_ptr(:),row_ind(:)
+      complex *16, allocatable :: zent(:)
       integer numit,niter
 
       complex *16 pot,potex,ztmp,ima
@@ -114,6 +120,91 @@ c
       
       call helm_comb_dir_fds_init(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,zfds)
+
+
+
+
+c
+c       create a permutation of indices from 1 to npts**2
+c       and divide them into nbat random sized partitions
+c
+      nn = npts**2
+      allocate(irand(nn),isort(nn))
+      do i=1,nn
+        irand(i) = hkrand(0)*nn
+      enddo
+
+      call sorti(nn,irand,isort)
+
+      nbat = 50
+      allocate(rrand(nbat))
+      ra = 0
+      do i=1,nbat
+        rrand(i) = hkrand(0)
+        ra = ra + rrand(i)
+      enddo
+
+   
+      do i=1,nbat
+         rrand(i) = rrand(i)/ra
+         irand(i) = rrand(i)*nn
+      enddo
+
+      allocate(isum(nbat+1))
+
+      isum(1) = 1
+      call cumsum(nbat,irand,isum(2))
+
+      if(isum(nbat).lt.nn+1) isum(nbat) = nn+1
+
+      call prinf('npts=*',npts,1)
+      call prinf('isum=*',isum,nbat)
+
+
+      allocate(col_ptr(npts))
+      allocate(xmat(npts,npts))
+
+      do i=1,npts
+        do j=1,npts
+          xmat(i,j) = 0
+        enddo
+      enddo
+
+      do ibat=1,nbat
+        nent = isum(ibat+1)-isum(ibat)
+
+        allocate(zent(nent),row_ind(nent),itarg(nent),jsrc(nent))
+        do i=1,nent
+          iind = isort(isum(ibat)+i-1)
+          idiv = iind/npts
+          idiv = idiv+1
+          irem = iind - (idiv-1)*npts
+          if(irem.eq.0) then
+            idiv = idiv - 1
+            irem = npts
+          endif
+
+          jsrc(i) = irem
+          itarg(i) = idiv
+        enddo
+
+        call conv_to_csc(nent,npts,itarg,jsrc,col_ptr,row_ind)
+
+        do i=1,npts
+          do j=col_ptr(i),col_ptr(i+1)
+            xmat(row_ind(j),i) = 1.0d0
+          enddo
+        enddo
+        deallocate(zent,row_ind,itarg,jsrc)
+      enddo
+
+      do i=1,npts
+        do j=1,npts
+          if(abs(xmat(i,j)-1.0d0).ge.1.0d-16) print *, i,j
+        enddo
+      enddo
+
+
 
 
 

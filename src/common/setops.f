@@ -180,10 +180,11 @@ c
 c
 c
 c
-      subroutine setdecomp(n,a,m,b,naintb,aintb,iaintb,naintbc,aintbc,
-     1   iaintbc)
+      subroutine setdecomp(n,a,m,b,naintb,aintb,iaintba,iaintbb,naintbc,
+     1   aintbc,iaintbc)
       implicit real *8 (a-h,o-z)
-      integer n,a(n),m,b(m),aintb(n),iaintb(n),aintbc(n),iaintbc(n)
+      integer n,a(n),m,b(m),aintb(n),iaintba(n),aintbc(n),iaintbc(n)
+      integer iaintbb(n)
       integer, allocatable :: asort(:),bsort(:),iasort(:),ibsort(:)
       integer nmin
 
@@ -217,7 +218,8 @@ c
             if(bsort(j).eq.asort(i)) then
               iabint = iabint + 1
               aintb(iabint) = asort(i)
-              iaintb(iabint) = i
+              iaintba(iabint) = i
+              iaintbb(iabint) = j
               ibind = j+1
               goto 1000
             endif
@@ -240,7 +242,8 @@ c
             if(bsort(i).eq.asort(j)) then
               iabint = iabint + 1
               aintb(iabint) = bsort(i)
-              iaintb(iabint) = j
+              iaintba(iabint) = j
+              iaintbb(iabint) = i
               iaind = j+1
               goto 1010
             endif
@@ -259,7 +262,7 @@ c
       iabint = 1
       iabintc = 0
       do i=1,n
-         if(i.ne.iaintb(iabint)) then
+         if(i.ne.iaintba(iabint)) then
            iabintc = iabintc + 1
            aintbc(iabintc) = asort(i)
            iaintbc(iabintc) = i
@@ -273,7 +276,8 @@ c
 c   unsort iaintb, and iaintbc
 c
       do i=1,naintb
-        iaintb(i) = iasort(iaintb(i))
+        iaintba(i) = iasort(iaintba(i))
+        iaintbb(i) = ibsort(iaintbb(i))
       enddo
 
       do i=1,naintbc

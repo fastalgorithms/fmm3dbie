@@ -53,13 +53,6 @@ c          set subtraction and turning off list 1
 c
 c
 c
-c     TO WRITE:
-c       setparams_fds_helm_comb_dir_mem
-c 
-c       setparams_fds_helm_comb_dir
-c
-c       fds_helm_comb_dir_matgen
-c
 c
 
 
@@ -1861,14 +1854,18 @@ c
 c          ifds(1) - npts_over
 c          ifds(2) - nnz
 c          ifds(3) - nquad
-c          ifds(4:5+npts-1) - row_ptr (for near quadrature info)
-c          ifds(5+npts:5+npts+nnz-1) - col_ind
-c          ifds(5+npts+nnz:5+npts+2*nnz) - iquad
-c          ifds(6+npts+2*nnz:6+npts+2*nnz+npatches-1) - novers
-c          ifds(6+npts+2*nnz+npatches:6+npts+2*nnz+2*npatches) - ixyzso
+c          ifds(4) - nximat
+c          ifds(5:6+npts-1) - row_ptr (for near quadrature info)
+c          ifds(6+npts:6+npts+nnz-1) - col_ind
+c          ifds(6+npts+nnz:6+npts+2*nnz) - iquad
+c          ifds(7+npts+2*nnz:7+npts+2*nnz+npatches-1) - novers
+c          ifds(7+npts+2*nnz+npatches:7+npts+2*nnz+2*npatches) - ixyzso
+c          ifds(8+npts+2*nnz+2*npatches:8+npts+2*nnz+3*npatches-1) -
+c             iximat
 c
 c          rfds(1:12*npts_over) - srcover
 c          rfds(12*npts_over+1:13*npts_over) - wover
+c          rfds(13*npts_over+1:13*npts_over+nximat) - ximats)
 c
 c          zfds(1:3) - zpars(1:3)
 c          zfds(4:4+nquad-1) - wnear
@@ -1894,7 +1891,7 @@ c
       real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
       integer, allocatable :: iquad(:),row_ptr(:),col_ind(:)
       integer, allocatable :: novers(:),ixyzso(:)
-      integer npts_over,nquad
+      integer npts_over,nquad,nximat
 
       integer i
 
@@ -1968,8 +1965,10 @@ c
       npts_over = ixyzso(npatches+1)-1
       nquad = iquad(nnz+1)-1
 
-      nifds = 6+npts+2*nnz+2*npatches
-      nrfds = 13*npts_over
+      call get_nximat(npatches,ixyzs,ixyzso,nximat)
+
+      nifds = 7+npts+2*nnz+3*npatches
+      nrfds = 13*npts_over+nximat
       nzfds = 3 + nquad
       
 
@@ -1994,14 +1993,18 @@ c
 c          ifds(1) - npts_over
 c          ifds(2) - nnz
 c          ifds(3) - nquad
-c          ifds(4:5+npts-1) - row_ptr (for near quadrature info)
-c          ifds(5+npts:5+npts+nnz-1) - col_ind
-c          ifds(5+npts+nnz:5+npts+2*nnz) - iquad
-c          ifds(6+npts+2*nnz:6+npts+2*nnz+npatches-1) - novers
-c          ifds(6+npts+2*nnz+npatches:6+npts+2*nnz+2*npatches) - ixyzso
+c          ifds(4) - nximat
+c          ifds(5:6+npts-1) - row_ptr (for near quadrature info)
+c          ifds(6+npts:6+npts+nnz-1) - col_ind
+c          ifds(6+npts+nnz:6+npts+2*nnz) - iquad
+c          ifds(7+npts+2*nnz:7+npts+2*nnz+npatches-1) - novers
+c          ifds(7+npts+2*nnz+npatches:7+npts+2*nnz+2*npatches) - ixyzso
+c          ifds(8+npts+2*nnz+2*npatches:8+npts+2*nnz+3*npatches-1) -
+c             iximat
 c
 c          rfds(1:12*npts_over) - srcover
 c          rfds(12*npts_over+1:13*npts_over) - wover
+c          rfds(13*npts_over+1:13*npts_over+nximat) - ximats
 c
 c          zfds(1:3) - zpars(1:3)
 c          zfds(4:4+nquad-1) - wnear
@@ -2034,7 +2037,9 @@ c
 
       integer iquadtype,istart,iend,i
 
-      integer irow_ptr,icol_ind,iiquad,inovers,iixyzso
+      integer irow_ptr,icol_ind,iiquad,inovers,iixyzso,iximat
+      integer nximat
+
 
 
 
@@ -2081,11 +2086,12 @@ c    find near quadrature correction interactions
 c
       call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
 
-      irow_ptr = 4
-      icol_ind = 5+npts
-      iiquad = 5+npts+nnz
+      irow_ptr = 5
+      icol_ind = irow_ptr+npts+1
+      iiquad = icol_ind+nnz
       inovers = iiquad + nnz+1
       iixyzso = inovers+npatches
+      iximat = iixyzso+npatches+1
 
       
       call findnear(cms,npatches,rad_near,targs,npts,ifds(irow_ptr), 
@@ -2141,6 +2147,13 @@ c
      1      ifds(icol_ind),ifds(iiquad),rfac0,nquad,zfds(4))
       
 
+      call get_nximat(npatches,ixyzs,ifds(iixyzso),nximat)
+
+      ifds(4) = nximat
+
+      call get_ximats(npatches,iptype,norders,ixyzs,ifds(inovers),
+     1  ifds(iixyzso),nximat,rfds(13*npts_over+1),ifds(iximat))
+
       return
       end
 c
@@ -2161,7 +2174,6 @@ c
       real *8 srccoefs(9,npts),srcvals(12,npts)
       real *8 eps
       complex *16 zpars(3)
-      integer nnz
       integer nifds,nrfds,nzfds
       integer ifds(nifds)
       real *8 rfds(nrfds)
@@ -2169,16 +2181,86 @@ c
       integer nent_csc,col_ptr(npts+1),row_ind(nent_csc)
       complex *16 zmatent(nent_csc)
 
-      
-
 c
 c        temporary variables
 c
       complex *16 zid
       integer i,j,k,l,ipatch,npols
       integer ilstart,ilend,istart,iend
+      integer irow_ptr,icol_ind,iiquad,inovers,iixyzso
+      integer npts_over,nnz,nquad
+
+      integer, allocatable :: iuni(:),iuniind(:)
+      integer, allocatable :: col_ptr_src(:),row_ind_src(:),iper(:)
+      integer, allocatable :: aintb(:),iaintba(:),aintbc(:),iaintbc(:)
+      complex *16, allocatable :: wquadn(:,:),wquad(:,:)
+      complex *16, allocatable :: wquadf(:,:),wquadf2(:,:)
+
+
+      complex *16 alpha, beta,zk
+      real *8, allocatable :: srcover(:,:),wtsover(:)
+      real *8 dpars
+      integer ipars,ipt,iquad,itind,iximat,ixist,j2,jind
+      integer jind0,juniind,n2,naintb,naintbc,nmax,nn,npolso
+      integer nuni,nximat
+      integer, allocatable :: iaintbb(:)
+
+      procedure (), pointer :: fker
+      external h3d_slp, h3d_dlp, h3d_comb
+
+c
+c
+c        initialize the appropriate kernel function
+c
+ 
+      
+      alpha = zfds(2)
+      beta = zfds(3)
+      fker => h3d_comb
+      if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
+        fker=>h3d_slp
+      else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
+        fker=>h3d_dlp
+      endif
+
+      npts_over = ifds(1)
+      nnz = ifds(2)
+      nquad = ifds(3)
+      nximat = ifds(4)
+
+
+      irow_ptr = 5
+      icol_ind = irow_ptr+npts+1
+      iiquad = icol_ind+nnz
+      inovers = iiquad + nnz+1
+      iixyzso = inovers+npatches
+      iximat = iixyzso+npatches+1
+
+      allocate(col_ptr_src(npatches+1),row_ind_src(nnz),iper(nnz))
+
+      call rsc_to_csc(npatches,npts,nnz,ifds(irow_ptr),ifds(icol_ind),
+     1  col_ptr_src,row_ind_src,iper)
+
+c
+c    estimate max oversampling
+c
+      nmax = 0
+      do ipatch=1,npatches
+        npolso = ifds(iixyzso+ipatch)-ifds(iixyzso+ipatch-1)
+        if(npolso.gt.nmax) nmax = npolso
+      enddo
+
+      allocate(srcover(12,nmax),wtsover(nmax))
+     
 
       do ipatch=1,npatches
+
+c
+c
+c   combine all list of targets requested for current
+c   patch and find unique list of targets
+c
+      
         istart = ixyzs(ipatch)
         iend = ixyzs(ipatch+1)-1
         npols= iend-istart+1
@@ -2186,6 +2268,89 @@ c
         ilstart = col_ptr(istart)
         ilend = col_ptr(iend+1)-1
 
+        nn = ilend-ilstart+1
+
+        allocate(iuni(nn),iuniind(nn))
+
+        call get_iuni1(nn,row_ind(ilstart),nuni,iuni,iuniind)
+        allocate(aintb(nuni),iaintba(nuni),aintbc(nuni),iaintbc(nuni))
+        allocate(iaintbb(nuni))
+
+        n2 = col_ptr_src(ipatch+1)-col_ptr_src(ipatch)
+
+c
+c
+c    separate list of targets into near field targets for which 
+c    quadrature is already computed and far-field targets for which
+c    quadrature is required to be computed
+c
+
+        call setdecomp(nuni,iuni,n2,
+     1     row_ind_src(col_ptr_src(ipatch)),naintb,aintb,iaintba,
+     2     iaintbb,naintbc,aintbc,iaintbc)
+
+c
+c    for the entries in aintb, the quadrature has already been computed
+c    so that needs to be extracted and sent to appropriate entries
+c  
+        allocate(wquadn(npols,naintb))
+        allocate(wquad(nuni,npols))
+        do i=1,naintb
+           jind0 = iaintbb(i)+col_ptr_src(ipatch)-1
+           jind = iper(jind0)
+           iquad = ifds(iiquad + jind-1)
+           wquad(iaintba(i),:) = zfds(3+iquad:3+iquad+npols-1)
+        enddo
+
+c
+c        compute the oversampled quadrature
+c
+        allocate(wquadf(npolso,naintbc))
+        allocate(wquadf2(npols,naintbc))
+
+c
+c      extract srcover, wtsover, and targvals 
+c
+        istart = ifds(iixyzso+ipatch-1)
+        iend = ifds(iixyzso+ipatch)-1
+
+        do i=1,npolso
+          do j=1,12
+            srcover(j,i) = rfds(12*(istart+i-1)+j)
+          enddo
+          wtsover(i) = rfds(12*npts_over+istart+i)
+        enddo
+
+
+        do i=1,naintbc
+          itind = aintbc(i)
+          do j=1,npolso
+            call fker(srcover(1,j),srcvals(1,itind),dpars,zfds,
+     1          ipars,wquadf(j,i))
+            wquadf(j,i) = wquadf(j,i)*wtsover(j)
+          enddo
+        enddo
+
+c
+c      now multiply wquadf by ximat
+c
+        ixist = ifds(iximat+ipatch-1) + 13*npts_over
+        call zrmatmatt_slow(naintbc,npols,npolso,wquadf,rfds(ixist),
+     1        wquadf2)
+
+        do i=1,naintbc
+          wquad(iaintbc(i),:) = wquadf2(:,i)
+        enddo
+       
+        do i = 1,npols
+          ipt = ixyzs(ipatch) + i-1
+          do j=col_ptr(ipt),col_ptr(ipt+1)-1
+             jind = row_ind(j)
+             j2 = j-col_ptr(ipt)+1
+             juniind = iuniind(j2)
+             zmatent(j) = wquad(juniind,i)
+          enddo
+        enddo
       enddo
       
       
