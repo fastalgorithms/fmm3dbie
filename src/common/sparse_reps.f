@@ -108,10 +108,10 @@ c-----------------------------------
       implicit none
       integer nent,m,iind(nent),jind(nent),col_ptr(m+1),row_ind(nent)
       integer, allocatable :: jsort(:),jper(:),icnt(:)
-      integer i,icur
+      integer i,icur,icur0,icur1
 
 
-      allocate(jper(nent),jsort(nent),icnt(m))
+      allocate(jper(nent),jsort(nent))
 
       call sorti(nent,jind,jper)
 
@@ -121,17 +121,23 @@ c-----------------------------------
       enddo
 
       icur = 1
+      col_ptr(1) = 1
 
       do i=1,nent
         if(jsort(i).gt.icur) then
-          icnt(icur) = i-1
-          icur = icur+1
+          icur0 = icur
+          icur = jsort(i)
+
+          do icur1 = icur0+1,icur
+            col_ptr(icur1) = i
+          enddo
         endif
       enddo
 
-      icnt(1) = icnt(1) + 1
-      col_ptr(1) = 1
-      call cumsum(m,icnt,col_ptr(2))
+      do i=icur+1,m+1
+        col_ptr(i) = nent+1
+      enddo
+
 
 
       return

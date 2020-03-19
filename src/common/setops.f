@@ -203,6 +203,7 @@ c
 
 
 
+
 c
 c      now compute the set intersection
 c
@@ -257,7 +258,9 @@ c
         enddo
       endif
 
+
       naintb = iabint
+
 
       iabint = 1
       iabintc = 0
@@ -268,9 +271,12 @@ c
            iaintbc(iabintc) = i
          else
            iabint = iabint+1
+           if(iabint.gt.naintb) iabint=naintb
          endif
       enddo
       naintbc = iabintc
+
+
 
 c
 c   unsort iaintb, and iaintbc

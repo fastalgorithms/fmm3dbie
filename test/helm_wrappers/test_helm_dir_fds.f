@@ -4,6 +4,9 @@
       character *100 fname
       integer ipars(2)
 
+      real *8, allocatable :: targs(:,:),uvs_targ(:,:)
+      integer, allocatable :: ipatch_id(:)
+
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
       integer, allocatable :: ifds(:)
@@ -11,7 +14,8 @@
       complex *16, allocatable :: zfds(:)
 
       real *8 xyz_out(3),xyz_in(3)
-      complex *16, allocatable :: sigma(:),rhs(:)
+      complex *16, allocatable :: sigma(:),rhs(:),sigma2(:)
+      complex *16 zid
       real *8, allocatable :: errs(:)
       complex * 16 zpars(3)
       integer, allocatable :: irand(:),isort(:),isum(:)
@@ -39,7 +43,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 2
+      if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
@@ -54,7 +58,7 @@ c
       zk = 1.11d0+ima*0.0d0
       zpars(1) = zk 
       zpars(2) = 0.0d0
-      zpars(3) = 2.0d0
+      zpars(3) = 1.0d0
 
       if(igeomtype.eq.1) then
         xyz_out(1) = 3.17d0
@@ -93,19 +97,39 @@ c
 
       ixyzs(npatches+1) = 1+npols*npatches
       allocate(wts(npts))
+      allocate(targs(3,npts),ipatch_id(npts),uvs_targ(2,npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
 
-      allocate(sigma(npts),rhs(npts))
+      ndtarg = 3
+     
+      do i=1,npts
+        targs(1,i) = srcvals(1,i)
+        targs(2,i) = srcvals(2,i)
+        targs(3,i) = srcvals(3,i)
+      enddo
+
+      do i=1,npts
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
+      enddo
+
+      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, 
+     1         ipatch_id,uvs_targ)
+
+
+      allocate(sigma(npts),rhs(npts),sigma2(npts))
+
+      do i=1,npts
+        rhs(i) = 0
+      enddo
+
 
       do i=1,npts
         call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
       enddo
-
-      numit = 200
-      ifinout = 0
-      niter = 0
-      allocate(errs(numit+1))
+      
 
       eps = 0.51d-6
 
@@ -117,6 +141,7 @@ c
       call prinf('nzfds=*',nzfds,1)
 
       allocate(ifds(nifds),rfds(nrfds),zfds(nzfds))
+
       
       call helm_comb_dir_fds_init(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,zfds)
@@ -154,14 +179,12 @@ c
 
       isum(1) = 1
       call cumsum(nbat,irand,isum(2))
+      
 
-      if(isum(nbat).lt.nn+1) isum(nbat) = nn+1
-
-      call prinf('npts=*',npts,1)
-      call prinf('isum=*',isum,nbat)
+      if(isum(nbat+1).lt.nn+1) isum(nbat+1) = nn+1
 
 
-      allocate(col_ptr(npts))
+      allocate(col_ptr(npts+1))
       allocate(xmat(npts,npts))
 
       do i=1,npts
@@ -176,6 +199,7 @@ c
         allocate(zent(nent),row_ind(nent),itarg(nent),jsrc(nent))
         do i=1,nent
           iind = isort(isum(ibat)+i-1)
+
           idiv = iind/npts
           idiv = idiv+1
           irem = iind - (idiv-1)*npts
@@ -186,27 +210,77 @@ c
 
           jsrc(i) = irem
           itarg(i) = idiv
+
         enddo
+
 
         call conv_to_csc(nent,npts,itarg,jsrc,col_ptr,row_ind)
 
+
+        
+
+        
+        
+        
+        call helm_comb_dir_fds_matgen(npatches,norders,ixyzs,iptype,
+     1     npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,
+     2     zfds,nent,col_ptr,row_ind,zent)
+        
+       
+cc        call prinf('col_ptr=*',col_ptr,npts+1)
+
         do i=1,npts
-          do j=col_ptr(i),col_ptr(i+1)
-            xmat(row_ind(j),i) = 1.0d0
+          do j=col_ptr(i),col_ptr(i+1)-1
+            xmat(row_ind(j),i) = zent(j)
           enddo
         enddo
+
         deallocate(zent,row_ind,itarg,jsrc)
       enddo
 
       do i=1,npts
+        sigma(i) = 0
+        sigma2(i) = 0
         do j=1,npts
-          if(abs(xmat(i,j)-1.0d0).ge.1.0d-16) print *, i,j
+          sigma(i) = sigma(i) + xmat(i,j)*rhs(j)
         enddo
       enddo
 
 
+      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
+     2  uvs_targ,eps,zpars,rhs,sigma2)
+
+      do i=1,npts
+        err = err + abs(sigma(i)-sigma2(i))**2
+        ra = ra + abs(sigma2(i))**2
+      enddo
+      err = sqrt(err/ra)
+      call prin2('error in matvec=*',err,1)
 
 
+
+      zid = -(-1)**(ifinout)*2*pi*zpars(3)
+      do i=1,npts
+        xmat(i,i) = xmat(i,i) + zid 
+      enddo
+
+
+      call zgausselim(npts,xmat,rhs,info,sigma,dcond)
+
+
+c
+c       test solution at interior point
+c
+      call h3d_slp(xyz_out,xyz_in,dpars,zpars,ipars,potex)
+      pot = 0
+      do i=1,npts
+        call h3d_comb(srcvals(1,i),xyz_in,dpars,zpars,ipars,ztmp)
+        pot = pot + sigma(i)*wts(i)*ztmp
+      enddo
+
+      erra = abs(pot-potex)/abs(potex)
+      call prin2('relative error in solve=*',erra,1)
 
       stop
       end
