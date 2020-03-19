@@ -1,4 +1,25 @@
       implicit real *8 (a-h,o-z)
+
+      call test_conv_to_csc()
+      call test_csc_to_rsc()
+
+      stop
+      end
+
+
+
+      subroutine test_conv_to_csc()
+      implicit real *8 (a-h,o-z)
+
+      return
+      end
+
+      
+
+      
+      subroutine test_csc_to_rsc()
+      
+      implicit real *8 (a-h,o-z)
       integer, allocatable :: row_ptr(:),col_ind(:),col_ptr(:),
      1   row_ind(:),iper(:)
 
@@ -47,14 +68,7 @@
         enddo
       enddo
 
-      print *, "Test completed successfully"
-
-      
-
-      
-
-
-
+      print *, "csc to rsc Test completed successfully"
        
 
       return

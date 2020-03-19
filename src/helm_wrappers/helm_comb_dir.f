@@ -1963,6 +1963,7 @@ c
      2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
+
       nquad = iquad(nnz+1)-1
 
       call get_nximat(npatches,ixyzs,ixyzso,nximat)
@@ -2151,6 +2152,7 @@ c
 
       ifds(4) = nximat
 
+
       call get_ximats(npatches,iptype,norders,ixyzs,ifds(inovers),
      1  ifds(iixyzso),nximat,rfds(13*npts_over+1),ifds(iximat))
 
@@ -2273,6 +2275,7 @@ c
         allocate(iuni(nn),iuniind(nn))
 
         call get_iuni1(nn,row_ind(ilstart),nuni,iuni,iuniind)
+        
         allocate(aintb(nuni),iaintba(nuni),aintbc(nuni),iaintbc(nuni))
         allocate(iaintbb(nuni))
 
@@ -2284,16 +2287,18 @@ c    separate list of targets into near field targets for which
 c    quadrature is already computed and far-field targets for which
 c    quadrature is required to be computed
 c
+        naintb = 0
+        naintbc = 0
 
         call setdecomp(nuni,iuni,n2,
      1     row_ind_src(col_ptr_src(ipatch)),naintb,aintb,iaintba,
      2     iaintbb,naintbc,aintbc,iaintbc)
 
+       
 c
 c    for the entries in aintb, the quadrature has already been computed
 c    so that needs to be extracted and sent to appropriate entries
 c  
-        allocate(wquadn(npols,naintb))
         allocate(wquad(nuni,npols))
         do i=1,naintb
            jind0 = iaintbb(i)+col_ptr_src(ipatch)-1
@@ -2305,22 +2310,29 @@ c
 c
 c        compute the oversampled quadrature
 c
+        istart = ifds(iixyzso+ipatch-1)
+        iend = ifds(iixyzso+ipatch)-1
+        npolso = iend-istart+1
+
         allocate(wquadf(npolso,naintbc))
         allocate(wquadf2(npols,naintbc))
 
 c
 c      extract srcover, wtsover, and targvals 
 c
-        istart = ifds(iixyzso+ipatch-1)
-        iend = ifds(iixyzso+ipatch)-1
 
         do i=1,npolso
           do j=1,12
-            srcover(j,i) = rfds(12*(istart+i-1)+j)
+            srcover(j,i) = rfds(12*(istart+i-2)+j)
           enddo
-          wtsover(i) = rfds(12*npts_over+istart+i)
+          wtsover(i) = rfds(12*npts_over+istart+i-1)
         enddo
 
+cc        call prin2('srcover=*',srcover,12*npolso)
+cc        call prin2('wtsover=*',wtsover,npolso)
+
+
+cc        call prin2('zfds=*',zfds,6)
 
         do i=1,naintbc
           itind = aintbc(i)
@@ -2335,9 +2347,9 @@ c
 c      now multiply wquadf by ximat
 c
         ixist = ifds(iximat+ipatch-1) + 13*npts_over
-        call zrmatmatt_slow(naintbc,npols,npolso,wquadf,rfds(ixist),
+        call zrmatmatt_slow(naintbc,npolso,npols,wquadf,rfds(ixist),
      1        wquadf2)
-
+        
         do i=1,naintbc
           wquad(iaintbc(i),:) = wquadf2(:,i)
         enddo
@@ -2346,11 +2358,15 @@ c
           ipt = ixyzs(ipatch) + i-1
           do j=col_ptr(ipt),col_ptr(ipt+1)-1
              jind = row_ind(j)
-             j2 = j-col_ptr(ipt)+1
+
+             j2 = j-col_ptr(ixyzs(ipatch))+1
              juniind = iuniind(j2)
              zmatent(j) = wquad(juniind,i)
           enddo
         enddo
+
+        deallocate(iuni,iuniind,aintb,iaintba,iaintbb,aintbc,iaintbc)
+        deallocate(wquad,wquadf,wquadf2)
       enddo
       
       

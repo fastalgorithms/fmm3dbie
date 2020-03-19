@@ -3,6 +3,7 @@ EXEC = helm_iter_solver
 
 #HOST = osx-gfortran
 HOST=linux-gfortran
+HOST=linux-gfortran-lblas
 #HOST=linux-gfortran-openmp
 #HOST=linux-ifort
 
@@ -11,6 +12,13 @@ FC = gfortran
 FFLAGS = -O3 -march=native -funroll-loops -c -w
 FLINK = gfortran -w -o $(EXEC)
 FEND = -L../lib -lfmm3d_ndiv -framework accelerate
+endif
+
+ifeq ($(HOST),linux-gfortran-lblas)
+FC = gfortran
+FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math -c -w  
+FLINK = gfortran -w -o $(EXEC) 
+FEND = -L../../lib -lblas -llapack -lfmm3d
 endif
 
 ifeq ($(HOST),linux-gfortran)

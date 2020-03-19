@@ -756,9 +756,11 @@ subroutine get_ximats(npatches,iptype,norders,ixyzs,novers,ixyzso, &
     nximats(i) = (ixyzso(i+1)-ixyzso(i))*(ixyzs(i+1)-ixyzs(i))
   enddo
 !$OMP END PARALLEL DO
-
- call cumsum(npatches,nximats,iximat)
-
+ 
+ iximat(1) = 1
+ nximats(1) = nximats(1)+1
+ call cumsum(npatches-1,nximats,iximat(2))
+ 
 
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(kpols,npols)
