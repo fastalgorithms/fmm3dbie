@@ -1,8 +1,8 @@
 
 EXEC = helm_iter_solver
 
-#HOST = osx-gfortran
-HOST=linux-gfortran
+HOST = osx-gfortran
+#HOST=linux-gfortran
 #HOST=linux-gfortran-openmp
 #HOST=linux-ifort
 
@@ -10,7 +10,7 @@ ifeq ($(HOST),osx-gfortran)
 FC = gfortran
 FFLAGS = -O3 -march=native -funroll-loops -c -w
 FLINK = gfortran -w -o $(EXEC)
-FEND = -L../lib -lfmm3d_ndiv -framework accelerate
+FEND = -L../../lib -lfmm3d -framework accelerate
 endif
 
 ifeq ($(HOST),linux-gfortran)
