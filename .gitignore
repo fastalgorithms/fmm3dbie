@@ -4,3 +4,8 @@
 *.dat
 fort.*
 *.go3
+*.txt
+*.log
+*.tex
+*.aux
+

@@ -89,13 +89,13 @@ COMOBJS = $(COM)/besseljs3d.o $(COM)/cdjseval3d.o $(COM)/dfft.o \
 HELM = $(FMM_DIR)/src/Helmholtz
 HOBJS = $(HELM)/h3dcommon.o $(HELM)/h3dterms.o $(HELM)/h3dtrans.o \
 	$(HELM)/helmrouts3d.o $(HELM)/hfmm3d.o \
-	$(HELM)/hpwrouts.o \
+	$(HELM)/hpwrouts.o $(HELM)/hfmm3dwrap.o \
 	$(HELM)/hwts3e.o $(HELM)/hnumphys.o $(HELM)/hnumfour.o $(HELM)/projections.o 
 
 # Laplace objects
 LAP = $(FMM_DIR)/src/Laplace
 LOBJS = $(LAP)/lwtsexp_sep1.o $(LAP)/l3dterms.o $(LAP)/l3dtrans.o \
-	$(LAP)/laprouts3d.o $(LAP)/lfmm3d.o \
+	$(LAP)/laprouts3d.o $(LAP)/lfmm3d.o $(LAP)/lfmm3dwrap.o \
 	$(LAP)/lwtsexp_sep2.o \
 	$(LAP)/lpwrouts.o
 

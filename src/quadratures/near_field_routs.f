@@ -645,8 +645,8 @@ c
 
       if(iptype.eq.1) then
 
-        if(norder.le.3) rfac = 2.75d0
-        if(norder.le.6.and.norder.gt.3) rfac = 2.0d0
+        if(norder.le.2) rfac = 2.75d0
+        if(norder.le.6.and.norder.gt.2) rfac = 2.0d0
         if(norder.gt.6) rfac = 1.25d0
         rfac0 = 1.25d0
       endif

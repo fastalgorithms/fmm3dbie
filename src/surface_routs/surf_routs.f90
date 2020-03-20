@@ -30,14 +30,11 @@
 !      get_patch_distortion - estimate shape distortion parameter for a given
 !          collection of patches
 !
-!      get_patch_distortion_tri - estimate shape distortion for  
-!        a patch mapped from the standard simplex (0,0),(1,0),(0,1)
-!
 !
 !      get_nximat - estimate number of elements in the union of 
 !        interpolation matrices for all patches
 !
-!      get_ximat_all - get all interpolation matrices for the surface
+!      get_ximats - get all interpolation matrices for the surface
 !
 !         
 !
@@ -695,30 +692,99 @@ subroutine get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
 !
 !   Let J denote the matrix whose columns are dxyz/du, and dxyz/dv
 !
-!   Let W denote the 2x2 matrix mapping the right triangle to the equilateral
-!   triangle. 
-!
 !   Let s1, s2 denote the largest and smallest singular values of the matrix
-!     J W^{-1}
+!     J 
 !
 !   Then the patch distortion is given by 
-!      \int_{T0} (s1/s2)^2 |det J| du dv
+!      sqrt(\int_{T0} (s1/s2)^2 |det J| du dv/ \int_{T0} |det J| du dv)
 !
+!   
+!   input:
+!     npatches - number patches
+!     norders(npatches) - order of discretization
+!     ixyzs(npatches+1) - starting location of nodes on patch i
+!     iptype(npatches) - type of patch
+!           iptype = 1, triangular patch discretized with RV ndoes
+!     npts - total number of discretization points
+!     srcvals(12,npts) - xyz, dxyz/du,dxyz/dv, normals at all nodes
+!     srccoefs(9,npts) - koornwinder expansion coeffs
+!                         of geometry info
+!     qwts(npts) - quadrature weights at discretization nodes
 !
-!   For a square patch, let r1,r2 be the singular values of J, then the patch
-!   distortion is given by
-!
-!      \int_{S0} (r1/r2)^2 |det J| du dv
-!  
+!     output:
+!      pdis(npatches) - l2 distortion of each patch
+!    
 !
     
   implicit none
   integer npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
   integer npts
   real *8 srccoefs(9,npts),srcvals(12,npts),qwts(npts),pdis(npatches)
+  real *8 rtmp,srat
+  integer i,istart,j,ipt,npols
 
-
+  
+  
+  do i=1,npatches
+    istart = ixyzs(i)
+    npols = ixyzs(i+1)-ixyzs(i)
+    pdis(i) = 0
+    rtmp = 0
+    do j=1,npols
+      ipt = istart+j-1
+      call get_local_asprat(srcvals(4,ipt),srcvals(7,ipt),srat)
+      rtmp = rtmp + qwts(ipt)
+      pdis(i) = pdis(i) + srat*qwts(ipt)
+    enddo
+    pdis(i) = sqrt(pdis(i)/rtmp)
+  enddo
 end subroutine get_patch_distortion
+
+
+
+
+subroutine get_local_asprat(du,dv,srat)
+!
+!
+!  This subroutine computes the ratio of the square of the singular
+!  values of the 3x2 jacobian matrix whose columsn are given by 
+!  du and dv
+!
+!  J = [du dv]
+!  J^{T}J = [|du|^2     <du,dv> ]
+!           [<du,dv>      |dv|^2]
+!
+!  The singular values of J^{T}J are s1^2, s2^2 and are given by
+!    (|du|^2 + |dv|^2 +- sqrt((|du|^2-|dv|^2)^2 + 4 <du,dv>^2))/2
+!
+!
+!  input:
+!    du - real *8 (3)
+!       first column of jacobian matrix
+!    dv - real *8 (3)
+!       second column of jacobian matrix
+!
+!   output:
+!      ratio: (s1/s2)^2
+!
+
+
+  implicit none
+  real *8 du(3),dv(3),srat,a11,a12,a22,t,s1,s2
+
+  a11 = du(1)**2 + du(2)**2 + du(3)**2
+  a22 = dv(1)**2 + dv(2)**2 + dv(3)**2
+  a12 = du(1)*dv(1) + du(2)*dv(2) + du(3)*dv(3)
+
+  t = sqrt((a11-a22)**2+4*(a12**2))
+  srat = (a11+a22+t)/(a11+a22-t)
+
+end subroutine get_local_asprat
+
+
+
+
+
 
 
 
