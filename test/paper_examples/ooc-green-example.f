@@ -12,7 +12,7 @@
       integer, allocatable :: ipatch_id(:),inode_id(:)
       real *8, allocatable :: uvs_targ(:,:)
       real *8 xyz_out(3)
-      complex * 16 zpars(3)
+      complex * 16 zpars(3),zk
       integer norder_list(5)
 
 
@@ -72,7 +72,7 @@ c
 
         allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
 
-        do iorder_list = 1,1
+        do iorder_list = 1,5
 
           norder = norder_list(iorder_list)-1 
           print *, norder,npatches
@@ -82,7 +82,6 @@ c
           allocate(srcvals(12,npts),srccoefs(9,npts))
           allocate(targs(3,npts))
           ifplot = 0
-
 
 
           call setup_geom(igeomtype,norder,npatches,ipars, 
@@ -136,6 +135,7 @@ c
           call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
      1      iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
      2      uvs_targ,eps,zpars,dudnval,potslp)
+
       
 
           zpars(2) = 0.0d0
@@ -153,6 +153,8 @@ c
           do i=1,npts
             pot(i) = (potslp(i) - potdlp(i))/2/pi
             errl2 = errl2 + abs(uval(i)-pot(i))**2*wts(i)
+            if(abs(uval(i)-pot(i)).gt.1) print *, i,uval(i),
+     1        potslp(i),potdlp(i),pi
             rl2 = rl2 + abs(uval(i))**2*wts(i)
           enddo
           err = sqrt(errl2/rl2)

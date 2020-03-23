@@ -9,13 +9,15 @@
       real *8 xyz_out(3),xyz_in(3)
       complex *16, allocatable :: sigma(:),rhs(:)
       real *8, allocatable :: errs(:)
-      complex * 16 zpars(3)
+      complex * 16 zpars(3),zk
       integer numit,niter
 
       integer ipatch_id
       real *8 uvs_targ(2)
 
       logical isout0,isout1
+
+      integer norder_list(5)
 
       complex *16 pot,potex,ztmp,ima
 
@@ -28,28 +30,23 @@
       pi = atan(done)*4
 
 
+      norder_list(1) = 2
+      norder_list(2) = 3
+      norder_list(3) = 4
+      norder_list(4) = 6
+      norder_list(5) = 8
+
+
 c
 c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 2
-      if(igeomtype.eq.1) ipars(1) = 3
-      if(igeomtype.eq.2) ipars(1) = 20
 
-      if(igeomtype.eq.1) then
-        npatches = 12*(4**ipars(1))
-      endif
-      if(igeomtype.eq.2) then
-        ipars(2) = ipars(1)*3
-        npatches = 2*ipars(1)*ipars(2)
-      endif
+      zk = 1.0d0
+      eps = 0.500001d-6
 
-
-      zk = 1.11d0+ima*0.0d0
-      zpars(1) = zk 
-      zpars(2) = 0.0d0
-      zpars(3) = 2.0d0
 
       if(igeomtype.eq.1) then
         xyz_out(1) = 3.17d0
@@ -71,91 +68,96 @@ c
         xyz_out(3) = 20.1d0
       endif
 
-
-      norder = 2 
-      npols = (norder+1)*(norder+2)/2
-
-      npts = npatches*npols
-      allocate(srcvals(12,npts),srccoefs(9,npts))
-      ifplot = 0
-
-
-      call setup_geom(igeomtype,norder,npatches,ipars, 
-     1       srcvals,srccoefs,ifplot,fname)
-
-      allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
-
-      do i=1,npatches
-        norders(i) = norder
-        ixyzs(i) = 1 +(i-1)*npols
-        iptype(i) = 1
-      enddo
-
-      ixyzs(npatches+1) = 1+npols*npatches
-      allocate(wts(npts))
-      call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
-
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1  wts,xyz_in,isout0)
-      
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1   wts,xyz_out,isout1)
-
-       print *, isout0,isout1
-
-
-      allocate(sigma(npts),rhs(npts))
-
-      do i=1,npts
-        call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
-        sigma(i) = 0
-      enddo
-
-
       numit = 200
       ifinout = 0
       niter = 0
       allocate(errs(numit+1))
 
-      eps = 0.51d-6
+      do iref = 1,2
 
-      call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,niter,errs,
-     2  rres,sigma)
+        if(igeomtype.eq.1) ipars(1) = 2+iref
+        if(igeomtype.eq.2) ipars(1) = 5*2**(iref-1)
 
-      call prinf('niter=*',niter,1)
-      call prin2('rres=*',rres,1)
-      call prin2('errs=*',errs,niter)
+        if(igeomtype.eq.1) then
+          npatches = 12*(4**ipars(1))
+        endif
+        if(igeomtype.eq.2) then
+          ipars(2) = ipars(1)*3
+          npatches = 2*ipars(1)*ipars(2)
+        endif
+
+
+        zpars(1) = zk 
+        zpars(2) = ima*zk
+        zpars(3) = 1.0d0
+
+        allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
+        do iorder_list = 1,3
+          norder = norder_list(iorder_list)-1 
+          print *, norder, npatches
+          npols = (norder+1)*(norder+2)/2
+
+          npts = npatches*npols
+          allocate(srcvals(12,npts),srccoefs(9,npts))
+          ifplot = 0
+
+          call setup_geom(igeomtype,norder,npatches,ipars, 
+     1       srcvals,srccoefs,ifplot,fname)
+
+          do i=1,npatches
+            norders(i) = norder
+            ixyzs(i) = 1 +(i-1)*npols
+            iptype(i) = 1
+          enddo
+
+          ixyzs(npatches+1) = 1+npols*npatches
+          allocate(wts(npts))
+          call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
+
+          call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
+     1      wts,xyz_in,isout0)
+      
+          call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
+     1       wts,xyz_out,isout1)
+
+          allocate(sigma(npts),rhs(npts))
+
+          do i=1,npts
+            call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
+            sigma(i) = 0
+          enddo
+
+          call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
+     1      srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,niter,errs,
+     2      rres,sigma)
+
+          call prinf('niter=*',niter,1)
+          call prin2('rres=*',rres,1)
+          call prin2('errs=*',errs,niter)
 
 
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,xyz_in,dpars,zpars,ipars,potex)
-      pot = 0
-      do i=1,npts
-        call h3d_comb(srcvals(1,i),xyz_in,dpars,zpars,ipars,ztmp)
-        pot = pot + sigma(i)*wts(i)*ztmp
+          call h3d_slp(xyz_out,xyz_in,dpars,zpars,ipars,potex)
+          pot = 0
+          do i=1,npts
+            call h3d_comb(srcvals(1,i),xyz_in,dpars,zpars,ipars,ztmp)
+            pot = pot + sigma(i)*wts(i)*ztmp
+          enddo
+
+          call prin2('potex=*',potex,2)
+          call prin2('pot=*',pot,2)
+          erra = abs(pot-potex)/abs(potex)
+          call prin2('relative error=*',erra,1)
+
+          open(unit=33,file='stell_ooc_cfie_mac.txt',access='append')
+          write(33,*) npatches,norder,erra,rres,niter
+          deallocate(srcvals,srccoefs,wts,sigma,rhs)
+        enddo
+        deallocate(norders,ixyzs,iptype)
       enddo
 
-      call prin2('potex=*',potex,2)
-      call prin2('pot=*',pot,2)
-      erra = abs(pot-potex)/abs(potex)
-      call prin2('relative error=*',erra,1)
-
-      ndtarg = 3
-      ntarg = 1
-      ipatch_id = -1
-      uvs_targ(1) = 0
-      uvs_targ(2) = 0
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
-     2  uvs_targ,eps,zpars,sigma,pot)
-
-      call prin2('potex=*',potex,2)
-      call prin2('pot=*',pot,2)
-      erra = abs(pot-potex)/abs(potex)
-      call prin2('relative error=*',erra,1)
 
 
 

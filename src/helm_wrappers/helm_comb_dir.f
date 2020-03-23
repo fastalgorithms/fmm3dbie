@@ -341,7 +341,7 @@ c
       real *8 targs(ndtarg,ntarg)
       complex *16 zpars(3)
       complex *16 sigma(npts)
-      complex *16 pot(npts)
+      complex *16 pot(ntarg)
       integer ipatch_id(ntarg)
       real *8 uvs_targ(2,ntarg)
 
@@ -390,15 +390,15 @@ C$OMP END PARALLEL DO
 c
 c    find near quadrature correction interactions
 c
-      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+      call findnearmem(cms,npatches,rad_near,targs,ntarg,nnz)
 
-      allocate(row_ptr(npts+1),col_ind(nnz))
+      allocate(row_ptr(ntarg+1),col_ind(nnz))
       
-      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+      call findnear(cms,npatches,rad_near,targs,ntarg,row_ptr, 
      1        col_ind)
 
       allocate(iquad(nnz+1)) 
-      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
+      call get_iquad_rsc(npatches,ixyzs,ntarg,nnz,row_ptr,col_ind,
      1         iquad)
 
       ikerorder = -1
@@ -411,7 +411,7 @@ c
       allocate(novers(npatches),ixyzso(npatches+1))
 
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
-     1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),
+     1    rads,npts,srccoefs,ndtarg,ntarg,targs,ikerorder,zpars(1),
      2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
@@ -441,7 +441,7 @@ C$OMP END PARALLEL DO
       iquadtype = 1
 
       call getnearquad_helm_comb_dir(npatches,norders,
-     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
      1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
      1      iquad,rfac0,nquad,wnear)
 
@@ -451,7 +451,7 @@ c
 c   compute layer potential
 c
       call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     1  iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
      2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,
      3  sigma,novers,npts_over,ixyzso,srcover,wover,pot)
 
@@ -743,6 +743,7 @@ c
       if(sizez.gt.boxsize) boxsize = sizez
 
       thresh = 2.0d0**(-51)*boxsize
+
       
 c
 c

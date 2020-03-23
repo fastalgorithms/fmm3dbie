@@ -19,7 +19,7 @@
 
       integer, allocatable :: ipatch_id(:),inode_id(:)
       real *8, allocatable :: uvs_targ(:,:)
-      real *8 xyz_out(3)
+      real *8 xyz_out(3),xyz_in(3)
       complex *16, allocatable :: sigma(:)
       complex * 16 zpars(3)
 
@@ -37,7 +37,7 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 1
+      igeomtype = 2
       if(igeomtype.eq.1) ipars(1) = 4
       if(igeomtype.eq.2) ipars(1) = 20
 
@@ -59,9 +59,17 @@ c
         xyz_out(1) = 3.17d0
         xyz_out(2) = -0.03d0
         xyz_out(3) = 3.15d0
+
+        xyz_in(1) = 0.17d0
+        xyz_in(2) = 0.23d0
+        xyz_in(3) = -0.11d0
       endif
 
       if(igeomtype.eq.2) then
+        xyz_in(1) = -4.501d0
+        xyz_in(2) = 1.7d-3
+        xyz_in(3) = 0.00001d0
+
         xyz_out(1) = -3.5d0
         xyz_out(2) = 3.1d0
         xyz_out(3) = 20.1d0
@@ -99,6 +107,14 @@ c
 
       call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
      1     srccoefs,cms,rads)
+
+cc      do i=1,npatches
+cc        rr = (xyz_in(1)-cms(1,i))**2 + (xyz_in(2)-cms(2,i))**2 + 
+cc     1    (xyz_in(3)-cms(3,i))**2
+cc        write(34,*) i,sqrt(rr),rads(i)
+cc      enddo
+cc
+cc      stop
 
 
       allocate(sigma(npts),uval(npts),dudnval(npts))

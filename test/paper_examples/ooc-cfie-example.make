@@ -1,8 +1,8 @@
 
-EXEC = helm_wrappers
+EXEC = int2-ooc-green
 
 HOST = osx-gfortran
-#HOST=linux-gfortran
+HOST=linux-gfortran
 #HOST=linux-gfortran-openmp
 #HOST=linux-ifort
 
@@ -17,7 +17,7 @@ ifeq ($(HOST),linux-gfortran)
 FC = gfortran
 FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math -c -w  
 FLINK = gfortran -w -o $(EXEC) 
-FEND = -L../../lib -lopenblas -lfmm3d -L/usr/local/lib
+FEND = -L../../lib -lopenblas -lfmm3d -L/usr/local/opt/openblas/lib
 endif
 
 
@@ -47,7 +47,7 @@ FMM = ../../src/fmm_wrappers
 
 .PHONY: all clean list
 
-SOURCES =  test_helm_wrappers_qg_lp.f \
+SOURCES =  ooc-cfie-example.f \
   $(COM)/prini_new.f \
   $(COM)/hkrand.f \
   $(COM)/dlaran.f \
