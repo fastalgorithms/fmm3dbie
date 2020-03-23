@@ -73,10 +73,10 @@ c
       niter = 0
       allocate(errs(numit+1))
 
-      do iref = 1,2
+      do iref = 1,3
 
         if(igeomtype.eq.1) ipars(1) = 2+iref
-        if(igeomtype.eq.2) ipars(1) = 5*2**(iref-1)
+        if(igeomtype.eq.2) ipars(1) = 10*2**(iref-1)
 
         if(igeomtype.eq.1) then
           npatches = 12*(4**ipars(1))
@@ -92,7 +92,7 @@ c
         zpars(3) = 1.0d0
 
         allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
-        do iorder_list = 1,3
+        do iorder_list = 1,5
           norder = norder_list(iorder_list)-1 
           print *, norder, npatches
           npols = (norder+1)*(norder+2)/2
@@ -151,7 +151,7 @@ c
           erra = abs(pot-potex)/abs(potex)
           call prin2('relative error=*',erra,1)
 
-          open(unit=33,file='stell_ooc_cfie_mac.txt',access='append')
+          open(unit=33,file='stell_ooc_cfie_linux.txt',access='append')
           write(33,*) npatches,norder,erra,rres,niter
           deallocate(srcvals,srccoefs,wts,sigma,rhs)
         enddo
