@@ -1727,6 +1727,7 @@ c
 
       do it=1,numit
         it1 = it + 1
+        print *, "iter=",it
 
 c
 c        NOTE:
@@ -2207,6 +2208,7 @@ c
       integer jind0,juniind,n2,naintb,naintbc,nmax,nn,npolso
       integer nuni,nximat
       integer, allocatable :: iaintbb(:)
+      integer ifcharge,ifdipole
 
       procedure (), pointer :: fker
       external h3d_slp, h3d_dlp, h3d_comb
@@ -2220,10 +2222,14 @@ c
       alpha = zfds(2)
       beta = zfds(3)
       fker => h3d_comb
+      ifcharge = 1
+      ifdipole = 1
       if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
         fker=>h3d_slp
+        ifdipole = 0
       else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
         fker=>h3d_dlp
+        ifcharge = 0
       endif
 
       npts_over = ifds(1)
@@ -2343,6 +2349,22 @@ cc        call prin2('zfds=*',zfds,6)
             wquadf(j,i) = wquadf(j,i)*wtsover(j)
           enddo
         enddo
+
+        if(ifdipole.eq.0) then
+          do i=1,naintbc
+            do j=1,npolso
+              wquadf(j,i) = wquadf(j,i)*alpha
+            enddo
+          enddo
+        endif
+
+        if(ifcharge.eq.0) then
+          do i=1,naintbc
+            do j=1,npolso
+              wquadf(j,i) = wquadf(j,i)*beta
+            enddo
+          enddo
+        endif
 
 c
 c      now multiply wquadf by ximat
