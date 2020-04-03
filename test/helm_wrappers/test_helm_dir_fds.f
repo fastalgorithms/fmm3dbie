@@ -57,7 +57,7 @@ c
 
       zk = 1.11d0+ima*0.0d0
       zpars(1) = zk 
-      zpars(2) = 2.0d0
+      zpars(2) = -3.0d0
       zpars(3) = 0.0d0
 
       if(igeomtype.eq.1) then

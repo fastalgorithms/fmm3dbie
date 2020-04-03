@@ -1681,10 +1681,14 @@ C$OMP END PARALLEL DO
 
       iquadtype = 1
 
+      print *, "starting to generate near quadrature"
+
       call getnearquad_helm_comb_dir(npatches,norders,
      1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
      1      iquad,rfac0,nquad,wnear)
+      
+      print *, "done generating near quadrature, now starting gmres"
 
 
 c
@@ -1700,7 +1704,7 @@ c
 
 
       niter=0
-      eps_gmres = 1.0d-15
+      eps_gmres = 1.0d-6
 
 c
 c      compute norm of right hand side and initialize v
@@ -1727,7 +1731,6 @@ c
 
       do it=1,numit
         it1 = it + 1
-        print *, "iter=",it
 
 c
 c        NOTE:
@@ -1778,6 +1781,7 @@ c
         svec(it) = cs(it)*svec(it)
         rmyerr = abs(svec(it1))/rb
         errs(it) = rmyerr
+        print *, "iter=",it,errs(it)
 
         if(rmyerr.le.eps_gmres.or.it.eq.numit) then
 
