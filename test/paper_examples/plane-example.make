@@ -1,5 +1,5 @@
 
-EXEC = int2-ingo3
+EXEC = int2-plane
 
 HOST = osx-gfortran
 #HOST=linux-gfortran
@@ -55,7 +55,7 @@ FMM = ../../src/fmm_wrappers
 
 .PHONY: all clean list
 
-SOURCES =  test_ingo3_outsol.f \
+SOURCES =  plane-example.f \
   $(COM)/prini_new.f \
   $(COM)/hkrand.f \
   $(COM)/dlaran.f \

@@ -1630,7 +1630,9 @@ C$OMP END PARALLEL DO
 c
 c    find near quadrature correction interactions
 c
+      print *, "entering find near mem"
       call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+      print *, "nnz=",nnz
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
@@ -1651,6 +1653,8 @@ c
 
       allocate(novers(npatches),ixyzso(npatches+1))
 
+      print *, "beginning far order estimation"
+
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
      1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),
      2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
@@ -1670,6 +1674,7 @@ c
 c   compute near quadrature correction
 c
       nquad = iquad(nnz+1)-1
+      print *, "nquad=",nquad
       allocate(wnear(nquad))
       
 C$OMP PARALLEL DO DEFAULT(SHARED)      
