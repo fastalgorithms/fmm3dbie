@@ -30,10 +30,10 @@
       pi = atan(done)*4
 
 
-      zk = 4.4d0+ima*0.0d0
+      zk = 0.44d0+ima*0.0d0
       zpars(1) = zk 
-      zpars(2) = ima*zk
-      zpars(3) = 1.0d0
+      zpars(2) = 0
+      zpars(3) = 2.0d0
 
       
       xyz_in(1) = 2.01d0
@@ -75,11 +75,15 @@
 
       allocate(sigma(npts),rhs(npts))
       allocate(sigma2(npts),rhs2(npts))
+      ifinout = 1
 
       thet = hkrand(0)*pi
       phi = hkrand(0)*2*pi
       do i=1,npts
-        call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
+        if(ifinout.eq.0) 
+     1     call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
+        if(ifinout.eq.1) 
+     1     call h3d_slp(xyz_in,srcvals(1,i),dpars,zpars,ipars,rhs(i))
         rhs(i) = rhs(i)
         x = srcvals(1,i)*cos(thet)
         y = srcvals(2,i)*sin(thet)*cos(phi)
@@ -91,7 +95,6 @@
 
 
       numit = 200
-      ifinout = 1
       niter = 0
       allocate(errs(numit+1))
 
@@ -112,7 +115,10 @@ c
       call h3d_slp(xyz_out,xyz_in,dpars,zpars,ipars,potex)
       pot = 0
       do i=1,npts
-        call h3d_comb(srcvals(1,i),xyz_in,dpars,zpars,ipars,ztmp)
+        if(ifinout.eq.0) 
+     1     call h3d_comb(srcvals(1,i),xyz_in,dpars,zpars,ipars,ztmp)
+        if(ifinout.eq.1) 
+     1     call h3d_comb(srcvals(1,i),xyz_out,dpars,zpars,ipars,ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 
@@ -126,7 +132,7 @@ c
         rsigma(i) = real(sigma(i))*100
       enddo
 
-      fname = 'a380_rsigma.vtk'
+      fname = 'a380_rsigma_ext.vtk'
       title = 'a380 - real part'
       call surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype,npts,
      1   srccoefs,srcvals,rsigma,fname,title)
@@ -139,7 +145,7 @@ c
         rsigma(i) = real(sigma2(i))*100
       enddo
 
-      fname = 'a380_rsigma2.vtk'
+      fname = 'a380_rsigma2_ext.vtk'
       title = 'a380 - real part - pw data'
       call surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype,npts,
      1   srccoefs,srcvals,rsigma,fname,title)
