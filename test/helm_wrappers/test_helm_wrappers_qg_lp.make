@@ -8,8 +8,8 @@ HOST = osx-gfortran
 
 ifeq ($(HOST),osx-gfortran)
 FC = gfortran
-FFLAGS = -O3 -march=native -funroll-loops -c -w
-FLINK = gfortran -w -o $(EXEC)
+FFLAGS = -fPIC -O3 -march=native -c -w --openmp
+FLINK = gfortran -w --openmp -o $(EXEC)
 FEND = -L../../lib -lfmm3d -framework accelerate
 endif
 
