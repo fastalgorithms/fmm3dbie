@@ -6,19 +6,25 @@
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
       integer, allocatable :: isout(:)
 
-      real *8, allocatable :: xyz_in(:,:)
+      real *8, allocatable :: xyz_in(:,:),cms(:,:),rads(:)
+      real *8, allocatable :: rad_near(:)
 
       complex *16, allocatable :: sigma(:),rhs(:),charges(:)
+      complex *16, allocatable :: rhs_coefs(:)
       complex *16, allocatable :: sigmatmp(:)
       integer, allocatable :: ipatch_id(:)
-      real *8, allocatable :: targs(:,:),uvs_targ(:,:)
+      real *8, allocatable :: targs(:,:),uvs_targ(:,:),pdis(:)
+
       complex *16, allocatable :: pvals(:),pvalsex(:)
       real *8, allocatable :: evals(:),evals2(:)
       real *8, allocatable :: errs(:)
+      real *8, allocatable :: errp_dens(:,:),rsurf(:),errp_surf(:,:)
+      real *8 errm_surf(100),errm_dens(100)
       real *8 thet,phi
       real *8 xyz_start(3),dxyz(3)
       complex * 16 zpars(3),zpars_tmp(3)
       integer numit,niter
+      logical isin(1000)
       character *100 title,fname
 
 
@@ -36,13 +42,13 @@
 c
 c   simulation for plane 50 wavelengths in size
 c
-      zk = 28.56d0/100.0d0
+      zk = 28.56d0
       zpars(1) = zk 
       zpars(2) = -ima*zk
-      zpars(3) = 2.0d0
+      zpars(3) = 1.0d0
 
       
-      fname = '../../geometries/A380_Final_o03_r00.go3'
+      fname = '../../geometries/A380_Final_o03_r02.go3'
       
       call open_gov3_geometry_mem(fname,npatches,npts)
 
@@ -56,51 +62,177 @@ c
       call open_gov3_geometry(fname,npatches,norders,ixyzs,
      1   iptype,npts,srcvals,srccoefs,wts)
 
-      open(unit=39,file='tail-sources.txt')
-      open(unit=40,file='fuselage-sources.txt')
-
-      read(39,*) ntail
-      read(40,*) nfuse
+      nmax = 1000
+      allocate(xyz_in(3,nmax),charges(nmax))
 
 
-      ntot = nfuse+ntail
-      allocate(xyz_in(3,ntot),charges(ntot))
-      do i=1,ntail
-        read(39,*) xyz_in(1,i),xyz_in(2,i),xyz_in(3,i)
+      ntot = 1   
+      charges(1) = 1
+      x0 = 2.01d0
+      y0 = 0.01d-5
+      z0 = 0.4d0
+
+      thet0 = hkrand(0)*pi
+      phi0 = hkrand(0)*2*pi
+
+      ax = cos(thet0)
+      ay = sin(thet0)*cos(phi0)
+      az = sin(thet0)*sin(phi0)
+
+      bx = 0
+      by = -sin(phi0)
+      bz = cos(phi0)
+
+      ncirc = 20
+      r0 = 0.1d0
+      do i=1,ncirc
+        thet = hkrand(0)*2*pi
+        rr = r0*hkrand(0)
+        xyz_in(1,i) = x0 + rr*ax*cos(thet)+rr*bx*sin(thet) 
+        xyz_in(2,i) = y0 + rr*ay*cos(thet)+rr*by*sin(thet) 
+        xyz_in(3,i) = z0 + rr*az*cos(thet)+rr*bz*sin(thet)
+        charges(i) = hkrand(0) - 0.5d0
       enddo
 
-      do i=1,nfuse
-        ii = i+ntail
-        read(40,*) xyz_in(1,ii),xyz_in(2,ii),xyz_in(3,ii)
+      x0 = 6.51d0
+      y0 = 0.01d-5
+      z0 = 0.4d0
+
+      thet0 = hkrand(0)*pi
+      phi0 = hkrand(0)*2*pi
+
+      ax = cos(thet0)
+      ay = sin(thet0)*cos(phi0)
+      az = sin(thet0)*sin(phi0)
+
+      bx = 0
+      by = -sin(phi0)
+      bz = cos(phi0)
+
+      r0 = 0.1d0
+      do i=ncirc+1,2*ncirc
+        thet = hkrand(0)*2*pi
+        rr = r0*hkrand(0)
+        xyz_in(1,i) = x0 + rr*ax*cos(thet)+rr*bx*sin(thet) 
+        xyz_in(2,i) = y0 + rr*ay*cos(thet)+rr*by*sin(thet) 
+        xyz_in(3,i) = z0 + rr*az*cos(thet)+rr*bz*sin(thet)
+        charges(i) = hkrand(0) - 0.5d0
       enddo
 
-      close(39)
-      close(40)
 
-      open(unit=39,file='charges.txt')
+      x0 = 9.84169d0
+      y0 = -7.30d-4
+      z0 = 1.25836d0
+
+      r0 = 0.001d0
+      r0 = 0
+      do i=2*ncirc+1,3*ncirc
+        thet = hkrand(0)*2*pi
+        rr = r0*hkrand(0)
+        xyz_in(1,i) = x0 + rr*cos(thet)
+        xyz_in(2,i) = y0  
+        xyz_in(3,i) = z0 + rr*sin(thet)
+        charges(i) = hkrand(0) - 0.5d0
+      enddo
+
+
+      ntot = 3*ncirc
+      call prin2('xyz_in=*',xyz_in,3*ntot)
+      call prin2('charges=*',charges,2*ntot)
+      open(unit=33,file='plane-res/chargerhs-analyticmulti-50l-6.dat')
+      write(33,*) ntot
       do i=1,ntot
-        read(39,*) rtmp
-        charges(i) = rtmp
+        write(33,*) xyz_in(1,i),xyz_in(2,i),xyz_in(3,i),
+     1     real(charges(i)),imag(charges(i))
       enddo
+      close(33)
 
-      
+      do i=1,ntot
+        call test_exterior_pt(npatches,norders,npts,srcvals,srccoefs,
+     1  wts,xyz_in(1,i),isin(i))
+        print *, i,isin(i),xyz_in(1,i),xyz_in(2,i),xyz_in(3,i)
+      enddo
+      stop
 
       allocate(sigma(npts),rhs(npts))
       ifinout = 1
 
       thet = hkrand(0)*pi
       phi = hkrand(0)*2*pi
+      rhs_m = 0
       do i=1,npts
         rhs(i) = 0
         do j=1,ntot
           call h3d_slp(xyz_in(1,j),srcvals(1,i),dpars,zpars,ipars,pot)
           rhs(i) = rhs(i) + charges(j)*pot
         enddo
+        if(abs(rhs(i)).gt.rhs_m) rhs_m = abs(rhs(i))
         sigma(i) = 0
       enddo
 
+      allocate(errp_dens(2,npatches),errp_surf(9,npatches))
 
-      numit = 200
+      allocate(rsurf(npatches))
+      rmax = 0
+      rmin = 100.0d0
+      imax = 1
+      imin = 1
+      do i=1,npatches
+        rsurf(i) = 0
+        istart = ixyzs(i)
+        npols = ixyzs(i+1)-ixyzs(i)
+        do j=1,npols
+          jpt = istart+j-1
+          rsurf(i) = rsurf(i) + wts(jpt)
+        enddo
+        if(rsurf(i).gt.rmax) then
+          rmax = rsurf(i)
+          imax = i
+        endif
+        if(rsurf(i).lt.rmin) then
+          rmin = rsurf(i)
+          imin = i
+        endif
+      enddo
+
+      print *, "rmax,rmin=",rmax,rmin
+      print *, "imax,imin=",imax,imin
+
+      call prin2('rsurf=*',rsurf,24)
+      allocate(rhs_coefs(npts),pdis(npatches))
+      call surf_vals_to_coefs(2,npatches,norders,ixyzs,iptype,npts,
+     1  rhs,rhs_coefs)
+      
+      call surf_fun_error(2,npatches,norders,ixyzs,iptype,npts,rsurf,
+     1  rhs_coefs,errp_dens,errm_dens)
+      
+      call surf_fun_error(9,npatches,norders,ixyzs,iptype,npts,rsurf,
+     1  srccoefs,errp_surf,errm_surf)
+
+      call get_patch_distortion(npatches,norders,ixyzs,iptype,npts,
+     1   srccoefs,srcvals,wts,pdis)
+
+      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
+     1     srccoefs,cms,rads)
+      do i=1,npatches
+        rad_near(i) = 7*rads(i)
+      enddo
+      print *, ntot
+      call findnearmem(cms,npatches,rad_near,xyz_in,ntot,nnz)
+      print *, nnz
+
+      do i=1,npatches
+        errp0 = maxval(errp_dens(:,i))
+        errs0 = maxval(errp_surf(:,i))
+        write(77,*) i,rsurf(i),rads(i),pdis(i),errs0,errp0
+      enddo
+      call prin2('errm_dens=*',errm_dens,2)
+      print *, "rhs_m=",rhs_m
+      
+
+
+      numit = 150
       niter = 0
       allocate(errs(numit+1))
 
@@ -121,13 +253,13 @@ C$      t1 = omp_get_wtime()
 C$       t2 = omp_get_wtime()
       call prin2('analytic solve time=*',t2-t1,1)
 
-      open(unit=33,file='plane-res/sigma-analyticmulti-50l.dat')
+      open(unit=33,file='plane-res/sigma-analyticmulti-50l-6.dat')
       do i=1,npts
         write(33,*) real(sigma(i)),imag(sigma(i))
       enddo
       close(33)
 
-      open(unit=33,file='plane-res/rhs-analyticmulti-50l.dat')
+      open(unit=33,file='plane-res/rhs-analyticmulti-50l-6.dat')
       do i=1,npts
         write(33,*) real(rhs(i)),imag(rhs(i))
       enddo
@@ -164,55 +296,79 @@ C$       t2 = omp_get_wtime()
       zpars_tmp(3) = 1.0d0
 
       allocate(pvals(ntarg),pvalsex(ntarg))
-C$OMP PARALLEL DO DEFAULT(SHARED)      
+ccC$OMP PARALLEL DO DEFAULT(SHARED)      
       do i=1,npts
         sigmatmp(i) = 1
       enddo
-C$OMP END PARALLEL DO      
+ccC$OMP END PARALLEL DO      
 
 
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,3,ntarg,targs,ipatch_id,uvs_targ,eps,zpars_tmp,
      2  sigmatmp,pvalsex)
 
-C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j,pot)
       do i=1,ntarg
-        if(abs(pvalsex(i)).le.1.0d-3*4*pi) isout(i) = 1
+        if(abs(pvalsex(i)).le.4*pi*1.0d-3) isout(i) = 1
+      enddo
+
+      print *, "ntot=",ntot
+      call prin2('xyz_in=*',xyz_in,3*ntot)
+      call prin2('charges=*',charges,2*ntot)
+
+      do i=1,ntarg
         pvalsex(i) = 0
         do j=1,ntot
+          pot = 0
           call h3d_slp(xyz_in(1,j),targs(1,i),dpars,zpars,ipars,pot)
           pvalsex(i) = pvalsex(i) + pot*charges(j)
         enddo
       enddo
-C$OMP END PARALLEL DO 
 
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,3,ntarg,targs,ipatch_id,uvs_targ,eps,zpars,
      2  sigma,pvals)
       
       allocate(evals(ntarg),evals2(ntarg))
+      emax = -100
+      emax2 = -100
 
-C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(rtmp)
+      rmax = 0
+      do i=1,ntarg
+        if(isout(i).eq.1) then
+          if(abs(pvalsex(i)).gt.rmax) rmax = abs(pvalsex(i))
+        endif
+      enddo
+
+      open(unit=33,file='plane-res/pottarg-analyticmulti-50l-6.dat')
+ccC$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(rtmp)
       do i=1,ntarg
         if(isout(i).eq.0) evals(i) = -6
         if(isout(i).eq.0) evals2(i) = -6
         if(isout(i).eq.1) then
           rtmp = abs(pvals(i)-pvalsex(i))
           evals(i) = log(rtmp)/log(10.0d0)
-          rtmp = rtmp/abs(pvalsex(i))
+          rtmp = rtmp/rmax
           evals2(i) = log(rtmp)/log(10.0d0) 
+          if(evals(i).gt.emax) emax = evals(i)
+          if(evals2(i).gt.emax2) emax2 = evals2(i)
         endif
+        write(33,*) real(pvals(i)),imag(pvals(i)),real(pvalsex(i)),
+     1    imag(pvalsex(i)),evals(i),evals2(i)
       enddo
-C$OMP END PARALLEL DO
+ccC$OMP END PARALLEL DO
+      close(33)
+
+      print *, "max errors=",emax,emax2
+      stop
 
       allocate(rsigma(npts))
-C$OMP PARALLEL DO DEFAULT(SHARED)      
+ccC$OMP PARALLEL DO DEFAULT(SHARED)      
       do i=1,npts
         rsigma(i) = real(sigma(i))
       enddo
-C$OMP END PARALLEL DO      
+ccC$OMP END PARALLEL DO      
 
-      fname = 'plane-res/a380_rsigma_analyticmulti_ext.vtk'
+      fname = 'plane-res/a380_rsigma_analytic_halfl_ext.vtk'
       title = 'a380 - real part'
       call surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype,npts,
      1   srccoefs,srcvals,rsigma,fname,title)
@@ -225,7 +381,7 @@ C$OMP END PARALLEL DO
       call vtk_write_plane(ndims,ntarg,xyz_start,dxyz,evals,title,
      1   fname)
 
-      fname = 'plane-res/a380_errrel_analyticmulti_ext.vtk'
+      fname = 'plane-res/a380_errrel_analytic1_halfl_ext.vtk'
       title = 'abc'
       xyz_start(3) = -6
       call vtk_write_plane(ndims,ntarg,xyz_start,dxyz,evals2,title,

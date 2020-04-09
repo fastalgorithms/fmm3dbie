@@ -1,10 +1,10 @@
 
-EXEC = int2-plane
+EXEC = int3-plane
 
 HOST = osx-gfortran
 #HOST=linux-gfortran
 #HOST=linux-gfortran-lblas
-#HOST=linux-gfortran-openmp
+HOST=linux-gfortran-openmp
 #HOST=linux-ifort
 
 ifeq ($(HOST),osx-gfortran)
@@ -31,7 +31,7 @@ endif
 
 ifeq ($(HOST),linux-gfortran-openmp)
 FC = gfortran
-FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math --openmp -c -w  
+FFLAGS = -fPIC -O3 -march=native -funroll-loops --openmp -c -w  
 FLINK = gfortran -w --openmp -o $(EXEC) 
 FEND = -L../../lib -lfmm3d -lopenblas
 endif

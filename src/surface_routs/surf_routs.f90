@@ -174,7 +174,8 @@ subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
       do i=istart,npols
         errp(idim,ip) = errp(idim,ip)+dcoefs(idim,i+istart0-1)**2
       enddo
-      errp(idim,ip) = sqrt(errp(idim,ip))*rsc(ip)
+!      errp(idim,ip) = sqrt(errp(idim,ip))*rsc(ip)
+      errp(idim,ip) = sqrt(errp(idim,ip))
       if(errp(idim,ip).gt.errm(idim)) errm(idim) = errp(idim,ip)
     enddo
   enddo
