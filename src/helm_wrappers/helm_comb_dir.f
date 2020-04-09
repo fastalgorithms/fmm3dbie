@@ -596,7 +596,7 @@ c
       integer novers(npatches+1)
       integer nover,npolso,nptso
       real *8 srcover(12,nptso),whtsover(nptso)
-      complex *16 pot(npts)
+      complex *16 pot(ntarg)
       complex *16, allocatable :: potsort(:)
 
       real *8, allocatable :: sources(:,:),targvals(:,:)

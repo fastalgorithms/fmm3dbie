@@ -1,4 +1,4 @@
-c
+
 c
 c
 c     This file has the following user callable routines
@@ -159,6 +159,9 @@ c
       integer nlev, nqorder_f
       real *8 rfac0
 
+      character *200 dirname
+      character *300 fname
+
 
       external fker
 c      
@@ -260,47 +263,22 @@ c
       call gen_xg_unif_nodes(nlev,nqorder_f,nnodes,npts_f,qnodes,qwts)
 
 
-
-      
 c
 c       setup self quadrature for bremer
 c
       
-      lrad = 0
-      ilrad(1) = 1
-
-      call radial_init_mem(4,lrad)
-
-      nlrad(1) = lrad
-      ilrad(2) = ilrad(1) + lrad
-
-      lrad0 = 0
-      call radial_init_mem(8,lrad0)
-      nlrad(2) = lrad0
-      ilrad(3) = ilrad(2) + lrad0
-      lrad = lrad + lrad0
-
-      lrad0 = 0
-      call radial_init_mem(12,lrad0)
-      lrad = lrad + lrad0
-      nlrad(3) = lrad0
       
+      call getenv("S3D_INSTALL_DIR",dirname)
+      fname = trim(dirname)//
+     1   '/src/quadratures/ggq-self-quads/radial4-8-12.bin'
+      open(unit=171,file=fname,action='read',
+     1     form='unformatted',access='stream',status='old')
+      read(unit=171) ilrad
+      read(unit=171) nlrad
+      read(unit=171) lrad
       allocate(rad(lrad))
-
-      jer0 = 0
-      lkeep = 0
-      call radial_init(jer0,4,rad(ilrad(1)),nlrad(1),lkeep)
-
-
-      jer0 = 0
-      lkeep = 0
-      call radial_init(jer0,8,rad(ilrad(2)),nlrad(2),lkeep)
-
-      jer0 = 0
-      lkeep = 0
-      call radial_init(jer0,12,rad(ilrad(3)),nlrad(3),lkeep)
-
-
+      read(unit=171) rad
+      close(171)
 
       t1 = second()
 C$        t1 = omp_get_wtime()
@@ -584,6 +562,8 @@ c
       complex *16 wnear(nquad)
 
       real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
+      character *200 dirname
+      character *100 fname
 
 c
 c        temporary variables
@@ -710,36 +690,17 @@ c
 c       setup self quadrature for bremer
 c
       
-      lrad = 0
-      ilrad(1) = 1
-      call pv_radial_init_mem(4,lrad)
-      nlrad(1) = lrad
-      ilrad(2) = ilrad(1) + lrad
-
-      lrad0 = 0
-      call pv_radial_init_mem(8,lrad0)
-      nlrad(2) = lrad0
-      ilrad(3) = ilrad(2) + lrad0
-      lrad = lrad + lrad0
-
-      lrad0 = 0
-      call pv_radial_init_mem(12,lrad0)
-      lrad = lrad + lrad0
-      nlrad(3) = lrad0
-      
+      call getenv("S3D_INSTALL_DIR",dirname)
+      fname = trim(dirname)//
+     1   '/src/quadratures/ggq-self-quads/pvradial4-8-12.bin'
+      open(unit=171,file=fname,action='read',
+     1     form='unformatted',access='stream',status='OLD')
+      read(unit=171) ilrad
+      read(unit=171) nlrad
+      read(unit=171) lrad
       allocate(rad(lrad))
-
-      jer0 = 0
-      lkeep = 0
-      call pv_radial_init(jer0,4,rad(ilrad(1)),nlrad(1),lkeep)
-
-      jer0 = 0
-      lkeep = 0
-      call pv_radial_init(jer0,8,rad(ilrad(2)),nlrad(2),lkeep)
-
-      jer0 = 0
-      lkeep = 0
-      call pv_radial_init(jer0,12,rad(ilrad(3)),nlrad(3),lkeep)
+      read(unit=171) rad
+      close(171)
 
 
 

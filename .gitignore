@@ -8,4 +8,7 @@ fort.*
 *.log
 *.tex
 *.aux
-
+*.save*
+int2*
+*.so
+*.a
