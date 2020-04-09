@@ -151,7 +151,7 @@ c
 c           nnz - integer
 c             number of source patch-> target interactions in the near field
 c 
-c           row_ptr - integer(npts+1)
+c           row_ptr - integer(ntarg+1)
 c              row_ptr(i) is the pointer
 c              to col_ind array where list of relevant source patches
 c              for target i start
@@ -186,7 +186,7 @@ c
       complex *16 zpars(3)
       integer nnz,ipars
       real *8 dpars
-      integer row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
+      integer row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
       complex *16 wnear(nquad)
 
       integer ipatch_id(ntarg)
@@ -539,7 +539,7 @@ c
 c           nnz - integer *8
 c             number of source patch-> target interactions in the near field
 c 
-c           row_ptr - integer(npts+1)
+c           row_ptr - integer(ntarg+1)
 c              row_ptr(i) is the pointer
 c              to col_ind array where list of relevant source patches
 c              for target i start
@@ -590,7 +590,7 @@ c
       real *8 srccoefs(9,npts),srcvals(12,npts),eps
       real *8 targs(ndtarg,ntarg)
       complex *16 zpars(3)
-      integer nnz,row_ptr(npts+1),col_ind(nnz),nquad
+      integer nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
       integer iquad(nnz+1)
       complex *16 wnear(nquad),sigma(npts)
       integer novers(npatches+1)
@@ -922,7 +922,7 @@ c
 c           nnz - integer *8
 c             number of source patch-> target interactions in the near field
 c 
-c           row_ptr - integer(npts+1)
+c           row_ptr - integer(ntarg+1)
 c              row_ptr(i) is the pointer
 c              to col_ind array where list of relevant source patches
 c              for target i start
@@ -972,13 +972,13 @@ c
       real *8 srccoefs(9,npts),srcvals(12,npts),eps
       real *8 targs(ndtarg,ntarg)
       complex *16 zpars(3)
-      integer nnz,row_ptr(npts+1),col_ind(nnz),nquad
+      integer nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
       integer iquad(nnz+1)
       complex *16 wnear(nquad),sigma(npts)
       integer novers(npatches+1)
       integer nover,npolso,nptso
       real *8 srcover(12,nptso),whtsover(nptso)
-      complex *16 pot(npts)
+      complex *16 pot(ntarg)
       complex *16, allocatable :: potsort(:)
 
       real *8, allocatable :: sources(:,:),targvals(:,:)
@@ -1532,7 +1532,7 @@ c
       integer ndtarg,ntarg
 
       real *8 errs(numit+1)
-      real *8 rres
+      real *8 rres,eps2
       integer niter
 
 
@@ -1660,6 +1660,8 @@ c
      2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
+      print *, "npts_over=",npts_over
+      call prinf('novers=*',novers,100)
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
@@ -1686,12 +1688,20 @@ C$OMP END PARALLEL DO
 
       iquadtype = 1
 
+cc      eps2 = 1.0d-8
+
       print *, "starting to generate near quadrature"
+      call cpu_time(t1)
+C$      t1 = omp_get_wtime()      
 
       call getnearquad_helm_comb_dir(npatches,norders,
      1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
      1      iquad,rfac0,nquad,wnear)
+      call cpu_time(t2)
+C$      t2 = omp_get_wtime()     
+
+      call prin2('quadrature generation time=*',t2-t1,1)
       
       print *, "done generating near quadrature, now starting gmres"
 
