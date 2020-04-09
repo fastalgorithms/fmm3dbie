@@ -16,6 +16,8 @@ CLINK += -Wl,-stack_size,0x40000000
 OMPFLAGS = -fopenmp
 OMPLIBS = -lgomp
 
+LIBS= -Llib/ -lm -lfmm3d -framework accelerate
+
 # MATLAB interface:
 MFLAGS += -L/usr/local/lib/gcc/9
 MEX = $(shell ls -d /Applications/MATLAB_R201*.app)/bin/mex

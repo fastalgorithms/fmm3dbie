@@ -1853,6 +1853,11 @@ c
       subroutine helm_comb_dir_fds_mem(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,nrfds,nzfds)
 c
+cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
+cf2py   intent(in) srccoefs,srcvals,eps,zpars
+cf2py   intent(out) nifds,nrfds,nzfds
+
+c
 c       This subroutine estimates the memory requirements
 c       for the precomputation routine of the fast direct solver
 c 
@@ -1995,6 +2000,11 @@ c
       subroutine helm_comb_dir_fds_init(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,
      2     rfds,nzfds,zfds)
+cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
+cf2py   intent(in) srccoefs,srcvals,eps,zpars
+cf2py   intent(in) nifds,nrfds,nzfds
+cf2py   intent(out) ifds,rfds,zfds
+
 c
 c       This subroutine is the precomputation routine of the fast direct solver
 c 
@@ -2179,7 +2189,12 @@ c
       subroutine helm_comb_dir_fds_matgen(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,
      2     rfds,nzfds,zfds,nent_csc,col_ptr,row_ind,zmatent)
-        
+cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
+cf2py   intent(in) srccoefs,srcvals,eps,zpars
+cf2py   intent(in) nifds,nrfds,nzfds
+cf2py   intent(in) ifds,rfds,zfds
+cf2py   intent(in) nent_csc,col_ptr,row_ind
+cf2py   intent(out) zmatent
       
       implicit none
       integer npatches,norders(npatches),ixyzs(npatches+1)

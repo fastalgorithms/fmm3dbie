@@ -260,9 +260,10 @@ c
 c
 c
 c
-        subroutine radinit0(ier,iw,max,nr,nt,ns,xs,whts,rs,ts,norder)
+        subroutine radinit0(ier,iw,max,nr,nt,rns,xs,whts,rs,ts,
+     1     norder)
         implicit double precision (a-h,o-z)
-        dimension ns(nt,nr),rs(2,1),ts(2,1)
+        dimension rns(nt,nr),rs(2,1),ts(2,1)
         dimension xs(max,nt,nr),whts(max,nt,nr)
         character*2 str
 c
@@ -290,7 +291,7 @@ c$$$        if (dd .gt. .93d0) then
 c$$$        write (*,3000) norder,rs(1,ir),rs(2,ir),ts(1,it),ts(2,it),nn
 c$$$        endif
 c
-        ns(it,ir)=nn
+        rns(it,ir)=nn
 c
  1200 continue
  1100 continue
@@ -634,11 +635,11 @@ c
 c
 c
 c
-        subroutine radfetch0(ier,max,nr,nt,rs,ts,ns,xs,xwhts,
+        subroutine radfetch0(ier,max,nr,nt,rs,ts,rns,xs,xwhts,
      1    n,ii,r,t)
         implicit double precision (a-h,o-z)
         dimension rs(2,nr),ts(2,nt)
-        dimension ns(nt,nr),xs(max,nt,nr),whts(max,nt,nr)
+        dimension rns(nt,nr),xs(max,nt,nr),whts(max,nt,nr)
 c
         data eps / 1.0d-12 /
         ier = 0
@@ -661,7 +662,7 @@ c
 c
 c       Get the number of nodes and set the pointer.
 c
-        n   = ns(it,ir)
+        n   = rns(it,ir)
         ii  = 1+max*(it-1)+max*nt*(ir-1)
 c
         end
