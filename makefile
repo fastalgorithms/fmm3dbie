@@ -77,7 +77,7 @@ LIBDIR = lib-static
 # objects to compile
 #
 # Common objects
-COM = src/Common
+COM = src/common
 COMOBJS = $(COM)/cumsum.o $(COM)/dlaran.o $(COM)/dotcross3d.o \
 	$(COM)/hkrand.o $(COM)/lapack_slow.o $(COM)/lapack_wrap.o \
 	$(COM)/legeexps.o $(COM)/orthom.o $(COM)/prini_new.o \

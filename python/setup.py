@@ -3,6 +3,7 @@ import string
 import os
 from numpy.distutils.core import setup
 from numpy.distutils.core import Extension
+from sys import platform
 
 pkg_name = "solvers3dpy"
 
@@ -19,6 +20,8 @@ FLIBS.append('-lm')
 FLIBS.append('-lgomp')
 FLIBS.append('-lfmm3d')
 FLIBS.append('-L../lib')
+if platform == "linux" or platform == "linux2":
+    FLIBS.append('-lopenblas')
 FLIBS.append('../lib-static/libsolvers3d.a')
 
 FFLAGS = FFLAGS.rstrip().split(' ')
