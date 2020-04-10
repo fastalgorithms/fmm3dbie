@@ -106,6 +106,11 @@ c
 c-----------------------------------
       subroutine conv_to_csc(nent,m,iind,jind,col_ptr,row_ind)
       implicit none
+c
+c
+c
+cf2py  intent(in) nent,m,iind,jind
+cf2py  intent(out) col_ptr,row_ind
       integer nent,m,iind(nent),jind(nent),col_ptr(m+1),row_ind(nent)
       integer, allocatable :: jsort(:),jper(:),icnt(:)
       integer i,icur,icur0,icur1

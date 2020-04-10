@@ -12,3 +12,4 @@ fort.*
 int2*
 *.so
 *.a
+*.vtk

@@ -533,6 +533,11 @@ end subroutine oversample_fun_tri
 
 subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
    u,ucoefs)
+
+!
+!f2py intent(in) nd,npatches,norders,ixyzs,iptype,npts,u
+!f2py intent(out) ucoefs
+!
 !
 !  This subroutine oversamples a function defined on a surface
 !
@@ -635,6 +640,10 @@ end subroutine vals_to_coefs_tri
 !
 !
 subroutine get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
+
+!
+!f2py intent(in) npatches,norders,ixyzs,iptype,npts,srcvals
+!f2py intent(out) qwts
 !
 !  this subroutine returns the quadrature weights
 !  for integrating smooth functions on the surface
@@ -767,6 +776,10 @@ end subroutine get_near_far_split_pt
 
 subroutine get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, &
     ipatch_id,uvs_pts)
+!
+!f2py intent(in) npatches,norders,ixyzs,iptype,npts
+!f2py intent(out) ipatch_id,uvs_pts
+!
   implicit none
   integer npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
   integer npts,ipatch_id(npts)

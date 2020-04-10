@@ -37,8 +37,8 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 2
-      if(igeomtype.eq.1) ipars(1) = 4
+      igeomtype = 1
+      if(igeomtype.eq.1) ipars(1) = 2
       if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
@@ -75,7 +75,7 @@ c
         xyz_out(3) = 20.1d0
       endif
 
-      norder = 4 
+      norder = 3 
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
@@ -100,6 +100,19 @@ c
       ixyzs(npatches+1) = 1+npols*npatches
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
+
+      open(unit=18,file='../../geometries/sphere_192_o03.go3')
+      write(18,*) norder
+      write(18,*) npatches
+      do j=1,12
+        do i=1,npts
+          write(18,*) srcvals(j,i)
+        enddo
+      enddo
+      close(18)
+      stop
+
+
 
 
       allocate(cms(3,npatches),rads(npatches),rad_near(npatches))

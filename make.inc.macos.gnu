@@ -16,7 +16,7 @@ CLINK += -Wl,-stack_size,0x40000000
 OMPFLAGS = -fopenmp
 OMPLIBS = -lgomp
 
-LIBS= -Llib/ -lm -lfmm3d -framework accelerate
+LIBS= -Llib/ -lm -lfmm3d -framework accelerate -lstdc++.6
 
 # MATLAB interface:
 MFLAGS += -L/usr/local/lib/gcc/9

@@ -259,6 +259,11 @@ c
      1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
      2   ipatch_id,uvs_targ,eps,zpars,sigma,pot)
 c
+cf2py intent(in) npatches,norders,ixyzs,iptype,npts,srccoefs,srcvals
+cf2py intent(in) ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,zpars
+cf2py intent(in) sigma
+cf2py intent(out) pot
+c
 c      this subroutine evaluates the layer potential for
 c      the representation u = 4 \pi(\alpha S_{k} + \beta D_{k})
 c

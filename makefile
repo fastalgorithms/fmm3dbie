@@ -160,11 +160,11 @@ $(DYNAMICLIB): $(OBJS)
 
 #python
 python: $(STATICLIB)
-	cd python && export FAST_KER=$(FAST_KER) && export FLIBS='$(LIBS)' && export FFLAGS='$(FFLAGS)' && pip install -e . && cd test && pytest -s
+	cd python && export FAST_KER=$(FAST_KER) && export FLIBS='$(LIBS)' && export FFLAGS='$(FFLAGS)' && pip install -e . 
 
 #python
 python3: $(STATICLIB)
-	cd python && export FAST_KER=$(FAST_KER) && export FLIBS='$(LIBS)' && export FFLAGS='$(FFLAGS)' && pip3 install -e . && cd test && python3 -m pytest -s
+	cd python && export FAST_KER=$(FAST_KER) && export FLIBS='$(LIBS)' && export FFLAGS='$(FFLAGS)' && pip3 install -e . 
 
 clean: objclean
 	rm -f lib-static/*.a lib/*.so
