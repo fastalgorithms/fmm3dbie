@@ -62,81 +62,32 @@ c
       call open_gov3_geometry(fname,npatches,norders,ixyzs,
      1   iptype,npts,srcvals,srccoefs,wts)
 
-      nmax = 1000
+      nmax = 2000
       allocate(xyz_in(3,nmax),charges(nmax))
+      open(unit=33,file='fuselage-sources-8.txt')
+      read(33,*) nfuse
 
+      ntail = 0
+      open(unit=34,file='tail-sources-3.5.txt')
+      read(34,*) ntail
 
-      ntot = 1   
-      charges(1) = 1
-      x0 = 2.01d0
-      y0 = 0.01d-5
-      z0 = 0.4d0
-
-      thet0 = hkrand(0)*pi
-      phi0 = hkrand(0)*2*pi
-
-      ax = cos(thet0)
-      ay = sin(thet0)*cos(phi0)
-      az = sin(thet0)*sin(phi0)
-
-      bx = 0
-      by = -sin(phi0)
-      bz = cos(phi0)
-
-      ncirc = 20
-      r0 = 0.1d0
-      do i=1,ncirc
-        thet = hkrand(0)*2*pi
-        rr = r0*hkrand(0)
-        xyz_in(1,i) = x0 + rr*ax*cos(thet)+rr*bx*sin(thet) 
-        xyz_in(2,i) = y0 + rr*ay*cos(thet)+rr*by*sin(thet) 
-        xyz_in(3,i) = z0 + rr*az*cos(thet)+rr*bz*sin(thet)
-        charges(i) = hkrand(0) - 0.5d0
+      ntot = nfuse + ntail
+      do i=1,nfuse
+        read(33,*) xyz_in(1,i),xyz_in(2,i),xyz_in(3,i)
       enddo
 
-      x0 = 6.51d0
-      y0 = 0.01d-5
-      z0 = 0.4d0
+      do i=1,ntail
+        ii = nfuse+i
+        read(34,*) xyz_in(1,ii),xyz_in(2,ii),xyz_in(3,ii)
+      enddo
+      close(33)
+      close(34)
 
-      thet0 = hkrand(0)*pi
-      phi0 = hkrand(0)*2*pi
-
-      ax = cos(thet0)
-      ay = sin(thet0)*cos(phi0)
-      az = sin(thet0)*sin(phi0)
-
-      bx = 0
-      by = -sin(phi0)
-      bz = cos(phi0)
-
-      r0 = 0.1d0
-      do i=ncirc+1,2*ncirc
-        thet = hkrand(0)*2*pi
-        rr = r0*hkrand(0)
-        xyz_in(1,i) = x0 + rr*ax*cos(thet)+rr*bx*sin(thet) 
-        xyz_in(2,i) = y0 + rr*ay*cos(thet)+rr*by*sin(thet) 
-        xyz_in(3,i) = z0 + rr*az*cos(thet)+rr*bz*sin(thet)
-        charges(i) = hkrand(0) - 0.5d0
+      do i=1,ntot
+        charges(i) = (hkrand(0)-0.5d0) + ima*(hkrand(0)-0.5d0)
       enddo
 
 
-      x0 = 9.84169d0
-      y0 = -7.30d-4
-      z0 = 1.25836d0
-
-      r0 = 0.001d0
-      r0 = 0
-      do i=2*ncirc+1,3*ncirc
-        thet = hkrand(0)*2*pi
-        rr = r0*hkrand(0)
-        xyz_in(1,i) = x0 + rr*cos(thet)
-        xyz_in(2,i) = y0  
-        xyz_in(3,i) = z0 + rr*sin(thet)
-        charges(i) = hkrand(0) - 0.5d0
-      enddo
-
-
-      ntot = 3*ncirc
       call prin2('xyz_in=*',xyz_in,3*ntot)
       call prin2('charges=*',charges,2*ntot)
       open(unit=33,file='plane-res/chargerhs-analyticmulti-50l-6.dat')
@@ -150,9 +101,7 @@ c
       do i=1,ntot
         call test_exterior_pt(npatches,norders,npts,srcvals,srccoefs,
      1  wts,xyz_in(1,i),isin(i))
-        print *, i,isin(i),xyz_in(1,i),xyz_in(2,i),xyz_in(3,i)
       enddo
-      stop
 
       allocate(sigma(npts),rhs(npts))
       ifinout = 1
@@ -216,7 +165,7 @@ c
       call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
      1     srccoefs,cms,rads)
       do i=1,npatches
-        rad_near(i) = 7*rads(i)
+        rad_near(i) = 3.5d0*rads(i)
       enddo
       print *, ntot
       call findnearmem(cms,npatches,rad_near,xyz_in,ntot,nnz)
