@@ -85,8 +85,8 @@ COMOBJS = $(COM)/cumsum.o $(COM)/dlaran.o $(COM)/dotcross3d.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/tree_lr_3d.o
 
 # FMM wrappers
-FMM = src/fmm_wrappers
-FOBJS = $(FMM)/hfmm3d_ndiv.o $(FMM)/lfmm3d_ndiv.o 
+FMML = src/fmm_wrappers
+FOBJS = $(FMML)/hfmm3d_ndiv.o $(FMML)/lfmm3d_ndiv.o 
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
