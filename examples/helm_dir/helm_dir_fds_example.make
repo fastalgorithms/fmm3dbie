@@ -1,114 +1,65 @@
+EXEC = int2-fds
+#HOST = gcc
+HOST = gcc-openmp
+#HOST = intel
+#HOST = intel-ompenmp
 
-EXEC = helm_fds_solver
+#
+# For linux systems, it is assumed that the environment
+# variable LD_LIBRARY_PATH contains the locations to libfmm3d.so
+# and libsolvers3d.so, for Macosx, these .so files also need to be
+# copied over /usr/local/lib
 
-#HOST = osx-gfortran
-HOST=linux-gfortran
-HOST=linux-gfortran-lblas
-#HOST=linux-gfortran-openmp
-#HOST=linux-ifort
 
-ifeq ($(HOST),osx-gfortran)
-FC = gfortran
-FFLAGS = -O3 -march=native -funroll-loops -c -w
-FLINK = gfortran -w -o $(EXEC)
-FEND = -L../../lib -lfmm3d -framework accelerate
+ifneq ($(OS),Windows_NT) 
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+        LDF = /usr/local/lib
+    endif
+endif
+    
+
+LIBS = -lfmm3d -lsolvers3d 
+ifeq ($(HOST),gcc)
+    FC=gfortran -L${LDF} 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native  
 endif
 
-ifeq ($(HOST),linux-gfortran-lblas)
-FC = gfortran
-FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math -c -w  
-FLINK = gfortran -w -o $(EXEC) 
-FEND = -L../../lib -lblas -llapack -lfmm3d
+ifeq ($(HOST),gcc-openmp)
+    FC = gfortran 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp 
 endif
 
-ifeq ($(HOST),linux-gfortran)
-FC = gfortran
-FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math -c -w  
-FLINK = gfortran -w -o $(EXEC) 
-FEND = -L../../lib -lopenblas -lfmm3d
+ifeq ($(HOST),intel)
+    FC=ifort -L${LDF} 
+    FFLAGS= -O3 -fPIC -march=native
 endif
 
-
-ifeq ($(HOST),linux-gfortran-openmp)
-FC = gfortran
-FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math --openmp -c -w  
-FLINK = gfortran -w --openmp -o $(EXEC) 
-FEND = -L../../lib -lfmm3d -lopenblas
+ifeq ($(HOST),intel-openmp)
+    FC = ifort -L${LDF} 
+    FFLAGS= -O3 -fPIC -march=native -qopenmp
 endif
 
-ifeq ($(HOST),linux-ifort)
-FC = ifort
-FFLAGS = -O1 -g -xHost -c -w -xW -qopenmp
-FLINK = ifort -qopenmp -w -mkl -o $(EXEC)
-FEND = -L../lib -lfmm3d
-endif
+SURF=../../src/surface_routs
 
+.PHONY: all clean 
 
-COM = ../../src/common
-TRIA = ../../src/tria_routs
-QUAD = ../../src/quadratures
-HELM = ../../src/helm_wrappers
-KER = ../../src/kernels
-SURF = ../../src/surface_routs
-FMM = ../../src/fmm_wrappers
+OBJECTS =  helm_dir_fds_example.o \
 
-
-.PHONY: all clean list
-
-SOURCES =  test_helm_dir_fds.f \
-  $(COM)/prini_new.f \
-  $(COM)/hkrand.f \
-  $(COM)/dlaran.f \
-  $(SURF)/surf_routs.f90 \
-  $(SURF)/xtri_routs/xtri_parameterizations.f90 \
-  $(SURF)/xtri_routs/xtri_plot.f90 \
-  $(QUAD)/far_field_routs.f90 \
-  $(QUAD)/near_field_routs.f \
-  $(QUAD)/ggq-quads.f \
-  $(QUAD)/ggq-selfquad.f \
-  $(QUAD)/ggq-pvselfquad.f \
-  $(QUAD)/ggq-radial.f \
-  $(QUAD)/ggq-pvradial.f \
-  $(KER)/helm_kernels.f90 \
-  $(TRIA)/koornexps.f90 \
-  $(TRIA)/ortho2eva.f90 \
-  $(TRIA)/ortho2exps.f90 \
-  $(COM)/dotcross3d.f90 \
-  $(COM)/lapack_wrap.f90 \
-  $(COM)/orthom.f \
-  $(COM)/legeexps.f \
-  $(COM)/lapack_slow.f \
-  $(COM)/sparse_reps.f \
-  $(COM)/sort.f \
-  $(COM)/cumsum.f \
-  $(COM)/tree_lr_3d.f \
-  $(COM)/rotmat_gmres.f \
-  $(HELM)/helm_comb_dir.f \
-  $(FMM)/hfmm3d_ndiv.f \
-  $(FMM)/lfmm3d_ndiv.f \
-  $(COM)/setops.f \
-  $(TRIA)/triasymq.f \
-  $(TRIA)/ctriaints_main.f \
-  $(TRIA)/triatreerouts.f \
-  $(TRIA)/triaintrouts.f  
-
-
-OBJECTS = $(patsubst %.f,%.o,$(patsubst %.f90,%.o,$(SOURCES)))
 
 #
 # use only the file part of the filename, then manually specify
 # the build location
 #
 
-%.o : %.f
-	$(FC) $(FFLAGS) $< -o $@
+%.o : %.f  
+	$(FC) -c $(FFLAGS) $< -o $@
 
-%.o : %.f90
-	$(FC) $(FFLAGS) $< -o $@
+%.o : %.f90  
+	$(FC) -c $(FFLAGS) $< -o $@
 
 all: $(OBJECTS)
-	rm -f $(EXEC)
-	$(FLINK) $(OBJECTS) $(FEND)
+	$(FC) $(FFLAGS) -o $(EXEC) $(OBJECTS) -L${LDF} $(LIBS)
 	./$(EXEC)  
 
 clean:

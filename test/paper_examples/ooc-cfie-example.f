@@ -6,7 +6,7 @@
 
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3)
+      real *8 xyz_out(3),xyz_in(3),eps_gmres
       complex *16, allocatable :: sigma(:),rhs(:)
       real *8, allocatable :: errs(:)
       complex * 16 zpars(3),zk
@@ -73,6 +73,8 @@ c
       niter = 0
       allocate(errs(numit+1))
 
+      eps_gmres = 1.0d-12
+
       do iref = 1,3
 
         if(igeomtype.eq.1) ipars(1) = 2+iref
@@ -128,8 +130,8 @@ c
           enddo
 
           call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
-     1      srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,niter,errs,
-     2      rres,sigma)
+     1      srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
+     2      niter,errs,rres,sigma)
 
           call prinf('niter=*',niter,1)
           call prin2('rres=*',rres,1)

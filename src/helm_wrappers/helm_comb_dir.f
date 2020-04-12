@@ -1437,7 +1437,7 @@ c
 c        
       subroutine helm_comb_dir_solver(npatches,norders,ixyzs,
      1    iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,
-     2    rhs,niter,errs,rres,soln)
+     2    rhs,eps_gmres,niter,errs,rres,soln)
 c
 c
 c        this subroutine solves the helmholtz dirichlet problem
@@ -1503,6 +1503,9 @@ c
 c           rhs - complex *16(npts)
 c              right hand side
 c
+c           eps_gmres - real *8
+c                gmres tolerance requested
+c
 c           numit - integer
 c              max number of gmres iterations
 c
@@ -1526,7 +1529,7 @@ c
       integer ifinout
       integer norders(npatches),ixyzs(npatches+1)
       integer iptype(npatches)
-      real *8 srccoefs(9,npts),srcvals(12,npts),eps
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
       complex *16 zpars(3)
       complex *16 rhs(npts)
       complex *16 soln(npts)
@@ -1569,7 +1572,7 @@ c
       complex *16 zid,ztmp
       real *8 rb,wnrm2
       integer numit,it,iind,it1,k,l
-      real *8 rmyerr,eps_gmres
+      real *8 rmyerr
       complex *16 temp
       complex *16, allocatable :: vmat(:,:),hmat(:,:)
       complex *16, allocatable :: cs(:),sn(:)
@@ -1724,7 +1727,6 @@ c
 
 
       niter=0
-      eps_gmres = 1.0d-6
 
 c
 c      compute norm of right hand side and initialize v

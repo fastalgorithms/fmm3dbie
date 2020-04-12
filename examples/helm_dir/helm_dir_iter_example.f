@@ -9,6 +9,7 @@
       real *8 xyz_out(3),xyz_in(3)
       complex *16, allocatable :: sigma(:),rhs(:)
       real *8, allocatable :: errs(:)
+      real *8 eps_gmres
       complex * 16 zpars(3)
       integer numit,niter
 
@@ -113,15 +114,17 @@ c
 
 
       numit = 200
-      ifinout = 0
+      ifinout = 1
       niter = 0
       allocate(errs(numit+1))
 
       eps = 0.51d-6
 
+      eps_gmres = 0.5d-6
+
       call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,niter,errs,
-     2  rres,sigma)
+     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
+     2  niter,errs,rres,sigma)
 
       call prinf('niter=*',niter,1)
       call prin2('rres=*',rres,1)

@@ -19,7 +19,7 @@
       real *8, allocatable :: evals(:),evals2(:)
       real *8, allocatable :: errs(:)
       real *8, allocatable :: errp_dens(:,:),rsurf(:),errp_surf(:,:)
-      real *8 errm_surf(100),errm_dens(100)
+      real *8 errm_surf(100),errm_dens(100),eps_gmres
       real *8 thet,phi
       real *8 xyz_start(3),dxyz(3)
       complex * 16 zpars(3),zpars_tmp(3)
@@ -186,13 +186,14 @@ c
       allocate(errs(numit+1))
 
       eps = 0.51d-6
+      eps_gmres = eps
 
 
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()      
       call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,niter,errs,
-     2  rres,sigma)
+     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
+     2  niter,errs,rres,sigma)
 
       call prinf('niter=*',niter,1)
       call prin2('rres=*',rres,1)

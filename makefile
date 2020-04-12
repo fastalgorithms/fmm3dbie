@@ -105,7 +105,9 @@ QOBJS = $(QUAD)/far_field_routs.o $(QUAD)/ggq-pvradial.o \
 
 # Surface wrappers
 SURF = src/surface_routs
-SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o
+SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
+	$(SURF)/xtri_routs/xtri_parameterizations.o \
+	$(SURF)/xtri_routs/xtri_plot.o
 
 # Triangle adaptive integration routines
 TRIA = src/tria_routs

@@ -9,7 +9,7 @@
       complex *16, allocatable :: sigma(:),rhs(:)
       complex *16, allocatable :: sigma2(:),rhs2(:)
       real *8, allocatable :: errs(:)
-      real *8 thet,phi
+      real *8 thet,phi,eps_gmres
       complex * 16 zpars(3)
       integer numit,niter
       character *100 title,fname
@@ -99,10 +99,11 @@
       allocate(errs(numit+1))
 
       eps = 0.51d-6
+      eps_gmres = eps
 
       call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,niter,errs,
-     2  rres,sigma)
+     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
+     2  niter,errs,rres,sigma)
 
       call prinf('niter=*',niter,1)
       call prin2('rres=*',rres,1)

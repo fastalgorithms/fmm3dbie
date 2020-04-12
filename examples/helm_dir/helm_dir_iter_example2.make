@@ -44,7 +44,7 @@ SURF=../../src/surface_routs
 
 .PHONY: all clean 
 
-OBJECTS =  helm_dir_iter_example.o \
+OBJECTS =  helm_dir_iter_example2.o \
 
 
 #

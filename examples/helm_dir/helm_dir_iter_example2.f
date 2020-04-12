@@ -29,24 +29,22 @@
       done = 1
       pi = atan(done)*4
 
-c
-c   simulation for plane 50 wavelengths in size
-c
-      zk = 15.7d0*2
+
+      zk = 4.4d0+ima*0.0d0
       zpars(1) = zk 
       zpars(2) = -ima*zk
       zpars(3) = 2.0d0
 
       
-      xyz_in(1) = 2.01d0
+      xyz_in(1) = 0.11d0
       xyz_in(2) = 0.0d-5
-      xyz_in(3) = 0.5d0
+      xyz_in(3) = 0.37d0
 
       xyz_out(1) = -3.5d0
       xyz_out(2) = 3.1d0
       xyz_out(3) = 20.1d0
 
-      fname = '../../geometries/A380_Final_o03_r02.go3'
+      fname = '../../geometries/sphere_192_o03.go3'
       
       call open_gov3_geometry_mem(fname,npatches,npts)
 
@@ -60,51 +58,27 @@ c
       call open_gov3_geometry(fname,npatches,norders,ixyzs,
      1   iptype,npts,srcvals,srccoefs,wts)
       
-cc      fname = 'plane-res/a380.vtk'
-cc      title = 'a380'
-cc      call surf_vtk_plot(npatches,norders,ixyzs,iptype,npts,
-cc     1   srccoefs,srcvals,fname,title)
-
-      norder = norders(1)
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1  wts,xyz_in,isout0)
-      
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1   wts,xyz_out,isout1)
-
-       print *, isout0,isout1
-
 
       allocate(sigma(npts),rhs(npts))
-      allocate(sigma2(npts),rhs2(npts))
       ifinout = 1
 
-      thet = hkrand(0)*pi
-      phi = hkrand(0)*2*pi
       do i=1,npts
         if(ifinout.eq.0) 
      1     call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
         if(ifinout.eq.1) 
      1     call h3d_slp(xyz_in,srcvals(1,i),dpars,zpars,ipars,rhs(i))
         rhs(i) = rhs(i)
-        x = srcvals(1,i)*cos(thet)
-        y = srcvals(2,i)*sin(thet)*cos(phi)
-        z = srcvals(3,i)*sin(thet)*sin(phi)
-        rhs2(i) = exp(ima*zk*(x+y+z))
         sigma(i) = 0
-        sigma2(i) = 0
       enddo
 
 
-      numit = 400
+      numit = 200
       niter = 0
       allocate(errs(numit+1))
 
       eps = 0.51d-6
       eps_gmres = eps
 
-      call cpu_time(t1)
-C$      t1 = omp_get_wtime()      
       call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
      2  niter,errs,rres,sigma)
@@ -112,16 +86,6 @@ C$      t1 = omp_get_wtime()
       call prinf('niter=*',niter,1)
       call prin2('rres=*',rres,1)
       call prin2('errs=*',errs,niter)
-
-      call cpu_time(t2)
-C$       t2 = omp_get_wtime()
-      call prin2('analytic solve time=*',t2-t1,1)
-
-      open(unit=33,file='plane-res/sigma-analytic-50l.dat')
-      do i=1,npts
-        write(33,*) real(sigma(i)),imag(sigma(i))
-      enddo
-      close(33)
 
 
 c
@@ -141,42 +105,6 @@ c
       call prin2('pot=*',pot,2)
       erra = abs(pot-potex)/abs(potex)
       call prin2('relative error=*',erra,1)
-
-      allocate(rsigma(npts))
-      do i=1,npts
-        rsigma(i) = real(sigma(i))*100
-      enddo
-
-      fname = 'plane-res/a380_rsigma_50l_ext.vtk'
-      title = 'a380 - real part'
-      call surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype,npts,
-     1   srccoefs,srcvals,rsigma,fname,title)
-
-      call cpu_time(t1)
-C$      t1 = omp_get_wtime()      
-      call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs2,eps_gmres,
-     2  niter,errs,rres,sigma2)
-      call cpu_time(t2)
-C$      t2 = omp_get_wtime()      
-
-      call prin2('pw solve time=*',t2-t1,1)
-      
-
-      open(unit=33,file='plane-res/sigma-pw-50l.dat')
-      do i=1,npts
-        write(33,*) real(sigma2(i)),imag(sigma2(i))
-      enddo
-      close(33)
-
-      do i=1,npts
-        rsigma(i) = real(sigma2(i))*100
-      enddo
-
-      fname = 'plane-res/a380_rsigma2_50l_ext.vtk'
-      title = 'a380 - real part - pw data'
-      call surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype,npts,
-     1   srccoefs,srcvals,rsigma,fname,title)
 
       stop
       end

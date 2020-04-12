@@ -2,8 +2,8 @@
 EXEC = int2-ooc-green
 
 #HOST = osx-gfortran
-#HOST=linux-gfortran
-HOST=linux-gfortran-openmp
+HOST=linux-gfortran
+#HOST=linux-gfortran-openmp
 #HOST=linux-ifort
 
 ifeq ($(HOST),osx-gfortran)
