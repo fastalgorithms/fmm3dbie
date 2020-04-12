@@ -2,7 +2,9 @@
 
 ## FMM-accelerated boundary integral equation solvers
 
-<img src="docs/plane.png" width="50%" align="center"/>
+<p align="center"
+<img src="docs/plane.png" width="50%"/>
+</p>
 
 
 Currently supports high-order triangulation of smooth surfaces
