@@ -2,9 +2,7 @@
 
 ## FMM-accelerated boundary integral equation solvers
 
-<p align="center">
-<img width="50%" src="docs/plane.png"/>
-</p>
+<img stype="float: center;" width="50%" src="docs/plane.png"/>
 
 
 Currently supports high-order triangulation of smooth surfaces
@@ -15,7 +13,7 @@ Upcoming support for:
 -  High order triangulation of surfaces with edges and corners
 
 
-This repository has two external dependencies - [FMM3D](https://fmm3d.readthedocs.io/en/latest)
+This repository has an external dependency - [FMM3D](https://fmm3d.readthedocs.io/en/latest)
 
 Make sure you have the shared object for the FMM library installed and
 located in an appropriate location (`/usr/local/lib` on MacOSX, and
