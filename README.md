@@ -3,7 +3,7 @@
 ## FMM-accelerated boundary integral equation solvers
 
 <p>
-<img src="docs/plane.png" width=50%/>
+<img src="docs/plane.png" width=50% align="center"/>
 </p>
 
 
