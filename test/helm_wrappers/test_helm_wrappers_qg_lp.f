@@ -101,18 +101,6 @@ c
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
-      open(unit=18,file='../../geometries/sphere_192_o03.go3')
-      write(18,*) norder
-      write(18,*) npatches
-      do j=1,12
-        do i=1,npts
-          write(18,*) srcvals(j,i)
-        enddo
-      enddo
-      close(18)
-      stop
-
-
 
 
       allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
@@ -120,15 +108,6 @@ c
 
       call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
      1     srccoefs,cms,rads)
-
-cc      do i=1,npatches
-cc        rr = (xyz_in(1)-cms(1,i))**2 + (xyz_in(2)-cms(2,i))**2 + 
-cc     1    (xyz_in(3)-cms(3,i))**2
-cc        write(34,*) i,sqrt(rr),rads(i)
-cc      enddo
-cc
-cc      stop
-
 
       allocate(sigma(npts),uval(npts),dudnval(npts))
 
@@ -295,6 +274,9 @@ c
 
       call prin2('error in greens identity=*',err,1)
 
+      i1 = 0
+      if(err.lt.1.0d-3) i1 = 1
+
       allocate(potslp2(npts))
 
       zpars(2) = 1.0d0
@@ -316,12 +298,18 @@ c
 
       call prin2('error in simpler calling interface for lp eval=*',
      1   errl2,1)
+
+      i2 = 0
+      if(errl2.lt.1.0d-12) i2 = 1
+      ntests = 2
+
+      nsuccess = i1+i2
+
+      open(unit=33,file='../../print_testres.txt',access='append')
+      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
+     1  ' out of ',ntests,' in helm_wrappers testing suite'
+      close(33)
       
-
-
-
-
-
       stop
       end
 

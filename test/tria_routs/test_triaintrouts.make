@@ -1,5 +1,5 @@
 
-EXEC = triaintrouts
+EXEC = int2-triaintrouts
 
 #HOST = osx
 HOST=linux-gfortran

@@ -1,11 +1,19 @@
       implicit real *8 (a-h,o-z)
 
-      call test_get_uni(isuccess0,isuccess1)
-      call test_setdecomp(isuccess)
+      ntests = 3
+      call test_get_uni(i1,i2)
+      call test_setdecomp(i3)
+
+      nsuccess = i1+i2+i3
+
+      open(unit=33,file='../../print_testres.txt')
+      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
+     1  ' out of ',ntests,' in common testing suite'
+      close(33)
+      
 
       stop
       end
-
 
 
 
@@ -210,5 +218,5 @@ c
 
       if(isuccess.eq.1) call prinf('test setdecomp passed*',i,0)
 
-      stop
+      return
       end

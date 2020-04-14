@@ -10,18 +10,18 @@ Boundary integral solvers in 3D (BIE3D)
     :width: 60%
     :align: center
 	    
-`BIE3D <https://gitlab.com/fastalgorithms/solvers3d>`_ 
-is a set of libraries to solve elliptic boundary value
-problems on surfaces inthree dimensions.
+`fmm3dbie <https://gitlab.com/fastalgorithms/fmm3dbie>`_ 
+is a set of libraries to solve constant coefficient elliptic boundary value
+problems on surfaces in three dimensions.
 The library currently supports Dirichlet and Neumann boundary value
-problems for Laplace, Helmholtz, Yukawa, Maxwell and Stokes
+problems for Laplace, Helmholtz, and Yukawa
 equations on multi-core shared memory machines.
 The library provides support for evaluating layer potentials on and
 off the surface using locally corrected precomputed quadratures, 
 FMM accelerated iterative solvers, interfaces for matrix entry
 generation for dense and fast direct solvers.
 The library is written in Fortran,
-and has wrappers for C, and Python.
+and has wrappers for Python.
 As an example, given a domain $\Omega \in \mathbb{R}^{3}$ 
 whose boundary is $\Gamma$,
 and a function $g$ defined on $\Gamma$, the interior Dirichlet
@@ -57,6 +57,20 @@ the unknown density $\sigma$
    -\frac{1}{2} \sigma + ik S_{k}[\sigma] + D_{k}[\sigma] = g \quad
    x \in \Gamma \, .
 
+The above integral equation then can be solved using an iterative solver
+such as GMRES, where the layer potentials $ik S_{k}[\sigma] +
+D_{k}[\sigma]$ are evaluated using FMM
+accelerated locally corrected quadrature wrappers provided in this
+library. 
+
+The library currently supports high order triangulations of surfaces
+stored in the .go3 format. In this setup each map from the standard 
+right triangle is stored at order $p$ Vioreanu-Rokhlin nodes. 
+The input format currently assumes that each patch is discretized using
+the same order nodes. Upcoming support will be provided for
+triangulations stored in .gmsh
+format, and .step format, and quadrilaterizations in all of the above
+formats.
 
 .. toctree::
    :maxdepth: 2

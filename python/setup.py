@@ -5,27 +5,19 @@ from numpy.distutils.core import setup
 from numpy.distutils.core import Extension
 from sys import platform
 
-pkg_name = "solvers3dpy"
+pkg_name = "bie-solvers3dpy"
 
 list_files=[]
 list_files.append('../src/helm_wrappers/helm_comb_dir.f')
 list_files.append('../src/common/sparse_reps.f')
 list_files.append('../src/surface_routs/surf_routs.f90')
 
-FAST_KER = os.getenv('FAST_KER')
-FFLAGS = os.getenv('FFLAGS')
-
 FLIBS=[]
-FLIBS.append('-lm')
-FLIBS.append('-lgomp')
-FLIBS.append('-lfmm3d')
-FLIBS.append('-L../lib')
+FLIBS.append('-lsolvers3d')
+if platform == "darwin":
+    FLIBS.append('-L/usr/local/lib')
 if platform == "linux" or platform == "linux2":
     FLIBS.append('-lopenblas')
-FLIBS.append('../lib-static/libsolvers3d.a')
-
-FFLAGS = FFLAGS.rstrip().split(' ')
-FFLAGS = list(filter(None,FFLAGS))
 
 helm = []
 com = []
@@ -43,8 +35,8 @@ ext_helm = Extension(
     name='helm3d_dir',
     sources=list_files,
     f2py_options=['only:']+helm+com+surf+[':'],
-    extra_f77_compile_args=FFLAGS,
-    extra_f90_compile_args=FFLAGS,
+#    extra_f77_compile_args=FFLAGS,
+#    extra_f90_compile_args=FFLAGS,
     extra_link_args=FLIBS
 )
 
