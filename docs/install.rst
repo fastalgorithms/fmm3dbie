@@ -40,9 +40,9 @@ in ``lib-static/`` and some fortran test drivers in ``test/``, after which it
 runs the test programs. The last 5 lines of the terminal output should be::
 
    cat print_testres.txt
-   Successfully completed 2 out of 2 tests in common testing suite
+   Successfully completed 3 out of 3 tests in common testing suite
    Successfully completed 2 out of 2 tests in helm_wrappers testing suite
-   Successfully completed 16 out of 16 tests in tria_routs testing suite
+   Successfully completed 13 out of 13 tests in tria_routs testing suite
    rm print_testres.txt
 
 .. note ::
