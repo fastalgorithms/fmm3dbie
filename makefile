@@ -56,7 +56,7 @@ endif
 -include make.inc
 
 # multi-threaded libs & flags needed
-ifeq ($(OMP),ON)
+ifneq ($(OMP),OFF)
 CFLAGS += $(OMPFLAGS)
 FFLAGS += $(OMPFLAGS)
 MFLAGS += $(MOMPFLAGS)
@@ -127,6 +127,7 @@ default: usage
 usage:
 	@echo "Makefile for FMM3D. Specify what to make:"
 	@echo "  make lib - compile the main library (in lib/ and lib-static/)"
+	@echo "  make test - compile and run validation tests (will take around 30 secs)"
 	@echo "  make python - compile and test python interfaces"
 	@echo "  make python3 - compile and test python interfaces using python3"
 	@echo "  make objclean - removal all object files, preserving lib & MEX"
@@ -159,6 +160,25 @@ $(DYNAMICLIB): $(OBJS)
 	mv $(DYNAMICLIB) lib/
 
 
+#
+# testing routines
+#
+
+test: $(STATICLIB) test/com test/hwrap test/tria
+	cd test/common; ./int2-com
+	cd test/helm_wrappers; ./int2-helm
+	cd test/tria_routs; ./int2-tria
+	cat print_testres.txt
+	rm print_testres.txt
+
+test/com:
+	$(FC) $(FFLAGS) test/common/test_common.f -o test/common/int2-com $(STATICLIB) $(LIBS) 
+
+test/hwrap:
+	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm $(STATICLIB) $(LIBS) 
+
+test/tria:
+	$(FC) $(FFLAGS) test/tria_routs/test_triaintrouts.f -o test/tria_routs/int2-tria $(STATICLIB) $(LIBS) 
 
 #python
 python: $(DYNAMICLIB)
@@ -170,10 +190,14 @@ python3: $(STATICLIB)
 
 clean: objclean
 	rm -f lib-static/*.a lib/*.so
+	rm -f test/common/int2-com
+	rm -f test/helm_wrappers/int2-helm
+	rm -f test/tria_routs/int2-tria
 	rm -f python/*.so
 	rm -rf python/build
 	rm -rf python/fmm3dpy.egg-info
 
 objclean: 
 	rm -f $(OBJS) $(COBJS) $(TOBJS)
-	rm -f test/*.o examples/*.o c/*.o
+	rm -f test/helm_wrappers/*.o test/common/*.o 
+	rm -f test/tria_routs/*.o examples/helm_dir/*.o 
