@@ -161,8 +161,8 @@ $(DYNAMICLIB): $(OBJS)
 
 
 #python
-python: $(STATICLIB)
-	cd python && export FAST_KER=$(FAST_KER) && export FLIBS='$(LIBS)' && export FFLAGS='$(FFLAGS)' && pip install -e . 
+python: $(DYNAMICLIB)
+	cd python && pip install -e . 
 
 #python
 python3: $(STATICLIB)
