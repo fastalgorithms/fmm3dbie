@@ -102,8 +102,7 @@ c>              relevant entries for column i begin
 c> @param[out] iper: (irow,jcol) corresponding to row_ind(iper(i))
 c>          is the same as (irow,jcol) corresponding to col_ind(i)
 c>
-c> @todo 
-c> openmp version
+c> @todo openmp version
 c------------------------------------------------------------
       subroutine conv_to_csc(nent,m,iind,jind,col_ptr,row_ind)
       implicit none
