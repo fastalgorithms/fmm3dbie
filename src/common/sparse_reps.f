@@ -1,68 +1,50 @@
 c
-c              rsc_to_csc - convert a row sparse compressed data
-c               structure to a column sparse compressed data 
-c               structure or vice vrsa
 c
-c
-c              conv_to_csc - convert a given set of (i,j) indices
-c                 to csc format
-c
+c This file contains the following user callable routines:
+c - conv_to_csc: convert a given set of (i,j) indices
+c              to csc format
+c - rsc_to_csc: convert a row sparse compressed data
+c                 structure to a column sparse compressed data 
+c                 structure or vice vrsa
 c-----------------------------------------------------
 c
 c
 c
 c
 c
-
+c-------------------------------------------------
+c> @brief
+c> Convert a row sparse compressed representation to
+c> a column sparse compressed representation or vice-vrsa
+c>
+c> @param[in] ncol: number of columns
+c> @param[in] nrow: number of rows
+c> @param[in] nnz: number of non-zero entries in row sparse format
+c> @param[in] row_ptr: row_ptr(i) indiciates location in col_ind
+c>               where relevant entries corresponding to row i begin
+c> @param[in] col_ind: list of column indices. 
+c>              (i,col_ind(row_ptr(i):row_ptr(i+1)-1)) are the non-zero
+c>              entries
+c> @param[out] col_ptr: col_ptr(i) indicates location in row_ind where
+c>              relevant entries for column i begin
+c> @param[out] row_ind: list of row_indices
+c>          (row_ind(row_ptr(i):row_ptr(i+1)-1),i) are 
+c>            all the non-zero entries
+c> @param[out] iper: (irow,jcol) corresponding to row_ind(iper(i))
+c>          is the same as (irow,jcol) corresponding to col_ind(i)
+c> 
+c> @todo openmp version, python interface
+c>-------------------------------------------------
       subroutine rsc_to_csc(ncol,nrow,nnz,row_ptr,col_ind,
      1    col_ptr,row_ind,iper)
-c
-c
-c
-c       convert a row sparse compressed representation
-c        to a column sparse compressed representation
-c        or vice-vrsa
-c
-c     input
-c       ncol - integer
-c          number of columns
-c       nrow - integer
-c          number of rows
-c       nnz - integer
-c          number of non-zero entries in row sparse
-c          compressed format
-c       row_ptr - integer (nrow+1)
-c          row_ptr(i) indicates location in col_ind
-c          where relevant entries corresponding
-c          to row i begin
-c       col_ind - integer(nnz)
-c          list of column indices. 
-c          (i,col_ind(row_ptr(i):row_ptr(i+1)-1)) are 
-c            all the non-zero entries
-c       
-c      output
-c        col_ptr - integer (nsrc+1)
-c          col_ptr(i) indicates location in row_ind
-c           where relevant entries for column i 
-c           begin
-c
-c       row_ind - integer(nnz)
-c          list of row indices. 
-c          (row_ind(row_ptr(i):row_ptr(i+1)-1),i) are 
-c            all the non-zero entries
-c
-c       iper - integer(nnz)
-c          (irow,jcol) corresponding to row_ind(iper(i))
-c            is the same as (irow,jcol) corresponding to
-c            col_ind(i)
-c
+      implicit real *8 (a-h,o-z)
+      integer, intent(in) :: ncol,nnz,nrow
+      integer, intent(in) :: row_ptr(nrow+1),col_ind(nnz)
+      integer, intent(out) :: col_ptr(ncol+1),row_ind(nnz)
+      integer, intent(out) :: iper(nnz)
 
-
-
-      implicit real *8 (a-h,o-z)      
-       integer ncol,nnz,row_ptr(nrow+1),col_ind(nnz)
-       integer col_ptr(ncol+1),row_ind(nnz),iper(nnz)
-       integer, allocatable :: nslr(:)
+      integer, allocatable :: nslr(:)
+      integer i,itarg,ictr
 
       allocate(nslr(ncol))
       lflg = nnz
@@ -103,7 +85,26 @@ c
 c
 c
 c
-c-----------------------------------
+c
+c----------------------------------------------------------
+c> @brief
+c> Convert a list of (i,j) matrix entries to column sparse
+c> compressed format
+c>
+c> @author manas rachh
+c> 
+c> @param[in] nent: number of entries (i,j)
+c> @param[in] m: number of columns in the matrix
+c> @param[in] iind: list of row indices of the (i,j) tuples
+c> @param[in] jind: list of column indices of the (i,j) tuples
+c> @param[out] col_ptr: col_ptr(i) indicates location in row_ind where
+c>              relevant entries for column i begin
+c> @param[out] iper: (irow,jcol) corresponding to row_ind(iper(i))
+c>          is the same as (irow,jcol) corresponding to col_ind(i)
+c>
+c> @todo 
+c> openmp version
+c------------------------------------------------------------
       subroutine conv_to_csc(nent,m,iind,jind,col_ptr,row_ind)
       implicit none
 c
@@ -111,7 +112,8 @@ c
 c
 cf2py  intent(in) nent,m,iind,jind
 cf2py  intent(out) col_ptr,row_ind
-      integer nent,m,iind(nent),jind(nent),col_ptr(m+1),row_ind(nent)
+      integer, intent(in) :: nent,m,iind(nent),jind(nent)
+      integer, intent(out) :: col_ptr(m+1),row_ind(nent)
       integer, allocatable :: jsort(:),jper(:),icnt(:)
       integer i,icur,icur0,icur1
 

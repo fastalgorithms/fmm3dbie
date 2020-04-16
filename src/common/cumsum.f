@@ -1,24 +1,19 @@
-c
-c
-c        compute the cumulative sum of an integer array
-c
+c-------------------------------------------
+c> @brief
+c> Compute the cumulative sum of a vector:
+c>
+c> \f{equation*}{b_{i} = \sum_{j=1}^{i} a_{j} \f}
+c>
+c> @param[in] n: length of array
+c> @param[in] a: input array
+c> @param[out] b: cumulative sum of input array
+c------------------------------------------------
       subroutine cumsum(n,a,b)
-c
-c
-c       TODO: need to make this routine openmp
-c
-c       input:
-c         n - number of elements
-c         a - integer(n)
-c              input array
-c
-c       output:
-c         b - integer(n)
-c            b(i) = sum_{j=1}^{i} a(j)
-c            
-c
       implicit none
-      integer a(n),b(n),n,i,isum
+      integer, intent(in) :: n,a(n)
+      integer, intent(out) :: b(n)
+
+      integer i,isum
 
       isum = 0
 
