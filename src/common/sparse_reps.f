@@ -34,7 +34,7 @@ c> @param[out] iper: (irow,jcol) corresponding to row_ind(iper(i))
 c>          is the same as (irow,jcol) corresponding to col_ind(i)
 c> 
 c> @todo openmp version, python interface
-c>-------------------------------------------------
+c-------------------------------------------------
       subroutine rsc_to_csc(ncol,nrow,nnz,row_ptr,col_ind,
      1    col_ptr,row_ind,iper)
       implicit real *8 (a-h,o-z)
