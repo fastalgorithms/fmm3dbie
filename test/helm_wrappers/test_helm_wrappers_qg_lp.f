@@ -112,9 +112,10 @@ c
       allocate(sigma(npts),uval(npts),dudnval(npts))
 
       do i=1,npts
-        call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,uval(i))
-        call h3d_sprime(xyz_out,srcvals(1,i),dpars,zpars,ipars,
-     1     dudnval(i))
+        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,
+     1     ipars,uval(i))
+        call h3d_sprime(xyz_out,12,srcvals(1,i),0,dpars,1,zpars,0,
+     1     ipars,dudnval(i))
       enddo
 
       ndtarg = 3

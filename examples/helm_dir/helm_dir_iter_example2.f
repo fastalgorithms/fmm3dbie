@@ -64,9 +64,11 @@
 
       do i=1,npts
         if(ifinout.eq.0) 
-     1     call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
+     1     call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,
+     2       ipars,rhs(i))
         if(ifinout.eq.1) 
-     1     call h3d_slp(xyz_in,srcvals(1,i),dpars,zpars,ipars,rhs(i))
+     1     call h3d_slp(xyz_in,3,srcvals(1,i),0,dpars,1,zpars,0,
+     1     ipars,rhs(i))
         rhs(i) = rhs(i)
         sigma(i) = 0
       enddo
@@ -91,13 +93,15 @@
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,xyz_in,dpars,zpars,ipars,potex)
+      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
       pot = 0
       do i=1,npts
         if(ifinout.eq.0) 
-     1     call h3d_comb(srcvals(1,i),xyz_in,dpars,zpars,ipars,ztmp)
+     1     call h3d_comb(srcvals(1,i),3,xyz_in,0,dpars,3,zpars,1,ipars,
+     2      ztmp)
         if(ifinout.eq.1) 
-     1     call h3d_comb(srcvals(1,i),xyz_out,dpars,zpars,ipars,ztmp)
+     1     call h3d_comb(srcvals(1,i),3,xyz_out,0,dpars,3,zpars,1,ipars,
+     1     ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 
@@ -274,7 +278,8 @@ c
       do ipatch=1,npatches
         do j=1,npols
           i = (ipatch-1)*npols + j
-          call h3d_sprime(xyzout,srcvals(1,i),dpars,zk,ipars,val)
+          call h3d_sprime(xyzout,3,srcvals(1,i),0,dpars,1,zk,0,ipars,
+     1       val)
           call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
           ds = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
           ra = ra + real(val)*wts(i)

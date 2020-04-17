@@ -127,8 +127,10 @@ c
 
 
       do i=1,npts
-        call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
+        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,ipars,
+     1     rhs(i))
       enddo
+
       
 
       eps = 0.51d-6
@@ -225,6 +227,7 @@ c
         call helm_comb_dir_fds_matgen(npatches,norders,ixyzs,iptype,
      1     npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,
      2     zfds,nent,col_ptr,row_ind,zent)
+
         
        
 cc        call prinf('col_ptr=*',col_ptr,npts+1)
@@ -272,10 +275,11 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,xyz_in,dpars,zpars,ipars,potex)
+      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
       pot = 0
       do i=1,npts
-        call h3d_comb(srcvals(1,i),xyz_in,dpars,zpars,ipars,ztmp)
+        call h3d_comb(srcvals(1,i),3,xyz_in,0,dpars,3,zpars,0,ipars,
+     1     ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 

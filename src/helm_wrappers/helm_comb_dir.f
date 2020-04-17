@@ -185,6 +185,7 @@ c
       real *8 targs(ndtarg,ntarg)
       complex *16 zpars(3)
       integer nnz,ipars
+      integer ndd,ndz,ndi
       real *8 dpars
       integer row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
       complex *16 wnear(nquad)
@@ -207,6 +208,10 @@ c
 
       alpha = zpars(2)
       beta = zpars(3)
+
+      ndz = 3
+      ndi = 0
+      ndd = 0
       if(iquadtype.eq.1) then
         fker => h3d_comb
         ipv = 1
@@ -222,13 +227,15 @@ c
           call getnearquad_ggq_compact_guru(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
      1     ipatch_id,uvs_targ,
-     1     eps,fker,dpars,zpars,ipars,nnz,row_ptr,col_ind,iquad,
+     1     eps,fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,
+     1     col_ind,iquad,
      1     rfac0,nquad,wnear)
         else
           call getnearquad_ggq_pv_guru(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
      1     ipatch_id,uvs_targ,
-     1     eps,fker,dpars,zpars,ipars,nnz,row_ptr,col_ind,iquad,
+     1     eps,fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,
+     1     col_ind,iquad,
      1     rfac0,nquad,wnear)
         endif
       endif
@@ -1994,6 +2001,9 @@ c
      1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),
      2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
+
+      
+
       npts_over = ixyzso(npatches+1)-1
 
       nquad = iquad(nnz+1)-1
@@ -2230,6 +2240,7 @@ c        temporary variables
 c
       complex *16 zid
       integer i,j,k,l,ipatch,npols
+      integer ndd,ndz,ndi
       integer ilstart,ilend,istart,iend
       integer irow_ptr,icol_ind,iiquad,inovers,iixyzso
       integer npts_over,nnz,nquad
@@ -2262,15 +2273,21 @@ c
       alpha = zfds(2)
       beta = zfds(3)
       fker => h3d_comb
+      ndz = 3
       ifcharge = 1
       ifdipole = 1
       if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
         fker=>h3d_slp
+        ndz = 1
         ifdipole = 0
       else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
         fker=>h3d_dlp
+        ndz = 1
         ifcharge = 0
       endif
+
+      ndd = 0
+      ndi = 0
 
       npts_over = ifds(1)
       nnz = ifds(2)
@@ -2384,8 +2401,8 @@ cc        call prin2('zfds=*',zfds,6)
         do i=1,naintbc
           itind = aintbc(i)
           do j=1,npolso
-            call fker(srcover(1,j),srcvals(1,itind),dpars,zfds,
-     1          ipars,wquadf(j,i))
+            call fker(srcover(1,j),3,srcvals(1,itind),ndd,dpars,ndz,
+     1        zfds,ndi,ipars,wquadf(j,i))
             wquadf(j,i) = wquadf(j,i)*wtsover(j)
           enddo
         enddo

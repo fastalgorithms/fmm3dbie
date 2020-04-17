@@ -10,14 +10,14 @@ ifeq ($(HOST),osx-gfortran)
 FC = gfortran
 FFLAGS = -fPIC -O3 -march=native -c -w --openmp
 FLINK = gfortran -w --openmp -o $(EXEC)
-FEND = -L../../lib -lfmm3d -framework accelerate
+FEND = -L/usr/local/lib -lfmm3d -framework accelerate
 endif
 
 ifeq ($(HOST),linux-gfortran)
 FC = gfortran
 FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math -c -w  
 FLINK = gfortran -w -o $(EXEC) 
-FEND = -L../../lib -lopenblas -lfmm3d -L/usr/local/lib
+FEND = -L/usr/local/lib -lopenblas -lfmm3d -L/usr/local/lib
 endif
 
 
@@ -25,14 +25,14 @@ ifeq ($(HOST),linux-gfortran-openmp)
 FC = gfortran
 FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math --openmp -c -w  
 FLINK = gfortran -w --openmp -o $(EXEC) 
-FEND = -L../../lib -lfmm3d -lopenblas
+FEND = -L/usr/local/lib -lfmm3d -lopenblas
 endif
 
 ifeq ($(HOST),linux-ifort)
 FC = ifort
 FFLAGS = -O1 -g -xHost -c -w -xW -qopenmp
 FLINK = ifort -qopenmp -w -mkl -o $(EXEC)
-FEND = -L../lib -lfmm3d
+FEND = -L/usr/local/lib -lfmm3d
 endif
 
 

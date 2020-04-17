@@ -240,6 +240,8 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   real *8 dpars
   integer ipars
 
+  integer ndd,ndz,ndi,ndt
+
   real *8, allocatable ::  srctmp(:,:)
   complex *16, allocatable :: sigmatmp(:),vcomp(:,:),vref(:,:)
   complex *16 val
@@ -258,6 +260,12 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   if(ikerorder.eq.-1) fker => h3d_slp
   if(ikerorder.eq.0) fker => h3d_dlp
   if(ikerorder.eq.1) fker => h3d_qlp
+
+
+  ndd = 0
+  ndz = 1
+  ndi = 0
+  ndt = 3
 
   iseed1 = 1001
   iseed2 = 3042
@@ -369,7 +377,8 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
       vcomp(l,itarg) = 0
     enddo
     do j=1,npolsf
-      call fker(srctmp(1,j),targtest(1,itarg),dpars,zk,ipars,val)
+      call fker(srctmp(1,j),ndt,targtest(1,itarg),ndd,dpars,ndz,zk,ndi, &
+        ipars,val)
       do l=1,npols
         vcomp(l,itarg) = vcomp(l,itarg)+val*pmat(l,j)*qwts(j)
       enddo
@@ -419,7 +428,8 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
         vref(l,itarg) = 0
       enddo
       do j=1,npolsf
-        call fker(srctmp(1,j),targtest(1,itarg),dpars,zk,ipars,val)
+        call fker(srctmp(1,j),ndt,targtest(1,itarg),ndd,dpars,ndz,zk,ndi, &
+        ipars,val)
         do l=1,npols
           vref(l,itarg) = vref(l,itarg)+val*pmat(l,j)*qwts(j)
         enddo

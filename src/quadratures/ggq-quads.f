@@ -19,8 +19,8 @@ c
 
       subroutine getnearquad_ggq_compact_guru(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targvals,
-     2   ipatch_id,uvs_targ,eps,fker,dpars,zpars,ipars,nnz,row_ptr,
-     3   col_ind,iquad,rfac0,nquad,wnear)
+     2   ipatch_id,uvs_targ,eps,fker,ndd,dpars,ndz,zpars,ndi,ipars,
+     3   nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
 c
 c       this subroutine generates the near field quadrature
 c       for the given kernel which is assumed to be
@@ -355,7 +355,8 @@ c
         if(iptype(ipatch).eq.1) 
      1      call ctriaints(eps_adap,istrat,intype,ntest0,norder,npols,
      1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
-     2      itargptr,ntarg_n,norder,npols,fker,dpars,zpars,ipars,
+     2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,
      3      nqorder,ntrimax,rfac,sints_n,ifmetric,
      3      rn1,n2)
         
@@ -368,7 +369,8 @@ c
         if(iptype(ipatch).eq.1) 
      1     call ctriaints_wnodes(ntest0,norder,npols,
      1     srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
-     2      itargptr,ntarg_f,norder,npols,fker,dpars,zpars,ipars,
+     2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
+     3      ndi,ipars,
      3      npts_f,qnodes,qwts,sints_f)
         
         call zrmatmatt_slow(ntarg_f,npols,npols,sints_f,umatr,svtmp_f)
@@ -404,7 +406,8 @@ c
           if(ipatch.eq.jpatch) then
             call get_ggq_self_quad_pt(norder,npols,uvs_targ(1,jtarg),
      1      umatr,srccoefs(1,istart),ndtarg,targvals(1,jtarg),
-     2      rad(ilrad(irad)),nlrad(irad),fker,dpars,zpars,ipars,
+     2      rad(ilrad(irad)),nlrad(irad),fker,ndd,dpars,ndz,zpars,
+     2      ndi,pars,
      2      wnear(iqstart+1))
           endif
 
@@ -441,8 +444,8 @@ c
 
       subroutine getnearquad_ggq_pv_guru(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targvals,
-     2   ipatch_id,uvs_targ,eps,fker,dpars,zpars,ipars,nnz,row_ptr,
-     3   col_ind,iquad,rfac0,nquad,wnear)
+     2   ipatch_id,uvs_targ,eps,fker,ndd,dpars,ndz,zpars,ndi,ipars,
+     3   nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
 c
 c       this subroutine generates the near field quadrature
 c       for the given kernel which is assumed to be
@@ -779,7 +782,8 @@ c
         if(iptype(ipatch).eq.1) 
      1      call ctriaints(eps_adap,istrat,intype,ntest0,norder,npols,
      1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
-     2      itargptr,ntarg_n,norder,npols,fker,dpars,zpars,ipars,
+     2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,
+     3      ndi,ipars,
      3      nqorder,ntrimax,rfac,sints_n,ifmetric,
      3      rn1,n2)
         
@@ -792,7 +796,8 @@ c
         if(iptype(ipatch).eq.1) 
      1     call ctriaints_wnodes(ntest0,norder,npols,
      1     srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
-     2      itargptr,ntarg_f,norder,npols,fker,dpars,zpars,ipars,
+     2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
+     3      ndi,ipars,
      3      npts_f,qnodes,qwts,sints_f)
         
         call zrmatmatt_slow(ntarg_f,npols,npols,sints_f,umatr,svtmp_f)
@@ -829,8 +834,8 @@ c
             call get_ggq_self_quad_pv_pt(norder,npols,
      1      uvs_targ(1,jtarg),
      1      umatr,srccoefs(1,istart),ndtarg,targvals(1,jtarg),
-     2      rad(ilrad(irad)),nlrad(irad),fker,dpars,zpars,ipars,
-     2      wnear(iqstart+1))
+     2      rad(ilrad(irad)),nlrad(irad),fker,ndd,dpars,ndz,zpars,ndi,
+     2      ipars,wnear(iqstart+1))
           endif
 
           if(ipatch.ne.jpatch) then
@@ -863,7 +868,7 @@ c
 
       subroutine get_ggq_self_quad(norder,npols,uvs,umat,vmat,
      1   srccoefs,rad,lrad,
-     1   fker,dpars,zpars,ipars,zquad)
+     1   fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
 c       this is the replacement for xtri_zself 
@@ -888,9 +893,10 @@ c
       real *8 uvs(2,npols),umat(npols,npols)
       real *8 vmat(npols,npols)
       complex *16 zquad(*)
-      integer ipars(*)
-      real *8 dpars(*)
-      complex *16 zpars(*)
+      integer ndd,ndz,ndi
+      integer ipars(ndi)
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
       real *8, allocatable :: srcvals(:,:)
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
@@ -980,8 +986,8 @@ c
           srctmp(11,i) = srctmp(11,i)/rr
           srctmp(12,i) = srctmp(12,i)/rr
 
-          call fker(srctmp(1,i),srcvals(1,inode),dpars,
-     2       zpars,ipars,fval)
+          call fker(srctmp(1,i),ndtarg,srcvals(1,inode),ndd,dpars,
+     2       ndz,zpars,ndi,ipars,fval)
            
           do j=1,npols
             fint(j,inode) = fint(j,inode) + fval*sigvals(j,i)*qwts(i)
@@ -1005,7 +1011,7 @@ c
 
       subroutine get_ggq_self_quad_pt(norder,npols,uvs,umat,
      1   srccoefs,ndtarg,targ,rad,lrad,
-     1   fker,dpars,zpars,ipars,zquad)
+     1   fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
 c       this is the replacement for xtri_zself 
@@ -1031,9 +1037,10 @@ c
       real *8 targ(ndtarg)
       real *8 uvs(2),umat(npols,npols)
       complex *16 zquad(*)
-      integer ipars(*)
-      real *8 dpars(*)
-      complex *16 zpars(*)
+      integer ndi,ndd,ndz
+      integer ipars(ndi)
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
@@ -1106,8 +1113,8 @@ c
         srctmp(11,i) = srctmp(11,i)/rr
         srctmp(12,i) = srctmp(12,i)/rr
 
-        call fker(srctmp(1,i),targ,dpars,
-     2         zpars,ipars,fval)
+        call fker(srctmp(1,i),ndtarg,targ,ndd,dpars,
+     2         ndz,zpars,ndi,ipars,fval)
            
         do j=1,npols
           fint(j) = fint(j) + fval*sigvals(j,i)*qwts(i)
@@ -1132,7 +1139,7 @@ c
 
       subroutine get_ggq_self_quad_pt_vec(norder,npols,uvs,umat,
      1   srccoefs,ndtarg,targ,rad,lrad,
-     1   fker,nd,dpars,zpars,ipars,zquad)
+     1   fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
 c       Vectorized version of get_ggq_self_quad_pt_vec
@@ -1152,9 +1159,9 @@ c
       real *8 targ(ndtarg)
       real *8 uvs(2),umat(npols,npols)
       complex *16 zquad(nd,*)
-      integer ipars(*)
-      real *8 dpars(*)
-      complex *16 zpars(*)
+      integer ipars(ndi)
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
@@ -1228,8 +1235,8 @@ c
         srctmp(11,i) = srctmp(11,i)/rr
         srctmp(12,i) = srctmp(12,i)/rr
 
-        call fker(nd,srctmp(1,i),targ,dpars,
-     2         zpars,ipars,fval)
+        call fker(nd,srctmp(1,i),ndtarg,targ,ndd,dpars,
+     2         ndz,zpars,ndi,ipars,fval)
            
         do j=1,npols
           do idim=1,nd
@@ -1256,7 +1263,7 @@ c
 
       subroutine get_ggq_self_quad_pv_pt(norder,npols,uvs,umat,
      1   srccoefs,ndtarg,targ,rad,lrad,
-     1   fker,dpars,zpars,ipars,zquad)
+     1   fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
 c       this is the replacement for xtri_zself 
@@ -1282,9 +1289,9 @@ c
       real *8 targ(ndtarg)
       real *8 uvs(2),umat(npols,npols)
       complex *16 zquad(*)
-      integer ipars(*)
-      real *8 dpars(*)
-      complex *16 zpars(*)
+      integer ipars(ndi)
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
@@ -1357,8 +1364,8 @@ c
         srctmp(11,i) = srctmp(11,i)/rr
         srctmp(12,i) = srctmp(12,i)/rr
 
-        call fker(srctmp(1,i),targ,dpars,
-     2         zpars,ipars,fval)
+        call fker(srctmp(1,i),ndtarg,targ,ndd,dpars,
+     2         ndz,zpars,ndi,ipars,fval)
            
         do j=1,npols
           fint(j) = fint(j) + fval*sigvals(j,i)*qwts(i)
@@ -1383,7 +1390,7 @@ c
 
       subroutine get_ggq_self_quad_pv_pt_vec(norder,npols,uvs,umat,
      1   srccoefs,ndtarg,targ,rad,lrad,
-     1   fker,nd,dpars,zpars,ipars,zquad)
+     1   fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
 c       Vectorized version of get_ggq_self_quad_pv_pt
@@ -1403,9 +1410,9 @@ c
       real *8 targ(ndtarg)
       real *8 uvs(2),umat(npols,npols)
       complex *16 zquad(nd,*)
-      integer ipars(*)
-      real *8 dpars(*)
-      complex *16 zpars(*)
+      integer ipars(ndi)
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
@@ -1479,8 +1486,8 @@ c
         srctmp(11,i) = srctmp(11,i)/rr
         srctmp(12,i) = srctmp(12,i)/rr
 
-        call fker(nd,srctmp(1,i),targ,dpars,
-     2         zpars,ipars,fval)
+        call fker(nd,srctmp(1,i),ndtarg,targ,ndd,dpars,
+     2         ndz,zpars,ndi,ipars,fval)
            
         do j=1,npols
           do idim=1,nd
