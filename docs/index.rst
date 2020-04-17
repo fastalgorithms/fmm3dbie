@@ -76,6 +76,12 @@ formats.
    :maxdepth: 2
 	   
    install
+   lquad
+   surface_reps
+   near_reps
+   wrappers
+   helm_wrappers
+   build_wrappers
+   build_quadratures
    
-
    

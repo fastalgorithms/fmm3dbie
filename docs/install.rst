@@ -59,8 +59,9 @@ link to the FMM library using the ``-lfmm3dbie`` option.
 .. note ::
    On unix/Linux systems, you will need to include the location of
    libfmm3dbie.so in the environment variable LD_LIBRARY_PATH. 
-   This can be set temporarily using ``export
-   LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<path-to-libfmm3dbie>''. 
+   This can be set temporarily using::
+
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<path-to-libfmm3dbie> 
 
 
 
