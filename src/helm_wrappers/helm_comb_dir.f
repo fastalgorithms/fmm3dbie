@@ -1512,7 +1512,6 @@ c
 c         output
 c           niter - integer
 c              number of gmres iterations required for relative residual
-c               to converge to 1e-15
 c          
 c           errs(1:iter) - relative residual as a function of iteration
 c              number
