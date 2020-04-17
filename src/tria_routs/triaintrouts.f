@@ -28,7 +28,7 @@ c
 c
       subroutine ctriaints_wnodes(npatches,norder,npols,
      1   srccoefs,ndtarg,ntarg,xyztarg,itargptr,ntargptr,
-     2   nporder,nppols,fker,dpars,zpars,ipars,nqpts,
+     2   nporder,nppols,fker,ndd,dpars,ndz,zpars,ndi,ipars,nqpts,
      3   qnodes,wts,cintvals)
 c
 c
@@ -43,9 +43,10 @@ c
       real *8 srccoefs(9,npols,npatches),xyztarg(ndtarg,ntarg)
       integer ntarg
       integer itargptr(npatches),ntargptr(npatches)
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*),nqpts
+      integer ndd,ndz,ndi
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi),nqpts
       real *8 qnodes(2,nqpts),wts(nqpts)
 
       complex *16 cintvals(nppols,ntarg)
@@ -134,8 +135,8 @@ c
         do itarg=itargptr(ipatch),itargptr(ipatch)+ntarg0-1
           ii = itarg - itargptr(ipatch)+1
           do j=1,nqpts
-            call fker(srcvals(1,j),xyztarg(1,itarg),dpars,zpars,ipars,
-     1         fval)
+            call fker(srcvals(1,j),ndtarg,xyztarg(1,itarg),ndd,dpars,
+     1         ndz,zpars,ndi,ipars,fval)
             xkernvals(j,ii) = fval*qwts(j)
           enddo
         enddo
@@ -165,7 +166,7 @@ c
      1     npatches,norder,npols,srccoefs,ndtarg,
      2     ntarg,xyztarg,ifp,xyzproxy,
      3     itargptr,ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,
-     3     rat1p,rat2p,rsc1p,fker,dpars,zpars,ipars,
+     3     rat1p,rat2p,rsc1p,fker,ndd,dpars,ndz,zpars,ndi,ipars,
      4     nqorder,rfac,cintvals)
 c
 c
@@ -237,14 +238,17 @@ c        ntrimax - max number of triangles to be used on base triangle
 c        fker - function handle for evaluating the kernel k
 c 
 c               expected calling sequence
-c               fker(y,x,ynorms,dpars,zpars,ipars,f)
+c               fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c               the output is assumed to be complex for the time
 c               being
 c
-c         dpars(*) - real parameters for the fker routine
-c         zpars(*) - complex parameters for the fker routine
-c         ipars(*) - integer parameters for the fker routine
+c         ndd - number of real parameters
+c         dpars(ndd) - real parameters for the fker routine
+c         ndz - number of complex parameters
+c         zpars(ndz) - complex parameters for the fker routine
+c         ndi - number of integer parameters
+c         ipars(ndi) - integer parameters for the fker routine
 c         nqorder - order of quadrature nodes on each subtriangle
 c                   to be used
 c         rfac - distance criterion for deciding whether a triangle
@@ -274,9 +278,10 @@ c
       integer ntargptr(npatches)
       
       external fker
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndz,ndi
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
 
       integer nqorder
       real *8 rfac
@@ -497,8 +502,8 @@ c
               do i=1,nqpols
                 jj = jstart+i
                 ii = npts+i
-                call fker(srcvals(1,jj),xyztarg(1,itarg),
-     1             dpars,zpars,ipars,fkervals(ii))
+                call fker(srcvals(1,jj),ndtarg,xyztarg(1,itarg),
+     1             ndd,dpars,ndz,zpars,ndi,ipars,fkervals(ii))
                 fkervals(ii) = fkervals(ii)*qwts(jj)
                 do j=1,nppols
                   sigmatmp(j,ii) = rsigtmp(j,jj)
@@ -528,7 +533,7 @@ c
      1     npatches,norder,npols,srccoefs,ndtarg,
      2     ntarg,xyztarg,itargptr,ntargptr,nporder,nppols,
      3     ntrimax,rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
-     4     fker,dpars,zpars,ipars,nqorder,cintvals)
+     4     fker,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,cintvals)
 
 c
       implicit none
@@ -548,9 +553,10 @@ c
       integer ntargptr(npatches)
       
       external fker
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndz,ndi
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
 
       real *8 rat1(2,0:norder)
       real *8 rat2(3,0:norder,0:norder)
@@ -705,7 +711,7 @@ c
      3          xyztarg(1,itarg),
      3          rat1,rat2,rsc1,
      3          rat1p,rat2p,rsc1p,
-     3          fker,dpars,zpars,ipars,
+     3          fker,ndd,dpars,ndz,zpars,ndi,ipars,
      3          cintvals(1,itarg))
         enddo
 
@@ -729,7 +735,7 @@ c
      3             ndtarg,xt,
      3             rat1,rat2,rsc1,
      3             rat1p,rat2p,rsc1p,
-     3             fker,dpars,zpars,
+     3             fker,ndd,dpars,ndz,zpars,ndi,
      3             ipars,cintall)
 
 c
@@ -799,9 +805,10 @@ c
       complex *16, allocatable :: ctmp(:)
       complex *16, allocatable :: cvals(:,:)
 
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndz,ndi
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -828,7 +835,8 @@ c
 cc      compute integral at level 0
 c
       do i=1,kpols
-         call fker(srcvals(1,i),xt,dpars,zpars,ipars,fval)
+         call fker(srcvals(1,i),ndtarg,xt,ndd,dpars,ndz,zpars,ndi,
+     1      ipars,fval)
          xkernvals(i) = fval*qwts(i)
          do j=1,ksigpols
             cvals(j,1) = cvals(j,1)+xkernvals(i)*sigvalsdens(j,i)
@@ -851,8 +859,8 @@ c
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,
      3      sigvalsdens,ndtarg,xt,rat1,rat2,rsc1,
      3      rat1p,rat2p,rsc1p,
-     3      fker,dpars,
-     3      zpars,ipars,cvals,istack,nproclist0,
+     3      fker,ndd,dpars,
+     3      ndz,zpars,ndi,ipars,cvals,istack,nproclist0,
      4      xkernvals,cintall)
       
       return
@@ -868,8 +876,8 @@ c
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3      ndtarg,xt,rat1,rat2,rsc1,
      3      rat1p,rat2p,rsc1p,
-     3      fker,dpars,
-     3      zpars,ipars,cvals,istack,nproclist0,xkernvals,
+     3      fker,ndd,dpars,ndz,
+     3      zpars,ndi,ipars,cvals,istack,nproclist0,xkernvals,
      4      cintall)
       
 
@@ -891,9 +899,10 @@ c
       complex *16 cintall(nppols),fval,ctmp(nppols)
       complex *16 cvals(nppols,ntmax)
 
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndz,ndi
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -984,8 +993,8 @@ c
           istart = (itric1-1)*kpols
           do j=1,kfine
             jj=j+istart
-            call fker(srcvals(1,jj),xt,dpars,
-     1         zpars,ipars,fval)
+            call fker(srcvals(1,jj),ndtarg,xt,ndd,dpars,
+     1         ndz,zpars,ndi,ipars,fval)
             xkernvals(jj) = fval*qwts(jj)
           enddo
 cc          call prin2('xkernvals=*',xkernvals(istart+1),kfine)
@@ -1069,7 +1078,7 @@ c
      2     ntarg,xyztarg,ifp,xyzproxy,
      3     itargptr,ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,
      3     rat1p,rat2p,rsc1p,
-     3     fker,dpars,zpars,ipars,
+     3     fker,ndd,dpars,ndz,zpars,ndi,ipars,
      4     nqorder,rfac,cintvals)
 c
 c
@@ -1135,9 +1144,9 @@ c        ntargptr(npatches) - number of relevant targets for patch i
 c        ntrimax - max number of triangles to be used on base triangle
 c        fker - function handle for evaluating the kernel k
 c 
-c               expected calling sequence
-c               fker(y,x,ynorms,dpars,zpars,ipars,f)
 c               
+c               expected calling sequence
+c               fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               the output is assumed to be complex for the time
 c               being
 c
@@ -1173,9 +1182,10 @@ c
       integer ntargptr(npatches)
       
       external fker
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndz,ndi
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
 
       integer nqorder
       real *8 rfac
@@ -1431,8 +1441,8 @@ c
               enddo
               do i=1,nqpols
                 jj = jstart+i
-                call fker(srcvals(1,jj),xyztarg(1,itarg),
-     1              dpars,zpars,ipars,xkernvals(jj))
+                call fker(srcvals(1,jj),ndtarg,xyztarg(1,itarg),
+     1              ndd,dpars,ndz,zpars,ndi,ipars,xkernvals(jj))
                 xkernvals(jj) = xkernvals(jj)*qwts(jj)
                 
                 do j=1,nppols
@@ -1452,7 +1462,7 @@ c
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3      ndtarg,xyztarg(1,itarg),
      3      rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
-     3      fker,dpars,zpars,ipars,cvals,istack,nproclist0,
+     3      fker,ndd,dpars,ndz,zpars,ndi,ipars,cvals,istack,nproclist0,
      4      xkernvals,cintvals(1,itarg))
 
       
@@ -1507,7 +1517,7 @@ c
      2     ntarg,xyztarg,ifp,xyzproxy,
      3     itargptr,ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,
      3     rat1p,rat2p,rsc1p,
-     3     fker,nd,dpars,zpars,ipars,
+     3     fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,
      4     nqorder,rfac,cintvals)
 c
 c
@@ -1574,7 +1584,7 @@ c        ntrimax - max number of triangles to be used on base triangle
 c        fker - function handle for evaluating the kernel k
 c 
 c               expected calling sequence
-c               fker(nd,x,y,dpars,zpars,ipars,f)
+c               fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c               the output is assumed to be nd complex numbers
 c
@@ -1611,9 +1621,10 @@ c
       integer ntargptr(npatches)
       
       external fker
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndi,ndz
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
 
       integer nqorder
       real *8 rfac
@@ -1831,8 +1842,8 @@ c
               do i=1,nqpols
                 jj = jstart+i
                 ii = npts+i
-                call fker(nd,srcvals(1,jj),xyztarg(1,itarg),
-     1             dpars,zpars,ipars,fkervals(1,ii))
+                call fker(nd,srcvals(1,jj),ndtarg,xyztarg(1,itarg),
+     1             ndd,dpars,ndz,zpars,ndi,ipars,fkervals(1,ii))
                 do idim=1,nd
                   fkervals(idim,ii) = fkervals(idim,ii)*qwts(jj)
                 enddo
@@ -1872,7 +1883,7 @@ c
      1     npatches,norder,npols,srccoefs,ndtarg,
      2     ntarg,xyztarg,itargptr,ntargptr,nporder,nppols,ntrimax,
      3     rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
-     3     fker,nd,dpars,zpars,ipars,nqorder,cintvals)
+     3     fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,cintvals)
 
 c
       implicit none
@@ -1892,9 +1903,10 @@ c
       integer ntargptr(npatches)
       
       external fker
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndi,ndz
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
 
       real *8 rat1(2,0:norder)
       real *8 rat2(3,0:norder,0:norder)
@@ -2048,7 +2060,7 @@ c
      2          qwts,sigvals,nporder,nppols,sigvalsdens,ndtarg,
      3          xyztarg(1,itarg),
      3          rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
-     3          fker,nd,dpars,zpars,ipars,
+     3          fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,
      3          cintvals(1,1,itarg))
         enddo
 
@@ -2070,7 +2082,7 @@ c
      1             norder,npols,srccoefs,npmax,srcvals,
      2             qwts,sigvals,nporder,nppols,sigvalsdens,ndtarg,xt,
      3             rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
-     3             fker,nd,dpars,zpars,
+     3             fker,nd,ndd,dpars,ndz,zpars,ndi,
      3             ipars,cintall)
 
 c
@@ -2139,9 +2151,10 @@ c
       complex *16 cintall(nd,npols),fval(nd)
       complex *16, allocatable :: cvals(:,:,:)
 
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*),idim
+      integer ndd,ndz,ndi
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi),idim
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -2172,7 +2185,8 @@ c
 cc      compute integral at level 0
 c
       do i=1,kpols
-         call fker(nd,srcvals(1,i),xt,dpars,zpars,ipars,fval)
+         call fker(nd,srcvals(1,i),ndtarg,xt,ndd,dpars,ndz,zpars,
+     1        ndi,ipars,fval)
          do idim=1,nd
            xkernvals(idim,i) = fval(idim)*qwts(i)
          enddo
@@ -2201,8 +2215,8 @@ c
      1      tvs,da,uvsq,wts,norder,npols,srccoefs,
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3      ndtarg,xt,rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
-     3      fker,nd,dpars,
-     3      zpars,ipars,cvals,istack,nproclist0,
+     3      fker,nd,ndd,dpars,ndz,
+     3      zpars,ndi,ipars,cvals,istack,nproclist0,
      4      xkernvals,cintall)
       
       return
@@ -2217,8 +2231,8 @@ c
      1      ichild_start,tvs,da,uvsq,wts,norder,npols,srccoefs,
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3      ndtarg,xt,rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
-     3      fker,nd,dpars,
-     3      zpars,ipars,cvals,istack,nproclist0,xkernvals,
+     3      fker,nd,ndd,dpars,ndz,
+     3      zpars,ndi,ipars,cvals,istack,nproclist0,xkernvals,
      4      cintall)
       
 
@@ -2240,9 +2254,10 @@ c
       complex *16 cintall(nd,nppols),fval(nd),ctmp(nd,nppols)
       complex *16 cvals(nd,nppols,ntmax)
 
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndz,ndi
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -2333,8 +2348,8 @@ c
           istart = (itric1-1)*kpols
           do j=1,kfine
             jj=j+istart
-            call fker(nd,srcvals(1,jj),xt,dpars,
-     1         zpars,ipars,fval)
+            call fker(nd,srcvals(1,jj),ndtarg,xt,ndd,dpars,
+     1         ndz,zpars,ndi,ipars,fval)
             do idim=1,nd
               xkernvals(idim,jj) = fval(idim)*qwts(jj)
             enddo
@@ -2433,7 +2448,7 @@ c
      2     ntarg,xyztarg,ifp,xyzproxy,
      3     itargptr,ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,
      3     rat1p,rat2p,rsc1p,
-     3     fker,nd,dpars,zpars,ipars,
+     3     fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,
      4     nqorder,rfac,cintvals)
 c
 c
@@ -2500,7 +2515,7 @@ c        ntrimax - max number of triangles to be used on base triangle
 c        fker - function handle for evaluating the kernel k
 c 
 c               expected calling sequence
-c               fker(nd,x,y,ynorms,dpars,zpars,ipars,f)
+c               fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c               the output is assumed to be complex for the time
 c               being
@@ -2538,9 +2553,10 @@ c
       integer ntargptr(npatches)
       
       external fker
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndz,ndi
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
 
       integer nqorder
       real *8 rfac
@@ -2802,8 +2818,8 @@ c
               enddo
               do i=1,nqpols
                 jj = jstart+i
-                call fker(nd,srcvals(1,jj),xyztarg(1,itarg),
-     1              dpars,zpars,ipars,xkernvals(1,jj))
+                call fker(nd,srcvals(1,jj),ndtarg,xyztarg(1,itarg),
+     1              ndd,dpars,ndz,zpars,ndi,ipars,xkernvals(1,jj))
                 do idim=1,nd
                   xkernvals(idim,jj) = xkernvals(idim,jj)*qwts(jj)
                 enddo
@@ -2829,7 +2845,8 @@ c
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3      ndtarg,xyztarg(1,itarg),
      3      rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
-     3      fker,nd,dpars,zpars,ipars,cvals,istack,nproclist0,
+     3      fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,cvals,istack,
+     3      nproclist0,
      4      xkernvals,cintvals(1,1,itarg))
 
       

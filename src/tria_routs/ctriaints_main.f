@@ -6,7 +6,7 @@ c
       subroutine ctriaints(eps,istrat,intype,npatches,norder,npols,
      2     srccoefs,ndtarg,ntarg,xyztarg,ifp,
      3     xyzproxy,itargptr,ntargptr,nporder,nppols,
-     3     fker,dpars,zpars,ipars,nqorder,ntrimax,
+     3     fker,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,ntrimax,
      4     rfac,cintvals,ifmetric,rn1,n2)
 c
 c
@@ -120,20 +120,25 @@ c
 c        fker - function handle for evaluating the kernel k
 c 
 c               expected calling sequence
-c               fker(x,y,dpars,zpars,ipars,f)
+c               fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c               the output is assumed to be complex for the time
 c               being
 c
-c         dpars(*) - real parameters for the fker routine
-c         zpars(*) - complex parameters for the fker routine
-c         ipars(*) - integer parameters for the fker routine
+c         ndd - number of real parameters
+c         dpars(ndd) - real parameters for the fker routine
+c         ndz - number of complex parameters
+c         zpars(ndz) - complex parameters for the fker routine
+c         ndi - number of integer parameters
+c         ipars(ndi) - integer parameters for the fker routine
 c         nqorder - order of quadrature nodes on each subtriangle
 c                   to be used
 c         ntrimax - max number of triangles to be used for 
 c                    any of the integrals 
 c         rfac - distance criterion for deciding whether a triangle
 c                is in the far-field or not (See comment (2))
+c
+c         note: the ifmetric feature is currently not in use
 c
 c         output:
 c
@@ -161,9 +166,10 @@ c
       integer ntargptr(npatches)
       
       external fker
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndi,ndz
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
       integer ntrimax
 
       integer nqorder
@@ -196,41 +202,34 @@ c
 
 
       if(istrat.eq.1) then
-        if(ifmetric.eq.1) then
-        else
           rn1 = 0
           n2 = 0
           
           call ctriaints_dist(eps,intype,npatches,norder,npols,
      1        srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,itargptr,
      2        ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,
-     3        rat1p,rat2p,rsc1p,fker,
-     3        dpars,zpars,ipars,nqorder,rfac,cintvals)
-        endif
+     3        rat1p,rat2p,rsc1p,fker,ndd,
+     3        dpars,ndz,zpars,ndi,ipars,nqorder,rfac,cintvals)
       endif
 
       if(istrat.eq.2) then
-        if(ifmetric.eq.1) then
-        else
           rn1 = 0
           n2 = 0
           call ctriaints_adap(eps,intype,npatches,norder,npols,
      1        srccoefs,ndtarg,ntarg,xyztarg,itargptr,
      2        ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,
-     3        rat1p,rat2p,rsc1p,fker,dpars,zpars,ipars,nqorder,cintvals)
-        endif
+     3        rat1p,rat2p,rsc1p,fker,ndd,dpars,ndz,zpars,ndi,ipars,
+     4        nqorder,cintvals)
       endif
 
       if(istrat.eq.3) then
-        if(ifmetric.eq.3) then
-        else
           rn1 = 0
           n2 = 0
           call ctriaints_comb(eps,intype,npatches,norder,npols,
      1        srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,itargptr,
      2        ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,rat1p,
-     3        rat2p,rsc1p,fker,dpars,zpars,ipars,nqorder,rfac,cintvals)
-        endif
+     3        rat2p,rsc1p,fker,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,
+     4        rfac,cintvals)
       endif
       return
       end
@@ -244,8 +243,9 @@ c
 c
       subroutine ctriaints_vec(eps,istrat,intype,npatches,norder,npols,
      2     srccoefs,ndtarg,ntarg,xyztarg,ifp,
-     3     xyzproxy,itargptr,ntargptr,nporder,nppols,fker,nd,dpars,
-     3     zpars,ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+     3     xyzproxy,itargptr,ntargptr,nporder,nppols,fker,nd,ndd,dpars,
+     3     ndz,zpars,ndi,ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,
+     4     rn1,n2)
 c
 c
 c       this subroutine computes the integrals
@@ -355,14 +355,17 @@ c
 c        fker - function handle for evaluating the kernel k
 c 
 c               expected calling sequence
-c               fker(nd,x,y,dpars,zpars,ipars,f)
+c               fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c               the output is assumed to be nd complex numbers 
 c
 c         nd - number of outputdimensions
-c         dpars(*) - real parameters for the fker routine
-c         zpars(*) - complex parameters for the fker routine
-c         ipars(*) - integer parameters for the fker routine
+c         ndd - number of real parameters
+c         dpars(ndd) - real parameters for the fker routine
+c         ndz - number of complex parameters
+c         zpars(ndz) - complex parameters for the fker routine
+c         ndi - number of integer parameters
+c         ipars(ndi) - integer parameters for the fker routine
 c         nqorder - order of quadrature nodes on each subtriangle
 c                   to be used
 c         ntrimax - max number of triangles to be used for 
@@ -397,9 +400,10 @@ c
       integer ntargptr(npatches)
       
       external fker
-      real *8 dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      integer ndd,ndi,ndz
+      real *8 dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
       integer ntrimax
 
       integer nqorder
@@ -429,42 +433,33 @@ c
 
 
       if(istrat.eq.1) then
-        if(ifmetric.eq.1) then
-        else
           rn1 = 0
           n2 = 0
           call ctriaints_dist_vec(eps,intype,npatches,norder,npols,
      1        srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,itargptr,
      2        ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,rat1p,
-     3        rat2p,rsc1p,fker,nd,dpars,zpars,ipars,nqorder,rfac,
-     4        cintvals)
-        endif
+     3        rat2p,rsc1p,fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,
+     3        nqorder,rfac,cintvals)
       endif
 
       if(istrat.eq.2) then
-        if(ifmetric.eq.1) then
-        else
           rn1 = 0
           n2 = 0
           call ctriaints_adap_vec(eps,intype,npatches,norder,npols,
      1        srccoefs,ndtarg,ntarg,xyztarg,itargptr,
      2        ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,
-     3        rat1p,rat2p,rsc1p,fker,nd,dpars,zpars,ipars,nqorder,
-     4        cintvals)
-        endif
+     3        rat1p,rat2p,rsc1p,fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,
+     4        nqorder,cintvals)
       endif
 
       if(istrat.eq.3) then
-        if(ifmetric.eq.3) then
-        else
           rn1 = 0
           n2 = 0
           call ctriaints_comb_vec(eps,intype,npatches,norder,npols,
      1        srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,itargptr,
      2        ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,rat1p,
-     3        rat2p,rsc1p,fker,nd,dpars,zpars,ipars,nqorder,rfac,
-     4        cintvals)
-        endif
+     3        rat2p,rsc1p,fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,
+     4        rfac,cintvals)
       endif
 
 

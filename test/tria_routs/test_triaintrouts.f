@@ -189,6 +189,10 @@ c
 
       eps = 1.0d-6
 
+      ndd = 1
+      ndi = 1
+      ndz = 1
+
 
       nqorder = 16
 c
@@ -210,7 +214,8 @@ c
 
       call ctriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
      1      3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,lslp,dpars,zpars,ipars,nqorder,
+     2      ntargptr,nporder,nppols,lslp,ndd,dpars,ndz,zpars,ndi,ipars,
+     3      nqorder,
      3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
       erra = 0
@@ -244,8 +249,8 @@ c
 
       call ctriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
      1      3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,lslp,dpars,zpars,ipars,nqorder,
-     3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+     2      ntargptr,nporder,nppols,lslp,ndd,dpars,ndz,zpars,ndi,ipars,
+     3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
       erra = 0
       ra = 0
@@ -280,8 +285,8 @@ c
 
       call ctriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
      1      3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,lslp,dpars,zpars,ipars,nqorder,
-     3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+     2      ntargptr,nporder,nppols,lslp,ndd,dpars,ndz,zpars,ndi,ipars,
+     3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
       erra = 0
       ra = 0
@@ -317,8 +322,8 @@ c
 
       call ctriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
      1      3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,lslp,dpars,zpars,ipars,nqorder,
-     3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+     2      ntargptr,nporder,nppols,lslp,ndd,dpars,ndz,zpars,ndi,ipars,
+     3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
       erra = 0
       ra = 0
@@ -362,8 +367,8 @@ c
       call ctriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
      1      3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,
-     3      lslp,dpars,zpars,ipars,nqorder,ntrimax,rfac,cintvals,
-     3      ifmetric,rn1,n2)
+     3      lslp,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,ntrimax,
+     3      rfac,cintvals,ifmetric,rn1,n2)
 
       erra = 0
       ra = 0
@@ -402,8 +407,8 @@ c
       call ctriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
      1      3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,
-     3      lslp,dpars,zpars,ipars,nqorder,ntrimax,rfac,cintvals,
-     3      ifmetric,rn1,n2)
+     3      lslp,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,ntrimax,rfac,
+     3      cintvals,ifmetric,rn1,n2)
 
       erra = 0
       ra = 0
@@ -450,7 +455,7 @@ c
       call ctriaints_wnodes(npatches,norder,npols,srccoefs,
      1      3,ntarg,xyztarg,itargptr,
      2      ntargptr,nporder,nppols,
-     3      lslp,dpars,zpars,ipars,npts,qnodes,
+     3      lslp,ndd,dpars,ndz,zpars,ndi,ipars,npts,qnodes,
      3      qwts,cintvals)
 
       erra = 0
@@ -665,6 +670,9 @@ cc      call prin2('xyztarg=*',xyztarg,9)
 
       eps = 1.0d-6
 
+      ndd = 1
+      ndi = 1
+      ndz = 1
 
 
       nqorder = 16
@@ -687,8 +695,8 @@ c
 
       call ctriaints_vec(eps,istrat,intype,npatches,norder,npols,
      1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,vslp,nd,dpars,zpars,ipars,nqorder,
-     3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+     2      ntargptr,nporder,nppols,vslp,nd,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
       erra = 0
       ra = 0
@@ -724,8 +732,8 @@ c
 
       call ctriaints_vec(eps,istrat,intype,npatches,norder,npols,
      1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,vslp,nd,dpars,zpars,ipars,nqorder,
-     3      ntrimax,rfac,cintvals,
+     2      ntargptr,nporder,nppols,vslp,nd,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,nqorder,ntrimax,rfac,cintvals,
      3      ifmetric,rn1,n2)
 
       erra = 0
@@ -769,7 +777,8 @@ c
 
       call ctriaints_vec(eps,istrat,intype,npatches,norder,npols,
      1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,vslp,nd,dpars,zpars,ipars,nqorder,
+     2      ntargptr,nporder,nppols,vslp,nd,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,nqorder,
      3      ntrimax,rfac,cintvals,
      3      ifmetric,rn1,n2)
 
@@ -807,8 +816,8 @@ c
 
       call ctriaints_vec(eps,istrat,intype,npatches,norder,npols,
      1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,vslp,nd,dpars,zpars,ipars,nqorder,
-     3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+     2      ntargptr,nporder,nppols,vslp,nd,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
       erra = 0
       ra = 0
@@ -849,8 +858,8 @@ c
 
       call ctriaints_vec(eps,istrat,intype,npatches,norder,npols,
      1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,vslp,nd,dpars,zpars,ipars,nqorder,
-     3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+     2      ntargptr,nporder,nppols,vslp,nd,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
       erra = 0
       ra = 0
@@ -889,8 +898,8 @@ c
 
       call ctriaints_vec(eps,istrat,intype,npatches,norder,npols,
      1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
-     2      ntargptr,nporder,nppols,vslp,nd,dpars,zpars,ipars,nqorder,
-     3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+     2      ntargptr,nporder,nppols,vslp,nd,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
       erra = 0
       ra = 0
@@ -916,11 +925,12 @@ c
 c
 c
 
-      subroutine vslp(nd,x,y,dpars,zpars,ipars,f)
+      subroutine vslp(nd,x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
-      real *8 x(3),y(3),dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      real *8 x(*),y(ndt),dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
+      integer ndd,ndi,ndz
       complex *16 f(2),ima
       data ima/(0.0d0,1.0d0)/
       
@@ -939,11 +949,11 @@ c
 
 c
 
-      subroutine lslp(x,y,dpars,zpars,ipars,f)
+      subroutine lslp(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
-      real *8 x(3),y(3),dpars(*)
-      complex *16 zpars(*)
-      integer ipars(*)
+      real *8 x(*),y(ndt),dpars(ndd)
+      complex *16 zpars(ndz)
+      integer ipars(ndi)
       complex *16 f
       
       rr = (x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2
