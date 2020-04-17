@@ -108,7 +108,7 @@ integral equation
 
 .. code:: fortran
 
-   subroutine lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,npts,
+   subroutine helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
    srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,niter,errs,
    rres,sigma)
 
