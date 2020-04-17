@@ -308,7 +308,7 @@ using combined field integral equation
 .. code:: fortran
 
    subroutine lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,iptype,npts,
-   srccoefs,srcvals,ndtarg,targs,ipatch_id,uvs_targ,eps,zpars,iquadtype,
+   srccoefs,srcvals,ndtarg,targs,ipatch_id,uvs_targ,eps,zpars,
    nnz,row_ptr,col_ind,iquad,nquad,wnear,sigma,novers,nptso,ixyzso,
    srcover,wover,pot)
 
@@ -358,11 +358,6 @@ Input arguments:
     - zpars: double complex(3)
          kernel parameters, zpars(1)=k, zpars(2)=$\alpha$,
          zpars(3)=$\beta$
-    - iquadtype: integer
-         quadrature type
-
-         - iquadtype = 1: for generalized gaussian quadrature+adaptive
-           integration
     - nnz: integer
          number of non-zero target-patch interactions
     - row_ptr: integer(ntarg+1) 
