@@ -119,7 +119,7 @@ TOBJS = $(TRIA)/ctriaints_main.o $(TRIA)/koornexps.o \
 
 OBJS = $(COMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(QOBJS) $(SOBJS) $(TOBJS)
 
-.PHONY: usage lib python python3 doxygen
+.PHONY: usage lib python python3 
 
 default: usage
 
@@ -128,7 +128,6 @@ usage:
 	@echo "Makefile for FMM3D. Specify what to make:"
 	@echo "  make lib - compile the main library (in lib/ and lib-static/)"
 	@echo "  make test - compile and run validation tests (will take around 30 secs)"
-	@echo "  make doxygen - Generate documentation API"
 	@echo "  make python - compile and test python interfaces"
 	@echo "  make python3 - compile and test python interfaces using python3"
 	@echo "  make objclean - removal all object files, preserving lib & MEX"
@@ -160,11 +159,6 @@ $(DYNAMICLIB): $(OBJS)
 	$(FC) -shared -fPIC $(OMPFLAGS) $(OBJS) -o $(DYNAMICLIB) $(LIBS) 
 	mv $(DYNAMICLIB) lib/
 
-
-# doxygen
-doxygen:
-	mkdir -p doc/api
-	doxygen src/doxygen/doxygen.cfg
 
 #
 # testing routines
