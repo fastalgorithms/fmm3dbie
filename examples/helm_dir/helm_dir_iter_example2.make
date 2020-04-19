@@ -16,6 +16,9 @@ ifneq ($(OS),Windows_NT)
     ifeq ($(UNAME_S),Darwin)
         LDF = /usr/local/lib
     endif
+    ifeq ($(UNAME_S),Linux)
+        LDF = ../../lib
+    endif
 endif
     
 

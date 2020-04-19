@@ -16,8 +16,11 @@ ifneq ($(OS),Windows_NT)
     ifeq ($(UNAME_S),Darwin)
         LDF = /usr/local/lib
     endif
+    ifeq ($(UNAME_S),Linux)
+        LDF = ../../lib
+    endif
 endif
-    
+
 
 LIBS = -lfmm3d -lsolvers3d 
 ifeq ($(HOST),gcc)

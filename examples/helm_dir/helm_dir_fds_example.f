@@ -254,6 +254,8 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
      2  uvs_targ,eps,zpars,rhs,sigma2)
 
+      err = 0
+      ra = 0
       do i=1,npts
         err = err + abs(sigma(i)-sigma2(i))**2
         ra = ra + abs(sigma2(i))**2

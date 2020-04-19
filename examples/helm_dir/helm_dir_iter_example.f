@@ -49,7 +49,7 @@ c
 
       zk = 1.11d0+ima*0.0d0
       zpars(1) = zk 
-      zpars(2) = -ima*zk
+      zpars(2) = ima*zk
       zpars(3) = 2.0d0
 
       if(igeomtype.eq.1) then
@@ -73,7 +73,7 @@ c
       endif
 
 
-      norder = 2 
+      norder = 4 
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
@@ -96,6 +96,8 @@ c
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
+      isout0 = .false.
+      isout1 = .false.
       call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
      1  wts,xyz_in,isout0)
       
@@ -110,16 +112,17 @@ c
       do i=1,npts
         call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,
      1     ipars,rhs(i))
-        sigma(i) = 0
+        sigma(i) = 0 
       enddo
 
 
+
       numit = 200
-      ifinout = 1
+      ifinout = 0
       niter = 0
       allocate(errs(numit+1))
 
-      eps = 0.51d-6
+      eps = 0.51d-4
 
       eps_gmres = 0.5d-6
 
@@ -131,6 +134,7 @@ c
       call prin2('rres=*',rres,1)
       call prin2('errs=*',errs,niter)
 
+ 2000 continue
 
 c
 c       test solution at interior point
@@ -341,8 +345,8 @@ c
         enddo
       enddo
 
-      if(abs(ra+4*pi).le.1.0d-3) isout = .false.
-      if(abs(ra).le.1.0d-3) isout = .true.
+      if(abs(ra+4*pi).le.1.0d-1) isout = .false.
+      if(abs(ra).le.1.0d-1) isout = .true.
 
       return
       end
