@@ -38,7 +38,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 2
+      if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
@@ -276,7 +276,7 @@ c
       call prin2('error in greens identity=*',err,1)
 
       i1 = 0
-      if(err.lt.1.0d-3) i1 = 1
+      if(err.lt.1.0d-2) i1 = 1
 
       allocate(potslp2(npts))
 

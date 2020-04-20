@@ -2,8 +2,8 @@
 EXEC = helm_wrappers
 
 HOST = osx-gfortran
-#HOST=linux-gfortran
-#HOST=linux-gfortran-openmp
+HOST=linux-gfortran
+HOST=linux-gfortran-openmp
 #HOST=linux-ifort
 
 ifeq ($(HOST),osx-gfortran)
@@ -17,7 +17,7 @@ ifeq ($(HOST),linux-gfortran)
 FC = gfortran
 FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math -c -w  
 FLINK = gfortran -w -o $(EXEC) 
-FEND = -L/usr/local/lib -lopenblas -lfmm3d -L/usr/local/lib
+FEND = -L../../lib -lopenblas -lfmm3d -L../../lib
 endif
 
 
@@ -25,7 +25,7 @@ ifeq ($(HOST),linux-gfortran-openmp)
 FC = gfortran
 FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math --openmp -c -w  
 FLINK = gfortran -w --openmp -o $(EXEC) 
-FEND = -L/usr/local/lib -lfmm3d -lopenblas
+FEND = -L../../lib -lfmm3d -lopenblas
 endif
 
 ifeq ($(HOST),linux-ifort)
