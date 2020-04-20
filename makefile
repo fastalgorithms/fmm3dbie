@@ -21,8 +21,6 @@ CXXFLAGS+=$(FFLAGS)
 CLIBS = -lgfortran -lm -ldl 
 
 # Update blas
-LBLAS = -lopenblas
-
 ifneq ($(OS),Windows_NT) 
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Darwin)
@@ -62,7 +60,7 @@ endif
 # For your OS, override the above by placing make variables in make.inc
 -include make.inc
 
-LIBS = -L${LDF} -lm -lfmm3d ${LBLAS}
+LIBS = -L${LDF} -lm -lfmm3d -lopenblas ${LDBLAS}
 
 # multi-threaded libs & flags needed
 ifneq ($(OMP),OFF)
