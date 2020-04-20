@@ -17,6 +17,7 @@ For the basic libraries
 * Fortran compiler, such as ``gfortran`` packaged with GCC
 * GNU make
 * `FMM3D <https://github.com/flatironinstitute/FMM3D>`_
+* Blocked linear algebra routines and LAPACK (default used: openblas)
 
 Optional:
 
@@ -138,7 +139,7 @@ On Ubuntu linux
 
 On Ubuntu linux (assuming python3 as opposed to python)::
 
-  sudo apt-get install make build-essential gfortran  
+  sudo apt-get install make build-essential gfortran libopenblas-dev 
 
 
 On Fedora/CentOS linux
@@ -147,7 +148,7 @@ On Fedora/CentOS linux
 On a Fedora/CentOS linux system, these dependencies can be installed as 
 follows::
 
-  sudo yum install make gcc gcc-c++ gcc-gfortran libgomp 
+  sudo yum install make gcc gcc-c++ gcc-gfortran libgomp openblas-devel 
 
 .. _mac-inst:
 
@@ -165,7 +166,7 @@ https://brew.sh
 
 Then do::
   
-  brew install gcc 
+  brew install gcc openblas 
   
 
 Tips for installing optional dependencies
