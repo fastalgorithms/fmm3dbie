@@ -44,7 +44,7 @@ end subroutine h3d_slp
 
 
 
-subroutine h3d_dlp(srcinfo, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
+subroutine h3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
   integer ipars(ndi)

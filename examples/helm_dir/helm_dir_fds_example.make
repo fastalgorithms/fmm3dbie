@@ -22,7 +22,7 @@ ifneq ($(OS),Windows_NT)
 endif
 
 
-LIBS = -lfmm3d -lsolvers3d 
+LIBS = -lfmm3d -lfmm3dbie 
 ifeq ($(HOST),gcc)
     FC=gfortran -L${LDF} 
     FFLAGS=-fPIC -O3 -funroll-loops -march=native  

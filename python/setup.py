@@ -13,7 +13,7 @@ list_files.append('../src/common/sparse_reps.f')
 list_files.append('../src/surface_routs/surf_routs.f90')
 
 FLIBS=[]
-FLIBS.append('-lsolvers3d')
+FLIBS.append('-lfmm3dbie')
 if platform == "darwin":
     FLIBS.append('-L/usr/local/lib')
 if platform == "linux" or platform == "linux2":

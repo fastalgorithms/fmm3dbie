@@ -1,4 +1,4 @@
-# Makefile for solver3d
+# Makefile for fmm3dbie
 # # This is the only makefile; there are no makefiles in subdirectories.
 # Users should not need to edit this makefile (doing so would make it
 # hard to stay up to date with repo version). Rather in order to
@@ -13,7 +13,6 @@ FC=gfortran
 FFLAGS= -fPIC -O3 -march=native -funroll-loops 
 
 
-
 CFLAGS= -std=c99 
 CFLAGS+= $(FFLAGS) 
 CXXFLAGS= -std=c++11 -DSCTL_PROFILE=-1
@@ -21,15 +20,23 @@ CXXFLAGS+=$(FFLAGS)
 
 CLIBS = -lgfortran -lm -ldl 
 
+# Update blas
+LBLAS = -lopenblas
 
-LIBS = -L/usr/local/lib -lm -lfmm3d -lopenblas 
+ifneq ($(OS),Windows_NT) 
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+        LDF = /usr/local/lib
+    endif
+    ifeq ($(UNAME_S),Linux)
+        LDF = ${LD_LIBRARY_PATH}
+    endif
+endif
+
 
 # extra flags for multithreaded: C/Fortran, MATLAB
 OMPFLAGS =-fopenmp
 OMPLIBS =-lgomp 
-
-
-
 
 # flags for MATLAB MEX compilation..
 MFLAGS=-largeArrayDims -DMWF77_UNDERSCORE1 
@@ -55,6 +62,8 @@ endif
 # For your OS, override the above by placing make variables in make.inc
 -include make.inc
 
+LIBS = -L${LDF} -lm -lfmm3d ${LBLAS}
+
 # multi-threaded libs & flags needed
 ifneq ($(OMP),OFF)
 CFLAGS += $(OMPFLAGS)
@@ -65,7 +74,7 @@ MEXLIBS += $(OMPLIBS)
 endif
 
 
-LIBNAME=libsolvers3d
+LIBNAME=libfmm3dbie
 DYNAMICLIB = $(LIBNAME).so
 STATICLIB = lib-static/$(LIBNAME).a
 
@@ -148,7 +157,7 @@ usage:
 
 # build the library...
 lib: $(STATICLIB) $(DYNAMICLIB)
-ifeq ($(OMP),ON)
+ifneq ($(OMP),OFF)
 	@echo "$(STATICLIB) and $(DYNAMICLIB) built, multithread versions"
 else
 	@echo "$(STATICLIB) and $(DYNAMICLIB) built, single-threaded versions"
