@@ -114,6 +114,7 @@ c             discretization nodes on the surface
 c             srcvals(1:3,i) - xyz info
 c             srcvals(4:6,i) - dxyz/du info
 c             srcvals(7:9,i) - dxyz/dv info
+c             srcvals(10:12,i) - normals info
 c 
 c         ndtarg - integer
 c            leading dimension of target array
@@ -130,8 +131,6 @@ c
 c         uvs_targ - real *8 (2,ntarg)
 c            local uv coordinates on patch if on surface, otherwise
 c            set to 0 by default
-c          (maybe better to find closest uv on patch using
-c            newton)
 c            
 c          eps - real *8
 c             precision requested
@@ -177,25 +176,27 @@ c
 c
 
       implicit none 
-      integer npatches,norders(npatches),npts,nquad
-      integer ixyzs(npatches+1),iptype(npatches)
-      real *8 srccoefs(9,npts),srcvals(12,npts),eps,rfac0
-      integer ndtarg,ntarg
-      integer iquadtype
-      real *8 targs(ndtarg,ntarg)
-      complex *16 zpars(3)
-      integer nnz,ipars
+      integer, intent(in) :: npatches,norders(npatches),npts,nquad
+      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      real *8, intent(in) :: rfac0
+      integer, intent(in) :: ndtarg,ntarg
+      integer, intent(in) :: iquadtype
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      complex *16, intent(in) :: zpars(3)
+      integer, intent(in) :: nnz
+      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+      complex *16, intent(out) :: wnear(nquad)
+
+
+      integer ipars
       integer ndd,ndz,ndi
       real *8 dpars
-      integer row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
-      complex *16 wnear(nquad)
-
-      integer ipatch_id(ntarg)
-      real *8 uvs_targ(2,ntarg)
 
       complex *16 alpha,beta
       integer i,j
-
       integer ipv
 
       procedure (), pointer :: fker
@@ -308,6 +309,7 @@ c             discretization nodes on the surface
 c             srcvals(1:3,i) - xyz info
 c             srcvals(4:6,i) - dxyz/du info
 c             srcvals(7:9,i) - dxyz/dv info
+c             srcvals(10:12,i) - normals info
 c 
 c         ndtarg - integer
 c            leading dimension of target array
@@ -345,20 +347,25 @@ c              layer potential evaluated at the target points
 c
 c
       implicit none
-      integer npatches,norder,npols,npts
-      integer ndtarg,ntarg
-      integer norders(npatches),ixyzs(npatches+1)
-      integer iptype(npatches)
-      real *8 srccoefs(9,npts),srcvals(12,npts),eps
-      real *8 targs(ndtarg,ntarg)
-      complex *16 zpars(3)
-      complex *16 sigma(npts)
-      complex *16 pot(ntarg)
-      integer ipatch_id(ntarg)
-      real *8 uvs_targ(2,ntarg)
+      integer, intent(in) :: npatches,npts
+      integer, intent(in) :: ndtarg,ntarg
+      integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      complex *16, intent(in) :: zpars(3)
+      complex *16, intent(in) :: sigma(npts)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
 
-      integer nover,npolso,nptso
-      integer nnz,nquad
+      complex *16, intent(out) :: pot(ntarg)
+
+
+      integer nptso,nnz,nquad
+
+
+      integer nover,npolso
+      integer norder,npols
       integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
       complex *16, allocatable :: wnear(:)
 
@@ -529,6 +536,7 @@ c             discretization nodes on the surface
 c             srcvals(1:3,i) - xyz info
 c             srcvals(4:6,i) - dxyz/du info
 c             srcvals(7:9,i) - dxyz/dv info
+c             srcvals(10:12,i) - normals info
 c 
 c         ndtarg - integer
 c            leading dimension of target array
@@ -591,24 +599,30 @@ c           whtsover - real *8 (nptso)
 c             smooth quadrature weights at oversampled nodes
 c
 c
+c         output
+c           pot - complex *16(npts)
+c              layer potential evaluated at the target points
+c
 c           
 c               
 c
       implicit none
-      integer npatches,norder,npols,npts
-      integer ndtarg,ntarg
-      integer norders(npatches),ixyzs(npatches+1)
-      integer ixyzso(npatches+1),iptype(npatches)
-      real *8 srccoefs(9,npts),srcvals(12,npts),eps
-      real *8 targs(ndtarg,ntarg)
-      complex *16 zpars(3)
-      integer nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
-      integer iquad(nnz+1)
-      complex *16 wnear(nquad),sigma(npts)
-      integer novers(npatches+1)
-      integer nover,npolso,nptso
-      real *8 srcover(12,nptso),whtsover(nptso)
-      complex *16 pot(ntarg)
+      integer, intent(in) :: npatches,npts
+      integer, intent(in) :: ndtarg,ntarg
+      integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer, intent(in) :: ixyzso(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      complex *16, intent(in) :: zpars(3)
+      integer, intent(in) :: nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
+      integer, intent(in) :: iquad(nnz+1)
+      complex *16, intent(in) :: wnear(nquad),sigma(npts)
+      integer, intent(in) :: novers(npatches+1)
+      integer, intent(in) :: nptso
+      real *8, intent(in) :: srcover(12,nptso),whtsover(nptso)
+      complex *16, intent(out) :: pot(ntarg)
+
+      integer norder,npols,nover,npolso
       complex *16, allocatable :: potsort(:)
 
       real *8, allocatable :: sources(:,:),targvals(:,:)
