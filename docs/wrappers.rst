@@ -5,7 +5,7 @@ For each of the solver in this repository, we have the following
 user callable routines::
 
     - lpcomp_<pde>_<rep>_<bvp>: evaluate layer potential
-    - <pde>_<rep>_<bvp>_iter_solver: iterative solver
+    - <pde>_<rep>_<bvp>_solver: iterative solver
 
 - <pde>: PDE being solved.
 
