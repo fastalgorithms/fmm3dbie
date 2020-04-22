@@ -1,0 +1,57 @@
+This subroutine evaluates the layer potential for the representation 
+
+
+.. math ::
+
+    u = 4 \pi(\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
+
+Note: the $4\pi$ scaling is included to be consistent with the FMM3D
+libraries. For targets on the boundary, this routine only computes
+the principal value part, the identity term corresponding to the jump
+in the layer potential is not included in the layer potential.
+
+
+Input arguments:
+
+  - npatches: integer
+      number of patches
+  - norders: integer(npatches)
+      order of discretization on each patch 
+  - ixyzs: integer(npatches+1)
+      ixyzs(i) denotes the starting location in srccoefs,
+      and srcvals array where information for patch i begins
+  - iptype: integer(npatches)
+      type of patch
+  - npts: integer
+      total number of discretization points on the boundary
+  - srccoefs: double precision (9,npts)
+      koornwinder expansion coefficients of x, $\partial_{u} x$,
+      and $\partial_{v} x$. 
+  - srcvals: double precision (12,npts)
+      x, $\partial_{u} x$, $\partial_{v} x$, and $n$ sampled at
+      discretization nodes
+  - ndtarg: integer
+      leading dimension of target array
+  - ntarg: integer
+      number of targets
+  - targs: double precision (ndtarg,ntarg)
+      target information
+  - ipatch_id: integer(ntarg)
+      id of patch of target i, id = -1, if target is off-surface
+  - uvs_targ: double precision (2,ntarg)
+      local uv coordinates on patch if on surface, otherwise
+      set to 0 by default
+  - eps: double precision
+      precision requested
+  - zpars: double complex (3)
+      kernel parameters (Referring to formula above)
+      zpars(1) = k 
+      zpars(2) = $\alpha$
+      zpars(3) = $\beta$
+   - sigma: double complex(npts)
+       density for layer potential
+
+Output arguments
+  - pot: double complex(ntarg)
+      layer potential evaluated at the target points
+

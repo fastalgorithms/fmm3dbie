@@ -36,58 +36,7 @@ integral equation
    subroutine lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,npts,
    srccoefs,srcvals,ndtarg,targs,ipatch_id,uvs_targ,eps,zpars,sigma,pot)
 
-This subroutine evaluates the layer potential for the representation
-
-.. math ::
-
-   u = 4 \pi (\alpha \mathcal{S}_{k}[\sigma] + \beta D_{k}[\sigma] )
-
-Note the additional scaling of $4\pi$ to be consistent with the FMM3D
-libraries. For targets on the boundary, this routine only computes the
-principal value part, the identity term corresponding to the jump in the
-double layer is not included in the layer potential.
-
-Input arguments:
-
-    - npatches: integer
-        number of patches
-    - norders: integer(npatches)
-        order of discretization on each patch
-    - ixyzs: integer(npatches+1)
-        ixyzs(i) denotes the starting location in srccoefs, and
-        srcvals array where information for patch i begins
-    - iptype: integer(npatches)
-        type of patch
-    - npts: integer
-        total number of points on the boundary
-    - srccoefs: double precision (9,npts)
-        koornwinder exapansion coefficients for x, $\partial_{u} x$, and
-        $\partial_{v} x$
-    - srcvals: double precision (12,npts)
-        x,$\partial_{u} x$, $\partial_{v} x$, and $n$ sampled at
-        discretization nodes
-    - ndtarg: integer
-        leading dimension of target array
-    - ntarg: integer
-        number of targets
-    - targs: double precision (ndtarg,ntarg)
-        target information. Note the first three entries must be the
-        cartesian components of the target
-    - ipatch_id: integer(ntarg)
-         id of patch of target i, id= -1/0 if target is off-surface
-    - uvs_targ: double precision (2,ntarg)
-         local uv coordinates on patch, if target is on surface
-    - eps: double precision
-         precision requested
-    - zpars: double complex(3)
-         kernel parameters, zpars(1)=k, zpars(2)=$\alpha$,
-         zpars(3)=$\beta$
-    - sigma: double complex(npts)
-         density for layer potential
-    
-Output arguments:
-    - pot: double complex(ntarg)
-         layer potential evaluated at target points
+.. include:: raws/lpcomp-helm-comb-dir.raw   
 
 .. container:: rttext
 
