@@ -272,79 +272,66 @@ cf2py intent(in) ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,zpars
 cf2py intent(in) sigma
 cf2py intent(out) pot
 c
-c      this subroutine evaluates the layer potential for
-c      the representation u = 4 \pi(\alpha S_{k} + \beta D_{k})
 c
-c      Note: the 4\pi scaling is included to be consistent with the fmm
+c------------------------------
+c  This subroutine evaluates the layer potential for the representation 
 c
 c
-c       input:
-c         npatches - integer
-c            number of patches
+c  .. math ::
+c  
+c      u = 4 \pi(\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
 c
-c         norders- integer(npatches)
-c            order of discretization on each patch 
+c  Note: the $4\pi$ scaling is included to be consistent with the FMM3D
+c  libraries. For targets on the boundary, this routine only computes
+c  the principal value part, the identity term corresponding to the jump
+c  in the layer potential is not included in the layer potential.
 c
-c         ixyzs - integer(npatches+1)
-c            ixyzs(i) denotes the starting location in srccoefs,
-c               and srcvals array corresponding to patch i
-c   
-c         iptype - integer(npatches)
-c            type of patch
-c             iptype = 1, triangular patch discretized using RV nodes
 c
-c         npts - integer
-c            total number of discretization points on the boundary
-c 
-c         srccoefs - real *8 (9,npts)
-c            koornwinder expansion coefficients of xyz, dxyz/du,
-c            and dxyz/dv on each patch. 
-c            For each point srccoefs(1:3,i) is xyz info
-c                           srccoefs(4:6,i) is dxyz/du info
-c                           srccoefs(7:9,i) is dxyz/dv info
+c  Input arguments:
 c
-c         srcvals - real *8 (12,npts)
-c             xyz(u,v) and derivative info sampled at the 
-c             discretization nodes on the surface
-c             srcvals(1:3,i) - xyz info
-c             srcvals(4:6,i) - dxyz/du info
-c             srcvals(7:9,i) - dxyz/dv info
-c             srcvals(10:12,i) - normals info
-c 
-c         ndtarg - integer
-c            leading dimension of target array
-c        
-c         ntarg - integer
-c            number of targets
+c    - npatches: integer
+c        number of patches
+c    - norders: integer(npatches)
+c        order of discretization on each patch 
+c    - ixyzs: integer(npatches+1)
+c        ixyzs(i) denotes the starting location in srccoefs,
+c        and srcvals array where information for patch i begins
+c    - iptype: integer(npatches)
+c        type of patch
+c    - npts: integer
+c        total number of discretization points on the boundary
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefficients of x, $\partial_{u} x$,
+c        and $\partial_{v} x$. 
+c    - srcvals: double precision (12,npts)
+c        x, $\partial_{u} x$, $\partial_{v} x$, and $n$ sampled at
+c        discretization nodes
+c    - ndtarg: integer
+c        leading dimension of target array
+c    - ntarg: integer
+c        number of targets
+c    - targs: double precision (ndtarg,ntarg)
+c        target information
+c    - ipatch_id: integer(ntarg)
+c        id of patch of target i, id = -1, if target is off-surface
+c    - uvs_targ: double precision (2,ntarg)
+c        local uv coordinates on patch if on surface, otherwise
+c        set to 0 by default
+c    - eps: double precision
+c        precision requested
+c    - zpars: double complex (3)
+c        kernel parameters (Referring to formula above)
+c        zpars(1) = k 
+c        zpars(2) = $\alpha$
+c        zpars(3) = $\beta$
+c     - sigma: double complex(npts)
+c         density for layer potential
 c
-c         targs - real *8 (ndtarg,ntarg)
-c            target information
+c  Output arguments
+c    - pot: double complex(ntarg)
+c        layer potential evaluated at the target points
 c
-c         ipatch_id - integer(ntarg)
-c            id of patch of target i, id = -1, if target is off-surface
-c
-c         uvs_targ - real *8 (2,ntarg)
-c            local uv coordinates on patch if on surface, otherwise
-c            set to 0 by default
-c          (maybe better to find closest uv on patch using
-c            newton)
-c            
-c          eps - real *8
-c             precision requested
-c
-c          zpars - complex *16 (3)
-c              kernel parameters (Referring to formula (1))
-c              zpars(1) = k 
-c              zpars(2) = alpha
-c              zpars(3) = beta
-c
-c           sigma - complex *16(npts)
-c               density for layer potential
-c
-c         output
-c           pot - complex *16(npts)
-c              layer potential evaluated at the target points
-c
+c-----------------------------------
 c
       implicit none
       integer, intent(in) :: npatches,npts

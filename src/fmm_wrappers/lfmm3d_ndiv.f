@@ -1,5 +1,5 @@
 c
-       subroutine lfmm3d(nd,eps,nsource,source,ifcharge,
+       subroutine lfmm3d_ndiv(nd,eps,nsource,source,ifcharge,
      $    charge,ifdipole,dipvec,ifpgh,pot,grad,hess,ntarg,
      $    targ,ifpghtarg,pottarg,gradtarg,hesstarg,ndiv,idivflag,
      $    ifnear)
