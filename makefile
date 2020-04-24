@@ -184,8 +184,10 @@ test/com:
 test/hwrap:
 	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm $(STATICLIB) $(LIBS) 
 
-test/tria:
-	$(FC) $(FFLAGS) test/tria_routs/test_triaintrouts.f -o test/tria_routs/int2-tria $(STATICLIB) $(LIBS) 
+TTOBJS = test/tria_routs/test_triaintrouts.o test/tria_routs/test_koornexps.o
+
+test/tria: $(TTOBJS)
+	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) $(STATICLIB) $(LIBS) 
 
 #python
 python: $(DYNAMICLIB)
