@@ -421,12 +421,12 @@ subroutine koorn_ders(uv, nmax, npols, pols, ders)
   iii = 0
   do n = 0,nmax
     do k = 0,n
-      sc = sqrt(done/(2*(n-k)+1)/(2*n+2)) 
+      sc = sqrt(done/(2*k+1)/(2*n+2)) 
       iii = iii + 1
-      pols(iii) = legpols(n-k)*jacpols(k,n-k)/sc 
-      ders(1,iii) = legu(n-k)*jacpols(k,n-k)/sc 
-      ders(2,iii) = (legv(n-k)*jacpols(k,n-k) + &
-           legpols(n-k)*jacv(k,n-k))/sc 
+      pols(iii) = legpols(k)*jacpols(n-k,k)/sc 
+      ders(1,iii) = legu(k)*jacpols(n-k,k)/sc 
+      ders(2,iii) = (legv(k)*jacpols(n-k,k) + &
+           legpols(k)*jacv(n-k,k))/sc 
     end do
   end do
 
@@ -1077,10 +1077,10 @@ subroutine koornf_ders(uv, nmax, npols, pols, ders, rat1, rat2, rsc1)
   do n = 0,nmax
      do k = 0,n
         iii = iii + 1
-        pols(iii) = legpols(n-k)*jacpols(k,n-k) * rsc1(k,n-k)
-        ders(1,iii) = legu(n-k)*jacpols(k,n-k) * rsc1(k,n-k)
-        ders(2,iii) = (legv(n-k)*jacpols(k,n-k) + &
-             legpols(n-k)*jacv(k,n-k))* rsc1(k,n-k)
+        pols(iii) = legpols(k)*jacpols(n-k,k) * rsc1(n-k,k)
+        ders(1,iii) = legu(k)*jacpols(n-k,k) * rsc1(n-k,k)
+        ders(2,iii) = (legv(k)*jacpols(n-k,k) + &
+             legpols(k)*jacv(n-k,k))* rsc1(n-k,k)
      end do
   end do
 
