@@ -1,24 +1,3 @@
-      implicit real *8 (a-h,o-z)
-
-      ntests = 13
-      call test_triarouts(i1)
-      call test_triarouts_vec(i2)
-
-      nsuccess = i1+i2
-
-      print *,i1,i2
-
-      open(unit=33,file='../../print_testres.txt',access='append')
-      write(33,'(a,i2,a,i2,a)') 'Successfully completed ',nsuccess,
-     1  ' out of ',ntests,' in tria_routs testing suite'
-      close(33)
-      
-
-
-      stop
-      end
-
-
       subroutine test_triarouts(nsuccess)
       
       implicit real *8 (a-h,o-z)
