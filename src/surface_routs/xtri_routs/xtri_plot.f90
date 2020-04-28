@@ -20,8 +20,6 @@ subroutine xtri_vtk_surf(fname, ntri, xeval, &
   external xeval
 
   real *8 :: uvs(2,1000), xyz(10), dxyzduv(3,20)
-  real *8 :: usout(100), vsout(100), umatr(10000), vmatr(10000)
-  real *8 :: wsout(100)
   real *8, allocatable :: sigma(:,:)
 
   !
@@ -58,8 +56,8 @@ subroutine xtri_vtk_surf(fname, ntri, xeval, &
 
   itype=1
   norder = 1
-  call ortho2siexps(itype, norder, npols, usout, vsout, &
-      umatr, vmatr, wsout)
+  npols = (norder+1)*(norder+2)/2
+  call get_vioreanu_nodes(norder,npols,uvs)
 
 
   allocate(sigma(npols,ntri))
@@ -69,7 +67,7 @@ subroutine xtri_vtk_surf(fname, ntri, xeval, &
   !
   do itri = 1,ntri
     do j = 1,npols
-      call xeval(itri, usout(j), vsout(j), xyz, dxyzduv, &
+      call xeval(itri, uvs(1,j), uvs(2,j), xyz, dxyzduv, &
           par1, par2, par3, par4)
       sigma(j,itri) = xyz(3)
       if (xyz(3) .gt. vmax) vmax = xyz(3)
@@ -98,8 +96,7 @@ subroutine xtri_vtk_plot(fname, ntri, xeval, par1, par2, &
   character (len=*) :: title,fname
   external xeval
 
-  real *8, allocatable :: usout(:),vsout(:),umatr(:,:),vmatr(:,:)
-  real *8, allocatable :: wsout(:)
+  real *8, allocatable :: uvs(:,:),umatr(:,:)
 
   real *8, allocatable :: sigmaout(:,:), xtriout(:,:,:)
 
@@ -141,12 +138,11 @@ subroutine xtri_vtk_plot(fname, ntri, xeval, par1, par2, &
   allocate(xtriout(3,3,len))
 
   npols = (norder+1)*(norder+2)/2
-  allocate(usout(npols),vsout(npols),umatr(npols,npols))
-  allocate(vmatr(npols,npols),wsout(npols))
+  allocate(uvs(2,npols),umatr(npols,npols))
 
   itype=1
-  call ortho2siexps(itype, norder, npols, usout, vsout, &
-      umatr, vmatr, wsout)
+  call get_vioreanu_nodes(norder,npols,uvs)
+  call koorn_vals2coefs(norder,npols,uvs,umatr)
 
   call xtri_flatten(ntri, xeval, par1, par2, &
     par3, par4, norder, sigma, npols, umatr, &
@@ -396,7 +392,7 @@ subroutine xtri_flatten(ntri, xeval, par1, par2, &
         !v = centers(2,j)
         u = uvs(1,k,j)
         v = uvs(2,k,j)
-        call ortho2sipols(u, v, norder, pols)
+        call koorn_pols(uvs(1,k,j),norder,npols,pols)
         !call prin2('pols = *', pols, npols)
 
         sigmaout(k,ijk) = 0

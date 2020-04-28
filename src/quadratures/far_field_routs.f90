@@ -340,6 +340,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   enddo
 
   iistart = max(iistart,1)
+  iistart = 1
 
 
   nfar = nfars(iistart) 
