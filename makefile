@@ -119,7 +119,6 @@ SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
 # Triangle adaptive integration routines
 TRIA = src/tria_routs
 TOBJS = $(TRIA)/ctriaints_main.o $(TRIA)/koornexps.o \
-	$(TRIA)/ortho2eva.o $(TRIA)/ortho2exps.o \
 	$(TRIA)/triaintrouts.o \
 	$(TRIA)/triasymq.o $(TRIA)/triatreerouts.o
 

@@ -55,13 +55,27 @@
 !
 
 subroutine get_vioreanu_wts(norder,npols,wts)
+!
+!  This subroutine extracts the precomputed vioreanu quadrature weights
+!  
+!  Input arguments
+!    
+!    - norder: integer
+!        input order. Must be between 0 and 20
+!    - npols: integer
+!        npols = (norder+1)*(norder+2)/2
+!
+!  Output arguments
+!
+!    - wts: double precision(npols)
+!        vioreanu quadrature weights of order=norder+1
+!
   implicit real *8 (a-h,o-z)
-  real *8 wts(npols),xsout(npols),ysout(npols)
+  integer, intent(in) :: norder,npols
+  real *8, intent(out) :: wts(npols)
+
+  INCLUDE 'koorn-wts-dat.txt'
   
-  call ortho2smexps(itype,norder,npols,xsout,ysout,wts)
-  do i=1,npols
-    wts(i) = wts(i)/sqrt(3.0d0)/2
-  enddo
 end subroutine get_vioreanu_wts
 
 
@@ -69,99 +83,102 @@ end subroutine get_vioreanu_wts
 
 
 
-subroutine get_vioreanu_nodes(norder,npols,xys)
+subroutine get_vioreanu_nodes(norder,npols,uvs)
+!
+!  This subroutine extracts the precomputed vioreanu quadrature
+!  or discretization nodes
+!  
+!  Input arguments
+!    
+!    - norder: integer
+!        input order. Must be between 0 and 20
+!    - npols: integer
+!        npols = (norder+1)*(norder+2)/2
+!
+!  Output arguments
+!
+!    - uvs: double precision(2,npols)
+!        vioreanu quadrature nodes of order=norder+1
+!
   implicit real *8 (a-h,o-z)
-  real *8 wts(npols),xsout(npols),ysout(npols)
-  real *8 xys(2,npols)
+  integer, intent(in) :: norder,npols
+  real *8, intent(out) :: uvs(2,npols)
+
+  INCLUDE 'koorn-uvs-dat.txt'
   
-  call ortho2smexps(itype,norder,npols,xsout,ysout,wts)
-  do i=1,npols
-    call ortho2_stdtosimplex(xsout(i),ysout(i), xys(1,i), xys(2,i))
-  enddo
 end subroutine get_vioreanu_nodes
 
 
 
 
-subroutine get_vioreanu_nodes_wts(norder,npols,xys,wts)
+
+
+subroutine get_vioreanu_nodes_wts(norder,npols,uvs,wts)
+!
+!  This subroutine extracts the precomputed vioreanu quadrature
+!  or discretization nodes and the corresponding weights
+!  
+!  Input arguments
+!    
+!    - norder: integer
+!        input order. Must be between 0 and 20
+!    - npols: integer
+!        npols = (norder+1)*(norder+2)/2
+!
+!  Output arguments
+!
+!    - uvs: double precision(2,npols)
+!        vioreanu quadrature nodes of order=norder+1
+!    - wts: double precision(npols)
+!        vioreanu quadrature weights of order=norder+1
+!
   implicit real *8 (a-h,o-z)
-  real *8 wts(npols),xsout(npols),ysout(npols)
-  real *8 xys(2,npols)
+  integer, intent(in) :: norder,npols
+  real *8, intent(out) :: uvs(2,npols),wts(npols)
+
+  call get_vioreanu_nodes(norder,npols,uvs)
+  call get_vioreanu_wts(norder,npols,wts)
   
-  call ortho2smexps(itype,norder,npols,xsout,ysout,wts)
-  do i=1,npols
-    call ortho2_stdtosimplex(xsout(i),ysout(i), xys(1,i), xys(2,i))
-    wts(i) = wts(i)/sqrt(3.0d0)/2
-  enddo
 end subroutine get_vioreanu_nodes_wts
 
 
 
 
 
-
-
-subroutine vioreanu_simplex_quad(norder, npols, xys, &
-    umatr, vmatr, whts)
+subroutine vioreanu_simplex_quad(norder, npols, uvs, &
+    umatr, vmatr, wts)
+!
+!  This subroutine extracts the precomputed vioreanu quadrature
+!  or discretization nodes, the corresponding weights, the coeffs
+!  to values matrix, and the values to coeffs matrix
+!  
+!  Input arguments
+!    
+!    - norder: integer
+!        input order. Must be between 0 and 20
+!    - npols: integer
+!        npols = (norder+1)*(norder+2)/2
+!
+!  Output arguments
+!
+!    - uvs: double precision(2,npols)
+!        vioreanu quadrature nodes of order=norder+1
+!    - umatr: double precision (npols,npols)
+!        vals to coeffs matrix
+!    - vmatr: double precision (npols,npols)
+!        coefs to vals matrix
+!    - wts: double precision(npols)
+!        vioreanu quadrature weights of order=norder+1
+!
   implicit real *8 (a-h,o-z)
-  real *8 :: xys(2,*), whts(*)
-  dimension xsout(1000), ysout(1000), umatr(1),vmatr(1)
-  !
-  ! This subroutine constructs the Vioreanu-Rokhlin quadrature nodes
-  ! and weights for polynomials on the simplex triangle with the
-  ! vertices
-  !
-  !       (0,0), (1,0), (0,1)                                   (1)
-  ! 
-  ! It also constructs the matrix vmatr converting the coefficients of
-  ! the polynomial expansion to its values at the interpolation nodes,
-  ! and its inverse umatr, converting the values of a function at the
-  ! interpolation nodes into the coefficients of the polynomial
-  ! expansion.
-  ! 
-  !          Input parameters:
-  ! 
-  !     norder - the order of the quadrature
-  ! 
-  ! 
-  !          Output parameters:
-  ! 
-  !     npols - the number of the polynomials, i.e. the terms in the
-  !           expansion
-  !     xsout - the x-coordinates of the interpolation nodes (npols of them)
-  !     ysout - the y-coordinates of the interpolation nodes (npols of them)
-  !     umatr - the npols*npols matrix, converting the values of the polynomial
-  !           at the interpolation nodes into the coefficients of its expansion
-  !     vmatr - the npols*npols matrix, converting the coefficients of 
-  !           the expansion into its values at the interpolation nodes.
-  !     wsout - the corresponding quadrature weigths (npols of them)
-  ! 
-  ! c
-  ! c
-  ! c       ... first, get the interpolation nodes for the standard triangle
-  ! c
-  ! c
-  call ortho2smexps(itype,norder,npols,xsout,ysout,whts)
-
-!  print *, "constructed vioreanu quad, umatr and vmatr are wrong!!"
-!  print *, "please update using koorn_pols"
-  
-  !
-  ! ... and convert them into simplex coordinates
-  !
-  do i=1,npols
-    call ortho2_stdtosimplex(xsout(i),ysout(i), xys(1,i), xys(2,i))
-    whts(i) = whts(i)/sqrt(3.0d0)
-    whts(i) = whts(i)*0.5d0
-  end do
+  integer, intent(in) :: norder,npols
+  real *8, intent(out) :: uvs(2,npols),wts(npols)
+  real *8, intent(out) :: umatr(npols,npols),vmatr(npols,npols)
 
 
-  !
-  !!  temp fix to umatr and matr via calling vals2coefs and coefs2vals
-  !
-
-  call koorn_vals2coefs(norder, npols, xys, umatr)
-  call koorn_coefs2vals(norder, npols, xys, vmatr)
+  call get_vioreanu_nodes(norder,npols,uvs)
+  call get_vioreanu_wts(norder,npols,wts)
+  call koorn_vals2coefs_coefs2vals(norder,npols,umatr,vmatr)
 
 
   return
@@ -538,9 +555,8 @@ subroutine koorn_vals2coefs_coefs2vals(korder,kpols,umatr,vmatr)
   real *8 umatr(kpols,kpols)
   real *8 vmatr(kpols,kpols)
   real *8 xys(2,kpols)
-  real *8 wts(kpols)
 
-  call vioreanu_simplex_quad(korder, kpols, xys, umatr,vmatr,wts)
+  call get_vioreanu_nodes(korder,kpols,xys)
   call koorn_coefs2vals(korder,kpols,xys,vmatr)
   call dinverse(kpols, vmatr, info, umatr)
 
