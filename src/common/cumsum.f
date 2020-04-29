@@ -1,14 +1,61 @@
-c-------------------------------------------
-c> @brief
-c> Compute the cumulative sum of a vector:
-c>
-c> \f{equation*}{b_{i} = \sum_{j=1}^{i} a_{j} \f}
-c>
-c> @param[in] n: length of array
-c> @param[in] a: input array
-c> @param[out] b: cumulative sum of input array
-c------------------------------------------------
+c
+c
+c     This file contains the following user callable
+c     routines:
+c
+c     cumsum - computes the cumulative sum (aka prefix
+c       sum or scan) of an array of integers. This code
+c       does some memory management and basic decision
+c       making around parallelism, which is hidden from
+c       the caller
+c      
+c     Advanced user interfaces:
+c******************************
+c     Note for developers: the prefix sum for integer
+c     arrays on a shared memory machine can be memory
+c     bound and performance changes significantly depending
+c     on the speed and size of the L1,L2, and L3 cache
+c     on chip. Thus, the performance of the parallel code
+c     typically exhibits non-monotonic behavior. The efficiency
+c     increases with the length of the vectors as the
+c     overhead is ammortized but then the memory bound
+c     effects kicks in for larger vectors. The best-case
+c     improvement is nthreads/2, though it is observed
+c     only for the appropriate length vectors.
+c******************************      
+c     
+c     cumsum1 - same as cumsum but forces the serial
+c       code
+c
+c     cumsum_para - openmp implementation of parallel
+c       cumulative sum
+c
+c
+
+
+      
       subroutine cumsum(n,a,b)
+c
+c     this subroutine computes the cumulative sum
+c     (aka prefix sum aka scan) of the vector a and
+c     returns in the result in b. i.e.
+c
+c     b(i) = sum_{j\leq i} a(j) for i = 1,...,n
+c
+c     this is the memory management routine with
+c     the work done by either cumsum1 in serial or
+c     cumsum_para in parallel
+c
+c     input:
+c       n - integer
+c         length of a and b
+c       a - integer(n)
+c         the array to perform cumulative sum on
+c
+c     output:
+c       b - integer(n)
+c         the resulting cumulative sum array
+c      
       implicit none
       integer, intent(in) :: n,a(n)
       integer, intent(out) :: b(n)
@@ -18,24 +65,30 @@ c------------------------------------------------
       integer d(lend)
       integer, allocatable :: d2(:)
 c$    integer omp_get_max_threads
-      data nsmall / 5000 /
+      data nsmall / 10000 /
 
-c     if small problem, no parallel
+c     if small problem, don't do parallel
       if (n .lt. nsmall) goto 300
 
-c     if not a ton of processors, use d on stack
-      maxth = 1
+c     get upper bound of number of threads on hand
+
+      maxth = 1      
 c$    maxth = omp_get_max_threads()
+
+c     no benefit to parallelize if only 2 threads
+      if (maxth .le. 2) goto 300
+
+c     if not a ton of processors, use d on stack
       if (maxth .le. lend) goto 200
 
 c     if tons of processors, allocate d2
       allocate(d2(maxth))
-      call cumsum_para2(n,a,b,maxth,d2)
+      call cumsum_para(n,a,b,maxth,d2)
       return
 
  200  continue
 
-      call cumsum_para2(n,a,b,lend,d)
+      call cumsum_para(n,a,b,lend,d)
       return
       
  300  continue
@@ -47,6 +100,26 @@ c     if tons of processors, allocate d2
 c
 c
       subroutine cumsum1(n,a,b)
+c
+c     this subroutine computes the cumulative sum
+c     (aka prefix sum aka scan) of the vector a and
+c     returns in the result in b. i.e.
+c
+c     b(i) = sum_{j\leq i} a(j) for i = 1,...,n
+c
+c     this is the serial version of the code
+c
+c     input:
+c       n - integer
+c         length of a and b
+c       a - integer(n)
+c         the array to perform cumulative sum on
+c
+c     output:
+c       b - integer(n)
+c         the resulting cumulative sum array
+c      
+      
       implicit none
       integer, intent(in) :: n,a(n)
       integer, intent(out) :: b(n)
@@ -63,80 +136,32 @@ c
       return
       end
 c
-
-c      subroutine cumsum_para(n,a,b,nd,d)
-cc--------------------------------------------
-cc      
-c      implicit none
-c      integer, intent(in) :: n,a(n),nd
-c      integer, intent(out) :: b(n),d(nd)
-c
-c      integer i,isum,offset,istart,iend
-c      integer nth, id, nbatch, inext
-cc$    integer omp_get_thread_num, omp_get_num_threads      
-c
-c
-cc$OMP PARALLEL DEFAULT(none) SHARED(a,b,n,nth,d,nbatch)
-cc$OMP$ PRIVATE(i,isum,offset,istart,iend,id,inext)
-c
-c
-cc     get some info on parallel set up (serial)
-c      
-cc$OMP SINGLE      
-c      nth = 1
-cc$    nth = omp_get_num_threads()
-c      nbatch = (n-1)/nth+1
-cc$OMP END SINGLE      
-c
-c      
-cc     partial sums (parallel)
-c
-c      id = 1
-cc$    id = omp_get_thread_num()+1
-c
-c      istart = 1+(id-1)*nbatch
-c      iend = min(istart + nbatch-1,n)
-c
-c      isum = 0
-c      do i = istart,iend
-c         isum = isum + a(i)
-c         b(i) = isum
-c      enddo
-c      d(id) = isum
-c
-cc$OMP BARRIER
-c      
-cc     accumulate over ends of partial sums (serial)
-c
-cc$OMP SINGLE      
-c      isum = 0
-c      do i = 1,nth
-c         inext = d(i)
-c         d(i) = isum
-c         isum = isum+inext
-c      enddo
-cc$OMP END SINGLE
-c
-cc     broadcast these accumulations (parallel)
-c
-c      offset = d(id)
-c      do i = istart,iend
-c         b(i) = b(i) + offset
-c      enddo
-c      
-cc$OMP END PARALLEL
-c      
-c      return
-c      end
-cc
-
-
       
-      subroutine cumsum_para2(n,a,b,nd,d)
-c----------------------------------------------------------------------
+      subroutine cumsum_para(n,a,b,nd,d)
 c
+c     this subroutine computes the cumulative sum
+c     (aka prefix sum aka scan) of the vector a and
+c     returns in the result in b. i.e.
 c
-c      
+c     b(i) = sum_{j\leq i} a(j) for i = 1,...,n
+c
+c     this is the openmp parallel version of the code
+c
+c     input:
+c       n - integer
+c         length of a and b
+c       a - integer(n)
+c         the array to perform cumulative sum on
+c       nd - integer
+c         length of the work array d, nd should be larger
+c         than the number of threads to be used
+c     output:
+c       b - integer(n)
+c         the resulting cumulative sum array
+c       d - integer(nd)
+c         work array of length nd, nd should be larger than
+c         the number of threads to be used
+c     
 c     WARNING: this subroutine depends on the properties
 c     of the "static" schedule in the OPENMP
 c     specification. Specifically, the static schedule
@@ -147,8 +172,6 @@ c     loops of the same cardinality within a parallel
 c     region. Changing the schedule will make the code non
 c     conforming.
 c
-c----------------------------------------------------------------------      
-      
       implicit none
       integer, intent(in) :: n,a(n),nd
       integer, intent(out) :: b(n),d(nd)
