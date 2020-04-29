@@ -105,9 +105,9 @@ KOBJS = $(KER)/helm_kernels.o
 
 # Quadrature wrappers
 QUAD = src/quadratures
-QOBJS = $(QUAD)/far_field_routs.o $(QUAD)/ggq-pvradial.o \
-	$(QUAD)/ggq-pvselfquad.o $(QUAD)/ggq-quads.o \
-	$(QUAD)/ggq-radial.o $(QUAD)/ggq-selfquad.o \
+QOBJS = $(QUAD)/far_field_routs.o \
+	$(QUAD)/ggq-selfquad-routs.o $(QUAD)/ggq-quads.o \
+	$(QUAD)/ggq-selfquad.o \
 	$(QUAD)/near_field_routs.o
 
 # Surface wrappers

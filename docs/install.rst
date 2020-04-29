@@ -17,7 +17,8 @@ For the basic libraries
 * Fortran compiler, such as ``gfortran`` packaged with GCC
 * GNU make
 * `FMM3D <https://github.com/flatironinstitute/FMM3D>`_
-* Blocked linear algebra routines and LAPACK (default used: openblas)
+* Blocked linear algebra routines and LAPACK (default used: Netlib BLAS
+on Linux machines, and framework accelerate on MacOS)
 
 Optional:
 
@@ -29,12 +30,8 @@ Quick install instructions
 Make sure you have dependencies downloaded, and `cd` into your fmm3dbie
 directory. 
 
-Set an environment variable called S3D_INSTALL_DIR to the location of
-the fmm3dbie directory. This can be done using ``export
-S3D_INSTALL_DIR=<path-to-fmm3dbie directory>``.
-
 -  For linux, run ``make test``.
--  For Mac OSX, run ``cp make.inc.macosx_gcc make.inc`` followed by ``make test``.
+-  For Mac OSX, run ``cp make.inc.macosx.gnu make.inc`` followed by ``make test``.
 
 This should compile the static library
 in ``lib-static/`` and some fortran test drivers in ``test/``, after which it
@@ -43,7 +40,7 @@ runs the test programs. The last 5 lines of the terminal output should be::
    cat print_testres.txt
    Successfully completed 3 out of 3 tests in common testing suite
    Successfully completed 2 out of 2 tests in helm_wrappers testing suite
-   Successfully completed 13 out of 13 tests in tria_routs testing suite
+   Successfully completed 14 out of 14 tests in tria_routs testing suite
    rm print_testres.txt
 
 .. note ::
@@ -70,12 +67,6 @@ link to the FMM library using the ``-lfmm3dbie`` option.
    On MacOSX, in order to link with the dynamic libraries, you will
    need to copy libfmm3d.so to ``usr/local/lib``. See any of the
    makefiles in the ``examples/`` directory for prototypes.
-
-.. note ::
-   In order make the environment variables S3D_INSTALL_DIR and/or
-   LD_LIBRARY_PATH permanent, you can 
-   update the .profile for your terminal (.bashrc for bash
-   terminals for example).
 
 Type ``make`` to see a list of other build options (language
 interfaces, etc). Please see ``examples/`` for sample drivers.

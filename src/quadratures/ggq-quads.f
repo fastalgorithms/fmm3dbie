@@ -149,8 +149,8 @@ c
       complex *16, allocatable :: sints_f(:,:),svtmp_f(:,:)
       complex *16, allocatable :: svtmp2(:,:)
 
-      real *8, allocatable :: rad(:),xyztarg2(:,:)
-      integer ilrad(3),nlrad(3),irad
+      real *8, allocatable :: xyztarg2(:,:)
+      integer irad
 
       real *8, allocatable :: qnodes(:,:),qwts(:)
       real *8 ra
@@ -268,18 +268,6 @@ c       setup self quadrature for bremer
 c
       
       
-      call getenv("S3D_INSTALL_DIR",dirname)
-      fname = trim(dirname)//
-     1   '/src/quadratures/ggq-self-quads/radial4-8-12.bin'
-      open(unit=171,file=fname,action='read',
-     1     form='unformatted',access='stream',status='old')
-      read(unit=171) ilrad
-      read(unit=171) nlrad
-      read(unit=171) lrad
-      allocate(rad(lrad))
-      read(unit=171) rad
-      close(171)
-
       t1 = second()
 C$        t1 = omp_get_wtime()
 
@@ -405,10 +393,8 @@ c
 
           if(ipatch.eq.jpatch) then
             call get_ggq_self_quad_pt(norder,npols,uvs_targ(1,jtarg),
-     1      umatr,srccoefs(1,istart),ndtarg,targvals(1,jtarg),
-     2      rad(ilrad(irad)),nlrad(irad),fker,ndd,dpars,ndz,zpars,
-     2      ndi,pars,
-     2      wnear(iqstart+1))
+     1      umatr,srccoefs(1,istart),ndtarg,targvals(1,jtarg),irad,
+     2      fker,ndd,dpars,ndz,zpars,ndi,pars,wnear(iqstart+1))
           endif
 
           if(ipatch.ne.jpatch) then
@@ -576,8 +562,8 @@ c
       complex *16, allocatable :: sints_f(:,:),svtmp_f(:,:)
       complex *16, allocatable :: svtmp2(:,:)
 
-      real *8, allocatable :: rad(:),xyztarg2(:,:)
-      integer ilrad(3),nlrad(3),irad
+      real *8, allocatable :: xyztarg2(:,:)
+      integer irad
 
       real *8, allocatable :: qnodes(:,:),qwts(:)
       real *8 ra
@@ -693,20 +679,6 @@ c
 c       setup self quadrature for bremer
 c
       
-      call getenv("S3D_INSTALL_DIR",dirname)
-      fname = trim(dirname)//
-     1   '/src/quadratures/ggq-self-quads/pvradial4-8-12.bin'
-      open(unit=171,file=fname,action='read',
-     1     form='unformatted',access='stream',status='OLD')
-      read(unit=171) ilrad
-      read(unit=171) nlrad
-      read(unit=171) lrad
-      allocate(rad(lrad))
-      read(unit=171) rad
-      close(171)
-
-
-
       t1 = second()
 C$        t1 = omp_get_wtime()
 
@@ -833,8 +805,8 @@ c
           if(ipatch.eq.jpatch) then
             call get_ggq_self_quad_pv_pt(norder,npols,
      1      uvs_targ(1,jtarg),
-     1      umatr,srccoefs(1,istart),ndtarg,targvals(1,jtarg),
-     2      rad(ilrad(irad)),nlrad(irad),fker,ndd,dpars,ndz,zpars,ndi,
+     1      umatr,srccoefs(1,istart),ndtarg,targvals(1,jtarg),irad,
+     2      fker,ndd,dpars,ndz,zpars,ndi,
      2      ipars,wnear(iqstart+1))
           endif
 
@@ -867,8 +839,7 @@ c
 c
 
       subroutine get_ggq_self_quad(norder,npols,uvs,umat,vmat,
-     1   srccoefs,rad,lrad,
-     1   fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
+     1   srccoefs,irad,fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
 c       this is the replacement for xtri_zself 
@@ -887,8 +858,8 @@ c
 
 
       implicit real *8(a-h,o-z)
-      integer norder,npols,lrad
-      real *8 rad(*)
+      integer norder,npols
+      integer irad
       real *8 srccoefs(9,npols)
       real *8 uvs(2,npols),umat(npols,npols)
       real *8 vmat(npols,npols)
@@ -949,7 +920,7 @@ c
         u = uvs(1,inode)
         v = uvs(2,inode)
         ns = 0
-        call self_quadrature_new(ier,rad,verts,uvs(1,inode),
+        call self_quadrature_new(irad,verts,uvs(1,inode),
      1     uvs(2,inode),srcvals(4,inode),ns,xs,ys,ws)
      
         allocate(srctmp(12,ns),qwts(ns))
@@ -1010,7 +981,7 @@ c
 c
 
       subroutine get_ggq_self_quad_pt(norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,rad,lrad,
+     1   srccoefs,ndtarg,targ,irad,
      1   fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
@@ -1030,8 +1001,7 @@ c
 
 
       implicit real *8(a-h,o-z)
-      integer norder,npols,lrad,ndtarg
-      real *8 rad(*)
+      integer norder,npols,ndtarg
       real *8 srccoefs(9,npols),srcvals(9)
       real *8, allocatable :: sigvalstmp(:)
       real *8 targ(ndtarg)
@@ -1078,7 +1048,7 @@ c
         fint(j) = 0
       enddo
       ns = 0
-      call self_quadrature_new(ier,rad,verts,uvs(1),
+      call self_quadrature_new(irad,verts,uvs(1),
      1  uvs(2),srcvals(4),ns,xs,ys,ws)
       
      
@@ -1138,7 +1108,7 @@ c
 c
 
       subroutine get_ggq_self_quad_pt_vec(norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,rad,lrad,
+     1   srccoefs,ndtarg,targ,irad,
      1   fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
@@ -1152,8 +1122,7 @@ c
 
 
       implicit real *8(a-h,o-z)
-      integer norder,npols,lrad,ndtarg,nd
-      real *8 rad(*)
+      integer norder,npols,ndtarg,nd,irad
       real *8 srccoefs(9,npols),srcvals(9)
       real *8, allocatable :: sigvalstmp(:)
       real *8 targ(ndtarg)
@@ -1201,7 +1170,7 @@ c
         enddo
       enddo
       ns = 0
-      call self_quadrature_new(ier,rad,verts,uvs(1),
+      call self_quadrature_new(irad,verts,uvs(1),
      1  uvs(2),srcvals(4),ns,xs,ys,ws)
      
       allocate(srctmp(12,ns),qwts(ns))
@@ -1262,7 +1231,7 @@ c
 c
 
       subroutine get_ggq_self_quad_pv_pt(norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,rad,lrad,
+     1   srccoefs,ndtarg,targ,irad,
      1   fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
@@ -1282,8 +1251,7 @@ c
 
 
       implicit real *8(a-h,o-z)
-      integer norder,npols,lrad,ndtarg
-      real *8 rad(*)
+      integer norder,npols,ndtarg,irad
       real *8 srccoefs(9,npols),srcvals(9)
       real *8, allocatable :: sigvalstmp(:)
       real *8 targ(ndtarg)
@@ -1329,7 +1297,7 @@ c
         fint(j) = 0
       enddo
       ns = 0
-      call pv_self_quadrature_new(ier,rad,verts,uvs(1),
+      call pv_self_quadrature_new(irad,verts,uvs(1),
      1  uvs(2),srcvals(4),ns,xs,ys,ws)
       
      
@@ -1389,7 +1357,7 @@ c
 c
 
       subroutine get_ggq_self_quad_pv_pt_vec(norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,rad,lrad,
+     1   srccoefs,ndtarg,targ,irad,
      1   fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
 c
 c
@@ -1403,8 +1371,7 @@ c
 
 
       implicit real *8(a-h,o-z)
-      integer norder,npols,lrad,ndtarg,nd
-      real *8 rad(*)
+      integer norder,npols,irad,ndtarg,nd
       real *8 srccoefs(9,npols),srcvals(9)
       real *8, allocatable :: sigvalstmp(:)
       real *8 targ(ndtarg)
@@ -1452,7 +1419,7 @@ c
         enddo
       enddo
       ns = 0
-      call pv_self_quadrature_new(ier,rad,verts,uvs(1),
+      call pv_self_quadrature_new(irad,verts,uvs(1),
      1  uvs(2),srcvals(4),ns,xs,ys,ws)
      
       allocate(srctmp(12,ns),qwts(ns))
