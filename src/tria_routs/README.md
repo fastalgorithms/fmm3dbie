@@ -18,10 +18,4 @@ triatreerouts.f - routines for constructing an adaptive level
 koornexps.f90 - routines for handling orthogonal koornwinder 
   polynomials on the standard simplex
 
-ortho2eva.f - old version of evaluating orthogonal koornwinder 
-  polynomials on the equilateral triangle
-
-ortho2exps.f - old version of obtaining vioreanu-rokhlin nodes on the 
-  equilateral triangle
-
 
