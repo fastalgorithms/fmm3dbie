@@ -299,42 +299,59 @@ end subroutine get_centroid_rads_tri
 !
 !
 subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
-    npts,srccoefs,nfars,ixyzso,nptso,srcover)
+    npts,srccoefs,srcvals,nfars,ixyzso,nptso,srcover)
 !
 !
 !  This subroutine oversamples geometry information
 !  given expansion coeffs of geometry info on patches
 !
-!  input
-!    npatches - integer
-!       number of patches
-!    norders - integer(npatches)
-!       discretization order of patches
-!    ixyzs - integer(npatches+1)
-!      starting location of points on patch i
-!    iptype - integer(npatches)
-!      type of patch
-!      iptype = 1, triangle discretized using RV nodes
-!    npts - integer
-!      total number of points on the surface
-!    srccoefs - real *8 (9,npts)
-!      koornwinder expansion coefs of geometry info
-!    nfars - integer(npatches)
-!      oversampled order of patch i
-!    ixyzso - integer(npatches+1)
-!      starting location of oversampled points on patch i
-!    nptso - integer
-!      total number of oversampled points
-!  
-!    ixyzs - integer(npatches+1)
+!
+!  Extreme care must be taken when an oversampled node is identical
+!  to a discretization node. The routine ensures that in this event
+!  the source information is copied over from the original
+!  discretization
+!
+!  Input arguments:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        discretization order of patches
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!    - nfars: integer(npatches)
+!        oversampled order of patch i
+!    - ixyzso: integer(npatches+1)
+!        starting location of oversampled points on patch i
+!    - nptso: integer
+!        total number of oversampled points
+!
+!  Output arguments:   
+!    
+!    - srcover: double precision(12,nptso)
+!        Oversampled geometry information
+!
+!----------------------------------------------
 !
 
   implicit none
-  integer npatches,norders(npatches),ixyzs(npatches+1)
-  integer iptype(npatches),ixyzso(npatches+1),nfars(npatches)
+  integer, intent(in) :: npatches,norders(npatches),ixyzs(npatches+1)
+  integer, intent(in) :: iptype(npatches),ixyzso(npatches+1)
+  integer, intent(in) :: nfars(npatches)
+  integer, intent(in) :: npts,nptso
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+  real *8, intent(out) :: srcover(12,nptso)
   integer nfar,norder
-  integer npts,nptso
-  real *8 srccoefs(9,npts),srcover(12,nptso),tmp(3),rr
+  real *8 tmp(3),rr
   
 
   real *8, allocatable :: pmat(:,:),pols(:)
@@ -342,7 +359,8 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
   character *1 transa,transb
   real *8 alpha, beta
 
-  integer i,istart,istartover,nfar_pols,j,jpt,npols
+  integer i,istart,istartover,nfar_pols,j,jpt,npols,l
+  integer n1,n2,ipt,i1,i2
 
 
   transa = 'n'
@@ -353,34 +371,68 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
     nfar = nfars(i)
     norder = norders(i)
 
-    if(iptype(i).eq.1) then
-      nfar_pols = (nfar+1)*(nfar+2)/2
-      npols = (norder+1)*(norder+2)/2
-      allocate(uvs(2,nfar_pols),wts(nfar_pols))
-      allocate(umat(nfar_pols,nfar_pols),vmat(nfar_pols,nfar_pols))
-      call vioreanu_simplex_quad(nfar,nfar_pols,uvs,umat,vmat,wts)
+    if(nfar.ne.norder) then
+      if(iptype(i).eq.1) then
+        nfar_pols = ixyzso(i+1)-ixyzso(i)
+        npols = ixyzs(i+1)-ixyzs(i)
+        allocate(uvs(2,nfar_pols))
+        call get_vioreanu_nodes(nfar,nfar_pols,uvs)
 
 
-      allocate(pmat(npols,nfar_pols))
+        allocate(pmat(npols,nfar_pols))
     
+        do j=1,nfar_pols
+          call koorn_pols(uvs(1,j),norder,npols,pmat(1,j))
+        enddo
+      endif
+
+      istart = ixyzs(i)
+      istartover = ixyzso(i)
+      call dgemm(transa,transb,9,nfar_pols,npols,alpha, &
+          srccoefs(1,istart),9,pmat,npols,beta,srcover(1,istartover),12)
       do j=1,nfar_pols
-        call koorn_pols(uvs(1,j),norder,npols,pmat(1,j))
+        jpt = istartover+j-1
+        call cross_prod3d(srcover(4,jpt),srcover(7,jpt),tmp)
+        rr = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+        srcover(10,jpt) = tmp(1)/rr
+        srcover(11,jpt) = tmp(2)/rr
+        srcover(12,jpt) = tmp(3)/rr
+      enddo
+
+!
+!    Fix clash in coordinates across orders
+!
+      if(iptype(i).eq.1) then
+        n1 = mod(norder,3)
+        n2 = mod(nfar,3)
+
+        if(n1.eq.0.and.n2.eq.0) then
+          i1 = 1
+          i2 = 1
+          if(norder.eq.15) i1 = 76
+          if(norder.eq.18) i1 = 106
+
+          if(nfar.eq.15) i2 = 76
+          if(nfar.eq.18) i2 = 106
+
+          ipt = ixyzs(i)+i1-1
+          jpt = ixyzso(i) + i2-1
+          do l=1,12
+            srcover(l,jpt) = srcvals(l,ipt)
+          enddo
+        endif
+      endif
+      deallocate(uvs,pmat)
+    else
+      npols = ixyzs(i+1)-ixyzs(i)
+      istart = ixyzs(i)
+      istartover = ixyzso(i)
+      do j=1,npols
+        do l=1,12
+          srcover(l,j+istartover-1) = srcvals(l,j+istartover-1)
+        enddo
       enddo
     endif
-
-    istart = ixyzs(i)
-    istartover = ixyzso(i)
-    call dgemm(transa,transb,9,nfar_pols,npols,alpha, &
-        srccoefs(1,istart),9,pmat,npols,beta,srcover(1,istartover),12)
-    do j=1,nfar_pols
-      jpt = istartover+j-1
-      call cross_prod3d(srcover(4,jpt),srcover(7,jpt),tmp)
-      rr = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
-      srcover(10,jpt) = tmp(1)/rr
-      srcover(11,jpt) = tmp(2)/rr
-      srcover(12,jpt) = tmp(3)/rr
-    enddo
-    deallocate(uvs,wts,umat,vmat,pmat)
   enddo
 end subroutine oversample_geom
 
