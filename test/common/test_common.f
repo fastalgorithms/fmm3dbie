@@ -1,10 +1,11 @@
       implicit real *8 (a-h,o-z)
 
-      ntests = 3
+      ntests = 4
       call test_get_uni(i1,i2)
       call test_setdecomp(i3)
+      call test_cumsum(i4)
 
-      nsuccess = i1+i2+i3
+      nsuccess = i1+i2+i3+i4
 
       open(unit=33,file='../../print_testres.txt')
       write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
@@ -220,3 +221,77 @@ c
 
       return
       end
+
+
+            
+      subroutine test_cumsum(isuccess)
+c$    use omp_lib
+      implicit real *8 (a-h,o-z)
+      integer, allocatable :: a(:), b(:), b2(:)
+      integer :: ns(10), idiff(10), nn, nmax, i, nrange, ntimes
+
+      call prini(6,13)
+
+      ns(1) = 240000
+      ns(2) = 270000
+      ns(3) = 1000000
+      ns(4) = 1500000
+      ns(5) = 10000000
+      nn = 5
+      
+      nmax = 0
+      do i = 1,nn
+         nmax = max(nmax,ns(i))
+      enddo
+
+
+      allocate(a(nmax),b(nmax),b2(nmax))
+
+      nrange = nmax*1.2
+
+      ifprint = 1
+
+      isuccess = 1
+      ntimes = 100
+      do i = 1,nn
+         do j=1,ns(i)
+            a(j) = hkrand(0)*nrange
+         enddo
+         call cpu_time(t1)
+C$       t1 = omp_get_wtime()
+         do j = 1,ntimes
+            call cumsum1(ns(i),a,b)
+         enddo
+         call cpu_time(t2)
+C$       t2 = omp_get_wtime()
+
+         call cumsum(ns(i),a,b2)
+         call cpu_time(t3)
+C$       t3 = omp_get_wtime()
+         do j = 1,ntimes
+            call cumsum(ns(i),a,b2)
+         enddo
+         call cpu_time(t4)
+C$       t4 = omp_get_wtime()
+
+
+         print *, 'speed-up ',(t2-t1)/(t4-t3), ' n = ', ns(i)
+
+         idiff(i) = 0
+         do j = 1,ns(i)
+            idiff(i) = idiff(i) + abs(b(j)-b2(j))
+         enddo
+         if (idiff(i) .gt. 0) then
+            isuccess = 0
+            print *, 'para cumsum not equal to direct, ns=',ns(i)
+         endif
+      enddo
+
+
+      if(isuccess.eq.1) call prinf('test cumsum passed*',i,0)
+      
+      return
+      end
+
+
+      
