@@ -2,8 +2,8 @@
 EXEC = helm_wrappers
 
 HOST = osx-gfortran
-HOST=linux-gfortran
-HOST=linux-gfortran-openmp
+#HOST=linux-gfortran
+#HOST=linux-gfortran-openmp
 #HOST=linux-ifort
 
 ifeq ($(HOST),osx-gfortran)
@@ -58,13 +58,9 @@ SOURCES =  test_helm_wrappers_qg_lp.f \
   $(QUAD)/near_field_routs.f \
   $(QUAD)/ggq-quads.f \
   $(QUAD)/ggq-selfquad.f \
-  $(QUAD)/ggq-pvselfquad.f \
-  $(QUAD)/ggq-radial.f \
-  $(QUAD)/ggq-pvradial.f \
+  $(QUAD)/ggq-selfquad-routs.f \
   $(KER)/helm_kernels.f90 \
   $(TRIA)/koornexps.f90 \
-  $(TRIA)/ortho2eva.f90 \
-  $(TRIA)/ortho2exps.f90 \
   $(COM)/dotcross3d.f90 \
   $(COM)/lapack_wrap.f90 \
   $(COM)/orthom.f \

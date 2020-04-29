@@ -41,31 +41,23 @@ c       and q in (2).  See radial_init for a list of possible orders.
 c
 c       The following subroutines are user-callable:
 c
-c   self_quadrature_init - this routine must be called before 
-c       self_quadrature
 c
-c   self_quadrature - return a quadrature for evaluating an integral of
-c       the form (1)
+c   self_quadrature_new - 
+c       return a quadrature for evaluating an integral of
+c       the form (1) for compact kernels
 c
-c   selfadap - construct an adaptive quadrature for evaluating an 
-c       integral of the form (1) using double exponential quadrature
-c       rules
+c   pv_quadrature_new
+c       return a quadrature for evaluating an integral of
+c       the form (1) for pv kernels
 c
-c   selfadap2 - construct an adaptive quadrature for evaluating an 
-c       integral of the form (1) using Gaussian quadrature rules
 c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-        subroutine self_quadrature_new(ier, rad, verts0, x0, y0, dr,
+        subroutine self_quadrature_new(irad, verts0, x0, y0, dr,
      1    nquad, xs, ys, whts)
         implicit double precision (a-h,o-z)
-        real *8 rad(1)
         dimension verts(2,3),dr(3,2),a(2,2),ainv(2,2),verts0(2,3)
-        dimension xs(1),ys(1),whts(1),b(3,2)
-c
-c        dimension rad(500 000)
-c        double precision, allocatable :: rad(:)
-c        save rad
+        dimension xs(*),ys(*),whts(*),b(3,2)
 c
 c       Return a quadrature formula for evaluating integrals of the
 c       form (1).
@@ -100,62 +92,143 @@ c
 c       Find a linear map A which makes the Jacobian at the target node
 c       conformal.  Also, compute the inverse of A.
 c
-        call self_findmap(dr,a,ainv)
+        call find_conf_map(dr,a,ainv)
 c
 c
 c       Apply the inverse of A to the vertices of the triangle T in
 c       order to find the vertices of the triangle T_0.
 c
-        do 2000 i=1,3
-        x = verts0(1,i)-x0
-        y = verts0(2,i)-y0
+        do i=1,3
+          x = verts0(1,i)-x0
+          y = verts0(2,i)-y0
 c
-        xx = ainv(1,1)*x+ainv(1,2)*y
-        yy = ainv(2,1)*x+ainv(2,2)*y
+          xx = ainv(1,1)*x+ainv(1,2)*y
+          yy = ainv(2,1)*x+ainv(2,2)*y
 c
-        verts(1,i) = xx
-        verts(2,i) = yy
- 2000 continue
+          verts(1,i) = xx
+          verts(2,i) = yy
+        enddo
 c
 c       Fetch a quadrature on T_0 for radially singular functions.
 c
-        call raddiag(jer,rad,verts,nquad,xs,ys,whts)
-c
-        if (jer .ne. 0) then
-        ier = 128
-        return
-        endif
+        call raddiag(irad,verts,nquad,xs,ys,whts)
 c
 c       Apply the mapping A to the quadrature formula.
 c
         det = abs(a(1,1)*a(2,2)-a(1,2)*a(2,1))
 c
-        sum=0
-c
-        do 3000 i=1,nquad
-        s   = xs(i)
-        t   = ys(i)
-        wht = whts(i)
+        do i=1,nquad
+          s   = xs(i)
+          t   = ys(i)
+          wht = whts(i)
 c       
-        u = a(1,1)*s + a(1,2)*t
-        v = a(2,1)*s + a(2,2)*t
-        wht = wht*det
+          u = a(1,1)*s + a(1,2)*t
+          v = a(2,1)*s + a(2,2)*t
+          wht = wht*det
 c
-        sum=sum+wht
 c
-        xs(i)   = u+x0
-        ys(i)   = v+y0
-        whts(i) = wht
- 3000 continue
+          xs(i)   = u+x0
+          ys(i)   = v+y0
+          whts(i) = wht
+        enddo
 c
         return
         end
+c
+c
+c
+c
+c
+        subroutine pv_self_quadrature_new(irad,verts0,x0,y0,dr,
+     1       nquad,xs,ys,whts)
+        implicit double precision (a-h,o-z)
+        integer irad
+        dimension verts(2,3),dr(3,2),a(2,2),ainv(2,2),verts0(2,3)
+        dimension xs(*),ys(*),whts(1),b(3,2)
+c
+c       Return a quadrature formula for evaluating integrals of the
+c       form (1).
+c
+c                            Input Parameters:
+c
+c    verts - a (2,3) matrix which specifys the vertices of the triangle
+c       over which the surface element is parameterized
+c    (x0,y0) - the coordinates (in the parameterization variables)
+c       of the target point x
+c    dr - the (3,2) Jacobian of the parameterization at (x0,y0)
+c
+c                           Output Parameters:
+c
+c    ier - an error return code;
+c       ier = 0     indicates successful execution
+c       ier = 128   means that the quadrature formula could not be
+c                   constructed
+c
+c    nquad - the number of nodes in the resulting quadrature formula
+c    xs - this user-supplied array will contain the x coordinates of
+c       the quadrature nodes upon return
+c    ys - this user-supplied array will contain the y coordinates of
+c       the quadrature nodes upone return
+c    whts - this user-supplied array will contain the quadrature weights
+c       upon return
+c
+c
+        ier = 0
+c
+c
+c       Find a linear map A which makes the Jacobian at the target node
+c       conformal.  Also, compute the inverse of A.
+c
+        ainv=0
+        call find_conf_map(dr,a,ainv)
 
-
-
-
-
-        subroutine self_findmap(a,b,binv)
+c
+c       Apply the inverse of A to the vertices of the triangle T in
+c       order to find the vertices of the triangle T_0.
+c
+        do i=1,3
+          x = verts0(1,i)-x0
+          y = verts0(2,i)-y0
+c
+          xx = ainv(1,1)*x+ainv(1,2)*y
+          yy = ainv(2,1)*x+ainv(2,2)*y
+c
+          verts(1,i) = xx
+          verts(2,i) = yy
+        enddo
+c
+c       Fetch a quadrature on T_0 for radially singular functions.
+c
+        call pv_raddiag(irad,verts,nquad,xs,ys,whts)
+c
+c       Apply the mapping A to the quadrature formula.
+c
+        det = abs(a(1,1)*a(2,2)-a(1,2)*a(2,1))
+c
+c
+        do i=1,nquad
+          s   = xs(i)
+          t   = ys(i)
+          wht = whts(i)
+c
+          u = a(1,1)*s + a(1,2)*t
+          v = a(2,1)*s + a(2,2)*t
+          wht = wht*det
+c
+c
+          xs(i)   = u+x0
+          ys(i)   = v+y0
+          whts(i) = wht
+        enddo
+c
+        return
+        end
+c
+c
+c
+c
+c
+        subroutine find_conf_map(a,b,binv)
         implicit double precision (a-h,o-z)
         dimension a(3,2),b(2,2),binv(2,2),q(3,2)
 c

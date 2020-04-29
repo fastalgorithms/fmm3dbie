@@ -2,6 +2,7 @@
 # OS:       macOS
 # Compiler: gfortran 9.X
 # OpenMP:   enabled
+# BLAS:     framework accelerate
 #
 
 CC=gcc-9
@@ -16,6 +17,7 @@ CLINK += -Wl,-stack_size,0x40000000
 OMPFLAGS = -fopenmp
 OMPLIBS = -lgomp
 
+LBLAS=-framework accelerate
 LDBLAS=${LDFLAGS}
 
 # MATLAB interface:
