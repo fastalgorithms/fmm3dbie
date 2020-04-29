@@ -425,7 +425,7 @@ c
       allocate(srcover(12,npts_over),wover(npts_over))
 
       call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
-     1   srccoefs,novers,ixyzso,npts_over,srcover)
+     1   srccoefs,srcvals,novers,ixyzso,npts_over,srcover)
 
       call get_qwts(npatches,novers,ixyzso,iptype,npts_over,
      1        srcover,wover)
@@ -1681,7 +1681,7 @@ c
       allocate(srcover(12,npts_over),wover(npts_over))
 
       call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
-     1   srccoefs,novers,ixyzso,npts_over,srcover)
+     1   srccoefs,srcvals,novers,ixyzso,npts_over,srcover)
 
       call get_qwts(npatches,novers,ixyzso,iptype,npts_over,
      1        srcover,wover)
@@ -2168,7 +2168,7 @@ c
       nquad = ifds(iiquad+nnz)-1
 
       call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
-     1   srccoefs,ifds(inovers),ifds(iixyzso),npts_over,rfds)
+     1   srccoefs,srcvals,ifds(inovers),ifds(iixyzso),npts_over,rfds)
 
       call get_qwts(npatches,ifds(inovers),ifds(iixyzso),iptype,
      1      npts_over,rfds,rfds(12*npts_over+1))
