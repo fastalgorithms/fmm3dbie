@@ -4,6 +4,7 @@
       real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
       real *8 errs(6),ts(2)
       real *8, allocatable :: rfacs(:,:)
+      complex *16 zk
       character *100 fname
       integer ipars(2)
       integer, allocatable :: row_ptr(:),col_ind(:)

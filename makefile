@@ -105,8 +105,7 @@ LOBJS = $(LAP)/lap_comb_dir.o
 
 # Kernels
 KER = src/kernels
-KOBJS = $(KER)/helm_kernels.o
-KOBJS = $(KER)/lap_kernels.o
+KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o
 
 # Quadrature wrappers
 QUAD = src/quadratures
