@@ -223,22 +223,11 @@ c
           fker=>h3d_dlp
         endif
 
-        if(ipv.eq.0) then
 
-          call getnearquad_ggq_compact_guru(npatches,norders,ixyzs,
+        call zgetnearquad_ggq_guru(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
-     1     ipatch_id,uvs_targ,
-     1     eps,fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,
-     1     col_ind,iquad,
-     1     rfac0,nquad,wnear)
-        else
-          call getnearquad_ggq_pv_guru(npatches,norders,ixyzs,
-     1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
-     1     ipatch_id,uvs_targ,
-     1     eps,fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,
-     1     col_ind,iquad,
-     1     rfac0,nquad,wnear)
-        endif
+     1     ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,
+     1     ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
       endif
 
 

@@ -119,8 +119,8 @@ SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
 # Triangle adaptive integration routines
 TRIA = src/tria_routs
 TOBJS = $(TRIA)/ctriaints_main.o $(TRIA)/koornexps.o \
-	$(TRIA)/triaintrouts.o \
-	$(TRIA)/triasymq.o $(TRIA)/triatreerouts.o
+	$(TRIA)/triaintrouts.o $(TRIA)/dtriaints_main.o \
+	$(TRIA)/triasymq.o $(TRIA)/triatreerouts.o $(TRIA)/dtriaintrouts.o
 
 
 OBJS = $(COMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(QOBJS) $(SOBJS) $(TOBJS)
@@ -183,7 +183,7 @@ test/com:
 test/hwrap:
 	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm $(STATICLIB) $(LIBS) 
 
-TTOBJS = test/tria_routs/test_triaintrouts.o test/tria_routs/test_koornexps.o
+TTOBJS = test/tria_routs/test_triaintrouts.o test/tria_routs/test_dtriaintrouts.o test/tria_routs/test_koornexps.o
 
 test/tria: $(TTOBJS)
 	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) $(STATICLIB) $(LIBS) 

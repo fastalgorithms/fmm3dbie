@@ -101,8 +101,7 @@ This routine internally calls a guru version wrapper for generating
 near quadrature corrections depending on whether the kernel is
 compact, pv, or hypersingular::
 
-  call getnearquad_ggq_compact_guru(..)
-  call getnearquad_ggq_pv_guru(..)
+  call getnearquad_ggq_guru(..)
 
 
 .. _build-wrap-gurulp:

@@ -40,7 +40,7 @@ runs the test programs. The last 5 lines of the terminal output should be::
    cat print_testres.txt
    Successfully completed 3 out of 3 tests in common testing suite
    Successfully completed 2 out of 2 tests in helm_wrappers testing suite
-   Successfully completed 14 out of 14 tests in tria_routs testing suite
+   Successfully completed 27 out of 27 tests in tria_routs testing suite
    rm print_testres.txt
 
 .. note ::

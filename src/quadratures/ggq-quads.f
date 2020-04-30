@@ -3,142 +3,144 @@ c
 c
 c     This file has the following user callable routines
 c
-c        getnearquad_ggq_compact_guru - guru interface for 
-c         computing near field quadrature for a compact kernel
-c         (for e.g. single layer potentials,
-c            double layer potentials for smooth domains)
+c        ?getnearquad_ggq_guru - guru interface for 
+c         computing near field quadrature for a compact/pv kernel
 c        
-c        getnearquad_ggq_pv_guru - guru interface for computing near
-c          field quadrature for principal value kernels
-c          (for e.g. tangential derivatives of single layer potentials)
+c
+c         z - complex
+c         d - double precision
+c
 c
 c
 c
 c
 c
 
-      subroutine getnearquad_ggq_compact_guru(npatches,norders,
+      subroutine zgetnearquad_ggq_guru(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targvals,
-     2   ipatch_id,uvs_targ,eps,fker,ndd,dpars,ndz,zpars,ndi,ipars,
-     3   nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
+     2   ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,
+     3   ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
 c
-c       this subroutine generates the near field quadrature
-c       for the given kernel which is assumed to be
-c       a compact integral operator
-c       where the near field is specified by the user 
-c       in row sparse compressed format.
+c------------------------
+c  This subroutine generates the near field quadrature
+c  for a given kernel which is assumed to be
+c  a compact/principal value integral operator
+c  where the near field is specified by the user 
+c  in row sparse compressed format.
 c
 c
-c       The quadrature is computed by the following strategy
-c        targets within a sphere of radius rfac0*rs
-c        of a chunk centroid is handled using adaptive integration
-c        where rs is the radius of the bounding sphere
-c        for the patch
+c  The quadrature is computed by the following strategy
+c  targets within a sphere of radius rfac0*rs
+c  of a chunk centroid is handled using adaptive integration
+c  where rs is the radius of the bounding sphere
+c  for the patch
 c  
-c       All other targets in the near field are handled via
-c        oversampled quadrature
-c
-c        
-c
-c       input:
-c         npatches - integer
-c            number of patches
-c
-c         norders - integer(npatches)
-c            order of discretization on each patch
-c
-c         ixyzs - integer(npatches+1)
-c            ixyzs(i) denotes the starting location in srccoefs,
-c               and srcvals array corresponding to patch i
-c   
-c         iptype - integer(npatches)
-c            type of patch
-c             iptype = 1, triangular patch discretized using RV nodes
-c
-c         npts - integer
-c            total number of discretization points on the boundary
-c 
-c         srccoefs - real *8 (9,npts)
-c            koornwinder expansion coefficients of xyz, dxyz/du,
-c            and dxyz/dv on each patch. 
-c            For each point srccoefs(1:3,i) is xyz info
-c                           srccoefs(4:6,i) is dxyz/du info
-c                           srccoefs(7:9,i) is dxyz/dv info
-c
-c          srcvals - real *8 (12,npts)
-c             xyz(u,v) and derivative info sampled at the 
-c             discretization nodes on the surface
-c             srcvals(1:3,i) - xyz info
-c             srcvals(4:6,i) - dxyz/du info
-c             srcvals(7:9,i) - dxyz/dv info
+c  All other targets in the near field are handled via
+c  oversampled quadrature
 c
 c
-c          ndtarg - integer
-c             leading dimension of target array
+c  Input arguments:
 c
-c          ntarg - integer
-c             number of targets
+c    - npatches: integer
+c        number of patches
+c    - norders: integer(npatches)
+c        order of discretization on each patch
+c    - ixyzs: integer(npatches+1)
+c        ixyzs(i) denotes the starting location in srccoefs,
+c        and srcvals array corresponding to patch i
+c    - iptype: integer(npatches)
+c        type of patch
+c        *  iptype = 1, triangular patch discretized using RV nodes
+c    - npts: integer
+c        total number of discretization points on the boundary
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c    - srcvals: double precision (12,npts)
+c        xyz(u,v) and derivative info sampled at the 
+c        discretization nodes on the surface
+c        * srcvals(1:3,i) - xyz info
+c        * srcvals(4:6,i) - dxyz/du info
+c        * srcvals(7:9,i) - dxyz/dv info
+c        * srcvals(10:12,i) - normals info
+c    - ndtarg: integer
+c        leading dimension of target array
+c    - ntarg: integer
+c        number of targets
+c    - targvals: double precision (ndtarg,ntarg)
+c        target info. First three components must be x,y,z
+c        coordinates
+c    - ipatch_id: integer(ntarg)
+c        patch id of target, patch_id = -1, if target off-surface
+c    - uvs_targ: double precision (2,ntarg)
+c        local uv coordinates on patch if target on surface
+c    - eps: double precision
+c        precision requested
+c    - ipv: integer
+c        Flag for choosing type of self-quadrature
+c        * ipv = 0, for compact/weakly singular operators
+c        * ipv = 1, for singular operators
+c    - fker: procedure pointer
+c        function handle for the kernel. Calling sequence 
+c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
+c    - ndd: integer
+c        number of double precision parameters
+c    - dpars: double precision(ndd)
+c        double precision parameters
+c    - ndz: integer
+c        number of double complex parameters
+c    - zpars: double complex(ndz)
+c        double complex parameters
+c    - ndi: integer
+c        number of integer parameters
+c    - ipars: integer(ndi)
+c        integer parameters
+c    - nnz: integer
+c        number of source patch-> target interactions in the near field
+c    - row_ptr: integer(ntarg+1)
+c        row_ptr(i) is the pointer
+c        to col_ind array where list of relevant source patches
+c        for target i start
+c    - col_ind: integer (nnz)
+c        list of source patches relevant for all targets, sorted
+c        by the target number
+c    - iquad: integer(nnz+1)
+c        location in wnear array where quadrature for col_ind(i)
+c        starts
+c    - rfac0: integer
+c        radius parameter for near field
+c    - nquad: integer
+c        number of entries in wnear
 c
-c          targvals - real *8 (ndtarg,ntarg)
-c             boundary target info
+c  Output parameters:
 c
-c          ipatch_id - integer(ntarg)
-c             patch id of target, patch_id = -1, if target off-surface
-c         
-c          uvs_targ - real *8 (2,ntarg)
-c            local uv coordinates on patch if target on surface
+c    - wnear: double complex(nquad)
+c        near field quadrature corrections
+c----------------------------------------------------               
 c
-c          eps - real *8
-c             precision requested
-c
-c          zpars - complex *16 (*)
-c
-c           nnz - integer *8
-c             number of source patch-> target interactions in the near field
-c 
-c           row_ptr - integer(npts+1)
-c              row_ptr(i) is the pointer
-c              to col_ind array where list of relevant source patches
-c              for target i start
-c
-c           col_ind - integer (nnz)
-c               list of source patches relevant for all targets, sorted
-c               by the target number
-c
-c           iquad - integer(nnz+1)
-c               location in wnear array where quadrature for col_ind(i)
-c               starts
-c
-c           rfac0 - integer
-c               radius parameter for near field
-c
-c           nquad - integer
-c               number of entries in wnear
-c
-c        output
-c            wnear - complex *16(nquad)
-c               the desired near field quadrature
-c               
-c
-
       implicit real *8 (a-h,o-z)
-      integer ipars(*)
-      integer ndtarg
+      integer, intent(in) :: ndi,ndd,ndz,ipv
+      integer, intent(in) :: ipars(ndi)
+      integer, intent(in) :: ndtarg
+      integer, intent(in) :: npatches,norders(npatches),npts
+      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      integer, intent(in) :: ntarg,ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: targvals(ndtarg,ntarg)
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer, intent(in) :: nnz
+      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+      complex *16, intent(out) :: wnear(nquad)
+
       integer ntrimax
-      integer npatches,norders(npatches),npts
-      integer ixyzs(npatches+1),iptype(npatches)
-      real *8 srccoefs(9,npts),srcvals(12,npts),eps
-      integer ntarg,ipatch_id(ntarg)
-      real *8 uvs_targ(2,ntarg)
-      real *8 targvals(ndtarg,ntarg)
       real *8, allocatable :: cms(:,:),rads(:)
       real *8, allocatable :: targ_near(:,:),targ_far(:,:)
       integer, allocatable :: iind_near(:),iind_far(:)
-      complex *16 zpars(3)
-      integer nnz
-      integer row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
-      complex *16 wnear(nquad)
-
       real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
 
 c
@@ -159,18 +161,7 @@ c
       integer nlev, nqorder_f
       real *8 rfac0
 
-      character *200 dirname
-      character *300 fname
-
-
       external fker
-c      
-c       determine number of discretization per node
-c       and get the relevant interpolation matrices
-c
-
-
-
 c
 c
 c       transpose the row sparse compressed format
@@ -188,8 +179,6 @@ c
 
 c
 c        find chunk radisu and centroid again
-c      note: this cost can be saved if needed
-c      by passing it in as arguments
 c
 
       call get_centroid_rads(npatches,norders,ixyzs,iptype,npts,
@@ -250,8 +239,6 @@ c      nqorder_f is the order of XG nodes on each of the smaller
 c      triangles
 c       
 c      
-
-
       call get_quadparams_adap(eps,nqorder,eps_adap,nlev,nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
@@ -262,12 +249,6 @@ c
 
       call gen_xg_unif_nodes(nlev,nqorder_f,nnodes,npts_f,qnodes,qwts)
 
-
-c
-c       setup self quadrature for bremer
-c
-      
-      
       t1 = second()
 C$        t1 = omp_get_wtime()
 
@@ -284,9 +265,6 @@ C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
         norder = norders(ipatch)
 
-c
-c         
-c
         if(norder.le.4) then
           irad = 1
         else if(norder.le.8) then
@@ -344,9 +322,7 @@ c
      1      call ctriaints(eps_adap,istrat,intype,ntest0,norder,npols,
      1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
      2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
-     3      ipars,
-     3      nqorder,ntrimax,rfac,sints_n,ifmetric,
-     3      rn1,n2)
+     3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
         
         call zrmatmatt_slow(ntarg_n,npols,npols,sints_n,umatr,svtmp_n)
 c
@@ -358,8 +334,7 @@ c
      1     call ctriaints_wnodes(ntest0,norder,npols,
      1     srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
-     3      ndi,ipars,
-     3      npts_f,qnodes,qwts,sints_f)
+     3      ndi,ipars,npts_f,qnodes,qwts,sints_f)
         
         call zrmatmatt_slow(ntarg_f,npols,npols,sints_f,umatr,svtmp_f)
 c
@@ -392,9 +367,10 @@ c
           iqstart = iquad(iper(i))-1
 
           if(ipatch.eq.jpatch) then
-            call get_ggq_self_quad_pt(norder,npols,uvs_targ(1,jtarg),
-     1      umatr,srccoefs(1,istart),ndtarg,targvals(1,jtarg),irad,
-     2      fker,ndd,dpars,ndz,zpars,ndi,pars,wnear(iqstart+1))
+            call zget_ggq_self_quad_pt(ipv,norder,npols,
+     1      uvs_targ(1,jtarg),umatr,srccoefs(1,istart),ndtarg,
+     2      targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,wnear(iqstart+1))
           endif
 
           if(ipatch.ne.jpatch) then
@@ -425,142 +401,141 @@ c
 c
 c
 c
-c
-c
 
-      subroutine getnearquad_ggq_pv_guru(npatches,norders,
+      subroutine dgetnearquad_ggq_guru(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targvals,
-     2   ipatch_id,uvs_targ,eps,fker,ndd,dpars,ndz,zpars,ndi,ipars,
-     3   nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
+     2   ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,
+     3   ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
 c
-c       this subroutine generates the near field quadrature
-c       for the given kernel which is assumed to be
-c       a compact integral operator
-c       where the near field is specified by the user 
-c       in row sparse compressed format.
+c------------------------
+c  This subroutine generates the near field quadrature
+c  for a given kernel which is assumed to be
+c  a compact/principal value integral operator
+c  where the near field is specified by the user 
+c  in row sparse compressed format.
 c
 c
-c       The quadrature is computed by the following strategy
-c        targets within a sphere of radius rfac0*rs
-c        of a chunk centroid is handled using adaptive integration
-c        where rs is the radius of the bounding sphere
-c        for the patch
+c  The quadrature is computed by the following strategy
+c  targets within a sphere of radius rfac0*rs
+c  of a chunk centroid is handled using adaptive integration
+c  where rs is the radius of the bounding sphere
+c  for the patch
 c  
-c       All other targets in the near field are handled via
-c        oversampled quadrature
-c
-c        
-c
-c       input:
-c         npatches - integer
-c            number of patches
-c
-c         norders - integer(npatches)
-c            order of discretization on each patch
-c
-c         ixyzs - integer(npatches+1)
-c            ixyzs(i) denotes the starting location in srccoefs,
-c               and srcvals array corresponding to patch i
-c   
-c         iptype - integer(npatches)
-c            type of patch
-c             iptype = 1, triangular patch discretized using RV nodes
-c
-c         npts - integer
-c            total number of discretization points on the boundary
-c 
-c         srccoefs - real *8 (9,npts)
-c            koornwinder expansion coefficients of xyz, dxyz/du,
-c            and dxyz/dv on each patch. 
-c            For each point srccoefs(1:3,i) is xyz info
-c                           srccoefs(4:6,i) is dxyz/du info
-c                           srccoefs(7:9,i) is dxyz/dv info
-c
-c          srcvals - real *8 (12,npts)
-c             xyz(u,v) and derivative info sampled at the 
-c             discretization nodes on the surface
-c             srcvals(1:3,i) - xyz info
-c             srcvals(4:6,i) - dxyz/du info
-c             srcvals(7:9,i) - dxyz/dv info
+c  All other targets in the near field are handled via
+c  oversampled quadrature
 c
 c
-c          ndtarg - integer
-c             leading dimension of target array
+c  Input arguments:
 c
-c          ntarg - integer
-c             number of targets
+c    - npatches: integer
+c        number of patches
+c    - norders: integer(npatches)
+c        order of discretization on each patch
+c    - ixyzs: integer(npatches+1)
+c        ixyzs(i) denotes the starting location in srccoefs,
+c        and srcvals array corresponding to patch i
+c    - iptype: integer(npatches)
+c        type of patch
+c        *  iptype = 1, triangular patch discretized using RV nodes
+c    - npts: integer
+c        total number of discretization points on the boundary
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c    - srcvals: double precision (12,npts)
+c        xyz(u,v) and derivative info sampled at the 
+c        discretization nodes on the surface
+c        * srcvals(1:3,i) - xyz info
+c        * srcvals(4:6,i) - dxyz/du info
+c        * srcvals(7:9,i) - dxyz/dv info
+c        * srcvals(10:12,i) - normals info
+c    - ndtarg: integer
+c        leading dimension of target array
+c    - ntarg: integer
+c        number of targets
+c    - targvals: double precision (ndtarg,ntarg)
+c        target info. First three components must be x,y,z
+c        coordinates
+c    - ipatch_id: integer(ntarg)
+c        patch id of target, patch_id = -1, if target off-surface
+c    - uvs_targ: double precision (2,ntarg)
+c        local uv coordinates on patch if target on surface
+c    - eps: double precision
+c        precision requested
+c    - ipv: integer
+c        Flag for choosing type of self-quadrature
+c        * ipv = 0, for compact/weakly singular operators
+c        * ipv = 1, for singular operators
+c    - fker: procedure pointer
+c        function handle for the kernel. Calling sequence 
+c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
+c    - ndd: integer
+c        number of double precision parameters
+c    - dpars: double precision(ndd)
+c        double precision parameters
+c    - ndz: integer
+c        number of double complex parameters
+c    - zpars: double complex(ndz)
+c        double complex parameters
+c    - ndi: integer
+c        number of integer parameters
+c    - ipars: integer(ndi)
+c        integer parameters
+c    - nnz: integer
+c        number of source patch-> target interactions in the near field
+c    - row_ptr: integer(ntarg+1)
+c        row_ptr(i) is the pointer
+c        to col_ind array where list of relevant source patches
+c        for target i start
+c    - col_ind: integer (nnz)
+c        list of source patches relevant for all targets, sorted
+c        by the target number
+c    - iquad: integer(nnz+1)
+c        location in wnear array where quadrature for col_ind(i)
+c        starts
+c    - rfac0: integer
+c        radius parameter for near field
+c    - nquad: integer
+c        number of entries in wnear
 c
-c          targvals - real *8 (ndtarg,ntarg)
-c             boundary target info
+c  Output parameters:
 c
-c          ipatch_id - integer(ntarg)
-c             patch id of target, patch_id = -1, if target off-surface
-c         
-c          uvs_targ - real *8 (2,ntarg)
-c            local uv coordinates on patch if target on surface
+c    - wnear: double precision(nquad)
+c        near field quadrature corrections
+c----------------------------------------------------               
 c
-c          eps - real *8
-c             precision requested
-c
-c          zpars - complex *16 (*)
-c
-c           nnz - integer *8
-c             number of source patch-> target interactions in the near field
-c 
-c           row_ptr - integer(npts+1)
-c              row_ptr(i) is the pointer
-c              to col_ind array where list of relevant source patches
-c              for target i start
-c
-c           col_ind - integer (nnz)
-c               list of source patches relevant for all targets, sorted
-c               by the target number
-c
-c           iquad - integer(nnz+1)
-c               location in wnear array where quadrature for col_ind(i)
-c               starts
-c
-c           rfac0 - integer
-c               radius parameter for near field
-c
-c           nquad - integer
-c               number of entries in wnear
-c
-c        output
-c            wnear - complex *16(nquad)
-c               the desired near field quadrature
-c               
-c
-
       implicit real *8 (a-h,o-z)
-      integer ipars(*)
-      integer ndtarg
+      integer, intent(in) :: ndi,ndd,ndz,ipv
+      integer, intent(in) :: ipars(ndi)
+      integer, intent(in) :: ndtarg
+      integer, intent(in) :: npatches,norders(npatches),npts
+      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      integer, intent(in) :: ntarg,ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: targvals(ndtarg,ntarg)
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer, intent(in) :: nnz
+      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+      real *8, intent(out) :: wnear(nquad)
+
       integer ntrimax
-      integer npatches,norders(npatches),npts
-      integer ixyzs(npatches+1),iptype(npatches)
-      real *8 srccoefs(9,npts),srcvals(12,npts),eps
-      integer ntarg,ipatch_id(ntarg)
-      real *8 uvs_targ(2,ntarg)
-      real *8 targvals(ndtarg,ntarg)
       real *8, allocatable :: cms(:,:),rads(:)
       real *8, allocatable :: targ_near(:,:),targ_far(:,:)
       integer, allocatable :: iind_near(:),iind_far(:)
-      complex *16 zpars(3)
-      integer nnz
-      integer row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
-      complex *16 wnear(nquad)
-
       real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
-      character *200 dirname
-      character *100 fname
 
 c
 c        temporary variables
 c
       integer, allocatable :: col_ptr(:),row_ind(:),iper(:)
-      complex *16, allocatable :: sints_n(:,:),svtmp_n(:,:)
-      complex *16, allocatable :: sints_f(:,:),svtmp_f(:,:)
-      complex *16, allocatable :: svtmp2(:,:)
+      real *8, allocatable :: sints_n(:,:),svtmp_n(:,:)
+      real *8, allocatable :: sints_f(:,:),svtmp_f(:,:)
+      real *8, allocatable :: svtmp2(:,:)
 
       real *8, allocatable :: xyztarg2(:,:)
       integer irad
@@ -568,19 +543,15 @@ c
       real *8, allocatable :: qnodes(:,:),qwts(:)
       real *8 ra
 
-      complex *16 ff1,ff2,cra1,cra2
+      real *8 ff1,ff2,cra1,cra2
       integer nlev, nqorder_f
       real *8 rfac0
-
+      real *8 done,dzero
 
       external fker
-c      
-c       determine number of discretization per node
-c       and get the relevant interpolation matrices
-c
 
-
-
+      done = 1
+      dzero = 0
 c
 c
 c       transpose the row sparse compressed format
@@ -598,8 +569,6 @@ c
 
 c
 c        find chunk radisu and centroid again
-c      note: this cost can be saved if needed
-c      by passing it in as arguments
 c
 
       call get_centroid_rads(npatches,norders,ixyzs,iptype,npts,
@@ -660,8 +629,6 @@ c      nqorder_f is the order of XG nodes on each of the smaller
 c      triangles
 c       
 c      
-
-
       call get_quadparams_adap(eps,nqorder,eps_adap,nlev,nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
@@ -672,13 +639,6 @@ c
 
       call gen_xg_unif_nodes(nlev,nqorder_f,nnodes,npts_f,qnodes,qwts)
 
-
-
-      
-c
-c       setup self quadrature for bremer
-c
-      
       t1 = second()
 C$        t1 = omp_get_wtime()
 
@@ -695,9 +655,6 @@ C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
         norder = norders(ipatch)
 
-c
-c         
-c
         if(norder.le.4) then
           irad = 1
         else if(norder.le.8) then
@@ -752,30 +709,28 @@ c       fill out near part of single layer
 c
 
         if(iptype(ipatch).eq.1) 
-     1      call ctriaints(eps_adap,istrat,intype,ntest0,norder,npols,
+     1      call dtriaints(eps_adap,istrat,intype,ntest0,norder,npols,
      1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
-     2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,
-     3      ndi,ipars,
-     3      nqorder,ntrimax,rfac,sints_n,ifmetric,
-     3      rn1,n2)
+     2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
         
-        call zrmatmatt_slow(ntarg_n,npols,npols,sints_n,umatr,svtmp_n)
+        call dgemm('t','n',npols,ntarg_n,npols,done,umatr,npols,
+     1     sints_n,npols,dzero,svtmp_n,npols)
 c
 c
 c       fill out far part of single layer
 c
 
         if(iptype(ipatch).eq.1) 
-     1     call ctriaints_wnodes(ntest0,norder,npols,
+     1     call dtriaints_wnodes(ntest0,norder,npols,
      1     srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
-     3      ndi,ipars,
-     3      npts_f,qnodes,qwts,sints_f)
+     3      ndi,ipars,npts_f,qnodes,qwts,sints_f)
         
-        call zrmatmatt_slow(ntarg_f,npols,npols,sints_f,umatr,svtmp_f)
+        call dgemm('t','n',npols,ntarg_f,npols,done,umatr,npols,
+     1     sints_f,npols,dzero,svtmp_f,npols)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
-c
 c
 
         do i=1,ntarg_f
@@ -803,11 +758,10 @@ c
           iqstart = iquad(iper(i))-1
 
           if(ipatch.eq.jpatch) then
-            call get_ggq_self_quad_pv_pt(norder,npols,
-     1      uvs_targ(1,jtarg),
-     1      umatr,srccoefs(1,istart),ndtarg,targvals(1,jtarg),irad,
-     2      fker,ndd,dpars,ndz,zpars,ndi,
-     2      ipars,wnear(iqstart+1))
+            call dget_ggq_self_quad_pt(ipv,norder,npols,
+     1      uvs_targ(1,jtarg),umatr,srccoefs(1,istart),ndtarg,
+     2      targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,wnear(iqstart+1))
           endif
 
           if(ipatch.ne.jpatch) then
@@ -837,180 +791,91 @@ c
 c
 c
 c
-
-      subroutine get_ggq_self_quad(norder,npols,uvs,umat,vmat,
-     1   srccoefs,irad,fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
-c
-c
-c       this is the replacement for xtri_zself 
-c       for implementing bremer quadrature in ytri. 
-c       
-c       the main difference is the calling sequence
-c       of the subroutine for getting the kernel
-c       this is made consistent with adaptive integration
-c       on triangles.
-c
-c
-c        The calling sequence for fker is of the form
-c          fker(srcinfo,targinfo,
-c
 c
 
-
-      implicit real *8(a-h,o-z)
-      integer norder,npols
-      integer irad
-      real *8 srccoefs(9,npols)
-      real *8 uvs(2,npols),umat(npols,npols)
-      real *8 vmat(npols,npols)
-      complex *16 zquad(*)
-      integer ndd,ndz,ndi
-      integer ipars(ndi)
-      real *8 dpars(ndd)
-      complex *16 zpars(ndz)
-      real *8, allocatable :: srcvals(:,:)
-      real *8, allocatable :: srctmp(:,:)
-      real *8, allocatable :: qwts(:),sigvals(:,:)
-      real *8, allocatable :: xs(:),ys(:),ws(:)
-      real *8 uv(2),verts(2,3)
-      real *8 alpha,beta
-      complex *16 fval
-      complex *16, allocatable :: fint(:,:),fcoefs(:),fvals(:)
-      character *1 transa,transb
-
-      external fker
-
-      nmax = 3000
-      allocate(ws(nmax),xs(nmax),ys(nmax))
-      allocate(srcvals(9,npols),fcoefs(npols),fvals(npols))
-      verts(1,1) = 0
-      verts(2,1) = 0
-      verts(1,2) = 1
-      verts(2,2) = 0
-      verts(1,3) = 0
-      verts(2,3) = 1
-      allocate(fint(npols,npols))
-
-cc      call prin2('zpars=*',zpars,2)
-cc
-cc      call prin2('srccoefs=*',srccoefs,9*npols)
+      subroutine zget_ggq_self_quad_pt(ipv,norder,npols,uvs,umat,
+     1   srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
+     2   ipars,zquad)
 c
 c
-c        check for optimizations in this part of the code
+c------------------
+c  This subroutine evaluates the integral of an integral
+c  operator at a target on the interior of a triangluar patch 
+c  using the generalized
+c  Gaussian quadratures developed by Bremer and Gimbutas.
 c
-      do i=1,npols
-        do k=1,9
-          srcvals(k,i) = 0
-        enddo
-
-        do j=1,npols
-          do k=1,9
-            srcvals(k,i) = srcvals(k,i) + vmat(i,j)*srccoefs(k,j)
-          enddo
-        enddo
-      enddo
-
-
-
-      do inode=1,npols
-        do j=1,npols
-          fint(j,inode) = 0
-          fcoefs(j) = 0
-        enddo
-        u = uvs(1,inode)
-        v = uvs(2,inode)
-        ns = 0
-        call self_quadrature_new(irad,verts,uvs(1,inode),
-     1     uvs(2,inode),srcvals(4,inode),ns,xs,ys,ws)
-     
-        allocate(srctmp(12,ns),qwts(ns))
-        allocate(sigvals(npols,ns))
-
-        do i=1,ns
-          uv(1) = xs(i)
-          uv(2) = ys(i)
-
-          call koorn_pols(uv,norder,npols,sigvals(1,i))
-        enddo
-
-        transa = 'N'
-        transb = 'N'
-        alpha = 1
-        beta = 0
-        lda = 9
-        ldb = npols
-        ldc = 12
-
-        call dgemm(transa,transb,9,ns,npols,alpha,
-     1        srccoefs,lda,sigvals,ldb,beta,srctmp,ldc)
-
-cc        call dmatmat(3,npols,xyzcoefs,ns,sigvals,xyztmp)
-cc        call dmatmat(6,npols,xyzcoefs,ns,sigvals,dtmp)
-
-
+c  The quadrature currently cannot handle targets on the boundary
+c  of the triangle
 c
-        do i=1,ns
-          call cross_prod3d(srctmp(4,i),srctmp(7,i),srctmp(10,i))
-          rr = sqrt(srctmp(10,i)**2+srctmp(11,i)**2+srctmp(12,i)**2)
-          qwts(i) = rr*ws(i)
-          srctmp(10,i) = srctmp(10,i)/rr
-          srctmp(11,i) = srctmp(11,i)/rr
-          srctmp(12,i) = srctmp(12,i)/rr
-
-          call fker(srctmp(1,i),ndtarg,srcvals(1,inode),ndd,dpars,
-     2       ndz,zpars,ndi,ipars,fval)
-           
-          do j=1,npols
-            fint(j,inode) = fint(j,inode) + fval*sigvals(j,i)*qwts(i)
-          enddo
-        enddo
-
-        deallocate(srctmp,qwts,sigvals)
-      enddo
-
-      call zrmatmatt_slow(npols,npols,npols,fint,umat,zquad)
-
-
-      return
-      end
+c  Input arguments:
+c    - ipv: integer
+c        Flag for choosing type of self-quadrature
+c        * ipv = 0, for compact/weakly singular operators
+c        * ipv = 1, for singular operators
+c    - norder: integer
+c        order of patch discretization
+c    - npols: integer
+c        number of discretization nodes on patch
+c    - uvs: double precision(2)
+c        local u,v coordinates of target
+c    - umat: double precision(npols,npols)
+c        values to coefficient matrix
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c    - ndtarg: integer
+c        leading dimension of target array
+c    - targ: double precision (ndtarg)
+c        target info. First three components must be x,y,z
+c        coordinates
+c    - irad: integer
+c        which order of self quadrature to use
+c        * for norder<=4, irad=1
+c        * for 4<norder<=8, irad=2
+c        * for 8<norder<=12, irad=3
+c        * irad = 3, for higher orders, but there might be some loss
+c          in precision
+c    - fker: procedure pointer
+c        function handle for the kernel. Calling sequence 
+c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
+c    - ndd: integer
+c        number of double precision parameters
+c    - dpars: double precision(ndd)
+c        double precision parameters
+c    - ndz: integer
+c        number of double complex parameters
+c    - zpars: double complex(ndz)
+c        double complex parameters
+c    - ndi: integer
+c        number of integer parameters
+c    - ipars: integer(ndi)
+c        integer parameters
 c
-c
-c
-c
-c
-c
-
-      subroutine get_ggq_self_quad_pt(norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,irad,
-     1   fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
-c
-c
-c       this is the replacement for xtri_zself 
-c       for implementing bremer quadrature in ytri. 
-c       
-c       the main difference is the calling sequence
-c       of the subroutine for getting the kernel
-c       this is made consistent with adaptive integration
-c       on triangles.
-c
-c
-c        The calling sequence for fker is of the form
-c          fker(srcinfo,targinfo,
+c  Output parameters:
+c    
+c    - zquad: double complex(npols)
+c        near quadrature correction
+c    
 c
 c
 
 
       implicit real *8(a-h,o-z)
-      integer norder,npols,ndtarg
-      real *8 srccoefs(9,npols),srcvals(9)
+      integer, intent(in) :: norder,npols,ndtarg
+      real *8, intent(in) :: srccoefs(9,npols)
+      real *8, intent(in) :: targ(ndtarg)
+      real *8, intent(in) :: uvs(2),umat(npols,npols)
+      integer, intent(in) :: ndi,ndd,ndz
+      integer, intent(in) :: ipars(ndi)
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      complex *16, intent(out) :: zquad(npols)
+
+      real *8 srcvals(9)
       real *8, allocatable :: sigvalstmp(:)
-      real *8 targ(ndtarg)
-      real *8 uvs(2),umat(npols,npols)
-      complex *16 zquad(*)
-      integer ndi,ndd,ndz
-      integer ipars(ndi)
-      real *8 dpars(ndd)
-      complex *16 zpars(ndz)
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
@@ -1048,9 +913,15 @@ c
         fint(j) = 0
       enddo
       ns = 0
-      call self_quadrature_new(irad,verts,uvs(1),
-     1  uvs(2),srcvals(4),ns,xs,ys,ws)
-      
+      if(ipv.eq.0) then
+        call self_quadrature_new(irad,verts,uvs(1),
+     1    uvs(2),srcvals(4),ns,xs,ys,ws)
+      endif
+
+      if(ipv.eq.1) then
+        call pv_self_quadrature_new(irad,verts,uvs(1),
+     1    uvs(2),srcvals(4),ns,xs,ys,ws)
+      endif
      
       allocate(srctmp(12,ns),qwts(ns))
       allocate(sigvals(npols,ns))
@@ -1058,7 +929,6 @@ c
       do i=1,ns
         uv(1) = xs(i)
         uv(2) = ys(i)
-
         call koorn_pols(uv,norder,npols,sigvals(1,i))
       enddo
 
@@ -1095,7 +965,6 @@ c
 
       call zrmatmatt_slow(1,npols,npols,fint,umat,zquad)
 
-
       return
       end
 c
@@ -1104,172 +973,104 @@ c
 c
 c
 c
-c
-c
 
-      subroutine get_ggq_self_quad_pt_vec(norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,irad,
-     1   fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
+      subroutine dget_ggq_self_quad_pt(ipv,norder,npols,uvs,umat,
+     1   srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
+     2   ipars,dquad)
 c
 c
-c       Vectorized version of get_ggq_self_quad_pt_vec
+c------------------
+c  This subroutine evaluates the integral of an integral
+c  operator at a target on the interior of a triangluar patch 
+c  using the generalized
+c  Gaussian quadratures developed by Bremer and Gimbutas.
 c
+c  The quadrature currently cannot handle targets on the boundary
+c  of the triangle
 c
-c        The calling sequence for fker is of the form
-c          fker(nd,srcinfo,targinfo,
+c  Input arguments:
+c    - ipv: integer
+c        Flag for choosing type of self-quadrature
+c        * ipv = 0, for compact/weakly singular operators
+c        * ipv = 1, for singular operators
+c    - norder: integer
+c        order of patch discretization
+c    - npols: integer
+c        number of discretization nodes on patch
+c    - uvs: double precision(2)
+c        local u,v coordinates of target
+c    - umat: double precision(npols,npols)
+c        values to coefficient matrix
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c    - ndtarg: integer
+c        leading dimension of target array
+c    - targ: double precision (ndtarg)
+c        target info. First three components must be x,y,z
+c        coordinates
+c    - irad: integer
+c        which order of self quadrature to use
+c        * for norder<=4, irad=1
+c        * for 4<norder<=8, irad=2
+c        * for 8<norder<=12, irad=3
+c        * irad = 3, for higher orders, but there might be some loss
+c          in precision
+c    - fker: procedure pointer
+c        function handle for the kernel. Calling sequence 
+c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
+c    - ndd: integer
+c        number of double precision parameters
+c    - dpars: double precision(ndd)
+c        double precision parameters
+c    - ndz: integer
+c        number of double complex parameters
+c    - zpars: double complex(ndz)
+c        double complex parameters
+c    - ndi: integer
+c        number of integer parameters
+c    - ipars: integer(ndi)
+c        integer parameters
 c
-c
-
-
-      implicit real *8(a-h,o-z)
-      integer norder,npols,ndtarg,nd,irad
-      real *8 srccoefs(9,npols),srcvals(9)
-      real *8, allocatable :: sigvalstmp(:)
-      real *8 targ(ndtarg)
-      real *8 uvs(2),umat(npols,npols)
-      complex *16 zquad(nd,*)
-      integer ipars(ndi)
-      real *8 dpars(ndd)
-      complex *16 zpars(ndz)
-      real *8, allocatable :: srctmp(:,:)
-      real *8, allocatable :: qwts(:),sigvals(:,:)
-      real *8, allocatable :: xs(:),ys(:),ws(:)
-      real *8 uv(2),verts(2,3)
-      real *8 alpha,beta
-      complex *16, allocatable :: fint(:,:),fvals(:,:),fval(:)
-      integer idim
-      character *1 transa,transb
-
-      external fker
-
-      nmax = 3000
-      allocate(ws(nmax),xs(nmax),ys(nmax))
-      allocate(fvals(nd,npols),fval(nd))
-      verts(1,1) = 0
-      verts(2,1) = 0
-      verts(1,2) = 1
-      verts(2,2) = 0
-      verts(1,3) = 0
-      verts(2,3) = 1
-      allocate(fint(nd,npols),sigvalstmp(npols))
-
-c
-c       compute all source info at target point on patch
-c
-      call koorn_pols(uvs,norder,npols,sigvalstmp)
-
-      alpha = 1.0d0
-      beta = 0.0d0
-      call dgemv('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
-     1      srcvals,1)
-      
-
-      do j=1,npols
-        do idim=1,nd
-          fint(idim,j) = 0
-        enddo
-      enddo
-      ns = 0
-      call self_quadrature_new(irad,verts,uvs(1),
-     1  uvs(2),srcvals(4),ns,xs,ys,ws)
-     
-      allocate(srctmp(12,ns),qwts(ns))
-      allocate(sigvals(npols,ns))
-
-      do i=1,ns
-        uv(1) = xs(i)
-        uv(2) = ys(i)
-
-        call koorn_pols(uv,norder,npols,sigvals(1,i))
-      enddo
-
-      transa = 'N'
-      transb = 'N'
-      alpha = 1
-      beta = 0
-      lda = 9
-      ldb = npols
-      ldc = 12
-
-      call dgemm(transa,transb,9,ns,npols,alpha,
-     1      srccoefs,lda,sigvals,ldb,beta,srctmp,ldc)
-
-
-c
-      do i=1,ns
-        call cross_prod3d(srctmp(4,i),srctmp(7,i),srctmp(10,i))
-        rr = sqrt(srctmp(10,i)**2+srctmp(11,i)**2+srctmp(12,i)**2)
-        qwts(i) = rr*ws(i)
-        srctmp(10,i) = srctmp(10,i)/rr
-        srctmp(11,i) = srctmp(11,i)/rr
-        srctmp(12,i) = srctmp(12,i)/rr
-
-        call fker(nd,srctmp(1,i),ndtarg,targ,ndd,dpars,
-     2         ndz,zpars,ndi,ipars,fval)
-           
-        do j=1,npols
-          do idim=1,nd
-            fint(idim,j) = fint(idim,j) + fval(idim)*
-     1         sigvals(j,i)*qwts(i)
-          enddo
-        enddo
-      enddo
-
-      deallocate(srctmp,qwts,sigvals)
-
-      call zrmatmatt_slow(nd,npols,npols,fint,umat,zquad)
-
-
-      return
-      end
-c
-c
-c
-c
-c
-c
-c
-
-      subroutine get_ggq_self_quad_pv_pt(norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,irad,
-     1   fker,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
-c
-c
-c       this is the replacement for xtri_zself 
-c       for implementing bremer quadrature in ytri. 
-c       
-c       the main difference is the calling sequence
-c       of the subroutine for getting the kernel
-c       this is made consistent with adaptive integration
-c       on triangles.
-c
-c
-c        The calling sequence for fker is of the form
-c          fker(srcinfo,targinfo,
+c  Output parameters:
+c    
+c    - dquad: double precision(npols)
+c        near quadrature correction
+c    
 c
 c
 
 
       implicit real *8(a-h,o-z)
-      integer norder,npols,ndtarg,irad
-      real *8 srccoefs(9,npols),srcvals(9)
+      integer, intent(in) :: norder,npols,ndtarg
+      real *8, intent(in) :: srccoefs(9,npols)
+      real *8, intent(in) :: targ(ndtarg)
+      real *8, intent(in) :: uvs(2),umat(npols,npols)
+      integer, intent(in) :: ndi,ndd,ndz
+      integer, intent(in) :: ipars(ndi)
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      real *8, intent(out) :: dquad(npols)
+
+      real *8 srcvals(9)
       real *8, allocatable :: sigvalstmp(:)
-      real *8 targ(ndtarg)
-      real *8 uvs(2),umat(npols,npols)
-      complex *16 zquad(*)
-      integer ipars(ndi)
-      real *8 dpars(ndd)
-      complex *16 zpars(ndz)
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
       real *8 uv(2),verts(2,3)
       real *8 alpha,beta
-      complex *16 fval
-      complex *16, allocatable :: fint(:),fvals(:)
+      real *8 fval
+      real *8, allocatable :: fint(:),fvals(:)
       character *1 transa,transb
+      real *8 done,dzero 
 
       external fker
+
+      done = 1
+      dzero = 0
 
       nmax = 10000
       allocate(ws(nmax),xs(nmax),ys(nmax))
@@ -1297,9 +1098,15 @@ c
         fint(j) = 0
       enddo
       ns = 0
-      call pv_self_quadrature_new(irad,verts,uvs(1),
-     1  uvs(2),srcvals(4),ns,xs,ys,ws)
-      
+      if(ipv.eq.0) then
+        call self_quadrature_new(irad,verts,uvs(1),
+     1    uvs(2),srcvals(4),ns,xs,ys,ws)
+      endif
+
+      if(ipv.eq.1) then
+        call pv_self_quadrature_new(irad,verts,uvs(1),
+     1    uvs(2),srcvals(4),ns,xs,ys,ws)
+      endif
      
       allocate(srctmp(12,ns),qwts(ns))
       allocate(sigvals(npols,ns))
@@ -1307,7 +1114,6 @@ c
       do i=1,ns
         uv(1) = xs(i)
         uv(2) = ys(i)
-
         call koorn_pols(uv,norder,npols,sigvals(1,i))
       enddo
 
@@ -1342,133 +1148,13 @@ c
 
       deallocate(srctmp,qwts,sigvals)
 
-      call zrmatmatt_slow(1,npols,npols,fint,umat,zquad)
-
-
-      return
-      end
-c
-c
-c
-c
-c
-c
-c
-c
-
-      subroutine get_ggq_self_quad_pv_pt_vec(norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,irad,
-     1   fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,zquad)
-c
-c
-c       Vectorized version of get_ggq_self_quad_pv_pt
-c
-c
-c        The calling sequence for fker is of the form
-c          fker(nd,srcinfo,targinfo,
-c
-c
-
-
-      implicit real *8(a-h,o-z)
-      integer norder,npols,irad,ndtarg,nd
-      real *8 srccoefs(9,npols),srcvals(9)
-      real *8, allocatable :: sigvalstmp(:)
-      real *8 targ(ndtarg)
-      real *8 uvs(2),umat(npols,npols)
-      complex *16 zquad(nd,*)
-      integer ipars(ndi)
-      real *8 dpars(ndd)
-      complex *16 zpars(ndz)
-      real *8, allocatable :: srctmp(:,:)
-      real *8, allocatable :: qwts(:),sigvals(:,:)
-      real *8, allocatable :: xs(:),ys(:),ws(:)
-      real *8 uv(2),verts(2,3)
-      real *8 alpha,beta
-      complex *16, allocatable :: fint(:,:),fvals(:,:),fval(:)
-      integer idim
-      character *1 transa,transb
-
-      external fker
-
-      nmax = 3000
-      allocate(ws(nmax),xs(nmax),ys(nmax))
-      allocate(fvals(nd,npols),fval(nd))
-      verts(1,1) = 0
-      verts(2,1) = 0
-      verts(1,2) = 1
-      verts(2,2) = 0
-      verts(1,3) = 0
-      verts(2,3) = 1
-      allocate(fint(nd,npols),sigvalstmp(npols))
-
-c
-c       compute all source info at target point on patch
-c
-      call koorn_pols(uvs,norder,npols,sigvalstmp)
-
-      alpha = 1.0d0
-      beta = 0.0d0
-      call dgemv('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
-     1      srcvals,1)
-      
-
-      do j=1,npols
-        do idim=1,nd
-          fint(idim,j) = 0
-        enddo
-      enddo
-      ns = 0
-      call pv_self_quadrature_new(irad,verts,uvs(1),
-     1  uvs(2),srcvals(4),ns,xs,ys,ws)
-     
-      allocate(srctmp(12,ns),qwts(ns))
-      allocate(sigvals(npols,ns))
-
-      do i=1,ns
-        uv(1) = xs(i)
-        uv(2) = ys(i)
-
-        call koorn_pols(uv,norder,npols,sigvals(1,i))
-      enddo
-
-      transa = 'N'
-      transb = 'N'
-      alpha = 1
-      beta = 0
-      lda = 9
-      ldb = npols
-      ldc = 12
-
-      call dgemm(transa,transb,9,ns,npols,alpha,
-     1      srccoefs,lda,sigvals,ldb,beta,srctmp,ldc)
-
-
-c
-      do i=1,ns
-        call cross_prod3d(srctmp(4,i),srctmp(7,i),srctmp(10,i))
-        rr = sqrt(srctmp(10,i)**2+srctmp(11,i)**2+srctmp(12,i)**2)
-        qwts(i) = rr*ws(i)
-        srctmp(10,i) = srctmp(10,i)/rr
-        srctmp(11,i) = srctmp(11,i)/rr
-        srctmp(12,i) = srctmp(12,i)/rr
-
-        call fker(nd,srctmp(1,i),ndtarg,targ,ndd,dpars,
-     2         ndz,zpars,ndi,ipars,fval)
-           
-        do j=1,npols
-          do idim=1,nd
-            fint(idim,j) = fint(idim,j) + fval(idim)*
-     1         sigvals(j,i)*qwts(i)
-          enddo
-        enddo
-      enddo
-
-      deallocate(srctmp,qwts,sigvals)
-
-      call zrmatmatt_slow(nd,npols,npols,fint,umat,zquad)
-
+      call dgemv('t',npols,npols,done,umat,npols,fint,1,dzero,dquad,1)
 
       return
       end
+c
+c
+c
+c
+c
 c

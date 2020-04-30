@@ -6,8 +6,15 @@
 
       ntests = ntests + 6
       call test_triarouts_vec(i2)
-
       nsuccess = i1+i2
+
+      ntests = ntests+ 7
+      call test_dtriarouts(i1)
+
+      ntests = ntests + 6
+      call test_dtriarouts_vec(i2)
+
+      nsuccess = nsuccess + i1+i2
 
       ntests = ntests + 1
       call test_koornf_ders(i3)
