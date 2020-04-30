@@ -40,6 +40,23 @@
 !        interpolation matrices for all patches
 !
 !      get_ximats - get all interpolation matrices for the surface
+!   
+!      get_first_fundamental_form - get the first fundamental form at all
+!        points
+!
+!      get_inv_first_fundamental_form - get inverse of first fundamental 
+!         form
+!
+!      get_surf_grad - compute surface gradient of a scalar function
+!
+!      get_surf_grad_fast - compute surface gradient of a scalar function 
+!        (With precomputed inverse of first fundamental form)
+!
+!      get_surf_uv_grad - compute the uv gradient of a function defined
+!         on a surface, i.e. \partial_{u}f, \partial_{v}f
+!
+!      get_surf_div - compute the surface divergence of a vector field
+!         defined on a surface
 !
 !
 !         
@@ -1021,3 +1038,561 @@ end subroutine get_ximats
 !
 !
 !
+!
+subroutine get_first_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,ffform)
+!
+!------------------------
+!  This subroutine computes the first fundamental form at
+!  the discretization nodes on the surface.
+!
+!  The first fundamental form is
+!  
+!  .. math::
+!    
+!    \begin{bmatrix} x_{u} \cdot x_{u} & x_{u} \cdot x_{v} \\
+!    x_{u} \cdot x_{v} & x_{v} \cdot x_{v} \end{bmatrix}
+!
+!  Input arguments:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!
+!  Output arguments:
+!
+!    - ffform: double precision(2,2,npts)
+!        first fundamental form at the discretization nodes
+!--------------------------
+!
+  
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches)
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer, intent(in) :: npts
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+  real *8, intent(out) :: ffform(2,2,npts)
+  integer i
+  real *8 xuu,xvv,xuv
+
+  do i=1,npts
+    xuu = srcvals(4,i)**2 + srcvals(5,i)**2 + srcvals(6,i)**2
+    xvv = srcvals(7,i)**2 + srcvals(8,i)**2 + srcvals(9,i)**2
+    xuv = srcvals(4,i)*srcvals(7,i) + srcvals(5,i)*srcvals(8,i)+ &
+       srcvals(6,i)*srcvals(9,i)
+    ffform(1,1,i) = xuu
+    ffform(2,1,i) = xuv
+    ffform(1,2,i) = xuv
+    ffform(2,2,i) = xvv
+  enddo
+
+  return
+end subroutine get_first_fundamental_form
+!
+!
+!
+!
+!
+
+subroutine get_inv_first_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,ffforminv)
+!------------------------
+!  This subroutine computes the inverse of the first fundamental form at
+!  the discretization nodes on the surface.
+!
+!  The first fundamental form is
+!  
+!  .. math::
+!    
+!    \begin{bmatrix} x_{u} \cdot x_{u} & x_{u} \cdot x_{v} \\
+!    x_{u} \cdot x_{v} & x_{v} \cdot x_{v} \end{bmatrix}
+!
+!  Input arguments:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!
+!  Output arguments:
+!
+!    - ffforminv: double precision(2,2,npts)
+!        inverse of first fundamental form at the discretization nodes
+!--------------------------
+  
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches)
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches),npts
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+  real *8, intent(out) :: ffforminv(2,2,npts)
+  integer i
+  real *8 xuu,xvv,xuv,d
+
+  do i=1,npts
+    xuu = srcvals(4,i)**2 + srcvals(5,i)**2 + srcvals(6,i)**2
+    xvv = srcvals(7,i)**2 + srcvals(8,i)**2 + srcvals(9,i)**2
+    xuv = srcvals(4,i)*srcvals(7,i) + srcvals(5,i)*srcvals(8,i)+ &
+       srcvals(6,i)*srcvals(9,i)
+    d = xuu*xvv - xuv*xuv
+    ffforminv(1,1,i) = xvv/d
+    ffforminv(2,1,i) = -xuv/d
+    ffforminv(1,2,i) = -xuv/d
+    ffforminv(2,2,i) = xuu/d
+  enddo
+
+  return
+end subroutine get_inv_first_fundamental_form
+!
+!
+!
+!
+!
+subroutine get_surf_grad(nd,npatches,norders,ixyzs,iptype,npts, &
+  srccoefs,srcvals,f,df)
+!
+!-----------------------------
+!  Compute the surface gradient of scalar function
+!
+!  Input arguments:
+!
+!    - nd: integer
+!        number of functions
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!    - f: double precision (nd,npts)
+!        function values at the discretization points
+!
+!  Output arguments:
+!
+!    - df: double precision(nd,2,npts)
+!        surface gradient of the input functions
+!-----------------------------
+!
+!
+
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches)
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer, intent(in) :: npts,nd
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),f(nd,npts)
+  real *8, intent(out) :: df(nd,2,npts)
+  real *8, allocatable :: ffforminv(:,:,:)
+
+  allocate(ffforminv(2,2,npts))
+
+
+  call get_inv_first_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,ffforminv)
+
+  call get_surf_grad_fast(nd,npatches,norders,ixyzs,iptype,npts, &
+    ffforminv,f,df)
+
+  return
+end subroutine get_surf_grad
+!
+!
+!
+!
+!
+!
+subroutine get_surf_grad_fast(nd,npatches,norders,ixyzs,iptype,npts, &
+  ffforminv,f,df)
+!
+!-----------------------------
+!  Faster version of computing the surface gradient of scalar function,
+!  with precomputed inverse of first fundamental form
+!
+!  Input arguments:
+!
+!    - nd: integer
+!        number of functions
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - ffforminv: double precision(2,2,npts)
+!        inverse of first fundamental form at the discretization nodes
+!    - f: double precision (nd,npts)
+!        function values at the discretization points
+!
+!  Output arguments:
+!
+!    - df: double precision(nd,2,npts)
+!        surface gradient of the input functions
+!-----------------------------
+!
+!
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches)
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer, intent(in) :: npts,nd
+  real *8, intent(in) :: ffforminv(2,2,npts),f(nd,npts)
+  real *8, intent(out) :: df(nd,2,npts)
+  real *8, allocatable :: fcoefs(:,:),dfuv(:,:,:)
+  integer i,idim
+
+  allocate(dfuv(nd,2,npts))
+  call get_surf_uv_grad(nd,npatches,norders,ixyzs,iptype,npts,f,dfuv)
+
+
+  do i=1,npts
+    do idim=1,nd
+      df(idim,1,i) = dfuv(idim,1,i)*ffforminv(1,1,i) + &
+         dfuv(idim,2,i)*ffforminv(1,2,i)
+      df(idim,2,i) = dfuv(idim,1,i)*ffforminv(2,1,i) + &
+         dfuv(idim,2,i)*ffforminv(2,2,i)
+    enddo
+  enddo
+
+
+  return
+end subroutine get_surf_grad_fast
+!
+!
+!
+!
+!
+subroutine get_surf_uv_grad(nd,npatches,norders,ixyzs,iptype,npts,f, &
+   dfuv)
+!
+!-----------------------------
+!  Compute the uv gradient of scalar function
+!
+!  Input arguments:
+!
+!    - nd: integer
+!        number of functions
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - f: double precision (nd,npts)
+!        function values at the discretization points
+!
+!  Output arguments:
+!
+!    - dfuv: double precision(nd,2,npts)
+!        uv surface gradient of the input functions
+!-----------------------------
+!
+  implicit none
+  integer, intent(in) :: nd,npatches,norders(npatches)
+  integer, intent(in) :: ixyzs(npatches+1)
+  integer, intent(in) :: iptype(npatches),npts
+  real *8, intent(in) :: f(nd,npts)
+  real *8, intent(out) :: dfuv(nd,2,npts)
+
+  integer i,istart,npols
+
+
+
+  do i=1,npatches
+    istart = ixyzs(i)
+    npols = ixyzs(i+1)-ixyzs(i)
+    if(iptype(i).eq.1) &
+      call get_surf_uv_grad_tri(nd,norders(i),npols,f(1,istart),&
+        dfuv(1,1,istart))
+  enddo
+
+
+  return
+end subroutine get_surf_uv_grad
+
+
+subroutine get_surf_uv_grad_tri(nd,norder,npols,f,dfuv)
+!
+!-----------------------------
+!  Compute the uv gradient of scalar function on a single triangular
+!  patch
+!
+!  Input arguments:
+!
+!    - nd: integer
+!        number of functions
+!    - norder: integer
+!        order of discretization
+!    - npols: integer
+!        total number of points on the patch
+!    - f: double precision (nd,npols)
+!        function values at the discretization points
+!
+!  Output arguments:
+!
+!    - dfuv: double precision(nd,2,npols)
+!        uv surface gradient of the input functions
+!-----------------------------
+!
+  implicit none
+  integer, intent(in) :: nd,norder,npols
+  real *8, intent(in) :: f(nd,npols)
+  real *8, intent(out) :: dfuv(nd,2,npols)
+  real *8 fcoefs(nd,npols),pols(npols),ders(2,npols)
+  real *8 uv(2,npols)
+  integer i,idim,j
+
+  call vals_to_coefs_tri(nd,norder,npols,f,fcoefs)
+  call get_vioreanu_nodes(norder,npols,uv)
+
+  do i=1,npols
+    do idim=1,nd
+      dfuv(idim,1,i) = 0
+      dfuv(idim,2,i) = 0
+    enddo
+  enddo
+
+
+  do i=1,npols
+    call koorn_ders(uv(1,i),norder,npols,pols,ders)
+    do j=1,npols
+      do idim=1,nd
+        dfuv(idim,1,i) = dfuv(idim,1,i) + ders(1,j)*fcoefs(idim,j)
+        dfuv(idim,2,i) = dfuv(idim,2,i) + ders(2,j)*fcoefs(idim,j)
+      enddo
+    enddo
+  enddo
+
+  return
+end subroutine get_surf_uv_grad_tri
+!
+!
+!
+!
+!
+subroutine get_surf_div(nd,npatches,norders,ixyzs,iptype,npts, &
+  srccoefs,srcvals,f,df)
+!
+!-----------------------------
+!  Compute the surface divergence of a vector function
+!
+!  Input arguments:
+!
+!    - nd: integer
+!        number of vector fields
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!    - f: double precision (nd,2,npts)
+!        vector field values at the discretization points
+!
+!  Output arguments:
+!
+!    - df: double precision(nd,npts)
+!        surface divergence of the input vector fields
+!-----------------------------
+!
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches)
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer, intent(in) :: npts,nd
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+  real *8, intent(in) :: f(nd,2,npts)
+  real *8, intent(out) :: df(nd,npts)
+  real *8, allocatable :: ffform(:,:,:)
+
+  allocate(ffform(2,2,npts))
+
+
+  call get_first_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,ffform)
+
+  call get_surf_div_fast(nd,npatches,norders,ixyzs,iptype,npts, &
+    ffform,f,df)
+
+  return
+end subroutine get_surf_div
+!
+!
+!
+!
+!
+
+
+subroutine get_surf_div_fast(nd,npatches,norders,ixyzs,iptype,npts, &
+  ffform,f,df)
+!
+!-----------------------------
+!  Faster version of computing the surface divergence of a vector function
+!  with precmoputed first fundamental form
+!
+!  Input arguments:
+!
+!    - nd: integer
+!        number of vector fields
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - f: double precision (nd,2,npts)
+!        vector field values at the discretization points
+!
+!  Output arguments:
+!
+!    - df: double precision(nd,npts)
+!        surface divergence of the input vector fields
+!-----------------------------
+!
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches)
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer, intent(in) :: npts,nd
+  real *8, intent(in) :: ffform(2,2,npts),f(nd,2,npts)
+  real *8, intent(out) :: df(nd,npts)
+  integer i,istart,npols
+
+  do i=1,npatches
+    istart = ixyzs(i)
+    npols = ixyzs(i+1)-ixyzs(i)
+    if(iptype(i).eq.1) &
+      call get_surf_div_tri(nd,norders(i),npols,ffform(1,1,istart), &
+        f(1,1,istart),df(1,istart))
+  enddo
+
+
+  return
+
+  return
+end subroutine get_surf_div_fast
+!
+!
+!
+!
+!
+subroutine get_surf_div_tri(nd,norder,npols,ff,f,df)
+!
+!-----------------------------
+!  Compute the surface divergence of a vector field on a single triangular
+!  patch
+!
+!  Input arguments:
+!
+!    - nd: integer
+!        number of functions
+!    - norder: integer
+!        order of discretization
+!    - npols: integer
+!        total number of points on the patch
+!    - ff: double precision(2,2,npols)
+!        first fundamental form at discretization nodes
+!    - f: double precision (nd,2,npols)
+!        vector field values at the discretization points
+!
+!  Output arguments:
+!
+!    - df: double precision(nd,npols)
+!        surface divergecen of the input vector fields 
+!-----------------------------
+!
+  implicit none
+  integer, intent(in) :: nd,norder,npols
+  real *8, intent(in) :: f(nd,2,npols),ff(2,2,npols)
+  real *8, intent(out) :: df(nd,npols)
+  real *8 fcoefs(nd,2,npols),pols(npols),ders(2,npols)
+  real *8 ftmp(nd,2,npols)
+  real *8 uv(2,npols),gg(npols)
+  integer i,idim,j
+
+  do i=1,npols
+    gg(i) = sqrt(ff(1,1,i)*ff(2,2,i) - ff(1,2,i)*ff(2,1,i))
+    do idim=1,nd
+      ftmp(idim,1,i) = f(idim,1,i)*gg(i)
+      ftmp(idim,2,i) = f(idim,2,i)*gg(i)
+    enddo
+  enddo
+
+  call vals_to_coefs_tri(2*nd,norder,npols,ftmp,fcoefs)
+  call get_vioreanu_nodes(norder,npols,uv)
+
+  do i=1,npols
+    do idim=1,nd
+      df(idim,i) = 0
+    enddo
+  enddo
+
+
+  do i=1,npols
+    call koorn_ders(uv(1,i),norder,npols,pols,ders)
+    do j=1,npols
+      do idim=1,nd
+        df(idim,i) = df(idim,i) + ders(1,j)*fcoefs(idim,1,j) + &
+                                  ders(2,j)*fcoefs(idim,2,j)
+      enddo
+    enddo
+
+    do idim=1,nd
+      df(idim,i) = df(idim,i)/gg(i)
+    enddo
+  enddo
+
+  return
+end subroutine get_surf_div_tri
+
+

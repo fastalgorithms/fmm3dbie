@@ -35,11 +35,13 @@ directory.
 
 This should compile the static library
 in ``lib-static/`` and some fortran test drivers in ``test/``, after which it
-runs the test programs. The last 5 lines of the terminal output should be::
+runs the test programs. The last 7 lines of the terminal output should be::
 
    cat print_testres.txt
-   Successfully completed 3 out of 3 tests in common testing suite
+   Successfully completed 4 out of 4 tests in common testing suite
    Successfully completed 2 out of 2 tests in helm_wrappers testing suite
+   Successfully completed 2 out of 2 tests in lap_wrappers testing suite
+   Successfully completed 2 out of 2 tests in surface routs testing suite
    Successfully completed 27 out of 27 tests in tria_routs testing suite
    rm print_testres.txt
 

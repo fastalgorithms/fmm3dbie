@@ -302,8 +302,10 @@ c
 
       nsuccess = i1+i2
 
-      write(*,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
+      open(unit=33,file='../../print_testres.txt',access='append')
+      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
      1  ' out of ',ntests,' in lap_wrappers testing suite'
+      close(33)
       
       stop
       end
