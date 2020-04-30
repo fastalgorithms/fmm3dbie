@@ -211,8 +211,6 @@ c
           fker=>l3d_dlp
         endif
 
-        print *, ipv
-
         call dgetnearquad_ggq_guru(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
      1     ipatch_id,uvs_targ,
