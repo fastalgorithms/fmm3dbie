@@ -8,7 +8,7 @@ For concreteness, we will be referring to the Generalized Gaussian
 quadrautre + adaptive integration approach for compact kernels::
 
   src/quadratures/ggq-quads.f
-  subroutine getnearquad_ggq_compact_guru
+  subroutine getnearquad_ggq_guru
 
 Subroutine summary
 -------------------
