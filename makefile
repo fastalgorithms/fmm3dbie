@@ -174,10 +174,11 @@ $(DYNAMICLIB): $(OBJS)
 # testing routines
 #
 
-test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap
+test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
+	cd test/surface_routs; ./int2-surf
 	cd test/tria_routs; ./int2-tria
 	cat print_testres.txt
 	rm print_testres.txt
@@ -190,6 +191,9 @@ test/hwrap:
 
 test/lwrap:
 	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f -o test/lap_wrappers/int2-lap $(STATICLIB) $(LIBS) 
+
+test/surf:
+	$(FC) $(FFLAGS) test/surface_routs/test_surf_routs.f -o test/surface_routs/int2-surf $(STATICLIB) $(LIBS) 
 
 TTOBJS = test/tria_routs/test_triaintrouts.o test/tria_routs/test_dtriaintrouts.o test/tria_routs/test_koornexps.o
 
