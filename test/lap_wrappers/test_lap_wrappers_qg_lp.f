@@ -4,6 +4,7 @@
       real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
       real *8 errs(6),ts(2)
       real *8, allocatable :: rfacs(:,:)
+      complex *16 zk
       character *100 fname
       integer ipars(2)
       integer, allocatable :: row_ptr(:),col_ind(:)
@@ -184,7 +185,7 @@ c
 
           
       call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
-     1   srccoefs,nfars,ixyzso,npts_over,srcover)
+     1   srccoefs,srcvals,nfars,ixyzso,npts_over,srcover)
 
       call get_qwts(npatches,nfars,ixyzso,iptype,npts_over,
      1        srcover,wover)
