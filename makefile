@@ -99,9 +99,14 @@ FOBJS = $(FMML)/hfmm3d_ndiv.o $(FMML)/lfmm3d_ndiv.o
 HELM = src/helm_wrappers
 HOBJS = $(HELM)/helm_comb_dir.o
 
+# Laplace wrappers
+LAP = src/lap_wrappers
+LOBJS = $(LAP)/lap_comb_dir.o
+
 # Kernels
 KER = src/kernels
 KOBJS = $(KER)/helm_kernels.o
+KOBJS = $(KER)/lap_kernels.o
 
 # Quadrature wrappers
 QUAD = src/quadratures
@@ -123,7 +128,7 @@ TOBJS = $(TRIA)/ctriaints_main.o $(TRIA)/koornexps.o \
 	$(TRIA)/triasymq.o $(TRIA)/triatreerouts.o $(TRIA)/dtriaintrouts.o
 
 
-OBJS = $(COMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(QOBJS) $(SOBJS) $(TOBJS)
+OBJS = $(COMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS)
 
 .PHONY: usage lib python python3 
 
@@ -170,9 +175,10 @@ $(DYNAMICLIB): $(OBJS)
 # testing routines
 #
 
-test: $(STATICLIB) test/com test/hwrap test/tria
+test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
+	cd test/lap_wrappers; ./int2-lap
 	cd test/tria_routs; ./int2-tria
 	cat print_testres.txt
 	rm print_testres.txt
@@ -182,6 +188,9 @@ test/com:
 
 test/hwrap:
 	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm $(STATICLIB) $(LIBS) 
+
+test/lwrap:
+	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f -o test/lap_wrappers/int2-lap $(STATICLIB) $(LIBS) 
 
 TTOBJS = test/tria_routs/test_triaintrouts.o test/tria_routs/test_dtriaintrouts.o test/tria_routs/test_koornexps.o
 
