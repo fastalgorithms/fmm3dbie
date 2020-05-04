@@ -1852,3 +1852,781 @@ c
       return
       end
 c
+c
+c
+c
+c
+      subroutine lap_comb_dir_fds_mem(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,eps,dpars,nifds,nrfds,nzfds)
+c
+cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
+cf2py   intent(in) srccoefs,srcvals,eps,dpars
+cf2py   intent(out) nifds,nrfds,nzfds
+
+c
+c----------------------------------
+c  This subroutine estimates the memory requirements
+c  for the precomputation routine of the fast direct solver
+c  for solving Dirichlet problems for Laplace's equation
+c  using the combined field integral equation:
+c
+c  .. math::
+c
+c     u = \alpha S_{0}[\sigma] + \beta D_{0} [\sigma]
+c 
+c  The precomputation routine computes an integer array (ifds)
+c  a real array (rfds), and complex array (zfds)
+c 
+c  The following quantities will be computed during the 
+c  precomputation phase of the fast direct solver
+c
+c  - ifds(1): npts_over
+c  - ifds(2): nnz
+c  - ifds(3): nquad
+c  - ifds(4): nximat
+c  - ifds(5:6+npts-1): row_ptr (for near quadrature info)
+c  - ifds(6+npts:6+npts+nnz-1): col_ind
+c  - ifds(6+npts+nnz:6+npts+2*nnz): iquad
+c  - ifds(7+npts+2*nnz:7+npts+2*nnz+npatches-1): novers
+c  - ifds(7+npts+2*nnz+npatches:7+npts+2*nnz+2*npatches): ixyzso
+c  - ifds(8+npts+2*nnz+2*npatches:8+npts+2*nnz+3*npatches-1): iximat
+c
+c  - rfds(1:2): dpars
+c  - rfds(3:12*npts_over+2): srcover
+c  - rfds(12*npts_over+3:13*npts_over+2): wover
+c  - rfds(13*npts_over+3:13*npts_over+nximat+2): ximats
+c  - rfds(13*npts_over+nximat+3:13*npts_over+nximat+nquad+2): wnear
+c
+c  - zfds: unused 
+c
+c  Input arguments:
+c  
+c    - npatches: integer
+c        number of patches
+c    - norders: integer(npatches)
+c        order of discretization of each patch
+c    - ixyzs: integer(npatches+1)
+c        starting location of points on patch i
+c    - iptype: integer(npatches)
+c        type of patch
+c        iptype = 1, triangle discretized using RV nodes
+c    - npts: integer
+c        total number of points on the surface
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefs of geometry info
+c    - srcvals: double precision (12,npts)
+c        xyz, dxyz/du,dxyz/dv, normals at all nodes
+c    - eps: double precision
+c        precision requested
+c    - dpars: double precision(2)
+c        weights for single and double layer potential in representation
+c        dpars(1) = \alpha
+c        dpars(2) = \beta
+c
+c  Output arguments:
+c  
+c    - nifds: integer
+c        size of integer array
+c    - nrfds: integer
+c        size of double precision array
+c    - nzfds: integer
+c        size of double complex array
+c     
+      implicit none
+      integer, intent(in) :: npatches,norders(npatches)
+      integer, intent(in) :: ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches),npts
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+      real *8, intent(in) :: eps
+      real *8, intent(in) :: dpars(2)
+      integer, intent(out) :: nifds,nrfds,nzfds
+
+      integer nnz
+      real *8, allocatable :: targs(:,:)
+      integer iptype_avg,norder_avg
+      integer ntarg,ndtarg,ikerorder
+      real *8 rfac,rfac0
+      real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
+      integer, allocatable :: iquad(:),row_ptr(:),col_ind(:)
+      integer, allocatable :: novers(:),ixyzso(:)
+      integer npts_over,nquad,nximat
+      
+
+      complex *16 ztmp
+      integer i
+
+
+c
+c
+c        setup targets as on surface discretization points
+c 
+      ndtarg = 3
+      ntarg = npts
+      allocate(targs(ndtarg,npts))
+
+C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        targs(1,i) = srcvals(1,i)
+        targs(2,i) = srcvals(2,i)
+        targs(3,i) = srcvals(3,i)
+      enddo
+C$OMP END PARALLEL DO   
+
+
+c
+c
+c        this might need fixing
+c
+      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+
+      call get_rfacs(norder_avg,iptype_avg,rfac,rfac0)
+
+
+      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
+     1     srccoefs,cms,rads)
+
+C$OMP PARALLEL DO DEFAULT(SHARED) 
+      do i=1,npatches
+        rad_near(i) = rads(i)*rfac
+      enddo
+C$OMP END PARALLEL DO      
+
+c
+c    find near quadrature correction interactions
+c
+      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+
+      allocate(row_ptr(npts+1),col_ind(nnz))
+      
+      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+     1        col_ind)
+
+      allocate(iquad(nnz+1)) 
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
+     1         iquad)
+
+      ikerorder = -1
+      if(abs(dpars(2)).gt.1.0d-16) ikerorder = 0
+
+
+c
+c    estimate oversampling for far-field, and oversample geometry
+c
+
+      allocate(novers(npatches),ixyzso(npatches+1))
+
+      ztmp = 0
+      call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
+     1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,ztmp,
+     2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
+
+
+      
+
+      npts_over = ixyzso(npatches+1)-1
+
+      nquad = iquad(nnz+1)-1
+
+      call get_nximat(npatches,ixyzs,ixyzso,nximat)
+
+      nifds = 7+npts+2*nnz+3*npatches
+      nrfds = 2+13*npts_over+nximat+nquad
+      nzfds = 0
+      
+
+      return
+      end
+c
+c
+c
+c
+c
+
+      subroutine lap_comb_dir_fds_init(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,eps,dpars,nifds,ifds,nrfds,
+     2     rfds,nzfds,zfds)
+cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
+cf2py   intent(in) srccoefs,srcvals,eps,dpars
+cf2py   intent(in) nifds,nrfds,nzfds
+cf2py   intent(out) ifds,rfds,zfds
+
+c
+c----------------------------------
+c  This subroutine precomputes a few arrays
+c  for subsequent calls to the fast direct solver
+c  for solving Dirichlet problems for Laplace's equation
+c  using the combined field integral equation:
+c
+c  .. math::
+c
+c     u = \alpha S_{0}[\sigma] + \beta D_{0} [\sigma]
+c 
+c  The precomputation routine computes an integer array (ifds)
+c  a real array (rfds), and complex array (zfds)
+c 
+c  The following quantities will be computed during the 
+c  precomputation phase of the fast direct solver
+c
+c  - ifds(1): npts_over
+c  - ifds(2): nnz
+c  - ifds(3): nquad
+c  - ifds(4): nximat
+c  - ifds(5:6+npts-1): row_ptr (for near quadrature info)
+c  - ifds(6+npts:6+npts+nnz-1): col_ind
+c  - ifds(6+npts+nnz:6+npts+2*nnz): iquad
+c  - ifds(7+npts+2*nnz:7+npts+2*nnz+npatches-1): novers
+c  - ifds(7+npts+2*nnz+npatches:7+npts+2*nnz+2*npatches): ixyzso
+c  - ifds(8+npts+2*nnz+2*npatches:8+npts+2*nnz+3*npatches-1): iximat
+c
+c  - rfds(1:2): dpars
+c  - rfds(3:12*npts_over+2): srcover
+c  - rfds(12*npts_over+3:13*npts_over+2): wover
+c  - rfds(13*npts_over+3:13*npts_over+nximat+2): ximats
+c  - rfds(13*npts_over+nximat+3:13*npts_over+nximat+nquad+2): wnear
+c
+c  - zfds: unused 
+c
+c  Input arguments:
+c  
+c    - npatches: integer
+c        number of patches
+c    - norders: integer(npatches)
+c        order of discretization of each patch
+c    - ixyzs: integer(npatches+1)
+c        starting location of points on patch i
+c    - iptype: integer(npatches)
+c        type of patch
+c        iptype = 1, triangle discretized using RV nodes
+c    - npts: integer
+c        total number of points on the surface
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefs of geometry info
+c    - srcvals: double precision (12,npts)
+c        xyz, dxyz/du,dxyz/dv, normals at all nodes
+c    - eps: double precision
+c        precision requested
+c    - dpars: double precision(2)
+c        weights for single and double layer potential in representation
+c        dpars(1) = \alpha
+c        dpars(2) = \beta
+c    - nifds: integer
+c        size of integer array
+c    - nrfds: integer
+c        size of double precision array
+c    - nzfds: integer
+c        size of double complex array
+c
+c  Output arguments:
+c
+c    - ifds: integer(nifds)
+c        precomputed integer array
+c    - rfds: double precision(nifds)
+c        precomputed double precision array
+c    - zfds: double complex(nifds)
+c        precomputed double complex array
+c  
+c     
+      implicit none
+      integer, intent(in) :: npatches,norders(npatches)
+      integer, intent(in) :: ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches),npts
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+      real *8, intent(in) :: eps
+      real *8, intent(in) :: dpars(2)
+      integer, intent(in) :: nifds,nrfds,nzfds
+      integer, intent(out) :: ifds(nifds)
+      real *8, intent(out) :: rfds(nrfds)
+      complex *16, intent(out) :: zfds(nzfds)
+
+      integer nnz
+      complex *16 ztmp
+      real *8, allocatable :: targs(:,:)
+      real *8, allocatable :: uvs_targ(:,:)
+      integer, allocatable :: ipatch_id(:)
+      integer iptype_avg,norder_avg
+      integer ntarg,ndtarg,ikerorder
+      real *8 rfac,rfac0
+      real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
+      integer npts_over,nquad
+
+      integer iquadtype,istart,iend,i
+
+      integer irow_ptr,icol_ind,iiquad,inovers,iixyzso,iximat
+      integer nximat
+
+c
+c
+c        setup targets as on surface discretization points
+c 
+      ndtarg = 3
+      ntarg = npts
+      allocate(targs(ndtarg,npts))
+
+C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        targs(1,i) = srcvals(1,i)
+        targs(2,i) = srcvals(2,i)
+        targs(3,i) = srcvals(3,i)
+      enddo
+C$OMP END PARALLEL DO   
+
+
+c
+c
+c        this might need fixing
+c
+      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+
+      call get_rfacs(norder_avg,iptype_avg,rfac,rfac0)
+
+
+      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
+     1     srccoefs,cms,rads)
+
+C$OMP PARALLEL DO DEFAULT(SHARED) 
+      do i=1,npatches
+        rad_near(i) = rads(i)*rfac
+      enddo
+C$OMP END PARALLEL DO      
+
+c
+c    find near quadrature correction interactions
+c
+      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+
+      irow_ptr = 5
+      icol_ind = irow_ptr+npts+1
+      iiquad = icol_ind+nnz
+      inovers = iiquad + nnz+1
+      iixyzso = inovers+npatches
+      iximat = iixyzso+npatches+1
+
+      
+      call findnear(cms,npatches,rad_near,targs,npts,ifds(irow_ptr), 
+     1        ifds(icol_ind))
+
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,ifds(irow_ptr),
+     1   ifds(icol_ind),ifds(iiquad))
+
+
+      ikerorder = -1
+      if(abs(dpars(2)).gt.1.0d-16) ikerorder = 0
+
+
+c
+c    estimate oversampling for far-field, and oversample geometry
+c
+
+
+      call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
+     1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,ztmp,
+     2    nnz,ifds(irow_ptr),ifds(icol_ind),rfac,ifds(inovers),
+     3    ifds(iixyzso))
+
+      npts_over = ifds(iixyzso+npatches)-1
+      nquad = ifds(iiquad+nnz)-1
+      
+      rfds(1) = dpars(1)
+      rfds(2) = dpars(2)
+
+      call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
+     1   srccoefs,srcvals,ifds(inovers),ifds(iixyzso),npts_over,
+     2   rfds(3))
+
+      call get_qwts(npatches,ifds(inovers),ifds(iixyzso),iptype,
+     1      npts_over,rfds(3),rfds(12*npts_over+3))
+
+      
+
+      ifds(1) = npts_over
+      ifds(2) = nnz
+      ifds(3) = nquad
+
+      call get_nximat(npatches,ixyzs,ifds(iixyzso),nximat)
+
+      ifds(4) = nximat
+
+      istart = 13*npts_over+3
+
+      call get_ximats(npatches,iptype,norders,ixyzs,ifds(inovers),
+     1  ifds(iixyzso),nximat,rfds(istart),ifds(iximat))
+
+
+c
+c    initialize patch_id and uv_targ for on surface targets
+c
+      allocate(ipatch_id(ntarg),uvs_targ(2,ntarg))
+      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts,
+     1  ipatch_id,uvs_targ)
+
+      iquadtype = 1
+      istart = 13*npts_over + nximat + 3
+
+      call getnearquad_lap_comb_dir(npatches,norders,
+     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     1      ipatch_id,uvs_targ,eps,dpars,iquadtype,nnz,ifds(irow_ptr),
+     1      ifds(icol_ind),ifds(iiquad),rfac0,nquad,rfds(istart))
+      
+      return
+      end
+c
+c
+c
+c
+c
+c
+
+      subroutine lap_comb_dir_fds_matgen(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,eps,dpars,nifds,ifds,nrfds,
+     2     rfds,nzfds,zfds,nent_csc,col_ptr,row_ind,dmatent)
+cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
+cf2py   intent(in) srccoefs,srcvals,eps,dpars
+cf2py   intent(in) nifds,nrfds,nzfds
+cf2py   intent(in) ifds,rfds,zfds
+cf2py   intent(in) nent_csc,col_ptr,row_ind
+cf2py   intent(out) dmatent
+   
+c----------------------------------
+c  This subroutine generates matrix entries queried 
+c  for solving Dirichlet problems for Laplace's equation
+c  using the combined field integral equation:
+c
+c  .. math::
+c
+c     u = \alpha S_{0}[\sigma] + \beta D_{0} [\sigma]
+c 
+c  The precomputation routine computes an integer array (ifds)
+c  a real array (rfds), and complex array (zfds)
+c 
+c  The following quantities will be computed during the 
+c  precomputation phase of the fast direct solver
+c
+c  - ifds(1): npts_over
+c  - ifds(2): nnz
+c  - ifds(3): nquad
+c  - ifds(4): nximat
+c  - ifds(5:6+npts-1): row_ptr (for near quadrature info)
+c  - ifds(6+npts:6+npts+nnz-1): col_ind
+c  - ifds(6+npts+nnz:6+npts+2*nnz): iquad
+c  - ifds(7+npts+2*nnz:7+npts+2*nnz+npatches-1): novers
+c  - ifds(7+npts+2*nnz+npatches:7+npts+2*nnz+2*npatches): ixyzso
+c  - ifds(8+npts+2*nnz+2*npatches:8+npts+2*nnz+3*npatches-1): iximat
+c
+c  - rfds(1:2): dpars
+c  - rfds(3:12*npts_over+2): srcover
+c  - rfds(12*npts_over+3:13*npts_over+2): wover
+c  - rfds(13*npts_over+3:13*npts_over+nximat+2): ximats
+c  - rfds(13*npts_over+nximat+3:13*npts_over+nximat+nquad+2): wnear
+c
+c  - zfds: unused
+c
+c  The list of input entries requested must be provided in 
+c  column sparse compressed format. Use the conv_to_csc
+c  utility to convert a list of (i,j) entries to column sparse
+c  compressed representation.
+c
+c  Note: if double layer potential is used in representation,
+c  then only principal value part of the layer potential
+c  is returned. The term corresponding to the jump in layer potential
+c  will have to be added manually.
+c
+c
+c  Input arguments:
+c  
+c    - npatches: integer
+c        number of patches
+c    - norders: integer(npatches)
+c        order of discretization of each patch
+c    - ixyzs: integer(npatches+1)
+c        starting location of points on patch i
+c    - iptype: integer(npatches)
+c        type of patch
+c        iptype = 1, triangle discretized using RV nodes
+c    - npts: integer
+c        total number of points on the surface
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefs of geometry info
+c    - srcvals: double precision (12,npts)
+c        xyz, dxyz/du,dxyz/dv, normals at all nodes
+c    - eps: double precision
+c        precision requested
+c    - dpars: double precision(2)
+c        weights for single and double layer potential in representation
+c        dpars(1) = \alpha
+c        dpars(2) = \beta
+c    - nifds: integer
+c        size of integer array
+c    - ifds: integer(nifds)
+c        precomputed integer array
+c    - nrfds: integer
+c        size of double precision array
+c    - rfds: double precision(nifds)
+c        precomputed double precision array
+c    - nzfds: integer
+c        size of double complex array
+c    - zfds: double complex(nifds)
+c        precomputed double complex array
+c    - nent_csc: integer
+c        number of matrix entries requested
+c    - col_ptr: integer(npts+1)
+c        indicates location in row_ind where relevant entries for
+c        column i begin
+c    - row_ind: integer(nent_csc)
+c        list of row indices. (row_ind(col_ptr(i):col_ptr(i+1)-1),i)
+c        are all the matrix entries requested
+c
+c  Output arguments:
+c
+c    - dmatent: double precision(npts)
+c        matrix entries requested 
+c
+c  
+c     
+
+      implicit none
+      integer, intent(in) :: npatches,norders(npatches)
+      integer, intent(in) :: ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches),npts
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+      real *8, intent(in) :: eps,dpars(2)
+      integer, intent(in) :: nifds,nrfds,nzfds
+      integer, intent(in) :: ifds(nifds)
+      real *8, intent(in) :: rfds(nrfds)
+      complex *16, intent(in) :: zfds(nzfds)
+      integer, intent(in) :: nent_csc,col_ptr(npts+1),row_ind(nent_csc)
+      real *8, intent(out) :: dmatent(nent_csc)
+
+c
+c        temporary variables
+c
+      integer i,j,k,l,ipatch,npols
+      integer ndd,ndz,ndi
+      integer ilstart,ilend,istart,iend
+      integer irow_ptr,icol_ind,iiquad,inovers,iixyzso
+      integer npts_over,nnz,nquad
+
+      integer, allocatable :: iuni(:),iuniind(:)
+      integer, allocatable :: col_ptr_src(:),row_ind_src(:),iper(:)
+      integer, allocatable :: aintb(:),iaintba(:),aintbc(:),iaintbc(:)
+      real *8, allocatable :: wquadn(:,:),wquad(:,:)
+      real *8, allocatable :: wquadf(:,:),wquadf2(:,:)
+
+
+      real *8 alpha, beta
+      complex *16 zk,zpars
+      real *8, allocatable :: srcover(:,:),wtsover(:)
+      integer ipars,ipt,iquad,itind,iximat,ixist,j2,jind
+      integer jind0,juniind,n2,naintb,naintbc,nmax,nn,npolso
+      integer nuni,nximat,iwnear
+      integer, allocatable :: iaintbb(:)
+      integer ifcharge,ifdipole
+
+      real *8 dzero,done
+
+      procedure (), pointer :: fker
+      external l3d_slp, l3d_dlp, l3d_comb
+
+      done = 1
+      dzero = 0
+
+c
+c
+c        initialize the appropriate kernel function
+c
+ 
+      
+      alpha = rfds(1)
+      beta = rfds(2)
+
+      fker => l3d_comb
+      ndd = 2
+      ifcharge = 1
+      ifdipole = 1
+      if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
+        fker=>l3d_slp
+        ndd = 0
+        ifdipole = 0
+      else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
+        fker=>l3d_dlp
+        ndd = 0
+        ifcharge = 0
+      endif
+
+
+      ndi = 0
+      ndz = 0
+
+      npts_over = ifds(1)
+      nnz = ifds(2)
+      nquad = ifds(3)
+      nximat = ifds(4)
+
+      irow_ptr = 5
+      icol_ind = irow_ptr+npts+1
+      iiquad = icol_ind+nnz
+      inovers = iiquad + nnz+1
+      iixyzso = inovers+npatches
+      iximat = iixyzso+npatches+1
+
+      allocate(col_ptr_src(npatches+1),row_ind_src(nnz),iper(nnz))
+
+      call rsc_to_csc(npatches,npts,nnz,ifds(irow_ptr),ifds(icol_ind),
+     1  col_ptr_src,row_ind_src,iper)
+
+c
+c    estimate max oversampling
+c
+      nmax = 0
+      do ipatch=1,npatches
+        npolso = ifds(iixyzso+ipatch)-ifds(iixyzso+ipatch-1)
+        if(npolso.gt.nmax) nmax = npolso
+      enddo
+
+      allocate(srcover(12,nmax),wtsover(nmax))
+
+      iwnear = 13*npts_over + nximat+2 
+     
+
+      do ipatch=1,npatches
+
+c
+c
+c   combine all list of targets requested for current
+c   patch and find unique list of targets
+c
+      
+        istart = ixyzs(ipatch)
+        iend = ixyzs(ipatch+1)-1
+        npols= iend-istart+1
+         
+        ilstart = col_ptr(istart)
+        ilend = col_ptr(iend+1)-1
+
+        nn = ilend-ilstart+1
+
+        allocate(iuni(nn),iuniind(nn))
+
+        call get_iuni1(nn,row_ind(ilstart),nuni,iuni,iuniind)
+        
+        allocate(aintb(nuni),iaintba(nuni),aintbc(nuni),iaintbc(nuni))
+        allocate(iaintbb(nuni))
+
+        n2 = col_ptr_src(ipatch+1)-col_ptr_src(ipatch)
+
+c
+c
+c    separate list of targets into near field targets for which 
+c    quadrature is already computed and far-field targets for which
+c    quadrature is required to be computed
+c
+        naintb = 0
+        naintbc = 0
+
+        call setdecomp(nuni,iuni,n2,
+     1     row_ind_src(col_ptr_src(ipatch)),naintb,aintb,iaintba,
+     2     iaintbb,naintbc,aintbc,iaintbc)
+
+       
+c
+c    for the entries in aintb, the quadrature has already been computed
+c    so that needs to be extracted and sent to appropriate entries
+c  
+        allocate(wquad(nuni,npols))
+        do i=1,naintb
+           jind0 = iaintbb(i)+col_ptr_src(ipatch)-1
+           jind = iper(jind0)
+           iquad = ifds(iiquad + jind-1)
+           wquad(iaintba(i),:) = rfds(iwnear+iquad:
+     1        iwnear+iquad+npols-1)
+        enddo
+
+c
+c        compute the oversampled quadrature
+c
+        istart = ifds(iixyzso+ipatch-1)
+        iend = ifds(iixyzso+ipatch)-1
+        npolso = iend-istart+1
+
+        allocate(wquadf(npolso,naintbc))
+        allocate(wquadf2(npols,naintbc))
+
+c
+c      extract srcover, wtsover, and targvals 
+c
+
+        do i=1,npolso
+          do j=1,12
+            srcover(j,i) = rfds(2+12*(istart+i-2)+j)
+          enddo
+          wtsover(i) = rfds(2+12*npts_over+istart+i-1)
+        enddo
+
+cc        call prin2('srcover=*',srcover,12*npolso)
+cc        call prin2('wtsover=*',wtsover,npolso)
+
+
+cc        call prin2('zfds=*',zfds,6)
+
+        do i=1,naintbc
+          itind = aintbc(i)
+          do j=1,npolso
+            call fker(srcover(1,j),3,srcvals(1,itind),ndd,dpars,ndz,
+     1        zfds,ndi,ipars,wquadf(j,i))
+            wquadf(j,i) = wquadf(j,i)*wtsover(j)
+          enddo
+        enddo
+
+        if(ifdipole.eq.0) then
+          do i=1,naintbc
+            do j=1,npolso
+              wquadf(j,i) = wquadf(j,i)*alpha
+            enddo
+          enddo
+        endif
+
+        if(ifcharge.eq.0) then
+          do i=1,naintbc
+            do j=1,npolso
+              wquadf(j,i) = wquadf(j,i)*beta
+            enddo
+          enddo
+        endif
+
+c
+c      now multiply wquadf by ximat
+c
+        ixist = ifds(iximat+ipatch-1) + 13*npts_over+2
+        call dgemm('t','n',npols,naintbc,npolso,done,rfds(ixist),
+     1    npolso,wquadf,npolso,dzero,wquadf2,npols)
+        
+        do i=1,naintbc
+          wquad(iaintbc(i),:) = wquadf2(:,i)
+        enddo
+       
+        do i = 1,npols
+          ipt = ixyzs(ipatch) + i-1
+          do j=col_ptr(ipt),col_ptr(ipt+1)-1
+             jind = row_ind(j)
+
+             j2 = j-col_ptr(ixyzs(ipatch))+1
+             juniind = iuniind(j2)
+             dmatent(j) = wquad(juniind,i)
+          enddo
+        enddo
+
+        deallocate(iuni,iuniind,aintb,iaintba,iaintbb,aintbc,iaintbc)
+        deallocate(wquad,wquadf,wquadf2)
+      enddo
+      
+      
+      
+
+
+      return
+      end
