@@ -61,8 +61,8 @@ Here are the list of input formats that are currently supported
 The .go3 file format is a storage format where each patch is iptype=1,
 and discretized using the same order Vioreanu-Rokhlin nodes.:: 
 
-    N_{patches}
     norder-1
+    N_{patches}
     srcvals(1,1)
     srcvals(1,2)
         .
