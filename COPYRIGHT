@@ -1,0 +1,29 @@
+License and Copyright
+
+fmm3dbie is Copyright 2020 Leslie Greengard, Michael O'Neil, Manas
+Rachh, and Felipe Vico
+
+fmm3dbie is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not you can find copies here:
+http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+http://www.gnu.org/licenses/gpl-3.0.txt
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+In addition, we kindly ask you to acknowledge fmm3dbie and its authors
+in any program or publication in which you use the software. (You are
+not required to do so; it is up to your common sense to decide whether
+you want to comply with this request or not.) For general
+publications, we suggest referencing:
+
+L. Greengard, M. O'Neil, M. Rachh, and F. Vico, "Efficient implementations of 
+fast multipole methods with locally-corrected quadratures - I", in preparation.
+
