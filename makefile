@@ -54,13 +54,12 @@ ifeq ($(FAST_KER),ON)
   OMP = ON
 endif
 
-
-
+LBLAS = -lblas -llapack
 
 # For your OS, override the above by placing make variables in make.inc
 -include make.inc
 
-LIBS = -L${LDF} -lm -lfmm3d -lopenblas ${LDBLAS}
+LIBS = -L${LDF} -lm -lfmm3d ${LBLAS} ${LDBLAS}
 
 # multi-threaded libs & flags needed
 ifneq ($(OMP),OFF)
