@@ -1,8 +1,8 @@
 EXEC = int2-iter
 #HOST = gcc
-HOST = gcc-openmp
+#HOST = gcc-openmp
 #HOST = intel
-#HOST = intel-ompenmp
+HOST = intel-openmp
 
 #
 # For linux systems, it is assumed that the environment
@@ -42,6 +42,7 @@ endif
 ifeq ($(HOST),intel-openmp)
     FC = ifort -L${LDF} 
     FFLAGS= -O3 -fPIC -march=native -qopenmp
+    FEND = -mkl
 endif
 
 SURF=../../src/surface_routs
@@ -63,7 +64,7 @@ OBJECTS =  helm_dir_iter_example.o \
 	$(FC) -c $(FFLAGS) $< -o $@
 
 all: $(OBJECTS)
-	$(FC) $(FFLAGS) -o $(EXEC) $(OBJECTS) -L${LDF} $(LIBS)
+	$(FC) $(FFLAGS) -o $(EXEC) $(OBJECTS) -L${LDF} $(LIBS) $(FEND)
 	./$(EXEC)  
 
 clean:
