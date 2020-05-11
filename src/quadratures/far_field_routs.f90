@@ -224,7 +224,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 !    
 !    output
 !      nfar - integer
-!        quadrature order for far-field (currently will only be 1,2,3,4,6,8,10,12)
+!        quadrature order for far-field (currently will only be 1,2,3,4,6,8,10,12,14,16)
 !
 !
   implicit real *8 (a-h,o-z)
@@ -248,7 +248,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   real *8, allocatable :: pmat(:,:)
   real *8, allocatable :: uvs(:,:),wts(:),qwts(:)
   real *8 tmp(3)
-  integer nfars(8)
+  integer nfars(10)
   integer nmax,iseed1,iseed2 
 
   character *1 transa,transb
@@ -278,6 +278,8 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   nfars(6) = 8
   nfars(7) = 10
   nfars(8) = 12
+  nfars(9) = 14
+  nfars(10) = 16
 
   done = 1
   pi = atan(done)*4
@@ -326,7 +328,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 !
 
 
-  nomax = 13
+  nomax = 16
   npmax = (nomax+1)*(nomax+2)/2
   allocate(srctmp(12,npmax),sigmatmp(npmax),pmat(npols,npmax))
   allocate(uvs(2,npmax),wts(npmax),qwts(npmax))
@@ -335,7 +337,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 
 
   iistart = 0
-  do i=1,8
+  do i=1,10
     if(nfars(i).lt.norder) iistart = i 
   enddo
 
@@ -389,7 +391,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 
 
 
-  do nnn=iistart+1,8
+  do nnn=iistart+1,10
     nfar = nfars(nnn)
 
     npolsf = (nfar+1)*(nfar+2)/2

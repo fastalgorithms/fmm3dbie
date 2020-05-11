@@ -152,4 +152,50 @@ subroutine l3d_comb(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
 
   return
 end subroutine l3d_comb
+!
+!
+!
+!
+!
+!
+
+subroutine l3d_qlp(srcinfo, ndt,targ,ndd, dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
+  integer ipars(ndi)
+  complex *16 :: zk
+  real *8 val
+
+  real *8 :: src(3), srcnorm(3)
+  real *8 dotprod
+  complex *16 :: ima
+  data ima/(0.0d0,1.0d0)/
+  !
+  ! returns the Laplace quadruple layer kernel
+  !
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+  srcnorm(1)=srcinfo(10)
+  srcnorm(2)=srcinfo(11)
+  srcnorm(3)=srcinfo(12)
+
+!  call prin2('srcinfo=*',srcinfo,12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  d = dx*srcnorm(1) + dy*srcnorm(2) + dz*srcnorm(3)
+  rsq = dx**2 + dy**2 + dz**2
+  r=sqrt(rsq)
+
+  val =  (d**2*(-3/rsq) + 1)/(r**3)
+
+  return
+end subroutine l3d_qlp
+
+
+
 
