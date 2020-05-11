@@ -18,7 +18,7 @@ For the basic libraries
 * GNU make
 * `FMM3D <https://github.com/flatironinstitute/FMM3D>`_
 * Blocked linear algebra routines and LAPACK (default used: Netlib BLAS
-on Linux machines, and framework accelerate on MacOS)
+  on Linux machines, and framework accelerate on MacOS)
 
 Optional:
 
