@@ -244,7 +244,7 @@ cc      goto 1111
       dpars(2) = 1.0d0
 
 
-      call lpcomp_lap_comb_dir_addsub(npatches,norders,ixyzs,
+      call lpcomp_lap_comb_dir_setsub(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      2  eps,dpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
      3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)
