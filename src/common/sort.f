@@ -82,7 +82,7 @@ C===================================================================
  
       INTEGER   LSTK(31),RSTK(31),ISTK
       INTEGER   L,R,I,J,P,INDEXP,INDEXT
-      REAL      DATAP
+      integer      DATAP
  
 C     QuickSort Cutoff
 C
