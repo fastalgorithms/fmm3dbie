@@ -63,7 +63,6 @@ SOURCES =  test_helm_wrappers_qg_lp.f \
   $(TRIA)/koornexps.f90 \
   $(COM)/dotcross3d.f90 \
   $(COM)/lapack_wrap.f90 \
-  $(COM)/orthom.f \
   $(COM)/legeexps.f \
   $(COM)/lapack_slow.f \
   $(COM)/sparse_reps.f \

@@ -1,4 +1,6 @@
+! (c) Mike O'Neil
 !
+! A few interfaces by Manas Rachh
 !
 ! this file contains basic common-sense wrappers for lapack routines,
 ! that way you never need to call the complicated routine with
@@ -10,13 +12,34 @@
 !     dgausselim_zrhs - real matrix, complex rhs, compex solution
 !
 subroutine zvecvec(n, x, y, cd)
+!
+!-----------------
+!  This subroutine computes the dot product of two complex vectors
+!
+!  Input arguments:
+!  
+!    - n: integer
+!        length of the complex vectors
+!    - x: double complex(n)
+!        input vector 1
+!    - y: double complex(n)
+!        input vector 2
+!
+!  Output arguments:
+!
+!    - cd: double complex
+!        inner product \sum_{i} x(i) y(i)
+!---------------------------        
+!
+!
+
   implicit double precision (a-h,o-z)
-  complex *16 :: x(n), y(n), cd
+  complex *16, intent(in) :: x(n), y(n)
+  complex *16, intent(out) :: cd
+  complex *16 zdotu
 
   cd = 0
-  do i = 1,n
-    cd = cd + x(i)*y(i)
-  end do
+  cd = zdotu(n,x,1,y,1)
   return
 end subroutine zvecvec
 
@@ -25,6 +48,21 @@ end subroutine zvecvec
 
 
 subroutine zzero(n, z)
+!
+!--------------------
+!  This subroutine zeros out a complex vector
+!
+!  Input arguments:
+!
+!    - n: integer
+!        length of the vector
+!
+!  Output arguments:
+!
+!    - z: double complex(n)
+!        zeroed out vector
+!---------------------
+!
   implicit double precision (a-h,o-z)
   complex *16 :: z(n)
 
@@ -39,12 +77,27 @@ end subroutine zzero
 
 
 subroutine ztranspose(m, n, a)
+!
+!---------------------
+!  This subroutine returns an inplace transpose
+!  of a complex matrix
+!
+!  Input arguments:
+!    - m: integer
+!        number of rows
+!    - n: integer
+!        number of columns
+!
+!  Inout arguments:
+!    - a: double complex(m,n)
+!        on input, the matrix a, on output
+!        the transpose of matrix a
+!-------------------------
+!
   implicit double precision (a-h,o-z)
-  double complex :: a(*)
+  integer, intent(in) :: m,n
+  double complex, intent(inout) :: a(*)
   double complex, allocatable :: at(:)
-  !
-  ! compute the transpose of matrix a, in place
-  !
 
   allocate(at(m*n))
 
@@ -637,5 +690,38 @@ end subroutine dmatmat
 
 
 
+
+
+
+
+
+
+
+subroutine zrmatmatt(m, n, a, k, b, c)
+  implicit double precision (a-h,o-z)
+  complex *16 :: a(n,m),c(k,m)
+  real *8 :: b(n,k)
+  complex *16, allocatable :: bz(:,:)
+  character *1 :: transa, transb
+  complex *16 :: alpha, beta
+
+
+  allocate(bz(n,k))
+  call zzero(n*k,bz)
+  call dcopy(n*k,b,1,bz,2)
+
+  !
+  ! note different dimensions than usual...
+  !
+  transa = 'T'
+  transb = 'N'
+  alpha = 1
+  beta = 0
+
+  call zgemm(transa, transb, k, m, n, alpha, bz, n, a, n, &
+      beta, c, k)
+
+  return
+end subroutine zrmatmatt
 
 

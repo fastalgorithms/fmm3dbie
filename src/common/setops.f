@@ -1,4 +1,3 @@
-c 
 c
 c        This file has 2 user callable routines:
 c           setsub - given two integer sets a,b, compute a\ (a \cap b)^{c}, 
@@ -306,6 +305,11 @@ c        are contained in the shorter array
 c
       integer n, a(n),nuni,iuni(n),iuniind(n)
       integer, allocatable :: iind(:),asort(:),iunisort(:)
+
+      if(n.eq.0) then
+        nuni = 0
+        return
+      endif
 
       allocate(iind(n),asort(n),iunisort(n))
       call sorti(n,a,iind)

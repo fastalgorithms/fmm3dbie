@@ -2512,6 +2512,7 @@ c
 
         allocate(iuni(nn),iuniind(nn))
 
+        nuni = 0
         call get_iuni1(nn,row_ind(ilstart),nuni,iuni,iuniind)
         
         allocate(aintb(nuni),iaintba(nuni),aintbc(nuni),iaintbc(nuni))

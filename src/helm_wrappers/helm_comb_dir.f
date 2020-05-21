@@ -2307,7 +2307,7 @@ c
       enddo
 
       allocate(srcover(12,nmax),wtsover(nmax))
-     
+
 
       do ipatch=1,npatches
 
@@ -2328,6 +2328,7 @@ c
 
         allocate(iuni(nn),iuniind(nn))
 
+        nuni = 0
         call get_iuni1(nn,row_ind(ilstart),nuni,iuni,iuniind)
         
         allocate(aintb(nuni),iaintba(nuni),aintbc(nuni),iaintbc(nuni))
@@ -2347,6 +2348,7 @@ c
         call setdecomp(nuni,iuni,n2,
      1     row_ind_src(col_ptr_src(ipatch)),naintb,aintb,iaintba,
      2     iaintbb,naintbc,aintbc,iaintbc)
+        
 
        
 c
@@ -2417,7 +2419,7 @@ c
 c      now multiply wquadf by ximat
 c
         ixist = ifds(iximat+ipatch-1) + 13*npts_over
-        call zrmatmatt_slow(naintbc,npolso,npols,wquadf,rfds(ixist),
+        call zrmatmatt(naintbc,npolso,wquadf,npols,rfds(ixist),
      1        wquadf2)
         
         do i=1,naintbc

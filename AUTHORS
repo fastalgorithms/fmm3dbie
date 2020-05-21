@@ -1,0 +1,9 @@
+Main authors of fmm3dbie:
+
+Leslie Greengard 
+Michael O'Neil
+Manas Rachh
+Felipe Vico
+
+Travis Askham contributed openmp support for cumulative sums
+
