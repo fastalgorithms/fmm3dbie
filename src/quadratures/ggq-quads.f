@@ -324,7 +324,7 @@ c
      2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
         
-        call zrmatmatt_slow(ntarg_n,npols,npols,sints_n,umatr,svtmp_n)
+        call zrmatmatt(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
 c
 c
 c       fill out far part of single layer
@@ -336,7 +336,7 @@ c
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
      3      ndi,ipars,npts_f,qnodes,qwts,sints_f)
         
-        call zrmatmatt_slow(ntarg_f,npols,npols,sints_f,umatr,svtmp_f)
+        call zrmatmatt(ntarg_f,npols,sints_f,npols,umatr,svtmp_f)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
 c
@@ -963,7 +963,7 @@ c
 
       deallocate(srctmp,qwts,sigvals)
 
-      call zrmatmatt_slow(1,npols,npols,fint,umat,zquad)
+      call zrmatmatt(1,npols,fint,npols,umat,zquad)
 
       return
       end

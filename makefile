@@ -85,8 +85,8 @@ LIBDIR = lib-static
 # Common objects
 COM = src/common
 COMOBJS = $(COM)/cumsum.o $(COM)/dlaran.o $(COM)/dotcross3d.o \
-	$(COM)/hkrand.o $(COM)/lapack_slow.o $(COM)/lapack_wrap.o \
-	$(COM)/legeexps.o $(COM)/orthom.o $(COM)/prini_new.o \
+	$(COM)/hkrand.o $(COM)/lapack_wrap.o \
+	$(COM)/legeexps.o $(COM)/prini_new.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/tree_lr_3d.o
 

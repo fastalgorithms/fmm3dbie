@@ -47,7 +47,6 @@ SOURCES =  test_triaintrouts.f \
   $(COM)/dotcross3d.f \
   $(TRIA)/ortho2exps.f \
   $(COM)/lapack_wrap.f90 \
-  $(COM)/orthom.f \
   $(TRIA)/triasymq.f \
   $(TRIA)/ctriaints_main.f \
   $(TRIA)/triatreerouts.f \

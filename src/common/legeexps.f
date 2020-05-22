@@ -1,11 +1,4 @@
-c 
-ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c 
-c        this is the end of the debugging code and the beginning
-c        of the legendre expansion routines
-c 
-ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c 
+c (c) Vladimir Rokhlin 
 c 
 c 
 c        This file contains a set of subroutines for the handling
