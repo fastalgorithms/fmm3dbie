@@ -446,7 +446,7 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
       istartover = ixyzso(i)
       do j=1,npols
         do l=1,12
-          srcover(l,j+istartover-1) = srcvals(l,j+istartover-1)
+          srcover(l,j+istartover-1) = srcvals(l,j+istart-1)
         enddo
       enddo
     endif
