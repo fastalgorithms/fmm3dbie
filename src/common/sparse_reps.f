@@ -156,7 +156,8 @@ c
 c----------------------------------------------------------
 c> @brief
 c> Convert a list of (i,j) matrix entries to column sparse
-c> compressed format
+c> compressed format.
+c> This is openmp version
 c>
 c> @param[in] nent: number of entries (i,j)
 c> @param[in] m: number of columns in the matrix

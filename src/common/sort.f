@@ -496,6 +496,28 @@ c
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine sorti_para(n,data,index)
+C===================================================================
+C
+C     SORTRX -- SORT, integer input, indeX output
+C
+C
+C     Input:  N     INTEGER
+C             DATA  INTEGER
+C
+C     Output: INDEX INTEGER (DIMENSION N)
+C
+C This openmp threaded routine performs an sort of the first N elements
+C of array DATA, returning into array INDEX the indices of elements of
+C DATA arranged in ascending order.  Thus,
+C
+C    DATA(INDEX(1)) will be the smallest number in array DATA;
+C    DATA(INDEX(N)) will be the largest number in DATA.
+C
+C The original data is not physically rearranged.  The original order
+C of equal input values is not necessarily preserved.
+C
+C===================================================================
+
       implicit none
       integer n,data(n),index(n)
       integer nthreads,nelems,ielems,istart,iend,i,j,swap
@@ -612,6 +634,16 @@ c
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine merge_arr_para(data,ind1,ind2,n1,n2,indout,nthreads)
+C===================================================================
+C
+C This openmp threaded routine performs merge of two arrays.
+C ind1 contains the index of array1 of data, ind2 contains the index
+C of array2 of data.
+C The merged index set is in indout of increaing order, it contains
+C the index respect to data, the original data is not physically
+C rearranged.
+C
+C===================================================================
       implicit none
       integer n1,n2,nthreads,i,j,k,ns,indx,first,val,split1,split2
       integer(8) tmpk
