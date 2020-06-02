@@ -1,11 +1,13 @@
       implicit real *8 (a-h,o-z)
 
-      ntests = 4
+      ntests = 6
       call test_get_uni(i1,i2)
       call test_setdecomp(i3)
       call test_cumsum(i4)
+      call test_sort(i5)
+      call test_conv_csc(i6)
 
-      nsuccess = i1+i2+i3+i4
+      nsuccess = i1+i2+i3+i4+i5+i6
 
       open(unit=33,file='../../print_testres.txt')
       write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
@@ -295,3 +297,117 @@ C$       t4 = omp_get_wtime()
 
 
       
+      subroutine test_sort(isuccess)
+c$    use omp_lib
+      implicit none
+      integer isuccess
+      integer, allocatable :: data(:),ind1(:),ind2(:)
+      integer i,j,n,nn,ns(5)
+      double precision t1,t2,t3,t4
+      integer,parameter :: seed = 86456
+
+      isuccess = 1
+      ns(1) = 100001
+      ns(2) = 1000003
+      ns(3) = 10000005
+      ns(4) = 100000006
+      ns(5) = 1000000007
+      nn=4
+      call srand(seed)
+      do i=1,nn
+        n = ns(i)
+        allocate(data(n),ind1(n),ind2(n))
+        do j=1,n
+          data(n-j+1) = irand()
+        enddo
+        call cpu_time(t1)
+C$      t1 = omp_get_wtime()
+        call sorti(n,data,ind1)
+        call cpu_time(t2)
+C$      t2 = omp_get_wtime()
+
+        call cpu_time(t3)
+C$      t3 = omp_get_wtime()
+        call sorti_para(n,data,ind2)
+        call cpu_time(t4)
+C$      t4 = omp_get_wtime()
+        write(*,*) "serial time: ",t2-t1,"para time: ",t4-t3
+        write(*,*) "speed up: ",(t2-t1)/(t4-t3),"n=",n
+        do j=2,n
+          if(data(ind2(j)) < data(ind2(j-1))) then
+            isuccess=0
+            write(*,*) "sort error",j,data(ind2(j-1)),data(ind2(j))
+          endif
+        enddo
+        deallocate(data,ind1,ind2)
+      enddo
+
+      if(isuccess.eq.1) call prinf('test sort passed*',i,0)
+
+      return
+      end
+
+
+
+      subroutine test_conv_csc(isuccess)
+c$    use omp_lib
+      implicit none
+      integer isuccess,nent,m,i,ns(5),ms(5),j,nn
+      integer, allocatable :: iind(:),jind(:)
+      integer, allocatable :: col_ptr1(:),row_ind1(:)
+      integer, allocatable :: col_ptr2(:),row_ind2(:)
+      double precision t1,t2,t3,t4
+      integer,parameter :: seed = 86456
+
+      isuccess = 1
+      ns(1) = 100001
+      ns(2) = 1000003
+      ns(3) = 10000005
+      ns(4) = 100000006
+      ns(5) = 1000000007
+
+      ms(1) = 1000
+      ms(2) = 10000
+      ms(3) = 100000
+      ms(4) = 1000000
+      ms(5) = 10000000
+
+      nn=4
+      do j=1,nn
+        m = ms(j)
+        nent = ns(j)
+        allocate(iind(nent),jind(nent),col_ptr1(m+1),row_ind1(nent))
+        allocate(col_ptr2(m+1),row_ind2(nent))
+
+        call srand(seed)
+        do i=1,nent
+          iind(i) = mod(irand(),m)
+          jind(i) = mod(irand(),m)
+        enddo
+
+        call cpu_time(t1)
+C$      t1 = omp_get_wtime()
+        call conv_to_csc(nent,m,iind,jind,col_ptr1,row_ind1)
+        call cpu_time(t2)
+C$      t2 = omp_get_wtime()
+
+        call cpu_time(t3)
+C$      t3 = omp_get_wtime()
+        call conv_to_csc_para(nent,m,iind,jind,col_ptr2,row_ind2)
+        call cpu_time(t4)
+C$      t4 = omp_get_wtime()
+         
+        write(*,*) "serial time: ",t2-t1,"para time: ",t4-t3
+        write(*,*) "speed up: ",(t2-t1)/(t4-t3),"nent=",nent,"m=",m
+
+        do i=1,m
+          if(col_ptr1(i).ne.col_ptr2(i)) isuccess = 0
+        enddo
+
+        deallocate(iind,jind,col_ptr1,col_ptr2,row_ind1,row_ind2)
+      enddo
+
+      if(isuccess.eq.1) call prinf('test convert to csc passed*',i,0)
+
+      return
+      end
