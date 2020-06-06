@@ -305,6 +305,7 @@ c$    use omp_lib
       integer i,j,n,nn,ns(5)
       double precision t1,t2,t3,t4
       integer,parameter :: seed = 86456
+      integer :: irand
 
       isuccess = 1
       ns(1) = 100001
@@ -358,6 +359,7 @@ c$    use omp_lib
       integer, allocatable :: col_ptr2(:),row_ind2(:)
       double precision t1,t2,t3,t4
       integer,parameter :: seed = 86456
+      integer :: irand
 
       isuccess = 1
       ns(1) = 100001
