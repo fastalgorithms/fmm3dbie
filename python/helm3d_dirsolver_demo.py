@@ -66,3 +66,11 @@ out = fmm3d.h3ddir(zk=zk,sources=xyz_out,targets=xyz_in,charges=c,pgt=1)
 pot_ex = out.pottarg
 erra = la.norm(pot_ex-pot_comp)
 print("error in solution = ",str(erra))
+
+# plot surface with shading as z coordinate
+h3.surf_vtk_plot(norders,ixyzs,iptype,srccoefs,srcvals,'sph.vtk','title1')
+
+rsigma = np.real(sigma)
+# plot surface with real part of density as solution
+h3.surf_vtk_plot_scalar(norders,ixyzs,iptype,srccoefs,srcvals,rsigma,'sph-sig.vtk','title1')
+

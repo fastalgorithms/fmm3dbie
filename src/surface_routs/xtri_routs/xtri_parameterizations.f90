@@ -1,6 +1,101 @@
 
 
 
+subroutine xtri_wtorus_eval(itri, u, v, xyz, dxyzduv, triainfo, &
+    radii, scales, p4)
+  implicit real *8 (a-h,o-z)
+  real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), scales(3)
+  real *8 :: radii(3)
+
+  !
+  ! project the triangle itri in triainfo onto a torus
+  !
+  !    Input:
+  ! itri - triangle number to map
+  ! u,v - local uv coordinates on triangle itri
+  ! triainfo - flat skeleton triangle info
+  ! p2,p3,p4 - dummy parameters
+  !
+  !    Output:
+  ! xyz - point on the sphere
+  ! dxyzduv - first and second derivative information
+  !
+  !
+
+  x0=triainfo(1,1,itri)
+  y0=triainfo(2,1,itri)
+  z0=triainfo(3,1,itri)
+
+  x1=triainfo(1,2,itri)
+  y1=triainfo(2,2,itri)
+  z1=triainfo(3,2,itri)
+
+  x2=triainfo(1,3,itri)
+  y2=triainfo(2,3,itri)
+  z2=triainfo(3,3,itri)
+
+  rminor = radii(1)
+  rmajor = radii(2)
+  rwave = radii(3)
+
+  a = scales(1)
+  b = scales(2)
+  c = scales(3)
+
+
+  !
+  ! ... process the geometry, return the point location on the almond
+  ! and the derivatives with respect to u and v
+  !
+  s = x0+u*(x1-x0)+v*(x2-x0)
+  t = y0+u*(y1-y0)+v*(y2-y0)
+
+  rr = rmajor+rminor*cos(t)+rwave*cos(5.0d0*s)
+
+
+  xyz(1) = a*rr*cos(s)
+  xyz(2) = b*rr*sin(s)
+  xyz(3) = c*rminor*sin(t)
+
+  dsdu = (x1-x0)
+  dsdv = (x2-x0)
+  dtdu = (y1-y0)
+  dtdv = (y2-y0)
+
+  drrds = -5.0d0*rwave*sin(5.0d0*s)
+  drrdt = -rminor*sin(t)
+
+  dxds = a*drrds*cos(s) - a*rr*sin(s)
+  dyds = b*drrds*sin(s) + b*rr*cos(s)
+  dzds = 0
+
+  dxdt = a*drrdt*cos(s)
+  dydt = b*drrdt*sin(s)
+  dzdt = c*rminor*cos(t)
+  
+  dxdu = dxds*dsdu + dxdt*dtdu
+  dydu = dyds*dsdu + dydt*dtdu
+  dzdu = dzds*dsdu + dzdt*dtdu
+
+  dxdv = dxds*dsdv + dxdt*dtdv
+  dydv = dyds*dsdv + dydt*dtdv
+  dzdv = dzds*dsdv + dzdt*dtdv
+
+  dxyzduv(1,1) = dxdu
+  dxyzduv(2,1) = dydu
+  dxyzduv(3,1) = dzdu
+
+  dxyzduv(1,2) = dxdv
+  dxyzduv(2,2) = dydv
+  dxyzduv(3,2) = dzdv
+
+  return
+end subroutine xtri_wtorus_eval
+
+
+
+
+
 subroutine xtri_stell_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     deltas, m, n)
   implicit real *8 (a-h,o-z)

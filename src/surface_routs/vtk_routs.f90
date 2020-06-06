@@ -11,8 +11,13 @@
 subroutine surf_vtk_plot(npatches,norders,ixyzs,iptype,npts,srccoefs,&
    srcvals,fname,title)
 !
+!
+!
+!
 !  This subroutine writes a vtk file to plot the surface
 !  
+!f2py intent(in) npatches,norders,ixyzs,iptype,npts,srccoefs
+!f2py intent(in) srcvals,fname,title
 !
    implicit none
    integer npatches,norders(npatches),ixyzs(npatches+1),npts
@@ -45,6 +50,8 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
 !   with a scalar. Currently only supports triangular patches
 !
 !
+!f2py intent(in) npatches,norders,ixyzs,iptype,npts,srccoefs
+!f2py intent(in) srcvals,sigma,fname,title
 !
   implicit none
   integer npatches,norders(npatches),ixyzs(npatches+1),npts

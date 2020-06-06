@@ -11,6 +11,7 @@ list_files=[]
 list_files.append('../src/helm_wrappers/helm_comb_dir.f')
 list_files.append('../src/common/sparse_reps.f')
 list_files.append('../src/surface_routs/surf_routs.f90')
+list_files.append('../src/surface_routs/vtk_routs.f90')
 
 FLIBS=[]
 FLIBS.append('-lfmm3dbie')
@@ -30,6 +31,8 @@ com.append('conv_to_csc')
 surf.append('surf_vals_to_coefs')
 surf.append('get_qwts')
 surf.append('get_patch_id_uvs')
+surf.append('surf_vtk_plot')
+surf.append('surf_vtk_plot_scalar')
 
 ext_helm = Extension(
     name='helm3d_dir',

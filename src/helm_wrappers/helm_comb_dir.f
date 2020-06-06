@@ -1119,30 +1119,8 @@ c
       radexp = 0
       iert = 0
 
-cc      ndiv = ns + ntarg
-
-       if(eps.ge.0.5d-0) then
-         ndiv = 300
-       else if(eps.ge.0.5d-1) then
-         ndiv = 300
-       else if(eps.ge.0.5d-2) then
-         ndiv = 300
-       else if(eps.ge.0.5d-3) then
-         ndiv = 300
-       else if(eps.ge.0.5d-6) then
-         ndiv = 1000
-       else if(eps.ge.0.5d-9) then
-         ndiv = 1000
-       else if(eps.ge.0.5d-12) then
-         ndiv = 1000
-       else if(eps.ge.0.5d-15) then
-         ndiv = 1000
-       else
-         ndiv = ns+ntarg
-       endif
-
-       ndiv = ndiv/4
-
+      call hndiv(eps,ns,ntarg,ifcharge,ifdipole,ifpgh,ifpghtarg,
+     1   ndiv,idivflag) 
 
 
       call mklraptreemem(iert,sources,ns,radsrc,targvals,ntarg,
