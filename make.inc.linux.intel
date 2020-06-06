@@ -1,0 +1,10 @@
+CC=icc
+CXX=icpc
+FC=ifort
+FFLAGS= -fPIC -O3 -march=native -funroll-loops -mkl 
+LIBS=-lm 
+CLIBS = -lm -ldl -lifcore
+
+
+OMPLIBS = 
+OMPFLAGS = -qopenmp
