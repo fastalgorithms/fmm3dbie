@@ -303,9 +303,9 @@ c$    use omp_lib
       integer isuccess
       integer, allocatable :: data(:),ind1(:),ind2(:)
       integer i,j,n,nn,ns(5)
-      double precision t1,t2,t3,t4
+      double precision t1,t2,t3,t4,hkrand
       integer,parameter :: seed = 86456
-      integer :: irand
+      integer :: irand,nmax
 
       isuccess = 1
       ns(1) = 100001
@@ -314,12 +314,12 @@ c$    use omp_lib
       ns(4) = 100000006
       ns(5) = 1000000007
       nn=3
-      call srand(seed)
+      nmax = 100000000
       do i=1,nn
         n = ns(i)
         allocate(data(n),ind1(n),ind2(n))
         do j=1,n
-          data(n-j+1) = irand()
+          data(n-j+1) = hkrand(0)*nmax 
         enddo
         call cpu_time(t1)
 C$      t1 = omp_get_wtime()
@@ -357,9 +357,9 @@ c$    use omp_lib
       integer, allocatable :: iind(:),jind(:)
       integer, allocatable :: col_ptr1(:),row_ind1(:)
       integer, allocatable :: col_ptr2(:),row_ind2(:)
-      double precision t1,t2,t3,t4
+      double precision t1,t2,t3,t4,hkrand
       integer,parameter :: seed = 86456
-      integer :: irand
+      integer :: ii,jj
 
       isuccess = 1
       ns(1) = 100001
@@ -383,8 +383,10 @@ c$    use omp_lib
 
         call srand(seed)
         do i=1,nent
-          iind(i) = mod(irand(),m)
-          jind(i) = mod(irand(),m)
+          ii = hkrand(0)*m*2
+          jj = hkrand(0)*m*2
+          iind(i) = mod(ii,m)
+          jind(i) = mod(jj,m)
         enddo
 
         call cpu_time(t1)
