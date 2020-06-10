@@ -129,6 +129,7 @@ OBJS = $(COMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS)
 default: usage
 
 usage:
+	@echo "-------------------------------------------------------------------------"
 	@echo "Makefile for FMM3D. Specify what to make:"
 	@echo "  make lib - compile the main library (in lib/ and lib-static/)"
 	@echo "  make test - compile and run validation tests (will take around 30 secs)"
@@ -136,8 +137,10 @@ usage:
 	@echo "  make python3 - compile and test python interfaces using python3"
 	@echo "  make objclean - removal all object files, preserving lib & MEX"
 	@echo "  make clean - also remove lib, MEX, py, and demo executables"
+	@echo ""
 	@echo "For faster (multicore) making, append the flag -j"
 	@echo "  'make [task] OMP=ON' for multi-threaded"
+	@echo "-------------------------------------------------------------------------"
 
 
 
@@ -176,7 +179,7 @@ $(DYNAMICLIB): $(OBJS)
 #
 # testing routines
 #
-test: $(DYNAMICLIB) test/com test/hwrap test/tria test/lwrap test/surf
+test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
