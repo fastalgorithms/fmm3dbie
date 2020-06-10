@@ -1,6 +1,7 @@
       implicit real *8 (a-h,o-z)
 
       ntests = 2
+      nsuccess = 0
       call test_surf_lap(nsuccess)
 
 
