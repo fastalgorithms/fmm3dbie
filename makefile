@@ -7,18 +7,15 @@
 # for ubunutu linux/gcc system). 
 
 # compiler, and linking from C, fortran
-CC=gcc
-CXX=g++
-FC=gfortran
-FFLAGS= -fPIC -O3 -march=native -funroll-loops 
+CC = gcc
+CXX = g++
+FC = gfortran
+FFLAGS = -fPIC -O3 -march=native -funroll-loops 
 
-
-CFLAGS= -std=c99 
-CFLAGS+= $(FFLAGS) 
-CXXFLAGS= -std=c++11 -DSCTL_PROFILE=-1
-CXXFLAGS+=$(FFLAGS)
-
+CFLAGS = -std=c99 $(FFLAGS) 
+CXXFLAGS = -std=c++11 -DSCTL_PROFILE=-1 $(FFLAGS)
 CLIBS = -lgfortran -lm -ldl 
+
 
 # Update blas
 ifneq ($(OS),Windows_NT) 
@@ -59,15 +56,15 @@ LBLAS = -lblas -llapack
 # For your OS, override the above by placing make variables in make.inc
 -include make.inc
 
-LIBS = -L${LDF} -lm -lfmm3d ${LBLAS} ${LDBLAS}
+LIBS = -L${LDF} -lm -lfmm3d ${LBLAS}
 
 # multi-threaded libs & flags needed
 ifneq ($(OMP),OFF)
-CFLAGS += $(OMPFLAGS)
-FFLAGS += $(OMPFLAGS)
-MFLAGS += $(MOMPFLAGS)
-LIBS += $(OMPLIBS)
-MEXLIBS += $(OMPLIBS)
+  CFLAGS += $(OMPFLAGS)
+  FFLAGS += $(OMPFLAGS)
+  MFLAGS += $(MOMPFLAGS)
+  LIBS += $(OMPLIBS)
+  MEXLIBS += $(OMPLIBS)
 endif
 
 
@@ -75,10 +72,6 @@ LIBNAME=libfmm3dbie
 DYNAMICLIB = $(LIBNAME).so
 STATICLIB = lib-static/$(LIBNAME).a
 
-# vectorized kernel directory
-SRCDIR = ./vec-kernels/src
-INCDIR = ./vec-kernels/include
-LIBDIR = lib-static
 
 # objects to compile
 #
@@ -128,10 +121,12 @@ TOBJS = $(TRIA)/ctriaints_main.o $(TRIA)/koornexps.o \
 
 OBJS = $(COMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS)
 
+
+
+
 .PHONY: usage lib python python3 
 
 default: usage
-
 
 usage:
 	@echo "Makefile for FMM3D. Specify what to make:"
@@ -145,7 +140,10 @@ usage:
 	@echo "  'make [task] OMP=ON' for multi-threaded"
 
 
+
+#
 # implicit rules for objects (note -o ensures writes to correct dir)
+#
 %.o: %.cpp %.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 %.o: %.c %.h
@@ -155,15 +153,21 @@ usage:
 %.o: %.f90 
 	$(FC) -c $(FFLAGS) $< -o $@
 
+
+
+#
 # build the library...
+#
 lib: $(STATICLIB) $(DYNAMICLIB)
 ifneq ($(OMP),OFF)
 	@echo "$(STATICLIB) and $(DYNAMICLIB) built, multithread versions"
 else
 	@echo "$(STATICLIB) and $(DYNAMICLIB) built, single-threaded versions"
 endif
+
 $(STATICLIB): $(OBJS) 
 	ar rcs $(STATICLIB) $(OBJS)
+
 $(DYNAMICLIB): $(OBJS) 
 	$(FC) -shared -fPIC $(OMPFLAGS) $(OBJS) -o $(DYNAMICLIB) $(LIBS) 
 	mv $(DYNAMICLIB) lib/
@@ -172,8 +176,7 @@ $(DYNAMICLIB): $(OBJS)
 #
 # testing routines
 #
-
-test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf
+test: $(DYNAMICLIB) test/com test/hwrap test/tria test/lwrap test/surf
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
@@ -199,14 +202,20 @@ TTOBJS = test/tria_routs/test_triaintrouts.o test/tria_routs/test_dtriaintrouts.
 test/tria: $(TTOBJS)
 	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) $(STATICLIB) $(LIBS) 
 
-#python
+
+#
+# build the python bindings/interface
+#
 python: $(DYNAMICLIB)
 	cd python && pip install -e . 
 
-#python
 python3: $(STATICLIB)
 	cd python && export FAST_KER=$(FAST_KER) && export FLIBS='$(LIBS)' && export FFLAGS='$(FFLAGS)' && pip3 install -e . 
 
+
+#
+# housekeeping routines
+#
 clean: objclean
 	rm -f lib-static/*.a lib/*.so
 	rm -f test/common/int2-com
