@@ -1,8 +1,8 @@
 EXEC = int2-iter
 #HOST = gcc
-HOST = gcc-openmp
+#HOST = gcc-openmp
 #HOST = intel
-#HOST = intel-ompenmp
+HOST = intel-openmp
 
 #
 # For linux systems, it is assumed that the environment
@@ -17,10 +17,9 @@ ifneq ($(OS),Windows_NT)
         LDF = /usr/local/lib
     endif
     ifeq ($(UNAME_S),Linux)
-        LDF = ../../lib
+        LDF = ${HOME}/lib
     endif
 endif
-    
 
 LIBS = -lfmm3d -lfmm3dbie
 

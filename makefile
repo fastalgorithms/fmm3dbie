@@ -24,7 +24,7 @@ ifneq ($(OS),Windows_NT)
         LDF = /usr/local/lib
     endif
     ifeq ($(UNAME_S),Linux)
-        LDF = ${LD_LIBRARY_PATH}
+        LDF = ${HOME}/lib
     endif
 endif
 
