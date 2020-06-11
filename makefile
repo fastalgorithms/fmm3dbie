@@ -45,11 +45,6 @@ MEX=mex
 MWRAP=../../mwrap-0.33/mwrap
 MEXLIBS=-lm -lstdc++ -ldl -lgfortran
 
-ifeq ($(FAST_KER),ON)
-  LIBS += -lstdc++
-  CLIBS += -lstdc++
-  OMP = ON
-endif
 
 LBLAS = -lblas -llapack
 
