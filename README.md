@@ -22,3 +22,4 @@ on linux machines)
 
 Please see the [online documentation](https://fmm3dbie.readthedocs.io).
 
+Funded in part by the Office of Naval Research under Awards #N00014-17-1-2059, #N00014-17-1-2451, and #N00014-18-1-2307.

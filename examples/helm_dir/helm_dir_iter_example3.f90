@@ -555,6 +555,9 @@ subroutine xtri_potato_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   xyz(1) = x
   xyz(2) = y
   xyz(3) = z
+
+  print *, 'check the normals in this geoemtry!'
+  stop
   
   !
   ! and now the derivatives
