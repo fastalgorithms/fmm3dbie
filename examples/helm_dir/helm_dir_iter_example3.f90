@@ -37,7 +37,7 @@ program helm_dir_iter_example3
   !   igeomtype = 2  =>  stellarator
   !   igeomtype = 3  =>  Tom Hagstrom potato taco
   !c 
-  igeomtype = 3
+  igeomtype = 1
   
   if(igeomtype.eq.1) then
     ipars(1) = 3
@@ -72,9 +72,9 @@ program helm_dir_iter_example3
     xyz_out(2) = -0.03d0
     xyz_out(3) = 3.15d0
 
-    xyz_in(1) = 0.17d0
-    xyz_in(2) = 0.23d0
-    xyz_in(3) = -0.11d0
+    xyz_in(1) = 0.01d0
+    xyz_in(2) = 0.02d0
+    xyz_in(3) = -0.01d0
   endif
 
   if(igeomtype.eq.2) then
@@ -214,6 +214,10 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
   double precision, allocatable :: uvs(:,:),umatr(:,:)
   double precision, allocatable :: vmatr(:,:),wts(:)
 
+  double precision :: xyz(10), dxyzduv(3,10)
+  double precision :: xyz1(10), dxyzduv1(3,10)
+  double precision :: xyz2(10), dxyzduv2(3,10)
+  double precision, target :: scales(10)
   double precision, pointer :: ptr1,ptr2,ptr3,ptr4
   integer, pointer :: iptr1, iptr2, iptr3, iptr4
   double precision, target :: p1(10),p2(10),p3(10),p4(10)
@@ -227,6 +231,7 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
 
   external xtri_stell_eval, xtri_sphere_eval
   external xtri_taco_eval, xtri_potato_eval
+  external xtri_ellipsoid_eval
 
   npols = (norder+1)*(norder+2)/2
   allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
@@ -234,27 +239,94 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
 
   call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
 
-  if(igeomtype.eq.1) then
+  if (igeomtype .eq. 1) then
+
     itype = 2
     allocate(triaskel(3,3,npatches))
     allocate(isides(npatches))
     npmax = npatches
     ntri = 0
+
     call xtri_platonic(itype, ipars(1), npmax, ntri,  &
         triaskel, isides)
 
-    xtri_geometry => xtri_sphere_eval
+    scales(1) = 0.5d0
+    scales(2) = 1/(4*sqrt(5.0d0))
+    scales(3) = 1/(4*sqrt(10.0d0))
+    
+    !scales(1) = 1
+    !scales(2) = 1
+    !scales(3) = 1
+    
+    xtri_geometry => xtri_ellipsoid_eval
     ptr1 => triaskel(1,1,1)
-    ptr2 => p2(1)
+    ptr2 => scales(1)
     ptr3 => p3(1)
     ptr4 => p4(1)
 
+    
+    itri = 7
+    u0 = 0.2d0
+    v0 = .15d0
+    call xtri_geometry(itri, u0, v0, xyz, dxyzduv, triaskel, &
+        ptr2, ptr3, ptr4)
 
+    call prinf('for itri = *', itri, 1)
+    call prin2('at u0 = *', u0, 1)
+    call prin2('and v0 = *', v0, 1)
+    call prin2('xyz = *', xyz, 3)
+    call prin2('dxyzduv = *', dxyzduv, 6)
+
+    print *
+    print *
+    h = 0.001d0
+    u = u0 + h
+    v = v0
+    call xtri_geometry(itri, u, v, xyz2, dxyzduv2, triaskel, &
+        ptr2, ptr3, ptr4)
+
+    u = u0 - h
+    v = v0
+    call xtri_geometry(itri, u, v, xyz1, dxyzduv1, triaskel, &
+        ptr2, ptr3, ptr4)
+
+    dxyzduv1(1,1) = (xyz2(1) - xyz1(1))/2/h
+    dxyzduv1(2,1) = (xyz2(2) - xyz1(2))/2/h
+    dxyzduv1(3,1) = (xyz2(3) - xyz1(3))/2/h
+    call prin2('from finite diff, du ders = *', dxyzduv1, 3)
+
+    dxyzduv1(1,1) = dxyzduv(1,1) - dxyzduv1(1,1)
+    dxyzduv1(2,1) = dxyzduv(2,1) - dxyzduv1(2,1)
+    dxyzduv1(3,1) = dxyzduv(3,1) - dxyzduv1(3,1)
+    call prin2('and du errors = *', dxyzduv1, 3)
+    
+    
+    u = u0
+    v = v0+h
+    call xtri_geometry(itri, u, v, xyz2, dxyzduv2, triaskel, &
+        ptr2, ptr3, ptr4)
+
+    u = u0
+    v = v0 - h
+    call xtri_geometry(itri, u, v, xyz1, dxyzduv1, triaskel, &
+        ptr2, ptr3, ptr4)
+
+    dxyzduv1(1,2) = (xyz2(1) - xyz1(1))/2/h
+    dxyzduv1(2,2) = (xyz2(2) - xyz1(2))/2/h
+    dxyzduv1(3,2) = (xyz2(3) - xyz1(3))/2/h
+    call prin2('from finite diff, dv ders = *', dxyzduv1(1,2), 3)
+    
+    dxyzduv1(1,2) = dxyzduv(1,2) - dxyzduv1(1,2)
+    dxyzduv1(2,2) = dxyzduv(2,2) - dxyzduv1(2,2)
+    dxyzduv1(3,2) = dxyzduv(3,2) - dxyzduv1(3,2)
+    call prin2('and dv errors = *', dxyzduv1(1,2), 3)
+
+
+    
     if(ifplot.eq.1) then
       call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2,&
-          ptr3,ptr4, norder,'Triangulated surface of the sphere')
+          ptr3,ptr4, norder,'Triangulated surface of the ellipsoid')
     endif
-
 
     call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,ptr3,ptr4, &
         npols,uvs,umatr,srcvals,srccoefs)
@@ -320,9 +392,11 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
 
     done = 1
     pi = atan(done)*4
-    umin = 0
-    umax = 1
+    umin = 0.1d0
+    umax = 0.9d0
+    !ipars(1) = ipars(1)/2
     vmin = -pi
+    !vmin = 0
     vmax = pi
 
     allocate(triaskel(3,3,npatches))
@@ -330,13 +404,70 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
     call xtri_rectmesh_ani(umin, umax, vmin, vmax, ipars(1), ipars(2), &
         nover, npatches, npatches, triaskel)
 
-    !xtri_geometry => xtri_taco_eval
-    xtri_geometry => xtri_potato_eval
+    xtri_geometry => xtri_taco_eval
+    !xtri_geometry => xtri_potato_eval
     ptr1 => triaskel(1,1,1)
     ptr2 => p2(1)
     ptr3 => p3(1)
     ptr4 => p4(1)
 
+    itri = 1
+    u0 = 0.2d0
+    v0 = .15d0
+    call xtri_potato_eval(itri, u0, v0, xyz, dxyzduv, triaskel, &
+        ptr2, ptr3, ptr4)
+
+    call prinf('for itri = *', itri, 1)
+    call prin2('at u0 = *', u0, 1)
+    call prin2('and v0 = *', v0, 1)
+    call prin2('xyz = *', xyz, 3)
+    call prin2('dxyzduv = *', dxyzduv, 6)
+
+    print *
+    print *
+    h = 0.001d0
+    u = u0 + h
+    v = v0
+    call xtri_potato_eval(itri, u, v, xyz2, dxyzduv2, triaskel, &
+        ptr2, ptr3, ptr4)
+
+    u = u0 - h
+    v = v0
+    call xtri_potato_eval(itri, u, v, xyz1, dxyzduv1, triaskel, &
+        ptr2, ptr3, ptr4)
+
+    dxyzduv1(1,1) = (xyz2(1) - xyz1(1))/2/h
+    dxyzduv1(2,1) = (xyz2(2) - xyz1(2))/2/h
+    dxyzduv1(3,1) = (xyz2(3) - xyz1(3))/2/h
+    call prin2('from finite diff, du ders = *', dxyzduv1, 3)
+
+    dxyzduv1(1,1) = dxyzduv(1,1) - dxyzduv1(1,1)
+    dxyzduv1(2,1) = dxyzduv(2,1) - dxyzduv1(2,1)
+    dxyzduv1(3,1) = dxyzduv(3,1) - dxyzduv1(3,1)
+    call prin2('and du errors = *', dxyzduv1, 3)
+    
+    
+    u = u0
+    v = v0+h
+    call xtri_potato_eval(itri, u, v, xyz2, dxyzduv2, triaskel, &
+        ptr2, ptr3, ptr4)
+
+    u = u0
+    v = v0 - h
+    call xtri_potato_eval(itri, u, v, xyz1, dxyzduv1, triaskel, &
+        ptr2, ptr3, ptr4)
+
+    dxyzduv1(1,2) = (xyz2(1) - xyz1(1))/2/h
+    dxyzduv1(2,2) = (xyz2(2) - xyz1(2))/2/h
+    dxyzduv1(3,2) = (xyz2(3) - xyz1(3))/2/h
+    call prin2('from finite diff, dv ders = *', dxyzduv1(1,2), 3)
+    
+    dxyzduv1(1,2) = dxyzduv(1,2) - dxyzduv1(1,2)
+    dxyzduv1(2,2) = dxyzduv(2,2) - dxyzduv1(2,2)
+    dxyzduv1(3,2) = dxyzduv(3,2) - dxyzduv1(3,2)
+    call prin2('and dv errors = *', dxyzduv1(1,2), 3)
+
+    
     if(ifplot .eq. 1) then
       call prinf('plotting, npatches = *', npatches, 1)
       call prinf('plotting, norder = *', norder, 1)
@@ -345,6 +476,8 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
           'Triangulated surface of the Toms taco')
     endif
 
+    stop
+    
     call getgeominfo(npatches, xtri_geometry, ptr1, ptr2, &
         iptr3, iptr4, npols, uvs, umatr, srcvals, srccoefs)
   endif
@@ -352,6 +485,179 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
   
   return  
 end subroutine setup_geom
+
+
+
+
+
+subroutine xtri_ellipsoid_eval(itri, u, v, xyz, dxyzduv, triainfo, &
+    scales, p3, p4)
+  implicit real *8 (a-h,o-z)
+  double precision :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
+  double precision :: scales(3)
+
+  !
+  ! project the triangle itri in triainfo onto the sphere
+  !
+  !    Input:
+  ! itri - triangle number to map
+  ! u,v - local uv coordinates on triangle itri
+  ! triainfo - flat skeleton triangle info
+  ! p2,p3,p4 - dummy parameters
+  !
+  !    Output:
+  ! xyz - point on the sphere
+  ! dxyzduv - first derivative information
+  !
+  !
+
+  x0=triainfo(1,1,itri)
+  y0=triainfo(2,1,itri)
+  z0=triainfo(3,1,itri)
+
+  x1=triainfo(1,2,itri)
+  y1=triainfo(2,2,itri)
+  z1=triainfo(3,2,itri)
+
+  x2=triainfo(1,3,itri)
+  y2=triainfo(2,3,itri)
+  z2=triainfo(3,3,itri)
+
+  !
+  ! ... process the geometry, return the point location on the sphere
+  ! and the derivatives with respect to u and v
+  !
+  x=x0+u*(x1-x0)+v*(x2-x0)
+  y=y0+u*(y1-y0)+v*(y2-y0)
+  z=z0+u*(z1-z0)+v*(z2-z0)
+
+  dxdu = x1-x0
+  dydu = y1-y0
+  dzdu = z1-z0
+
+  dxdv = x2-x0
+  dydv = y2-y0
+  dzdv = z2-z0
+
+  !
+  ! second derivatives are zero...
+  !
+
+  !
+  ! project onto the sphere
+  !
+  phi = atan2(y, x)
+  theta = atan2(sqrt(x**2 + y**2), z)
+  
+  e = sin(theta)**2 * cos(phi)**2 / scales(1)**2
+  f = sin(theta)**2 * sin(phi)**2 / scales(2)**2
+  g = cos(theta)**2  / scales(3)**2
+
+  r = sqrt(1/(e + f + g))
+  xyz(1) = r*sin(theta)*cos(phi)
+  xyz(2) = r*sin(theta)*sin(phi)
+  xyz(3) = r*cos(theta)
+
+  !xyz(1) = phi
+  !xyz(2) = theta
+  !xyz(3) = r
+  
+
+  ! and now the derivatives
+  dphidu = 1/(x**2 + y**2) * (x*dydu - y*dxdu)
+  dphidv = 1/(x**2 + y**2) * (x*dydv - y*dxdv)
+
+  p = sqrt(x**2+y**2)
+  dthetadu = (z/p*(x*dxdu + y*dydu) - dzdu*p)/(x**2 + y**2 + z**2)
+  dthetadv = (z/p*(x*dxdv + y*dydv) - dzdv*p)/(x**2 + y**2 + z**2)
+
+  dedu = 1/scales(1)**2 &
+      * (2*sin(theta)*cos(theta)*dthetadu*cos(phi)**2 &
+      - 2*sin(theta)**2 * cos(phi)*sin(phi)*dphidu)
+  dfdu = 1/scales(2)**2 &
+      * (2*sin(theta)*cos(theta)*dthetadu*sin(phi)**2 &
+      + 2*sin(theta)**2 * sin(phi)*cos(phi)*dphidu)
+  dgdu = -1/scales(3)**2 * 2*cos(theta)*sin(theta)*dthetadu
+  
+  dedv = 1/scales(1)**2 &
+      * (2*sin(theta)*cos(theta)*dthetadv*cos(phi)**2 &
+      - 2*sin(theta)**2 * cos(phi)*sin(phi)*dphidv)
+  dfdv = 1/scales(2)**2 &
+      * (2*sin(theta)*cos(theta)*dthetadv*sin(phi)**2 &
+      + 2*sin(theta)**2 * sin(phi)*cos(phi)*dphidv)
+  dgdv = -1/scales(3)**2 * 2*cos(theta)*sin(theta)*dthetadv
+  
+  drdu = -(dedu + dfdu + dgdu)/2/r/(e+f+g)**2
+  drdv = -(dedv + dfdv + dgdv)/2/r/(e+f+g)**2
+
+
+  ! now for the final derivatives
+  dxyzduv(1,1) = drdu*sin(theta)*cos(phi) &
+      + r*cos(theta)*dthetadu*cos(phi) &
+      - r*sin(theta)*sin(phi)*dphidu
+
+  dxyzduv(2,1) = drdu*sin(theta)*sin(phi) &
+      + r*cos(theta)*dthetadu*sin(phi) &
+      + r*sin(theta)*cos(phi)*dphidu
+
+  dxyzduv(3,1) = drdu*cos(theta) - r*sin(theta)*dthetadu
+  
+  dxyzduv(1,2) = drdv*sin(theta)*cos(phi) &
+      + r*cos(theta)*dthetadv*cos(phi) &
+      - r*sin(theta)*sin(phi)*dphidv
+
+  dxyzduv(2,2) = drdv*sin(theta)*sin(phi) &
+      + r*cos(theta)*dthetadv*sin(phi) &
+      + r*sin(theta)*cos(phi)*dphidv
+
+  dxyzduv(3,2) = drdv*cos(theta) - r*sin(theta)*dthetadv
+  
+  !dxyzduv(1,1) = dphidu
+  !dxyzduv(2,1) = dthetadu
+  !dxyzduv(3,1) = drdu
+
+  !dxyzduv(1,2) = dphidv
+  !dxyzduv(2,2) = dthetadv
+  !dxyzduv(3,2) = drdv
+
+  
+  
+  ! r=sqrt(x**2+y**2+z**2)
+  ! xyz(1)=x/r
+  ! xyz(2)=y/r
+  ! xyz(3)=z/r
+
+  ! a = x0*(x1-x0) + y0*(y1-y0) + z0*(z1-z0)
+  ! b = (x1-x0)*(x2-x0) + (y1-y0)*(y2-y0) + (z1-z0)*(z2-z0)
+  ! c = (x1-x0)*(x1-x0) + (y1-y0)*(y1-y0) + (z1-z0)*(z1-z0)
+
+  ! drdu = (a + v*b + u*c)/r
+  ! drdu2 = (r*c - r*drdu*drdu)/r/r
+
+  ! e = x0*(x2-x0) + y0*(y2-y0) + z0*(z2-z0)
+  ! f = b
+  ! g = (x2-x0)*(x2-x0) + (y2-y0)*(y2-y0) + (z2-z0)*(z2-z0)
+
+  ! drdv = (e + u*f + v*g)/r
+  ! drdv2 = (r*g - r*drdv*drdv)/r/r
+
+  ! drduv = (r*b - r*drdu*drdv)/r/r
+
+  ! ! du
+  ! dxyzduv(1,1) = (r*dxdu-x*drdu)/r/r
+  ! dxyzduv(2,1) = (r*dydu-y*drdu)/r/r
+  ! dxyzduv(3,1) = (r*dzdu-z*drdu)/r/r
+
+  ! ! dv
+  ! dxyzduv(1,2) = (r*dxdv-x*drdv)/r/r
+  ! dxyzduv(2,2) = (r*dydv-y*drdv)/r/r
+  ! dxyzduv(3,2) = (r*dzdv-z*drdv)/r/r
+
+  return
+end subroutine xtri_ellipsoid_eval
+
+
+
 
 
 
@@ -556,9 +862,6 @@ subroutine xtri_potato_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   xyz(2) = y
   xyz(3) = z
 
-  print *, 'check the normals in this geoemtry!'
-  stop
-  
   !
   ! and now the derivatives
   !
