@@ -8,7 +8,7 @@ program helm_dir_iter_example3
 
   integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-  double precision xyz_out(3),xyz_in(3)
+  double precision :: xyz_out(3), xyz_in(3), evec(3)
   double complex, allocatable :: sigma(:),rhs(:)
   double precision, allocatable :: errs(:)
   double precision eps_gmres
@@ -20,7 +20,7 @@ program helm_dir_iter_example3
 
   logical isout0,isout1
 
-  double complex pot,potex,ztmp,ima
+  double complex :: pot, potex, ztmp, ima, cd
 
   data ima/(0.0d0,1.0d0)/
 
@@ -60,16 +60,18 @@ program helm_dir_iter_example3
   ! set the wavenumber
   !
   zk = 1.11d0+ima*0.0d0
+  zk = 2*pi + ima*0.0d0
   zpars(1) = zk 
   zpars(2) = ima*zk
   zpars(3) = 2.0d0
+  !zpars(3) = 1
 
   !
   ! choose test points inside and outside
   !
   if(igeomtype.eq.1) then
     xyz_out(1) = 3.17d0
-    xyz_out(2) = -0.03d0
+    xyz_out(2) = -2.03d0
     xyz_out(3) = 3.15d0
 
     xyz_in(1) = 0.01d0
@@ -98,7 +100,7 @@ program helm_dir_iter_example3
   endif
 
 
-  norder = 4 
+  norder = 4
   npols = (norder+1)*(norder+2)/2
 
   npts = npatches*npols
@@ -137,63 +139,97 @@ program helm_dir_iter_example3
 
   allocate(sigma(npts),rhs(npts))
 
-  do i=1,npts
-    call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0, &
-        ipars,rhs(i))
-    sigma(i) = 0 
-  enddo
+  ifscat = 0
 
+  if (ifscat .eq. 0) then
+    ! generate rhs based on a source on the interior
+    do i=1,npts
+      call h3d_slp(xyz_in, 3, srcvals(1,i), 0, dpars, 1, zpars, 0, &
+          ipars, rhs(i))
+      sigma(i) = 0 
+    enddo
+  else
+
+    ! generate rhs based on a planewave
+    evec(1) = 1/sqrt(3.0d0)
+    evec(2) = 1/sqrt(3.0d0)
+    evec(3) = 1/sqrt(3.0d0)
+    do i=1,npts
+      cd = evec(1)*srcvals(1,i) + evec(2)*srcvals(2,i) &
+          + evec(3)*srcvals(3,i)
+      rhs(i) = exp(ima*zk*cd)
+      sigma(i) = 0 
+    enddo
+    
+  end if
+  
 
 
   numit = 200
-  ifinout = 0
+  ifinout = 1
   niter = 0
   allocate(errs(numit+1))
 
-  eps = 0.51d-4
-  eps_gmres = 0.5d-6
+  eps = 0.51d-6
+  eps_gmres = 0.5d-8
 
-  call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,&
-      srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres, &
-      niter,errs,rres,sigma)
+  call helm_comb_dir_solver(npatches, norders, ixyzs, iptype, npts, &
+      srccoefs, srcvals, eps, zpars, numit, ifinout, rhs, eps_gmres, &
+      niter, errs, rres, sigma)
 
   call prinf('niter=*',niter,1)
   call prin2('rres=*',rres,1)
   call prin2('errs=*',errs,niter)
 
 
-  ! 
-  ! test solution at interior point
-  ! 
-  call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
-  pot = 0
-  do i=1,npts
-    call h3d_comb(srcvals(1,i),3,xyz_in,0,dpars,3,zpars,0,ipars, &
-        ztmp)
-    pot = pot + sigma(i)*wts(i)*ztmp
-  enddo
+  if (ifscat .eq. 0) then
 
-  call prin2('potex=*',potex,2)
-  call prin2('pot=*',pot,2)
-  erra = abs(pot-potex)/abs(potex)
-  call prin2('relative error=*',erra,1)
+    ! test solution at an exterior point
+    call h3d_slp(xyz_in, 3, xyz_out, 0, dpars, 1, zpars, 0, &
+        ipars, potex)
+    pot = 0
+    do i=1,npts
+      call h3d_comb(srcvals(1,i), 3, xyz_out, 0, dpars, 3, zpars, 0, &
+          ipars, ztmp)
+      pot = pot + sigma(i)*wts(i)*ztmp
+    enddo
+    
+    call prin2('potex=*',potex,2)
+    call prin2('pot=*',pot,2)
+    erra = abs(pot-potex)/abs(potex)
+    call prin2('relative error=*',erra,1)
+    
+    ndtarg = 3
+    ntarg = 1
+    ipatch_id = -1
+    uvs_targ(1) = 0
+    uvs_targ(2) = 0
+    call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,&
+        npts,srccoefs,srcvals,ndtarg,ntarg,xyz_out,ipatch_id,&
+        uvs_targ,eps,zpars,sigma,pot)
 
-  ndtarg = 3
-  ntarg = 1
-  ipatch_id = -1
-  uvs_targ(1) = 0
-  uvs_targ(2) = 0
-  call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,&
-      npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,&
-      uvs_targ,eps,zpars,sigma,pot)
+    call prin2('potex=*',potex,2)
+    call prin2('pot=*',pot,2)
+    erra = abs(pot-potex)/abs(potex)
+    call prin2('relative error=*',erra,1)
 
-  call prin2('potex=*',potex,2)
-  call prin2('pot=*',pot,2)
-  erra = abs(pot-potex)/abs(potex)
-  call prin2('relative error=*',erra,1)
+  else
 
+    ! evaluate scattered solution at a point
+    pot = 0
+    do i=1,npts
+      call h3d_comb(srcvals(1,i), 3, xyz_out, 0, dpars, 3, zpars, 0, &
+          ipars, ztmp)
+      pot = pot + sigma(i)*wts(i)*ztmp
+    enddo
 
-
+    call prin2('test point, xyz_out = *', xyz_out, 3)
+    call prin2('from the solver, scattered pot = *', pot, 1)
+    
+  end if
+  
+    
+    
 end program helm_dir_iter_example3
 
 !----------------------------------------------------------------
@@ -254,74 +290,11 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
     scales(2) = 1/(4*sqrt(5.0d0))
     scales(3) = 1/(4*sqrt(10.0d0))
     
-    !scales(1) = 1
-    !scales(2) = 1
-    !scales(3) = 1
-    
     xtri_geometry => xtri_ellipsoid_eval
     ptr1 => triaskel(1,1,1)
     ptr2 => scales(1)
     ptr3 => p3(1)
     ptr4 => p4(1)
-
-    
-    itri = 7
-    u0 = 0.2d0
-    v0 = .15d0
-    call xtri_geometry(itri, u0, v0, xyz, dxyzduv, triaskel, &
-        ptr2, ptr3, ptr4)
-
-    call prinf('for itri = *', itri, 1)
-    call prin2('at u0 = *', u0, 1)
-    call prin2('and v0 = *', v0, 1)
-    call prin2('xyz = *', xyz, 3)
-    call prin2('dxyzduv = *', dxyzduv, 6)
-
-    print *
-    print *
-    h = 0.001d0
-    u = u0 + h
-    v = v0
-    call xtri_geometry(itri, u, v, xyz2, dxyzduv2, triaskel, &
-        ptr2, ptr3, ptr4)
-
-    u = u0 - h
-    v = v0
-    call xtri_geometry(itri, u, v, xyz1, dxyzduv1, triaskel, &
-        ptr2, ptr3, ptr4)
-
-    dxyzduv1(1,1) = (xyz2(1) - xyz1(1))/2/h
-    dxyzduv1(2,1) = (xyz2(2) - xyz1(2))/2/h
-    dxyzduv1(3,1) = (xyz2(3) - xyz1(3))/2/h
-    call prin2('from finite diff, du ders = *', dxyzduv1, 3)
-
-    dxyzduv1(1,1) = dxyzduv(1,1) - dxyzduv1(1,1)
-    dxyzduv1(2,1) = dxyzduv(2,1) - dxyzduv1(2,1)
-    dxyzduv1(3,1) = dxyzduv(3,1) - dxyzduv1(3,1)
-    call prin2('and du errors = *', dxyzduv1, 3)
-    
-    
-    u = u0
-    v = v0+h
-    call xtri_geometry(itri, u, v, xyz2, dxyzduv2, triaskel, &
-        ptr2, ptr3, ptr4)
-
-    u = u0
-    v = v0 - h
-    call xtri_geometry(itri, u, v, xyz1, dxyzduv1, triaskel, &
-        ptr2, ptr3, ptr4)
-
-    dxyzduv1(1,2) = (xyz2(1) - xyz1(1))/2/h
-    dxyzduv1(2,2) = (xyz2(2) - xyz1(2))/2/h
-    dxyzduv1(3,2) = (xyz2(3) - xyz1(3))/2/h
-    call prin2('from finite diff, dv ders = *', dxyzduv1(1,2), 3)
-    
-    dxyzduv1(1,2) = dxyzduv(1,2) - dxyzduv1(1,2)
-    dxyzduv1(2,2) = dxyzduv(2,2) - dxyzduv1(2,2)
-    dxyzduv1(3,2) = dxyzduv(3,2) - dxyzduv1(3,2)
-    call prin2('and dv errors = *', dxyzduv1(1,2), 3)
-
-
     
     if(ifplot.eq.1) then
       call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2,&
