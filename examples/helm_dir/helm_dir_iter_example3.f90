@@ -40,7 +40,7 @@ program helm_dir_iter_example3
   igeomtype = 1
   
   if(igeomtype.eq.1) then
-    ipars(1) = 3
+    ipars(1) = 5
     npatches = 12*(4**ipars(1))
   end if
   
@@ -56,15 +56,17 @@ program helm_dir_iter_example3
     npatches = 2*ipars(1)*ipars(2)
   end if
 
+  call prinf('npatches = *', npatches, 1)
+  
   !
   ! set the wavenumber
   !
-  zk = 1.11d0+ima*0.0d0
+  !zk = 1.11d0+ima*0.0d0
   zk = 2*pi + ima*0.0d0
   zpars(1) = zk 
   zpars(2) = ima*zk
-  zpars(3) = 2.0d0
-  !zpars(3) = 1
+  !zpars(3) = 2.0d0
+  zpars(3) = 1
 
   !
   ! choose test points inside and outside
@@ -103,7 +105,13 @@ program helm_dir_iter_example3
   norder = 4
   npols = (norder+1)*(norder+2)/2
 
+  call prinf('npols = *', npols, 1)
+  
   npts = npatches*npols
+  call prinf('npts = *', npts, 1)
+  print *
+  print *
+
   allocate(srcvals(12,npts),srccoefs(9,npts))
   ifplot = 1
 
@@ -139,7 +147,7 @@ program helm_dir_iter_example3
 
   allocate(sigma(npts),rhs(npts))
 
-  ifscat = 0
+  ifscat = 1
 
   if (ifscat .eq. 0) then
     ! generate rhs based on a source on the interior
@@ -157,7 +165,7 @@ program helm_dir_iter_example3
     do i=1,npts
       cd = evec(1)*srcvals(1,i) + evec(2)*srcvals(2,i) &
           + evec(3)*srcvals(3,i)
-      rhs(i) = exp(ima*zk*cd)
+      rhs(i) = -exp(ima*zk*cd)
       sigma(i) = 0 
     enddo
     
@@ -225,10 +233,15 @@ program helm_dir_iter_example3
 
     call prin2('test point, xyz_out = *', xyz_out, 3)
     call prin2('from the solver, scattered pot = *', pot, 1)
+    print *, 'pot = ', pot
     
   end if
-  
-    
+
+  ! plot the induced charge along the surface
+  ! fname = 'charge3.vtk'
+  ! call xtri_vtk_plot(fname, npatches, xtri_geometry, ptr1, ptr2,&
+  !     ptr3,ptr4, norder,'Triangulated surface of the ellipsoid')
+
     
 end program helm_dir_iter_example3
 
