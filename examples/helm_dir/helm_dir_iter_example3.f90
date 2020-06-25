@@ -37,7 +37,7 @@ program helm_dir_iter_example3
   !   igeomtype = 2  =>  stellarator
   !   igeomtype = 3  =>  Tom Hagstrom potato taco
   !c 
-  igeomtype = 1
+  igeomtype = 3
   
   if(igeomtype.eq.1) then
     ipars(1) = 5
@@ -51,9 +51,11 @@ program helm_dir_iter_example3
   end if
   
   if(igeomtype .eq. 3) then
-    ipars(1) = 20
-    ipars(2) = ipars(1)
-    npatches = 2*ipars(1)*ipars(2)
+    ipars(1) = 4
+    npatches = 12*(4**ipars(1))
+    !ipars(1) = 20
+    !ipars(2) = ipars(1)
+    !npatches = 2*ipars(1)*ipars(2)
   end if
 
   call prinf('npatches = *', npatches, 1)
@@ -122,6 +124,7 @@ program helm_dir_iter_example3
   call setup_geom(igeomtype, norder, npatches, ipars, &
       srcvals, srccoefs, ifplot, fname)
 
+  stop
   
   allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
 
@@ -375,6 +378,35 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
   ! setup Tom Hagstrom's potato taco
   !
   if(igeomtype .eq. 3) then
+
+    itype = 2
+    allocate(triaskel(3,3,npatches))
+    allocate(isides(npatches))
+    npmax = npatches
+    ntri = 0
+
+    call xtri_platonic(itype, ipars(1), npmax, ntri,  &
+        triaskel, isides)
+
+    xtri_geometry => xtri_potato_eval
+    ptr1 => triaskel(1,1,1)
+    ptr2 => p2(1)
+    ptr3 => p3(1)
+    ptr4 => p4(1)
+    
+    if(ifplot.eq.1) then
+      call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2,&
+          ptr3,ptr4, norder,'Triangulated surface of the potato')
+    endif
+
+    stop
+    
+    call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,ptr3,ptr4, &
+        npols,uvs,umatr,srcvals,srccoefs)
+
+!!!!!!!!!!!!!!!!!!!!!!!!1
+
+
 
     done = 1
     pi = atan(done)*4
@@ -832,22 +864,59 @@ subroutine xtri_potato_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   ! ... process the geometry, return the point location on the sphere
   ! and the derivatives with respect to u and v
   !
-  s = x0+u*(x1-x0)+v*(x2-x0)
-  t = y0+u*(y1-y0)+v*(y2-y0)
 
-  r = .4d0 * sqrt(s*(1-s))/(cos(t)**6 + sin(t)**6)**(1/6.0d0)
+  ! get the points on the skeleton mesh
+  x = x0+u*(x1-x0)+v*(x2-x0)
+  y = y0+u*(y1-y0)+v*(y2-y0)
+  z = z0+u*(z1-z0)+v*(z2-z0)
 
-  sqr3 = sqrt(3.0d0)
+  ! and their partial derivatives
+  dxdu = x1-x0
+  dydu = y1-y0
+  dzdu = z1-z0
+
+  dxdv = x2-x0
+  dydv = y2-y0
+  dzdv = z2-z0
+
+  ! now the spherical angles
+  phi = atan2(y, x)
+  theta = atan2(sqrt(x**2 + y**2), z)
+
+  ! and their partial derivatives
+  dphidu = 1/(x**2 + y**2) * (x*dydu - y*dxdu)
+  dphidv = 1/(x**2 + y**2) * (x*dydv - y*dxdv)
+
+  p = sqrt(x**2+y**2)
+  dthetadu = (z/p*(x*dxdu + y*dydu) - dzdu*p)/(x**2 + y**2 + z**2)
+  dthetadv = (z/p*(x*dxdv + y*dydv) - dzdv*p)/(x**2 + y**2 + z**2)
+
+  ! now compute the points on the surface
   done = 1
   pi = 4*atan(done)
-  x = (2*s-1)/4 + sqr3*r*sin(t)/2
-  y = (sqr3/4 - r*cos(t))*cos(pi*s/2) + r*sin(t)*sin(pi*s/2)/2
-  z = (sqr3/4 - r*cos(t))*sin(pi*s/2) - r*sin(t)*cos(pi*s/2)/2
+  s = theta/pi
+  dsdu = (1/pi)*dthetadu
+  dsdv = (1/pi)*dthetadv
 
-  xyz(1) = x
-  xyz(2) = y
-  xyz(3) = z
+  d = (cos(phi)**6 + sin(phi)**6)**(1/6.0d0)
+  r = .4d0 * sqrt(s*(1-s))/d
 
+  
+  
+  sqr3 = sqrt(3.0d0)
+  xxx = (2*s-1)/4 + sqr3*r*sin(t)/2
+  yyy = (sqr3/4 - r*cos(phi))*cos(pi*s/2) + r*sin(phi)*sin(pi*s/2)/2
+  zzz = (sqr3/4 - r*cos(phi))*sin(pi*s/2) - r*sin(phi)*cos(pi*s/2)/2
+
+  xyz(1) = xxx
+  xyz(2) = yyy
+  xyz(3) = zzz
+
+  ! now compute the partial derivatives of the points on the surface
+  
+
+  
+  return
   !
   ! and now the derivatives
   !
