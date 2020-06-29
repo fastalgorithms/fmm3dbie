@@ -10,7 +10,7 @@ The source code can be downloaded from https://gitlab.com/fastalgorithms/fmm3dbi
 Dependencies
 ************
 
-This library is supported for unix/linux, and Mac OSX
+This library is supported for unix/linux, and Mac OSX.
 
 For the basic libraries
 
@@ -30,45 +30,70 @@ Quick install instructions
 Make sure you have dependencies downloaded, and `cd` into your fmm3dbie
 directory. 
 
--  For linux, run ``make test``.
--  For Mac OSX, run ``cp make.inc.macosx.gnu make.inc`` followed by ``make test``.
+-  For linux, run ``make install``.
+-  For Mac OSX, run ``cp make.inc.macos.gnu make.inc`` followed by ``make install``.
 
 This should compile the static library
-in ``lib-static/`` and some fortran test drivers in ``test/``, after which it
+in ``lib-static/``, the dynamic library in ``lib/`` and copy the dynamic 
+library to ``$(HOME)/lib`` on Linux, and to ``/usr/local/lib`` on Mac OSX.
+The location of the default installation directory can be changed by
+running::
+
+    make install PREFIX=(INSTALL_DIR)
+
+If the FMM3D library was installed in a non-standard directory, you can
+update the directory for where the library looks for ``libfmm3d.a`` by
+running::
+    
+    make install PREFIX_FMM=(FMM_INSTALL_DIR)
+
+
+In order to link against the dynamic library, you will have to update
+the ``LD_LIBRARY_PATH`` environment
+variable on Linux and ``DYLD_LIBRARY_PATH`` environment variable on Mac OSX
+to the installation directory.
+You may then link to the fmm3dbie library using the ``-L$(FMMBIE_INSTALL_DIR) -lfmm3dbie -L$(FMM_INSTALL_DIR) -lfmm3d`` 
+option.
+
+.. note :: 
+   On MacOSX, /usr/local/lib is included by default in the
+   DYLD_LIBRARY_PATH.
+
+
+To verify successful compilation of the program, run ``make test``
+which compiles some fortran test drivers in ``test/`` linked against
+the static library, after which it
 runs the test programs. The last 7 lines of the terminal output should be::
 
    cat print_testres.txt
-   Successfully completed 4 out of 4 tests in common testing suite
+   Successfully completed 6 out of 6 tests in common testing suite
    Successfully completed 2 out of 2 tests in helm_wrappers testing suite
    Successfully completed 2 out of 2 tests in lap_wrappers testing suite
    Successfully completed 2 out of 2 tests in surface routs testing suite
    Successfully completed 27 out of 27 tests in tria_routs testing suite
    rm print_testres.txt
 
+
+To verify successful installation of the program, and the correct
+setting for environment variables, run ``make test-dyn`` which compiles
+some fortran test drivers in ``test/`` linked against the dynamic
+library, after which it runs teh test prgram. The output ofshould be the
+same as above.
+
+
 .. note ::
-   By default, ``make test`` creates the multithreaded version of the library. To
+   By default, ``make install`` creates the multithreaded version of the library. To
    compile the library in single-threaded mode, append
-   ``OMP=OFF`` to the make task. For instance ``make test`` should be replaced by 
-   ``make test OMP=OFF``. 
+   ``OMP=OFF`` to the make task. For instance ``make install`` should be replaced by 
+   ``make install OMP=OFF``. 
    
 
-If ``make test`` fails, see more detailed instructions below. If it succeeds, run
-``make lib``, which creates the dynamic library (``libfmm3dbie.so``). You may then
-link to the FMM library using the ``-lfmm3dbie`` option.
+If ``make test`` fails, see more detailed instructions below. 
 
-.. note ::
-   On unix/Linux systems, you will need to include the location of
-   libfmm3dbie.so in the environment variable LD_LIBRARY_PATH. 
-   This can be set temporarily using::
-
-      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<path-to-libfmm3dbie> 
-
-
-
-.. note :: 
-   On MacOSX, in order to link with the dynamic libraries, you will
-   need to copy libfmm3d.so to ``usr/local/lib``. See any of the
-   makefiles in the ``examples/`` directory for prototypes.
+If ``make test-dyn`` fails with an error about not finding ``-lfmm3d``
+or ``-lfmm3dbie`` make sure that the appropriate environment variables
+have been set. If it fails with other issues, see more detailed
+instructions below. 
 
 Type ``make`` to see a list of other build options (language
 interfaces, etc). Please see ``examples/`` for sample drivers.
