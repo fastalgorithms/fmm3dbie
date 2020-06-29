@@ -32,8 +32,8 @@ c = np.array([1 + 1j*0,1+1.1j])
 out = fmm3d.h3ddir(zk=zk,sources=xyz_out,targets=srcvals[0:3,:],charges=c,pgt=1)
 rhs = out.pottarg
 
-alpha = 3.0
-beta = 0
+alpha = 0.0
+beta = -2.0
 zpars = np.array([zk,alpha,beta],dtype=complex)
 eps = 0.51e-6
 
@@ -51,6 +51,7 @@ xmat = h3.helm_comb_dir_fds_matgen(norders,ixyzs,iptype,srccoefs,srcvals,
   eps,zpars,ifds,rfds,zfds,col_ptr,row_ind)
 
 xmat = xmat.reshape(npts,npts).transpose()
+xmat = xmat - 2*np.pi*np.identity(npts)*zpars[2]
 sigma = la.solve(xmat,rhs)
 
 xyz_in = np.array([[0.17,-0.03,0.15],[0.13,-0.1,0.22]]).transpose()

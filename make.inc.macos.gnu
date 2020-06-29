@@ -2,28 +2,30 @@
 # OS:       macOS
 # Compiler: gfortran 9.X
 # OpenMP:   enabled
-# BLAS:     framework accelerate
+# BLAS:     framework acceralate
+#
+# NOTE for user:
+#           Check gfortran version number 
 #
 
 CC=gcc-9
 CXX=g++-9
 FC=gfortran-9
-FFLAGS= -fPIC -O3 -march=native -funroll-loops -lstdc++
+FFLAGS= -fPIC -O3 -march=native -funroll-loops 
 
-CFLAGS += -I src 
-#CLINK += -Wl,-stack_size,0x40000000
+ifeq ($(PREFIX),)
+    FMMBIE_INSTALL_DIR=/usr/local/lib
+endif
+
+ifeq ($(PREFIX_FMM),)
+    FMM_INSTALL_DIR=/usr/local/lib
+endif
 
 # OpenMP with gcc on OSX needs the following
 OMPFLAGS = -fopenmp
 OMPLIBS = -lgomp
 
 LBLAS=-framework accelerate
-LDBLAS=${LDFLAGS}
 
-# MATLAB interface:
-MFLAGS += -L/usr/local/lib/gcc/9
-MEX = $(shell ls -d /Applications/MATLAB_R201*.app)/bin/mex
-#LIBS = -lm -lstdc++.6
-#MEXLIBS= -lm -lstdc++.6 -lgfortran -ldl
 
 
