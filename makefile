@@ -50,7 +50,7 @@ LLINKLIB = -lfmm3dbie
 # does not get bundled in with the fmm3dbie dynamic library
 #
 LIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB) 
-DYLIBS += $(FMM_INSTALL_DIR)/libfmm3d.a
+DYLIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB)
 
 # multi-threaded libs & flags needed
 ifneq ($(OMP),OFF)

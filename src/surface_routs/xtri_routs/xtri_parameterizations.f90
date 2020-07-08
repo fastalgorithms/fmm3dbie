@@ -14,7 +14,11 @@ subroutine xtri_wtorus_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   ! itri - triangle number to map
   ! u,v - local uv coordinates on triangle itri
   ! triainfo - flat skeleton triangle info
-  ! p2,p3,p4 - dummy parameters
+  ! radii - the two radii defining the torus, the third
+  !     radius is the radius of osciallation
+  ! scales - scaling for x,y,z components from the standard torus
+  ! p4 - number of oscillations (must be an integer currently recast
+  !   as a double precision number)
   !
   !    Output:
   ! xyz - point on the sphere
@@ -42,6 +46,8 @@ subroutine xtri_wtorus_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   b = scales(2)
   c = scales(3)
 
+  nosc = p4
+
 
   !
   ! ... process the geometry, return the point location on the almond
@@ -50,7 +56,7 @@ subroutine xtri_wtorus_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   s = x0+u*(x1-x0)+v*(x2-x0)
   t = y0+u*(y1-y0)+v*(y2-y0)
 
-  rr = rmajor+rminor*cos(t)+rwave*cos(5.0d0*s)
+  rr = rmajor+rminor*cos(t)+rwave*cos(nosc*s)
 
 
   xyz(1) = a*rr*cos(s)
@@ -62,7 +68,7 @@ subroutine xtri_wtorus_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   dtdu = (y1-y0)
   dtdv = (y2-y0)
 
-  drrds = -5.0d0*rwave*sin(5.0d0*s)
+  drrds = -nosc*rwave*sin(nosc*s)
   drrdt = -rminor*sin(t)
 
   dxds = a*drrds*cos(s) - a*rr*sin(s)
