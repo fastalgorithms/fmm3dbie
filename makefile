@@ -10,7 +10,7 @@
 CC = gcc
 CXX = g++
 FC = gfortran
-FFLAGS = -fPIC -O3 -march=native -funroll-loops 
+FFLAGS = -fPIC -O3 -march=native -funroll-loops -std=legacy 
 
 # extra flags for multithreaded: C/Fortran, MATLAB
 OMPFLAGS =-fopenmp
@@ -140,10 +140,6 @@ usage:
 #
 # implicit rules for objects (note -o ensures writes to correct dir)
 #
-%.o: %.cpp %.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
-%.o: %.c %.h
-	$(CC) -c $(CFLAGS) $< -o $@
 %.o: %.f %.h
 	$(FC) -c $(FFLAGS) $< -o $@
 %.o: %.f90 
