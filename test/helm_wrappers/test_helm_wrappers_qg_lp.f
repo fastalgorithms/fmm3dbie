@@ -14,6 +14,8 @@
       complex *16, allocatable :: pot(:),potslp(:),potdlp(:)
       complex *16, allocatable :: potslp2(:)
 
+      complex *16 zk
+
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
       integer, allocatable :: ixyzso(:),nfars(:)
 
@@ -37,7 +39,7 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 2
+      igeomtype = 1
       if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 10
 
@@ -248,7 +250,7 @@ cc      goto 1111
       zpars(3) = 1.0d0
 
 
-      call lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
+      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
      3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)

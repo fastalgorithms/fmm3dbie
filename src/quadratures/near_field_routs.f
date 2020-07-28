@@ -31,6 +31,8 @@ c              get_quadparams_adap - get various parameters
 c                when computing nearly-singular integrals
 c                using adaptive integration
 c
+c              get_near_corr_max - estimate max size
+c                of array needed for near correction
 c
 c-------------------------------------------------------------------
       subroutine findnearslow(xyzs,ns,rads,targets,nt,row_ptr,col_ind)
@@ -740,7 +742,69 @@ c
       end
 c
 c
+c
+c
+c
+      subroutine get_near_corr_max(ntarg,row_ptr,nnz,col_ind,npatches,
+     1   ixyzs,nmax)
+c------------------------------------
+c
+c  This subroutine estimates the max size of sources
+c  (in terms of discretization points) contained
+c  in the near field of a given target.
+c
+c  Note that one could easily call this routine by the oversampled
+c  sources by sending in ixyzs corresponding to oversampled
+c  discretization
+c
+c
+c  Input arguments:
+c  - ntarg: integer
+c      number of targets
+c  - row_ptr: integer(ntarg+1)
+c      rowptr(i) is the starting point in the col_ind
+c      array for the list of sources relevant for target i
+c  - nnz: integer
+c      number of entries in the col_ind array
+c  - col_ind: integer(nnz) 
+c      col_ind(row_ptr(i):row_ptr(i+1)) is the list
+c      of sources in the near field of target i
+c  - npatches: integer
+c      number of patches in the surface discretization
+c  - ixyzs: integer(npatches+1)
+c      ixyzs(i+1)-ixyzs(i) is the number of discretization
+c      nodes on patch i
+c  
+c  Output arguments:
+c  
+c  - nmax: integer
+c      max number of sources in the near field of any target
+c               
+c-------------------------------
+      implicit none
+      integer, intent(in) :: npatches,nnz,ntarg
+      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer, intent(in) :: ixyzs(npatches+1)
+      integer, intent(out) :: nmax
 
+      integer i,j,jpatch,ntmp
+
+      nmax = 0
+
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,ntmp)
+C$OMP$REDUCTION(max:nmax) 
+      do i=1,ntarg
+        ntmp = 0
+        do j=row_ptr(i),row_ptr(i+1)-1
+          jpatch = col_ind(i)
+          ntmp = ntmp + ixyzs(jpatch+1)-ixyzs(jpatch)
+        enddo
+        if(ntmp.gt.nmax) nmax = ntmp
+      enddo
+C$OMP END PARALLEL DO
+
+      return
+      end
 
 
       

@@ -30,6 +30,11 @@ c       helm_comb_dir_fds_matgen - query entries of the combined field
 c          representation matrix (input indices must be in column 
 c          sparse compressed format, and must be preceeded by a call
 c          to helm_comb_dir_fds_init)
+c
+c
+c       REMARK:
+c         The fast direct solver routines need to be optimized
+c         for performance. Improvements coming shortly
 c        
 c
 c    Advanced user interfaces: 
@@ -711,40 +716,8 @@ C$      t2 = omp_get_wtime()
 c
 c        compute threshold for ignoring local computation
 c
+      call get_fmm_thresh(3,ns,sources,3,ntarg,targvals,thresh)
       
-      xmin = sources(1,1)
-      xmax = sources(1,1)
-      ymin = sources(2,1)
-      ymax = sources(2,1)
-      zmin = sources(3,1)
-      zmax = sources(3,1)
-
-      do i=1,ns
-        if(sources(1,i).lt.xmin) xmin = sources(1,i)
-        if(sources(1,i).gt.xmax) xmax = sources(1,i)
-        if(sources(2,i).lt.ymin) ymin = sources(2,i)
-        if(sources(2,i).gt.ymax) ymax = sources(2,i)
-        if(sources(3,i).lt.zmin) zmin = sources(3,i)
-        if(sources(3,i).gt.zmax) zmax = sources(3,i)
-      enddo
-
-      do i=1,ntarg
-        if(targvals(1,i).lt.xmin) xmin = targvals(1,i)
-        if(targvals(1,i).gt.xmax) xmax = targvals(1,i)
-        if(targvals(2,i).lt.ymin) ymin = targvals(2,i)
-        if(targvals(2,i).gt.ymax) ymax = targvals(2,i)
-        if(targvals(3,i).lt.zmin) zmin = targvals(3,i)
-        if(targvals(3,i).gt.zmax) zmax = targvals(3,i)
-      enddo
-      
-      boxsize = xmax-xmin
-      sizey = ymax - ymin
-      sizez = zmax - zmin
-
-      if(sizey.gt.boxsize) boxsize = sizey
-      if(sizez.gt.boxsize) boxsize = sizez
-
-      thresh = 2.0d0**(-51)*boxsize
 
       
 c
@@ -1657,7 +1630,6 @@ c
 c   compute near quadrature correction
 c
       nquad = iquad(nnz+1)-1
-      print *, "nquad=",nquad
       allocate(wnear(nquad))
       
 C$OMP PARALLEL DO DEFAULT(SHARED)      

@@ -192,3 +192,77 @@ end subroutine h3d_qlp
 
 
 
+
+
+subroutine h3d_dprime_diff(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi, &
+  ipars,val)
+!
+!  This subroutine returns D_{k1}' - D_{k2}'
+!  
+!  zpars(1) = k1
+!  zpars(2) = k2
+!
+!  This routine does so by computing D_{k1}'-D_{0}' and
+!  D_{k2}'-D_{0}' in a stabilized manner and then return
+!  the difference
+!
+
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
+  integer ipars(ndi)
+  complex *16 :: zk, val, zpars(ndz), alpha,beta
+
+  real *8 :: src(3), rns(3),rnt(3),rnsdot,rntdot,rnstdot 
+  complex *16 :: ima,z1,z2,ztmp,zexp,sexp,ztmp2
+  data ima/(0.0d0,1.0d0)/
+
+
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+  rns(1)=srcinfo(10)
+  rns(2)=srcinfo(11)
+  rns(3)=srcinfo(12)
+
+  rnt(1) = targ(10)
+  rnt(2) = targ(11)
+  rnt(3) = targ(12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  rnsdot = dx*rns(1) + dy*rns(2) + dz*rns(3)
+  rntdot = dx*rnt(1) + dy*rnt(2) + dz*rnt(3)
+  rnstdot = rns(1)*rnt(1) + rns(2)*rnt(2) + rns(3)*rnt(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+  rinv = 1.0d0/r
+  rinv3 = rinv**3
+  rinv5 = rinv**5
+
+  ztmp = ima*zpars(1)*r
+  ztmp2 = ztmp**2
+  zexp = exp(ztmp/2)
+  sexp = imag(zexp)*2*ima*zexp
+
+  z1 = rinv3*((ztmp-1)*sexp + ztmp)
+  z2 = rinv5*((ztmp2-3*ztmp+3)*sexp+ztmp2-3*ztmp)
+  val = -rntdot*rnsdot*z2 - rnstdot*z1
+
+
+  ztmp = ima*zpars(2)*r
+  ztmp2 = ztmp**2
+  zexp = exp(ztmp/2)
+  sexp = imag(zexp)*2*ima*zexp
+
+  z1 = rinv3*((ztmp-1)*sexp + ztmp)
+  z2 = rinv5*((ztmp2-3*ztmp+3)*sexp+ztmp2-3*ztmp)
+  val = val -rntdot*rnsdot*z2 - rnstdot*z1
+
+
+
+  return
+end subroutine h3d_dprime_diff
+
