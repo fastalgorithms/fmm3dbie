@@ -216,11 +216,15 @@ subroutine h3d_dprime_diff(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi, &
   complex *16 :: ima,z1,z2,ztmp,zexp,sexp,ztmp2
   data ima/(0.0d0,1.0d0)/
 
+  done = 1
+  pi = atan(done)*4
+
 
 
   src(1)=srcinfo(1)
   src(2)=srcinfo(2)
   src(3)=srcinfo(3)
+
   rns(1)=srcinfo(10)
   rns(2)=srcinfo(11)
   rns(3)=srcinfo(12)
@@ -245,21 +249,23 @@ subroutine h3d_dprime_diff(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi, &
   ztmp = ima*zpars(1)*r
   ztmp2 = ztmp**2
   zexp = exp(ztmp/2)
-  sexp = imag(zexp)*2*ima*zexp
+  sexp = sin(zpars(1)*r/2)*2*ima*zexp
 
   z1 = rinv3*((ztmp-1)*sexp + ztmp)
   z2 = rinv5*((ztmp2-3*ztmp+3)*sexp+ztmp2-3*ztmp)
+
   val = -rntdot*rnsdot*z2 - rnstdot*z1
+
 
 
   ztmp = ima*zpars(2)*r
   ztmp2 = ztmp**2
   zexp = exp(ztmp/2)
-  sexp = imag(zexp)*2*ima*zexp
+  sexp = sin(zpars(2)*r/2)*2*ima*zexp
 
   z1 = rinv3*((ztmp-1)*sexp + ztmp)
   z2 = rinv5*((ztmp2-3*ztmp+3)*sexp+ztmp2-3*ztmp)
-  val = val -rntdot*rnsdot*z2 - rnstdot*z1
+  val = val+rntdot*rnsdot*z2 + rnstdot*z1
 
 
 

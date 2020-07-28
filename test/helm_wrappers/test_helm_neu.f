@@ -5,20 +5,26 @@
       integer ipars(2)
 
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_targ(:,:),targs(:,:)
+      integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
+      complex *16, allocatable :: wnear1(:),wnear2(:)
+
+      real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
 
       real *8 xyz_out(3),xyz_in(3)
-      complex *16, allocatable :: sigma(:),rhs(:)
+      complex *16, allocatable :: sigma(:),rhs(:),sigma2(:),sigma3(:)
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
-      complex * 16 zpars(3)
+      real *8 uvs_tmp(2)
+      complex * 16 zpars(3),zpars_tmp(3),zpars_fp(3)
+      complex *16, allocatable :: pottmp(:)
       integer numit,niter
 
-      integer ipatch_id
-      real *8 uvs_targ(2)
 
       logical isout0,isout1
 
-      complex *16 pot,potex,ztmp,ima
+      complex *16 pot,potex,ztmp,ima,z1,z2
 
       data ima/(0.0d0,1.0d0)/
 
@@ -83,7 +89,7 @@ c
        print *, isout0,isout1
 
 
-      allocate(sigma(npts),rhs(npts))
+      allocate(sigma(npts),rhs(npts),sigma2(npts),sigma3(npts))
 
       do i=1,npts
         call h3d_sprime(xyz_in,12,srcvals(1,i),0,dpars,1,zpars,0,
@@ -101,33 +107,155 @@ c
 
       eps_gmres = 0.5d-6
 
+      ipars(1) = 2
+      ipars(2) = 2
+
+      ipt = 3
+      jpt = 20
+
+      ndd = 0
+      ndz = 2
+      ndi = 2
+
+      call fker_h_neumanns(srcvals(1,ipt),12,srcvals(1,jpt),ndd,
+     1   dpars,ndz,zpars,ndi,ipars,z1)
+      
+      zpars_tmp(1) = zpars(1)
+      zpars_tmp(2) = zpars(1)*ima
+      z2 = 0
+      call h3d_dprime_diff(srcvals(1,ipt),12,srcvals(1,jpt),ndd,
+     1  dpars,ndz,zpars_tmp,ndi,ipars,z2)
+
+      z2 = z2/4/pi
+
+      call prin2('z1=*',z1,2)
+      call prin2('z2=*',z2,2)
+
+      erra = abs(z1-z2)/abs(z1)
+      call prin2('error =*',erra,1)
+
+      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+      
+      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts,
+     1  srccoefs,cms,rads)
+      
+      allocate(ipatch_id(npts),uvs_targ(2,npts))
+      allocate(targs(3,npts))
+      do i=1,npts
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
+        targs(1:3,i) = srcvals(1:3,i)
+      enddo
+
+      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts,
+     1 ipatch_id,uvs_targ)
+
+c
+c    find near field
+c
+      iptype = 1
+      call get_rfacs(norder,iptype,rfac,rfac0)
+      do i=1,npatches 
+        rad_near(i) = rads(i)*rfac
+      enddo
+      
+
+      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+
+      allocate(row_ptr(npts+1),col_ind(nnz))
+      
+      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+     1        col_ind)
+
+      allocate(iquad(nnz+1)) 
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
+     1         iquad)
+
+      nquad = iquad(nnz+1)-1
+
+      allocate(wnear1(4*nquad),wnear2(4*nquad))
+
+      rfac0 = 1.25d0
+      iquadtype = 1
+      call getnearquad_h_neumann(npatches,norders,
+     1 ixyzs,iptype,npts,srccoefs,srcvals,12,npts,srcvals,
+     2 ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     3 iquad,rfac0,nquad,wnear1,wnear1(nquad+1),wnear1(2*nquad+1),
+     4 wnear1(3*nquad+1))
+
+      call getnearquad_helm_rpcomb_neu(npatches,norders,ixyzs,
+     1 iptype,npts,srccoefs,srcvals,eps,zpars,iquadtype,nnz,
+     2 row_ptr,col_ind,iquad,rfac0,nquad,wnear2)
+      
+      wnear2 = wnear2/4/pi
+      
+      erra1 = 0
+      erra2 = 0
+      erra3 = 0
+      erra4 = 0
+      ra = 0
+      do i=1,nquad
+        erra1 = erra1 + abs(wnear1(i)-wnear2(i))
+        erra2 = erra2 + abs(wnear1(nquad+i)-wnear2(nquad+i))
+        erra3 = erra3 + abs(wnear1(2*nquad+i)-wnear2(2*nquad+i))
+        erra4 = erra4 + abs(wnear1(3*nquad+i)-wnear2(3*nquad+i))
+        ra = ra + abs(wnear1(i))+abs(wnear1(nquad+i))+
+     1     abs(wnear1(2*nquad+i))+abs(wnear1(3*nquad+i))
+      enddo
+
+      erra1 = erra1/ra
+      erra2 = erra2/ra
+      erra3 = erra3/ra
+      erra4 = erra4/ra
+      call prin2('erra1=*',erra1,1)
+      call prin2('erra2=*',erra2,1)
+      call prin2('erra3=*',erra3,1)
+      call prin2('erra4=*',erra4,1)
+
       call helm_rpcomb_neu_solver(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,numit,rhs,eps_gmres,
-     2  niter,errs,rres,sigma)
+     1  srccoefs,srcvals,eps,zpars,numit,rhs,eps_gmres,niter,errs,rres,
+     2  sigma)
+      sigma = sigma*4*pi
 
-      call prinf('niter=*',niter,1)
-      call prin2('rres=*',rres,1)
-      call prin2('errs=*',errs,niter)
+      ipatch_tmp = -1
+      uvs_tmp(1) = 0
+      uvs_tmp(2) = 0
 
+      allocate(pottmp(npts))
 
-c
-c       test solution at interior point
-c
-      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
-
-      ndtarg = 3
-      ntarg = 1
-      ipatch_id = -1
-      uvs_targ(1) = 0
-      uvs_targ(2) = 0
       call lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_out,ipatch_id,
-     2  uvs_targ,eps,zpars,sigma,pot)
+     1 npts,srccoefs,srcvals,3,1,xyz_out,ipatch_tmp,uvs_tmp,
+     2 eps,zpars,sigma,pot,pottmp)
 
-      call prin2('potex=*',potex,2)
-      call prin2('pot=*',pot,2)
-      erra = abs(pot-potex)/abs(potex)
-      call prin2('relative error=*',erra,1)
+      pottmp = pottmp/4/pi
+
+
+      zpars_fp(1) = zk
+      zpars_fp(2) = zpars(2)*4*pi
+
+      call h_neumann_solver(npatches,norders,ixyzs,iptype,npts,srccoefs,
+     1 srcvals,eps,zpars_fp,numit,ifinout,rhs,eps_gmres,niter,errs,rres,
+     2 sigma2,sigma3)
+
+      erra = 0
+      ra = 0
+      erra2 = 0
+      ra2 = 0
+      do i=1,npts
+        erra = erra + abs(sigma2(i)-sigma(i))
+        ra = ra + abs(sigma2(i))
+        erra2 = erra2 + abs(sigma3(i)-pottmp(i))
+        ra2 = ra2 + abs(sigma3(i))
+      enddo
+      erra = erra/ra
+      erra2 = erra2/ra2
+
+      call prin2('error in solve=*',erra,1)
+      call prin2('error in second density=*',erra2,1)
+      call prin2('sigma3=*',sigma3,12)
+      call prin2('pottmp=*',pottmp,12)
+
 
 
 

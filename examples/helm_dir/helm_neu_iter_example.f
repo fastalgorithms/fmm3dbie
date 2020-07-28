@@ -34,10 +34,11 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c 
       igeomtype = 1
-      ipars(1) = 1
+      ipars(1) = 2
       npatches = 12*(4**ipars(1))
 
       zk = 1.11d0+ima*0.0d0
+      zk = 1.0d0
       zpars(1) = zk 
       zpars(2) = 1.0d0
 

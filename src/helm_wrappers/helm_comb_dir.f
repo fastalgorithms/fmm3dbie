@@ -224,8 +224,10 @@ c
         if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
           fker=>h3d_slp
           ipv = 0 
+          print *, "in slp"
         else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
           fker=>h3d_dlp
+          print *, "in dlp"
         endif
 
 

@@ -255,7 +255,6 @@
 
       npts_over = ixyzso(npatches+1)-1
       print *, "npts_over=",npts_over
-      call prinf('novers=*',novers,100)
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
@@ -731,19 +730,19 @@ implicit none
 		call get_ngradSklambda(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1_1,my_exp_1,r,ngradSk1lambda)
 		E_val=ngradSk1lambda(1,1)
 	  else
-	  	zk0=zk
-		zk1=zk*ima
-		my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-		my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-		R1_0_stab=(1.0d0/(r**3*4.0d0*pi))*((ima*zk0*r-1.0d0)*(exp(ima*zk0*r/2.0d0)*2*ima*sin(zk0*r/2.0d0))+ima*zk0*r)
-		R2_0_stab=(1.0d0/(4.0d0*pi*r**5))*(((ima*zk0*r)**2-3.0d0*ima*zk0*r+3.0d0)*(exp(ima*zk0*r/2.0d0)*&
-		&2*ima*sin(zk0*r/2.0d0))+(ima*zk0*r)**2-3.0d0*ima*zk0*r)
-		R1_1_stab=(1.0d0/(r**3*4.0d0*pi))*((ima*zk1*r-1.0d0)*(exp(ima*zk1*r/2.0d0)*2*ima*sin(zk1*r/2.0d0))+ima*zk1*r)
-		R2_1_stab=(1.0d0/(4.0d0*pi*r**5))*(((ima*zk1*r)**2-3.0d0*ima*zk1*r+3.0d0)*(exp(ima*zk1*r/2.0d0)*&
-		&2*ima*sin(zk1*r/2.0d0))+(ima*zk1*r)**2-3.0d0*ima*zk1*r)
-		call get_ngradDkrho(n_s,n_t,dr,R1_0_stab,R2_0_stab,zk0,my_exp_0,r,ngradDk0rho)
-		call get_ngradDkrho(n_s,n_t,dr,R1_1_stab,R2_1_stab,zk1,my_exp_1,r,ngradDk1rho)
-		E_val=ngradDk0rho(1,1)-ngradDk1rho(1,1)
+        zk0=zk
+        zk1=zk*ima
+        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
+        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
+        R1_0_stab=(1.0d0/(r**3*4.0d0*pi))*((ima*zk0*r-1.0d0)*(exp(ima*zk0*r/2.0d0)*2*ima*sin(zk0*r/2.0d0))+ima*zk0*r)
+        R2_0_stab=(1.0d0/(4.0d0*pi*r**5))*(((ima*zk0*r)**2-3.0d0*ima*zk0*r+3.0d0)*(exp(ima*zk0*r/2.0d0)*&
+        &2*ima*sin(zk0*r/2.0d0))+(ima*zk0*r)**2-3.0d0*ima*zk0*r)
+        R1_1_stab=(1.0d0/(r**3*4.0d0*pi))*((ima*zk1*r-1.0d0)*(exp(ima*zk1*r/2.0d0)*2*ima*sin(zk1*r/2.0d0))+ima*zk1*r)
+        R2_1_stab=(1.0d0/(4.0d0*pi*r**5))*(((ima*zk1*r)**2-3.0d0*ima*zk1*r+3.0d0)*(exp(ima*zk1*r/2.0d0)*&
+        &2*ima*sin(zk1*r/2.0d0))+(ima*zk1*r)**2-3.0d0*ima*zk1*r)
+        call get_ngradDkrho(n_s,n_t,dr,R1_0_stab,R2_0_stab,zk0,my_exp_0,r,ngradDk0rho)
+        call get_ngradDkrho(n_s,n_t,dr,R1_1_stab,R2_1_stab,zk1,my_exp_1,r,ngradDk1rho)
+        E_val=ngradDk0rho(1,1)-ngradDk1rho(1,1)
 	  endif	
 	endif
 

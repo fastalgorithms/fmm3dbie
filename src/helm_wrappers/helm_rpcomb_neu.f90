@@ -160,7 +160,7 @@
 
       zpars_tmp(1) = ima*zk
       fker => h3d_slp
-      ipv = 0
+      ipv = 1
       call zgetnearquad_ggq_guru(npatches,norders,ixyzs, &
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals, &
         ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp, &
@@ -171,7 +171,7 @@
       ipv = 1
       call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
        iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals,&
-       ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,&
+       ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp,ndi,&
        ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(2*nquad+1))
 
       zpars_tmp(1) = zk
@@ -463,6 +463,10 @@
           enddo
         enddo
 
+        pottmp = 0
+        gradtmp = 0
+
+
         call h3ddirectcg(nd,zpars(1),srctmp2,ctmp2,nss,srctmp(1,i), &
           ntarg0,pottmp,gradtmp,thresh)
         pot(i) = pot(i) - gradtmp(1)*srcvals(10,i) - &
@@ -527,6 +531,8 @@
             ctmp2(nss)= charges(l) 
           enddo
         enddo
+        pottmp = 0
+        gradtmp = 0
         call h3ddirectcg(nd,ztmp,srctmp2,ctmp2,nss,srctmp(1,i), &
           ntarg0,pottmp,gradtmp,thresh)
         phi1(i) = phi1(i) - pottmp  
@@ -602,6 +608,9 @@
             ctmp2(nss)= charges(l) 
           enddo
         enddo
+        pottmp = 0
+        gradtmp = 0
+
         call h3ddirectcg(nd,ztmp,srctmp2,ctmp2,nss,srctmp(1,i), &
           ntarg0,pottmp,gradtmp,thresh)
         pot_aux(i) = pot_aux(i) - gradtmp(1)*srcvals(10,i) - &
@@ -626,7 +635,7 @@
 !
 
       call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
-        npts,phi2,novers,ixyzso,ns,sigmaover)
+        npts,phi1,novers,ixyzso,ns,sigmaover)
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ns
@@ -695,6 +704,7 @@
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+            pottmp = 0
             call h3d_dprime_diff(srcover(1,l),12,srcvals(1,i),ndd, &
               dpars,ndz,zpars2,ndi,ipars,pottmp)
             pot_aux(i) = pot_aux(i) - pottmp*sigmaover(l)*whtsover(l)
@@ -1145,7 +1155,7 @@
 !
       subroutine lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
-        uvs_targ,eps,zpars,sigma,pot)
+        uvs_targ,eps,zpars,sigma,pot,pottmp)
 !
 !
 !  This subroutine evaluates the dirichlet data for
@@ -1222,16 +1232,18 @@
       real *8, intent(in) :: uvs_targ(2,ntarg),eps
       complex *16, intent(in) :: zpars(2),sigma(npts)
       complex *16, intent(out) :: pot(ntarg)
+      complex *16, intent(out) :: pottmp(npts)
 
-      complex *16, allocatable :: pottmp(:),pottmp2(:)
+      complex *16, allocatable :: pottmp2(:)
       complex *16 zpars_tmp(3),ima
       integer, allocatable :: ipatch_id_src(:)
       real *8, allocatable :: uvs_src(:,:)
-      integer i
+      integer i,ndtarg0
 
       data ima/(0.0d0,1.0d0)/
 
-      allocate(pottmp(npts),pottmp2(ntarg))
+
+      allocate(pottmp2(ntarg))
       allocate(ipatch_id_src(npts),uvs_src(2,npts))
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
@@ -1251,17 +1263,33 @@
       
       call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, &
         ipatch_id_src,uvs_src)
+      
 
 !
 !  compute ima*alpha*S_{ik}[\rho]
 !
       zpars_tmp(1) = ima*zpars(1)
-      zpars_tmp(2) = ima*zpars(2)
+      zpars_tmp(2) = 1.0d0 
       zpars_tmp(3) = 0
-      
+
+      print *, "Here"
+
+
+      call prin2('zpars_tmp=*',zpars_tmp,6)
+      call prinf('npatches=*',npatches,1)
+      call prinf('norders=*',norders,20)
+      call prinf('ixyzs=*',ixyzs,20)
+      call prinf('iptype=*',iptype,20)
+      call prinf('npts=*',npts,1)
+
+      ndtarg0 = 12
+
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
-        iptype,npts,srccoefs,srcvals,12,npts,srcvals,ipatch_id_src, &
-        uvs_src,eps,zpars_tmp,sigma,pottmp)
+        iptype,npts,srccoefs,srcvals,ndtarg0,npts,srcvals,&
+        ipatch_id_src,uvs_src,eps,zpars_tmp,sigma,pottmp)
+      return
+
+
       
 !
 !  compute S_{k} [sigma]
@@ -1269,10 +1297,13 @@
       zpars_tmp(1) = zpars(1)
       zpars_tmp(2) = 1.0d0 
       zpars_tmp(3) = 0
+
       
+      call prin2('zpars_tmp=*',zpars_tmp,6)
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
         uvs_targ,eps,zpars_tmp,sigma,pot)
+      call prin2('pot=*',pot,2)
       
       
 !
@@ -1281,16 +1312,20 @@
       zpars_tmp(1) = zpars(1)
       zpars_tmp(2) = 0
       zpars_tmp(3) = 1.0d0
+
       
+      call prin2('zpars_tmp=*',zpars_tmp,6)
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
         uvs_targ,eps,zpars_tmp,pottmp,pottmp2)
 
+
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
-        pot(i) = pot(i) + pottmp2(i)
+        pot(i) = pot(i) + pottmp2(i)*zpars(2)*ima
       enddo
 !$OMP END PARALLEL DO
+
      
       return
       end subroutine lpcomp_helm_rpcomb_dir
