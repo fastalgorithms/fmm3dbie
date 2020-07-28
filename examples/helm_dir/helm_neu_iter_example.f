@@ -7,7 +7,7 @@
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
       real *8 xyz_out(3),xyz_in(3)
-      complex *16, allocatable :: sigma(:),rhs(:)
+      complex *16, allocatable :: sigma(:),rhs(:),sigma1(:)
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
       complex * 16 zpars(3)
@@ -34,11 +34,10 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c 
       igeomtype = 1
-      ipars(1) = 2
+      ipars(1) = 1
       npatches = 12*(4**ipars(1))
 
       zk = 1.11d0+ima*0.0d0
-      zk = 1.0d0
       zpars(1) = zk 
       zpars(2) = 1.0d0
 
@@ -84,12 +83,13 @@ c
        print *, isout0,isout1
 
 
-      allocate(sigma(npts),rhs(npts))
+      allocate(sigma(npts),rhs(npts),sigma1(npts))
 
       do i=1,npts
         call h3d_sprime(xyz_in,12,srcvals(1,i),0,dpars,1,zpars,0,
      1     ipars,rhs(i))
-        sigma(i) = 0 
+        sigma(i) = 0
+        sigma1(i) = 0
       enddo
 
 
@@ -104,7 +104,7 @@ c
 
       call helm_rpcomb_neu_solver(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,numit,rhs,eps_gmres,
-     2  niter,errs,rres,sigma)
+     2  niter,errs,rres,sigma,sigma1)
 
       call prinf('niter=*',niter,1)
       call prin2('rres=*',rres,1)
@@ -123,7 +123,7 @@ c
       uvs_targ(2) = 0
       call lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,iptype,
      1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_out,ipatch_id,
-     2  uvs_targ,eps,zpars,sigma,pot)
+     2  uvs_targ,eps,zpars,sigma,sigma1,pot)
 
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)

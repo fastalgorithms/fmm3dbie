@@ -228,6 +228,7 @@
       call findnearmem(cms,npatches,rad_near,targs_aux,npts,nnz)
       print *, "nnz=",nnz
 
+
       allocate(row_ptr(npts+1),col_ind(nnz))
       
       call findnear(cms,npatches,rad_near,targs_aux,npts,row_ptr,&
@@ -237,8 +238,7 @@
       call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,&
      &iquad)
 
-      ikerorder = -1
-      if(abs(zpars(3)).gt.1.0d-16) ikerorder = 0
+      ikerorder = 0
 
 
 !

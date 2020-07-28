@@ -14,6 +14,7 @@
 
       real *8 xyz_out(3),xyz_in(3)
       complex *16, allocatable :: sigma(:),rhs(:),sigma2(:),sigma3(:)
+      complex *16, allocatable :: sigma1(:)
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
       real *8 uvs_tmp(2)
@@ -91,11 +92,15 @@ c
 
 
       allocate(sigma(npts),rhs(npts),sigma2(npts),sigma3(npts))
+      allocate(sigma1(npts))
 
       do i=1,npts
         call h3d_sprime(xyz_in,12,srcvals(1,i),0,dpars,1,zpars,0,
      1     ipars,rhs(i))
-        sigma(i) = 0 
+        sigma(i) = 0
+        sigma1(i) = 0
+        sigma2(i) = 0
+        sigma3(i) = 0
       enddo
 
 
@@ -175,8 +180,6 @@ c
 
       nquad = iquad(nnz+1)-1
 
-      goto 1111      
-
       allocate(wnear1(4*nquad),wnear2(4*nquad))
 
       rfac0 = 1.25d0
@@ -216,28 +219,26 @@ c
       call prin2('erra3=*',erra3,1)
       call prin2('erra4=*',erra4,1)
 
- 1111 continue      
 
       niter = 0
 
       call helm_rpcomb_neu_solver(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,numit,rhs,eps_gmres,niter,errs,rres,
-     2  sigma)
+     2  sigma,sigma1)
       sigma = sigma*4*pi
 
       ipatch_tmp = -1
       uvs_tmp(1) = 0
       uvs_tmp(2) = 0
 
-      allocate(pottmp(npts))
-
-      call lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,iptype,
-     1 npts,srccoefs,srcvals,3,1,xyz_out,ipatch_tmp,uvs_tmp,
-     2 eps,zpars,sigma,pot,pottmp)
-
-      pottmp = pottmp/4/pi
+cc      allocate(pottmp(npts))
+cc      call lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,iptype,
+cc     1 npts,srccoefs,srcvals,3,1,xyz_out,ipatch_tmp,uvs_tmp,
+cc     2 eps,zpars,sigma,pot,pottmp)
+cc      pottmp = pottmp/4/pi
 
 
+ 1111 continue      
       zpars_fp(1) = zk
       zpars_fp(2) = zpars(2)*4*pi
       ifinout = 1
@@ -253,7 +254,7 @@ c
       do i=1,npts
         erra = erra + abs(sigma2(i)-sigma(i))
         ra = ra + abs(sigma2(i))
-        erra2 = erra2 + abs(sigma3(i)-pottmp(i))
+        erra2 = erra2 + abs(sigma3(i)-sigma1(i))
         ra2 = ra2 + abs(sigma3(i))
       enddo
       erra = erra/ra
@@ -262,7 +263,7 @@ c
       call prin2('error in solve=*',erra,1)
       call prin2('error in second density=*',erra2,1)
       call prin2('sigma3=*',sigma3,12)
-      call prin2('pottmp=*',pottmp,12)
+      call prin2('sigma1=*',sigma1,12)
 
 
 

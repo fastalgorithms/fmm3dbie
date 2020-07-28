@@ -195,7 +195,7 @@
       subroutine lpcomp_helm_rpcomb_neu_addsub(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,eps,zpars,nnz,row_ptr,col_ind, &
         iquad,nquad,wnear,sigma,novers,nptso,ixyzso,srcover,whtsover, &
-        pot)
+        pot,phi1)
 
 !
 !  This subroutine evaluates the neumann data corresponding to
@@ -297,6 +297,8 @@
 !  Output arguments:
 !    - pot: complex *16 (npts)
 !        du/dn corresponding to representation
+!    - phi1: complex *16 (npts)
+!        sik(pot) to be used for computing solution later
 !
 
       implicit none
@@ -314,7 +316,7 @@
       integer novers(npatches)
       integer nover,npolso,nptso
       real *8 srcover(12,nptso),whtsover(nptso)
-      complex *16 pot(npts)
+      complex *16 pot(npts),phi1(npts)
 
       real *8, allocatable :: sources(:,:),srctmp(:,:)
       complex *16, allocatable :: charges(:),dipvec(:,:),sigmaover(:)
@@ -329,7 +331,7 @@
       integer i,j,jpatch,jquadstart,jstart,count1,count2
       complex *16 zdotu,pottmp,gradtmp(3)
       complex *16, allocatable :: pot_aux(:),grad_aux(:,:)
-      complex *16, allocatable :: phi1(:),phi2(:)
+      complex *16, allocatable :: phi2(:)
 
       real *8 radexp,epsfmm
 
@@ -364,7 +366,7 @@
       allocate(charges(ns),dipvec(3,ns))
       allocate(sigmaover(ns))
       allocate(pot_aux(npts),grad_aux(3,npts))
-      allocate(phi1(npts),phi2(npts))
+      allocate(phi2(npts))
       allocate(sigma_aux(npts))
 !
 !  estimate max number of sources in the near field of any target
@@ -730,7 +732,7 @@
 
       subroutine helm_rpcomb_neu_solver(npatches,norders,ixyzs, &
         iptype,npts,srccoefs,srcvals,eps,zpars,numit, &
-        rhs,eps_gmres,niter,errs,rres,soln)
+        rhs,eps_gmres,niter,errs,rres,soln,siksoln)
 !
 !
 !  This subroutine solves the Helmholtz Neumann problem
@@ -802,6 +804,9 @@
 !        relative residual for computed solution
 !    - soln: complex *16(npts)
 !        density which solves the neumann problem \rho
+!    - siksoln: complx *16(npts)
+!        sik[\rho] which can be used for far field
+!        computations later
 !				 
 !
 !
@@ -812,7 +817,7 @@
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
       complex *16 zpars(2)
       complex *16 rhs(npts)
-      complex *16 soln(npts)
+      complex *16 soln(npts),siksoln(npts)
 
       real *8, allocatable :: targs(:,:)
       real *8, allocatable :: targs_aux(:,:)
@@ -1049,7 +1054,7 @@
       call lpcomp_helm_rpcomb_neu_addsub(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,eps,zpars,nnz,row_ptr,col_ind, &
         iquad,nquad,wnear,vmat(1,it),novers,npts_over,ixyzso,srcover,&
-        wover,wtmp)
+        wover,wtmp,siksoln)
 
         do k=1,it
           hmat(k,it) = 0
@@ -1133,7 +1138,7 @@
       call lpcomp_helm_rpcomb_neu_addsub(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,eps,zpars,nnz,row_ptr,col_ind, &
         iquad,nquad,wnear,soln,novers,npts_over,ixyzso,srcover,&
-        wover,wtmp)
+        wover,wtmp,siksoln)
 
 
           do i=1,npts
@@ -1155,7 +1160,7 @@
 !
       subroutine lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
-        uvs_targ,eps,zpars,sigma,pot,pottmp)
+        uvs_targ,eps,zpars,sigma,sigma1,pot)
 !
 !
 !  This subroutine evaluates the dirichlet data for
@@ -1215,6 +1220,8 @@
 !          * zpars(2) = alpha
 !    - sigma: complex *16(npts)
 !        density sigma above
+!    - sigma1: complex *16 (npts)
+!        sik(sigma)
 !
 !  Output arguments:
 !    - pot: complex *16(ntarg)
@@ -1230,9 +1237,8 @@
       real *8, intent(in) :: targs(ndtarg,ntarg)
       integer, intent(in) :: ipatch_id(ntarg)
       real *8, intent(in) :: uvs_targ(2,ntarg),eps
-      complex *16, intent(in) :: zpars(2),sigma(npts)
+      complex *16, intent(in) :: zpars(2),sigma(npts),sigma1(npts)
       complex *16, intent(out) :: pot(ntarg)
-      complex *16, intent(out) :: pottmp(npts)
 
       complex *16, allocatable :: pottmp2(:)
       complex *16 zpars_tmp(3),ima
@@ -1244,15 +1250,6 @@
 
 
       allocate(pottmp2(ntarg))
-      allocate(ipatch_id_src(npts),uvs_src(2,npts))
-!$OMP PARALLEL DO DEFAULT(SHARED)
-      do i=1,npts
-        pottmp(i) = 0
-        ipatch_id_src(i) = -1
-        uvs_src(1,i) = 0
-        uvs_src(2,i) = 0
-      enddo
-!$OMP END PARALLEL DO
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
@@ -1261,35 +1258,6 @@
       enddo
 !$OMP END PARALLEL DO
       
-      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, &
-        ipatch_id_src,uvs_src)
-      
-
-!
-!  compute ima*alpha*S_{ik}[\rho]
-!
-      zpars_tmp(1) = ima*zpars(1)
-      zpars_tmp(2) = 1.0d0 
-      zpars_tmp(3) = 0
-
-      print *, "Here"
-
-
-      call prin2('zpars_tmp=*',zpars_tmp,6)
-      call prinf('npatches=*',npatches,1)
-      call prinf('norders=*',norders,20)
-      call prinf('ixyzs=*',ixyzs,20)
-      call prinf('iptype=*',iptype,20)
-      call prinf('npts=*',npts,1)
-
-      ndtarg0 = 12
-
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
-        iptype,npts,srccoefs,srcvals,ndtarg0,npts,srcvals,&
-        ipatch_id_src,uvs_src,eps,zpars_tmp,sigma,pottmp)
-      return
-
-
       
 !
 !  compute S_{k} [sigma]
@@ -1317,7 +1285,7 @@
       call prin2('zpars_tmp=*',zpars_tmp,6)
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
-        uvs_targ,eps,zpars_tmp,pottmp,pottmp2)
+        uvs_targ,eps,zpars_tmp,sigma1,pottmp2)
 
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
