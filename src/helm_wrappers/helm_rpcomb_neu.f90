@@ -305,7 +305,7 @@
       integer norders(npatches),ixyzs(npatches+1)
       integer ixyzso(npatches+1),iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps
-      complex *16 zpars(3),zpars2(3)
+      complex *16 zpars(2),zpars2(3)
       integer nnz,row_ptr(npts+1),col_ind(nnz),nquad
       integer iquad(nnz+1)
       complex *16 sigma(npts)
