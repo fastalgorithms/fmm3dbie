@@ -57,7 +57,7 @@ c
       xyz_in(2) = 0.23d0
       xyz_in(3) = -0.11d0
 
-      norder = 4 
+      norder = 3 
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
@@ -225,13 +225,43 @@ c
       call helm_rpcomb_neu_solver(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,numit,rhs,eps_gmres,niter,errs,rres,
      2  sigma,sigma1)
+      allocate(pottmp(npts))
+      zpars_tmp(1) = ima*zk
+      zpars_tmp(2) = 1.0d0
+      zpars_tmp(3) = 0.0d0
+
+
+      pottmp = 0
+      ndtarg0 = 12
+      call prinf('ipatch_id=*',ipatch_id,npts)
+
+      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,
+     2 npts,srccoefs,srcvals,ndtarg0,npts,srcvals,ipatch_id,uvs_targ,
+     2 eps,zpars_tmp,sigma,pottmp)
+
+ 1121 format(5(2x,e11.5))
+      erra = 0
+      ra = 0
+      do i=1,npts
+        erra = erra + abs(pottmp(i)-sigma1(i))
+        ra = ra + abs(sigma1(i))
+        write(44,1121) real(sigma1(i)),imag(sigma1(i)),
+     1     real(pottmp(i)),imag(pottmp(i)),abs(pottmp(i)-sigma1(i))
+      enddo
+      erra = erra/ra
+
+
+
+      call prin2('error in sigma1*',erra,1)
+      stop
+
+      
       sigma = sigma*4*pi
 
       ipatch_tmp = -1
       uvs_tmp(1) = 0
       uvs_tmp(2) = 0
 
-cc      allocate(pottmp(npts))
 cc      call lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,iptype,
 cc     1 npts,srccoefs,srcvals,3,1,xyz_out,ipatch_tmp,uvs_tmp,
 cc     2 eps,zpars,sigma,pot,pottmp)

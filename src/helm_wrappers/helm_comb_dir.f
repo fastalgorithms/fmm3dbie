@@ -368,6 +368,7 @@ c
       integer iptype_avg,norder_avg
       integer ikerorder, iquadtype,npts_over
 
+
 c
 c
 c        this might need fixing
@@ -417,6 +418,8 @@ c
      2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
+
+      print *, "npts_over=",npts_over
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
@@ -719,15 +722,9 @@ c
 c        compute threshold for ignoring local computation
 c
       call get_fmm_thresh(3,ns,sources,3,ntarg,targvals,thresh)
-      
 
-      
-c
 c
 c       add in precomputed quadrature
-c
-
-
 
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()
@@ -760,7 +757,6 @@ C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,ii,val,npover)
         enddo
         allocate(srctmp2(3,nss),ctmp2(nss),dtmp2(3,nss))
 
-        rmin = 1.0d6
         ii = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
