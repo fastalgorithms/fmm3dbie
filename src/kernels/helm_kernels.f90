@@ -265,7 +265,7 @@ subroutine h3d_dprime_diff(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi, &
 
   z1 = rinv3*((ztmp-1)*sexp + ztmp)
   z2 = rinv5*((ztmp2-3*ztmp+3)*sexp+ztmp2-3*ztmp)
-  val = val+rntdot*rnsdot*z2 + rnstdot*z1
+  val = val + rntdot*rnsdot*z2 + rnstdot*z1
 
 
 

@@ -18,6 +18,7 @@
       real *8 eps_gmres
       real *8 uvs_tmp(2)
       complex * 16 zpars(3),zpars_tmp(3),zpars_fp(3)
+      complex *16 zk
       complex *16, allocatable :: pottmp(:)
       integer numit,niter
 
@@ -174,6 +175,8 @@ c
 
       nquad = iquad(nnz+1)-1
 
+      goto 1111      
+
       allocate(wnear1(4*nquad),wnear2(4*nquad))
 
       rfac0 = 1.25d0
@@ -213,6 +216,10 @@ c
       call prin2('erra3=*',erra3,1)
       call prin2('erra4=*',erra4,1)
 
+ 1111 continue      
+
+      niter = 0
+
       call helm_rpcomb_neu_solver(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,numit,rhs,eps_gmres,niter,errs,rres,
      2  sigma)
@@ -233,6 +240,7 @@ c
 
       zpars_fp(1) = zk
       zpars_fp(2) = zpars(2)*4*pi
+      ifinout = 1
 
       call h_neumann_solver(npatches,norders,ixyzs,iptype,npts,srccoefs,
      1 srcvals,eps,zpars_fp,numit,ifinout,rhs,eps_gmres,niter,errs,rres,
