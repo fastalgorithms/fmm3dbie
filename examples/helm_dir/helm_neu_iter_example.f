@@ -72,17 +72,6 @@ c
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
-      isout0 = .false.
-      isout1 = .false.
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1  wts,xyz_in,isout0)
-      
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1   wts,xyz_out,isout1)
-
-       print *, isout0,isout1
-
-
       allocate(sigma(npts),rhs(npts),sigma1(npts))
 
       do i=1,npts

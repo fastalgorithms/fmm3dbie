@@ -350,6 +350,7 @@
       integer ndd,ndz,ndi
 
       real *8 ttot,done,pi
+      data ima/(0.0d0,1.0d0)/
 
       parameter (nd=1,ntarg0=1)
 
@@ -357,7 +358,7 @@
       ntarg = npts
       done = 1
       pi = atan(done)*4
-      ima=(0.0d0,1.0d0)
+
 
            
       ifpgh = 0
@@ -432,7 +433,7 @@
       call cpu_time(t1)
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart) &
-!$OMP PRIVATE(jstart,npols)
+!$OMP PRIVATE(jstart,npols,l)
       do i=1,npts
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -453,27 +454,32 @@
       ifdipole = 0 
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2) &
-!$OMP PRIVATE(ctmp2,dtmp2,l,jstart,nss,pottmp,gradtmp)
+!$OMP PRIVATE(ctmp2,l,jstart,nss,pottmp,gradtmp)
       do i=1,npts
         nss = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
             nss = nss+1
-            srctmp2(1:3,nss) = srcover(1:3,l)
+            srctmp2(1,nss) = srcover(1,l)
+            srctmp2(2,nss) = srcover(2,l)
+            srctmp2(3,nss) = srcover(3,l)
             ctmp2(nss)=charges(l)
           enddo
         enddo
 
         pottmp = 0
-        gradtmp = 0
-
+        gradtmp(1) = 0
+        gradtmp(2) = 0
+        gradtmp(3) = 0
 
         call h3ddirectcg(nd,zpars(1),srctmp2,ctmp2,nss,srctmp(1,i), &
           ntarg0,pottmp,gradtmp,thresh)
         pot(i) = pot(i) - gradtmp(1)*srcvals(10,i) - &
           gradtmp(2)*srcvals(11,i)-gradtmp(3)*srcvals(12,i)
       enddo
+!$OMP END PARALLEL DO      
+
 !
 !
 !    Now handle the computation of S_{ik}[\rho] and S_{ik}'[\rho] 
@@ -499,7 +505,7 @@
 !
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart) &
-!$OMP PRIVATE(jstart,pottmp,npols)
+!$OMP PRIVATE(jstart,pottmp,npols,l)
       do i=1,npts
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -521,20 +527,23 @@
 !
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2) &
-!$OMP PRIVATE(ctmp2,nss,l,jstart,pottmp,gradtmp,npover)
-
+!$OMP PRIVATE(ctmp2,nss,l,pottmp,gradtmp)
       do i=1,npts
         nss = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
             nss = nss+1
-            srctmp2(1:3,nss) = srcover(1:3,jstart+l)
+            srctmp2(1,nss) = srcover(1,l)
+            srctmp2(2,nss) = srcover(2,l)
+            srctmp2(3,nss) = srcover(3,l)
             ctmp2(nss)= charges(l) 
           enddo
         enddo
         pottmp = 0
-        gradtmp = 0
+        gradtmp(1) = 0
+        gradtmp(2) = 0
+        gradtmp(3) = 0
         call h3ddirectcg(nd,ztmp,srctmp2,ctmp2,nss,srctmp(1,i), &
           ntarg0,pottmp,gradtmp,thresh)
         phi1(i) = phi1(i) - pottmp  
@@ -546,7 +555,6 @@
 !  End of computing phi1 = S_{ik}[\sigma]
 !  and phi2 = S_{ik}'[\sigma]
 !
-      
 
 !
 !  Now compoute S_{ik}'[\phi2] and add i\alpha S_{ik}'[phi2]
@@ -578,7 +586,7 @@
 !
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart) &
-!$OMP PRIVATE(jstart,pottmp,npols)
+!$OMP PRIVATE(jstart,npols,l)
       do i=1,npts
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -598,20 +606,23 @@
 !
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2) &
-!$OMP PRIVATE(ctmp2,nss,l,jstart,pottmp,gradtmp,npover)
-
+!$OMP PRIVATE(ctmp2,nss,l,jstart,pottmp,gradtmp)
       do i=1,npts
         nss = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
             nss = nss+1
-            srctmp2(1:3,nss) = srcover(1:3,l)
+            srctmp2(1,nss) = srcover(1,l)
+            srctmp2(2,nss) = srcover(2,l)
+            srctmp2(3,nss) = srcover(3,l)
             ctmp2(nss)= charges(l) 
           enddo
         enddo
         pottmp = 0
-        gradtmp = 0
+        gradtmp(1) = 0
+        gradtmp(2) = 0
+        gradtmp(3) = 0
 
         call h3ddirectcg(nd,ztmp,srctmp2,ctmp2,nss,srctmp(1,i), &
           ntarg0,pottmp,gradtmp,thresh)
@@ -674,7 +685,7 @@
 !
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart) &
-!$OMP PRIVATE(jstart,pottmp,npols)
+!$OMP PRIVATE(jstart,pottmp,npols,l)
       do i=1,npts
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -698,18 +709,20 @@
       ndd = 0
       ndi = 0
       ndz = 2
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2) &
-!$OMP PRIVATE(dtmp2,nss,l,jstart,pottmp,gradtmp,npover)
-
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,l,jpatch,pottmp,rr)
       do i=1,npts
-        nss = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
             pottmp = 0
+            rr = sqrt((srcover(1,l)-srcvals(1,i))**2 + &
+              (srcover(2,l)-srcvals(2,i))**2 + &
+              (srcover(3,l)-srcvals(3,i))**2)
+            if(rr.lt.thresh) goto 1311
             call h3d_dprime_diff(srcover(1,l),12,srcvals(1,i),ndd, &
               dpars,ndz,zpars2,ndi,ipars,pottmp)
             pot_aux(i) = pot_aux(i) - pottmp*sigmaover(l)*whtsover(l)
+ 1311       continue            
           enddo
         enddo
         pot(i) = pot(i)+ ima*zpars(2)*pot_aux(i)
@@ -963,7 +976,6 @@
        nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
-      print *, "npts_over=",npts_over
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
@@ -1030,15 +1042,18 @@
       enddo
 
 !
+!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rb)
       do i=1,n_var
         rb = rb + abs(rhs(i))**2
       enddo
+!$OMP END PARALLEL DO      
       rb = sqrt(rb)
 
-
+!$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,n_var
         vmat(i,1) = rhs(i)/rb
       enddo
+!$OMP END PARALLEL DO      
 
       svec(1) = rb
 
@@ -1057,26 +1072,35 @@
         wover,wtmp,siksoln)
 
         do k=1,it
-          hmat(k,it) = 0
+          ztmp = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:ztmp)          
           do j=1,n_var      
-            hmat(k,it) = hmat(k,it) + wtmp(j)*conjg(vmat(j,k))
+            ztmp = ztmp + wtmp(j)*conjg(vmat(j,k))
           enddo
+!$OMP END PARALLEL DO  
+          hmat(k,it) = ztmp
 
+!$OMP PARALLEL DO DEFAULT(SHARED)
           do j=1,n_var
             wtmp(j) = wtmp(j)-hmat(k,it)*vmat(j,k)
           enddo
+!$OMP END PARALLEL DO          
         enddo
           
         hmat(it,it) = hmat(it,it)+zid
         wnrm2 = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:wnrm2)        
         do j=1,n_var
           wnrm2 = wnrm2 + abs(wtmp(j))**2
         enddo
+!$OMP END PARALLEL DO        
         wnrm2 = sqrt(wnrm2)
 
+!$OMP PARALLEL DO DEFAULT(SHARED)
         do j=1,n_var
           vmat(j,it1) = wtmp(j)/wnrm2
         enddo
+!$OMP END PARALLEL DO        
 
         do k=1,it-1
           temp = cs(k)*hmat(k,it)+sn(k)*hmat(k+1,it)
@@ -1117,18 +1141,22 @@
 !
 !          estimate x
 !
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
           do j=1,n_var
             soln(j) = 0
             do i=1,it
               soln(j) = soln(j) + yvec(i)*vmat(j,i)
             enddo
           enddo
+!$OMP END PARALLEL DO          
 
 
           rres = 0
+!$OMP PARALLEL DO DEFAULT(SHARED)          
           do i=1,n_var
             wtmp(i) = 0
           enddo
+!$OMP END PARALLEL DO          
 !
 !        NOTE:
 !        replace this routine by appropriate layer potential
@@ -1140,10 +1168,11 @@
         iquad,nquad,wnear,soln,novers,npts_over,ixyzso,srcover,&
         wover,wtmp,siksoln)
 
-
+!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rres)
           do i=1,npts
             rres = rres + abs(zid*soln(i) + wtmp(i)-rhs(i))**2
           enddo
+!$OMP END PARALLEL DO          
           rres = sqrt(rres)/rb
           niter = it
           return
@@ -1251,12 +1280,12 @@
 
       allocate(pottmp2(ntarg))
 
-!$OMP PARALLEL DO DEFAULT(SHARED)
+!!!$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
         pottmp2(i) = 0
         pot(i) = 0
       enddo
-!$OMP END PARALLEL DO
+!!!$OMP END PARALLEL DO
       
       
 !
@@ -1267,11 +1296,9 @@
       zpars_tmp(3) = 0
 
       
-      call prin2('zpars_tmp=*',zpars_tmp,6)
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
         uvs_targ,eps,zpars_tmp,sigma,pot)
-      call prin2('pot=*',pot,2)
       
       
 !
@@ -1282,17 +1309,16 @@
       zpars_tmp(3) = 1.0d0
 
       
-      call prin2('zpars_tmp=*',zpars_tmp,6)
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
         uvs_targ,eps,zpars_tmp,sigma1,pottmp2)
 
 
-!$OMP PARALLEL DO DEFAULT(SHARED)
+!!!$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
         pot(i) = pot(i) + pottmp2(i)*zpars(2)*ima
       enddo
-!$OMP END PARALLEL DO
+!!!$OMP END PARALLEL DO
 
      
       return

@@ -224,10 +224,8 @@ c
         if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
           fker=>h3d_slp
           ipv = 0 
-          print *, "in slp"
         else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
           fker=>h3d_dlp
-          print *, "in dlp"
         endif
 
 
@@ -418,8 +416,6 @@ c
      2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
-
-      print *, "npts_over=",npts_over
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
@@ -1613,7 +1609,6 @@ c
      2    nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
-      print *, "npts_over=",npts_over
 
       allocate(srcover(12,npts_over),wover(npts_over))
 

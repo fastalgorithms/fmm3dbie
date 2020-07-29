@@ -47,11 +47,12 @@
       xyz_out(2) = 3.1d0
       xyz_out(3) = 20.1d0
 	  
-      fname = '../../../../Geometries_go3/' // &
-     &  'simplest_cube_quadratic_v4_o04_r01.go3'
+!      fname = '../../../../Geometries_go3/' // &
+!     &  'simplest_cube_quadratic_v4_o04_r01.go3'
+      fname = '../../geometries/sphere_192_o03.go3'
 	  xyz_in(1) = 0.00d0
       xyz_in(2) = 0.0d0
-      xyz_in(3) = 1.5d0
+      xyz_in(3) = 0.15d0
 	 
 !	  fname =  '../../../../Geometries_go3/' // &
 !      & 'Round_2_o08_r01.go3'
@@ -120,8 +121,8 @@
       niter = 0
       allocate(errs(numit+1))
 
-      eps = 1d-9
-	  eps_gmres=1d-14
+      eps = 1d-4
+	  eps_gmres=1d-7
 
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      

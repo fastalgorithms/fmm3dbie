@@ -1,6 +1,6 @@
 EXEC = int2-fds
-#HOST = gcc
-HOST = gcc-openmp
+HOST = gcc
+#HOST = gcc-openmp
 #HOST = intel
 #HOST = intel-ompenmp
 
@@ -25,7 +25,7 @@ endif
 LIBS = -lfmm3d -lfmm3dbie 
 ifeq ($(HOST),gcc)
     FC=gfortran -L${LDF} 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native  
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -std=legacy 
 endif
 
 ifeq ($(HOST),gcc-openmp)
@@ -47,7 +47,7 @@ SURF=../../src/surface_routs
 
 .PHONY: all clean 
 
-OBJECTS =  test_Helmholtz_Neumann.o \
+OBJECTS =  test_helmholtz_neumann.o \
   $ ../../src/common/incoming_fields.o \
   $ ../../src/helm_wrappers/Helmholtz_Neumann.o \
   $ ../../src/fmm_wrappers/common_Maxwell.o \

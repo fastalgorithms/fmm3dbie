@@ -8,6 +8,7 @@
 
       real *8 xyz_out(3),xyz_in(3)
       complex *16, allocatable :: sigma(:),rhs(:)
+      complex *16 zk
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
       complex * 16 zpars(3)
@@ -34,8 +35,8 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 2
-      if(igeomtype.eq.1) ipars(1) = 3
+      igeomtype = 1
+      if(igeomtype.eq.1) ipars(1) = 2
       if(igeomtype.eq.2) ipars(1) = 10
 
       if(igeomtype.eq.1) then
@@ -48,6 +49,7 @@ c
 
 
       zk = 1.11d0+ima*0.0d0
+      zk = zk*ima
       zpars(1) = zk 
       zpars(2) = ima*zk
       zpars(3) = 2.0d0

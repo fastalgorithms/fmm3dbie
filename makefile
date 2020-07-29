@@ -162,7 +162,7 @@ $(STATICLIB): $(OBJS)
 	mv $(STATICLIB) lib-static/
 
 $(DYNAMICLIB): $(OBJS) 
-	$(FC) -shared -fPIC $(OMPFLAGS) $(OBJS) -o $(DYNAMICLIB) $(DYLIBS) 
+	$(FC) -shared -fPIC $(FFLAGS) $(OBJS) -o $(DYNAMICLIB) $(DYLIBS) 
 	mv $(DYNAMICLIB) lib/
 	[ ! -f $(LIMPLIB) ] || mv $(LIMPLIB) lib/
 
