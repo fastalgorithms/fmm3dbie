@@ -195,9 +195,9 @@ subroutine xtri_stell_eval(itri, u, v, xyz, dxyzduv, triainfo, &
 !  Fix this
 !
 
-  dxyzduv(1,2) = -(dxyzds(1)*dsdv + dxyzdt(1)*dtdv)
-  dxyzduv(2,2) = -(dxyzds(2)*dsdv + dxyzdt(2)*dtdv)
-  dxyzduv(3,2) = -(dxyzds(3)*dsdv + dxyzdt(3)*dtdv)
+  dxyzduv(1,2) = (dxyzds(1)*dsdv + dxyzdt(1)*dtdv)
+  dxyzduv(2,2) = (dxyzds(2)*dsdv + dxyzdt(2)*dtdv)
+  dxyzduv(3,2) = (dxyzds(3)*dsdv + dxyzdt(3)*dtdv)
 
   return
 end subroutine xtri_stell_eval

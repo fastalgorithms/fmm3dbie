@@ -37,9 +37,9 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 1
+      igeomtype = 2
       if(igeomtype.eq.1) ipars(1) = 1
-      if(igeomtype.eq.2) ipars(1) = 20
+      if(igeomtype.eq.2) ipars(1) = 10
 
       if(igeomtype.eq.1) then
         npatches = 12*(4**ipars(1))
@@ -375,8 +375,8 @@ c
         pi = atan(done)*4
         umin = 0
         umax = 2*pi
-        vmin = 0
-        vmax = 2*pi
+        vmin = 2*pi
+        vmax = 0
         allocate(triaskel(3,3,npatches))
         nover = 0
         call xtri_rectmesh_ani(umin,umax,vmin,vmax,ipars(1),ipars(2),

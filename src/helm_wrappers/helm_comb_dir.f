@@ -1643,7 +1643,6 @@ c
 
       npts_over = ixyzso(npatches+1)-1
       print *, "npts_over=",npts_over
-      call prinf('novers=*',novers,100)
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
@@ -2304,6 +2303,11 @@ c
 
         nn = ilend-ilstart+1
 
+c
+c    if no relevant targets for this source do nothing
+c
+        if(nn.le.0) goto 1111
+
         allocate(iuni(nn),iuniind(nn))
 
         nuni = 0
@@ -2417,6 +2421,7 @@ c
 
         deallocate(iuni,iuniind,aintb,iaintba,iaintbb,aintbc,iaintbc)
         deallocate(wquad,wquadf,wquadf2)
+ 1111   continue        
       enddo
       
       

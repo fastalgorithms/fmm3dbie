@@ -39,12 +39,12 @@ endif
 
 ifeq ($(HOST),gcc)
     FC=gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native  
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -std=legacy 
 endif
 
 ifeq ($(HOST),gcc-openmp)
     FC = gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy
 endif
 
 ifeq ($(HOST),intel)
