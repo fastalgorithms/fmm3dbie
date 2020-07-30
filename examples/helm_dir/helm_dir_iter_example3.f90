@@ -37,10 +37,10 @@ program helm_dir_iter_example3
   !   igeomtype = 2  =>  stellarator
   !   igeomtype = 3  =>  Tom Hagstrom potato taco
   !c 
-  igeomtype = 3
+  igeomtype = 1
   
   if(igeomtype.eq.1) then
-    ipars(1) = 5
+    ipars(1) = 4
     npatches = 12*(4**ipars(1))
   end if
   
@@ -124,7 +124,6 @@ program helm_dir_iter_example3
   call setup_geom(igeomtype, norder, npatches, ipars, &
       srcvals, srccoefs, ifplot, fname)
 
-  stop
   
   allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
 
