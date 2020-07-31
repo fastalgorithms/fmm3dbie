@@ -2180,7 +2180,7 @@ c
 c    estimate oversampling for far-field, and oversample geometry
 c
 
-
+      ztmp = 0.0d0
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
      1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,ztmp,
      2    nnz,ifds(irow_ptr),ifds(icol_ind),rfac,ifds(inovers),

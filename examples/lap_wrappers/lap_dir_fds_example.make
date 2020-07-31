@@ -17,7 +17,7 @@ ifneq ($(OS),Windows_NT)
         LDF = /usr/local/lib
     endif
     ifeq ($(UNAME_S),Linux)
-        LDF = ../../lib
+        LDF = ${HOME}/lib
     endif
 endif
 
