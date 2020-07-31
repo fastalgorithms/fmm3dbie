@@ -48,13 +48,9 @@ c
      3   iquad,rfac0,nquad,wnear)
 c
 c       this subroutine generates the near field quadrature
-c       for the representation u = 4\pi (\alpha S_{0}  + \beta D_{0}) ---(1)
+c       for the representation u = (\alpha S_{0}  + \beta D_{0}) ---(1)
 c       where the near field is specified by the user 
 c       in row sparse compressed format.
-c
-c
-c        Note: the 4 \pi scaling is included to be consistent with the FMM
-c
 c
 c       The quadrature is computed by the following strategy
 c        targets within a sphere of radius rfac0*rs
@@ -71,7 +67,6 @@ c       Note that all the parameters are real and the quadrature
 c       correction returned is real. Currently implemented in
 c       a hacky manner by calling the complex routine and then
 c       converting to real routines
-c        
 c
 c       input:
 c         npatches - integer
@@ -258,10 +253,9 @@ c
 c
 c  .. math ::
 c  
-c      u = 4 \pi(\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
+c      u = (\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
 c
-c  Note: the $4\pi$ scaling is included to be consistent with the FMM3D
-c  libraries. For targets on the boundary, this routine only computes
+c  Note: For targets on the boundary, this routine only computes
 c  the principal value part, the identity term corresponding to the jump
 c  in the layer potential is not included in the layer potential.
 c
@@ -458,12 +452,9 @@ c
 c
 c
 c      this subroutine evaluates the layer potential for
-c      the representation u = 4\pi (\alpha S_{0} + \beta D_{0}) 
+c      the representation u = (\alpha S_{0} + \beta D_{0}) 
 c      where the near field is precomputed and stored
 c      in the row sparse compressed format.
-c
-c       Note the 4\pi scaling is included to be consistent with the FMM
-c
 c
 c     The fmm is used to accelerate the far-field and 
 c     near-field interactions are handled via precomputed quadrature
@@ -599,6 +590,7 @@ c
       integer ifcharge,ifdipole
       integer ifpgh,ifpghtarg
       real *8 tmp(10),val
+      real *8 over4pi
 
       real *8 xmin,xmax,ymin,ymax,zmin,zmax,sizey,sizez,boxsize
 
@@ -614,7 +606,7 @@ c
       real *8, allocatable :: ctmp2(:),dtmp2(:,:)
       real *8 radexp,epsfmm
 
-      integer ipars
+      integer ipars,nmax
       complex *16 zpars
       real *8 timeinfo(10),t1,t2,omp_get_wtime
 
@@ -629,11 +621,21 @@ c
       real *8 ttot,done,pi
 
       parameter (nd=1,ntarg0=1)
+      data over4pi/0.07957747154594767d0/
 
       ns = nptso
       done = 1
       pi = atan(done)*4
 
+c
+c    estimate max number of sources in neear field of 
+c    any target
+c
+      nmax = 0
+      call get_near_corr_max(ntarg,row_ptr,nnz,col_ind,npatches,
+     1  ixyzso,nmax)
+      allocate(srctmp2(3,nmax),ctmp2(nmax),dtmp2(3,nmax))
+           
            
       ifpgh = 0
       ifpghtarg = 1
@@ -649,14 +651,11 @@ c
      1    npts,sigma,novers,ixyzso,ns,sigmaover)
 
 
-      ra = 0
-
-
 c
 c       set relevatn parameters for the fmm
 c
-      alpha = dpars(1)
-      beta = dpars(2)
+      alpha = dpars(1)*over4pi
+      beta = dpars(2)*over4pi
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
       do i=1,ns
         sources(1,i) = srcover(1,i)
@@ -704,53 +703,18 @@ c
 c        compute threshold for ignoring local computation
 c
       
-      xmin = sources(1,1)
-      xmax = sources(1,1)
-      ymin = sources(2,1)
-      ymax = sources(2,1)
-      zmin = sources(3,1)
-      zmax = sources(3,1)
-
-      do i=1,ns
-        if(sources(1,i).lt.xmin) xmin = sources(1,i)
-        if(sources(1,i).gt.xmax) xmax = sources(1,i)
-        if(sources(2,i).lt.ymin) ymin = sources(2,i)
-        if(sources(2,i).gt.ymax) ymax = sources(2,i)
-        if(sources(3,i).lt.zmin) zmin = sources(3,i)
-        if(sources(3,i).gt.zmax) zmax = sources(3,i)
-      enddo
-
-      do i=1,ntarg
-        if(targvals(1,i).lt.xmin) xmin = targvals(1,i)
-        if(targvals(1,i).gt.xmax) xmax = targvals(1,i)
-        if(targvals(2,i).lt.ymin) ymin = targvals(2,i)
-        if(targvals(2,i).gt.ymax) ymax = targvals(2,i)
-        if(targvals(3,i).lt.zmin) zmin = targvals(3,i)
-        if(targvals(3,i).gt.zmax) zmax = targvals(3,i)
-      enddo
-      
-      boxsize = xmax-xmin
-      sizey = ymax - ymin
-      sizez = zmax - zmin
-
-      if(sizey.gt.boxsize) boxsize = sizey
-      if(sizez.gt.boxsize) boxsize = sizez
-
-      thresh = 2.0d0**(-51)*boxsize
-
+      call get_fmm_thresh(3,ns,sources,3,ntarg,targvals,thresh)
       
 c
 c
 c       add in precomputed quadrature
 c
 
-
-
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
-C$OMP$PRIVATE(jstart,pottmp,npols)
+C$OMP$PRIVATE(jstart,pottmp,npols,l)
       do i=1,ntarg
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -773,27 +737,17 @@ C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,ii,val,npover)
         nss = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
-          nss = nss + ixyzso(jpatch+1)-ixyzso(jpatch)
-        enddo
-        allocate(srctmp2(3,nss),ctmp2(nss),dtmp2(3,nss))
+          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+            nss = nss + 1
+            srctmp2(1,nss) = srcover(1,l)
+            srctmp2(2,nss) = srcover(2,l)
+            srctmp2(3,nss) = srcover(3,l)
 
-        rmin = 1.0d6
-        ii = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          jstart = ixyzso(jpatch)-1
-          npover = ixyzso(jpatch+1)-ixyzso(jpatch)
-          do l=1,npover
-            ii = ii+1
-            srctmp2(1,ii) = srcover(1,jstart+l)
-            srctmp2(2,ii) = srcover(2,jstart+l)
-            srctmp2(3,ii) = srcover(3,jstart+l)
-
-            if(ifcharge.eq.1) ctmp2(ii) = charges(jstart+l)
+            if(ifcharge.eq.1) ctmp2(nss) = charges(l)
             if(ifdipole.eq.1) then
-              dtmp2(1,ii) = dipvec(1,jstart+l)
-              dtmp2(2,ii) = dipvec(2,jstart+l)
-              dtmp2(3,ii) = dipvec(3,jstart+l)
+              dtmp2(1,nss) = dipvec(1,l)
+              dtmp2(2,nss) = dipvec(2,l)
+              dtmp2(3,nss) = dipvec(3,l)
             endif
           enddo
         enddo
@@ -814,8 +768,6 @@ C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,ii,val,npover)
      1          nss,targvals(1,i),ntarg0,val,thresh)
         endif
         pot(i) = pot(i) - val
-
-        deallocate(srctmp2,ctmp2,dtmp2)
       enddo
       
       call cpu_time(t2)
@@ -827,7 +779,6 @@ C$      t2 = omp_get_wtime()
 cc      call prin2('quadrature time=*',timeinfo,2)
       
       ttot = timeinfo(1) + timeinfo(2)
-cc      call prin2('time in lpcomp=*',ttot,1)
 
       
       return
@@ -851,12 +802,9 @@ c
 c
 c
 c      this subroutine evaluates the layer potential for
-c      the representation u = (\alpha S_{0} + \beta D_{0}) 4 \pi 
+c      the representation u = (\alpha S_{0} + \beta D_{0}) 
 c      where the near field is precomputed and stored
 c      in the row sparse compressed format.
-c
-c
-c          Note the 4\pi scaling is included to be consistent with fmm
 c
 c
 c     The fmm is used to accelerate the far-field and 
@@ -1013,6 +961,7 @@ c
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp1(:,:),srctmp2(:,:)
       real *8 thresh,ra
+      real *8 over4pi
       integer nss
 
       integer nd,ntarg0
@@ -1020,6 +969,7 @@ c
       real *8 ttot,done,pi
 
       parameter (nd=1,ntarg0=1)
+      data over4pi/0.07957747154594767d0/
 
       ns = nptso
       done = 1
@@ -1038,17 +988,11 @@ c
 
       call oversample_fun_surf(1,npatches,norders,ixyzs,iptype, 
      1    npts,sigma,novers,ixyzso,ns,sigmaover)
-      call prinf('inside lpcomp, done oversampling density*',i,0)
-
-
-      ra = 0
-
-
 c
 c       set relevatn parameters for the fmm
 c
-      alpha = dpars(1)
-      beta = dpars(2)
+      alpha = dpars(1)*over4pi
+      beta = dpars(2)*over4pi
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
       do i=1,ns
         sources(1,i) = srcover(1,i)
@@ -1177,7 +1121,7 @@ c
 C$      t1 = omp_get_wtime()
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
-C$OMP$PRIVATE(jstart,pottmp,npols)
+C$OMP$PRIVATE(jstart,pottmp,npols,l)
       do i=1,ntarg
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -1218,6 +1162,9 @@ c
       allocate(il2(ndiv*mnlist1),il2m1(ndiv*mnlist1))
       allocate(ctmp2(ndiv*mnlist1),dtmp2(3,ndiv*mnlist1))
       allocate(srctmp2(3,ndiv*mnlist1))
+      allocate(srctmp1(3,ndiv*mnlist1))
+      allocate(ctmp1(ndiv*mnlist1),dtmp1(3,ndiv*mnlist1))
+      allocate(il1(ndiv*mnlist1),il1m2(ndiv*mnlist1))
 
   
 
@@ -1268,8 +1215,6 @@ c
               nl1 = nl1 + ixyzso(jpatch+1)-ixyzso(jpatch)
             enddo
 
-            allocate(il1(nl1),il1m2(nl1),ctmp1(nl1),dtmp1(3,nl1))
-            allocate(srctmp1(3,nl1))
 c
 c    populate il1 
 c
@@ -1391,7 +1336,6 @@ c  scatter step
 c
             potsort(itt) = potsort(itt) + val
 
-            deallocate(il1,il1m2,ctmp1,dtmp1,srctmp1)
           enddo
         endif
       enddo
@@ -1405,11 +1349,6 @@ C$      t2 = omp_get_wtime()
 cc      call prin2('quadrature time=*',timeinfo,2)
       
       ttot = timeinfo(1) + timeinfo(2)
-cc      call prin2('time in lpcomp=*',ttot,1)
-
-cc      call prin2('at end of lpcomp*',i,0)
-cc      call prin2('pot=*',pot,24)
-        
       
       return
       end
@@ -1659,7 +1598,6 @@ c
 
       npts_over = ixyzso(npatches+1)-1
       print *, "npts_over=",npts_over
-      call prinf('novers=*',novers,100)
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
@@ -1711,7 +1649,7 @@ c       the identity scaling (z) is defined via did below,
 c       and K represents the action of the principal value 
 c       part of the matvec
 c
-      did = -(-1)**(ifinout)*2*pi*dpars(2)
+      did = -(-1)**(ifinout)*dpars(2)/2
 
 
       niter=0
@@ -1728,14 +1666,18 @@ c
 
 
 c
+C$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rb)
       do i=1,npts
         rb = rb + abs(rhs(i))**2
       enddo
+C$OMP END PARALLEL DO      
       rb = sqrt(rb)
 
+C$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
         vmat(i,1) = rhs(i)/rb
       enddo
+C$OMP END PARALLEL DO      
 
       svec(1) = rb
 
@@ -1755,26 +1697,35 @@ c
      3    vmat(1,it),novers,npts_over,ixyzso,srcover,wover,wtmp)
 
         do k=1,it
-          hmat(k,it) = 0
+          dtmp = 0
+C$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:dtmp)          
           do j=1,npts
-            hmat(k,it) = hmat(k,it) + wtmp(j)*vmat(j,k)
+            dtmp = dtmp + wtmp(j)*vmat(j,k)
           enddo
+C$OMP END PARALLEL DO          
+          hmat(k,it) = dtmp
 
+C$OMP PARALLEL DO DEFAULT(SHARED) 
           do j=1,npts
             wtmp(j) = wtmp(j)-hmat(k,it)*vmat(j,k)
           enddo
+C$OMP END PARALLEL DO          
         enddo
           
         hmat(it,it) = hmat(it,it)+did
         wnrm2 = 0
+C$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:wnrm2)        
         do j=1,npts
           wnrm2 = wnrm2 + abs(wtmp(j))**2
         enddo
+C$OMP END PARALLEL DO        
         wnrm2 = sqrt(wnrm2)
 
+C$OMP PARALLEL DO DEFAULT(SHARED) 
         do j=1,npts
           vmat(j,it1) = wtmp(j)/wnrm2
         enddo
+C$OMP END PARALLEL DO        
 
         do k=1,it-1
           temp = cs(k)*hmat(k,it)+sn(k)*hmat(k+1,it)
@@ -1815,18 +1766,22 @@ c
 c
 c          estimate x
 c
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j)
           do j=1,npts
             soln(j) = 0
             do i=1,it
               soln(j) = soln(j) + yvec(i)*vmat(j,i)
             enddo
           enddo
+C$OMP END PARALLEL DO          
 
 
           rres = 0
+C$OMP PARALLEL DO DEFAULT(SHARED)          
           do i=1,npts
             wtmp(i) = 0
           enddo
+C$OMP END PARALLEL DO          
 c
 c        NOTE:
 c        replace this routine by appropriate layer potential
@@ -1840,9 +1795,11 @@ c
      3      soln,novers,npts_over,ixyzso,srcover,wover,wtmp)
 
             
+C$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rres)            
           do i=1,npts
             rres = rres + abs(did*soln(i) + wtmp(i)-rhs(i))**2
           enddo
+C$OMP END PARALLEL DO          
           rres = sqrt(rres)/rb
           niter = it
           return
@@ -2223,7 +2180,7 @@ c
 c    estimate oversampling for far-field, and oversample geometry
 c
 
-
+      ztmp = 0.0d0
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
      1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,ztmp,
      2    nnz,ifds(irow_ptr),ifds(icol_ind),rfac,ifds(inovers),

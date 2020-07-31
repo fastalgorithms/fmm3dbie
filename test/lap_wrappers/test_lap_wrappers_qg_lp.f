@@ -261,7 +261,7 @@ c
       errl2 = 0
       rl2 = 0
       do i=1,npts
-        pot(i) = (potslp(i) - potdlp(i))/2/pi
+        pot(i) = (potslp(i) - potdlp(i))*2
         errl2 = errl2 + abs(uval(i)-pot(i))**2*wts(i)
         rl2 = rl2 + abs(uval(i))**2*wts(i)
       enddo

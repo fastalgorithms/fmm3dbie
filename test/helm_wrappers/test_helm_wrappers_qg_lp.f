@@ -14,6 +14,8 @@
       complex *16, allocatable :: pot(:),potslp(:),potdlp(:)
       complex *16, allocatable :: potslp2(:)
 
+      complex *16 zk
+
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
       integer, allocatable :: ixyzso(:),nfars(:)
 
@@ -37,7 +39,7 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 2
+      igeomtype = 1
       if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 10
 
@@ -265,7 +267,7 @@ c
       errl2 = 0
       rl2 = 0
       do i=1,npts
-        pot(i) = (potslp(i) - potdlp(i))/2/pi
+        pot(i) = (potslp(i) - potdlp(i))*2
         errl2 = errl2 + abs(uval(i)-pot(i))**2*wts(i)
         rl2 = rl2 + abs(uval(i))**2*wts(i)
       enddo

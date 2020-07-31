@@ -4,27 +4,20 @@
       character *100 fname
       integer ipars(2)
 
-      real *8, allocatable :: targs(:,:),uvs_targ(:,:)
-      integer, allocatable :: ipatch_id(:)
-
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      integer, allocatable :: ifds(:)
-      real *8, allocatable :: rfds(:)
-      complex *16, allocatable :: zfds(:)
-
       real *8 xyz_out(3),xyz_in(3)
-      complex *16, allocatable :: sigma(:),rhs(:),sigma2(:)
-      complex *16 zid
+      complex *16, allocatable :: sigma(:),rhs(:)
+      complex *16 zk
       real *8, allocatable :: errs(:)
+      real *8 eps_gmres
       complex * 16 zpars(3)
-      integer, allocatable :: irand(:),isort(:),isum(:)
-      real *8, allocatable :: rrand(:)
-      complex *16, allocatable :: xmat(:,:)
-      integer, allocatable :: itarg(:),jsrc(:)
-      integer, allocatable :: col_ptr(:),row_ind(:)
-      complex *16, allocatable :: zent(:)
       integer numit,niter
+
+      integer ipatch_id
+      real *8 uvs_targ(2)
+
+      logical isout0,isout1
 
       complex *16 pot,potex,ztmp,ima
 
@@ -42,8 +35,8 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 2
-      if(igeomtype.eq.1) ipars(1) = 1
+      igeomtype = 1
+      if(igeomtype.eq.1) ipars(1) = 2
       if(igeomtype.eq.2) ipars(1) = 10
 
       if(igeomtype.eq.1) then
@@ -57,8 +50,8 @@ c
 
       zk = 1.11d0+ima*0.0d0
       zpars(1) = zk 
-      zpars(2) = -3.0d0
-      zpars(3) = 0.0d0
+      zpars(2) = ima*zk
+      zpars(3) = 1.0d0 
 
       if(igeomtype.eq.1) then
         xyz_out(1) = 3.17d0
@@ -71,10 +64,15 @@ c
       endif
 
       if(igeomtype.eq.2) then
+        xyz_in(1) = -4.501d0
+        xyz_in(2) = 1.7d-3
+        xyz_in(3) = 0.00001d0
+
         xyz_out(1) = -3.5d0
         xyz_out(2) = 3.1d0
         xyz_out(3) = 20.1d0
       endif
+
 
       norder = 4 
       npols = (norder+1)*(norder+2)/2
@@ -97,182 +95,47 @@ c
 
       ixyzs(npatches+1) = 1+npols*npatches
       allocate(wts(npts))
-      allocate(targs(3,npts),ipatch_id(npts),uvs_targ(2,npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
-
-      ndtarg = 3
-     
-      do i=1,npts
-        targs(1,i) = srcvals(1,i)
-        targs(2,i) = srcvals(2,i)
-        targs(3,i) = srcvals(3,i)
-      enddo
-
-      do i=1,npts
-        ipatch_id(i) = -1
-        uvs_targ(1,i) = 0
-        uvs_targ(2,i) = 0
-      enddo
-
-      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, 
-     1         ipatch_id,uvs_targ)
-
-
-      allocate(sigma(npts),rhs(npts),sigma2(npts))
-
-      do i=1,npts
-        rhs(i) = 0
-      enddo
-
-
-      do i=1,npts
-        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,ipars,
-     1     rhs(i))
-      enddo
-
+      isout0 = .false.
+      isout1 = .false.
+      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
+     1  wts,xyz_in,isout0)
       
+      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
+     1   wts,xyz_out,isout1)
 
-      eps = 0.51d-6
-
-      call helm_comb_dir_fds_mem(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,nifds,nrfds,nzfds)
-
-      call prinf('nifds=*',nifds,1)
-      call prinf('nrfds=*',nrfds,1)
-      call prinf('nzfds=*',nzfds,1)
-
-      allocate(ifds(nifds),rfds(nrfds),zfds(nzfds))
-
-      
-      call helm_comb_dir_fds_init(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,zfds)
+       print *, isout0,isout1
 
 
-
-
-c
-c       create a permutation of indices from 1 to npts**2
-c       and divide them into nbat random sized partitions
-c
-      nn = npts**2
-      allocate(irand(nn),isort(nn))
-      do i=1,nn
-        irand(i) = hkrand(0)*nn
-      enddo
-
-      call sorti(nn,irand,isort)
-
-      nbat = 50
-      allocate(rrand(nbat))
-      ra = 0
-      do i=1,nbat
-        rrand(i) = hkrand(0)
-        ra = ra + rrand(i)
-      enddo
-
-   
-      do i=1,nbat
-         rrand(i) = rrand(i)/ra
-         irand(i) = rrand(i)*nn
-      enddo
-
-      allocate(isum(nbat+1))
-
-      isum(1) = 1
-      call cumsum(nbat,irand,isum(2))
-      
-
-      if(isum(nbat+1).lt.nn+1) isum(nbat+1) = nn+1
-
-
-      allocate(col_ptr(npts+1))
-      allocate(xmat(npts,npts))
+      allocate(sigma(npts),rhs(npts))
 
       do i=1,npts
-        do j=1,npts
-          xmat(i,j) = 0
-        enddo
-      enddo
-
-      do ibat=1,nbat
-        nent = isum(ibat+1)-isum(ibat)
-
-        allocate(zent(nent),row_ind(nent),itarg(nent),jsrc(nent))
-        do i=1,nent
-          iind = isort(isum(ibat)+i-1)
-
-          idiv = iind/npts
-          idiv = idiv+1
-          irem = iind - (idiv-1)*npts
-          if(irem.eq.0) then
-            idiv = idiv - 1
-            irem = npts
-          endif
-
-          jsrc(i) = irem
-          itarg(i) = idiv
-
-        enddo
-
-
-        call conv_to_csc(nent,npts,itarg,jsrc,col_ptr,row_ind)
-
-
-        
-
-        
-        
-        
-        call helm_comb_dir_fds_matgen(npatches,norders,ixyzs,iptype,
-     1     npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,
-     2     zfds,nent,col_ptr,row_ind,zent)
-
-        
-       
-cc        call prinf('col_ptr=*',col_ptr,npts+1)
-
-        do i=1,npts
-          do j=col_ptr(i),col_ptr(i+1)-1
-            xmat(row_ind(j),i) = zent(j)
-          enddo
-        enddo
-
-        deallocate(zent,row_ind,itarg,jsrc)
-      enddo
-
-      do i=1,npts
-        sigma(i) = 0
-        sigma2(i) = 0
-        do j=1,npts
-          sigma(i) = sigma(i) + xmat(i,j)*rhs(j)
-        enddo
+        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,
+     1     ipars,rhs(i))
+        sigma(i) = 0 
       enddo
 
 
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
-     2  uvs_targ,eps,zpars,rhs,sigma2)
 
-      err = 0
-      ra = 0
-      do i=1,npts
-        err = err + abs(sigma(i)-sigma2(i))**2
-        ra = ra + abs(sigma2(i))**2
-      enddo
-      err = sqrt(err/ra)
-      call prin2('error in matvec=*',err,1)
+      numit = 200
+      ifinout = 0
+      niter = 0
+      allocate(errs(numit+1))
 
+      eps = 0.51d-4
 
+      eps_gmres = 0.5d-6
 
-      zid = -(-1)**(ifinout)*2*pi*zpars(3)
-      do i=1,npts
-        xmat(i,i) = xmat(i,i) + zid 
-      enddo
+      call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
+     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
+     2  niter,errs,rres,sigma)
 
+      call prinf('niter=*',niter,1)
+      call prin2('rres=*',rres,1)
+      call prin2('errs=*',errs,niter)
 
-      call zgausselim(npts,xmat,rhs,info,sigma,dcond)
-
+ 2000 continue
 
 c
 c       test solution at interior point
@@ -285,8 +148,26 @@ c
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 
+      call prin2('potex=*',potex,2)
+      call prin2('pot=*',pot,2)
       erra = abs(pot-potex)/abs(potex)
-      call prin2('relative error in solve=*',erra,1)
+      call prin2('relative error=*',erra,1)
+
+      ndtarg = 3
+      ntarg = 1
+      ipatch_id = -1
+      uvs_targ(1) = 0
+      uvs_targ(2) = 0
+      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
+     2  uvs_targ,eps,zpars,sigma,pot)
+
+      call prin2('potex=*',potex,2)
+      call prin2('pot=*',pot,2)
+      erra = abs(pot-potex)/abs(potex)
+      call prin2('relative error=*',erra,1)
+
+
 
       stop
       end
@@ -396,4 +277,83 @@ c
       
       return  
       end
+
+
+      subroutine test_exterior_pt(npatches,norder,npts,srcvals,
+     1   srccoefs,wts,xyzout,isout)
+c
+c
+c  this subroutine tests whether the pt xyzin, is
+c  in the exterior of a surface, and also estimates the error
+c  in representing e^{ir/2}/r and \grad e^{ir/2}/r \cdot n
+c  centered at the interior point. Whether a point 
+c  is in the interior or not is tested using Gauss' 
+c  identity for the flux due to a point charge
+c
+c
+c  input:
+c    npatches - integer
+c       number of patches
+c    norder - integer
+c       order of discretization
+c    npts - integer
+c       total number of discretization points on the surface
+c    srccoefs - real *8 (9,npts)
+c       koornwinder expansion coefficients of geometry info
+c    xyzout -  real *8 (3)
+c       point to be tested
+c
+c  output: 
+c    isout - boolean
+c      whether the target is in the interior or not
+c
+
+      implicit none
+      integer npatches,norder,npts,npols
+      real *8 srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
+      real *8 tmp(3)
+      real *8 dpars,done,pi
+      real *8, allocatable :: rsurf(:),err_p(:,:) 
+      integer ipars,norderhead,nd
+      complex *16, allocatable :: sigma_coefs(:,:), sigma_vals(:,:)
+      complex *16 zk,val
+
+      integer ipatch,j,i
+      real *8 ra,ds
+      logical isout
+
+      done = 1
+      pi = atan(done)*4
+
+      npols = (norder+1)*(norder+2)/2
+
+
+      zk = 0
+
+      ra = 0
+
+
+
+      do ipatch=1,npatches
+        do j=1,npols
+          i = (ipatch-1)*npols + j
+          call h3d_sprime(xyzout,12,srcvals(1,i),0,dpars,1,zk,0,ipars,
+     1       val)
+
+          call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
+          ds = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+          ra = ra + real(val)*wts(i)
+        enddo
+      enddo
+
+      if(abs(ra+4*pi).le.1.0d-1) isout = .false.
+      if(abs(ra).le.1.0d-1) isout = .true.
+
+      return
+      end
+
+   
+
+
+
 

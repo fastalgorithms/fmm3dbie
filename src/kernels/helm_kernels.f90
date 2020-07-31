@@ -18,13 +18,13 @@
 subroutine h3d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   real *8 :: src(*), targ(ndt),dpars(ndd)
+  real *8 over4pi
   integer ipars(ndi)
-
   complex *16 :: zk, val
-
   complex *16 :: ima
 
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the helmholtz single layer potential kernel
   !
@@ -35,7 +35,7 @@ subroutine h3d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
 
   r=sqrt(dx**2+dy**2+dz**2)
 
-  val =  exp(ima*zk*r)/r
+  val =  exp(ima*zk*r)/r*over4pi
 
   return
 end subroutine h3d_slp
@@ -51,8 +51,10 @@ subroutine h3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   complex *16 :: zk, val
 
   real *8 :: src(3), srcnorm(3)
+  real *8 over4pi
   complex *16 :: ima
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the helmholtz double layer kernel
   !
@@ -73,7 +75,7 @@ subroutine h3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   d = dx*srcnorm(1) + dy*srcnorm(2) + dz*srcnorm(3)
   r=sqrt(dx**2+dy**2+dz**2)
 
-  val =  d*(1.0d0 - ima*zk*r)*exp(ima*zk*r)/(r**3)
+  val =  d*(1.0d0 - ima*zk*r)*exp(ima*zk*r)/(r**3)*over4pi
 
   return
 end subroutine h3d_dlp
@@ -90,7 +92,9 @@ subroutine h3d_sprime(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   complex *16 :: zk, val
 
   complex *16 :: ima
+  real *8 over4pi
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the normal derivative of the single layer kernel
   !
@@ -102,7 +106,7 @@ subroutine h3d_sprime(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   d = dx*targinfo(10) + dy*targinfo(11) + dz*targinfo(12)
   r=sqrt(dx**2+dy**2+dz**2)
 
-  val =  -d*(1.0d0 - ima*zk*r)*exp(ima*zk*r)/(r**3)
+  val =  -d*(1.0d0 - ima*zk*r)*exp(ima*zk*r)/(r**3)*over4pi
 
   return
 end subroutine h3d_sprime
@@ -117,10 +121,12 @@ subroutine h3d_comb(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
   complex *16 :: zk, val, zpars(ndz), alpha,beta
 
   real *8 :: src(3), srcnorm(3)
+  real *8 over4pi
   complex *16 :: ima
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
-  ! returns the helmholtz double layer kernel
+  ! returns the helmholtz combined field kernel 
   !
 
   zk = zpars(1)
@@ -144,7 +150,8 @@ subroutine h3d_comb(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
   r=sqrt(dx**2+dy**2+dz**2)
 
 
-  val =  (beta*d*(1.0d0 - ima*zk*r)/(r**3)+alpha/r)*exp(ima*zk*r)
+  val =  (beta*d*(1.0d0 - ima*zk*r)/(r**3)+alpha/r)*exp(ima*zk*r)* &
+    over4pi
 
   return
 end subroutine h3d_comb
@@ -161,7 +168,9 @@ subroutine h3d_qlp(srcinfo, ndt,targ,ndd, dpars,ndz,zk,ndi,ipars,val)
   real *8 :: src(3), srcnorm(3)
   real *8 dotprod
   complex *16 :: ima
+  real *8 :: over4pi
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the helmholtz quadruple layer kernel
   !
@@ -184,11 +193,94 @@ subroutine h3d_qlp(srcinfo, ndt,targ,ndd, dpars,ndz,zk,ndi,ipars,val)
   r=sqrt(rsq)
 
   val =  (d**2*(-(ima*zk)**2 -3/rsq + 3*ima*zk/r) +  &
-     1-ima*zk*r)*exp(ima*zk*r)/(r**3)
+     1-ima*zk*r)*exp(ima*zk*r)/(r**3)*over4pi
 
   return
 end subroutine h3d_qlp
 
 
 
+
+
+
+subroutine h3d_dprime_diff(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi, &
+  ipars,val)
+!
+!  This subroutine returns D_{k1}' - D_{k2}'
+!  
+!  zpars(1) = k1
+!  zpars(2) = k2
+!
+!  This routine does so by computing D_{k1}'-D_{0}' and
+!  D_{k2}'-D_{0}' in a stabilized manner and then return
+!  the difference
+!
+
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
+  integer ipars(ndi)
+  complex *16 :: zk, val, zpars(ndz), alpha,beta
+
+  real *8 :: src(3), rns(3),rnt(3),rnsdot,rntdot,rnstdot 
+  complex *16 :: ima,z1,z2,ztmp,zexp,sexp,ztmp2
+  real *8 :: over4pi
+  data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
+
+  done = 1
+  pi = atan(done)*4
+
+
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+
+  rns(1)=srcinfo(10)
+  rns(2)=srcinfo(11)
+  rns(3)=srcinfo(12)
+
+  rnt(1) = targ(10)
+  rnt(2) = targ(11)
+  rnt(3) = targ(12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  rnsdot = dx*rns(1) + dy*rns(2) + dz*rns(3)
+  rntdot = dx*rnt(1) + dy*rnt(2) + dz*rnt(3)
+  rnstdot = rns(1)*rnt(1) + rns(2)*rnt(2) + rns(3)*rnt(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+  rinv = 1.0d0/r
+  rinv3 = rinv**3
+  rinv5 = rinv**5
+
+  ztmp = ima*zpars(1)*r
+  ztmp2 = ztmp**2
+  zexp = exp(ztmp/2)
+  sexp = sin(zpars(1)*r/2)*2*ima*zexp
+
+  z1 = rinv3*((ztmp-1)*sexp + ztmp)
+  z2 = rinv5*((ztmp2-3*ztmp+3)*sexp+ztmp2-3*ztmp)
+
+  val = -rntdot*rnsdot*z2 - rnstdot*z1
+
+
+
+  ztmp = ima*zpars(2)*r
+  ztmp2 = ztmp**2
+  zexp = exp(ztmp/2)
+  sexp = sin(zpars(2)*r/2)*2*ima*zexp
+
+  z1 = rinv3*((ztmp-1)*sexp + ztmp)
+  z2 = rinv5*((ztmp2-3*ztmp+3)*sexp+ztmp2-3*ztmp)
+  val = val + rntdot*rnsdot*z2 + rnstdot*z1
+  val = val*over4pi
+
+
+
+  return
+end subroutine h3d_dprime_diff
 

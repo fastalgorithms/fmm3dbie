@@ -39,12 +39,12 @@ endif
 
 ifeq ($(HOST),gcc)
     FC=gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native  
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -std=legacy 
 endif
 
 ifeq ($(HOST),gcc-openmp)
     FC = gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy
 endif
 
 ifeq ($(HOST),intel)
@@ -57,11 +57,12 @@ ifeq ($(HOST),intel-openmp)
     FFLAGS= -O3 -fPIC -march=native -qopenmp
 endif
 
-FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
+FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) 
+#-L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
 
 .PHONY: all clean 
 
-OBJECTS =  helm_dir_iter_example3.o \
+OBJECTS =  helm_neu_iter_example.o \
 
 
 #

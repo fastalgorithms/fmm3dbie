@@ -11,43 +11,57 @@ HOST = gcc-openmp
 # copied over /usr/local/lib
 
 
+FMMBIE_INSTALL_DIR = $(PREFIX)
+FMM_INSTALL_DIR = $(PREFIX_FMM)
+LFMMLINKLIB = -lfmm3d
+LLINKLIB = -lfmm3dbie
+
 ifneq ($(OS),Windows_NT) 
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Darwin)
-        LDF = /usr/local/lib
+        ifeq ($(PREFIX_FMM),)
+            FMM_INSTALL_DIR=/usr/local/lib
+        endif
+        ifeq ($(PREFIX),)
+            FMMBIE_INSTALL_DIR=/usr/local/lib
+        endif
     endif
     ifeq ($(UNAME_S),Linux)
-        LDF = ../../lib
+        ifeq ($(PREFIX_FMM),)
+            FMM_INSTALL_DIR=${HOME}/lib
+        endif
+        ifeq ($(PREFIX),)
+            FMMBIE_INSTALL_DIR=${HOME}/lib
+        endif
     endif
 endif
 
 
-LIBS = -lfmm3d -lfmm3dbie 
 ifeq ($(HOST),gcc)
-    FC=gfortran -L${LDF} 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native  
+    FC=gfortran 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -std=legacy 
 endif
 
 ifeq ($(HOST),gcc-openmp)
     FC = gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy
 endif
 
 ifeq ($(HOST),intel)
-    FC=ifort -L${LDF} 
+    FC=ifort 
     FFLAGS= -O3 -fPIC -march=native
 endif
 
 ifeq ($(HOST),intel-openmp)
-    FC = ifort -L${LDF} 
+    FC = ifort 
     FFLAGS= -O3 -fPIC -march=native -qopenmp
 endif
 
-SURF=../../src/surface_routs
+FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
 
 .PHONY: all clean 
 
-OBJECTS =  lap_dir_fds_example.o \
+OBJECTS =  helm_dir_iter_example2.o \
 
 
 #
@@ -56,13 +70,13 @@ OBJECTS =  lap_dir_fds_example.o \
 #
 
 %.o : %.f  
-	$(FC) -c $(FFLAGS) $< -o $@
+	$(FC) -c $(FFLAGS) $< -o $@ $(FEND)
 
 %.o : %.f90  
-	$(FC) -c $(FFLAGS) $< -o $@
+	$(FC) -c $(FFLAGS) $< -o $@ $(FEND)
 
 all: $(OBJECTS)
-	$(FC) $(FFLAGS) -o $(EXEC) $(OBJECTS) -L${LDF} $(LIBS)
+	$(FC) $(FFLAGS) -o $(EXEC) $(OBJECTS) $(FEND) 
 	./$(EXEC)  
 
 clean:

@@ -313,7 +313,7 @@ c$    use omp_lib
       ns(3) = 10000005
       ns(4) = 100000006
       ns(5) = 1000000007
-      nn=3
+      nn=2
       nmax = 100000000
       do i=1,nn
         n = ns(i)
@@ -374,7 +374,7 @@ c$    use omp_lib
       ms(4) = 1000000
       ms(5) = 10000000
 
-      nn=3
+      nn=2
       do j=1,nn
         m = ms(j)
         nent = ns(j)
