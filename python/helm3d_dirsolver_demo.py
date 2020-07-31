@@ -51,7 +51,7 @@ xmat = h3.helm_comb_dir_fds_matgen(norders,ixyzs,iptype,srccoefs,srcvals,
   eps,zpars,ifds,rfds,zfds,col_ptr,row_ind)
 
 xmat = xmat.reshape(npts,npts).transpose()
-xmat = xmat - 2*np.pi*np.identity(npts)*zpars[2]
+xmat = xmat - np.identity(npts)*zpars[2]/2
 sigma = la.solve(xmat,rhs)
 
 xyz_in = np.array([[0.17,-0.03,0.15],[0.13,-0.1,0.22]]).transpose()

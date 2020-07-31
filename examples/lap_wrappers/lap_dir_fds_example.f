@@ -14,19 +14,20 @@
       complex *16, allocatable :: zfds(:)
 
       real *8 xyz_out(3),xyz_in(3)
-      complex *16, allocatable :: sigma(:),rhs(:),sigma2(:)
-      complex *16 zid
+      real *8, allocatable :: sigma(:),rhs(:),sigma2(:)
+      real *8 did
       real *8, allocatable :: errs(:)
-      complex * 16 zpars(3)
+      real *8 dpars(2)
       integer, allocatable :: irand(:),isort(:),isum(:)
       real *8, allocatable :: rrand(:)
-      complex *16, allocatable :: xmat(:,:)
+      real *8, allocatable :: xmat(:,:)
       integer, allocatable :: itarg(:),jsrc(:)
       integer, allocatable :: col_ptr(:),row_ind(:)
-      complex *16, allocatable :: zent(:)
+      real *8, allocatable :: zent(:)
       integer numit,niter
 
-      complex *16 pot,potex,ztmp,ima
+      real *8 pot,potex
+      complex *16 ztmp,ima
 
       data ima/(0.0d0,1.0d0)/
 
@@ -42,9 +43,9 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 2
+      igeomtype = 1
       if(igeomtype.eq.1) ipars(1) = 1
-      if(igeomtype.eq.2) ipars(1) = 10
+      if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
         npatches = 12*(4**ipars(1))
@@ -55,11 +56,8 @@ c
       endif
 
 
-      zk = 1.11d0+ima*0.0d0
-      zpars(1) = zk 
-      zpars(2) = -3.0d0
-      zpars(3) = 0.0d0
-
+      dpars(1) = 1.1d0
+      dpars(2) = 0
       if(igeomtype.eq.1) then
         xyz_out(1) = 3.17d0
         xyz_out(2) = -0.03d0
@@ -127,7 +125,7 @@ c
 
 
       do i=1,npts
-        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,ipars,
+        call l3d_slp(xyz_out,3,srcvals(1,i),0,dpars,0,zpars,0,ipars,
      1     rhs(i))
       enddo
 
@@ -135,8 +133,10 @@ c
 
       eps = 0.51d-6
 
-      call helm_comb_dir_fds_mem(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,nifds,nrfds,nzfds)
+      print *, dpars(1),dpars(2)
+
+      call lap_comb_dir_fds_mem(npatches,norders,ixyzs,iptype,npts,
+     1  srccoefs,srcvals,eps,dpars,nifds,nrfds,nzfds)
 
       call prinf('nifds=*',nifds,1)
       call prinf('nrfds=*',nrfds,1)
@@ -145,8 +145,8 @@ c
       allocate(ifds(nifds),rfds(nrfds),zfds(nzfds))
 
       
-      call helm_comb_dir_fds_init(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,zfds)
+      call lap_comb_dir_fds_init(npatches,norders,ixyzs,iptype,npts,
+     1  srccoefs,srcvals,eps,dpars,nifds,ifds,nrfds,rfds,nzfds,zfds)
 
 
 
@@ -224,8 +224,8 @@ c
         
         
         
-        call helm_comb_dir_fds_matgen(npatches,norders,ixyzs,iptype,
-     1     npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,
+        call lap_comb_dir_fds_matgen(npatches,norders,ixyzs,iptype,
+     1     npts,srccoefs,srcvals,eps,dpars,nifds,ifds,nrfds,rfds,nzfds,
      2     zfds,nent,col_ptr,row_ind,zent)
 
         
@@ -250,9 +250,9 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
       enddo
 
 
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
+      call lpcomp_lap_comb_dir(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
-     2  uvs_targ,eps,zpars,rhs,sigma2)
+     2  uvs_targ,eps,dpars,rhs,sigma2)
 
       err = 0
       ra = 0
@@ -265,22 +265,22 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
 
 
 
-      zid = -(-1)**(ifinout)*2*pi*zpars(3)
+      did = -(-1)**(ifinout)*2*pi*dpars(2)
       do i=1,npts
-        xmat(i,i) = xmat(i,i) + zid 
+        xmat(i,i) = xmat(i,i) + did 
       enddo
 
 
-      call zgausselim(npts,xmat,rhs,info,sigma,dcond)
+      call dgausselim(npts,xmat,rhs,info,sigma,dcond)
 
 
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
+      call l3d_slp(xyz_out,3,xyz_in,0,dpars,0,zpars,0,ipars,potex)
       pot = 0
       do i=1,npts
-        call h3d_comb(srcvals(1,i),3,xyz_in,0,dpars,3,zpars,0,ipars,
+        call l3d_comb(srcvals(1,i),3,xyz_in,2,dpars,0,zpars,0,ipars,
      1     ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo

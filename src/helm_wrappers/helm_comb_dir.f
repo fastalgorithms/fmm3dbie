@@ -68,13 +68,9 @@ c
      3   iquad,rfac0,nquad,wnear)
 c
 c       this subroutine generates the near field quadrature
-c       for the representation u = 4\pi (\alpha S_{k}  + \beta D_{k}) ---(1)
+c       for the representation u = (\alpha S_{k}  + \beta D_{k}) ---(1)
 c       where the near field is specified by the user 
 c       in row sparse compressed format.
-c
-c
-c        Note: the 4 \pi scaling is included to be consistent with the FMM
-c
 c
 c       The quadrature is computed by the following strategy
 c        targets within a sphere of radius rfac0*rs
@@ -86,8 +82,6 @@ c       All other targets in the near field are handled via
 c        oversampled quadrature
 c
 c       The recommended parameter for rfac0 is 1.25d0
-c
-c        
 c
 c       input:
 c         npatches - integer
@@ -273,10 +267,9 @@ c
 c
 c  .. math ::
 c  
-c      u = 4 \pi(\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
+c      u = (\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
 c
-c  Note: the $4\pi$ scaling is included to be consistent with the FMM3D
-c  libraries. For targets on the boundary, this routine only computes
+c  Note: For targets on the boundary, this routine only computes
 c  the principal value part, the identity term corresponding to the jump
 c  in the layer potential is not included in the layer potential.
 c
@@ -363,8 +356,10 @@ c
 
       real *8 ttot,done,pi
       real *8 rfac,rfac0
+      real *8 over4pi
       integer iptype_avg,norder_avg
       integer ikerorder, iquadtype,npts_over
+      data over4pi/0.07957747154594767d0/
 
 
 c
@@ -472,12 +467,9 @@ c
 c
 c
 c      this subroutine evaluates the layer potential for
-c      the representation u = 4\pi (\alpha S_{k} + \beta D_{k}) 
+c      the representation u = (\alpha S_{k} + \beta D_{k}) 
 c      where the near field is precomputed and stored
 c      in the row sparse compressed format.
-c
-c       Note the 4\pi scaling is included to be consistent with the FMM
-c
 c
 c     The fmm is used to accelerate the far-field and 
 c     near-field interactions are handled via precomputed quadrature
@@ -626,7 +618,6 @@ c
       integer ntj
       
       complex *16 zdotu,pottmp
-      complex *16, allocatable :: ctmp2(:),dtmp2(:,:)
       real *8 radexp,epsfmm
 
       integer ipars
@@ -634,13 +625,17 @@ c
 
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp2(:,:)
+      complex *16, allocatable :: ctmp2(:),dtmp2(:,:)
       real *8 thresh,ra
       real *8 rr,rmin
+      real *8 over4pi
       integer nss,ii,l,npover
+      integer nmax
 
       integer nd,ntarg0
 
       real *8 ttot,done,pi
+      data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
@@ -648,6 +643,14 @@ c
       done = 1
       pi = atan(done)*4
 
+c
+c    estimate max number of sources in neear field of 
+c    any target
+c
+      nmax = 0
+      call get_near_corr_max(ntarg,row_ptr,nnz,col_ind,npatches,
+     1  ixyzso,nmax)
+      allocate(srctmp2(3,nmax),ctmp2(nmax),dtmp2(3,nmax))
            
       ifpgh = 0
       ifpghtarg = 1
@@ -669,8 +672,8 @@ c
 c
 c       set relevatn parameters for the fmm
 c
-      alpha = zpars(2)
-      beta = zpars(3)
+      alpha = zpars(2)*over4pi
+      beta = zpars(3)*over4pi
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
       do i=1,ns
         sources(1,i) = srcover(1,i)
@@ -726,7 +729,7 @@ c       add in precomputed quadrature
 C$      t1 = omp_get_wtime()
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
-C$OMP$PRIVATE(jstart,pottmp,npols)
+C$OMP$PRIVATE(jstart,pottmp,npols,l)
       do i=1,ntarg
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -749,26 +752,17 @@ C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,ii,val,npover)
         nss = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
-          nss = nss + ixyzso(jpatch+1)-ixyzso(jpatch)
-        enddo
-        allocate(srctmp2(3,nss),ctmp2(nss),dtmp2(3,nss))
+          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+            nss = nss+1
+            srctmp2(1,nss) = srcover(1,l)
+            srctmp2(2,nss) = srcover(2,l)
+            srctmp2(3,nss) = srcover(3,l)
 
-        ii = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          jstart = ixyzso(jpatch)-1
-          npover = ixyzso(jpatch+1)-ixyzso(jpatch)
-          do l=1,npover
-            ii = ii+1
-            srctmp2(1,ii) = srcover(1,jstart+l)
-            srctmp2(2,ii) = srcover(2,jstart+l)
-            srctmp2(3,ii) = srcover(3,jstart+l)
-
-            if(ifcharge.eq.1) ctmp2(ii) = charges(jstart+l)
+            if(ifcharge.eq.1) ctmp2(nss) = charges(l)
             if(ifdipole.eq.1) then
-              dtmp2(1,ii) = dipvec(1,jstart+l)
-              dtmp2(2,ii) = dipvec(2,jstart+l)
-              dtmp2(3,ii) = dipvec(3,jstart+l)
+              dtmp2(1,nss) = dipvec(1,l)
+              dtmp2(2,nss) = dipvec(2,l)
+              dtmp2(3,nss) = dipvec(3,l)
             endif
           enddo
         enddo
@@ -789,8 +783,6 @@ C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,ii,val,npover)
      1          nss,targvals(1,i),ntarg0,val,thresh)
         endif
         pot(i) = pot(i) - val
-
-        deallocate(srctmp2,ctmp2,dtmp2)
       enddo
       
       call cpu_time(t2)
@@ -826,12 +818,9 @@ c
 c
 c
 c      this subroutine evaluates the layer potential for
-c      the representation u = (\alpha S_{k} + \beta D_{k}) 4 \pi 
+c      the representation u = (\alpha S_{k} + \beta D_{k})  
 c      where the near field is precomputed and stored
 c      in the row sparse compressed format.
-c
-c
-c          Note the 4\pi scaling is included to be consistent with fmm
 c
 c
 c     The fmm is used to accelerate the far-field and 
@@ -988,11 +977,13 @@ c
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp1(:,:),srctmp2(:,:)
       real *8 thresh,ra
+      real *8 over4pi
       integer nss
 
       integer nd,ntarg0
 
       real *8 ttot,done,pi
+      data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
@@ -1022,8 +1013,8 @@ c
 c
 c       set relevatn parameters for the fmm
 c
-      alpha = zpars(2)
-      beta = zpars(3)
+      alpha = zpars(2)*over4pi
+      beta = zpars(3)*over4pi
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
       do i=1,ns
         sources(1,i) = srcover(1,i)
@@ -1131,7 +1122,7 @@ c
 C$      t1 = omp_get_wtime()
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
-C$OMP$PRIVATE(jstart,pottmp,npols)
+C$OMP$PRIVATE(jstart,pottmp,npols,l)
       do i=1,ntarg
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -1172,6 +1163,9 @@ c
       allocate(il2(ndiv*mnlist1),il2m1(ndiv*mnlist1))
       allocate(ctmp2(ndiv*mnlist1),dtmp2(3,ndiv*mnlist1))
       allocate(srctmp2(3,ndiv*mnlist1))
+      allocate(srctmp1(3,ndiv*mnlist1))
+      allocate(ctmp1(ndiv*mnlist1),dtmp1(3,ndiv*mnlist1))
+      allocate(il1(ndiv*mnlist1),il1m2(ndiv*mnlist1))
 
   
 
@@ -1222,8 +1216,6 @@ c
               nl1 = nl1 + ixyzso(jpatch+1)-ixyzso(jpatch)
             enddo
 
-            allocate(il1(nl1),il1m2(nl1),ctmp1(nl1),dtmp1(3,nl1))
-            allocate(srctmp1(3,nl1))
 c
 c    populate il1 
 c
@@ -1345,7 +1337,6 @@ c  scatter step
 c
             potsort(itt) = potsort(itt) + val
 
-            deallocate(il1,il1m2,ctmp1,dtmp1,srctmp1)
           enddo
         endif
       enddo
@@ -1391,7 +1382,7 @@ c     Representation:
 c        u = \alpha S_{k} + \beta D_{k}
 c     
 c     The linear system is solved iteratively using GMRES
-c     until a relative residual of 1e-15 is reached
+c     until a relative residual of eps_gmres is reached
 c
 c
 c       input:
@@ -1634,8 +1625,6 @@ C$OMP END PARALLEL DO
 
       iquadtype = 1
 
-cc      eps2 = 1.0d-8
-
       print *, "starting to generate near quadrature"
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()      
@@ -1661,7 +1650,7 @@ c       the identity scaling (z) is defined via zid below,
 c       and K represents the action of the principal value 
 c       part of the matvec
 c
-      zid = -(-1)**(ifinout)*2*pi*zpars(3)
+      zid = -(-1)**(ifinout)*zpars(3)/2
 
 
       niter=0
@@ -1678,14 +1667,18 @@ c
 
 
 c
+C$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rb)
       do i=1,npts
         rb = rb + abs(rhs(i))**2
       enddo
+C$OMP END PARALLEL DO      
       rb = sqrt(rb)
 
+C$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
         vmat(i,1) = rhs(i)/rb
       enddo
+C$OMP END PARALLEL DO      
 
       svec(1) = rb
 
@@ -1705,26 +1698,35 @@ c
      3    vmat(1,it),novers,npts_over,ixyzso,srcover,wover,wtmp)
 
         do k=1,it
-          hmat(k,it) = 0
+          ztmp = 0
+C$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:ztmp)          
           do j=1,npts
-            hmat(k,it) = hmat(k,it) + wtmp(j)*conjg(vmat(j,k))
+            ztmp = ztmp + wtmp(j)*conjg(vmat(j,k))
           enddo
+C$OMP END PARALLEL DO          
+          hmat(k,it) = ztmp
 
+C$OMP PARALLEL DO DEFAULT(SHARED) 
           do j=1,npts
             wtmp(j) = wtmp(j)-hmat(k,it)*vmat(j,k)
           enddo
+C$OMP END PARALLEL DO          
         enddo
           
         hmat(it,it) = hmat(it,it)+zid
         wnrm2 = 0
+C$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:wnrm2)        
         do j=1,npts
           wnrm2 = wnrm2 + abs(wtmp(j))**2
         enddo
+C$OMP END PARALLEL DO        
         wnrm2 = sqrt(wnrm2)
 
+C$OMP PARALLEL DO DEFAULT(SHARED) 
         do j=1,npts
           vmat(j,it1) = wtmp(j)/wnrm2
         enddo
+C$OMP END PARALLEL DO        
 
         do k=1,it-1
           temp = cs(k)*hmat(k,it)+sn(k)*hmat(k+1,it)
@@ -1765,18 +1767,22 @@ c
 c
 c          estimate x
 c
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j)
           do j=1,npts
             soln(j) = 0
             do i=1,it
               soln(j) = soln(j) + yvec(i)*vmat(j,i)
             enddo
           enddo
+C$OMP END PARALLEL DO          
 
 
           rres = 0
+C$OMP PARALLEL DO DEFAULT(SHARED)          
           do i=1,npts
             wtmp(i) = 0
           enddo
+C$OMP END PARALLEL DO          
 c
 c        NOTE:
 c        replace this routine by appropriate layer potential
@@ -1789,10 +1795,11 @@ c
      2      eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,
      3      soln,novers,npts_over,ixyzso,srcover,wover,wtmp)
 
-            
+C$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rres)            
           do i=1,npts
             rres = rres + abs(zid*soln(i) + wtmp(i)-rhs(i))**2
           enddo
+C$OMP END PARALLEL DO          
           rres = sqrt(rres)/rb
           niter = it
           return
@@ -2192,9 +2199,11 @@ c
       integer nuni,nximat
       integer, allocatable :: iaintbb(:)
       integer ifcharge,ifdipole
+      real *8 over4pi
 
       procedure (), pointer :: fker
       external h3d_slp, h3d_dlp, h3d_comb
+      data over4pi/0.07957747154594767d0/
 
 c
 c

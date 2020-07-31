@@ -8,7 +8,7 @@
 !  This subroutine generates the near field quadrature
 !  for the representation:
 !
-!  u = S_{k}[\rho]+i*alpha*D_{k}[S_{ik}[\rho]]
+!  u = S_{k}[\rho]+i*alpha*D_{k}[S_{i|k|}[\rho]]
 !
 !  and returns quantities related to evaluating du/dn on surface
 !  at the surface discretization nodes
@@ -19,8 +19,8 @@
 !
 !  On imposing the boundary condition, we get the following operator
 !
-!  du/dn = -I/2 + S_{k}' + i \alpha (D_{k}'-D_{ik}') S_{ik}
-!    - i \alpha I/4 + i \alpha (S_{ik}')^2
+!  du/dn = -I/2 + S_{k}' + i \alpha (D_{k}'-D_{i|k|}') S_{i|k|}
+!    - i \alpha I/4 + i \alpha (S_{i|k|}')^2
 !
 !
 !  The quadrature is computed by the following strategy
@@ -38,9 +38,9 @@
 !    - wnear must be of size 4*nquad as 4 different layer
 !      potentials are returned
 !      * the first kernel is S_{k}'
-!      * the second kernel is S_{ik}
-!      * the third kernel is S_{ik}'
-!      * the fourth kernel is D_{k}'-D_{ik}'
+!      * the second kernel is S_{i|k|}
+!      * the third kernel is S_{i|k|}'
+!      * the fourth kernel is D_{k}'-D_{i|k|}'
 ! 
 !  Input arguments:
 ! 
@@ -158,7 +158,7 @@
         ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,&
         ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
 
-      zpars_tmp(1) = ima*zk
+      zpars_tmp(1) = ima*abs(zk)
       fker => h3d_slp
       ipv = 1
       call zgetnearquad_ggq_guru(npatches,norders,ixyzs, &
@@ -175,7 +175,7 @@
        ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(2*nquad+1))
 
       zpars_tmp(1) = zk
-      zpars_tmp(2) = ima*zk
+      zpars_tmp(2) = ima*abs(zk)
       ndz = 2
       fker => h3d_dprime_diff
       call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
@@ -201,17 +201,14 @@
 !  This subroutine evaluates the neumann data corresponding to
 !  the following integral representation:
 !  
-!  u = S_{k}[\rho]+i*alpha*D_{k}[S_{ik}[\rho]]
+!  u = S_{k}[\rho]+i*alpha*D_{k}[S_{i|k|}[\rho]]
 !
-!  du/dn = S_{k}'[\rho] + i\alpha S_{ik}'^2 [\rho] + 
-!    i \alpha (D_{k}' - D_{ik}') S_{ik}
+!  du/dn = S_{k}'[\rho] + i\alpha S_{i|k|}'^2 [\rho] + 
+!    i \alpha (D_{k}' - D_{i|k|}') S_{i|k|}
 !
 !
 !  where the near field is precomputed and stored
 !  in the row sparse compressed format.
-!
-!  Note the 4\pi scaling is NOT included as the FMM output was scaled
-!  appropriately
 !
 !
 !  The fmm is used to accelerate the far-field and 
@@ -276,9 +273,9 @@
 !    - wnear: complex *16(4*nquad)
 !        Precomputed near field quadrature
 !          * the first kernel is S_{k}'
-!          * the second kernel is S_{ik}
-!          * the third kernel is S_{ik}'
-!          * the fourth kernel is D_{k}'-D_{ik}'
+!          * the second kernel is S_{i|k|}
+!          * the third kernel is S_{i|k|}'
+!          * the fourth kernel is D_{k}'-D_{i|k|}'
 !    - sigma: complex *16(npts)
 !        density for layer potential
 !    - novers: integer(npatches)
@@ -343,6 +340,7 @@
       complex *16, allocatable :: ctmp2(:),dtmp2(:,:)
       real *8 thresh,ra
       real *8 rr,rmin
+      real *8 over4pi
       integer nss,ii,l,npover
       complex *16 ima,ztmp
 
@@ -351,6 +349,7 @@
 
       real *8 ttot,done,pi
       data ima/(0.0d0,1.0d0)/
+      data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
@@ -392,7 +391,7 @@
         sources(1,i) = srcover(1,i)
         sources(2,i) = srcover(2,i)
         sources(3,i) = srcover(3,i)
-        charges(i) = sigmaover(i)*whtsover(i)
+        charges(i) = sigmaover(i)*whtsover(i)*over4pi
       enddo
 !$OMP END PARALLEL DO      
 
@@ -482,11 +481,11 @@
 
 !
 !
-!    Now handle the computation of S_{ik}[\rho] and S_{ik}'[\rho] 
+!    Now handle the computation of S_{i|k|}[\rho] and S_{i|k|}'[\rho] 
 !    and hold them in separate arrays phi1 and phi2
 !
 !
-      ztmp = ima*zpars(1)
+      ztmp = ima*abs(zpars(1))
       call hfmm3d_t_c_g(eps,ztmp,ns,sources,charges,npts, &
         srctmp,pot_aux,grad_aux)
 
@@ -552,12 +551,12 @@
       enddo
 !$OMP END PARALLEL DO      
 !
-!  End of computing phi1 = S_{ik}[\sigma]
-!  and phi2 = S_{ik}'[\sigma]
+!  End of computing phi1 = S_{i|k|}[\sigma]
+!  and phi2 = S_{i|k|}'[\sigma]
 !
 
 !
-!  Now compoute S_{ik}'[\phi2] and add i\alpha S_{ik}'[phi2]
+!  Now compoute S_{i|k|}'[\phi2] and add i\alpha S_{i|k|}'[phi2]
 !  to pot
 !
       call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
@@ -565,7 +564,7 @@
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ns
-        charges(i) = sigmaover(i)*whtsover(i) 
+        charges(i) = sigmaover(i)*whtsover(i)*over4pi 
       enddo
 !$OMP END PARALLEL DO
 
@@ -640,7 +639,7 @@
 !
 !  Begin computation of D_{k}'[\phi1] 
 !   we will not handle to subtraction of the near correction
-!   until compouting D_{ik}'[\phi1] and take care of
+!   until compouting D_{i|k|}'[\phi1] and take care of
 !   the total subtraction together
 !
 !  the array phi2 is no longer neeeded, so we will reuse it
@@ -652,9 +651,9 @@
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ns
-        dipvec(1,i) = sigmaover(i)*whtsover(i)*srcover(10,i) 
-        dipvec(2,i) = sigmaover(i)*whtsover(i)*srcover(11,i) 
-        dipvec(3,i) = sigmaover(i)*whtsover(i)*srcover(12,i) 
+        dipvec(1,i) = sigmaover(i)*whtsover(i)*srcover(10,i)*over4pi 
+        dipvec(2,i) = sigmaover(i)*whtsover(i)*srcover(11,i)*over4pi 
+        dipvec(3,i) = sigmaover(i)*whtsover(i)*srcover(12,i)*over4pi 
       enddo
 !$OMP END PARALLEL DO
 
@@ -744,7 +743,7 @@
 !
 
       subroutine helm_rpcomb_neu_solver(npatches,norders,ixyzs, &
-        iptype,npts,srccoefs,srcvals,eps,zpars,numit, &
+        iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout, &
         rhs,eps_gmres,niter,errs,rres,soln,siksoln)
 !
 !
@@ -755,7 +754,7 @@
 !
 !
 !  Representation:
-!    u = S_{k}[\rho]+i*alpha*D_{k}[S_{ik}[\rho]]
+!    u = S_{k}[\rho]+i*alpha*D_{k}[S_{i|k|}[\rho]]
 !
 !  Boundary condition:
 !    u'=f
@@ -799,12 +798,17 @@
 !        kernel parameters (Referring to formula (1))
 !          * zpars(1) = k 
 !          * zpars(2) = alpha
+!    - numit: integer
+!        max number of gmres iterations
+!    - ifinout: integer
+!        ifinout = 0, interior problem
+!        ifinout = 1, exterior problem
+!      
 !    - rhs: complex *16(npts)
 !        right hand side
 !    - eps_gmres: real *8
 !        gmres tolerance requested
-!    - numit: integer
-!        max number of gmres iterations
+!      
 !
 !  output
 !    - niter: integer
@@ -828,6 +832,7 @@
       integer norders(npatches),ixyzs(npatches+1)
       integer iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
+      integer ifinout
       complex *16 zpars(2)
       complex *16 rhs(npts)
       complex *16 soln(npts),siksoln(npts)
@@ -1027,7 +1032,7 @@
 !      In this case it is a bit messy because of the identity that
 !      comes from the calderon identity
   
-      zid=(-2*pi-ima*zpars(2)*4*pi*pi)
+      zid=((-1)**(ifinout)/2.0d0-ima*zpars(2)/4)
 
 
       niter=0
@@ -1197,7 +1202,7 @@
 !  combined field representation.
 !
 !  Representation:
-!    u = S_{k}[\sigma]+i*alpha*D_{k}[S_{ik}[\sigma]]
+!    u = S_{k}[\sigma]+i*alpha*D_{k}[S_{i|k|}[\sigma]]
 !
 !
 !  Input:
@@ -1314,11 +1319,11 @@
         uvs_targ,eps,zpars_tmp,sigma1,pottmp2)
 
 
-!!!$OMP PARALLEL DO DEFAULT(SHARED)
+!$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
         pot(i) = pot(i) + pottmp2(i)*zpars(2)*ima
       enddo
-!!!$OMP END PARALLEL DO
+!$OMP END PARALLEL DO
 
      
       return

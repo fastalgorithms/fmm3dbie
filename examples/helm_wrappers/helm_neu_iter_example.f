@@ -6,9 +6,8 @@
 
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3)
-      complex *16, allocatable :: sigma(:),rhs(:)
-      complex *16 zk
+      real *8 xyz_out(3),xyz_in(3),xyz_src(3),xyz_targ(3)
+      complex *16, allocatable :: sigma(:),rhs(:),sigma1(:)
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
       complex * 16 zpars(3)
@@ -33,51 +32,46 @@
 c
 c       select geometry type
 c       igeomtype = 1 => sphere
-c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 2
-      if(igeomtype.eq.2) ipars(1) = 10
+      ipars(1) = 1
+      npatches = 12*(4**ipars(1))
 
-      if(igeomtype.eq.1) then
-        npatches = 12*(4**ipars(1))
-      endif
-      if(igeomtype.eq.2) then
-        ipars(2) = ipars(1)*3
-        npatches = 2*ipars(1)*ipars(2)
-      endif
-
-
-      zk = 1.11d0+ima*0.0d0
-      zk = zk*ima
+      zk = 1.11d0+ima*0.1d0
       zpars(1) = zk 
-      zpars(2) = ima*zk
-      zpars(3) = 2.0d0
+      zpars(2) = 1.0d0
 
-      if(igeomtype.eq.1) then
-        xyz_out(1) = 3.17d0
-        xyz_out(2) = -0.03d0
-        xyz_out(3) = 3.15d0
+      xyz_out(1) = 3.17d0
+      xyz_out(2) = -0.03d0
+      xyz_out(3) = 3.15d0
 
-        xyz_in(1) = 0.17d0
-        xyz_in(2) = 0.23d0
-        xyz_in(3) = -0.11d0
-      endif
-
-      if(igeomtype.eq.2) then
-        xyz_in(1) = -4.501d0
-        xyz_in(2) = 1.7d-3
-        xyz_in(3) = 0.00001d0
-
-        xyz_out(1) = -3.5d0
-        xyz_out(2) = 3.1d0
-        xyz_out(3) = 20.1d0
-      endif
-
+      xyz_in(1) = 0.17d0
+      xyz_in(2) = 0.23d0
+      xyz_in(3) = -0.11d0
 
       norder = 4 
       npols = (norder+1)*(norder+2)/2
 
+      ifinout = 0
+      if(ifinout.eq.0) then
+        xyz_src(1) = xyz_out(1)
+        xyz_src(2) = xyz_out(2)
+        xyz_src(3) = xyz_out(3)
+
+        xyz_targ(1) = xyz_in(1)
+        xyz_targ(2) = xyz_in(2)
+        xyz_targ(3) = xyz_in(3)
+      endif
+
+      if(ifinout.eq.1) then
+        xyz_src(1) = xyz_in(1)
+        xyz_src(2) = xyz_in(2)
+        xyz_src(3) = xyz_in(3)
+
+        xyz_targ(1) = xyz_out(1)
+        xyz_targ(2) = xyz_out(2)
+        xyz_targ(3) = xyz_out(3)
+      endif
       npts = npatches*npols
       allocate(srcvals(12,npts),srccoefs(9,npts))
       ifplot = 0
@@ -98,29 +92,17 @@ c
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
-      isout0 = .false.
-      isout1 = .false.
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1  wts,xyz_in,isout0)
-      
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1   wts,xyz_out,isout1)
-
-       print *, isout0,isout1
-
-
-      allocate(sigma(npts),rhs(npts))
+      allocate(sigma(npts),rhs(npts),sigma1(npts))
 
       do i=1,npts
-        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,
+        call h3d_sprime(xyz_src,12,srcvals(1,i),0,dpars,1,zpars,0,
      1     ipars,rhs(i))
-        sigma(i) = 0 
+        sigma(i) = 0
+        sigma1(i) = 0
       enddo
 
 
-
       numit = 200
-      ifinout = 0
       niter = 0
       allocate(errs(numit+1))
 
@@ -128,40 +110,28 @@ c
 
       eps_gmres = 0.5d-6
 
-      call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
+      call helm_rpcomb_neu_solver(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
-     2  niter,errs,rres,sigma)
+     2  niter,errs,rres,sigma,sigma1)
 
       call prinf('niter=*',niter,1)
       call prin2('rres=*',rres,1)
       call prin2('errs=*',errs,niter)
 
- 2000 continue
 
 c
 c       test solution at interior point
 c
       call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
-      pot = 0
-      do i=1,npts
-        call h3d_comb(srcvals(1,i),3,xyz_in,0,dpars,3,zpars,0,ipars,
-     1     ztmp)
-        pot = pot + sigma(i)*wts(i)*ztmp
-      enddo
-
-      call prin2('potex=*',potex,2)
-      call prin2('pot=*',pot,2)
-      erra = abs(pot-potex)/abs(potex)
-      call prin2('relative error=*',erra,1)
 
       ndtarg = 3
       ntarg = 1
       ipatch_id = -1
       uvs_targ(1) = 0
       uvs_targ(2) = 0
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
-     2  uvs_targ,eps,zpars,sigma,pot)
+      call lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_targ,ipatch_id,
+     2  uvs_targ,eps,zpars,sigma,sigma1,pot)
 
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)

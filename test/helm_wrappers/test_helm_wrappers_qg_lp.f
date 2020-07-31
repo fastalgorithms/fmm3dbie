@@ -250,7 +250,7 @@ cc      goto 1111
       zpars(3) = 1.0d0
 
 
-      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
+      call lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
      3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)
@@ -267,7 +267,7 @@ c
       errl2 = 0
       rl2 = 0
       do i=1,npts
-        pot(i) = (potslp(i) - potdlp(i))/2/pi
+        pot(i) = (potslp(i) - potdlp(i))*2
         errl2 = errl2 + abs(uval(i)-pot(i))**2*wts(i)
         rl2 = rl2 + abs(uval(i))**2*wts(i)
       enddo
