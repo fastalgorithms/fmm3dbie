@@ -796,7 +796,7 @@ C$OMP$REDUCTION(max:nmax)
       do i=1,ntarg
         ntmp = 0
         do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(i)
+          jpatch = col_ind(j)
           ntmp = ntmp + ixyzs(jpatch+1)-ixyzs(jpatch)
         enddo
         if(ntmp.gt.nmax) nmax = ntmp
