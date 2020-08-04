@@ -17,7 +17,7 @@ ifneq ($(OS),Windows_NT)
         LDF = /usr/local/lib
     endif
     ifeq ($(UNAME_S),Linux)
-        LDF = ../../../fmm3dbie/lib
+        LDF = ${HOME}/lib
     endif
 endif
 
@@ -25,12 +25,12 @@ endif
 LIBS = -lfmm3d -lfmm3dbie 
 ifeq ($(HOST),gcc)
     FC=gfortran -L${LDF} 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native  
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -std=legacy 
 endif
 
 ifeq ($(HOST),gcc-openmp)
-    FC = gfortran -L${LDF}
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp 
+    FC = gfortran 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy 
 endif
 
 ifeq ($(HOST),intel)
@@ -47,11 +47,8 @@ SURF=../../src/surface_routs
 
 .PHONY: all clean 
 
-OBJECTS =  test_Helmholtz_Neumann.o \
-  $ ../../src/common/incoming_fields.o \
-  $ ../../src/helm_wrappers/Helmholtz_Neumann.o \
-  $ ../../src/fmm_wrappers/common_Maxwell.o \
-  $ ../../src/kernels/DPIE_kernels.o \
+OBJECTS =  lap_dir_fds_example.o \
+
 
 #
 # use only the file part of the filename, then manually specify

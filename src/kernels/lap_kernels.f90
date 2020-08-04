@@ -19,6 +19,7 @@ subroutine l3d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
+  real *8 over4pi
 
   complex *16 :: zk
   real *8 :: val
@@ -26,6 +27,7 @@ subroutine l3d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   complex *16 :: ima
 
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the Laplace single layer potential kernel
   !
@@ -36,7 +38,7 @@ subroutine l3d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
 
   r=sqrt(dx**2+dy**2+dz**2)
 
-  val =  1.0d0/r
+  val =  over4pi/r
 
   return
 end subroutine l3d_slp
@@ -51,10 +53,12 @@ subroutine l3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   integer ipars(ndi)
   complex *16 :: zk
   real *8 :: val
+  real *8 :: over4pi
 
   real *8 :: src(3), srcnorm(3)
   complex *16 :: ima
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the Laplace double layer kernel
   !
@@ -75,7 +79,7 @@ subroutine l3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   d = dx*srcnorm(1) + dy*srcnorm(2) + dz*srcnorm(3)
   r=sqrt(dx**2+dy**2+dz**2)
 
-  val =  d/(r**3)
+  val =  d/(r**3)*over4pi
 
   return
 end subroutine l3d_dlp
@@ -90,10 +94,12 @@ subroutine l3d_sprime(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
   integer ipars(ndi)
   real *8 :: val
+  real *8 :: over4pi
   complex *16 :: zk
 
   complex *16 :: ima
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the normal derivative of the single layer kernel
   !
@@ -105,7 +111,7 @@ subroutine l3d_sprime(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   d = dx*targinfo(10) + dy*targinfo(11) + dz*targinfo(12)
   r=sqrt(dx**2+dy**2+dz**2)
 
-  val =  -d/(r**3)
+  val =  -d/(r**3)*over4pi
 
   return
 end subroutine l3d_sprime
@@ -122,8 +128,10 @@ subroutine l3d_comb(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
   real *8 :: val
 
   real *8 :: src(3), srcnorm(3)
+  real *8 :: over4pi
   complex *16 :: ima
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the Laplace double layer kernel
   !
@@ -148,7 +156,7 @@ subroutine l3d_comb(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
   r=sqrt(dx**2+dy**2+dz**2)
 
 
-  val =  (beta*d/(r**3)+alpha/r)
+  val =  (beta*d/(r**3)+alpha/r)*over4pi
 
   return
 end subroutine l3d_comb
@@ -168,8 +176,10 @@ subroutine l3d_qlp(srcinfo, ndt,targ,ndd, dpars,ndz,zk,ndi,ipars,val)
 
   real *8 :: src(3), srcnorm(3)
   real *8 dotprod
+  real *8 over4pi
   complex *16 :: ima
   data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the Laplace quadruple layer kernel
   !
@@ -191,7 +201,7 @@ subroutine l3d_qlp(srcinfo, ndt,targ,ndd, dpars,ndz,zk,ndi,ipars,val)
   rsq = dx**2 + dy**2 + dz**2
   r=sqrt(rsq)
 
-  val =  (d**2*(-3/rsq) + 1)/(r**3)
+  val =  (d**2*(-3/rsq) + 1)/(r**3)*over4pi
 
   return
 end subroutine l3d_qlp

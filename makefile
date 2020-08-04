@@ -72,7 +72,7 @@ COMOBJS = $(COM)/cumsum.o $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/dlaran.o $(COM)/lapack_wrap.o \
 	$(COM)/legeexps.o $(COM)/prini_new.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
-	$(COM)/sort.o $(COM)/sparse_reps.o 
+	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o 
 
 # FMM wrappers
 FMML = src/fmm_wrappers
@@ -80,7 +80,7 @@ FOBJS = $(FMML)/hfmm3d_ndiv.o $(FMML)/lfmm3d_ndiv.o
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
-HOBJS = $(HELM)/helm_comb_dir.o
+HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o
 
 # Laplace wrappers
 LAP = src/lap_wrappers
@@ -162,7 +162,7 @@ $(STATICLIB): $(OBJS)
 	mv $(STATICLIB) lib-static/
 
 $(DYNAMICLIB): $(OBJS) 
-	$(FC) -shared -fPIC $(OMPFLAGS) $(OBJS) -o $(DYNAMICLIB) $(DYLIBS) 
+	$(FC) -shared -fPIC $(FFLAGS) $(OBJS) -o $(DYNAMICLIB) $(DYLIBS) 
 	mv $(DYNAMICLIB) lib/
 	[ ! -f $(LIMPLIB) ] || mv $(LIMPLIB) lib/
 
