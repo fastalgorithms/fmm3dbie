@@ -1,52 +1,26 @@
-      implicit real *8 (a-h,o-z)
-
-      ntests = 2
-      nsuccess = 0
-      call test_surf_lap(nsuccess)
-
-
-      open(unit=33,file='../../print_testres.txt',access='append')
-      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
-     1  ' out of ',ntests,' in surface routs testing suite'
-      close(33)
-
-      stop
-      end
-c
-c
-c
-c
-c
-      subroutine test_surf_lap(nsuccess)
       implicit real *8 (a-h,o-z) 
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
-      real *8, allocatable :: wts(:),rsigma(:)
+      real *8, allocatable :: wts(:)
+      character *100 fname
       integer ipars(2)
 
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3)
-      real *8, allocatable :: ffform(:,:,:),ffformex(:,:,:)
-      real *8, allocatable :: ffforminv(:,:,:),ffformexinv(:,:,:)
-
-      complex *16, allocatable :: sigma(:),rhs(:),drhs(:,:)
-      complex *16, allocatable :: drhs_cart_ex(:,:)
-      complex *16, allocatable :: drhs_cart(:,:)
-      complex *16, allocatable :: sigma2(:),rhs2(:)
+      real *8 xyz_out(3),xyz_in(3),xyz_src(3),xyz_targ(3)
+      complex *16, allocatable :: sigma(:),rhs(:),sigma1(:)
       real *8, allocatable :: errs(:)
-      real *8 thet,phi,eps_gmres
-      complex * 16 zpars(3)
+      real *8 eps_gmres
+      complex * 16 zpars(5),zpars2(3)
+      complex *16 omega,ep0,ep1,mu0,mu1,zk0,zk1,ztmp,ztmp2
+      complex *16 u0,dudn0,u1,dudn1
       integer numit,niter
-      character *100 title,dirname
-      character *300 fname
 
       integer ipatch_id
       real *8 uvs_targ(2)
-      real *8, allocatable :: w(:,:)
 
       logical isout0,isout1
 
-      complex *16 pot,potex,ztmp,ima
+      complex *16 pot,potex,ima
 
       data ima/(0.0d0,1.0d0)/
 
@@ -57,30 +31,42 @@ c
       pi = atan(done)*4
 
 
-      zk = 4.4d0+ima*0.0d0
-      zpars(1) = zk 
-      zpars(2) = -ima*zk
-      zpars(3) = 2.0d0
-
-      
-      xyz_in(1) = 0.11d0
-      xyz_in(2) = 0.0d-5
-      xyz_in(3) = 0.37d0
-
-      xyz_out(1) = -3.5d0
-      xyz_out(2) = 3.1d0
-      xyz_out(3) = 20.1d0
-
+c
+c       select geometry type
+c       igeomtype = 1 => sphere
+c 
       igeomtype = 1
-      ipars(1) = 4
-      npatches=12*(4**ipars(1))
+      ipars(1) = 3
+      npatches = 12*(4**ipars(1))
 
-      norder = 8 
+      omega = 0.33d0
+      ep0 = 1.0d0
+      mu0 = 1.0d0
+      ep1 = 1.1d0
+      mu1 = 1.2d0
+      zk0 = omega*sqrt(ep0*mu0)
+      zk1 = omega*sqrt(ep1*mu1)
+      zpars(1) = omega
+      zpars(2) = ep0
+      zpars(3) = mu0
+      zpars(4) = ep1
+      zpars(5) = mu1
+
+      xyz_out(1) = 3.17d0
+      xyz_out(2) = -0.03d0
+      xyz_out(3) = 3.15d0
+
+      xyz_in(1) = 0.17d0
+      xyz_in(2) = 0.23d0
+      xyz_in(3) = -0.11d0
+
+      norder = 4 
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
       allocate(srcvals(12,npts),srccoefs(9,npts))
       ifplot = 0
+
 
       call setup_geom(igeomtype,norder,npatches,ipars, 
      1       srcvals,srccoefs,ifplot,fname)
@@ -94,75 +80,92 @@ c
       enddo
 
       ixyzs(npatches+1) = 1+npols*npatches
-
-      call surf_quadratic_msh_vtk_plot(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,'sph-msh.vtk','msh')
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
-
-      allocate(sigma(npts),rhs(npts),rhs2(npts))
-      allocate(ffform(2,2,npts))
+      allocate(sigma(2*npts),rhs(2*npts))
 
 c
-c       define rhs to be one of the ynm's
+c  get boundary data
 c
-      nn = 2
-      mm = 1
-      nmax = nn
-      allocate(w(0:nmax,0:nmax))
-      call l3getsph(nmax,mm,nn,12,srcvals,rhs,npts,w)
-
-      allocate(drhs(2,npts),drhs_cart(3,npts),drhs_cart_ex(3,npts))
-
-      call get_surf_grad(2,npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,rhs,drhs)
-       
-c
-c      estimate correct scaling
-c
-      erra = 0
       do i=1,npts
-        call cart2polar(srcvals(1,i),r,theta,phi)
-        ztmp = -sqrt(15.0d0/2.0d0)*exp(ima*phi)
-        ct = cos(theta)
-        st = sin(theta)
-        cp = cos(phi)
-        sp = sin(phi)
-        c2t = cos(2*theta)
-        drhs_cart_ex(1,i) = ztmp*(c2t*ct*cp - ima*ct*sp) 
-        drhs_cart_ex(2,i) = ztmp*(c2t*ct*sp + ima*ct*cp)
-        drhs_cart_ex(3,i) = -ztmp*st*c2t
-
-
-        drhs_cart(1,i)=drhs(1,i)*srcvals(4,i) + drhs(2,i)*srcvals(7,i)
-        drhs_cart(2,i)=drhs(1,i)*srcvals(5,i) + drhs(2,i)*srcvals(8,i)
-        drhs_cart(3,i)=drhs(1,i)*srcvals(6,i) + drhs(2,i)*srcvals(9,i)
-
-        err1 = abs(drhs_cart(1,i)-drhs_cart_ex(1,i))**2
-        err2 = abs(drhs_cart(2,i)-drhs_cart_ex(2,i))**2
-        err3 = abs(drhs_cart(3,i)-drhs_cart_ex(3,i))**2
-        
-        erra = erra + err1 + err2 + err3
-      enddo
-      erra = sqrt(erra/npts)
-
-      print *, "error in surface gradient=",erra
-      if(erra.lt.1.0d-8) nsuccess=nsuccess+1
-
-      call get_surf_div(2,npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,drhs,rhs2)
-
-      erra = 0
-      do i=1,npts
-        erra = erra + abs(rhs2(i)+rhs(i)*nn*(nn+1))**2
+        call h3d_slp(xyz_in,12,srcvals(1,i),0,dpars,1,zk0,0,
+     1     ipars,u0)
+        call h3d_sprime(xyz_in,12,srcvals(1,i),0,dpars,1,zk0,0,
+     1     ipars,dudn0)
+        call h3d_slp(xyz_out,12,srcvals(1,i),0,dpars,1,zk1,0,
+     1     ipars,u1)
+        call h3d_sprime(xyz_out,12,srcvals(1,i),0,dpars,1,zk1,0,
+     1     ipars,dudn1)
+        rhs(i) = u0-u1
+        rhs(npts+i) = dudn0/ep0 - dudn1/ep1
       enddo
 
-      erra=  sqrt(erra/npts)
-      print *, "error in surface divergence=",erra
-      if(erra.lt.1.0d-6) nsuccess=nsuccess+1
 
-      return
+      numit = 200
+      niter = 0
+      allocate(errs(numit+1))
+
+      eps = 0.51d-4
+
+      eps_gmres = 0.5d-6
+
+      call helm_comb_trans_solver(npatches,norders,ixyzs,iptype,npts,
+     1  srccoefs,srcvals,eps,zpars,numit,rhs,eps_gmres,
+     2  niter,errs,rres,sigma)
+
+      call prinf('niter=*',niter,1)
+      call prin2('rres=*',rres,1)
+      call prin2('errs=*',errs,niter)
+
+
+c
+c       test solution at interior point
+c
+      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zk1,0,ipars,potex)
+
+      ndtarg = 3
+      ntarg = 1
+      ipatch_id = -1
+      uvs_targ(1) = 0
+      uvs_targ(2) = 0
+      zpars2(1) = zk1
+      zpars2(2) = ep1**2
+      zpars2(3) = ep1
+      call lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
+     2  uvs_targ,eps,zpars2,sigma,pot)
+
+      call prin2('potex=*',potex,2)
+      call prin2('pot=*',pot,2)
+      erra = abs(pot-potex)/abs(potex)
+      call prin2('relative error at interior target=*',erra,1)
+
+c
+c       test solution at exterior point
+c
+      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zk0,0,ipars,potex)
+
+      ndtarg = 3
+      ntarg = 1
+      ipatch_id = -1
+      uvs_targ(1) = 0
+      uvs_targ(2) = 0
+      zpars2(1) = zk0
+      zpars2(2) = ep0**2
+      zpars2(3) = ep0
+      call lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_out,ipatch_id,
+     2  uvs_targ,eps,zpars2,sigma,pot)
+
+      call prin2('potex=*',potex,2)
+      call prin2('pot=*',pot,2)
+      erra = abs(pot-potex)/abs(potex)
+      call prin2('relative error at exterior target=*',erra,1)
+
+
+
+      stop
       end
 
 
@@ -330,48 +333,22 @@ c
       do ipatch=1,npatches
         do j=1,npols
           i = (ipatch-1)*npols + j
-          call h3d_sprime(xyzout,srcvals(1,i),dpars,zk,ipars,val)
+          call h3d_sprime(xyzout,12,srcvals(1,i),0,dpars,1,zk,0,ipars,
+     1       val)
+
           call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
           ds = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
           ra = ra + real(val)*wts(i)
         enddo
       enddo
 
-      if(abs(ra+4*pi).le.1.0d-3) isout = .false.
-      if(abs(ra).le.1.0d-3) isout = .true.
+      if(abs(ra+4*pi).le.1.0d-1) isout = .false.
+      if(abs(ra).le.1.0d-1) isout = .true.
 
       return
       end
 
    
-
-
-
-      subroutine l3getsph(nmax,mm,nn,ndx,xyzs,ynms,npts,ynm)
-      implicit real *8 (a-h,o-z)
-      real *8 :: xyzs(ndx,npts)
-      complex *16 ynms(npts),ima
-      real *8 rat1(10000),rat2(10000)
-      real *8 ynm(0:nmax,0:nmax)
-      data ima/(0.0d0,1.0d0)/
-  
-      call ylgndrini(nmax, rat1, rat2)
-  
-      do i=1,npts
-        x=xyzs(1,i)
-        y=xyzs(2,i)
-        z=xyzs(3,i)
-        r=sqrt(x**2+y**2+z**2)
-        call cart2polar(xyzs(1,i),r,theta,phi)
-        ctheta = cos(theta)
-        call ylgndrf(nmax, ctheta, ynm, rat1, rat2)
-        ynms(i) = ynm(nn,abs(mm))*exp(ima*mm*phi)        
-      enddo
-       
-      return
-      end
-
-
 
 
 

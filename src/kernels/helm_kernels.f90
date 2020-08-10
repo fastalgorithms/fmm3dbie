@@ -284,3 +284,134 @@ subroutine h3d_dprime_diff(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi, &
   return
 end subroutine h3d_dprime_diff
 
+
+
+
+subroutine h3d_slp_diff(src, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
+!
+!  This subroutine evaluates the kernel
+!    a0 S_{k0} - a1 S_{k1}
+!
+!  where zpars(1) = k0,
+!        zpars(2) = k1,
+!        zpars(3) = a0
+!        zpars(4) = a1
+
+  implicit real *8 (a-h,o-z)
+  real *8 :: src(*), targ(ndt),dpars(ndd)
+  real *8 over4pi
+  integer ipars(ndi)
+  complex *16 :: zpars(ndz), val
+  complex *16 :: ima
+
+  data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+  rinv = over4pi/r
+
+  val=(zpars(3)*exp(ima*zpars(1)*r) -zpars(4)*exp(ima*zpars(2)*r))*rinv
+
+  return
+end subroutine h3d_slp_diff
+
+
+
+
+
+subroutine h3d_dlp_diff(srcinfo,ndt,targ,ndd,dpars,ndz,zpars,ndi, &
+  ipars,val)
+!
+!  This subroutine evaluates the kernel
+!    a0 D_{k0} - a_{1} D_{k1}
+!
+!  where zpars(1) = k0,
+!        zpars(2) = k1,
+!        zpars(3) = a0
+!        zpars(4) = a1
+
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
+  integer ipars(ndi)
+  complex *16 :: zpars(ndz), val
+
+  real *8 :: src(3), srcnorm(3)
+  real *8 over4pi
+  complex *16 :: ima,zk0,zk1
+  data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+  srcnorm(1)=srcinfo(10)
+  srcnorm(2)=srcinfo(11)
+  srcnorm(3)=srcinfo(12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  d = dx*srcnorm(1) + dy*srcnorm(2) + dz*srcnorm(3)
+  r=sqrt(dx**2+dy**2+dz**2)
+  rtmp = over4pi*d/r**3
+
+  zk0 = zpars(1)
+  zk1 = zpars(2)
+
+  val =  (zpars(3)*(1.0d0 - ima*zk0*r)*exp(ima*zk0*r) - &
+       zpars(4)*(1.0d0 - ima*zk1*r)*exp(ima*zk1*r))*rtmp
+
+  return
+end subroutine h3d_dlp_diff
+
+
+
+
+
+
+subroutine h3d_sprime_diff(srcinfo,ndt,targinfo,ndd,dpars,ndz,zpars,&
+  ndi,ipars,val)
+!
+!  This subroutine evaluates the kernel
+!    a0 S_{k0}' - a1 S_{k1}'
+!
+!  where zpars(1) = k0,
+!        zpars(2) = k1,
+!        zpars(3) = a0
+!        zpars(4) = a1
+
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
+  integer ipars(ndi)
+  complex *16 :: zpars(ndz), val,zk0,zk1
+
+  complex *16 :: ima
+  real *8 over4pi
+  data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
+
+  dx=targinfo(1)-srcinfo(1)
+  dy=targinfo(2)-srcinfo(2)
+  dz=targinfo(3)-srcinfo(3)
+
+  d = dx*targinfo(10) + dy*targinfo(11) + dz*targinfo(12)
+  r=sqrt(dx**2+dy**2+dz**2)
+  rtmp = d*over4pi/r**3
+
+  zk0 = zpars(1)
+  zk1 = zpars(2)
+
+  val =  -(zpars(3)*(1.0d0 - ima*zk0*r)*exp(ima*zk0*r) - &
+    zpars(4)*(1.0d0-ima*zk1*r)*exp(ima*zk1*r))*rtmp
+
+  return
+end subroutine h3d_sprime_diff
+
+
+
+
