@@ -1,5 +1,4 @@
 
-
       subroutine getnearquad_helm_comb_trans(npatches,norders,&
        ixyzs,iptype,npts,srccoefs,srcvals, &
        eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
@@ -450,21 +449,21 @@
         sources(1,i) = srcover(1,i)
         sources(2,i) = srcover(2,i)
         sources(3,i) = srcover(3,i)
-        charges0(i) = sigmaover(i)*whtsover(i)*over4pi*ep0sq
-        charges1(i) = sigmaover(i)*whtsover(i)*over4pi*ep1sq
+        charges0(i) = sigmaover(ns+i)*whtsover(i)*over4pi*ep0sq
+        charges1(i) = sigmaover(ns+i)*whtsover(i)*over4pi*ep1sq
 
-        dipvec0(1,i) = sigmaover(ns+i)*whtsover(i)*over4pi* &
+        dipvec0(1,i) = sigmaover(i)*whtsover(i)*over4pi* &
            ep0*srcover(10,i)
-        dipvec0(2,i) = sigmaover(ns+i)*whtsover(i)*over4pi* &
+        dipvec0(2,i) = sigmaover(i)*whtsover(i)*over4pi* &
            ep0*srcover(11,i)
-        dipvec0(3,i) = sigmaover(ns+i)*whtsover(i)*over4pi* &
+        dipvec0(3,i) = sigmaover(i)*whtsover(i)*over4pi* &
            ep0*srcover(12,i)
 
-        dipvec1(1,i) = sigmaover(ns+i)*whtsover(i)*over4pi* &
+        dipvec1(1,i) = sigmaover(i)*whtsover(i)*over4pi* &
            ep1*srcover(10,i)
-        dipvec1(2,i) = sigmaover(ns+i)*whtsover(i)*over4pi* &
+        dipvec1(2,i) = sigmaover(i)*whtsover(i)*over4pi* &
            ep1*srcover(11,i)
-        dipvec1(3,i) = sigmaover(ns+i)*whtsover(i)*over4pi* &
+        dipvec1(3,i) = sigmaover(i)*whtsover(i)*over4pi* &
            ep1*srcover(12,i)
       enddo
 !$OMP END PARALLEL DO      
@@ -488,7 +487,7 @@
 ! 
 !  Compute ep0^2*S_{k0}[\lambda] + ep0*D_{k0}[\rho], 
 !  ep0^2*S_{k0}'[\lambda] + ep0*D_{k0}'[\rho]
-!
+
       call hfmm3d_t_cd_g(eps,zk0,ns,sources,charges0,dipvec0,npts, &
         srctmp,pot_aux,grad_aux)
 
@@ -524,7 +523,7 @@
           grad_aux(3,i)*srcvals(12,i))
       enddo
 !$OMP END PARALLEL DO      
-        
+
 !        compute threshold for ignoring local computation
       call get_fmm_thresh(12,ns,srcover,12,npts,srcvals,thresh)
 !
@@ -541,19 +540,18 @@
           jquadstart = iquad(j)
           jstart = ixyzs(jpatch) 
           do l=1,npols
-            pot(i) = pot(i) + wnear(jquadstart+l-1)*sigma(jstart+l-1)
+            pot(i) = pot(i) + wnear(jquadstart+l-1)*sigma(jstart+l-1+npts)
             pot(i) = pot(i) + wnear(nquad+jquadstart+l-1)* &
-              sigma(jstart+l-1+npts)
-            pot(i+npts) = pot(i+npts) + wnear(2*nquad+jquadstart+l-1)* &
               sigma(jstart+l-1)
-            pot(i+npts) = pot(i+npts) + wnear(3*nquad+jquadstart+l-1)* &
+            pot(i+npts) = pot(i+npts) + wnear(2*nquad+jquadstart+l-1)* &
               sigma(jstart+l-1+npts)
+            pot(i+npts) = pot(i+npts) + wnear(3*nquad+jquadstart+l-1)* &
+              sigma(jstart+l-1)
           enddo
         enddo
       enddo
 !$OMP END PARALLEL DO
 
-!
 !     Remove near contribution of the FMM
 !
 
@@ -858,7 +856,7 @@
       call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,&
          iquad)
 
-      ikerorder = -1
+      ikerorder = 0
 !
 !    estimate oversampling for far-field, and oversample geometry
 !
@@ -1205,7 +1203,7 @@
       
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
-        uvs_targ,eps,zpars_tmp,sigma,pot)
+        uvs_targ,eps,zpars_tmp,sigma(npts+1),pot)
       
       
 !
@@ -1218,7 +1216,7 @@
       
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
-        uvs_targ,eps,zpars_tmp,sigma(npts+1),pottmp2)
+        uvs_targ,eps,zpars_tmp,sigma,pottmp2)
 
 
 !$OMP PARALLEL DO DEFAULT(SHARED)

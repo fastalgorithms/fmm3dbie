@@ -36,7 +36,7 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c 
       igeomtype = 1
-      ipars(1) = 3
+      ipars(1) = 1
       npatches = 12*(4**ipars(1))
 
       omega = 0.33d0
