@@ -104,21 +104,21 @@ subroutine surf_quadratic_msh_vtk_plot(npatches,norders,ixyzs,iptype, &
   write(iunit1,'(a)') trim(title)
   write(iunit1,'(a)') "ASCII"
   write(iunit1,'(a)') "DATASET UNSTRUCTURED_GRID"
-  write(iunit1,'(a,i8,a)') "POINTS ", n0, " float"
+  write(iunit1,'(a,i9,a)') "POINTS ", n0, " float"
 
   do i = 1,n0
     write(iunit1,"(E11.5,2(2x,e11.5))") xyzs(1,i), xyzs(2,i), xyzs(3,i)
   end do
 
-  write(iunit1,'(a,i8,i8)') "CELLS ", npatches, npatches*7
+  write(iunit1,'(a,i9,i9)') "CELLS ", npatches, npatches*7
 
   do ipatch=1,npatches
     i1 = 6*(ipatch-1) 
-    write(iunit1,'(a,i8,i8,i8,i8,i8,i8)') "6 ", i1, i1+1,i1+2, &
+    write(iunit1,'(a,i9,i9,i9,i9,i9,i9)') "6 ", i1, i1+1,i1+2, &
       i1+3,i1+4,i1+5
   enddo
 
-  write(iunit1,'(a,i8)') "CELL_TYPES ", npatches
+  write(iunit1,'(a,i9)') "CELL_TYPES ", npatches
   do ipatch = 1,npatches
     if(iptype(ipatch).eq.1) then
       write(iunit1,'(a)') "22"
@@ -126,7 +126,7 @@ subroutine surf_quadratic_msh_vtk_plot(npatches,norders,ixyzs,iptype, &
   end do
 
   write(iunit1,'(a)') ""
-  write(iunit1,'(a,i8)') "CELL_DATA ", npatches
+  write(iunit1,'(a,i9)') "CELL_DATA ", npatches
   write(iunit1,'(a)') "SCALARS material int"
   write(iunit1,'(a)') "LOOKUP_TABLE default"
   do i = 1,npatches
@@ -311,7 +311,7 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
   write(iunit1,'(a)') trim(title)
   write(iunit1,'(a)') "ASCII"
   write(iunit1,'(a)') "DATASET UNSTRUCTURED_GRID"
-  write(iunit1,'(a,i8,a)') "POINTS ", npout, " float"
+  write(iunit1,'(a,i9,a)') "POINTS ", npout, " float"
 
   do i = 1,npout
     write(iunit1,"(E11.5,2(2x,e11.5))") xyzs(1,i), xyzs(2,i), xyzs(3,i)
@@ -324,7 +324,7 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
     if(iptype(i).eq.1) ncsize = ncsize + 4*(4**kovers(i))
   enddo
 
-  write(iunit1,'(a,i8,i8)') "CELLS ", ncell, ncsize
+  write(iunit1,'(a,i9,i9)') "CELLS ", ncell, ncsize
 
   do ipatch=1,npatches
     nb = 4**kovers(ipatch)
@@ -332,12 +332,12 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
       istart = ipstart(ipatch) 
       do i = 1,nb
         i1 = istart + 3*(i-1) 
-        write(iunit1,'(a,i8,i8,i8)') "3 ", i1-1, i1, i1+1
+        write(iunit1,'(a,i9,i9,i9)') "3 ", i1-1, i1, i1+1
       enddo
     endif
   end do
 
-  write(iunit1,'(a,i8)') "CELL_TYPES ", ncell
+  write(iunit1,'(a,i9)') "CELL_TYPES ", ncell
   do ipatch = 1,npatches
     nb = 4**kovers(ipatch)
     if(iptype(ipatch).eq.1) then
@@ -348,7 +348,7 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
   end do
 
   write(iunit1,'(a)') ""
-  write(iunit1,'(a,i8)') "POINT_DATA ", npout
+  write(iunit1,'(a,i9)') "POINT_DATA ", npout
   write(iunit1,'(a,i4)') "SCALARS scalar_function float ", 1
   write(iunit1,'(a)') "LOOKUP_TABLE default"
   do i = 1,npout
@@ -391,7 +391,7 @@ subroutine vtk_write_plane(ndims,ntarg,xyz,dxyz,f,title,fname)
   write(iunit1,'(a,e11.5,1x,e11.5,1x,e11.5)') "SPACING ", &
     dxyz(1),dxyz(2),dxyz(3)
   write(iunit1,'(a)') ""
-  write(iunit1,'(a,i8)') "POINT_DATA ",ntarg 
+  write(iunit1,'(a,i9)') "POINT_DATA ",ntarg 
   write(iunit1,'(a,i4)') "SCALARS scalar_function float ", 1
   write(iunit1,'(a)') "LOOKUP_TABLE default"
   do i = 1,ntarg
