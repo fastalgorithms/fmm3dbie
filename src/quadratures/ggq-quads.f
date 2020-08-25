@@ -158,7 +158,7 @@ c
       real *8 ra
 
       complex *16 ff1,ff2,cra1,cra2
-      integer nlev, nqorder_f
+      integer nlev, nqorder_f,norder_avg
       real *8 rfac0
 
       external fker
@@ -213,6 +213,8 @@ c      number of source patches to be processed per batch
       itargptr = 1
 
       ntrimax = 3000
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+      if(norder_avg.ge.8) ntrimax = 6000
 
       rfac = 1.0d0
 c
@@ -547,6 +549,7 @@ c
       integer nlev, nqorder_f
       real *8 rfac0
       real *8 done,dzero
+      integer norder_avg
 
       external fker
 
@@ -603,6 +606,8 @@ c      number of source patches to be processed per batch
       itargptr = 1
 
       ntrimax = 3000
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+      if(norder_avg.ge.8) ntrimax = 6000
 
       rfac = 1.0d0
 c
