@@ -11,9 +11,6 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
 !	 rho/2+S'_{k}[rho]-ikS_{k}[J]+alpha(divS_{k}[J]-ikS_{k}[rho]) = 
 !      = n·E_inc
 !
-!  Note: the 4 \pi scaling is NOT!! included as the output of the FMM
-!  has been rescaled.
-!
 !
 !  The quadrature is computed by the following strategy
 !  targets within a sphere of radius rfac0*rs
@@ -823,7 +820,6 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
 
       npts_over = ixyzso(npatches+1)-1
       print *, "npts_over=",npts_over
-      call prinf('novers=*',novers,100)
 
       allocate(srcover(12,npts_over),wover(npts_over))
 

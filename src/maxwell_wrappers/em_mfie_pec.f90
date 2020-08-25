@@ -1039,7 +1039,6 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
 
       npts_over = ixyzso(npatches+1)-1
       print *, "npts_over=",npts_over
-      call prinf('novers=*',novers,100)
 
       allocate(srcover(12,npts_over),wover(npts_over))
 

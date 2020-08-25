@@ -37,26 +37,21 @@
       done = 1
       pi = atan(done)*4
 
-!
-!   simulation for plane 50 wavelengths in size
-!
-      zk = 2.0d-20
+      zk = 2.0d-2
       zpars(1) = zk 
       zpars(2) = 1.0d0
       zpars(3) = 0.0d0
 
-      
-      xyz_in(1) = 0.00d0
-      xyz_in(2) = 0.0d0
-      xyz_in(3) = 1.5d0
+      xyz_in(1) = 0.11d0
+      xyz_in(2) = 0.0d-5
+      xyz_in(3) = 0.37d0
 
-      xyz_out(1) = 50.0d0
-      xyz_out(2) = 60.0d0
-      xyz_out(3) = 70.0d0
-	  
-      fname = '../../geometries/A380_Final_o03_r02.go3'
-      fname = '../../../../Geometries_go3/' // &
-     & 'simplest_cube_quadratic_v4_o04_r01.go3'
+      xyz_out(1) = -3.5d0
+      xyz_out(2) = 3.1d0
+      xyz_out(3) = 20.1d0
+      
+      fname = '../../geometries/sphere_192_o03.go3'
+      
             
       call open_gov3_geometry_mem(fname,npatches,npts)
 
@@ -71,62 +66,27 @@
      &iptype,npts,srcvals,srccoefs,wts)
 
 
-!      fname = 'plane-res/a380.vtk'
-!      title = 'a380'
-!      call surf_vtk_plot(npatches,norders,ixyzs,iptype,npts,
-!     1   srccoefs,srcvals,fname,title)
-
-      norder = norders(1)
-!      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,&
-!     &wts,xyz_in,isout0)
-      
-!      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,&
-!     &wts,xyz_out,isout1)
-
-       print *, isout0,isout1
-
-
       allocate(sigma(npts),rhs(npts))
       allocate(sigma2(npts),rhs2(npts))
-	  
-	  allocate(a_vect(3*npts),RHS_vect(3*npts))
+      allocate(a_vect(3*npts),RHS_vect(3*npts))
       ifinout = 1
-	  
+  
       thet = hkrand(0)*pi
       phi = hkrand(0)*2*pi
-	  
-	  vf(1)=1.0d0
-	  vf(2)=2.0d0
-	  vf(3)=3.0d0
-!	  
-!	  call get_RHS_EMFIE(xyz_in,vf,npts,srcvals,zk,RHS_vect)
-	  call get_rhs_em_nrccie_pec(xyz_out,vf,zpars(2),npts,srcvals,zpars(1),RHS_vect)
+  
+      vf(1)=1.0d0
+      vf(2)=2.0d0
+      vf(3)=3.0d0
 
-!	  do count1=1,10
-!	      write (*,*) count1,RHS_vect(count1),RHS_vect(npts+count1)
-!	  enddo
-	  
-!      do i=1,npts
-!        if(ifinout.eq.0)& 
-!     &call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
-!        if(ifinout.eq.1)& 
-!     &call h3d_slp(xyz_in,srcvals(1,i),dpars,zpars,ipars,rhs(i))
-!        rhs(i) = rhs(i)
-!        x = srcvals(1,i)*cos(thet)
-!        y = srcvals(2,i)*sin(thet)*cos(phi)
-!        z = srcvals(3,i)*sin(thet)*sin(phi)
-!        rhs2(i) = exp(ima*zk*(x+y+z))
-!        sigma(i) = 0
-!        sigma2(i) = 0
-!      enddo
-
+      call get_rhs_em_nrccie_pec(xyz_out,vf,zpars(2),npts,srcvals,&
+        zpars(1),RHS_vect)
 
       numit = 400
       niter = 0
       allocate(errs(numit+1))
 
-      eps = 1d-14
-	  eps_gmres=1d-14
+      eps = 1d-4
+      eps_gmres=1d-3
 
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      
@@ -142,19 +102,12 @@
 !C$       t2 = omp_get_wtime()
       call prin2('analytic solve time=*',t2-t1,1)
 
-!      open(unit=33,file='plane-res/sigma-analytic-50l.dat')
-!      do i=1,npts
-!        write(33,*) real(sigma(i)),imag(sigma(i))
-!      enddo
-!      close(33)
-
-
 !
 !       test solution at interior point
 !
-      call test_accuracy_em_nrccie_pec(eps,a_vect,zpars,npts,wts,srcvals,xyz_in,vf,xyz_out)
+      call test_accuracy_em_nrccie_pec(eps,a_vect,zpars,npts,wts,&
+        srcvals,xyz_in,vf,xyz_out)
       
-	  
 
       stop
       end
