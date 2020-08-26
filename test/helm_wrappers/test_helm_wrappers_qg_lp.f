@@ -149,11 +149,11 @@ c
       enddo
       
 
-      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+      call findnearmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
-      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+      call findnear(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr, 
      1        col_ind)
 
       allocate(iquad(nnz+1)) 

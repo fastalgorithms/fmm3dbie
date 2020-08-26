@@ -369,12 +369,13 @@ C$OMP END PARALLEL DO
 c
 c    find near quadrature correction interactions
 c
-      call findnearmem(cms,npatches,rad_near,targs,ntarg,nnz)
+      call findnearmem(cms,npatches,rad_near,ndtarg,targs,
+     1   ntarg,nnz)
 
       allocate(row_ptr(ntarg+1),col_ind(nnz))
       
-      call findnear(cms,npatches,rad_near,targs,ntarg,row_ptr, 
-     1        col_ind)
+      call findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,
+     1   row_ptr,col_ind)
 
       allocate(iquad(nnz+1)) 
       call get_iquad_rsc(npatches,ixyzs,ntarg,nnz,row_ptr,col_ind,
@@ -704,6 +705,7 @@ c        compute threshold for ignoring local computation
 c
       
       call get_fmm_thresh(3,ns,sources,3,ntarg,targvals,thresh)
+      print *, "thresh=",thresh
       
 c
 c
@@ -1566,12 +1568,12 @@ c
 c    find near quadrature correction interactions
 c
       print *, "entering find near mem"
-      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+      call findnearmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
       print *, "nnz=",nnz
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
-      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+      call findnear(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr, 
      1        col_ind)
 
       allocate(iquad(nnz+1)) 
@@ -1954,11 +1956,11 @@ C$OMP END PARALLEL DO
 c
 c    find near quadrature correction interactions
 c
-      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+      call findnearmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
-      call findnear(cms,npatches,rad_near,targs,npts,row_ptr, 
+      call findnear(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr, 
      1        col_ind)
 
       allocate(iquad(nnz+1)) 
@@ -2155,7 +2157,7 @@ C$OMP END PARALLEL DO
 c
 c    find near quadrature correction interactions
 c
-      call findnearmem(cms,npatches,rad_near,targs,npts,nnz)
+      call findnearmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
 
       irow_ptr = 5
       icol_ind = irow_ptr+npts+1
@@ -2165,8 +2167,8 @@ c
       iximat = iixyzso+npatches+1
 
       
-      call findnear(cms,npatches,rad_near,targs,npts,ifds(irow_ptr), 
-     1        ifds(icol_ind))
+      call findnear(cms,npatches,rad_near,ndtarg,targs,npts,
+     1   ifds(irow_ptr),ifds(icol_ind))
 
       call get_iquad_rsc(npatches,ixyzs,npts,nnz,ifds(irow_ptr),
      1   ifds(icol_ind),ifds(iiquad))

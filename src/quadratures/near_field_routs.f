@@ -35,7 +35,8 @@ c              get_near_corr_max - estimate max size
 c                of array needed for near correction
 c
 c-------------------------------------------------------------------
-      subroutine findnearslow(xyzs,ns,rads,targets,nt,row_ptr,col_ind)
+      subroutine findnearslow(xyzs,ns,rads,ndt,targets,nt,row_ptr,
+     1  col_ind)
 c
 cc      identify targets which are contained in 
 c       |xyzs(:,i)-targets(:,j)|<=rads(i)
@@ -51,8 +52,12 @@ c
 c       rads    in: real *8(ns)
 c               radii associated with the sources
 c
-c       targets in: real *8(3,nt)
-c               location of the targets
+c       ndt     in: integer
+c               leading dimension of targets array
+c
+c       targets in: real *8(ndt,nt)
+c               target info.
+c               The first three components must be xyz coordinates
 c
 c       nt      in: integer
 c               number of targets
@@ -72,7 +77,7 @@ c
 c-------------------------------
 
       implicit real *8 (a-h,o-z)
-      real *8 xyzs(3,ns),targets(3,nt),rads(ns)
+      real *8 xyzs(3,ns),targets(ndt,nt),rads(ns)
       integer row_ptr(*),col_ind(*)
       integer, allocatable :: nlst(:)
 
@@ -124,7 +129,7 @@ c
 c
 c------------------------------------------------------------------      
 
-      subroutine findnearslowmem(xyzs,ns,rads,targets,nt,nnz)
+      subroutine findnearslowmem(xyzs,ns,rads,ndt,targets,nt,nnz)
 c
 cc      identify all sources which are contained in 
 c       |xyzs(:,i)-targets(:,j)|<=rads(i)
@@ -139,9 +144,14 @@ c               number of sources
 c
 c       rads    in: real *8(ns)
 c               radii associated with the sources
+c      
+c       ndt     in: integer
+c               leading dimension of target array
 c
-c       targets in: real *8(3,nt)
-c               location of the targets
+c       targets in: real *8(ndt,nt)
+c               target info
+c               the first three components must be
+c               the xyz coordinates
 c
 c       nt      in: integer
 c               number of targets
@@ -153,7 +163,7 @@ c               number of elements in the flag array
 c-------------------------------
 
       implicit real *8 (a-h,o-z)
-      real *8 xyzs(3,*),targets(3,*),rads(*)
+      real *8 xyzs(3,*),targets(ndt,*),rads(*)
       integer nnz
 
       nnz = 0
@@ -178,7 +188,7 @@ c
 c
 c
 c------------------------------------------------------------------      
-      subroutine findnearmem(xyzs,ns,rads,targets,nt,nnz)
+      subroutine findnearmem(xyzs,ns,rads,ndt,targets,nt,nnz)
 c
 cc      identify all sources which are contained in 
 c       |xyzs(:,i)-targets(:,j)|<=rads(i).
@@ -199,8 +209,13 @@ c
 c       rads    in: real *8(ns)
 c               radii associated with the sources
 c
-c       targets in: real *8(3,nt)
-c               location of the targets
+c       ndt     in: integer
+c               leading dimension of target array
+c
+c       targets in: real *8(ndt,nt)
+c               target info
+c               the first three components must be
+c               the xyz coordinates
 c
 c       nt      in: integer
 c               number of targets
@@ -222,7 +237,7 @@ c
 c-------------------------------
 
        implicit real *8 (a-h,o-z)
-       real *8 xyzs(3,ns),rads(ns),targets(3,nt)
+       real *8 xyzs(3,ns),rads(ns),targets(ndt,nt)
        real *8 xtmp(3)
        real *8, allocatable :: rstmp(:)
 
@@ -231,6 +246,7 @@ c-------------------------------
 cc       tree variables
 c 
        real *8, allocatable :: centers(:,:),boxsize(:)
+       real *8, allocatable :: targs(:,:)
        integer, allocatable :: ilevel(:)
        integer, allocatable :: itree(:)
        integer *8 ipointer(32),ltree
@@ -240,11 +256,18 @@ c
 
 
        allocate(rstmp(ns))
+       allocate(targs(3,nt))
 
 
 
        do i=1,ns
          rstmp(i) = 2*rads(i)
+       enddo
+
+       do i=1,nt
+         targs(1,i) = targets(1,i)
+         targs(2,i) = targets(2,i)
+         targs(3,i) = targets(3,i)
        enddo
 
 
@@ -271,7 +294,7 @@ c
        ntmp = 0
 
 
-       call mklraptreemem(ier,xyzs,ns,rstmp,targets,nt,xtmp,ntmp,rttmp,
+       call mklraptreemem(ier,xyzs,ns,rstmp,targs,nt,xtmp,ntmp,rttmp,
      1    idivflag,ndiv,isep,nlmax,nbmax,nlevels,nboxes,mnbors,mnlist1,
      2    mnlist2,mnlist3,mnlist4,mhung,ltree)
 
@@ -279,7 +302,7 @@ c
 
        allocate(centers(3,nboxes),itree(ltree),boxsize(0:nlevels))
   
-       call mklraptree(xyzs,ns,rstmp,targets,nt,xtmp,ntmp,rttmp,
+       call mklraptree(xyzs,ns,rstmp,targs,nt,xtmp,ntmp,rttmp,
      1    idivflag,ndiv,isep,mhung,mnbors,mnlist1,mnlist2,mnlist3,
      2    mnlist4,nlevels,nboxes,centers,boxsize,
      2    itree,ltree,ipointer)
@@ -340,7 +363,7 @@ c
 c
 c
 c-----------------------------------------------------
-      subroutine findnear(xyzs,ns,rads,targets,nt,row_ptr,
+      subroutine findnear(xyzs,ns,rads,ndt,targets,nt,row_ptr,
      1       col_ind) 
 c     
 cc      identify all sources which are contained in 
@@ -360,8 +383,13 @@ c
 c       rads    in: real *8(ns)
 c               radii associated with the sources
 c
-c       targets in: real *8(3,nt)
-c               location of the targets
+c       ndt     in: integer
+c               leading dimension of target array
+c
+c       targets in: real *8(ndt,nt)
+c               target info
+c               the first three components must be
+c               the xyz coordinates
 c
 c       nt      in: integer
 c               number of targets
@@ -380,7 +408,7 @@ c
 c               
 c-------------------------------
        implicit real *8 (a-h,o-z)
-       real *8 xyzs(3,*),rads(*),targets(3,*)
+       real *8 xyzs(3,*),rads(*),targets(ndt,*)
        real *8, allocatable :: rstmp(:)
 
        integer row_ptr(*),col_ind(*)
@@ -388,16 +416,27 @@ c-------------------------------
 c
 cc       tree variables
 c 
-       real *8, allocatable :: centers(:,:),boxsize(:)
+       real *8, allocatable :: centers(:,:),boxsize(:),targs(:,:)
        integer, allocatable :: itree(:)
        integer *8 ipointer(32), ltree
        integer, allocatable :: ilevel(:)
 
        allocate(rstmp(ns))
 
+C$OMP PARALLEL DO DEFAULT(SHARED)
        do i=1,ns
          rstmp(i) = 2*rads(i)
        enddo
+C$OMP END PARALLEL DO       
+       allocate(targs(3,nt))
+
+C$OMP PARALLEL DO DEFAULT(SHARED)       
+       do i=1,nt
+         targs(1,i) = targets(1,i)
+         targs(2,i) = targets(2,i)
+         targs(3,i) = targets(3,i)
+       enddo
+C$OMP END PARALLEL DO       
 
        rttmp = 0.0d0
 
@@ -421,14 +460,14 @@ c
        mnlist4 = 0
        mnbors = 0
 
-       call mklraptreemem(ier,xyzs,ns,rstmp,targets,nt,xtmp,ntmp,rttmp,
+       call mklraptreemem(ier,xyzs,ns,rstmp,targs,nt,xtmp,ntmp,rttmp,
      1    idivflag,ndiv,isep,nlmax,nbmax,nlevels,nboxes,mnbors,mnlist1,
      2    mnlist2,mnlist3,mnlist4,mhung,ltree)
 
        allocate(centers(3,nboxes),itree(ltree),boxsize(0:nlevels))
 
        
-       call mklraptree(xyzs,ns,rstmp,targets,nt,xtmp,ntmp,rttmp,
+       call mklraptree(xyzs,ns,rstmp,targs,nt,xtmp,ntmp,rttmp,
      1    idivflag,ndiv,isep,mhung,mnbors,mnlist1,mnlist2,mnlist3,
      2    mnlist4,nlevels,nboxes,centers,boxsize,
      2    itree,ltree,ipointer)
