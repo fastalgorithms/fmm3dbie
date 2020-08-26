@@ -293,8 +293,6 @@ subroutine l3d_sgradz(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   real *8 :: over4pi
   complex *16 :: zk
 
-  complex *16 :: ima
-  data ima/(0.0d0,1.0d0)/
   data over4pi/0.07957747154594767d0/
   !
   ! returns the normal derivative of the single layer kernel
@@ -306,7 +304,7 @@ subroutine l3d_sgradz(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
 
   r=sqrt(dx**2+dy**2+dz**2)
 
-  val =  -dy/(r**3)*over4pi
+  val =  -dz/(r**3)*over4pi
 
   return
 end subroutine l3d_sgradz

@@ -95,7 +95,8 @@ EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 
 # Kernels
 KER = src/kernels
-KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o
+KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
+	$(KER)/yuk_kernels.o
 
 # Quadrature wrappers
 QUAD = src/quadratures
