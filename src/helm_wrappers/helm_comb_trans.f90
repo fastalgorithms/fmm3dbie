@@ -752,6 +752,7 @@
 
       integer ipars(2)
       real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
+      complex *16 zk0,zk1,zkuse
 
 
       real *8 ttot,done,pi
@@ -865,11 +866,18 @@
 
       print *, "beginning far order estimation"
 
+      zk0 = zpars(1)*sqrt(zpars(2)*zpars(3))
+      zk1 = zpars(1)*sqrt(zpars(4)*zpars(5))
+      
+      zkuse = real(zk0)
+      if(real(zk1).gt.real(zk0)) zkuse = real(zk1)
+
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,&
-       rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),&
+       rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zkuse,&
        nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
+      print *, "npts_over=",npts_over
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
