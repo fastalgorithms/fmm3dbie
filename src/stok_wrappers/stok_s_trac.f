@@ -1351,6 +1351,19 @@ c
      3          soln,novers,npts_over,ixyzso,srcover,wover,
      4          wtmp)
 
+
+           sdotn = 0
+           do j = 1,npts
+              sdotn = sdotn + vmat((j-1)*3+1,it)*srcvals(10,j)*wts(j)
+              sdotn = sdotn + vmat((j-1)*3+2,it)*srcvals(11,j)*wts(j)
+              sdotn = sdotn + vmat((j-1)*3+3,it)*srcvals(12,j)*wts(j)
+           enddo
+
+           do j = 1,npts
+              wtmp((j-1)*3+1) = wtmp((j-1)*3+1) + srcvals(10,j)*sdotn
+              wtmp((j-1)*3+2) = wtmp((j-1)*3+2) + srcvals(11,j)*sdotn
+              wtmp((j-1)*3+3) = wtmp((j-1)*3+3) + srcvals(12,j)*sdotn
+           enddo
            
            do i=1,nmat
               rres = rres + abs(did*soln(i) + wtmp(i)-rhs(i))**2
