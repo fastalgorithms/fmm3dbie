@@ -893,6 +893,7 @@ C$OMP$PRIVATE(strstmp2,strsvec2,istress)
 
          deallocate(srctmp2,sttmp2,strstmp2,strsvec2)
       enddo
+c$OMP END PARALLEL DO
       
       call cpu_time(t2)
 C$      t2 = omp_get_wtime()     
@@ -1251,9 +1252,11 @@ c
       enddo
       rb = sqrt(rb)
 
+c$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
       do i=1,nmat
         vmat(i,1) = rhs(i)/rb
       enddo
+c$OMP END PARALLEL DO
 
       svec(1) = rb
 
@@ -1282,11 +1285,13 @@ c
             uconst(3) = uconst(3) + wts(j)*vmat(3*(j-1)+3,it)
          enddo
 
+c$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)         
          do j = 1,npts
             wtmp(3*(j-1)+1) = uconst(1) + wtmp(3*(j-1)+1)
             wtmp(3*(j-1)+2) = uconst(2) + wtmp(3*(j-1)+2)
             wtmp(3*(j-1)+3) = uconst(3) + wtmp(3*(j-1)+3)
          enddo
+c$OMP END PARALLEL DO
          
          do k=1,it
             hmat(k,it) = 0
@@ -1384,12 +1389,14 @@ c
               uconst(3) = uconst(3) + wts(j)*soln(3*(j-1)+3)
            enddo
 
+c$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)           
            do j = 1,npts
               wtmp(3*(j-1)+1) = uconst(1) + wtmp(3*(j-1)+1)
               wtmp(3*(j-1)+2) = uconst(2) + wtmp(3*(j-1)+2)
               wtmp(3*(j-1)+3) = uconst(3) + wtmp(3*(j-1)+3)
            enddo
-           
+c$OMP END PARALLEL DO           
+
            do i=1,nmat
               rres = rres + abs(did*soln(i) + wtmp(i)-rhs(i))**2
            enddo
