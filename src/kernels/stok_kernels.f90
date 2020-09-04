@@ -346,7 +346,7 @@ subroutine st3d_comb(srcinfo,ndt,targ,ndd,dpars,ndz, &
   r=sqrt(dx**2+dy**2+dz**2)
   rinv = 1.0d0/r
   rinv3 = 0.5d0*rinv**3*alpha
-  rinv5 = 3.0d0*dprod*(1.0d0/r)**5*beta
+  rinv5 = 3.0d0*dprod*rinv**5*beta
   rinv = 0.5d0*rinv*alpha
 
   dcomb = rinv3 + rinv5
@@ -357,7 +357,7 @@ subroutine st3d_comb(srcinfo,ndt,targ,ndd,dpars,ndz, &
 
   dxi = dr(i)
   dxj = dr(j)
-  val = dxi*dxj*rinv5
+  val = dxi*dxj*dcomb
 
   if (i .eq. j) val = val + rinv
 

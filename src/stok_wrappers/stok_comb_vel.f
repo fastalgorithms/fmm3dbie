@@ -159,7 +159,7 @@ c
 c
 
       implicit none 
-      integer, intent(in) :: npatches,norders(npatches),npts,nquad,nker
+      integer, intent(in) :: npatches,norders(npatches),npts,nquad
       integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
       real *8, intent(in) :: rfac0
@@ -220,7 +220,7 @@ c
          j = ijloc(2,l)
          ipars(1) = i
          ipars(2) = j
-         fker => st3d_strac
+         fker => st3d_comb
          ipv = 1
          
          call dgetnearquad_ggq_guru(npatches,norders,ixyzs,
@@ -312,7 +312,7 @@ c        density for layer potential
 c
 c  Output arguments
 c    - pot: double precision(ndpot,ntarg)
-c        traction of layer potential evaluated at the target points
+c        velocity of layer potential evaluated at the target points
 c
 c-----------------------------------
 c
@@ -355,6 +355,10 @@ c
       integer iptype_avg,norder_avg
       integer ikerorder, iquadtype,npts_over
 
+
+
+      call cpu_time(t1)
+      
 c
 c
 c        this might need fixing
@@ -416,6 +420,12 @@ c
      1        srcover,wover)
 
 
+
+      call cpu_time(t2)
+
+c      write(*,*) 'TIME FOR GEO CALCS (find near, oversample) '
+c      write(*,*) t2-t1
+      
 c
 c   compute near quadrature correction
 c
@@ -436,23 +446,36 @@ C$OMP END PARALLEL DO
 
       iquadtype = 1
 
-      call getnearquad_stok_s_trac(npatches,norders,
+      call cpu_time(t1)
+
+      call getnearquad_stok_comb_vel(npatches,norders,
      1     ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
-     1     ipatch_id,uvs_targ,eps,iquadtype,nnz,row_ptr,col_ind,
+     1     ipatch_id,uvs_targ,eps,dpars,iquadtype,nnz,row_ptr,col_ind,
      1     iquad,rfac0,nquad,wnear)
       
 
+      call cpu_time(t2)
+c      write(*,*) 'TIME FOR NEAR WEIGHTS PRE-COMP'
+c      write(*,*) t2-t1
+      
 c
 c     
 c     compute layer potential
-c     
-      call lpcomp_stok_s_trac_addsub(npatches,norders,ixyzs,
+c
+
+      call cpu_time(t1)
+c$    t1 = omp_get_wtime()
+      call lpcomp_stok_comb_vel_addsub(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
-     2     eps,nnz,row_ptr,col_ind,iquad,nquad,wnear,
+     2     eps,dpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,
      3     sigma,novers,npts_over,ixyzso,srcover,wover,pot)
       
 
-
+      call cpu_time(t2)
+c$    t2 = omp_get_wtime()
+c      write(*,*) 'TIME FOR LAYER POTENTIAL EVAL (ADDSUB)'
+c      write(*,*) t2-t1
+      
       return
       end
 c
@@ -460,14 +483,14 @@ c
 c
 c
 c
-      subroutine lpcomp_stok_s_trac_addsub(npatches,norders,ixyzs,
-     1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
-     2     eps,nnz,row_ptr,col_ind,iquad,nquad,wnear,sigma,
+      subroutine lpcomp_stok_comb_vel_addsub(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
+     2     eps,dpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,sigma,
      3     novers,nptso,ixyzso,srcover,whtsover,pot)
-c
+c     
 c
 c      this subroutine evaluates the layer potential for
-c      the traction of the representation u = 4\pi S 
+c      the traction of the representation u = 4\pi (\alpha S + \beta D)
 c      where S is the single layer potential for the Stokes operator.
 c      the near field is precomputed and stored
 c      in the row sparse compressed format.
@@ -525,9 +548,11 @@ c
 c         targs - real *8 (ndtarg,ntarg)
 c            target information
 c
-c          eps - real *8
+c           eps - real *8
 c             precision requested
-c
+c           dpars - real *8 (2)
+c             alpha = dpars(1) and beta = dpars(2) are the parameters of the
+c             representation as above
 c           nnz - integer *8
 c             number of source patch-> target interactions in the near field
 c 
@@ -598,15 +623,18 @@ c
       real *8, allocatable :: potsort(:)
 
       real *8, allocatable :: sources(:,:),targvals(:,:)
-      real *8, allocatable :: sigmaover(:,:), stoklet(:,:)
-      real *8, allocatable :: pottarg(:,:), pretarg(:)
-      real *8, allocatable :: gradtarg(:,:,:)
+      real *8, allocatable :: sigmaover(:,:), stoklet(:,:), strslet(:,:)
+      real *8, allocatable :: pottarg(:,:), strsvec(:,:)
       integer ns,nt
       real *8 alpha,beta
       integer ifstoklet,ifstrslet
       integer ifppreg,ifppregtarg
       real *8 tmp(10),val
 
+      real *8 w11,w12,w13,w21,w22,w23,w31,w32,w33,sig1,sig2,sig3
+
+      integer istress
+      
       real *8 xmin,xmax,ymin,ymax,zmin,zmax,sizey,sizez,boxsize
 
 
@@ -618,7 +646,7 @@ c
       integer ntj
       
       real *8 ddot,pottmp
-      real *8, allocatable :: sttmp2(:,:)
+      real *8, allocatable :: sttmp2(:,:), strstmp2(:,:), strsvec2(:,:)
       real *8 radexp,epsfmm
 
       integer ipars
@@ -631,13 +659,12 @@ c
       real *8 rr,rmin
       integer nss,ii,l,npover
 
-      integer ntarg0
+      integer ntarg0, nd
 
       real *8 ttot,done,pi
 
-      real *8 e11,e12,e13,e21,e22,e23,e31,e32,e33,p,dn1,dn2,dn3
-      real *8 w11,w12,w13,w21,w22,w23,w31,w32,w33,sig1,sig2,sig3
-      real *8 tmp3(3), gradv(3,3)
+      real *8 potv(3),pv,gradv(3,3)
+
 
       parameter (nd=1,ntarg0=1)
 
@@ -645,13 +672,14 @@ c
       done = 1
       pi = atan(done)*4
 
+      alpha = dpars(1)
+      beta = dpars(2)
            
-      ifpgh = 0
-      ifpghtarg = 1
       allocate(sources(3,ns),targvals(3,ntarg))
-      allocate(pottarg(3,ntarg),pretarg(ntarg),gradtarg(3,3,ntarg))
+      allocate(pottarg(3,ntarg))
 
-      allocate(sigmaover(3,ns),stoklet(3,ns))
+      allocate(sigmaover(3,ns),stoklet(3,ns),strslet(3,ns),
+     1     strsvec(3,ns))
 
 c 
 c       oversample density
@@ -676,9 +704,21 @@ C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
         sources(2,i) = srcover(2,i)
         sources(3,i) = srcover(3,i)
 
-        stoklet(1,i) = sigmaover(1,i)*whtsover(i)
-        stoklet(2,i) = sigmaover(2,i)*whtsover(i)
-        stoklet(3,i) = sigmaover(3,i)*whtsover(i)
+        stoklet(1,i) = sigmaover(1,i)*whtsover(i)*alpha
+        stoklet(2,i) = sigmaover(2,i)*whtsover(i)*alpha
+        stoklet(3,i) = sigmaover(3,i)*whtsover(i)*alpha
+
+
+c     double layer is negative of a stresslet with
+c     orientation given by surface normal
+
+        strslet(1,i) = -sigmaover(1,i)*whtsover(i)*beta
+        strslet(2,i) = -sigmaover(2,i)*whtsover(i)*beta
+        strslet(3,i) = -sigmaover(3,i)*whtsover(i)*beta
+
+        strsvec(1,i) = srcover(10,i)
+        strsvec(2,i) = srcover(11,i)
+        strsvec(3,i) = srcover(12,i)        
       enddo
 C$OMP END PARALLEL DO      
 
@@ -691,45 +731,30 @@ C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
 C$OMP END PARALLEL DO      
 
       ifstoklet = 1
-      ifstrslet = 0
+      ifstrslet = 1
 
 c
 c       call the fmm
 c
 
-      nd = 1
       ifppreg = 0
-      ifppregtarg = 3
+      ifppregtarg = 1
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()      
       call stfmm3d(nd,eps,ns,sources,ifstoklet,stoklet,
-     1     ifstrslet,tmp,tmp,ifppreg,tmp,tmp,tmp,
-     2     ntarg,targvals,ifppregtarg,pottarg,pretarg,gradtarg)
+     1     ifstrslet,strslet,strsvec,ifppreg,tmp,tmp,tmp,
+     2     ntarg,targvals,ifppregtarg,pottarg,tmp,tmp)
       call cpu_time(t2)
 C$      t2 = omp_get_wtime()
 
       timeinfo(1) = t2-t1
 
 c$OMP PARALLEL DO DEFAULT(SHARED)
-c$OMP& PRIVATE(i,e11,e12,e13,e21,e22,e23,e31,e32,e33,dn1,dn2,dn3,p)
+c$OMP& PRIVATE(i)
       do i = 1,ntarg
-         e11 = gradtarg(1,1,i)*2
-         e12 = gradtarg(1,2,i) + gradtarg(2,1,i)
-         e21 = e12
-         e13 = gradtarg(1,3,i) + gradtarg(3,1,i)
-         e31 = e13
-         e22 = gradtarg(2,2,i)*2
-         e23 = gradtarg(2,3,i) + gradtarg(3,2,i)
-         e32 = e23
-         e33 = gradtarg(3,3,i)*2
-         dn1 = targs(10,i)
-         dn2 = targs(11,i)
-         dn3 = targs(12,i)
-         p = pretarg(i)
-         
-         pot(1,i) = e11*dn1 + e12*dn2 + e13*dn3 - p*dn1
-         pot(2,i) = e21*dn1 + e22*dn2 + e23*dn3 - p*dn2
-         pot(3,i) = e31*dn1 + e32*dn2 + e33*dn3 - p*dn3
+         pot(1,i) = pottarg(1,i)
+         pot(2,i) = pottarg(2,i)
+         pot(3,i) = pottarg(3,i)
       enddo
 c$OMP END PARALLEL DO      
 
@@ -783,7 +808,8 @@ c
 C$      t1 = omp_get_wtime()
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
-C$OMP$PRIVATE(jstart,pottmp,npols)
+C$OMP$PRIVATE(jstart,pottmp,npols,sig1,sig2,sig3,w11,w12,w13)
+C$OMP$PRIVATE(w21,w22,w23,w31,w32,w33)
       do i=1,ntarg
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -796,10 +822,11 @@ C$OMP$PRIVATE(jstart,pottmp,npols)
              sig3 = sigma(3,jstart+l-1)
              w11 = wnear(1,jquadstart+l-1)
              w12 = wnear(2,jquadstart+l-1)
-             w21 = w12
              w13 = wnear(3,jquadstart+l-1)
+             w21 = w12
              w22 = wnear(4,jquadstart+l-1)
              w23 = wnear(5,jquadstart+l-1)
+             w31 = w13
              w32 = w23
              w33 = wnear(6,jquadstart+l-1)
              pot(1,i) = pot(1,i) + w11*sig1+w12*sig2+w13*sig3
@@ -814,15 +841,16 @@ C$OMP END PARALLEL DO
 c
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2)
-C$OMP$PRIVATE(sttmp2,nss,l,jstart,ii,npover,gradv
-C$OMP$   e11,e12,e13,e21,e22,e23,e31,e32,e33,dn1,dn2,dn3,p)
+C$OMP$PRIVATE(sttmp2,nss,l,jstart,ii,npover,gradv,potv,pv)
+C$OMP$PRIVATE(strstmp2,strsvec2,istress)      
       do i=1,ntarg
          nss = 0
          do j=row_ptr(i),row_ptr(i+1)-1
             jpatch = col_ind(j)
             nss = nss + ixyzso(jpatch+1)-ixyzso(jpatch)
          enddo
-         allocate(srctmp2(3,nss),sttmp2(3,nss))
+         allocate(srctmp2(3,nss),sttmp2(3,nss),strstmp2(3,nss),
+     1        strsvec2(3,nss))
 
          rmin = 1.0d6
          ii = 0
@@ -839,31 +867,31 @@ C$OMP$   e11,e12,e13,e21,e22,e23,e31,e32,e33,dn1,dn2,dn3,p)
                sttmp2(1,ii) = stoklet(1,jstart+l)
                sttmp2(2,ii) = stoklet(2,jstart+l)
                sttmp2(3,ii) = stoklet(3,jstart+l)
+
+               strstmp2(1,ii) = strslet(1,jstart+l)
+               strstmp2(2,ii) = strslet(2,jstart+l)
+               strstmp2(3,ii) = strslet(3,jstart+l)
+
+               strsvec2(1,ii) = strsvec(1,jstart+l)
+               strsvec2(2,ii) = strsvec(2,jstart+l)
+               strsvec2(3,ii) = strsvec(3,jstart+l)
             enddo
          enddo
 
-         val = 0
-         call st3ddirectstokg(nd,srctmp2,sttmp2,nss,
-     1        targvals(1,i),ntarg0,tmp3,p,gradv,thresh)
+         potv(1) = 0
+         potv(2) = 0
+         potv(3) = 0
+         istress = 1
+         call st3ddirectstokstrsg(nd,srctmp2,sttmp2,istress,
+     1        strstmp2,strsvec2,nss,
+     1        targvals(1,i),ntarg0,potv,pv,gradv,thresh)
 
-         e11 = gradv(1,1)*2
-         e12 = gradv(1,2) + gradv(2,1)
-         e21 = e12
-         e13 = gradv(1,3) + gradv(3,1)
-         e31 = e13
-         e22 = gradv(2,2)*2
-         e23 = gradv(2,3) + gradv(3,2)
-         e32 = e23
-         e33 = gradv(3,3)*2
-         dn1 = targs(10,i)
-         dn2 = targs(11,i)
-         dn3 = targs(12,i)
 
-         pot(1,i) = pot(1,i) - (e11*dn1 + e12*dn2 + e13*dn3 - p*dn1)
-         pot(2,i) = pot(2,i) - (e21*dn1 + e22*dn2 + e23*dn3 - p*dn2)
-         pot(3,i) = pot(3,i) - (e31*dn1 + e32*dn2 + e33*dn3 - p*dn3)
+         pot(1,i) = pot(1,i) - potv(1)
+         pot(2,i) = pot(2,i) - potv(2)
+         pot(3,i) = pot(3,i) - potv(3)
 
-         deallocate(srctmp2,sttmp2)
+         deallocate(srctmp2,sttmp2,strstmp2,strsvec2)
       enddo
       
       call cpu_time(t2)
@@ -895,18 +923,19 @@ c
 c
 c
 c        
-      subroutine stok_s_trac_solver(npatches,norders,ixyzs,
-     1    iptype,npts,srccoefs,srcvals,eps,numit,ifinout,
-     2     rhs,eps_gmres,niter,errs,rres,soln)
+      subroutine stok_comb_vel_solver(npatches,norders,ixyzs,
+     1    iptype,npts,srccoefs,srcvals,eps,dpars,numit,ifinout,
+     2     rhs,eps_gmres,niter,errs,rres,soln,uconst)
 c
 c
-c        this subroutine solves the Stokes traction problem
-c     on the interior or exterior of an object where the potential
-c     is represented as a single layer potential.
+c     this subroutine solves the Stokes velocity boundary
+c     value problem on the interior or exterior of an object
+c     where the potential is represented as a combined layer
+c     potential.
 c
 c
 c     Representation:
-c        u = S \sigma
+c        u = alpha S \sigma + beta D \sigma
 c     
 c     The linear system is solved iteratively using GMRES
 c
@@ -947,6 +976,10 @@ c          eps - real *8
 c             precision requested for computing quadrature and fmm
 c             tolerance
 c
+c          dpars - real *8 (2)
+c             alpha = dpars(1), beta = dpars(2) in the layer potential
+c             representation
+c      
 c          ifinout - integer
 c              flag for interior or exterior problems (normals assumed to 
 c                be pointing in exterior of region)
@@ -973,7 +1006,7 @@ c           rres - real *8
 c              relative residual for computed solution
 c              
 c           soln - real *8(3,npts)
-c              density which solves the traction problem
+c              density which solves the velocity problem
 c
 c
       implicit none
@@ -984,7 +1017,7 @@ c
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
       real *8 dpars(2)
       real *8 rhs(3*npts)
-      real *8 soln(3*npts)
+      real *8 soln(3*npts), uconst(3)
 
       real *8, allocatable :: targs(:,:)
       integer, allocatable :: ipatch_id(:)
@@ -999,7 +1032,7 @@ c
       integer nover,npolso,nptso
       integer nnz,nquad
       integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
-      real *8, allocatable :: wnear(:,:)
+      real *8, allocatable :: wnear(:,:), wts(:)
 
       real *8, allocatable :: srcover(:,:),wover(:)
       integer, allocatable :: ixyzso(:),novers(:)
@@ -1014,7 +1047,7 @@ c
 
 
       real *8 ttot,done,pi
-      real *8 rfac,rfac0
+      real *8 rfac,rfac0,alpha,beta
       integer iptype_avg,norder_avg
       integer ikerorder, iquadtype,npts_over
 
@@ -1035,6 +1068,9 @@ c
       complex *16 ztmp
 
 
+      alpha = dpars(1)
+      beta = dpars(2)
+      
       nmat = 3*npts
       allocate(vmat(nmat,numit+1),hmat(numit,numit))
       allocate(cs(numit),sn(numit))
@@ -1147,7 +1183,9 @@ c
       call get_qwts(npatches,novers,ixyzso,iptype,npts_over,
      1        srcover,wover)
 
-
+      allocate(wts(npts))
+      call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
+      
 c
 c   compute near quadrature correction
 c
@@ -1157,7 +1195,7 @@ c
       
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)
       do i=1,nquad
-         do j = 1,nker
+         do j = 1,6
             wnear(j,i) = 0
          enddo
       enddo
@@ -1170,10 +1208,10 @@ C$OMP END PARALLEL DO
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()      
 
-      call getnearquad_stok_s_trac(npatches,norders,
-     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,iquadtype,nnz,row_ptr,col_ind,
-     1      iquad,rfac0,nquad,wnear)
+      call getnearquad_stok_comb_vel(npatches,norders,
+     1     ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     1     ipatch_id,uvs_targ,eps,dpars,iquadtype,nnz,row_ptr,col_ind,
+     1     iquad,rfac0,nquad,wnear)
       call cpu_time(t2)
 C$      t2 = omp_get_wtime()     
 
@@ -1191,7 +1229,7 @@ c       the identity scaling (z) is defined via did below,
 c       and K represents the action of the principal value 
 c       part of the matvec
 c
-      did = (-1)**(ifinout)*2*pi
+      did = -(-1)**(ifinout)*2*pi*beta
 
 
       niter=0
@@ -1229,12 +1267,27 @@ c     evaluation routine
 c     
 
 
-         call lpcomp_stok_s_trac_addsub(npatches,norders,ixyzs,
+         call lpcomp_stok_comb_vel_addsub(npatches,norders,ixyzs,
      1        iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2        eps,nnz,row_ptr,col_ind,iquad,nquad,wnear,
+     2        eps,dpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,
      3        vmat(1,it),novers,npts_over,ixyzso,srcover,wover,
      4        wtmp)
 
+         uconst(1) = 0
+         uconst(2) = 0
+         uconst(3) = 0
+         do j = 1,npts
+            uconst(1) = uconst(1) + wts(j)*vmat(3*(j-1)+1,it)
+            uconst(2) = uconst(2) + wts(j)*vmat(3*(j-1)+2,it)
+            uconst(3) = uconst(3) + wts(j)*vmat(3*(j-1)+3,it)
+         enddo
+
+         do j = 1,npts
+            wtmp(3*(j-1)+1) = uconst(1) + wtmp(3*(j-1)+1)
+            wtmp(3*(j-1)+2) = uconst(2) + wtmp(3*(j-1)+2)
+            wtmp(3*(j-1)+3) = uconst(3) + wtmp(3*(j-1)+3)
+         enddo
+         
          do k=1,it
             hmat(k,it) = 0
             do j=1,nmat
@@ -1315,12 +1368,27 @@ c     evaluation routine
 c     
 
            
-           call lpcomp_stok_s_trac_addsub(npatches,norders,ixyzs,
+           call lpcomp_stok_comb_vel_addsub(npatches,norders,ixyzs,
      1          iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2          eps,nnz,row_ptr,col_ind,iquad,nquad,wnear,
+     2          eps,dpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,
      3          soln,novers,npts_over,ixyzso,srcover,wover,
      4          wtmp)
 
+
+           uconst(1) = 0
+           uconst(2) = 0
+           uconst(3) = 0
+           do j = 1,npts
+              uconst(1) = uconst(1) + wts(j)*soln(3*(j-1)+1)
+              uconst(2) = uconst(2) + wts(j)*soln(3*(j-1)+2)
+              uconst(3) = uconst(3) + wts(j)*soln(3*(j-1)+3)
+           enddo
+
+           do j = 1,npts
+              wtmp(3*(j-1)+1) = uconst(1) + wtmp(3*(j-1)+1)
+              wtmp(3*(j-1)+2) = uconst(2) + wtmp(3*(j-1)+2)
+              wtmp(3*(j-1)+3) = uconst(3) + wtmp(3*(j-1)+3)
+           enddo
            
            do i=1,nmat
               rres = rres + abs(did*soln(i) + wtmp(i)-rhs(i))**2

@@ -4,13 +4,14 @@ c     This file contains the following user callable
 c     routines: 
 c 
 c       getnearquad_stok_s_trac - generates the near
-c        field quadrature for the traction data
-c        corresponding to the single layer
+c        field quadrature for the traction of
+c        the single layer
 c        representation (targ arrays must have normal
 c        vector info)
 c
 c       lpcomp_stok_s_trac 
-c          simpler version of Laplace layer potential evaluator
+c          simpler version of Stokes single layer traction
+c          potential evaluator
 c          only geometry, targets,
 c          and density sampled at discretization required on input,
 c          output is the layer potential evaluated at the target points
@@ -19,7 +20,7 @@ c          array must have the source array format, in particular
 c          normal information should be in targs(10:12,i)
 c
 c       stok_s_trac_solver - solves the interior/exterior traction
-c         problem for the Stokes equation using the single-layer
+c         problem for the Stokes equation using the single layer
 c         representation
 c
 c    Advanced user interfaces: 
@@ -31,8 +32,8 @@ c     version tends to have better CPU-time performance, but we expect
 c     the setsub version to be more numerically stable
 c**************************************
 c       lpcomp_stok_s_trac_addsub 
-c         compute layer potential for the Dirichlet
-c         data corresponding to the combined field representation
+c         compute traction of the layer potential
+c         corresponding to the combined field representation
 c         using add and subtract
 c 
 c
@@ -160,7 +161,7 @@ c
 c
 
       implicit none 
-      integer, intent(in) :: npatches,norders(npatches),npts,nquad,nker
+      integer, intent(in) :: npatches,norders(npatches),npts,nquad
       integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
       real *8, intent(in) :: rfac0
@@ -577,7 +578,6 @@ c
       integer, intent(in) :: ixyzso(npatches+1),iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
       real *8, intent(in) :: targs(ndtarg,ntarg)
-      real *8, intent(in) :: dpars(2)
       integer, intent(in) :: nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
       integer, intent(in) :: iquad(nnz+1)
       real *8, intent(in) :: wnear(6,nquad),sigma(3,npts)
@@ -594,7 +594,7 @@ c
       real *8, allocatable :: pottarg(:,:), pretarg(:)
       real *8, allocatable :: gradtarg(:,:,:)
       integer ns,nt
-      real *8 alpha,beta
+
       integer ifstoklet,ifstrslet
       integer ifppreg,ifppregtarg
       real *8 tmp(10),val
@@ -623,7 +623,7 @@ c
       real *8 rr,rmin
       integer nss,ii,l,npover
 
-      integer ntarg0
+      integer ntarg0, nd
 
       real *8 ttot,done,pi
 
@@ -631,15 +631,13 @@ c
       real *8 w11,w12,w13,w21,w22,w23,w31,w32,w33,sig1,sig2,sig3
       real *8 tmp3(3), gradv(3,3)
 
-      parameter (nd=1,ntarg0=1)
+      parameter (ntarg0=1)
 
       ns = nptso
       done = 1
       pi = atan(done)*4
 
            
-      ifpgh = 0
-      ifpghtarg = 1
       allocate(sources(3,ns),targvals(3,ntarg))
       allocate(pottarg(3,ntarg),pretarg(ntarg),gradtarg(3,3,ntarg))
 
@@ -660,8 +658,7 @@ c
 c
 c       set relevatn parameters for the fmm
 c
-      alpha = dpars(1)
-      beta = dpars(2)
+
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
       do i=1,ns
         sources(1,i) = srcover(1,i)
@@ -707,11 +704,11 @@ c$OMP& PRIVATE(i,e11,e12,e13,e21,e22,e23,e31,e32,e33,dn1,dn2,dn3,p)
       do i = 1,ntarg
          e11 = gradtarg(1,1,i)*2
          e12 = gradtarg(1,2,i) + gradtarg(2,1,i)
-         e21 = e12
          e13 = gradtarg(1,3,i) + gradtarg(3,1,i)
-         e31 = e13
+         e21 = e12
          e22 = gradtarg(2,2,i)*2
          e23 = gradtarg(2,3,i) + gradtarg(3,2,i)
+         e31 = e13
          e32 = e23
          e33 = gradtarg(3,3,i)*2
          dn1 = targs(10,i)
@@ -775,7 +772,8 @@ c
 C$      t1 = omp_get_wtime()
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
-C$OMP$PRIVATE(jstart,pottmp,npols)
+C$OMP$PRIVATE(jstart,pottmp,npols,w11,w12,w13,w21,w22,w23)
+C$OMP$PRIVATE(w31,w32,w33,sig1,sig2,sig3)
       do i=1,ntarg
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -788,10 +786,11 @@ C$OMP$PRIVATE(jstart,pottmp,npols)
              sig3 = sigma(3,jstart+l-1)
              w11 = wnear(1,jquadstart+l-1)
              w12 = wnear(2,jquadstart+l-1)
-             w21 = w12
              w13 = wnear(3,jquadstart+l-1)
+             w21 = w12
              w22 = wnear(4,jquadstart+l-1)
              w23 = wnear(5,jquadstart+l-1)
+             w31 = w13
              w32 = w23
              w33 = wnear(6,jquadstart+l-1)
              pot(1,i) = pot(1,i) + w11*sig1+w12*sig2+w13*sig3
@@ -806,7 +805,7 @@ C$OMP END PARALLEL DO
 c
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2)
-C$OMP$PRIVATE(sttmp2,nss,l,jstart,ii,npover,gradv
+C$OMP$PRIVATE(sttmp2,nss,l,jstart,ii,npover,gradv,tmp3,
 C$OMP$   e11,e12,e13,e21,e22,e23,e31,e32,e33,dn1,dn2,dn3,p)
       do i=1,ntarg
          nss = 0
@@ -834,17 +833,27 @@ C$OMP$   e11,e12,e13,e21,e22,e23,e31,e32,e33,dn1,dn2,dn3,p)
             enddo
          enddo
 
-         val = 0
+         p=0
+         gradv(1,1) = 0
+         gradv(2,1) = 0
+         gradv(3,1) = 0
+         gradv(1,2) = 0
+         gradv(2,2) = 0
+         gradv(3,2) = 0
+         gradv(1,3) = 0
+         gradv(2,3) = 0
+         gradv(3,3) = 0
+         
          call st3ddirectstokg(nd,srctmp2,sttmp2,nss,
      1        targvals(1,i),ntarg0,tmp3,p,gradv,thresh)
 
          e11 = gradv(1,1)*2
          e12 = gradv(1,2) + gradv(2,1)
-         e21 = e12
          e13 = gradv(1,3) + gradv(3,1)
-         e31 = e13
+         e21 = e12
          e22 = gradv(2,2)*2
          e23 = gradv(2,3) + gradv(3,2)
+         e31 = e13
          e32 = e23
          e33 = gradv(3,3)*2
          dn1 = targs(10,i)
@@ -899,7 +908,19 @@ c
 c
 c     Representation:
 c        u = S \sigma
-c     
+c      
+c     Equation:
+c
+c     1/2 \sigma(x) + t(S \sigma)[x]
+c         + n(x) \int n(y) \cdot \sigma \, dS
+c
+c     the integral
+c
+c     \int n(y) \cdot \sigma \, dS
+c
+c     should be zero, so it does not affect the representation.
+c     In practice, this removes a nullspace
+c      
 c     The linear system is solved iteratively using GMRES
 c
 c
@@ -980,7 +1001,7 @@ c
 
       real *8, allocatable :: targs(:,:)
       integer, allocatable :: ipatch_id(:)
-      real *8, allocatable :: uvs_targ(:,:)
+      real *8, allocatable :: uvs_targ(:,:), wts(:)
       integer ndtarg,ntarg
 
       real *8 errs(numit+1)
@@ -1006,7 +1027,7 @@ c
 
 
       real *8 ttot,done,pi
-      real *8 rfac,rfac0
+      real *8 rfac,rfac0,sdotn
       integer iptype_avg,norder_avg
       integer ikerorder, iquadtype,npts_over
 
@@ -1131,10 +1152,13 @@ c
       print *, "npts_over=",npts_over
       call prinf('novers=*',novers,100)
 
-      allocate(srcover(12,npts_over),wover(npts_over))
+      allocate(srcover(12,npts_over),wover(npts_over),wts(npts))
 
       call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
      1   srccoefs,srcvals,novers,ixyzso,npts_over,srcover)
+
+      call get_qwts(npatches,norders,ixyzs,iptype,npts,
+     1        srcvals,wts)
 
       call get_qwts(npatches,novers,ixyzso,iptype,npts_over,
      1        srcover,wover)
@@ -1149,7 +1173,7 @@ c
       
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)
       do i=1,nquad
-         do j = 1,nker
+         do j = 1,6
             wnear(j,i) = 0
          enddo
       enddo
@@ -1226,6 +1250,20 @@ c
      2        eps,nnz,row_ptr,col_ind,iquad,nquad,wnear,
      3        vmat(1,it),novers,npts_over,ixyzso,srcover,wover,
      4        wtmp)
+
+
+         sdotn = 0
+         do j = 1,npts
+            sdotn = sdotn + vmat((j-1)*3+1,it)*srcvals(10,j)*wts(j)
+            sdotn = sdotn + vmat((j-1)*3+2,it)*srcvals(11,j)*wts(j)
+            sdotn = sdotn + vmat((j-1)*3+3,it)*srcvals(12,j)*wts(j)
+         enddo
+
+         do j = 1,npts
+            wtmp((j-1)*3+1) = wtmp((j-1)*3+1) + srcvals(10,j)*sdotn
+            wtmp((j-1)*3+2) = wtmp((j-1)*3+2) + srcvals(11,j)*sdotn
+            wtmp((j-1)*3+3) = wtmp((j-1)*3+3) + srcvals(12,j)*sdotn
+         enddo
 
          do k=1,it
             hmat(k,it) = 0

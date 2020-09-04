@@ -2,8 +2,8 @@
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:),targs(:,:)
       real *8, allocatable :: wts(:)
       
-      real *8 errs(6),ts(2)
-      real *8, allocatable :: rfacs(:,:)
+      real *8 ts(2), rres
+      real *8, allocatable :: rfacs(:,:), errs(:)
       character *100 fname
       integer ipars(2)
       integer, allocatable :: row_ptr(:),col_ind(:)
@@ -15,10 +15,13 @@
 
       integer, allocatable :: ipatch_id(:),inode_id(:)
       real *8, allocatable :: uvs_targ(:,:)
-      real *8 xyz_out(3),xyz_in(3), stracmat(3,3), smat(3,3), dmat(3,3)
+      real *8 xyz_out(3),xyz_in(3,10),stracmat(3,3),smat(3,3), dmat(3,3)
       real *8 velgrad(3,3), vel(3), pre, tractemp(3)
-      real *8 sigout(3), uin(3), uintest(3)
-      real *8, allocatable :: uval(:,:), tracval(:,:)
+      real *8 sigout(3), uin(3), uintest(3,10), dpars(2), st1(3), du1(3)
+      real *8 udir(3), uneu(3,10), uavecomp(3), uavetest(3)
+      real *8 st2(3), du2(3), uconst(3)
+      real *8 v(3), omega(3), r0(3), udiff(3,10), udiff2(3,10)      
+      real *8, allocatable :: uval(:,:), tracval(:,:), soln(:,:)
       complex * 16 zpars
 
       call prini(6,13)
@@ -50,22 +53,29 @@ c
         xyz_out(2) = -0.03d0
         xyz_out(3) = 3.15d0
 
-        xyz_in(1) = 0.17d0
-        xyz_in(2) = 0.23d0
-        xyz_in(3) = -0.11d0
+        xyz_in(1,1) = 0.17d0
+        xyz_in(2,1) = 0.23d0
+        xyz_in(3,1) = -0.11d0
+
+        do i = 2,10
+           xyz_in(1,i) = 0.2d0*cos(100.0d0*i+5.0d0)
+           xyz_in(2,i) = 0.2d0*cos(211.0d0*i+5.0d0)
+           xyz_in(3,i) = 0.2d0*cos(357.0d0*i+5.0d0)
+        enddo
+
       endif
 
       if(igeomtype.eq.2) then
-        xyz_in(1) = -4.501d0
-        xyz_in(2) = 1.7d-3
-        xyz_in(3) = 0.00001d0
+        xyz_in(1,1) = -4.501d0
+        xyz_in(2,1) = 1.7d-3
+        xyz_in(3,1) = 0.00001d0
 
         xyz_out(1) = -3.5d0
         xyz_out(2) = 3.1d0
         xyz_out(3) = 20.1d0
       endif
 
-      norder = 3
+      norder = 8
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
@@ -119,24 +129,37 @@ c
 
 
 
-      call st3d_slp_vec(9,xyz_out,3,xyz_in,0,dpars,0,zpars,0,
-     1     ipars,smat)
+      nin = 9
       
-      uintest(1) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
-     1     + smat(1,3)*sigout(3)
-      uintest(2) = smat(2,1)*sigout(1) + smat(2,2)*sigout(2)
-     1     + smat(2,3)*sigout(3)
-      uintest(3) = smat(3,1)*sigout(1) + smat(3,2)*sigout(2)
-     1     + smat(3,3)*sigout(3)
+      do i = 1,nin
+         call st3d_slp_vec(9,xyz_out,3,xyz_in(1,i),0,dpars,0,zpars,0,
+     1        ipars,smat)
+      
+         uintest(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
+     1        + smat(1,3)*sigout(3)
+         uintest(2,i) = smat(2,1)*sigout(1) + smat(2,2)*sigout(2)
+     1        + smat(2,3)*sigout(3)
+         uintest(3,i) = smat(3,1)*sigout(1) + smat(3,2)*sigout(2)
+     1        + smat(3,3)*sigout(3)
+
+      enddo
 
 
 c
-c     basic kernel check with smooth quad
+c     basic kernel check: green's i.d. with smooth quad at 1 target
 c     
 
       uin(1) = 0
       uin(2) = 0
       uin(3) = 0
+
+      st2(1) = 0
+      st2(2) = 0
+      st2(3) = 0
+
+      du2(1) = 0
+      du2(2) = 0
+      du2(3) = 0
 
       do i = 1,npts
          call st3d_slp_vec(9,srcvals(1,i),3,xyz_in,0,dpars,0,zpars,0,
@@ -161,57 +184,222 @@ c
      1        smat(3,1)*t1+smat(3,2)*t2+smat(3,3)*t3
      2        -dmat(3,1)*u1-dmat(3,2)*u2-dmat(3,3)*u3)
 
+         st2(1) = st2(1) + wts(i)*(
+     1        smat(1,1)*t1+smat(1,2)*t2+smat(1,3)*t3)
+         st2(2) = st2(2) + wts(i)*(
+     1        smat(2,1)*t1+smat(2,2)*t2+smat(2,3)*t3)
+         st2(3) = st2(3) + wts(i)*(
+     1        smat(3,1)*t1+smat(3,2)*t2+smat(3,3)*t3)
+
+         du2(1) = du2(1) + wts(i)*(
+     2        dmat(1,1)*u1+dmat(1,2)*u2+dmat(1,3)*u3)
+         du2(2) = du2(2) + wts(i)*(
+     2        dmat(2,1)*u1+dmat(2,2)*u2+dmat(2,3)*u3)
+         du2(3) = du2(3) + wts(i)*(
+     2        dmat(3,1)*u1+dmat(3,2)*u2+dmat(3,3)*u3)
+
 
       enddo
-      call prinf('npts *',npts,1)
 
       uin(1) = uin(1)/(4*pi)
       uin(2) = uin(2)/(4*pi)
       uin(3) = uin(3)/(4*pi)      
-      
-      write(*,*) abs(1-uin(1)/uintest(1))
-      write(*,*) abs(1-uin(2)/uintest(2))
-      write(*,*) abs(1-uin(3)/uintest(3))
 
-      stop
+      sum = 0
+      sumrel = 0
 
-      
-      ndtarg = 3
-     
-      do i=1,npts
-        targs(1,i) = srcvals(1,i)
-        targs(2,i) = srcvals(2,i)
-        targs(3,i) = srcvals(3,i)
+      do i = 1,3
+         sum = sum + (uin(i)-uintest(i,1))**2
+         sumrel = sumrel + uintest(i,1)**2
       enddo
 
-      allocate(ipatch_id(npts),uvs_targ(2,npts))
-      do i=1,npts
+      call prin2('rel err in Gauss ID --- direct, smooth quad *',
+     1     sqrt(sum/sumrel),1)
+
+c
+c     same test but calling fmm interface
+c      
+
+
+      npt1 = 1
+      allocate(ipatch_id(npt1),uvs_targ(2,npt1))
+      do i=1,npt1
         ipatch_id(i) = -1
         uvs_targ(1,i) = 0
         uvs_targ(2,i) = 0
       enddo
 
-      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, 
-     1         ipatch_id,uvs_targ)
 
- 
-      ndtarg = 3
-      
-      eps = 0.50001d-6
-      
-      
+      ndt_in = 3
+      nt_in = 1
+      eps = 1d-9
+      dpars(1) = 1
+      dpars(2) = 0
+      st1(1) = 0
+      st1(2) = 0
+      st1(3) = 0      
+      call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
+     2     ipatch_id,uvs_targ,eps,dpars,tracval,st1)
 
+      ndt_in = 3
+      nt_in = 1
+      eps = 1d-9
+      dpars(1) = 0
+      dpars(2) = 1
+      du1(1) = 0
+      du1(2) = 0
+      du1(3) = 0      
+      call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
+     2     ipatch_id,uvs_targ,eps,dpars,uval,du1)
+
+
+
+      uin(1) = (st1(1)-du1(1))/(4*pi)
+      uin(2) = (st1(2)-du1(2))/(4*pi)
+      uin(3) = (st1(3)-du1(3))/(4*pi)
+
+      sum = 0
+      sumrel = 0
+      do i = 1,3
+         sum = sum + (uin(i)-uintest(i,1))**2
+         sumrel = sumrel + uintest(i,1)**2
+      enddo
+
+      call prin2('rel err in Gauss ID --- FMM, adaptive quadrature *',
+     1     sqrt(sum/sumrel),1)
 
 
 c
+c     solve interior dirichlet (velocity) problem
 c
-c      compute error
+
+      if (1 .eq. 1) then
+
+         alpha = 1
+         beta = 1
+         
+         dpars(1) = alpha
+         dpars(2) = beta
+         ifinout = 0
+         numit = 30
+
+         allocate(soln(3,npts),errs(numit+1))
+
+         eps_gmres = 1d-15
+         
+         call stok_comb_vel_solver(npatches,norders,ixyzs,
+     1        iptype,npts,srccoefs,srcvals,eps,dpars,numit,
+     2        ifinout,uval,eps_gmres,niter,errs,rres,soln,uconst)
+
+
+         call prin2('gmres errs *',errs,niter)
+         call prin2('gmres rres *',rres,1)
+
+         call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
+     1        iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
+     2        ipatch_id,uvs_targ,eps,dpars,soln,udir)
+
+         udir(1) = udir(1) + uconst(1)
+         udir(2) = udir(2) + uconst(2)
+         udir(3) = udir(3) + uconst(3)      
+
+         sum = 0
+         sumrel = 0
+
+         do i = 1,3
+            sum = sum + (udir(i)-uintest(i,1))**2
+            sumrel = sumrel + (uintest(i,1))**2
+         enddo
+            
+         call prin2('rel err in velocity *',sqrt(sum/sumrel),1)
+
+         deallocate(soln,errs)
+      endif
+      
 c
+c     solve interior neumann (traction) problem
+c     compute at several targets to determine
+c     rigid body motion:
+c     
+c     ucomp-utest = v + omega \times r
+c
+c     where v and omega unknown, r the position
+
+
+      if (1 .eq. 1) then
+         dpars(1) = 0
+         dpars(2) = 0
+         ifinout = 0
+         numit = 100
+
+         allocate(soln(3,npts),errs(numit+1))
+         
+         eps_gmres = 1d-15
+         
+         call stok_s_trac_solver(npatches,norders,ixyzs,
+     1        iptype,npts,srccoefs,srcvals,eps,numit,
+     2        ifinout,tracval,eps_gmres,niter,errs,rres,soln)
+
+
+         call prin2('gmres errs *',errs,niter)
+         call prin2('gmres rres *',rres,1)
+
+         dpars(1) = 1
+         dpars(2) = 0
+
+         nt_in2 = nin
+         call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
+     1        iptype,npts,srccoefs,srcvals,ndt_in,nt_in2,xyz_in,
+     2        ipatch_id,uvs_targ,eps,dpars,soln,uneu)
+
+         deallocate(soln,errs)
+
+         do i = 1,nin
+            udiff(1,i) = uintest(1,i)-uneu(1,i)
+            udiff(2,i) = uintest(2,i)-uneu(2,i)
+            udiff(3,i) = uintest(3,i)-uneu(3,i)
+         enddo
+
+         r0(1) = 0
+         r0(2) = 0
+         r0(3) = 0
+         
+         call dfindrigidbody3d(nin,udiff,xyz_in,r0,v,omega)
+
+         call prin2('v *',v,3)
+         call prin2('omega *',omega,3)
+
+         call dapplyrigidbody3d(r0,v,omega,nin,xyz_in,udiff2)
+
+c     update ucomp -> ucomp - v - omega \times r
+
+         sum = 0
+         sumrel = 0
+         do i = 1,nin
+            sum = sum+ (udiff(1,i)-udiff2(1,i))**2
+            sum = sum+ (udiff(2,i)-udiff2(2,i))**2
+            sum = sum+ (udiff(3,i)-udiff2(3,i))**2            
+
+            sumrel = sumrel+ (udiff(1,i))**2
+            sumrel = sumrel+ (udiff(2,i))**2
+            sumrel = sumrel+ (udiff(3,i))**2            
+         enddo
+
+         call prin2('rel err in finding rigid body motion *',
+     1        sqrt(sum/sumrel),1)
+         
+         
+      endif
+
       
       stop
+
       end
 
 
+      
 
 
       subroutine setup_geom(igeomtype,norder,npatches,ipars, 
