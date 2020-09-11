@@ -4,7 +4,7 @@ EXEC = stok_wrappers
 HOST = osx-gfortran
 HOST=linux-gfortran
 #HOST=linux-gfortran-debug
-#HOST=linux-gfortran-openmp
+HOST=linux-gfortran-openmp
 #HOST=linux-ifort
 
 ifeq ($(HOST),osx-gfortran)

@@ -145,86 +145,6 @@ c
       enddo
 
 
-c
-c     basic kernel check: green's i.d. with smooth quad at 1 target
-c     
-
-      uin(1) = 0
-      uin(2) = 0
-      uin(3) = 0
-
-      st2(1) = 0
-      st2(2) = 0
-      st2(3) = 0
-
-      du2(1) = 0
-      du2(2) = 0
-      du2(3) = 0
-
-      do i = 1,npts
-         call st3d_slp_vec(9,srcvals(1,i),3,xyz_in,0,dpars,0,zpars,0,
-     1        ipars,smat)
-         call st3d_dlp_vec(9,srcvals(1,i),3,xyz_in,0,dpars,0,zpars,
-     1        0,ipars,dmat)
-
-         u1 = uval(1,i)
-         u2 = uval(2,i)
-         u3 = uval(3,i)
-         t1 = tracval(1,i)
-         t2 = tracval(2,i)
-         t3 = tracval(3,i)         
-
-         uin(1) = uin(1) + wts(i)*(
-     1        smat(1,1)*t1+smat(1,2)*t2+smat(1,3)*t3
-     2        -dmat(1,1)*u1-dmat(1,2)*u2-dmat(1,3)*u3)
-         uin(2) = uin(2) + wts(i)*(
-     1        smat(2,1)*t1+smat(2,2)*t2+smat(2,3)*t3
-     2        -dmat(2,1)*u1-dmat(2,2)*u2-dmat(2,3)*u3)
-         uin(3) = uin(3) + wts(i)*(
-     1        smat(3,1)*t1+smat(3,2)*t2+smat(3,3)*t3
-     2        -dmat(3,1)*u1-dmat(3,2)*u2-dmat(3,3)*u3)
-
-         st2(1) = st2(1) + wts(i)*(
-     1        smat(1,1)*t1+smat(1,2)*t2+smat(1,3)*t3)
-         st2(2) = st2(2) + wts(i)*(
-     1        smat(2,1)*t1+smat(2,2)*t2+smat(2,3)*t3)
-         st2(3) = st2(3) + wts(i)*(
-     1        smat(3,1)*t1+smat(3,2)*t2+smat(3,3)*t3)
-
-         du2(1) = du2(1) + wts(i)*(
-     2        dmat(1,1)*u1+dmat(1,2)*u2+dmat(1,3)*u3)
-         du2(2) = du2(2) + wts(i)*(
-     2        dmat(2,1)*u1+dmat(2,2)*u2+dmat(2,3)*u3)
-         du2(3) = du2(3) + wts(i)*(
-     2        dmat(3,1)*u1+dmat(3,2)*u2+dmat(3,3)*u3)
-
-
-      enddo
-
-      uin(1) = uin(1)/(4*pi)
-      uin(2) = uin(2)/(4*pi)
-      uin(3) = uin(3)/(4*pi)      
-
-      sum = 0
-      sumrel = 0
-
-      do i = 1,3
-         sum = sum + (uin(i)-uintest(i,1))**2
-         sumrel = sumrel + uintest(i,1)**2
-      enddo
-
-      i1 = 0
-      errl2 = sqrt(sum/sumrel)
-      if (errl2 .lt. 1d-3) i1 = 1
-      
-      call prin2('rel err in Gauss ID --- direct, smooth quad *',
-     1     errl2,1)
-
-c
-c     same test but calling fmm interface
-c      
-
-
       npt1 = nin
       allocate(ipatch_id(npt1),uvs_targ(2,npt1))
       do i=1,npt1
@@ -232,57 +152,52 @@ c
         uvs_targ(1,i) = 0
         uvs_targ(2,i) = 0
       enddo
+      
+      
+c
+c     solve interior dirichlet (velocity) problem
+c
 
+      alpha = 1
+      beta = 1
+      
+      dpars(1) = alpha
+      dpars(2) = beta
+      ifinout = 0
+      numit = 30
+
+      allocate(soln(3,npts),errs(numit+1))
+
+      eps_gmres = 1d-15
+      
+      call stok_comb_vel_solver(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,eps,dpars,numit,
+     2     ifinout,uval,eps_gmres,niter,errs,rres,soln,uconst)
+
+
+      call prin2('gmres errs *',errs,niter)
+      call prin2('gmres rres *',rres,1)
 
       ndt_in = 3
       nt_in = 1
-      eps = 1d-12
-      dpars(1) = 1
-      dpars(2) = 0
-      st1(1) = 0
-      st1(2) = 0
-      st1(3) = 0      
       call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
-     2     ipatch_id,uvs_targ,eps,dpars,tracval,st1)
+     2     ipatch_id,uvs_targ,eps,dpars,soln,udir)
 
-      dpars(1) = 0
-      dpars(2) = 1
-      du1(1) = 0
-      du1(2) = 0
-      du1(3) = 0      
-      call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
-     1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
-     2     ipatch_id,uvs_targ,eps,dpars,uval,du1)
-
-
-
-      uin(1) = (st1(1)-du1(1))/(4*pi)
-      uin(2) = (st1(2)-du1(2))/(4*pi)
-      uin(3) = (st1(3)-du1(3))/(4*pi)
+      udir(1) = udir(1) + uconst(1)
+      udir(2) = udir(2) + uconst(2)
+      udir(3) = udir(3) + uconst(3)      
 
       sum = 0
       sumrel = 0
+
       do i = 1,3
-         sum = sum + (uin(i)-uintest(i,1))**2
-         sumrel = sumrel + uintest(i,1)**2
+         sum = sum + (udir(i)-uintest(i,1))**2
+         sumrel = sumrel + (uintest(i,1))**2
       enddo
-
-      i2= 0
-      errl2 = sqrt(sum/sumrel)
-      if (errl2 .lt. 1d-3) i2 = 2 
-
-      call prin2('rel err in Gauss ID --- FMM, adaptive quadrature *',
-     1     errl2,1)
-
-      ntests=2
-      nsuccess = i1+i2
-
-      open(unit=33,file='../../print_testres.txt',access='append')
-      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
-     1     ' out of ',ntests,' in stok_wrappers testing suite'
-      close(33)
       
+      call prin2('rel err in velocity *',sqrt(sum/sumrel),1)
+
       
       stop
 
