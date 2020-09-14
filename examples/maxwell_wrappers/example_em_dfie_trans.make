@@ -63,10 +63,6 @@ FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
 .PHONY: all clean 
 
 OBJECTS =  example_em_dfie_trans.o \
-  $ ../../src/common/incoming_fields.o \
-  $ ../../src/maxwell_wrappers/em_dfie_trans.o \
-  $ ../../src/common/common_Maxwell.o \
-  $ ../../src/kernels/DPIE_kernels.o \
 
 #
 # use only the file part of the filename, then manually specify

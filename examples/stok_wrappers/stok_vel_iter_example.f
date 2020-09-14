@@ -168,7 +168,8 @@ c
 
       allocate(soln(3,npts),errs(numit+1))
 
-      eps_gmres = 1d-15
+      eps_gmres = 1d-5
+      eps = 1d-5
       
       call stok_comb_vel_solver(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,dpars,numit,

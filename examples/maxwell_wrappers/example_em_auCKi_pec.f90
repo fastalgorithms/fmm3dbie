@@ -39,35 +39,25 @@
 !
 !   simulation for plane 50 wavelengths in size
 !
- 	  zk=1.5d0
-	  write (*,*) 'zk: ',zk
+      zk=1.5d0
+      write (*,*) 'zk: ',zk
       zpars(1) = zk 
       zpars(2) = 1.0d0   ! this is alpha
       zpars(3) = 0.0d0
 
-      xyz_out(1) = 50d0
-      xyz_out(2) = 60.0d0
-      xyz_out(3) = 70.0d0
-	  
-!     fname = '../../geometries/A380_Final_o03_r02.go3'
-     fname = '../../../../Geometries_go3/' // &
-     & 'simplest_cube_quadratic_v4_o04_r01.go3'
-	  xyz_in(1) = 0.00d0
-     xyz_in(2) = 0.0d0
-     xyz_in(3) = 1.5d0
 
-	 
-!	  fname =  '../../../../Geometries_go3/' // &
-!     & 'Round_2_o08_r02.go3'
-!      xyz_in(1) = 0.00d0
-!      xyz_in(2) = 0.0d0
-!      xyz_in(3) = 0.0d0
+      xyz_in(1) = 0.11d0
+      xyz_in(2) = 0.0d-5
+      xyz_in(3) = 0.37d0
 
+      xyz_out(1) = -3.5d0
+      xyz_out(2) = 3.1d0
+      xyz_out(3) = 20.1d0
+      
+      fname = '../../geometries/sphere_192_o03.go3'
+      
 
-
-
-
-	  write (*,*) 'Geometry name (FAST): ', fname
+      write (*,*) 'Geometry name (FAST): ', fname
             
       call open_gov3_geometry_mem(fname,npatches,npts)
 
@@ -82,82 +72,50 @@
      &iptype,npts,srcvals,srccoefs,wts)
 
 
-!      fname = 'plane-res/a380.vtk'
-!      title = 'a380'
-!      call surf_vtk_plot(npatches,norders,ixyzs,iptype,npts,
-!     1   srccoefs,srcvals,fname,title)
-
-      norder = norders(1)
-!      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,&
-!     &wts,xyz_in,isout0)
-      
-!      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,&
-!     &wts,xyz_out,isout1)
-
-       print *, isout0,isout1
-
-
       allocate(sigma(npts),rhs(npts))
       allocate(sigma2(npts),rhs2(npts))
-	  allocate(scalar_RHS(npts),normal_H(npts))
-	  
-	  allocate(a_vect(2*npts),a_vect2(3*npts),RHS_vect(2*npts))
+      allocate(scalar_RHS(npts),normal_H(npts))
+  
+      allocate(a_vect(2*npts),a_vect2(3*npts),RHS_vect(2*npts))
       ifinout = 1
-	  
+  
       thet = hkrand(0)*pi
       phi = hkrand(0)*2*pi
-	  
-	  vf(1)=1.0d0
-	  vf(2)=2.0d0
-	  vf(3)=3.0d0
-	  write(*,*) 'NOT DONE RHS'
+  
+      vf(1)=1.0d0
+      vf(2)=2.0d0
+      vf(3)=3.0d0
+      write(*,*) 'NOT DONE RHS'
 !	  
-	  call get_RHS_CKif(xyz_in,vf,npts,srcvals,zpars(1),zpars(2),RHS_vect(1:2*npts),normal_H)
+      call get_RHS_CKif(xyz_in,vf,npts,srcvals,zpars(1),zpars(2), &
+        RHS_vect(1:2*npts),normal_H)
 
-	  write(*,*) 'DONE RHS'
-!	  do count1=1,10
-!	      write (*,*) count1,RHS_vect(count1),RHS_vect(npts+count1)
-!	  enddo
-	  
-!      do i=1,npts
-!        if(ifinout.eq.0)& 
-!     &call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
-!        if(ifinout.eq.1)& 
-!     &call h3d_slp(xyz_in,srcvals(1,i),dpars,zpars,ipars,rhs(i))
-!        rhs(i) = rhs(i)
-!        x = srcvals(1,i)*cos(thet)
-!        y = srcvals(2,i)*sin(thet)*cos(phi)
-!        z = srcvals(3,i)*sin(thet)*sin(phi)
-!        rhs2(i) = exp(ima*zk*(x+y+z))
-!        sigma(i) = 0
-!        sigma2(i) = 0
-!      enddo
-
+      write(*,*) 'DONE RHS'
 
       numit = 400
       niter = 0
       allocate(errs(numit+1))
 
       eps = 1d-5
-	  eps_gmres=1d-6
+      eps_gmres=1d-6
 
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      
       call em_auCKi_pec_solver(npatches,norders,ixyzs,iptype,npts,&
      &srccoefs,srcvals,eps,zpars,numit,ifinout,RHS_vect,eps_gmres,niter,errs,&
      &rres,a_vect,a_vect2,scalar_RHS)
-	 
-	 
-	 do i=1,npts
-		rhs2(i)=normal_H(i)-scalar_RHS(i)
-	 enddo
-	 
+ 
+ 
+     do i=1,npts
+        rhs2(i)=normal_H(i)-scalar_RHS(i)
+     enddo
+ 
       numit = 400
       niter = 0
       allocate(errs2(numit+1))
 
       eps = 1d-5
-	  eps_gmres=1d-6
+      eps_gmres=1d-6
 
 
 
@@ -170,31 +128,20 @@
 !C$       t2 = omp_get_wtime()
       call prin2('analytic solve time=*',t2-t1,1)
 
-!      open(unit=33,file='plane-res/sigma-analytic-50l.dat')
-!      do i=1,npts
-!        write(33,*) real(sigma(i)),imag(sigma(i))
-!      enddo
-!      close(33)
-
-
 !
 !       test solution at interior point
 
 
       call test_accuracy_CKi(eps,a_vect,a_vect2,zpars(1),zpars(2),&
-	   &npts,wts,srcvals,xyz_in,vf,xyz_out)
+       npts,wts,srcvals,xyz_in,vf,xyz_out)
  
  
       call helm_rpcomb_neu_solver(npatches,norders,ixyzs, &
         iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout, &
         rhs2,eps_gmres,niter,errs,rres,sigma,sigma2)
 
-!	call h_neumann_solver(npatches,norders,ixyzs,&
-!     &iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,&
-!     &rhs2,eps_gmres,niter,errs,rres,sigma,sigma2)
-
       call test_accuracy_auCKi(eps,a_vect,a_vect2,sigma,sigma2,zpars(1),zpars(2),&
-	   &npts,wts,srcvals,xyz_in,vf,xyz_out)
+       &npts,wts,srcvals,xyz_in,vf,xyz_out)
 
 
       stop

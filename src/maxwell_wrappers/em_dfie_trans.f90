@@ -675,7 +675,6 @@ subroutine em_dfie_trans_solver(npatches,norders,ixyzs,&
       complex *16 soln(6*npts)
 
       real *8, allocatable :: targs(:,:)
-      real *8, allocatable :: targs_aux(:,:)
       integer, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_targ(:,:)
       integer ndtarg,ntarg
@@ -747,16 +746,12 @@ subroutine em_dfie_trans_solver(npatches,norders,ixyzs,&
       ndtarg = 12
       ntarg = npts
       allocate(targs(ndtarg,npts),uvs_targ(2,ntarg),ipatch_id(ntarg))
-      allocate(targs_aux(3,npts))
 !C$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
-	    targs_aux(1,i) = srcvals(1,i)
-		targs_aux(2,i) = srcvals(2,i)
-		targs_aux(3,i) = srcvals(3,i)
-		targs(:,i)=srcvals(:,i)
-		ipatch_id(i) = -1
-		uvs_targ(1,i) = 0
-		uvs_targ(2,i) = 0
+        targs(:,i)=srcvals(:,i)
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
       enddo
 !C$OMP END PARALLEL DO   
 
@@ -792,21 +787,19 @@ subroutine em_dfie_trans_solver(npatches,norders,ixyzs,&
 !    find near quadrature correction interactions
 !
       print *, "entering find near mem"
-      call findnearmem(cms,npatches,rad_near,targs_aux,npts,nnz)
+      call findnearmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
       print *, "nnz=",nnz
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
-      call findnear(cms,npatches,rad_near,targs_aux,npts,row_ptr,&
+      call findnear(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr,&
      &col_ind)
 
       allocate(iquad(nnz+1)) 
       call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,&
-     &iquad)
+     &  iquad)
 
-      ikerorder = -1
-      if(abs(zpars(3)).gt.1.0d-16) ikerorder = 0
-
+      ikerorder = 0
 
 !
 !    estimate oversampling for far-field, and oversample geometry
@@ -822,8 +815,6 @@ subroutine em_dfie_trans_solver(npatches,norders,ixyzs,&
 
       npts_over = ixyzso(npatches+1)-1
       print *, "npts_over=",npts_over
-      call prinf('novers=*',novers,100)
-	write (*,*) 'inside no collapse'
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
@@ -854,15 +845,11 @@ subroutine em_dfie_trans_solver(npatches,norders,ixyzs,&
       print *, "starting to generate near quadrature"
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      
-	 
-	 	 write (*,*) 'generation doing'
 
       call getnearquad_em_dfie_trans(npatches,norders,&
      &ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
      &ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
      &iquad,rfac0,nquad,wnear)
-	 
-	 
       call cpu_time(t2)
 !C$      t2 = omp_get_wtime()     
 
@@ -1013,12 +1000,9 @@ subroutine em_dfie_trans_solver(npatches,norders,ixyzs,&
           enddo
           rres = sqrt(rres)/rb
           niter = it
-		  
-		  
           return
         endif
       enddo
-	  
 !
       return
       end subroutine em_dfie_trans_solver
@@ -1689,7 +1673,6 @@ implicit none
 	ep1 = zpars(4)
 	mu1 = zpars(5)
 
-	write (*,*) 'solution:' ,sol(1:10)
 	
 	call em_dfie_trans_FMM_targ(eps_FMM,omega,ep0,mu0,ns,srcvals,1,Pt,&
 	 &wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),sol(3*ns+1:4*ns),&

@@ -172,8 +172,8 @@ c     where v and omega unknown, r the position
 
       allocate(soln(3,npts),errs(numit+1))
 
-      eps = 1d-12
-      eps_gmres = 1d-15
+      eps = 1d-5
+      eps_gmres = 1d-5
       
       call stok_s_trac_solver(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,numit,

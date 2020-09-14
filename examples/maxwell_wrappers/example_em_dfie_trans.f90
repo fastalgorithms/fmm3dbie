@@ -46,38 +46,33 @@
 !
 !	Electromagnetic parameters
 !
-	  
-	omega=0.330d0
-	ep0=1.0d0
-	mu0=1.0d0
-	ep1=1.200d0
-	mu1=1.00d0
+  
+      omega=0.330d0
+      ep0=1.0d0
+      mu0=1.0d0
+      ep1=1.200d0
+      mu1=1.00d0
 
-	zpars(1) = omega
-	zpars(2) = ep0
-	zpars(3) = mu0
-	zpars(4) = ep1
-	zpars(5) = mu1
-	  
-	write (*,*) 'omega: ',omega
-	write (*,*) 'ep1: ',ep1
-!	write (*,*) 'Electrical length for the cube (simplest_cube_quadratic): ', 3.0d0*omega*sqrt(ep1*mu1)/(2*3.1415927d0)
+      zpars(1) = omega
+      zpars(2) = ep0
+      zpars(3) = mu0
+      zpars(4) = ep1
+      zpars(5) = mu1
+  
+      write (*,*) 'omega: ',omega
+      write (*,*) 'ep1: ',ep1
 
-	xyz_out(1) = 2.14d0
-	xyz_out(2) = 1.1d0
-	xyz_out(3) = -2.4d0
-	  
-	fname = '../../../../Geometries_go3/' // &
-    & 'simplest_cube_quadratic_v4_o04_r01.go3'
-	xyz_in(1) = 0.00d0
-	xyz_in(2) = 0.0d0
-	xyz_in(3) = 1.5d0
 
-!	  fname =  '../../../../Geometries_go3/' // &
-!      & 'Round_2_o08_r02.go3'
-!      xyz_in(1) = 0.00d0
-!      xyz_in(2) = 0.0d0
-!      xyz_in(3) = 0.0d0
+      xyz_in(1) = 0.11d0
+      xyz_in(2) = 0.0d-5
+      xyz_in(3) = 0.37d0
+
+      xyz_out(1) = -3.5d0
+      xyz_out(2) = 3.1d0
+      xyz_out(3) = 20.1d0
+      
+      fname = '../../geometries/sphere_192_o03.go3'
+      
 
 !
 !	Open geometry
@@ -92,29 +87,11 @@
       allocate(wts(npts))
 
       call open_gov3_geometry(fname,npatches,norders,ixyzs,&
-     &iptype,npts,srcvals,srccoefs,wts )
-
-
-!      fname = 'plane-res/a380.vtk'
-!      title = 'a380'
-!      call surf_vtk_plot(npatches,norders,ixyzs,iptype,npts,
-!     1   srccoefs,srcvals,fname,title)
-
-      norder = norders(1)
-!      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,&
-!     &wts,xyz_in,isout0)
-      
-!      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,&
-!     &wts,xyz_out,isout1)
-
-       print *, isout0,isout1
+     &iptype,npts,srcvals,srccoefs,wts)
 
       allocate(sigma(6*npts),rhs(6*npts))
-!      allocate(sigma2(npts),rhs2(npts))
-	  
-!	  allocate(a_vect(npts),RHS_vect(npts))
       ifinout = 1
-	  
+
       thet = hkrand(0)*pi
       phi = hkrand(0)*2*pi
 
@@ -122,28 +99,13 @@
 !	Set the orientation of the Electric/Magnetic dipoles
 !
 
-	  vf(1)=1.0d0
-	  vf(2)=2.0d0
-	  vf(3)=3.0d0
+      vf(1)=1.0d0
+      vf(2)=2.0d0
+      vf(3)=3.0d0
 !	  
-	  call get_rhs_em_dfie_trans(xyz_in,xyz_out,vf,npts,srcvals,zpars,rhs)
-	  
-	  
-!      do i=1,npts
-!        if(ifinout.eq.0)& 
-!     &call h3d_slp(xyz_out,srcvals(1,i),dpars,zpars,ipars,rhs(i))
-!        if(ifinout.eq.1)& 
-!     &call h3d_slp(xyz_in,srcvals(1,i),dpars,zpars,ipars,rhs(i))
-!        rhs(i) = rhs(i)
-!        x = srcvals(1,i)*cos(thet)
-!        y = srcvals(2,i)*sin(thet)*cos(phi)
-!        z = srcvals(3,i)*sin(thet)*sin(phi)
-!        rhs2(i) = exp(ima*zk*(x+y+z))
-!        sigma(i) = 0
-!        sigma2(i) = 0
-!      enddo
-
-
+      call get_rhs_em_dfie_trans(xyz_in,xyz_out,vf,npts,srcvals,zpars, &
+        rhs)
+  
       numit = 400
       niter = 0
       allocate(errs(numit+1))
@@ -152,8 +114,8 @@
 !	Specify
 !
 
-	  eps = 1d-14
-	  eps_gmres=1d-14
+      eps = 1d-5
+      eps_gmres=1d-5
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      
       call em_dfie_trans_solver(npatches,norders,ixyzs,iptype,npts,&
@@ -168,15 +130,13 @@
 !C$       t2 = omp_get_wtime()
       call prin2('analytic solve time=*',t2-t1,1)
 
-!      open(unit=33,file='plane-res/sigma-analytic-50l.dat')
-!      close(33)
-
 !
 !       test solution at interior and exterior point
 !
 
-		call test_accuracy_em_dfie_trans(eps,sigma,zpars,npts,wts,srcvals,xyz_in,vf,xyz_out)
-	  
+      call test_accuracy_em_dfie_trans(eps,sigma,zpars,npts,wts,srcvals, &
+        xyz_in,vf,xyz_out)
+
       stop
       end
 
