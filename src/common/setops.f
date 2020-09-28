@@ -1,50 +1,66 @@
+c----------------------------
+c  This file has the following user callable routines:
 c
-c        This file has 2 user callable routines:
-c           setsub - given two integer sets a,b, compute a\ (a \cap b)^{c}, 
-c                      and b\ (a \cap b)^{c}
+c    - setsub:
+c        given two integer sets a,b, compute a\ (a \cap b)^{c}, 
+c        and b\ (a \cap b)^{c}
 c
-c           setdecomp - given two integer sets a,b, compute a \cap b and
-c              a \cap b^{c} and mappings of the set a to various
-c              elements of either sets
+c    - setdecomp: 
+c        given two integer sets a,b, compute a \cap b and
+c        a \cap b^{c} and mappings of the set a to various
+c        elements of either sets
 c
-c           get_iuni1 - compute list of unique integers from a given
-c              array of integers
+c    - get_iuni1:
+c        compute list of unique integers from a given
+c        array of integers
 c 
-c           get_iuni1_omp - open mp version of get_iuni1 (note the
-c             sorting routine needs to be updated to be openmped)
+c    - get_iuni1_omp: 
+c        open mp version of get_iuni1 (note the
+c        sorting routine needs to be updated to be openmped)
 c
-c           get_iuni3 - compute list of unique integer triplets
-c             from a given collection of 3 integer arrays
+c    - get_iuni3: 
+c        compute list of unique integer triplets
+c        from a given collection of 3 integer arrays
 c
 
       subroutine setsub(a,n,b,m,amb,namb,bma,nbma)
 c
-c       find set subtraction for two integer arrays 
-c        with unique elements
+c-------------------------------
+c  Compute a \cap b^{c} and b \cap a^{c} for two integer
+c  sets with unique elements
 c
-c      input:
-c       a - integer(n)
-c         integer array 1
-c       n - integer
-c         number of input elements for array 1
-c       b - integer(m)
-c         integer array 2
-c       m - number of input elements for array 2
+c  Input arguments:
 c
-c      output
-c       amb - integer(n) 
-c         a \ (a \cap b)^{c} elements which are in a but not in b
-c       namb - integer
-c         number of elements in amb
-c       bma - integer(m)
-c         b \ (a \cap b)^{c} elements which are in b but not in a
-c       nbma - integer
-c         number of elements in bma
+c    - a: integer(n)
+c        integer array 1
+c    - n: integer
+c        number of input elements for array 1
+c    - b: integer(m)
+c        integer array 2
+c    - m: integer 
+c        number of input elements for array 2
 c
+c  Output arguments:
+c
+c    - amb: integer(n) 
+c        elements which are in a but not in b.
+c        On input of size (n), but only first namb
+c        entries are relevant.
+c    - namb: integer
+c        number of elements in amb
+c    - bma: integer(m)
+c        elements which are in b but not in a.
+c        On input of size (n), but only first nbma
+c        entries are relevant.
+c    - nbma: integer
+c        number of elements in bma
+c---------------------------
 
       
       implicit real *8 (a-h,o-z)
-      integer a(n),b(m),amb(n),bma(m)
+      integer, intent(in) :: n,m
+      integer, intent(in) :: a(n),b(m)
+      integer, intent(out) :: amb(n),bma(m)
       integer, allocatable :: asort(:),bsort(:),w(:),abint(:)
       integer, allocatable :: iabinta(:),iabintb(:)
 
@@ -73,11 +89,6 @@ c
       do i=1,m
         bsort(i) = b(w(i))
       enddo
-
-
-
-cc      call sortanyn(asort,n,w)
-cc      call sortanyn(bsort,m,w)
 
 
 c
@@ -179,8 +190,11 @@ c
 c
 c
 c
+c
       subroutine setdecomp(n,a,m,b,naintb,aintb,iaintba,iaintbb,naintbc,
      1   aintbc,iaintbc)
+
+
       implicit real *8 (a-h,o-z)
       integer n,a(n),m,b(m),aintb(n),iaintba(n),aintbc(n),iaintbc(n)
       integer iaintbb(n)

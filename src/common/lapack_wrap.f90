@@ -386,9 +386,6 @@ subroutine dgausselim(n, a, rhs, info, sol, dcond)
 end subroutine dgausselim
 
 
-
-
-
 subroutine dgausselim_vec(n, a, k, rhs, info, sol, dcond)
   implicit double precision (a-h,o-z)
   double precision :: a(n,n), rhs(n,k), sol(n,k)
@@ -428,7 +425,80 @@ subroutine dgausselim_vec(n, a, k, rhs, info, sol, dcond)
 end subroutine dgausselim_vec
 
 
+subroutine dleastsq(m,n,a,nrhs,rhs,eps,info,sol,irank)
+  !
+  ! a wrapper for dgelsy. a and rhs are not destroyed
+  !
+  ! eps is the rank cut-off for solving the system
+  ! in general, eps can be set near machine precision
+  ! recommended: 1d-15 .lt. eps .lt. 1d-12
+  !
+  implicit none
+  integer m,n,info,nrhs,irank
+  real *8 a(m,n), rhs(m,nrhs), sol(n,nrhs), eps
+  ! local  
+  real *8, allocatable :: work(:), atemp(:,:), rhstemp(:,:)
+  integer, allocatable :: ipiv(:)
+  real *8 dcond
 
+  integer lwork, lda, ldb, i, j, mn, mn2, nb, nb1, nb2, nb3, nb4
+  integer lwkmin, lwkopt
+
+  integer ilaenv
+
+  dcond = 1d0/eps
+  dcond = eps
+
+  dcond = 1d-8
+  
+  mn = min(m,n)
+  mn2 = max(m,n)
+  
+  if( mn.eq.0 .or. nrhs.eq.0 ) then
+     lwkmin = 1
+     lwkopt = 1
+  else
+     nb1 = ilaenv( 1, 'DGEQRF', ' ', m, n, -1, -1 )
+     nb2 = ilaenv( 1, 'DGERQF', ' ', m, n, -1, -1 )
+     nb3 = ilaenv( 1, 'DORMQR', ' ', m, n, nrhs, -1 )
+     nb4 = ilaenv( 1, 'DORMRQ', ' ', m, n, nrhs, -1 )
+     nb = max( nb1, nb2, nb3, nb4 )
+     lwkmin = mn + max( 2*mn, n + 1, mn + nrhs )
+     lwkopt = max( lwkmin, mn + 2*n + nb*( n + 1 ), 2*mn + nb*nrhs )
+  endif
+  
+  lwork = lwkopt
+  
+  allocate(work(lwork),ipiv(n),atemp(m,n),rhstemp(mn2,nrhs))
+
+  do i = 1,n
+     ipiv(i) = 0
+     do j = 1,m
+        atemp(j,i) = a(j,i)
+     enddo
+  enddo
+
+  do i = 1,nrhs
+     do j = 1,m
+        rhstemp(j,i) = rhs(j,i)
+     enddo
+  enddo
+
+  lda = m
+  ldb = mn2
+
+  call dgelsy(m,n,nrhs,atemp,lda,rhstemp,ldb,ipiv,dcond, &
+       irank,work,lwork,info)
+
+  do i = 1,nrhs
+     do j = 1,n
+        sol(j,i) = rhstemp(j,i)
+     enddo
+  enddo
+
+  return
+end subroutine dleastsq
+  
 
 
 subroutine zgausselim(n, a, rhs, info, sol, dcond)

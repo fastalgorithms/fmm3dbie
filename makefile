@@ -73,7 +73,8 @@ COMOBJS = $(COM)/cumsum.o $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/legeexps.o $(COM)/prini_new.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
-	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o
+	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o \
+	$(COM)/rigidbodies.o
 
 # FMM wrappers
 FMML = src/fmm_wrappers
@@ -91,12 +92,17 @@ LOBJS = $(LAP)/lap_comb_dir.o
 # Maxwell wrappers
 EM = src/maxwell_wrappers
 EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
-	$(EM)/em_nrccie_pec.o
+	$(EM)/em_nrccie_pec.o $(EM)/em_auCKi_pec.o \
+	$(EM)/em_dfie_trans.o
+
+# Stokes wrappers
+STOK = src/stok_wrappers
+STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_trac.o
 
 # Kernels
 KER = src/kernels
 KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
-	$(KER)/yuk_kernels.o
+	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o
 
 # Quadrature wrappers
 QUAD = src/quadratures
@@ -118,7 +124,7 @@ TOBJS = $(TRIA)/ctriaints_main.o $(TRIA)/koornexps.o \
 	$(TRIA)/triasymq.o $(TRIA)/triatreerouts.o $(TRIA)/dtriaintrouts.o
 
 
-OBJS = $(COMOBJS) $(EMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS)
+OBJS = $(COMOBJS) $(EMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS)
 
 
 
