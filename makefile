@@ -30,6 +30,7 @@ LBLAS = -lblas -llapack
 
 LIBS = -lm
 DYLIBS = -lm
+F2PYDYLIBS = -lm -lblas -llapack
 
 LIBNAME=libfmm3dbie
 DYNAMICLIB = $(LIBNAME).so
@@ -51,12 +52,14 @@ LLINKLIB = -lfmm3dbie
 #
 LIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB) 
 DYLIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB)
+F2PYDYLIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB)
 
 # multi-threaded libs & flags needed
 ifneq ($(OMP),OFF)
   FFLAGS += $(OMPFLAGS)
   LIBS += $(OMPLIBS)
   DYLIBS += $(OMPLIBS)
+  F2PYDYLIBS += $(OMPLIBS)
 endif
 
 LIBS += $(LBLAS) $(LDBLASINC)
@@ -260,6 +263,17 @@ test/tria-dyn: $(TTOBJS)
 python: $(STATICLIB)
 	cd python && export FMMBIE_LIBS='$(LIBS)' && pip install -e . 
 
+
+#
+# build python gmsh to go3
+#
+python-gmsh: $(DYNAMICLIB)
+	f2py $(F2PYDYLIBS) -lfmm3dbie -c src/tria_routs/koornexps.f90 -m kexp
+	f2py $(F2PYDYLIBS) -lfmm3dbie -c src/surface_routs/surf_routs.f90 -m srout
+	mv kexp*.so python/
+	mv srout*.so python/
+	rm -rf *.dSYM
+
 #
 # housekeeping routines
 #
@@ -271,6 +285,8 @@ clean: objclean
 	rm -f python/*.so
 	rm -rf python/build
 	rm -rf python/fmm3dpy.egg-info
+	rm -rf python/kexp*.so
+	rm -rf python/srout*.so
 
 objclean: 
 	rm -f $(OBJS) $(TOBJS)
