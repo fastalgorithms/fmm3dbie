@@ -457,7 +457,9 @@ end subroutine koorn_ders
 
 subroutine koorn_vals2coefs(nmax, npols, uvs, amat)
   implicit real *8 (a-h,o-z)
-  real *8 :: uvs(2,npols), amat(npols,npols)
+  integer, intent(in) :: nmax, npols
+  real *8, intent(in) :: uvs(2,npols)
+  real *8, intent(out) :: amat(npols,npols)
 
   real *8, allocatable :: bmat(:,:)
   
@@ -529,6 +531,21 @@ subroutine koorn_coefs2vals(nmax, npols, uvs, amat)
  
   return
 end subroutine koorn_coefs2vals
+
+
+
+subroutine koorn_coefs2vals_vioreanu(norder, npols, amat)
+  implicit real *8 (a-h,o-z)
+  integer, intent(in) :: norder, npols
+  real *8, intent(out) :: amat(npols,npols)
+  real *8 :: uvs(2,npols)
+
+  INCLUDE 'koorn-uvs-dat.txt'
+  call koorn_coefs2vals(norder, npols, uvs, amat)
+
+  return
+end subroutine koorn_coefs2vals_vioreanu
+
 
 
 
