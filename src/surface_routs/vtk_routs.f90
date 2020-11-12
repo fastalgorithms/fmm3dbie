@@ -240,12 +240,13 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
   nps(1) = nps(1) - 1
 
   allocate(xyzs(3,npout),splot(npout))
+  call prinf('npout=*',npout,1)
 
 !
 !   get uvs of all patches of type = 1
 !
   
-  nlmax = 2
+  nlmax = 5
   nuv = (4**(nlmax+1)-1)/3
   allocate(uvs(2,3,nuv))
 
@@ -268,6 +269,7 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
   enddo
 
 
+
   do ipatch=1,npatches
     istart = ipstart(ipatch)
     npols = ixyzs(ipatch+1)-ixyzs(ipatch)
@@ -276,8 +278,9 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
     if(iptype(ipatch).eq.1) then
 
       nuvl = ipstart(ipatch+1)-ipstart(ipatch)
-      ilstart = 4**(kovers(ipatch)-1)/3+1
+      ilstart = (4**(kovers(ipatch))-1)/3+1
       nb = 4**(kovers(ipatch))
+      
       do i=1,nb
         itri = i+ilstart-1
         do j=1,3
@@ -477,7 +480,7 @@ subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
 !   get uvs of all patches of type = 1
 !
   
-  nlmax = 4
+  nlmax = 5
   nuv = (4**(nlmax+1)-1)/3
   allocate(uvs(2,3,nuv))
 
@@ -508,7 +511,7 @@ subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
     if(iptype(ipatch).eq.1) then
 
       nuvl = ipstart(ipatch+1)-ipstart(ipatch)
-      ilstart = 4**(kovers(ipatch)-1)/3+1
+      ilstart = (4**(kovers(ipatch))-1)/3+1
       nb = 4**(kovers(ipatch))
       do i=1,nb
         itri = i+ilstart-1
