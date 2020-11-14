@@ -1,18 +1,29 @@
+!
+!  This file contains the following user callable routines
+!  for solving Maxwell equations using the mfie integral
+!  represenation:
+!    getnearquad_em_mfie_pec: routine for generating the near
+!     field quadrature correction  
+!
+!
+!
+
+
+
+
+
 subroutine getnearquad_em_mfie_pec(npatches,norders,&
- &ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
- &ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
- &iquad,rfac0,nquad,wnear)
+  ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
+  ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
+  iquad,rfac0,nquad,wnear)
 !
 !  This subroutine generates the near field quadrature
 !  for the MFIE integral equation:
 !
-!  J/2-M_{k}[J]= nxH_inc
+!  J/2-M_{k}[J]= n \times H_inc
 !
 !  and the additional operator ikn·S_{k}[J] to get the charge therm
 !  from n·E_inc in a separate solver if E is needed.
-!
-!  Note: the 4 \pi scaling is NOT!! included as the output of the FMM
-!  has been rescaled.
 !
 !  The quadrature is computed by the following strategy
 !  targets within a sphere of radius rfac0*rs
@@ -26,7 +37,7 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
 !  The recommended parameter for rfac0 is 1.25d0
 !  
 !  NOTES:
-!    - wnear must be of size 6*nquad as 4 different layer
+!    - wnear must be of size 6*nquad as 6 different layer
 !      potentials are returned
 !      * the uu component of the matrix kernel -M_{k}[J]
 !      * the uv component of the matrix kernel -M_{k}[J]
@@ -37,7 +48,6 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
 !
 !
 !  Input arguments:
-! 
 !    - npatches: integer
 !        number of patches
 !    - norders: integer(npatches)
@@ -69,8 +79,6 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
 !    - zpars: complex *16 (2)
 !        kernel parameters (Referring to formula (1))
 !        zpars(1) = k 
-!        zpars(2) = not in use
-!        zpars(3) = not in use
 !    - iquadtype: integer
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
@@ -102,75 +110,73 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
 !              
 
       implicit none 
-      integer npatches,norders(npatches),npts,nquad
-      integer ixyzs(npatches+1),iptype(npatches)
-      real *8 srccoefs(9,npts),srcvals(12,npts),eps,rfac0
-      integer ndtarg,ntarg
-      integer iquadtype
-      real *8 targs(ndtarg,ntarg)
-      complex *16 zpars(3)
-      integer nnz,ipars(2)
+      integer, intent(in) :: npatches,norders(npatches),npts,nquad
+      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      real *8, intent(in) :: rfac0
+      integer, intent(in) :: ndtarg,ntarg
+      integer, intent(in) :: iquadtype
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      complex *16, intent(in) :: zpars
+      integer, intent(in) :: nnz
+      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      complex *16, intent(out) :: wnear(6*nquad)
+      integer ipars(2)
       real *8 dpars(1)
-      integer row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
-	  complex *16 wnear(6*nquad)
-
-      integer ipatch_id(ntarg)
-      real *8 uvs_targ(2,ntarg)
 
       complex *16 alpha,beta
       integer i,j,ndi,ndd,ndz
 
       integer ipv
 
-!      procedure (), pointer :: fker
-!      external h3d_slp, h3d_dlp, h3d_comb
-
       procedure (), pointer :: fker
-	  external  fker_em_mfie_pec
+      external  fker_em_mfie_pec
 
      ndz=3
-	 ndd=1
-	 ndi=2
-	 ipv=0
+     ndd=1
+     ndi=2
+     ipv=0
 
-      fker =>  fker_em_mfie_pec
-	  ipars(1)=1
-	  ipars(2)=1
-	  call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
+     fker =>  fker_em_mfie_pec
+     ipars(1)=1
+     ipars(2)=1
+     call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
      &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,&
      &ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(1:nquad))
-	 
+
       ipars(1)=1
-	  ipars(2)=2
+      ipars(2)=2
       call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
      &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
      &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(nquad+1:2*nquad))
-	 
+ 
       ipars(1)=2
-	  ipars(2)=1
+      ipars(2)=1
       call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
      &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
-	 &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(2*nquad+1:3*nquad))
-	 
+     &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(2*nquad+1:3*nquad))
+
       ipars(1)=2
-	  ipars(2)=2
+      ipars(2)=2
       call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
      &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
-	 &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(3*nquad+1:4*nquad))
+     &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(3*nquad+1:4*nquad))
 
       ipars(1)=3
-	  ipars(2)=1
+      ipars(2)=1
       call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
      &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
      &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(4*nquad+1:5*nquad))
-	 
+
       ipars(1)=3
-	  ipars(2)=2
+      ipars(2)=2
       call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
      &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
@@ -1070,7 +1076,7 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
      &ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
      &ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
      &iquad,rfac0,nquad,wnear)
-	 	 
+
       call cpu_time(t2)
 !C$      t2 = omp_get_wtime()     
 

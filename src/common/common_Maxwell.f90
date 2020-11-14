@@ -326,13 +326,13 @@ subroutine get_thresh(srcover,ns,targs,ntarg,thresh)
 implicit none
 
     !List of calling arguments
-	integer, intent(in) :: ns,ntarg
+    integer, intent(in) :: ns,ntarg
 	real ( kind = 8 ), intent(in) :: srcover(12,ns),targs(12,ntarg)
 	real ( kind = 8 ), intent(out) :: thresh
 
     !List of local variables
 	real ( kind = 8 ) xmin,xmax,ymin,ymax,zmin,zmax,boxsize,sizey,sizez
-	integer i
+    integer i
 
       xmin = srcover(1,1)
       xmax = srcover(1,1) 

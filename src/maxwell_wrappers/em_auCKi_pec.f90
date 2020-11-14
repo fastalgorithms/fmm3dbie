@@ -1,9 +1,8 @@
 !                                                                       1
       subroutine getnearquad_CKi(npatches,norders,&
-     &ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-     &ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
-     &iquad,rfac0,nquad,wnear)
-	
+       ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
+       ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
+       iquad,rfac0,nquad,wnear)
 !
 !  This subroutine generates the near field quadrature
 !  for the integral equation:
@@ -1077,7 +1076,7 @@ end subroutine fker_em_auCKi_pec
       !
       !     FMM call to compute nxSkia and -n·curlSkia
       !
-	  call get_thresh(srcover,ns,targs,ntarg,thresh)
+	  call get_fmm_thresh(12,ns,srcover,ndtarg,ntarg,targs,thresh)
 	  
        ifdir=0
 	   
@@ -2894,7 +2893,7 @@ end subroutine CKif_FMM_targ
       !
       !     FMM call to compute nxSkia and -n·curlSkia
       !
-	  call get_thresh(srcover,ns,targs,ntarg,thresh)
+	  call get_fmm_thresh(12,ns,srcover,ndtarg,ntarg,targs,thresh)
 	  
        ifdir=0
 	   

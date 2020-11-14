@@ -418,7 +418,7 @@
 
 
 
-		call get_thresh(srcover,ns,targs,ntarg,thresh)
+		call get_fmm_thresh(12,ns,srcover,ndtarg,ntarg,targs,thresh)
        ifdir=0
 	  
 		!Calculate the far_field with FMM		
