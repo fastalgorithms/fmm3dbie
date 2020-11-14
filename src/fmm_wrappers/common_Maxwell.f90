@@ -7,7 +7,7 @@ implicit none
     real ( kind = 8 ), intent(in) :: eps
     complex ( kind = 8 ), intent(in) :: zk
     integer, intent(in) :: ns
-	integer, intent(in) :: nt
+    integer, intent(in) :: nt
     real ( kind = 8 ), intent(in) :: source(3,ns)
     integer, intent(in) :: ifa_vect
     complex ( kind = 8 ), intent(in) :: a_vect(3,ns)
@@ -28,96 +28,94 @@ implicit none
     real ( kind = 8 ), intent(in) :: targets(3,nt)
 
     !List of local variables
-	complex ( kind = 8 ), allocatable :: sigma_vect(:,:), dipvect_vect(:,:,:)
+    complex ( kind = 8 ), allocatable :: sigma_vect(:,:), dipvect_vect(:,:,:)
     complex ( kind = 8 ), allocatable :: gradE_vect(:,:,:)
     integer count1,count2,nd
     integer ifcharge,ifdipole,ifpot,ifgrad
 	real ( kind = 8 ) pi
-	
-	pi=3.141592653589793238462643383d0
+
+    pi=3.141592653589793238462643383d0
 
     !!Initialize sources
     allocate(sigma_vect(3,ns))
     allocate(dipvect_vect(3,3,ns))
-    allocate(gradE_vect(3,3,nt))	
+    allocate(gradE_vect(3,3,nt))
 
     do count1=1,ns
         sigma_vect(1,count1)=0.0d0
         sigma_vect(2,count1)=0.0d0
         sigma_vect(3,count1)=0.0d0
  
-		dipvect_vect(1,1,count1)=0.0d0
-		dipvect_vect(1,2,count1)=0.0d0
-		dipvect_vect(1,3,count1)=0.0d0
+        dipvect_vect(1,1,count1)=0.0d0
+        dipvect_vect(1,2,count1)=0.0d0
+        dipvect_vect(1,3,count1)=0.0d0
 
-		dipvect_vect(2,1,count1)=0.0d0
-		dipvect_vect(2,2,count1)=0.0d0
-		dipvect_vect(2,3,count1)=0.0d0
+        dipvect_vect(2,1,count1)=0.0d0
+        dipvect_vect(2,2,count1)=0.0d0
+        dipvect_vect(2,3,count1)=0.0d0
 
-		dipvect_vect(3,1,count1)=0.0d0
-		dipvect_vect(3,2,count1)=0.0d0
-		dipvect_vect(3,3,count1)=0.0d0
+        dipvect_vect(3,1,count1)=0.0d0
+        dipvect_vect(3,2,count1)=0.0d0
+        dipvect_vect(3,3,count1)=0.0d0
     enddo
 
     if (ifrho.eq.1) then
         do count1=1,ns
-			 sigma_vect(1,count1)=sigma_vect(1,count1)+norm_vect(1,count1)*rho(count1)
-			 sigma_vect(2,count1)=sigma_vect(2,count1)+norm_vect(2,count1)*rho(count1)
-			 sigma_vect(3,count1)=sigma_vect(3,count1)+norm_vect(3,count1)*rho(count1)
+            sigma_vect(1,count1)=sigma_vect(1,count1)+norm_vect(1,count1)*rho(count1)
+            sigma_vect(2,count1)=sigma_vect(2,count1)+norm_vect(2,count1)*rho(count1)
+            sigma_vect(3,count1)=sigma_vect(3,count1)+norm_vect(3,count1)*rho(count1)
         enddo
     endif
 
     if (ifb_vect.eq.1) then
         do count1=1,ns
-			 sigma_vect(1,count1)=sigma_vect(1,count1)+b_vect(1,count1)
-			 sigma_vect(2,count1)=sigma_vect(2,count1)+b_vect(2,count1)
-			 sigma_vect(3,count1)=sigma_vect(3,count1)+b_vect(3,count1)
+            sigma_vect(1,count1)=sigma_vect(1,count1)+b_vect(1,count1)
+            sigma_vect(2,count1)=sigma_vect(2,count1)+b_vect(2,count1)
+            sigma_vect(3,count1)=sigma_vect(3,count1)+b_vect(3,count1)
         enddo
     endif
 
     if (iflambda.eq.1) then
         do count1=1,ns
-			 dipvect_vect(1,1,count1)=dipvect_vect(1,1,count1)-lambda(count1)
-			 dipvect_vect(2,2,count1)=dipvect_vect(2,2,count1)-lambda(count1)
-			 dipvect_vect(3,3,count1)=dipvect_vect(3,3,count1)-lambda(count1)
+            dipvect_vect(1,1,count1)=dipvect_vect(1,1,count1)-lambda(count1)
+            dipvect_vect(2,2,count1)=dipvect_vect(2,2,count1)-lambda(count1)
+            dipvect_vect(3,3,count1)=dipvect_vect(3,3,count1)-lambda(count1)
         enddo
     endif
 
     if (ifa_vect.eq.1) then
         do count1=1,ns
-!!            dipvect_x(1,count1)=dipvect_x(1,count1)+0.0d0
+            dipvect_vect(2,1,count1)=dipvect_vect(2,1,count1)+a_vect(3,count1)
             dipvect_vect(1,2,count1)=dipvect_vect(1,2,count1)-a_vect(3,count1)
             dipvect_vect(1,3,count1)=dipvect_vect(1,3,count1)+a_vect(2,count1)
 
-            dipvect_vect(2,1,count1)=dipvect_vect(2,1,count1)+a_vect(3,count1)
 !!            dipvect_y(2,count1)=dipvect_y(2,count1)+0.0d0
+            dipvect_vect(3,2,count1)=dipvect_vect(3,2,count1)+a_vect(1,count1)
+            dipvect_vect(3,1,count1)=dipvect_vect(3,1,count1)-a_vect(2,count1)
             dipvect_vect(2,3,count1)=dipvect_vect(2,3,count1)-a_vect(1,count1)
 
-            dipvect_vect(3,1,count1)=dipvect_vect(3,1,count1)-a_vect(2,count1)
-            dipvect_vect(3,2,count1)=dipvect_vect(3,2,count1)+a_vect(1,count1)
 !!            dipvect_z(3,count1)=dipvect_z(3,count1)+0.0d0
 
         enddo
     endif
-	
-	
-	do count1=1,ns
-		sigma_vect(1,count1)=sigma_vect(1,count1)*wts(count1)
-		sigma_vect(2,count1)=sigma_vect(2,count1)*wts(count1)
-		sigma_vect(3,count1)=sigma_vect(3,count1)*wts(count1)
-		
-		dipvect_vect(1,1,count1)=dipvect_vect(1,1,count1)*wts(count1)
-		dipvect_vect(1,2,count1)=dipvect_vect(1,2,count1)*wts(count1)
-		dipvect_vect(1,3,count1)=dipvect_vect(1,3,count1)*wts(count1)
-		
-		dipvect_vect(2,1,count1)=dipvect_vect(2,1,count1)*wts(count1)
-		dipvect_vect(2,2,count1)=dipvect_vect(2,2,count1)*wts(count1)
-		dipvect_vect(2,3,count1)=dipvect_vect(2,3,count1)*wts(count1)
-		
-		dipvect_vect(3,1,count1)=dipvect_vect(3,1,count1)*wts(count1)
-		dipvect_vect(3,2,count1)=dipvect_vect(3,2,count1)*wts(count1)
-		dipvect_vect(3,3,count1)=dipvect_vect(3,3,count1)*wts(count1)
-	enddo
+
+    do count1=1,ns
+        sigma_vect(1,count1)=sigma_vect(1,count1)*wts(count1)
+        sigma_vect(2,count1)=sigma_vect(2,count1)*wts(count1)
+        sigma_vect(3,count1)=sigma_vect(3,count1)*wts(count1)
+
+        dipvect_vect(1,1,count1)=dipvect_vect(1,1,count1)*wts(count1)
+        dipvect_vect(1,2,count1)=dipvect_vect(1,2,count1)*wts(count1)
+        dipvect_vect(1,3,count1)=dipvect_vect(1,3,count1)*wts(count1)
+
+        dipvect_vect(2,1,count1)=dipvect_vect(2,1,count1)*wts(count1)
+        dipvect_vect(2,2,count1)=dipvect_vect(2,2,count1)*wts(count1)
+        dipvect_vect(2,3,count1)=dipvect_vect(2,3,count1)*wts(count1)
+
+        dipvect_vect(3,1,count1)=dipvect_vect(3,1,count1)*wts(count1)
+        dipvect_vect(3,2,count1)=dipvect_vect(3,2,count1)*wts(count1)
+        dipvect_vect(3,3,count1)=dipvect_vect(3,3,count1)*wts(count1)
+    enddo
 
     ifcharge=1
     ifdipole=1
@@ -136,22 +134,20 @@ implicit none
         ifcharge=0
     endif
     nd=3
-	if ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.(ifdipole.eq.1)) then
-	    call hfmm3d_t_cd_g_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E,gradE_vect)
-		
-!	    call direct_calculation(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E, gradE_vect)
-		
-	elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.(ifdipole.eq.1)) then
-		call hfmm3d_t_cd_p_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E)		
-	elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.(ifdipole.eq.0)) then
-	    call hfmm3d_t_c_g_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E,gradE_vect)
-	elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.(ifdipole.eq.0)) then
-		call hfmm3d_t_c_p_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E)
-	elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.0).and.(ifdipole.eq.1)) then
-	    call hfmm3d_t_d_g_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E,gradE_vect)
-	elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.0).and.(ifdipole.eq.1)) then
-		call hfmm3d_t_d_p_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E)
-	endif
+    if ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.(ifdipole.eq.1)) then
+        call hfmm3d_t_cd_g_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E,gradE_vect)
+
+    elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.(ifdipole.eq.1)) then
+        call hfmm3d_t_cd_p_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E)		
+    elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.(ifdipole.eq.0)) then
+        call hfmm3d_t_c_g_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E,gradE_vect)
+    elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.(ifdipole.eq.0)) then
+        call hfmm3d_t_c_p_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E)
+    elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.0).and.(ifdipole.eq.1)) then
+        call hfmm3d_t_d_g_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E,gradE_vect)
+    elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.0).and.(ifdipole.eq.1)) then
+        call hfmm3d_t_d_p_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E)
+    endif
 
     if (ifdivE.eq.1) then
         do count1=1,nt
@@ -184,53 +180,3 @@ end subroutine Vector_Helmholtz_targ
 
 
 
-
-subroutine get_thresh(srcover,ns,targs,ntarg,thresh)
-implicit none
-
-    !List of calling arguments
-	integer, intent(in) :: ns,ntarg
-	real ( kind = 8 ), intent(in) :: srcover(12,ns),targs(12,ntarg)
-	real ( kind = 8 ), intent(out) :: thresh
-
-    !List of local variables
-	real ( kind = 8 ) xmin,xmax,ymin,ymax,zmin,zmax,boxsize,sizey,sizez
-	integer i
-
-      xmin = srcover(1,1)
-      xmax = srcover(1,1) 
-      ymin = srcover(2,1)
-      ymax = srcover(2,1)
-      zmin = srcover(3,1)
-      zmax = srcover(3,1)
-
-      do i=1,ns
-        if(srcover(1,i).lt.xmin) xmin = srcover(1,i)
-        if(srcover(1,i).gt.xmax) xmax = srcover(1,i)
-        if(srcover(2,i).lt.ymin) ymin = srcover(2,i)
-        if(srcover(2,i).gt.ymax) ymax = srcover(2,i)
-        if(srcover(3,i).lt.zmin) zmin = srcover(3,i)
-        if(srcover(3,i).gt.zmax) zmax = srcover(3,i)
-      enddo
-
-      do i=1,ntarg
-        if(targs(1,i).lt.xmin) xmin = targs(1,i)
-        if(targs(1,i).gt.xmax) xmax = targs(1,i)
-        if(targs(2,i).lt.ymin) ymin = targs(2,i)
-        if(targs(2,i).gt.ymax) ymax = targs(2,i)
-        if(targs(3,i).lt.zmin) zmin = targs(3,i)
-        if(targs(3,i).gt.zmax) zmax = targs(3,i)
-      enddo
-      
-      boxsize = xmax-xmin
-      sizey = ymax - ymin
-      sizez = zmax - zmin
-
-      if(sizey.gt.boxsize) boxsize = sizey
-      if(sizez.gt.boxsize) boxsize = sizez
-
-      thresh = 2.0d0**(-51)*boxsize
-
-
-return
-end subroutine
