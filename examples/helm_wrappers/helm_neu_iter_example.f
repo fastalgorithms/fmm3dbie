@@ -52,7 +52,7 @@ c
       norder = 4 
       npols = (norder+1)*(norder+2)/2
 
-      ifinout = 0
+      ifinout = 1
       if(ifinout.eq.0) then
         xyz_src(1) = xyz_out(1)
         xyz_src(2) = xyz_out(2)
@@ -122,7 +122,7 @@ c
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
+      call h3d_slp(xyz_targ,3,xyz_src,0,dpars,1,zpars,0,ipars,potex)
 
       ndtarg = 3
       ntarg = 1
