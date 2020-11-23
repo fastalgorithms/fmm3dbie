@@ -1,13 +1,15 @@
       implicit real *8 (a-h,o-z)
 
-      ntests = 6
+      ntests = 8
       call test_get_uni(i1,i2)
       call test_setdecomp(i3)
       call test_cumsum(i4)
       call test_sort(i5)
       call test_conv_csc(i6)
+      call test_findnear(i7)
+      call test_rsc_to_csc(i8)
 
-      nsuccess = i1+i2+i3+i4+i5+i6
+      nsuccess = i1+i2+i3+i4+i5+i6+i7+i8
 
       open(unit=33,file='../../print_testres.txt')
       write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
@@ -415,3 +417,152 @@ C$      t4 = omp_get_wtime()
 
       return
       end
+c
+c
+c
+c
+c
+      subroutine test_findnear(isuccess)
+      implicit real *8 (a-h,o-z)
+      real *8, allocatable :: src(:,:),targ(:,:),rads(:)
+      integer, allocatable :: row_ptr(:),row_ptr2(:)
+      integer, allocatable :: col_ind(:),col_ind2(:)
+      integer, allocatable :: isort(:),wsort(:),isort2(:),wsort2(:)
+
+      call prini(6,13)
+
+
+      ns = 1001
+      nt = 10000
+      isuccess = 1
+      
+      allocate(src(3,ns),targ(3,nt),rads(ns))
+      allocate(row_ptr(nt+1),row_ptr2(nt+1))
+      allocate(isort(nt),wsort(nt),isort2(nt),wsort2(nt))
+
+      do i=1,ns
+        src(1,i) = hkrand(0)
+        src(2,i) = hkrand(0)
+        src(3,i) = hkrand(0)
+        rads(i) = 2.0d0**(-10*hkrand(0))/3.0d0
+      enddo
+
+      do i=1,nt
+        targ(1,i) = hkrand(0)
+        targ(2,i) = hkrand(0)
+        targ(3,i) = hkrand(0)
+      enddo
+
+      nnz = 0
+      nnz2 = 0
+      ndt = 3
+      call findnearslowmem(src,ns,rads,ndt,targ,nt,nnz2)
+      call findnearmem(src,ns,rads,ndt,targ,nt,nnz)
+
+
+      if(nnz.ne.nnz2) then
+        call prinf('number of non zero elements dont match*',i,0)
+        isuccess = 0
+        return
+      endif
+
+      allocate(col_ind(nnz),col_ind2(nnz))
+      call findnear(src,ns,rads,ndt,targ,nt,row_ptr,col_ind)
+      call findnearslow(src,ns,rads,ndt,targ,nt,row_ptr2,col_ind2)
+
+      do i=1,nt
+        n1 = row_ptr(i+1)-row_ptr(i)
+        n2 = row_ptr2(i+1)-row_ptr2(i)
+        if(n1.ne.n2) then
+          call prinf('number of sources doesnt match for target i=*',
+     1       i,1)
+          isuccess = 0
+          return
+        endif
+
+        call sorti(n1,col_ind(row_ptr(i)),wsort)
+        call sorti(n2,col_ind2(row_ptr2(i)),wsort2)
+
+        erra = 0
+        do j=1,n1
+          isort(j) = col_ind(row_ptr(i)+wsort(j)-1)
+          isort2(j) = col_ind2(row_ptr2(i)+wsort2(j)-1)
+          erra = erra + abs(isort(j)-isort2(j))
+        enddo
+
+        if(erra.ne.0) then
+          call prinf('list of sources dont match for target i=*',i,1)
+          call prinf('correct sources=*',isort2,n2)
+          call prinf('computed sources=*',isort,n1)
+          isuccess = 0
+          return
+        endif
+      enddo
+      
+      print *, "find near test successfully completed"
+
+
+
+      return
+      end
+
+
+
+      subroutine test_rsc_to_csc(isuccess)
+      implicit real *8 (a-h,o-z)
+      integer, allocatable :: row_ptr(:),col_ind(:),col_ptr(:),
+     1   row_ind(:),iper(:)
+
+      
+      ns = 301
+      nt = 101
+
+      isuccess = 1
+
+      allocate(row_ptr(nt+1),col_ptr(ns+1))
+      
+
+      nnz_max = ns*nt
+      allocate(col_ind(nnz_max),iper(nnz_max),row_ind(nnz_max))
+
+      
+      row_ptr(1) = 1
+      do i=1,nt
+        nrel = hkrand(0)*0.5*ns
+        do j=1,nrel
+          col_ind(row_ptr(i)+j-1) = ceiling(hkrand(0)*ns)
+        enddo
+        row_ptr(i+1) = row_ptr(i) + nrel
+      enddo
+      nnz = row_ptr(nt+1)-1
+
+      call rsc_to_csc(ns,nt,nnz,row_ptr,col_ind,col_ptr,row_ind,iper)
+
+      do i=1,ns
+        do j=col_ptr(i),col_ptr(i+1)-1
+           itarg = row_ind(j)
+           ii1 = iper(j)
+           isrc = col_ind(ii1)
+           if(ii1.lt.row_ptr(itarg).or.ii1.ge.row_ptr(itarg+1)) then
+              call prinf('error in permutation array*',i,0)
+              print *, ii1,row_ptr(itarg),row_ptr(itarg+1)
+              isuccess = 0
+              return
+           endif
+
+           if(isrc.ne.i) then
+             call prinf('error in converting rsc to csc*',i,0)
+             print *, "No match found for interaction between ",isrc,
+     1          itarg
+             isuccess = 0
+             return
+
+           endif
+        enddo
+      enddo
+
+      print *, "rsc_to_csc completed successfully"
+
+      return
+      end
+

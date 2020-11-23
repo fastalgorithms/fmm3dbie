@@ -1,8 +1,8 @@
 c
        subroutine lfmm3d_ndiv(nd,eps,nsource,source,ifcharge,
-     $    charge,ifdipole,dipvec,ifpgh,pot,grad,hess,ntarg,
+     $    charge,ifdipole,dipvec,iper,ifpgh,pot,grad,hess,ntarg,
      $    targ,ifpghtarg,pottarg,gradtarg,hesstarg,ndiv,idivflag,
-     $    ifnear)
+     $    ifnear,ier)
 c
 c        Laplace FMM in R^{3}: evaluate all pairwise particle
 c        interactions (ignoring self-interactions) and interactions
@@ -41,7 +41,8 @@ c
 c
 c   dipvec   in: double precision (3,nsource) 
 c              dipole orientation vectors
-c
+c   iper    in: integer
+c             flag for periodic implmentations. Currently unused
 c   ifpgh   in: integer
 c              flag for evaluating potential/gradient at the sources
 c              ifpgh = 1, only potential is evaluated
@@ -82,10 +83,20 @@ c
 c   hesstarg    out: double precision(nd,6,ntarg)
 c                hessian at the target locations - currently not
 c                supported
+c   ier         out: integer
+c                error flag
+c                ier = 0, for successful execution
+c                ier = 4, if failed to allocate workspace
+c                      for multipole and local expansions
+c                ier = 8, if failed to allocate workspace
+c                      for plane wave expansions
+c     
+     
      
        implicit none
 
        integer nd
+       integer ier,iper
 
        double precision eps
 
@@ -105,12 +116,15 @@ c                supported
 c
 cc       tree variables
 c
-       integer mhung,idivflag,ndiv,isep,nboxes,nbmax,nlevels
-       integer *8 ltree
+       integer idivflag,ndiv,nboxes,nlevels
        integer nlmax
-       integer mnbors,mnlist1,mnlist2,mnlist3,mnlist4
-       integer *8 ipointer(32)
+       integer *8 ipointer(8),ltree
+       integer ifunif,nlmin
        integer, allocatable :: itree(:)
+       integer, allocatable :: isrcse(:,:),itargse(:,:),isrc(:)
+       integer, allocatable :: itarg(:)
+       integer, allocatable :: iexpcse(:,:)
+       integer iexpc
        double precision, allocatable :: treecenters(:,:),boxsize(:)
        double precision b0,b0inv,b0inv2,b0inv3
 
@@ -130,7 +144,6 @@ c
 c
 cc        temporary fmm arrays
 c
-       double precision epsfmm
        integer, allocatable :: nterms(:)
        integer *8, allocatable :: iaddr(:,:)
        double precision, allocatable :: scales(:)
@@ -151,7 +164,7 @@ c        not used in particle code
 c
 cc         other temporary variables
 c
-        integer i,iert,ifprint,ilev,idim,ier
+        integer i,iert,ifprint,ilev,idim
         double precision time1,time2,omp_get_wtime,second
 
 c
@@ -162,69 +175,59 @@ c     Prints timing breakdown and other things if ifprint=1.
 c       
       ifprint=0
 
-c
-cc        figure out tree structure
-c
-c
-cc      set tree flags
-c 
-       isep = 1
-       nlmax = 200
-       nlevels = 0
-       nboxes = 0
-       mhung = 0
-       ltree = 0
-
        nexpc = 0
        nadd = 0
        ntj = 0
 
-       mnlist1 = 0
-       mnlist2 = 0
-       mnlist3 = 0
-       mnlist4 = 0
-       nbmax = 0
 
-
-       allocate(radsrc(nsource))
-C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)       
-       do i=1,nsource
-          radsrc(i) = 0
-       enddo
-C$OMP END PARALLEL DO  
-
-       radexp = 0
+c
+cc      set tree flags
+c 
+       nlmax = 51
+       nlevels = 0
+       nboxes = 0
+       ltree = 0
+       nlmin = 0
+       ifunif = 0
+       iper = 0
 
 c
 cc     memory management code for contructing level restricted tree
-        iert = 0
-        call mklraptreemem(iert,source,nsource,radsrc,targ,ntarg,
-     1        expc,nexpc,radexp,idivflag,ndiv,isep,nlmax,nbmax,
-     2        nlevels,nboxes,mnbors,mnlist1,mnlist2,mnlist3,
-     3        mnlist4,mhung,ltree)
+      call pts_tree_mem(source,nsource,targ,ntarg,idivflag,ndiv,
+     1  nlmin,nlmax,iper,ifunif,nlevels,nboxes,ltree)
+
 
         if(ifprint.ge.1) print *, ltree/1.0d9
-        if(ifprint.ge.1) print *, "mnlist3 = ",mnlist3
-        if(ifprint.ge.1) print *, "mnlist4 = ",mnlist4
-
-
-
-        if(iert.ne.0) then
-           print *, "Error in allocating tree memory"
-           stop
-        endif
-
 
         allocate(itree(ltree))
         allocate(boxsize(0:nlevels))
         allocate(treecenters(3,nboxes))
 
 c       Call tree code
-        call mklraptree(source,nsource,radsrc,targ,ntarg,expc,
-     1               nexpc,radexp,idivflag,ndiv,isep,mhung,mnbors,
-     2               mnlist1,mnlist2,mnlist3,mnlist4,nlevels,
-     2               nboxes,treecenters,boxsize,itree,ltree,ipointer)
+      call pts_tree_build(source,nsource,targ,ntarg,idivflag,ndiv,
+     1  nlmin,nlmax,iper,ifunif,nlevels,nboxes,ltree,itree,ipointer,
+     2  treecenters,boxsize)
+      
 
+      allocate(isrcse(2,nboxes),itargse(2,nboxes),iexpcse(2,nboxes))
+      allocate(isrc(nsource),itarg(ntarg))
+
+      call pts_tree_sort(nsource,source,itree,ltree,nboxes,nlevels,
+     1   ipointer,treecenters,isrc,isrcse)
+      
+      call pts_tree_sort(ntarg,targ,itree,ltree,nboxes,nlevels,
+     1   ipointer,treecenters,itarg,itargse)
+      
+      call pts_tree_sort(nexpc,expc,itree,ltree,nboxes,nlevels,
+     1   ipointer,treecenters,iexpc,iexpcse)
+
+c
+c   End of tree build
+c
+
+c
+c  Set rescaling parameters
+c
       b0 = boxsize(0)
       b0inv = 1.0d0/b0
       b0inv2 = b0inv**2
@@ -388,7 +391,7 @@ c
 c
 cc     reorder sources 
 c
-      call dreorderf(3,nsource,source,sourcesort,itree(ipointer(5)))
+      call dreorderf(3,nsource,source,sourcesort,isrc)
 
 c
 c       rescale sources to be contained in unit box
@@ -397,21 +400,21 @@ c
 
       if(ifcharge.eq.1) then
         call dreorderf(nd,nsource,charge,chargesort,
-     1                     itree(ipointer(5)))
+     1                     isrc)
         call drescale(nd*nsource,chargesort,b0inv)
       endif
 
 
       if(ifdipole.eq.1) then
          call dreorderf(3*nd,nsource,dipvec,dipvecsort,
-     1       itree(ipointer(5)))
+     1       isrc)
          call drescale(3*nd*nsource,dipvecsort,b0inv2)
       endif
 
 c
 cc      reorder and rescale targs
 c
-      call dreorderf(3,ntarg,targ,targsort,itree(ipointer(6)))
+      call dreorderf(3,ntarg,targ,targsort,itarg)
       call drescale(3*ntarg,targsort,b0inv)
 
 
@@ -431,10 +434,12 @@ c
 
 
       allocate(rmlexp(lmptot),stat=ier)
+      ier = 0
       if(ier.ne.0) then
          print *, "Cannot allocate mpole expansion workspace"
          print *, "lmptot=", lmptot
-         stop
+         ier = 4
+         return
       endif
 
 c     Memory allocation is complete. 
@@ -454,13 +459,13 @@ C$      time1=omp_get_wtime()
      $   ifcharge,chargesort,
      $   ifdipole,dipvecsort,
      $   ntarg,targsort,nexpc,expcsort,
-     $   epsfmm,iaddr,rmlexp,lmptot,mptemp,mptemp2,lmptemp,
-     $   itree,ltree,ipointer,isep,ndiv,nlevels,
-     $   nboxes,boxsize,mnbors,mnlist1,mnlist2,mnlist3,mnlist4,
-     $   scales,treecenters,itree(ipointer(1)),nterms,
+     $   iaddr,rmlexp,lmptot,mptemp,mptemp2,lmptemp,
+     $   itree,ltree,ipointer,ndiv,nlevels,
+     $   nboxes,iper,boxsize,treecenters,isrcse,itargse,iexpcse,
+     $   scales,itree(ipointer(1)),nterms,
      $   ifpgh,potsort,gradsort,hesssort,
      $   ifpghtarg,pottargsort,gradtargsort,hesstargsort,ntj,
-     $   texpssort,scjsort,ifnear)
+     $   texpssort,scjsort,ifnear,ier)
 
       call cpu_time(time2)
 C$        time2=omp_get_wtime()
@@ -470,36 +475,30 @@ C$        time2=omp_get_wtime()
 
 
       if(ifpgh.ge.1) then
-        call dreorderi(nd,nsource,potsort,pot,
-     1                 itree(ipointer(5)))
+        call dreorderi(nd,nsource,potsort,pot,isrc)
       endif
       if(ifpgh.ge.2) then 
-        call dreorderi(3*nd,nsource,gradsort,grad,
-     1                 itree(ipointer(5)))
+        call dreorderi(3*nd,nsource,gradsort,grad,isrc)
         call drescale(nd*3*nsource,grad,b0inv)
       endif
 
       if(ifpgh.ge.3) then 
-        call dreorderi(6*nd,nsource,hesssort,hess,
-     1                 itree(ipointer(5)))
+        call dreorderi(6*nd,nsource,hesssort,hess,isrc)
         call drescale(nd*6*nsource,hess,b0inv2)
       endif
 
 
       if(ifpghtarg.ge.1) then
-        call dreorderi(nd,ntarg,pottargsort,pottarg,
-     1     itree(ipointer(6)))
+        call dreorderi(nd,ntarg,pottargsort,pottarg,itarg)
       endif
 
       if(ifpghtarg.ge.2) then
-        call dreorderi(3*nd,ntarg,gradtargsort,gradtarg,
-     1     itree(ipointer(6)))
+        call dreorderi(3*nd,ntarg,gradtargsort,gradtarg,itarg)
         call drescale(nd*3*ntarg,gradtarg,b0inv)
       endif
 
       if(ifpghtarg.ge.3) then
-        call dreorderi(6*nd,ntarg,hesstargsort,hesstarg,
-     1     itree(ipointer(6)))
+        call dreorderi(6*nd,ntarg,hesstargsort,hesstarg,itarg)
         call drescale(nd*6*ntarg,hesstarg,b0inv2)
       endif
 
@@ -507,3 +506,4 @@ C$        time2=omp_get_wtime()
       end
 
 c       
+c---------------------------------------------------------------

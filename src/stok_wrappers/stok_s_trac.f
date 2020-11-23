@@ -621,7 +621,7 @@ c
       real *8, allocatable :: srctmp2(:,:)
       real *8 thresh
       real *8 rr,rmin
-      integer nss,ii,l,npover
+      integer nss,ii,l,npover,ier
 
       integer ntarg0, nd
 
@@ -693,7 +693,7 @@ c
 C$      t1 = omp_get_wtime()      
       call stfmm3d(nd,eps,ns,sources,ifstoklet,stoklet,
      1     ifstrslet,tmp,tmp,ifppreg,tmp,tmp,tmp,
-     2     ntarg,targvals,ifppregtarg,pottarg,pretarg,gradtarg)
+     2     ntarg,targvals,ifppregtarg,pottarg,pretarg,gradtarg,ier)
       call cpu_time(t2)
 C$      t2 = omp_get_wtime()
 

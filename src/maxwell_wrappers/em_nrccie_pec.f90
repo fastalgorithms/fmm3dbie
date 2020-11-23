@@ -1200,7 +1200,7 @@ implicit none
     complex ( kind = 8 ), allocatable :: E(:,:),curlE(:,:),divE(:),rho(:)
 	complex ( kind = 8 ) ima,zk,alpha
 
-    integer count1,count2
+    integer count1,count2,ier
     integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
 	real ( kind = 8 ) pi
 	pi=3.1415926535897932384626433832795028841971d0
@@ -1310,9 +1310,8 @@ implicit none
      &,thresh)
     else
      call hfmm3d_t_c_g_vec(1,eps,zk,ns,source,rho,nt,targets,divE,&
-     &E)
+     &E,ier)
 	endif		
-!	call hfmm3d_t_c_g(eps,zk,ns,source,rho,nt,targets,divE,E)
 	
 	do count1=1,nt
      E(:,count1)=E(:,count1)/(4.0d0*pi)
@@ -1528,7 +1527,7 @@ implicit none
     complex ( kind = 8 ), allocatable :: curlE(:,:),gradpot(:,:),divE(:)
 	complex ( kind = 8 ) ima
 
-    integer count1,count2
+    integer count1,count2,ier
     integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
 	real ( kind = 8 ) pi
 	pi=3.1415926535897932384626433832795028841971d0
@@ -1582,7 +1581,7 @@ implicit none
 
 
     !Computing the full operator
-    call hfmm3d_t_c_g(eps,zk,ns,source,rho,nt,targ,divE,gradpot)
+    call hfmm3d_t_c_g(eps,zk,ns,source,rho,nt,targ,divE,gradpot,ier)
 
 
 	do count1=1,nt

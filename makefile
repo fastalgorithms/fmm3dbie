@@ -71,13 +71,13 @@ DYLIBS += $(LBLAS) $(LDBLASINC)
 #
 # Common objects
 COM = src/common
-COMOBJS = $(COM)/cumsum.o $(COM)/hkrand.o $(COM)/dotcross3d.o \
+COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/dlaran.o $(COM)/lapack_wrap.o \
 	$(COM)/legeexps.o $(COM)/prini_new.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o \
-	$(COM)/rigidbodies.o
+	$(COM)/rigidbodies.o 
 
 # FMM wrappers
 FMML = src/fmm_wrappers
@@ -112,7 +112,7 @@ QUAD = src/quadratures
 QOBJS = $(QUAD)/far_field_routs.o \
 	$(QUAD)/ggq-selfquad-routs.o $(QUAD)/ggq-quads.o \
 	$(QUAD)/ggq-selfquad.o \
-	$(QUAD)/near_field_routs.o
+	$(QUAD)/near_field_routs.o 
 
 # Surface wrappers
 SURF = src/surface_routs
