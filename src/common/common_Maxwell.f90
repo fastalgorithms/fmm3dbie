@@ -168,6 +168,7 @@ implicit none
 	complex ( kind = 8 ), allocatable :: sigma_vect(:,:), dipvect_vect(:,:,:)
     complex ( kind = 8 ), allocatable :: gradE_vect(:,:,:)
     integer count1,count2,nd
+    integer ier
     integer ifcharge,ifdipole,ifpot,ifgrad
 	real ( kind = 8 ) pi
 	
@@ -274,20 +275,17 @@ implicit none
     endif
     nd=3
 	if ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.(ifdipole.eq.1)) then
-	    call hfmm3d_t_cd_g_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E,gradE_vect)
-		
-!	    call direct_calculation(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E, gradE_vect)
-		
+	    call hfmm3d_t_cd_g_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E,gradE_vect,ier)
 	elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.(ifdipole.eq.1)) then
-		call hfmm3d_t_cd_p_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E)		
+		call hfmm3d_t_cd_p_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect,nt,targets,E,ier)		
 	elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.(ifdipole.eq.0)) then
-	    call hfmm3d_t_c_g_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E,gradE_vect)
+	    call hfmm3d_t_c_g_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E,gradE_vect,ier)
 	elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.(ifdipole.eq.0)) then
-		call hfmm3d_t_c_p_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E)
+		call hfmm3d_t_c_p_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E,ier)
 	elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.0).and.(ifdipole.eq.1)) then
-	    call hfmm3d_t_d_g_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E,gradE_vect)
+	    call hfmm3d_t_d_g_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E,gradE_vect,ier)
 	elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.0).and.(ifdipole.eq.1)) then
-		call hfmm3d_t_d_p_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E)
+		call hfmm3d_t_d_p_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E,ier)
 	endif
 
     if (ifdivE.eq.1) then
@@ -489,6 +487,7 @@ implicit none
   complex ( kind = 8 ), allocatable :: sigma_vect(:,:), dipvect_vect(:,:,:)
   complex ( kind = 8 ), allocatable :: gradE_vect(:,:,:)
   integer count1,count2,nd
+  integer ier
   integer ifcharge,ifdipole,ifpot,ifgrad
   real ( kind = 8 ) pi
 	
@@ -615,7 +614,7 @@ implicit none
 	   &,targets,nt,E,gradE_vect,thresh)
     else
       call hfmm3d_t_cd_g_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect&
-	   &,nt,targets,E,gradE_vect)
+	   &,nt,targets,E,gradE_vect,ier)
     endif
   elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.&
    &(ifdipole.eq.1)) then
@@ -624,7 +623,7 @@ implicit none
 	   &,targets,nt,E,thresh)
     else
 	  call hfmm3d_t_cd_p_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect&
-	   &,nt,targets,E)
+	   &,nt,targets,E,ier)
     endif
   elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.&
    &(ifdipole.eq.0)) then
@@ -633,14 +632,14 @@ implicit none
 	   &,thresh)
     else
       call hfmm3d_t_c_g_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E,&
-	   &gradE_vect)
+	   &gradE_vect,ier)
 	endif	
   elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.&
    &(ifdipole.eq.0)) then
     if (ifdir.eq.1) then
       call h3ddirectcp(nd,zk,source,sigma_vect,ns,targets,nt,E,thresh)
     else
-      call hfmm3d_t_c_p_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E)
+      call hfmm3d_t_c_p_vec(nd,eps,zk,ns,source,sigma_vect,nt,targets,E,ier)
     endif		
   elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.0).and.&
    &(ifdipole.eq.1)) then
@@ -649,14 +648,14 @@ implicit none
 	   &gradE_vect,thresh)
     else
       call hfmm3d_t_d_g_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets&
-	   &,E,gradE_vect)
+	   &,E,gradE_vect,ier)
     endif
   elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.0).and.&
    &(ifdipole.eq.1)) then
     if (ifdir.eq.1) then
       call h3ddirectdp(nd,zk,source,dipvect_vect,ns,targets,nt,E,thresh)
     else
-      call hfmm3d_t_d_p_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E)
+      call hfmm3d_t_d_p_vec(nd,eps,zk,ns,source,dipvect_vect,nt,targets,E,ier)
     endif
   endif
 

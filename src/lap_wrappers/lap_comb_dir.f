@@ -618,6 +618,7 @@ c
       integer nss,ii,l,npover
 
       integer nd,ntarg0
+      integer ier,iper
 
       real *8 ttot,done,pi
 
@@ -684,6 +685,9 @@ C$OMP END PARALLEL DO
       if(alpha.eq.0) ifcharge = 0
       if(beta.eq.0) ifdipole = 0
 
+      iper = 0
+      ier = 0
+
 c
 c
 c       call the fmm
@@ -692,8 +696,8 @@ c
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()      
       call lfmm3d(nd,eps,ns,sources,ifcharge,charges,
-     1  ifdipole,dipvec,ifpgh,tmp,tmp,tmp,ntarg,targvals,ifpghtarg,
-     1  pot,tmp,tmp)
+     1  ifdipole,dipvec,iper,ifpgh,tmp,tmp,tmp,ntarg,targvals,ifpghtarg,
+     1  pot,tmp,tmp,ier)
       call cpu_time(t2)
 C$      t2 = omp_get_wtime()
 
@@ -939,17 +943,25 @@ c
 
       integer ifaddsub
 
-      integer *8 ltree,ipointer(32)
+      integer *8 ltree,ipointer(8)
       integer, allocatable :: itree(:)
       integer, allocatable :: il1(:),il2(:),ilint(:),il1m2(:),il2m1(:)
       real *8, allocatable :: boxsize(:),centers(:,:)
+      integer, allocatable :: isrcse(:,:),isrcper(:)
+      integer, allocatable :: itargse(:,:),itargper(:)
+
+      integer, allocatable :: nlist1(:),list1(:,:)
+      integer, allocatable :: nlist2(:),list2(:,:)
+      integer, allocatable :: nlist3(:),list3(:,:)
+      integer, allocatable :: nlist4(:),list4(:,:)
 
       real *8 expc(3)
       integer ibox,nexpc,idivflag,iert,ifnear,ii,isend,isep,isource
       integer isstart,itarg,itend,itstart,itt,jbox,jpt,mhung,mnbors
       integer iss,l,lpt,mnlist1,mnlist2,mnlist3,mnlist4
       integer n1m2,n2m1,nadd,nbmax,nboxes,nchild,ndiv,nl2,nlevels
-      integer nlist1,nlmax,npover,nl1,ntj
+      integer nlmax,npover,nl1,ntj
+      integer nlmin,iper,ier,ifunif
       
       real *8 ddot,pottmp
       real *8, allocatable :: ctmp1(:),ctmp2(:),dtmp1(:,:),
@@ -1025,76 +1037,82 @@ C$OMP END PARALLEL DO
 c
 c       setup tree
 c
-c
 
       isep = 1
-      nlmax = 200
+      nlmax = 51
       nbmax = 0
       nlevels = 0
       nboxes = 0
-      mhung = 0
       ltree = 0
 
-      nexpc = 0
-      nadd = 0
-      ntj = 0
-      
       idivflag = 0
-
-
       mnlist1 = 0
       mnlist2 = 0
       mnlist3 = 0
       mnlist4 = 0
 
-      allocate(radsrc(ns))
+
+      call lndiv(eps,ns,ntarg,ifcharge,ifdipole,ifpgh,ifpghtarg,
+     1   ndiv,idivflag) 
+c
+cc      set tree flags
+c 
+       nlmax = 51
+       nlevels = 0
+       nboxes = 0
+       ltree = 0
+       nlmin = 0
+       ifunif = 0
+       iper = 0
+
+
+c
+cc     memory management code for contructing level restricted tree
+      call pts_tree_mem(sources,ns,targvals,ntarg,idivflag,ndiv,
+     1  nlmin,nlmax,iper,ifunif,nlevels,nboxes,ltree)
       
-      do i=1,ns
-        radsrc(i) = 0
-      enddo
+       allocate(itree(ltree))
+       allocate(boxsize(0:nlevels))
+       allocate(centers(3,nboxes))
 
-      radexp = 0
-      iert = 0
+c       Call tree code
+      call pts_tree_build(sources,ns,targvals,ntarg,idivflag,ndiv,
+     1  nlmin,nlmax,iper,ifunif,nlevels,nboxes,ltree,itree,ipointer,
+     2  centers,boxsize)
+      
+      
 
-cc      ndiv = ns + ntarg
+      allocate(isrcse(2,nboxes),itargse(2,nboxes))
+      allocate(isrcper(ns),itargper(ntarg))
 
-       if(eps.ge.0.5d-0) then
-         ndiv = 300
-       else if(eps.ge.0.5d-1) then
-         ndiv = 300
-       else if(eps.ge.0.5d-2) then
-         ndiv = 300
-       else if(eps.ge.0.5d-3) then
-         ndiv = 300
-       else if(eps.ge.0.5d-6) then
-         ndiv = 1000
-       else if(eps.ge.0.5d-9) then
-         ndiv = 1000
-       else if(eps.ge.0.5d-12) then
-         ndiv = 1000
-       else if(eps.ge.0.5d-15) then
-         ndiv = 1000
-       else
-         ndiv = ns+ntarg
-       endif
+      call pts_tree_sort(ns,sources,itree,ltree,nboxes,nlevels,
+     1   ipointer,centers,isrcper,isrcse)
 
-       ndiv = ndiv/4
-
-
-
-      call mklraptreemem(iert,sources,ns,radsrc,targvals,ntarg,
-     1   expc,nexpc,radexp,idivflag,ndiv,isep,nlmax,nbmax,
-     2   nlevels,nboxes,mnbors,mnlist1,mnlist2,mnlist3,mnlist4,
-     3   mhung,ltree)
-
-      allocate(itree(ltree),boxsize(0:nlevels),centers(3,nboxes))
-
-      call mklraptree(sources,ns,radsrc,targvals,ntarg,expc,nexpc,
-     1  radexp,idivflag,ndiv,isep,mhung,mnbors,mnlist1,mnlist2,mnlist3,
-     2  mnlist4,nlevels,nboxes,centers,boxsize,itree,ltree,ipointer)
-
+      call pts_tree_sort(ntarg,targvals,itree,ltree,nboxes,nlevels,
+     1   ipointer,centers,itargper,itargse)
 
       ifnear = 0
+
+      mnbors = 27
+      isep = 1
+
+      call computemnlists(nlevels,nboxes,itree(ipointer(1)),boxsize,
+     1  centers,itree(ipointer(3)),itree(ipointer(4)),
+     2  itree(ipointer(5)),isep,itree(ipointer(6)),mnbors,
+     2  itree(ipointer(7)),iper,mnlist1,mnlist2,mnlist3,mnlist4)
+      
+      allocate(list1(mnlist1,nboxes),nlist1(nboxes))
+      allocate(list2(mnlist2,nboxes),nlist2(nboxes))
+      allocate(list3(mnlist3,nboxes),nlist3(nboxes))
+      allocate(list4(mnlist4,nboxes),nlist4(nboxes))
+
+      call computelists(nlevels,nboxes,itree(ipointer(1)),boxsize,
+     1  centers,itree(ipointer(3)),itree(ipointer(4)),
+     2  itree(ipointer(5)),isep,itree(ipointer(6)),mnbors,
+     3  itree(ipointer(7)),iper,nlist1,mnlist1,list1,nlist2,
+     4  mnlist2,list2,nlist3,mnlist3,list3,
+     4  nlist4,mnlist4,list4)
+
 
 
 c
@@ -1105,8 +1123,8 @@ c
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()      
       call lfmm3d_ndiv(nd,eps,ns,sources,ifcharge,charges,
-     1  ifdipole,dipvec,ifpgh,tmp,tmp,tmp,ntarg,targvals,ifpghtarg,
-     1  pot,tmp,tmp,ndiv,idivflag,ifnear)
+     1  ifdipole,dipvec,iper,ifpgh,tmp,tmp,tmp,ntarg,targvals,ifpghtarg,
+     1  pot,tmp,tmp,ndiv,idivflag,ifnear,ier)
       call cpu_time(t2)
 C$      t2 = omp_get_wtime()
 
@@ -1144,7 +1162,7 @@ c
 c    work with sorted potentials and unsort them again later
 c
       allocate(potsort(ntarg))
-      call dreorderf(1,ntarg,pot,potsort,itree(ipointer(6)))
+      call dreorderf(1,ntarg,pot,potsort,itargper)
 
 
 
@@ -1175,26 +1193,25 @@ C$      t1 = omp_get_wtime()
 
 C$OMP PARALLEL DO DEFAULT(SHARED) 
 C$OMP$PRIVATE(ibox,nchild,nl2)
-C$OMP$PRIVATE(nlist1,i,jbox,isstart,isend,j,isource,il2)
+C$OMP$PRIVATE(i,jbox,isstart,isend,j,isource,il2)
 C$OMP$PRIVATE(itstart,itend,itt,itarg,nl1,il1,il1m2,il2m1)
 C$OMP$PRIVATE(jpatch,l,jpt,lpt,n1m2,n2m1,ii,val,npover)
 C$OMP$PRIVATE(ctmp1,ctmp2,dtmp1,dtmp2,srctmp1,srctmp2)
 C$OMP$SCHEDULE(DYNAMIC)
       do ibox = 1,nboxes
-        nchild = itree(ipointer(3)+ibox-1)
+        nchild = itree(ipointer(4)+ibox-1)
         if(nchild.eq.0) then
 
 c
 c     populate il2
 c
           nl2 = 0
-          nlist1 = itree(ipointer(20)+ibox-1)
-          do i=1,nlist1
-            jbox = itree(ipointer(21) + mnlist1*(ibox-1)+i-1)
-            isstart = itree(ipointer(10)+jbox-1)
-            isend = itree(ipointer(11)+jbox-1)
+          do i=1,nlist1(ibox)
+            jbox = list1(i,ibox) 
+            isstart = isrcse(1,jbox) 
+            isend = isrcse(2,jbox)
             do j=isstart,isend
-              isource = itree(ipointer(5)+j-1)
+              isource = isrcper(j) 
               nl2 = nl2 + 1
               il2(nl2) = isource
             enddo
@@ -1206,10 +1223,10 @@ c    end of populating il2.
 c    
 c    now loop over targets in this box
 c
-          itstart = itree(ipointer(12)+ibox-1)
-          itend = itree(ipointer(13)+ibox-1)
+          itstart = itargse(1,ibox) 
+          itend = itargse(2,ibox)
           do itt = itstart,itend
-            itarg = itree(ipointer(6)+itt-1)
+            itarg = itargper(itt) 
             
             nl1 = 0
             do j=row_ptr(itarg),row_ptr(itarg+1)-1
@@ -1231,8 +1248,6 @@ c
                 il1(lpt) = jpt
               enddo
             enddo
-
-cc            call prinf('il1=*',il1,nl1)
 c
 c   end of populating il1. now perform various set subtractions
 c
@@ -1346,7 +1361,7 @@ C$OMP END PARALLEL DO
 C$      t2 = omp_get_wtime()      
       timeinfo(2) = t2-t1
 
-      call dreorderi(1,ntarg,potsort,pot,itree(ipointer(6)))
+      call dreorderi(1,ntarg,potsort,pot,itargper)
 
 cc      call prin2('quadrature time=*',timeinfo,2)
       

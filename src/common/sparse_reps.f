@@ -33,7 +33,7 @@ c>            all the non-zero entries
 c> @param[out] iper: (irow,jcol) corresponding to row_ind(iper(i))
 c>          is the same as (irow,jcol) corresponding to col_ind(i)
 c> 
-c> @todo openmp version, python interface
+c> @todo python interface
 c-------------------------------------------------
       subroutine rsc_to_csc(ncol,nrow,nnz,row_ptr,col_ind,
      1    col_ptr,row_ind,iper)
@@ -43,41 +43,29 @@ c-------------------------------------------------
       integer, intent(out) :: col_ptr(ncol+1),row_ind(nnz)
       integer, intent(out) :: iper(nnz)
 
+      integer, allocatable :: row_ind_exp(:)
+
       integer, allocatable :: nslr(:)
       integer i,itarg,ictr
 
-      allocate(nslr(ncol))
-      lflg = nnz
-      do i=1,ncol
-         nslr(i) = 0
+      allocate(row_ind_exp(nnz))
+
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j)
+      do i=1,nrow
+        do j=row_ptr(i),row_ptr(i+1)-1
+          row_ind_exp(j) = i
+        enddo
       enddo
+C$OMP END PARALLEL DO     
 
-      do i=1,lflg
-        nslr(col_ind(i)) = nslr(col_ind(i)) + 1
-      enddo
-
-
-      col_ptr(1) = 1
-      do i=2,ncol+1
-         col_ptr(i) = col_ptr(i-1)+nslr(i-1)
-      enddo
-
-
-      do itarg=1,nrow
-         do ictr=row_ptr(itarg),row_ptr(itarg+1)-1
-           jsrc = col_ind(ictr)
-
-           iper(col_ptr(jsrc)) = ictr
-
-           row_ind(col_ptr(jsrc)) = itarg
-           col_ptr(jsrc) = col_ptr(jsrc) + 1 
-         enddo
-      enddo
-
-      col_ptr(1) = 1
-      do i=2,ncol+1
-         col_ptr(i) = col_ptr(i-1)+nslr(i-1)
-      enddo
+      if(nrow.lt.1000.or.nnz.lt.10000) then
+        call sorti(nnz,col_ind,iper)
+        call conv_to_csc(nnz,ncol,row_ind_exp,col_ind,col_ptr,row_ind)
+      else
+        call sorti_para(nnz,col_ind,iper)
+        call conv_to_csc_para(nnz,ncol,row_ind_exp,col_ind,col_ptr,
+     1     row_ind)
+      endif
 
       return
       end
