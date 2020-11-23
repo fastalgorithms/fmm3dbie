@@ -2148,7 +2148,7 @@ implicit none
     complex ( kind = 8 ), allocatable :: pot_aux2(:)
     complex ( kind = 8 ) ima
 
-    integer count1,count2,npols,ntri
+    integer count1,count2,npols,ntri,ier
     integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
     real ( kind = 8 ) pi
     pi=3.1415926535897932384626433832795028841971d0
@@ -2180,7 +2180,7 @@ implicit none
 
     !Computing the full operator
     call hfmm3d_t_cd_g(eps,zk,ns,source,charge,dipvec,nt,targ,pot_aux2,&
-    &H_aux)
+    &H_aux,ier)
 !    call hfmm3d_t_cd_p(eps,zk,ns,source,charge,dipvec,nt,targ,pot)
 			
 

@@ -341,7 +341,7 @@
       real *8 thresh,ra
       real *8 rr,rmin
       real *8 over4pi
-      integer nss,ii,l,npover
+      integer nss,ii,l,npover,ier
       complex *16 ima,ztmp
 
       integer nd,ntarg0,nmax
@@ -413,7 +413,7 @@
 !  Compute S_{k}'
 !
       call hfmm3d_t_c_g(eps,zpars(1),ns,sources,charges,npts, &
-        srctmp,pot_aux,grad_aux)
+        srctmp,pot_aux,grad_aux,ier)
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
@@ -487,7 +487,7 @@
 !
       ztmp = ima*abs(zpars(1))
       call hfmm3d_t_c_g(eps,ztmp,ns,sources,charges,npts, &
-        srctmp,pot_aux,grad_aux)
+        srctmp,pot_aux,grad_aux,ier)
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
@@ -569,7 +569,7 @@
 !$OMP END PARALLEL DO
 
       call hfmm3d_t_c_g(eps,ztmp,ns,sources,charges,npts, &
-        srctmp,pot_aux,grad_aux)
+        srctmp,pot_aux,grad_aux,ier)
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
@@ -658,7 +658,7 @@
 !$OMP END PARALLEL DO
 
       call hfmm3d_t_d_g(eps,zpars(1),ns,sources,dipvec,npts, &
-        srctmp,pot_aux,grad_aux)
+        srctmp,pot_aux,grad_aux,ier)
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
@@ -669,7 +669,7 @@
       
 
       call hfmm3d_t_d_g(eps,ztmp,ns,sources,dipvec,npts, &
-        srctmp,pot_aux,grad_aux)
+        srctmp,pot_aux,grad_aux,ier)
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts

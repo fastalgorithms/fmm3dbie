@@ -389,7 +389,7 @@
       real *8 thresh,ra
       real *8 rr,rmin
       real *8 over4pi
-      integer nss,ii,l,npover
+      integer nss,ii,l,npover,ier
       complex *16 ima,ztmp
 
       integer nd,ntarg0,nmax
@@ -489,7 +489,7 @@
 !  ep0^2*S_{k0}'[\lambda] + ep0*D_{k0}'[\rho]
 
       call hfmm3d_t_cd_g(eps,zk0,ns,sources,charges0,dipvec0,npts, &
-        srctmp,pot_aux,grad_aux)
+        srctmp,pot_aux,grad_aux,ier)
 
 !
 !   Add ep0^2*S_{k0}[\lambda]+ep0 D_{k0}[\rho] to pot and 
@@ -509,7 +509,7 @@
 !  ep1^2*S_{k1}'[\lambda] + ep1*D_{k1}'[\rho]
 !
       call hfmm3d_t_cd_g(eps,zk1,ns,sources,charges1,dipvec1,npts, &
-        srctmp,pot_aux,grad_aux)
+        srctmp,pot_aux,grad_aux,ier)
 
 !
 !   subtract ep1^2*S_{k1}[\lambda]+ep1 D_{k1}[\rho] from pot and 
