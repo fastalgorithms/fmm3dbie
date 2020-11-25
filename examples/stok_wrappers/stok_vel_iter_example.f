@@ -15,9 +15,10 @@
 
       integer, allocatable :: ipatch_id(:),inode_id(:)
       real *8, allocatable :: uvs_targ(:,:)
-      real *8 xyz_out(3),xyz_in(3,10),stracmat(3,3),smat(3,3), dmat(3,3)
+      real *8 xyz_out(3),xyz_in(3),stracmat(3,3),smat(3,3), dmat(3,3)
+      real *8 xyz_src(3),xyz_targ(3)
       real *8 velgrad(3,3), vel(3), pre, tractemp(3)
-      real *8 sigout(3), uin(3), uintest(3,10), dpars(2), st1(3), du1(3)
+      real *8 sigout(3), uin(3), uintest(3), dpars(2), st1(3), du1(3)
       real *8 udir(3), uneu(3,10), uavecomp(3), uavetest(3)
       real *8 st2(3), du2(3), uconst(3)
       real *8 v(3), omega(3), r0(3), udiff(3,10), udiff2(3,10)      
@@ -36,7 +37,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 2
+      if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
@@ -53,29 +54,41 @@ c
         xyz_out(2) = -0.03d0
         xyz_out(3) = 3.15d0
 
-        xyz_in(1,1) = 0.17d0
-        xyz_in(2,1) = 0.23d0
-        xyz_in(3,1) = -0.11d0
-
-        do i = 2,10
-           xyz_in(1,i) = 0.2d0*cos(100.0d0*i+5.0d0)
-           xyz_in(2,i) = 0.2d0*cos(211.0d0*i+5.0d0)
-           xyz_in(3,i) = 0.2d0*cos(357.0d0*i+5.0d0)
-        enddo
-
+        xyz_in(1) = 0.17d0
+        xyz_in(2) = 0.23d0
+        xyz_in(3) = -0.11d0
       endif
 
       if(igeomtype.eq.2) then
-        xyz_in(1,1) = -4.501d0
-        xyz_in(2,1) = 1.7d-3
-        xyz_in(3,1) = 0.00001d0
+        xyz_in(1) = -4.501d0
+        xyz_in(2) = 1.7d-3
+        xyz_in(3) = 0.00001d0
 
         xyz_out(1) = -3.5d0
         xyz_out(2) = 3.1d0
         xyz_out(3) = 20.1d0
       endif
+      ifinout = 0
 
-      norder = 3
+      if(ifinout.eq.0) then
+        xyz_src(1) = xyz_out(1) 
+        xyz_src(2) = xyz_out(2) 
+        xyz_src(3) = xyz_out(3)
+
+        xyz_targ(1) = xyz_in(1)
+        xyz_targ(2) = xyz_in(2)
+        xyz_targ(3) = xyz_in(3)
+      else
+        xyz_src(1) = xyz_in(1) 
+        xyz_src(2) = xyz_in(2) 
+        xyz_src(3) = xyz_in(3)
+
+        xyz_targ(1) = xyz_out(1)
+        xyz_targ(2) = xyz_out(2)
+        xyz_targ(3) = xyz_out(3)
+      endif
+
+      norder = 4
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
@@ -108,51 +121,36 @@ c
       sigout(3) = .31d0
       
       do i=1,npts
-         call st3d_slp_vec(9,xyz_out,3,srcvals(1,i),0,dpars,0,zpars,0,
+         call st3d_slp_vec(9,xyz_src,3,srcvals(1,i),0,dpars,0,zpars,0,
      1        ipars,smat)
-         call st3d_strac_vec(9,xyz_out,12,srcvals(1,i),0,dpars,0,zpars,
-     1        0,ipars,stracmat)
          uval(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
          uval(2,i) = smat(2,1)*sigout(1) + smat(2,2)*sigout(2)
      1        + smat(2,3)*sigout(3)
          uval(3,i) = smat(3,1)*sigout(1) + smat(3,2)*sigout(2)
      1        + smat(3,3)*sigout(3)
-         tracval(1,i) = stracmat(1,1)*sigout(1)+ stracmat(1,2)*sigout(2)
-     1        + stracmat(1,3)*sigout(3)
-         tracval(2,i) = stracmat(2,1)*sigout(1)+ stracmat(2,2)*sigout(2)
-     1        + stracmat(2,3)*sigout(3)
-         tracval(3,i) = stracmat(3,1)*sigout(1)+ stracmat(3,2)*sigout(2)
-     1        + stracmat(3,3)*sigout(3)
-         
       enddo
 
 
 
-      nin = 9
+      call st3d_slp_vec(9,xyz_src,3,xyz_targ,0,dpars,0,zpars,0,
+     1     ipars,smat)
       
-      do i = 1,nin
-         call st3d_slp_vec(9,xyz_out,3,xyz_in(1,i),0,dpars,0,zpars,0,
-     1        ipars,smat)
-      
-         uintest(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
+       uintest(1) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
-         uintest(2,i) = smat(2,1)*sigout(1) + smat(2,2)*sigout(2)
+       uintest(2) = smat(2,1)*sigout(1) + smat(2,2)*sigout(2)
      1        + smat(2,3)*sigout(3)
-         uintest(3,i) = smat(3,1)*sigout(1) + smat(3,2)*sigout(2)
+       uintest(3) = smat(3,1)*sigout(1) + smat(3,2)*sigout(2)
      1        + smat(3,3)*sigout(3)
 
-      enddo
 
-
-      npt1 = nin
+      npt1 = 1
       allocate(ipatch_id(npt1),uvs_targ(2,npt1))
       do i=1,npt1
         ipatch_id(i) = -1
         uvs_targ(1,i) = 0
         uvs_targ(2,i) = 0
       enddo
-      
       
 c
 c     solve interior dirichlet (velocity) problem
@@ -163,17 +161,16 @@ c
       
       dpars(1) = alpha
       dpars(2) = beta
-      ifinout = 0
       numit = 30
 
       allocate(soln(3,npts),errs(numit+1))
 
-      eps_gmres = 1d-6
-      eps = 1d-6
+      eps_gmres = 1d-5
+      eps = 1d-5
       
       call stok_comb_vel_solver(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,dpars,numit,
-     2     ifinout,uval,eps_gmres,niter,errs,rres,soln,uconst)
+     2     ifinout,uval,eps_gmres,niter,errs,rres,soln)
 
 
       call prin2('gmres errs *',errs,niter)
@@ -182,19 +179,19 @@ c
       ndt_in = 3
       nt_in = 1
       call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
-     1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
+     1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_targ,
      2     ipatch_id,uvs_targ,eps,dpars,soln,udir)
 
-      udir(1) = udir(1) + uconst(1)
-      udir(2) = udir(2) + uconst(2)
-      udir(3) = udir(3) + uconst(3)      
+      udir(1) = udir(1) 
+      udir(2) = udir(2) 
+      udir(3) = udir(3) 
 
       sum = 0
       sumrel = 0
 
       do i = 1,3
-         sum = sum + (udir(i)-uintest(i,1))**2
-         sumrel = sumrel + (uintest(i,1))**2
+         sum = sum + (udir(i)-uintest(i))**2
+         sumrel = sumrel + (uintest(i))**2
       enddo
       
       call prin2('rel err in velocity *',sqrt(sum/sumrel),1)

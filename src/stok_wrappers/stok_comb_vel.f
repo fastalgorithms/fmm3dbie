@@ -926,7 +926,7 @@ c
 c        
       subroutine stok_comb_vel_solver(npatches,norders,ixyzs,
      1    iptype,npts,srccoefs,srcvals,eps,dpars,numit,ifinout,
-     2     rhs,eps_gmres,niter,errs,rres,soln,uconst)
+     2     rhs,eps_gmres,niter,errs,rres,soln)
 c
 c
 c     this subroutine solves the Stokes velocity boundary
@@ -1018,7 +1018,9 @@ c
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
       real *8 dpars(2)
       real *8 rhs(3*npts)
-      real *8 soln(3*npts), uconst(3)
+      real *8 soln(3*npts)
+
+      real *8 uint
 
       real *8, allocatable :: targs(:,:)
       integer, allocatable :: ipatch_id(:)
@@ -1142,12 +1144,12 @@ c
 c    find near quadrature correction interactions
 c
       print *, "entering find near mem"
-      call findnearmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
+      call findnearslowmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
       print *, "nnz=",nnz
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
-      call findnear(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr, 
+      call findnearslow(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr, 
      1        col_ind)
 
       allocate(iquad(nnz+1)) 
@@ -1275,22 +1277,22 @@ c
      3        vmat(1,it),novers,npts_over,ixyzso,srcover,wover,
      4        wtmp)
 
-         uconst(1) = 0
-         uconst(2) = 0
-         uconst(3) = 0
-         do j = 1,npts
-            uconst(1) = uconst(1) + wts(j)*vmat(3*(j-1)+1,it)
-            uconst(2) = uconst(2) + wts(j)*vmat(3*(j-1)+2,it)
-            uconst(3) = uconst(3) + wts(j)*vmat(3*(j-1)+3,it)
-         enddo
+         if(ifinout.eq.0) then
+           uint = 0
+           do j = 1,npts
+              uint = uint + wts(j)*(vmat(3*(j-1)+1,it)*srcvals(10,j) +
+     1           vmat(3*(j-1)+2,it)*srcvals(11,j) + 
+     2           vmat(3*(j-1)+3,it)*srcvals(12,j))
+           enddo
 
 c$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)         
-         do j = 1,npts
-            wtmp(3*(j-1)+1) = uconst(1) + wtmp(3*(j-1)+1)
-            wtmp(3*(j-1)+2) = uconst(2) + wtmp(3*(j-1)+2)
-            wtmp(3*(j-1)+3) = uconst(3) + wtmp(3*(j-1)+3)
-         enddo
+           do j = 1,npts
+              wtmp(3*(j-1)+1) = uint*srcvals(10,j) + wtmp(3*(j-1)+1)
+              wtmp(3*(j-1)+2) = uint*srcvals(11,j) + wtmp(3*(j-1)+2)
+              wtmp(3*(j-1)+3) = uint*srcvals(12,j) + wtmp(3*(j-1)+3)
+           enddo
 c$OMP END PARALLEL DO
+         endif
          
          do k=1,it
             hmat(k,it) = 0
@@ -1377,24 +1379,6 @@ c
      2          eps,dpars,nnz,row_ptr,col_ind,iquad,nquad,wnear,
      3          soln,novers,npts_over,ixyzso,srcover,wover,
      4          wtmp)
-
-
-           uconst(1) = 0
-           uconst(2) = 0
-           uconst(3) = 0
-           do j = 1,npts
-              uconst(1) = uconst(1) + wts(j)*soln(3*(j-1)+1)
-              uconst(2) = uconst(2) + wts(j)*soln(3*(j-1)+2)
-              uconst(3) = uconst(3) + wts(j)*soln(3*(j-1)+3)
-           enddo
-
-c$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)           
-           do j = 1,npts
-              wtmp(3*(j-1)+1) = uconst(1) + wtmp(3*(j-1)+1)
-              wtmp(3*(j-1)+2) = uconst(2) + wtmp(3*(j-1)+2)
-              wtmp(3*(j-1)+3) = uconst(3) + wtmp(3*(j-1)+3)
-           enddo
-c$OMP END PARALLEL DO           
 
            do i=1,nmat
               rres = rres + abs(did*soln(i) + wtmp(i)-rhs(i))**2
