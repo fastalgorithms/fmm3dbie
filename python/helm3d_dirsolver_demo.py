@@ -1,25 +1,24 @@
 import numpy as np
 import numpy.linalg as la
-import helm3d_dir as h3
+import fmm3dbie as h3
 import fmm3dpy as fmm3d
 
-x = np.loadtxt('../geometries/sphere_192_o03.go3')
+# setup the geomtry for sphere
+# number of refinements
+nref = 2
 
-norder = int(x[0])
-npatches = int(x[1])
+# order of discretization
+norder = 3
+
+
+# The following derived quantites must not be changed
+npatches = int(12*4**int(nref))
 npols = int((norder+1)*(norder+2)/2)
-npts = npatches*npols 
+npts = int(npatches*npols)
 
-# setup geometry in the correct format
-norders = norder*np.ones(npatches)
-iptype = np.ones(npatches)
-srcvals = x[2::].reshape(12,npts)
-ixyzs = np.arange(npatches+1)*npols+1
 
-# convert values to coefs
-srccoefs = h3.surf_vals_to_coefs(norders,ixyzs,iptype,srcvals[0:9,:])
-
-wts = h3.get_qwts(norders,ixyzs,iptype,srcvals)
+norders,ixyzs,iptype,srcvals,srccoefs,wts = h3.get_sphere_geom(nref,
+  npatches,norder,npts)
 
 print("error in area of sphere = ",str(sum(wts)-4*np.pi))
 

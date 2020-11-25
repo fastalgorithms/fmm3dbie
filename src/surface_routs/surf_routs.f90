@@ -875,6 +875,12 @@ end subroutine get_patch_id_uvs
 
 subroutine get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
     srccoefs,srcvals,qwts,pdis)
+
+!
+!f2py intent(in) npatches,norders,ixyzs,iptype,npts,srccoefs,srcvals
+!f2py intent(in) qwts
+!f2py intent(out) pdis
+!
 !
 !   This subroutine estimates the patch distortion for a collection of 
 !   patches:
