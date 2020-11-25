@@ -68,7 +68,7 @@ c
         xyz_out(2) = 3.1d0
         xyz_out(3) = 20.1d0
       endif
-      ifinout = 0
+      ifinout = 1
 
       if(ifinout.eq.0) then
         xyz_src(1) = xyz_out(1) 

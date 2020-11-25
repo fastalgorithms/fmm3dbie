@@ -44,6 +44,9 @@ subroutine st3d_slp_vec(nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   complex *16 :: zk
   real *8 :: val(nd)
 
+!f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
+
   !
   ! returns the Stokes single layer potential kernel
   !
@@ -89,6 +92,8 @@ subroutine st3d_slp(src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
 
   complex *16 :: zk
   real *8 :: val, dr(3)
+!f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
 
   !
   ! returns one entry of the Stokes single layer potential
@@ -131,6 +136,8 @@ end subroutine st3d_slp
 
 subroutine st3d_dlp_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
      ipars,val)
+!f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
   integer ipars(ndi)
@@ -186,6 +193,8 @@ end subroutine st3d_dlp_vec
 
 subroutine st3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz, &
      zk,ndi,ipars,val)
+!f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
   integer ipars(ndi)
@@ -237,6 +246,8 @@ end subroutine st3d_dlp
 
 subroutine st3d_comb_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
      ipars,val)
+!f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
   integer ipars(ndi)
@@ -306,6 +317,8 @@ end subroutine st3d_comb_vec
 
 subroutine st3d_comb(srcinfo,ndt,targ,ndd,dpars,ndz, &
      zk,ndi,ipars,val)
+!f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
   integer ipars(ndi)
@@ -373,6 +386,8 @@ subroutine st3d_strac_vec(nd,srcinfo,ndt,targinfo, &
   integer ipars(ndi)
   real *8 :: val(9), targ(3), src(3), targnorm(3)
   complex *16 :: zk
+!f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
 
   !
   ! returns the traction of the Stokes single layer kernel
@@ -429,6 +444,8 @@ subroutine st3d_strac(srcinfo,ndt,targinfo,ndd,dpars, &
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
   integer ipars(ndi)
   real *8 :: val, targ(3), src(3), targnorm(3), dr(3)
+!f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
 
   !
   ! returns one entry of the traction of the Stokes single

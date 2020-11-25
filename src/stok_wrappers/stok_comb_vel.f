@@ -249,7 +249,7 @@ c
 c
 cf2py intent(in) npatches,norders,ixyzs,iptype,npts,srccoefs,srcvals
 cf2py intent(in) ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,dpars
-cf2py intent(in) sigma,ndpot
+cf2py intent(in) sigma
 cf2py intent(out) pot
 c
 c
@@ -928,6 +928,11 @@ c
      1    iptype,npts,srccoefs,srcvals,eps,dpars,numit,ifinout,
      2     rhs,eps_gmres,niter,errs,rres,soln)
 c
+cf2py  intent(in) npatches,norders,ixyzs,iptype
+cf2py  intent(in) npts,srccoefs,srcvals,eps,dpars
+cf2py  intent(in) numit,ifinout
+cf2py  intent(in) rhs,eps_gmres
+cf2py  intent(out) niter,errs,rres,soln
 c
 c     this subroutine solves the Stokes velocity boundary
 c     value problem on the interior or exterior of an object
