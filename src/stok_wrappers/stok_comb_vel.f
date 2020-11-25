@@ -249,7 +249,7 @@ c
 c
 cf2py intent(in) npatches,norders,ixyzs,iptype,npts,srccoefs,srcvals
 cf2py intent(in) ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,dpars
-cf2py intent(in) sigma
+cf2py intent(in) sigma,ndpot
 cf2py intent(out) pot
 c
 c
@@ -926,11 +926,7 @@ c
 c        
       subroutine stok_comb_vel_solver(npatches,norders,ixyzs,
      1    iptype,npts,srccoefs,srcvals,eps,dpars,numit,ifinout,
-     2     rhs,eps_gmres,niter,errs,rres,soln)
-c
-cf2py   intent(in) npatches,norders,ixyzs,iptype,npts,srccoefs
-cf2py   intent(in) srcvals,eps,dpars,numit,ifinout,rhs,eps_gmres
-cf2py   intent(out) niter,errs,rres,soln
+     2     rhs,eps_gmres,niter,errs,rres,soln,uconst)
 c
 c
 c     this subroutine solves the Stokes velocity boundary
@@ -1022,10 +1018,9 @@ c
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
       real *8 dpars(2)
       real *8 rhs(3*npts)
-      real *8 soln(3*npts)
+      real *8 soln(3*npts), uconst(3)
 
       real *8, allocatable :: targs(:,:)
-      real *8 uint
       integer, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_targ(:,:)
       integer ndtarg,ntarg
@@ -1280,23 +1275,22 @@ c
      3        vmat(1,it),novers,npts_over,ixyzso,srcover,wover,
      4        wtmp)
 
-         if(ifinout.eq.0) then
-           uint = 0
-C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j) REDUCTION(+:uint)         
-           do j = 1,npts
-             uint = uint + wts(j)*(vmat(3*(j-1)+1,it)*srcvals(10,j)+
-     1          vmat(3*(j-1)+2,it)*srcvals(11,j)+vmat(3*(j-1)+3,it)*
-     2          srcvals(12,j))
-           enddo
+         uconst(1) = 0
+         uconst(2) = 0
+         uconst(3) = 0
+         do j = 1,npts
+            uconst(1) = uconst(1) + wts(j)*vmat(3*(j-1)+1,it)
+            uconst(2) = uconst(2) + wts(j)*vmat(3*(j-1)+2,it)
+            uconst(3) = uconst(3) + wts(j)*vmat(3*(j-1)+3,it)
+         enddo
 
 c$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)         
-           do j = 1,npts
-             wtmp(3*(j-1)+1) = uint*srcvals(10,j) + wtmp(3*(j-1)+1)
-             wtmp(3*(j-1)+2) = uint*srcvals(11,j) + wtmp(3*(j-1)+2)
-             wtmp(3*(j-1)+3) = uint*srcvals(12,j) + wtmp(3*(j-1)+3)
-          enddo
+         do j = 1,npts
+            wtmp(3*(j-1)+1) = uconst(1) + wtmp(3*(j-1)+1)
+            wtmp(3*(j-1)+2) = uconst(2) + wtmp(3*(j-1)+2)
+            wtmp(3*(j-1)+3) = uconst(3) + wtmp(3*(j-1)+3)
+         enddo
 c$OMP END PARALLEL DO
-         endif
          
          do k=1,it
             hmat(k,it) = 0
@@ -1385,12 +1379,20 @@ c
      4          wtmp)
 
 
+           uconst(1) = 0
+           uconst(2) = 0
+           uconst(3) = 0
+           do j = 1,npts
+              uconst(1) = uconst(1) + wts(j)*soln(3*(j-1)+1)
+              uconst(2) = uconst(2) + wts(j)*soln(3*(j-1)+2)
+              uconst(3) = uconst(3) + wts(j)*soln(3*(j-1)+3)
+           enddo
 
 c$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)           
            do j = 1,npts
-              wtmp(3*(j-1)+1) = wtmp(3*(j-1)+1)
-              wtmp(3*(j-1)+2) = wtmp(3*(j-1)+2)
-              wtmp(3*(j-1)+3) = wtmp(3*(j-1)+3)
+              wtmp(3*(j-1)+1) = uconst(1) + wtmp(3*(j-1)+1)
+              wtmp(3*(j-1)+2) = uconst(2) + wtmp(3*(j-1)+2)
+              wtmp(3*(j-1)+3) = uconst(3) + wtmp(3*(j-1)+3)
            enddo
 c$OMP END PARALLEL DO           
 
