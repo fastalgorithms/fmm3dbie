@@ -190,10 +190,6 @@ subroutine xtri_stell_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   dxyzduv(2,1) = dxyzds(2)*dsdu + dxyzdt(2)*dtdu
   dxyzduv(3,1) = dxyzds(3)*dsdu + dxyzdt(3)*dtdu
 
-!
-!  currently hacked version for getting signs of normals right...
-!  Fix this
-!
 
   dxyzduv(1,2) = (dxyzds(1)*dsdv + dxyzdt(1)*dtdv)
   dxyzduv(2,2) = (dxyzds(2)*dsdv + dxyzdt(2)*dtdv)

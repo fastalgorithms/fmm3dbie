@@ -739,13 +739,15 @@ c
           enddo
         endif
       enddo
-C$OMP END PARALLEL DO      
+C$OMP END PARALLEL DO     
+      
 
       if(ns.lt.1000.or.nnz.lt.10000) then
         call conv_to_csc(nnz,nt,col_ind2,row_ind2,row_ptr,col_ind)
       else
-        call conv_to_csc_para(nnz,nt,col_ind2,row_ind2,row_ptr,col_ind)
+        call conv_to_csc(nnz,nt,col_ind2,row_ind2,row_ptr,col_ind)
       endif
+
 
       return
       end

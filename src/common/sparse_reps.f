@@ -63,7 +63,7 @@ C$OMP END PARALLEL DO
         call conv_to_csc(nnz,ncol,row_ind_exp,col_ind,col_ptr,row_ind)
       else
         call sorti_para(nnz,col_ind,iper)
-        call conv_to_csc_para(nnz,ncol,row_ind_exp,col_ind,col_ptr,
+        call conv_to_csc(nnz,ncol,row_ind_exp,col_ind,col_ptr,
      1     row_ind)
       endif
 
@@ -102,7 +102,7 @@ cf2py  intent(out) col_ptr,row_ind
       integer, intent(in) :: nent,m,iind(nent),jind(nent)
       integer, intent(out) :: col_ptr(m+1),row_ind(nent)
       integer, allocatable :: jsort(:),jper(:),icnt(:)
-      integer i,icur,icur0,icur1
+      integer i,icur,icur0,icur1,j
 
 
       allocate(jper(nent),jsort(nent))
@@ -116,6 +116,7 @@ cf2py  intent(out) col_ptr,row_ind
 
       icur = 1
       col_ptr(1) = 1
+
 
       do i=1,nent
         if(jsort(i).gt.icur) then
@@ -131,6 +132,7 @@ cf2py  intent(out) col_ptr,row_ind
       do i=icur+1,m+1
         col_ptr(i) = nent+1
       enddo
+
 
 
 
