@@ -36,9 +36,9 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 1
+      igeomtype = 2
       if(igeomtype.eq.1) ipars(1) = 1
-      if(igeomtype.eq.2) ipars(1) = 20
+      if(igeomtype.eq.2) ipars(1) = 5*2
 
       if(igeomtype.eq.1) then
         npatches = 12*(4**ipars(1))
@@ -68,7 +68,7 @@ c
         xyz_out(2) = 3.1d0
         xyz_out(3) = 20.1d0
       endif
-      ifinout = 0
+      ifinout = 1
 
       if(ifinout.eq.0) then
         xyz_src(1) = xyz_out(1) 
@@ -153,7 +153,7 @@ c
       enddo
       
 c
-c     solve interior dirichlet (velocity) problem
+c     solve dirichlet (velocity) problem
 c
 
       alpha = 1
@@ -161,12 +161,12 @@ c
       
       dpars(1) = alpha
       dpars(2) = beta
-      numit = 30
+      numit = 200
 
       allocate(soln(3,npts),errs(numit+1))
 
-      eps_gmres = 1d-5
-      eps = 1d-5
+      eps_gmres = 1d-7
+      eps = 1d-7
       
       call stok_comb_vel_solver(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,dpars,numit,
@@ -196,9 +196,31 @@ c
       
       call prin2('rel err in velocity *',sqrt(sum/sumrel),1)
 
+c
+c  solve scattering problem
+c
+      do i=1,npts
+        uval(1,i) = -1
+        uval(2,i) = 0
+        uval(3,i) = 0
+        soln(1,i) = 0
+        soln(2,i) = 0
+        soln(3,i) = 0
+      enddo
+      
+      call stok_comb_vel_solver(npatches,norders,ixyzs,
+     1     iptype,npts,srccoefs,srcvals,eps,dpars,numit,
+     2     ifinout,uval,eps_gmres,niter,errs,rres,soln)
+
+
+      call prin2('gmres errs *',errs,niter)
+      call prin2('gmres rres *',rres,1)
+
+      call surf_vtk_plot_vec(npatches,norders,ixyzs,iptype,
+     1   npts,srccoefs,srcvals,soln,'stell-stok-scat-soln-ref1.vtk','a')
+
       
       stop
-
       end
 
 
@@ -263,8 +285,8 @@ c
         pi = atan(done)*4
         umin = 0
         umax = 2*pi
-        vmin = 0
-        vmax = 2*pi
+        vmin = 2*pi
+        vmax = 0
         allocate(triaskel(3,3,npatches))
         nover = 0
         call xtri_rectmesh_ani(umin,umax,vmin,vmax,ipars(1),ipars(2),
