@@ -35,7 +35,7 @@ sigout = np.random.rand(3)
 # exteior one. ifinout = 0 ==> interior problem
 # ifinout = 1 ==> exterior problem
 
-ifinout = 0
+ifinout = 1
 if(ifinout == 0):
     xyz_src = xyz_out
     xyz_targ = xyz_in
@@ -65,8 +65,8 @@ for i in range(npts):
 # Set parameter for solver
 # alpha is the strength of stokeslet
 # beta is the strength of the stresslet
-alpha = 0.0
-beta = -2.0
+alpha = 1.0
+beta = 1.0
 dpars = np.array([alpha,beta])
 eps = 0.51e-6
 
@@ -111,3 +111,20 @@ print("error in solution = ",str(err))
 # individual components are also stored in case you want to plot the
 # vector field
 h3.surf_vtk_plot_vec(norders,ixyzs,iptype,srccoefs,srcvals,soln,'sph-stok-sig.vtk','title')
+
+#
+# given density evaluate density on the sphere
+#
+ipatch_id_src,uvs_src = h3.get_patch_id_uvs(norders,ixyzs,iptype,npts)
+
+usurf = h3.lpcomp_stok_comb_vel(norders,ixyzs,iptype,srccoefs,srcvals,
+  srcvals,ipatch_id_src,uvs_src,eps,dpars,soln)
+
+#
+# Note routine only returns principal value part of the double
+# layer potential on surface. Fix the identity term
+#
+usurf = usurf - soln*dpars[1]*(-1.0)**(ifinout)*2*np.pi
+rhs = np.reshape(rhs,(3,npts),'F')
+err = np.linalg.norm(usurf-rhs)
+print("error in computing velocity on boundary = ",str(err))
