@@ -1149,12 +1149,12 @@ c
 c    find near quadrature correction interactions
 c
       print *, "entering find near mem"
-      call findnearslowmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
+      call findnearmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
       print *, "nnz=",nnz
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
-      call findnearslow(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr, 
+      call findnear(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr, 
      1        col_ind)
 
       allocate(iquad(nnz+1)) 
@@ -1393,6 +1393,321 @@ c
            return
         endif
       enddo
+c     
+      return
+      end
+c     
+c
+c
+c
+c        
+      subroutine stok_comb_vel_matgen(npatches,norders,ixyzs,
+     1    iptype,npts,srccoefs,srcvals,eps,dpars,ifinout,
+     2     xmat)
+c
+cf2py  intent(in) npatches,norders,ixyzs,iptype
+cf2py  intent(in) npts,srccoefs,srcvals,eps,dpars
+cf2py  intent(in) ifinout
+cf2py  intent(out) xmat
+c
+c     this subroutine returns the discretization matrix
+c     for the on-surface discretization of the stokes combined
+c     field layer potential. The unknowns are ordered as:
+c
+c     \sigma_{1}(x_{1}), \sigma_{2}(x_{1}), \sigma_{3}(x_{1})...
+c      \sigma_{1}(x_{2}), \sigma_{2}(x_{2})l \sigma_{3}(x_{2})..
+c                           .
+c                           .
+c                           .
+c                           .
+c      \sigma_{1}(x_{n}), \sigma_{2}(x_{n}), \sigma_{3}(x_{n})
+c
+c     And the same ordering for the velocity components as well
+c
+c
+c     Representation:
+c        u = alpha S \sigma + beta D \sigma
+c     
+c
+c       input:
+c         npatches - integer
+c            number of patches
+c
+c         norders- integer(npatches)
+c            order of discretization on each patch 
+c
+c         ixyzs - integer(npatches+1)
+c            ixyzs(i) denotes the starting location in srccoefs,
+c               and srcvals array corresponding to patch i
+c   
+c         iptype - integer(npatches)
+c            type of patch
+c             iptype = 1, triangular patch discretized using RV nodes
+c
+c         npts - integer
+c            total number of discretization points on the boundary
+c 
+c         srccoefs - real *8 (9,npts)
+c            koornwinder expansion coefficients of xyz, dxyz/du,
+c            and dxyz/dv on each patch. 
+c            For each point srccoefs(1:3,i) is xyz info
+c                           srccoefs(4:6,i) is dxyz/du info
+c                           srccoefs(7:9,i) is dxyz/dv info
+c
+c         srcvals - real *8 (12,npts)
+c             xyz(u,v) and derivative info sampled at the 
+c             discretization nodes on the surface
+c             srcvals(1:3,i) - xyz info
+c             srcvals(4:6,i) - dxyz/du info
+c             srcvals(7:9,i) - dxyz/dv info
+c 
+c          eps - real *8
+c             precision requested for computing quadrature and fmm
+c             tolerance
+c
+c          dpars - real *8 (2)
+c             alpha = dpars(1), beta = dpars(2) in the layer potential
+c             representation
+c      
+c          ifinout - integer
+c              flag for interior or exterior problems (normals assumed to 
+c                be pointing in exterior of region)
+c              ifinout = 0, interior problem
+c              ifinout = 1, exterior problem
+c
+c         output
+c           xmat - real *8(3*npts,3*npts)
+c              discretization matrix for the stokes boundary value
+c              problem
+c
+c
+      implicit none
+      integer npatches,norder,npols,npts
+      integer ifinout
+      integer norders(npatches),ixyzs(npatches+1)
+      integer iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
+      real *8 dpars(2)
+      real *8 xmat(3*npts,3*npts)
+
+      real *8 uint
+
+      real *8, allocatable :: targs(:,:)
+      integer, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_targ(:,:)
+      integer ndtarg,ntarg
+
+      real *8 rres,eps2
+      integer niter
+
+
+      integer nover,npolso,nptso
+      integer nnz,nquad
+      integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
+      real *8, allocatable :: wnear(:,:), wts(:)
+
+      real *8, allocatable :: srcover(:,:),wover(:)
+      integer, allocatable :: ixyzso(:),novers(:)
+
+      real *8, allocatable :: cms(:,:),rads(:),rad_near(:) 
+
+      integer i,j,jpatch,jquadstart,jstart
+
+      integer ipars
+      complex *16 zpars
+      real *8 timeinfo(10),t1,t2,omp_get_wtime
+
+
+      real *8 ttot,done,pi,rsurf
+      real *8 rfac,rfac0,alpha,beta
+      integer iptype_avg,norder_avg
+      integer ikerorder, iquadtype,npts_over
+
+      real *8 did,ra
+      integer jj,l,nmat
+      real *8 w11,w12,w13,w21,w22,w23,w31,w32,w33
+      
+
+      alpha = dpars(1)
+      beta = dpars(2)
+      
+      nmat = 3*npts
+      done = 1
+      pi = atan(done)*4
+
+
+c
+c
+c        setup targets as on surface discretization points
+c 
+      ndtarg = 12
+      ntarg = npts
+      allocate(targs(ndtarg,npts),uvs_targ(2,ntarg),ipatch_id(ntarg))
+
+C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        targs(1,i) = srcvals(1,i)
+        targs(2,i) = srcvals(2,i)
+        targs(3,i) = srcvals(3,i)
+        targs(4,i) = srcvals(4,i)
+        targs(5,i) = srcvals(5,i)
+        targs(6,i) = srcvals(6,i)
+        targs(7,i) = srcvals(7,i)
+        targs(8,i) = srcvals(8,i)
+        targs(9,i) = srcvals(9,i)
+        targs(10,i) = srcvals(10,i)
+        targs(11,i) = srcvals(11,i)
+        targs(12,i) = srcvals(12,i)
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
+      enddo
+C$OMP END PARALLEL DO   
+
+
+c
+c    initialize patch_id and uv_targ for on surface targets
+c
+      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts,
+     1  ipatch_id,uvs_targ)
+
+c
+c
+c        this might need fixing
+c
+      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+
+      call get_rfacs(norder_avg,iptype_avg,rfac,rfac0)
+
+      nnz = npts*npatches
+      allocate(row_ptr(npts+1),col_ind(nnz))
+
+      do i=1,npts+1
+        row_ptr(i) = (i-1)*npatches + 1
+      enddo
+
+
+      do i=1,npts
+        do j=1,npatches
+          col_ind((i-1)*npatches + j) = j
+        enddo
+      enddo
+
+      allocate(iquad(nnz+1)) 
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
+     1         iquad)
+
+      ikerorder = -1
+      if(abs(dpars(2)).gt.1.0d-16) ikerorder = 0
+
+      
+c
+c   compute near quadrature correction
+c
+      nquad = iquad(nnz+1)-1
+      print *, "nquad=",nquad
+      allocate(wnear(6,nquad))
+      
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)
+      do i=1,nquad
+         do j = 1,6
+            wnear(j,i) = 0
+         enddo
+      enddo
+C$OMP END PARALLEL DO    
+
+
+      iquadtype = 1
+
+      print *, "starting to generate near quadrature"
+      call cpu_time(t1)
+C$      t1 = omp_get_wtime()      
+
+      call getnearquad_stok_comb_vel(npatches,norders,
+     1     ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+     1     ipatch_id,uvs_targ,eps,dpars,iquadtype,nnz,row_ptr,col_ind,
+     1     iquad,rfac0,nquad,wnear)
+      call cpu_time(t2)
+C$      t2 = omp_get_wtime()     
+
+      call prin2('quadrature generation time=*',t2-t1,1)
+      allocate(wts(npts))
+
+
+      call get_qwts(npatches,norders,ixyzs,iptype,npts,
+     1        srcvals,wts)
+
+
+c
+c  compute scaling for one's matrix correction for interior problem
+c
+
+      rsurf = 0
+      do i=1,npts
+        rsurf = rsurf + wts(i)
+      enddo
+      
+      ra = 0
+      if(ifinout.eq.0) ra = -2*pi/rsurf
+      
+
+      call cpu_time(t1)
+C$      t1 = omp_get_wtime()
+
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
+C$OMP$PRIVATE(jstart,npols,jj,w11,w12,w13)
+C$OMP$PRIVATE(w21,w22,w23,w31,w32,w33)
+      do i=1,ntarg
+        do j=row_ptr(i),row_ptr(i+1)-1
+          jpatch = col_ind(j)
+          npols = ixyzs(jpatch+1)-ixyzs(jpatch)
+          jquadstart = iquad(j)
+          jstart = ixyzs(jpatch) 
+          do l=1,npols
+             jj = jstart + l-1
+             w11 = wnear(1,jquadstart+l-1)
+             w12 = wnear(2,jquadstart+l-1)
+             w13 = wnear(3,jquadstart+l-1)
+             w21 = w12
+             w22 = wnear(4,jquadstart+l-1)
+             w23 = wnear(5,jquadstart+l-1)
+             w31 = w13
+             w32 = w23
+             w33 = wnear(6,jquadstart+l-1)
+             xmat(3*(i-1)+1,3*(jj-1)+1) = w11 +
+     1           srcvals(10,i)*srcvals(10,jj)*ra*wts(jj)
+             xmat(3*(i-1)+1,3*(jj-1)+2) = w12 + 
+     1           srcvals(10,i)*srcvals(11,jj)*ra*wts(jj)
+             xmat(3*(i-1)+1,3*(jj-1)+3) = w13 + 
+     1           srcvals(10,i)*srcvals(12,jj)*ra*wts(jj)
+
+             xmat(3*(i-1)+2,3*(jj-1)+1) = w21 + 
+     1           srcvals(11,i)*srcvals(10,jj)*ra*wts(jj)
+             xmat(3*(i-1)+2,3*(jj-1)+2) = w22 + 
+     1           srcvals(11,i)*srcvals(11,jj)*ra*wts(jj)
+             xmat(3*(i-1)+2,3*(jj-1)+3) = w23 + 
+     1           srcvals(11,i)*srcvals(12,jj)*ra*wts(jj)
+
+             xmat(3*(i-1)+3,3*(jj-1)+1) = w31 + 
+     1           srcvals(12,i)*srcvals(10,jj)*ra*wts(jj)
+             xmat(3*(i-1)+3,3*(jj-1)+2) = w32 + 
+     1           srcvals(12,i)*srcvals(11,jj)*ra*wts(jj)
+             xmat(3*(i-1)+3,3*(jj-1)+3) = w33 + 
+     1           srcvals(12,i)*srcvals(12,jj)*ra*wts(jj)
+
+          enddo
+        enddo
+      enddo
+C$OMP END PARALLEL DO
+     
+
+      did = -(-1)**(ifinout)*2*pi*beta
+      do i=1,3*npts
+         xmat(i,i) = xmat(i,i) + did
+      enddo
+
+     
 c     
       return
       end

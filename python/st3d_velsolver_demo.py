@@ -5,7 +5,7 @@ import fmm3dpy as fmm3d
 
 # setup the geomtry for sphere
 # number of refinements
-nref = 2
+nref = 1
 
 # order of discretization
 norder = 3
@@ -112,19 +112,46 @@ print("error in solution = ",str(err))
 # vector field
 h3.surf_vtk_plot_vec(norders,ixyzs,iptype,srccoefs,srcvals,soln,'sph-stok-sig.vtk','title')
 
+
+#
+#
+#  Now compute the solution using direct inversion
+#
+
+eps = 0.51e-9
+xmat = h3.stok_comb_vel_matgen(norders,ixyzs,iptype,srccoefs,srcvals,eps,
+  dpars,ifinout)
+
+rhsuse = np.reshape(rhs,3*npts)
+soln2 = np.linalg.solve(xmat,rhsuse)
+
+ipatch_id = -1
+uvs_targ = np.zeros(2)
+soln2 = np.reshape(soln2,(3,npts),'F')
+u = h3.lpcomp_stok_comb_vel(norders,ixyzs,iptype,srccoefs,srcvals,xyz_targ,
+  ipatch_id,uvs_targ,eps,dpars,soln2)
+
+err = np.linalg.norm(np.transpose(u) - uex)
+print("error in solution from inverting matrix= ",str(err))
+
+
+
 #
 # given density evaluate density on the sphere
 #
 ipatch_id_src,uvs_src = h3.get_patch_id_uvs(norders,ixyzs,iptype,npts)
 
 usurf = h3.lpcomp_stok_comb_vel(norders,ixyzs,iptype,srccoefs,srcvals,
-  srcvals,ipatch_id_src,uvs_src,eps,dpars,soln)
+  srcvals,ipatch_id_src,uvs_src,eps,dpars,soln2)
 
 #
 # Note routine only returns principal value part of the double
 # layer potential on surface. Fix the identity term
 #
-usurf = usurf - soln*dpars[1]*(-1.0)**(ifinout)*2*np.pi
+usurf = usurf - soln2*dpars[1]*(-1.0)**(ifinout)*2*np.pi
 rhs = np.reshape(rhs,(3,npts),'F')
-err = np.linalg.norm(usurf-rhs)
+err = np.linalg.norm((usurf[0,:]-rhs[0,:])*np.sqrt(wts))/np.linalg.norm(rhs[0,:]*np.sqrt(wts))
 print("error in computing velocity on boundary = ",str(err))
+
+
+

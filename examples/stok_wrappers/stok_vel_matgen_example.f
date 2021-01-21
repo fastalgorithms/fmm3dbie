@@ -21,7 +21,8 @@
       real *8 sigout(3), uin(3), uintest(3), dpars(2), st1(3), du1(3)
       real *8 udir(3), uneu(3,10), uavecomp(3), uavetest(3)
       real *8 st2(3), du2(3), uconst(3)
-      real *8 v(3), omega(3), r0(3), udiff(3,10), udiff2(3,10)      
+      real *8 v(3), omega(3), r0(3), udiff(3,10), udiff2(3,10)     
+      real *8, allocatable :: xmat(:,:)
       real *8, allocatable :: uval(:,:), tracval(:,:), soln(:,:)
       complex * 16 zpars
 
@@ -37,7 +38,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 0
+      if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 5*2
 
       if(igeomtype.eq.1) then
@@ -68,7 +69,7 @@ c
         xyz_out(2) = 3.1d0
         xyz_out(3) = 20.1d0
       endif
-      ifinout = 1
+      ifinout = 0
 
       if(ifinout.eq.0) then
         xyz_src(1) = xyz_out(1) 
@@ -156,25 +157,30 @@ c
 c     solve dirichlet (velocity) problem
 c
 
-      alpha = 1
+      alpha = 0
       beta = 1
       
       dpars(1) = alpha
       dpars(2) = beta
       numit = 200
-
-      allocate(soln(3,npts),errs(numit+1))
-
-      eps_gmres = 1d-7
+      nmat = 3*npts
+      allocate(xmat(nmat,nmat))
       eps = 1d-7
+      do i=1,nmat
+        do j=1,nmat
+          xmat(j,i) = 0
+        enddo
+      enddo
+      call stok_comb_vel_matgen(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,eps,dpars,ifinout,xmat)
       
-      call stok_comb_vel_solver(npatches,norders,ixyzs,
-     1     iptype,npts,srccoefs,srcvals,eps,dpars,numit,
-     2     ifinout,uval,eps_gmres,niter,errs,rres,soln)
+
+      allocate(soln(3,npts))
+      dcond = 0
+      call dgausselim(nmat,xmat,uval,info,soln,dcond)
+      call prin2('dcond=*',dcond,1)
 
 
-      call prin2('gmres errs *',errs,niter)
-      call prin2('gmres rres *',rres,1)
 
       ndt_in = 3
       nt_in = 1
@@ -195,29 +201,6 @@ c
       enddo
       
       call prin2('rel err in velocity *',sqrt(sum/sumrel),1)
-
-c
-c  solve scattering problem
-c
-      do i=1,npts
-        uval(1,i) = -1
-        uval(2,i) = 0
-        uval(3,i) = 0
-        soln(1,i) = 0
-        soln(2,i) = 0
-        soln(3,i) = 0
-      enddo
-      
-      call stok_comb_vel_solver(npatches,norders,ixyzs,
-     1     iptype,npts,srccoefs,srcvals,eps,dpars,numit,
-     2     ifinout,uval,eps_gmres,niter,errs,rres,soln)
-
-
-      call prin2('gmres errs *',errs,niter)
-      call prin2('gmres rres *',rres,1)
-
-      call surf_vtk_plot_vec(npatches,norders,ixyzs,iptype,
-     1   npts,srccoefs,srcvals,soln,'stell-stok-scat-soln-ref1.vtk','a')
 
       
       stop
