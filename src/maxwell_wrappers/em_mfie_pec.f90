@@ -1414,6 +1414,7 @@ implicit none
 
     complex ( kind = 8 ), allocatable :: a_vect(:,:),b_vect(:,:),lambda(:)
     complex ( kind = 8 ), allocatable :: E(:,:),curlE(:,:),divE(:),rho(:)
+    complex ( kind = 8 ), allocatable :: b_vect_t(:,:)
 	complex ( kind = 8 ) ima,zk,alpha
 
     integer count1,count2
@@ -1440,6 +1441,7 @@ implicit none
 	allocate(v_vect_t(3,nt))
 	allocate(source(3,ns))
 	allocate(targets(3,nt))
+    allocate(b_vect_t(3,nt))
 
 	do count1=1,ns
 	  n_vect_s(:,count1)=srcvals(10:12,count1)
@@ -1477,19 +1479,19 @@ implicit none
 	 &ifb_vect,b_vect,iflambda,lambda,ifrho,rho,n_vect_s,ifE,E,ifcurlE&
 	 &,curlE,ifdivE,divE,nt,targets,thresh,ifdir)
     do count1=1,nt
-	  b_vect(1,count1)=n_vect_t(2,count1)*curlE(3,count1)-&
+	  b_vect_t(1,count1)=n_vect_t(2,count1)*curlE(3,count1)-&
 	   &n_vect_t(3,count1)*curlE(2,count1)
-	  b_vect(2,count1)=n_vect_t(3,count1)*curlE(1,count1)-&
+	  b_vect_t(2,count1)=n_vect_t(3,count1)*curlE(1,count1)-&
 	   &n_vect_t(1,count1)*curlE(3,count1)
-	  b_vect(3,count1)=n_vect_t(1,count1)*curlE(2,count1)-&
+	  b_vect_t(3,count1)=n_vect_t(1,count1)*curlE(2,count1)-&
 	   &n_vect_t(2,count1)*curlE(1,count1)
     enddo
 
     do count1=1,nt
-	  AA_u(count1)=-(b_vect(1,count1)*u_vect_t(1,count1)+b_vect(2,count1)&
-	   &*u_vect_t(2,count1)+b_vect(3,count1)*u_vect_t(3,count1))
-	  AA_v(count1)=-(b_vect(1,count1)*v_vect_t(1,count1)+b_vect(2,count1)&
-	   &*v_vect_t(2,count1)+b_vect(3,count1)*v_vect_t(3,count1))
+	  AA_u(count1)=-(b_vect_t(1,count1)*u_vect_t(1,count1)+b_vect_t(2,count1)&
+	   &*u_vect_t(2,count1)+b_vect_t(3,count1)*u_vect_t(3,count1))
+	  AA_v(count1)=-(b_vect_t(1,count1)*v_vect_t(1,count1)+b_vect_t(2,count1)&
+	   &*v_vect_t(2,count1)+b_vect_t(3,count1)*v_vect_t(3,count1))
     enddo
 
 	deallocate(a_vect)
@@ -1509,6 +1511,7 @@ implicit none
 	deallocate(v_vect_t)
 	deallocate(n_vect_t)
 	deallocate(targets)
+    deallocate(b_vect_t)
 
 return
 end subroutine em_mfie_pec_FMM
@@ -1605,6 +1608,7 @@ implicit none
 
     complex ( kind = 8 ), allocatable :: a_vect(:,:),b_vect(:,:),lambda(:)
     complex ( kind = 8 ), allocatable :: E(:,:),curlE(:,:),divE(:),rho(:)
+    complex ( kind = 8 ), allocatable :: b_vect_t(:,:)
 	complex ( kind = 8 ) ima,zk,alpha
 
     integer count1,count2
@@ -1631,6 +1635,7 @@ implicit none
     allocate(v_vect_t(3,nt))
     allocate(source(3,ns))
     allocate(targets(3,nt))
+    allocate(b_vect_t(3,nt))
 
 	do count1=1,ns
 	  n_vect_s(:,count1)=srcvals(10:12,count1)
@@ -1671,19 +1676,19 @@ implicit none
 	 &,curlE,ifdivE,divE,nt,targets,thresh,ifdir)
 
     do count1=1,nt
-	  b_vect(1,count1)=n_vect_t(2,count1)*curlE(3,count1)-&
+	  b_vect_t(1,count1)=n_vect_t(2,count1)*curlE(3,count1)-&
 	   &n_vect_t(3,count1)*curlE(2,count1)
-	  b_vect(2,count1)=n_vect_t(3,count1)*curlE(1,count1)-&
+	  b_vect_t(2,count1)=n_vect_t(3,count1)*curlE(1,count1)-&
 	   &n_vect_t(1,count1)*curlE(3,count1)
-	  b_vect(3,count1)=n_vect_t(1,count1)*curlE(2,count1)-&
+	  b_vect_t(3,count1)=n_vect_t(1,count1)*curlE(2,count1)-&
 	   &n_vect_t(2,count1)*curlE(1,count1)
     enddo
 
     do count1=1,nt
-	  AA_u(count1)=-(b_vect(1,count1)*u_vect_t(1,count1)+b_vect(2,count1)&
-	   &*u_vect_t(2,count1)+b_vect(3,count1)*u_vect_t(3,count1))
-	  AA_v(count1)=-(b_vect(1,count1)*v_vect_t(1,count1)+b_vect(2,count1)&
-	   &*v_vect_t(2,count1)+b_vect(3,count1)*v_vect_t(3,count1))
+	  AA_u(count1)=-(b_vect_t(1,count1)*u_vect_t(1,count1)+b_vect_t(2,count1)&
+	   &*u_vect_t(2,count1)+b_vect_t(3,count1)*u_vect_t(3,count1))
+	  AA_v(count1)=-(b_vect_t(1,count1)*v_vect_t(1,count1)+b_vect_t(2,count1)&
+	   &*v_vect_t(2,count1)+b_vect_t(3,count1)*v_vect_t(3,count1))
     enddo
 
     do count1=1,nt
@@ -1708,6 +1713,7 @@ implicit none
 	deallocate(v_vect_t)
 	deallocate(n_vect_t)
 	deallocate(targets)
+    deallocate(b_vect_t)
 
 return
 end subroutine em_mfie_pec_FMM_last
