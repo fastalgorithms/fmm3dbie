@@ -132,7 +132,10 @@
 
       return
       end subroutine getnearquad_em_aumfie_pec
-
+!
+!
+!
+!
 
       subroutine lpcomp_em_aumfie_pec_addsub(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
@@ -350,9 +353,9 @@
 !     Remove near contribution of the FMM
 !
 
+      ifdir=1
 !C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2)
 !C$OMP$PRIVATE(ctmp2_u,ctmp2_v,wtmp2,nss,l,jstart,ii,E,npover)
-ifdir=1
       do i=1,ntarg
         nss = 0
         do j=row_ptr(i),row_ptr(i+1)-1
@@ -1118,56 +1121,55 @@ implicit none
 	zk=zpars(1)
 	alpha=zpars(2)
 
-	allocate(rho(ns))
+    allocate(rho(ns))
     allocate(E(3,nt))
     allocate(divE(nt))
-	allocate(n_vect_s(3,ns))
-	allocate(n_vect_t(3,nt))
-	allocate(u_vect_s(3,ns))
-	allocate(v_vect_s(3,ns))
-	allocate(u_vect_t(3,nt))
-	allocate(v_vect_t(3,nt))
-	allocate(source(3,ns))
-	allocate(targets(3,nt))
-
-	do count1=1,nt
-		divE(count1)=0.0d0
-		E(1,count1)=0.0d0
-		E(2,count1)=0.0d0
-		E(3,count1)=0.0d0
-	enddo
-
-	do count1=1,ns
-		n_vect_s(:,count1)=srcvals(10:12,count1)
-		source(:,count1)=srcvals(1:3,count1)
-	enddo
-	call orthonormalize_all(srcvals(4:6,:),srcvals(10:12,:),u_vect_s,v_vect_s,ns)
-	
-	do count1=1,nt
-		n_vect_t(:,count1)=targvals(10:12,count1)
-		targets(:,count1)=targvals(1:3,count1)
-	enddo
-	call orthonormalize_all(targvals(4:6,:),targvals(10:12,:),u_vect_t,v_vect_t,nt)
-	
-	do count1=1,ns
-		rho(count1)=rho_in(count1)*wts(count1)
-	enddo
-
-    !Computing the full operator
-	if (ifdir.eq.1) then
-    	call h3ddirectcg(1,zk,source,rho,ns,targets,nt,divE,E,thresh)
-	else
-		call hfmm3d_t_c_g(eps,zk,ns,source,rho,nt,targets,divE,E,ier)
-	endif
-	do count1=1,nt
-		E(:,count1)=E(:,count1)/(4.0d0*pi)
-!		divE(count1)=divE(count1)/(4.0d0*pi)
-	enddo
+    allocate(n_vect_s(3,ns))
+    allocate(u_vect_s(3,ns))
+    allocate(v_vect_s(3,ns))
+    allocate(n_vect_t(3,nt))
+    allocate(u_vect_t(3,nt))
+    allocate(v_vect_t(3,nt))
+    allocate(source(3,ns))
+    allocate(targets(3,nt))
 
     do count1=1,nt
-		PHI(count1)=&
-		&+(E(1,count1)*n_vect_t(1,count1)+E(2,count1)*n_vect_t(2,count1)+E(3,count1)*n_vect_t(3,count1))
-	enddo
+        divE(count1)=0.0d0
+        E(1,count1)=0.0d0
+        E(2,count1)=0.0d0
+        E(3,count1)=0.0d0
+    enddo
+
+    do count1=1,ns
+      n_vect_s(:,count1)=srcvals(10:12,count1)
+      source(:,count1)=srcvals(1:3,count1)
+    enddo
+    call orthonormalize_all(srcvals(4:6,:),srcvals(10:12,:),u_vect_s,v_vect_s,ns)
+
+    do count1=1,nt
+      n_vect_t(:,count1)=targvals(10:12,count1)
+      targets(:,count1)=targvals(1:3,count1)
+    enddo
+    call orthonormalize_all(targvals(4:6,:),targvals(10:12,:),u_vect_t,v_vect_t,nt)
+
+    do count1=1,ns
+       rho(count1)=rho_in(count1)*wts(count1)
+    enddo
+
+    !Computing the full operator
+    if (ifdir.eq.1) then
+       call h3ddirectcg(1,zk,source,rho,ns,targets,nt,divE,E,thresh)
+    else
+       call hfmm3d_t_c_g(eps,zk,ns,source,rho,nt,targets,divE,E,ier)
+    endif
+    do count1=1,nt
+       E(:,count1)=E(:,count1)/(4.0d0*pi)
+    enddo
+
+    do count1=1,nt
+      PHI(count1)=&
+       +(E(1,count1)*n_vect_t(1,count1)+E(2,count1)*n_vect_t(2,count1)+E(3,count1)*n_vect_t(3,count1))
+    enddo
 
 	deallocate(rho)
 	deallocate(E)
