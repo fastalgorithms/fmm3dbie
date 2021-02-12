@@ -156,7 +156,6 @@ for e in entities:
             for ipol in range(0,npols):
                 for idim in range(0,ndim):
                     indi = ipol + ielem*npols
-                    eCoef[idim][indi] = 0
                     for jpol in range(0,npols):
                         indj = int(elemNodeTags[elemTypeIter][jpol+ielem*numv])
                         eCoef[idim][indi] = eCoef[idim][indi] + umatr[ipol][jpol]*nodeCoords[idim+(indj-1)*ndim]
@@ -166,7 +165,6 @@ for e in entities:
             for ipol in range(0,npols):
                 for idim in range(0,ndim):
                     indi = ipol + ielem*npols
-                    eCoef[idim][indi] = 0
                     for jpol in range(0,npols):
                         ePos[idim][indi] = ePos[idim][indi] + vmatr[ipol][jpol]*eCoef[idim][jpol+ielem*npols]
 
