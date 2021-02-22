@@ -190,9 +190,8 @@ end subroutine vioreanu_simplex_quad
 subroutine koorn_pols(uv, nmax, npols, pols)
   implicit real *8 (a-h,o-z)
   real *8 :: uv(2), pols(*)
-  real *8, allocatable :: legpols(:),jacpols(:,:)
 
-  allocate(legpols(0:100),jacpols(0:100,0:100))
+  real *8 :: legpols(0:100), jacpols(0:100,0:100)
 
   !
   ! This subroutine evalutes a bunch of orthogonal polynomials on the
@@ -332,11 +331,9 @@ subroutine koorn_ders(uv, nmax, npols, pols, ders)
   real *8, intent(in) :: uv(2)
   real *8, intent(out) :: pols(npols), ders(2,npols)
 
-  real *8, allocatable :: legpols(:), jacpols(:,:),legu(:),legv(:)
-  real *8, allocatable :: jacv(:,:)
-
-  allocate(legpols(0:100),jacpols(0:100,0:100),legu(0:100))
-  allocate(legv(0:100),jacv(0:100,0:100))
+  real *8 :: legpols(0:100), jacpols(0:100,0:100)
+  real *8 :: legu(0:100), legv(0:100)
+  real *8 :: jacv(0:100,0:100)
   
   
   !
@@ -460,9 +457,7 @@ end subroutine koorn_ders
 
 subroutine koorn_vals2coefs(nmax, npols, uvs, amat)
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: nmax, npols
-  real *8, intent(in) :: uvs(2,npols)
-  real *8, intent(out) :: amat(npols,npols)
+  real *8 :: uvs(2,npols), amat(npols,npols)
 
   real *8, allocatable :: bmat(:,:)
   
@@ -534,21 +529,6 @@ subroutine koorn_coefs2vals(nmax, npols, uvs, amat)
  
   return
 end subroutine koorn_coefs2vals
-
-
-
-subroutine koorn_coefs2vals_vioreanu(norder, npols, amat)
-  implicit real *8 (a-h,o-z)
-  integer, intent(in) :: norder, npols
-  real *8, intent(out) :: amat(npols,npols)
-  real *8 :: uvs(2,npols)
-
-  INCLUDE 'koorn-uvs-dat.txt'
-  call koorn_coefs2vals(norder, npols, uvs, amat)
-
-  return
-end subroutine koorn_coefs2vals_vioreanu
-
 
 
 
@@ -864,9 +844,7 @@ subroutine koornf_pols(uv, nmax, npols, pols, rat1, rat2, rsc1)
   real *8 :: rat1(2,0:nmax)
   real *8 :: rat2(3,0:nmax,0:nmax)
   real *8 :: rsc1(0:nmax,0:nmax)
-  real *8, allocatable :: legpols(:),jacpols(:,:)
-
-  allocate(legpols(0:100),jacpols(0:100,0:100))
+  real *8 :: legpols(0:100), jacpols(0:100,0:100)
 
   !
   ! This subroutine evalutes a bunch of orthogonal polynomials on the
@@ -1022,10 +1000,10 @@ subroutine koornf_ders(uv, nmax, npols, pols, ders, rat1, rat2, rsc1)
   real *8, intent(out) :: pols(npols), ders(2,npols)
 
   real *8, allocatable :: jacpols(:,:),jacv(:,:)
-  real *8, allocatable :: legpols(:),legu(:),legv(:)
+  real *8 :: legpols(0:100) 
+  real *8 :: legu(0:100), legv(0:100)
 
   allocate(jacpols(0:100,0:100),jacv(0:100,0:100))
-  allocate(legpols(0:100),legu(0:100),legv(0:100))
 
   
   

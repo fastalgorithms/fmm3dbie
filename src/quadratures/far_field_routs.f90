@@ -247,6 +247,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   complex *16 val
   real *8, allocatable :: pmat(:,:)
   real *8, allocatable :: uvs(:,:),wts(:),qwts(:)
+  real *8 epsp
   real *8 tmp(3)
   integer nfars(10)
   integer nmax,iseed1,iseed2 
@@ -327,6 +328,9 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 !  end of generating targets
 !
 
+!
+
+
 
   nomax = 16
   npmax = (nomax+1)*(nomax+2)/2
@@ -344,6 +348,40 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   iistart = max(iistart,1)
   iistart = 1
 
+
+!
+!  temporarily take the hit and reevaluate srcvals to
+!  estimate scaling parameter. Can be optimized
+!  by passing in srcvals as an input parameter
+!
+  call get_vioreanu_nodes_wts(norder,npols,uvs,wts)
+
+  do i=1,npols
+    call koorn_pols(uvs(1,i),norder,npols,pmat(1,i)) 
+  enddo
+
+
+  transa = 'n'
+  transb = 'n'
+  alpha = 1
+  beta = 0
+  
+  call dgemm(transa,transb,9,npols,npols,alpha,srccoefs,9,pmat,npols,&
+     beta,srctmp,12)
+
+  call cross_prod3d(srctmp(4,1),srctmp(7,1),tmp)
+  rsc = tmp(1)**2 + tmp(2)**2 + tmp(3)**2
+  do jpt=2,npols
+    call cross_prod3d(srctmp(4,jpt),srctmp(7,jpt),tmp)
+    rr = tmp(1)**2 + tmp(2)**2 + tmp(3)**2
+    if(rr.lt.rsc) rsc = rr
+  enddo
+  epsp = rsc**0.25d0*eps
+
+!
+!  estimate the potential at far targets using order
+!  1 quadrature rule to start comparison
+!
 
   nfar = nfars(iistart) 
   npolsf = (nfar+1)*(nfar+2)/2
@@ -363,9 +401,6 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   call dgemm(transa,transb,9,npolsf,npols,alpha,srccoefs,9,pmat,npols,&
      beta,srctmp,12)
 
-!
-!   compute the potential at the nmax targets
-!
   do jpt=1,npolsf
     call cross_prod3d(srctmp(4,jpt),srctmp(7,jpt),tmp)
     rr = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
@@ -374,6 +409,8 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
     srctmp(12,jpt) = tmp(3)/rr
     qwts(jpt) = wts(jpt)*rr
   enddo
+
+
 
   do itarg=1,nmax
     do l=1,npols
@@ -437,16 +474,18 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
           vref(l,itarg) = vref(l,itarg)+val*pmat(l,j)*qwts(j)
         enddo
       enddo
-
+      errl2 = 0
       do l=1,npols
         err = abs(vref(l,itarg)-vcomp(l,itarg))
-        if(err.gt.errmax) errmax = err
+        errl2 = errl2 + err**2
       enddo
+      errl2 = sqrt(errl2)
+      if(errl2.gt.errmax) errmax = errl2
     enddo
 
 
 
-    if(errmax.lt.eps) goto 1111
+    if(errmax.lt.epsp) goto 1111
     do itarg=1,nmax
       do l=1,npols
         vcomp(l,itarg) = vref(l,itarg)

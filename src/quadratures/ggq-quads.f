@@ -159,7 +159,7 @@ c
 
       complex *16 ff1,ff2,cra1,cra2
       integer nlev, nqorder_f,norder_avg
-      real *8 rfac0
+      real *8 rfac0,rsc,rr,tmp(3),epsp
 
       external fker
 c
@@ -261,6 +261,7 @@ C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder,irad)
 C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
+C$OMP$PRIVATE(epsp,rsc,tmp)
 
       do ipatch=1,npatches
         
@@ -279,6 +280,20 @@ C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
         allocate(wts(npols))
         if(iptype(ipatch).eq.1) 
      1     call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
+c
+c  estimate rescaling of epsp needed to account for the scale of the
+c    patch 
+c
+
+        ii = ixyzs(ipatch)
+        call cross_prod3d(srcvals(4,ii),srcvals(7,ii),tmp)
+        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+        do i=2,npols
+          call cross_prod3d(srcvals(4,ii+i-1),srcvals(7,ii+i-1),tmp)
+          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+          if(rr.lt.rsc) rsc = rr
+        enddo
+        epsp = eps_adap*rsc**0.25d0
 
         ntarg2m = col_ptr(ipatch+1)-col_ptr(ipatch) 
         allocate(xyztarg2(ndtarg,ntarg2m),svtmp2(npols,ntarg2m))
@@ -321,7 +336,7 @@ c       fill out near part of single layer
 c
 
         if(iptype(ipatch).eq.1) 
-     1      call ctriaints(eps_adap,istrat,intype,ntest0,norder,npols,
+     1      call ctriaints(epsp,istrat,intype,ntest0,norder,npols,
      1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
      2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
@@ -547,7 +562,7 @@ c
 
       real *8 ff1,ff2,cra1,cra2
       integer nlev, nqorder_f
-      real *8 rfac0
+      real *8 rfac0,rsc,rr,tmp(3),epsp
       real *8 done,dzero
       integer norder_avg
 
@@ -654,6 +669,7 @@ C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder,irad)
 C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
+C$OMP$PRIVATE(rsc,tmp,epsp)
 
       do ipatch=1,npatches
         
@@ -672,6 +688,21 @@ C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
         allocate(wts(npols))
         if(iptype(ipatch).eq.1) 
      1     call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
+
+c
+c  estimate rescaling of epsp needed to account for the scale of the
+c    patch 
+c
+
+        ii = ixyzs(ipatch)
+        call cross_prod3d(srcvals(4,ii),srcvals(7,ii),tmp)
+        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+        do i=2,npols
+          call cross_prod3d(srcvals(4,ii+i-1),srcvals(7,ii+i-1),tmp)
+          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+          if(rr.lt.rsc) rsc = rr
+        enddo
+        epsp = eps_adap*rsc**0.25d0
 
         ntarg2m = col_ptr(ipatch+1)-col_ptr(ipatch) 
         allocate(xyztarg2(ndtarg,ntarg2m),svtmp2(npols,ntarg2m))
