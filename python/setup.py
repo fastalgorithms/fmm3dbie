@@ -16,8 +16,10 @@ list_files.append('../src/stok_wrappers/stok_comb_vel.f')
 list_files.append('../src/kernels/stok_kernels.f90')
 list_files.append('../src/surface_routs/write_go3.f90')
 
-FLIBS=[]
-FLIBS.append('-lfmm3dbie')
+FLIBS = os.getenv('FMMBIE_LIBS')
+FLIBS = FLIBS.rstrip().split(' ')
+FLIBS = list(filter(None,FLIBS))
+FLIBS.append('../lib-static/libfmm3dbie.a')
 if platform == "darwin":
     FLIBS.append('-L/usr/local/lib')
 if platform == "linux" or platform == "linux2":

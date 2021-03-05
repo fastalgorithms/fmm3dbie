@@ -139,22 +139,22 @@ implicit none
 			H(2,i)=0
 			H(3,i)=0
 		endif
-			dx=points(1,i)-P0(1)
-			dy=points(2,i)-P0(2)
-			dz=points(3,i)-P0(3)
-			r=sqrt(dx**2+dy**2+dz**2)
-			R1=(ima*zk/r**2-1/r**3)
-			R2=((ima*zk)**2/r**3-3*ima*zk/r**4+3/r**5)
-			au1=(zk**2/r+R1)*exp(ima*zk*r)/(-ima*zk)
-			au2=dx*vf(1)+dy*vf(2)
-			au2=au2+dz*vf(3)
-			au2=au2*R2*exp(ima*zk*r)/(-ima*zk)
-			E(1,i)=E(1,i)+(vf(1)*au1+dx*au2)
-			E(2,i)=E(2,i)+(vf(2)*au1+dy*au2)
-			E(3,i)=E(3,i)+(vf(3)*au1+dz*au2)
-			H(1,i)=H(1,i)+(dy*vf(3)-dz*vf(2))*R1*exp(ima*zk*r)
-			H(2,i)=H(2,i)+(dz*vf(1)-dx*vf(3))*R1*exp(ima*zk*r)
-			H(3,i)=H(3,i)+(dx*vf(2)-dy*vf(1))*R1*exp(ima*zk*r)
+            dx=points(1,i)-P0(1)
+            dy=points(2,i)-P0(2)
+            dz=points(3,i)-P0(3)
+            r=sqrt(dx**2+dy**2+dz**2)
+            R1=(ima*zk/r**2-1/r**3)
+            R2=((ima*zk)**2/r**3-3*ima*zk/r**4+3/r**5)
+            au1=(zk**2/r+R1)*exp(ima*zk*r)/(-ima*zk)
+            au2=dx*vf(1)+dy*vf(2)
+            au2=au2+dz*vf(3)
+            au2=au2*R2*exp(ima*zk*r)/(-ima*zk)
+            E(1,i)=E(1,i)+(vf(1)*au1+dx*au2)
+            E(2,i)=E(2,i)+(vf(2)*au1+dy*au2)
+            E(3,i)=E(3,i)+(vf(3)*au1+dz*au2)
+            H(1,i)=H(1,i)+(dy*vf(3)-dz*vf(2))*R1*exp(ima*zk*r)
+            H(2,i)=H(2,i)+(dz*vf(1)-dx*vf(3))*R1*exp(ima*zk*r)
+            H(3,i)=H(3,i)+(dx*vf(2)-dy*vf(1))*R1*exp(ima*zk*r)
       enddo
 return
 end subroutine fieldsED

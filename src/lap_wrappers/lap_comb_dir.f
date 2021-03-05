@@ -709,7 +709,6 @@ c        compute threshold for ignoring local computation
 c
       
       call get_fmm_thresh(3,ns,sources,3,ntarg,targvals,thresh)
-      print *, "thresh=",thresh
       
 c
 c
@@ -1120,6 +1119,8 @@ c
 c       call the fmm
 c
 
+      ier = 0
+      iper = 0
       call cpu_time(t1)
 C$      t1 = omp_get_wtime()      
       call lfmm3d_ndiv(nd,eps,ns,sources,ifcharge,charges,
