@@ -56,6 +56,9 @@
 
 subroutine get_vioreanu_wts(norder,npols,wts)
 !
+!f2py intent(in) norder,npols
+!f2py intent(out) wts
+!
 !  This subroutine extracts the precomputed vioreanu quadrature weights
 !  
 !  Input arguments
@@ -84,6 +87,9 @@ end subroutine get_vioreanu_wts
 
 
 subroutine get_vioreanu_nodes(norder,npols,uvs)
+!
+!f2py intent(in) norder,npols
+!f2py intent(out) uvs
 !
 !  This subroutine extracts the precomputed vioreanu quadrature
 !  or discretization nodes
@@ -114,6 +120,9 @@ end subroutine get_vioreanu_nodes
 
 
 subroutine get_vioreanu_nodes_wts(norder,npols,uvs,wts)
+!
+!f2py intent(in) norder,npols
+!f2py intent(out) uvs,wts
 !
 !  This subroutine extracts the precomputed vioreanu quadrature
 !  or discretization nodes and the corresponding weights
@@ -147,6 +156,9 @@ end subroutine get_vioreanu_nodes_wts
 
 subroutine vioreanu_simplex_quad(norder, npols, uvs, &
     umatr, vmatr, wts)
+!
+!f2py intent(in) norder,npols
+!f2py intent(out) uvs,wts,umatr,vmatr
 !
 !  This subroutine extracts the precomputed vioreanu quadrature
 !  or discretization nodes, the corresponding weights, the coeffs
@@ -456,8 +468,14 @@ end subroutine koorn_ders
 
 
 subroutine koorn_vals2coefs(nmax, npols, uvs, amat)
+!
+!f2py intent(in) nmax,npols,uvs
+!f2py intent(out) amat
+!
   implicit real *8 (a-h,o-z)
-  real *8 :: uvs(2,npols), amat(npols,npols)
+  integer, intent(in) :: nmax,npols
+  real *8, intent(in) :: uvs(2,npols)
+  real *8, intent(out) :: amat(npols,npols)
 
   real *8, allocatable :: bmat(:,:)
   
@@ -496,8 +514,14 @@ end subroutine koorn_vals2coefs
 
 
 subroutine koorn_coefs2vals(nmax, npols, uvs, amat)
+!
+!f2py intent(in) nmax,npols,uvs
+!f2py intent(out) amat
+!
   implicit real *8 (a-h,o-z)
-  real *8 :: uvs(2,npols), amat(npols,npols)
+  integer, intent(in) :: nmax,npols
+  real *8, intent(in) :: uvs(2,npols)
+  real *8, intent(out) :: amat(npols,npols)
 
   real *8 :: pols(2000)
   
@@ -534,6 +558,9 @@ end subroutine koorn_coefs2vals
 
 
 subroutine koorn_vals2coefs_coefs2vals(korder,kpols,umatr,vmatr)
+!
+!f2py intent(in) korder,kpols
+!f2py intent(out) umatr,vmatr
   !
   !!   compute vals2coefs and coefs2vals matrix 
   !
@@ -551,9 +578,9 @@ subroutine koorn_vals2coefs_coefs2vals(korder,kpols,umatr,vmatr)
   !    vmatr      out: real *8 (kpols,kpols)
   !               coefs2vals matrix
   implicit real *8 (a-h,o-z)
-  integer korder
-  real *8 umatr(kpols,kpols)
-  real *8 vmatr(kpols,kpols)
+  integer, intent(in) :: korder,kpols
+  real *8, intent(out) :: umatr(kpols,kpols)
+  real *8, intent(out) :: vmatr(kpols,kpols)
   real *8 xys(2,kpols)
 
   call get_vioreanu_nodes(korder,kpols,xys)
@@ -563,8 +590,32 @@ subroutine koorn_vals2coefs_coefs2vals(korder,kpols,umatr,vmatr)
 
   return
 end subroutine koorn_vals2coefs_coefs2vals
+!
+!
+!
+!
+!
+subroutine koorn_coefs2vals_vioreanu(norder, npols, amat)
+!
+!f2py intent(in) npols,norder
+!f2py intent(out) amat(npols,npols)
+!
+!
+  implicit real *8 (a-h,o-z)
+  integer, intent(in) :: norder, npols
+  real *8, intent(out) :: amat(npols,npols)
+  real *8 :: uvs(2,npols)
 
+  INCLUDE 'koorn-uvs-dat.txt'
+  call koorn_coefs2vals(norder, npols, uvs, amat)
 
+  return
+end subroutine koorn_coefs2vals_vioreanu
+!
+!
+!
+!
+!
 
 
 subroutine koorn_oversamp_mat(korder,kpols,norder,npols,interpmat)

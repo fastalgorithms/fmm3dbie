@@ -8,6 +8,8 @@ c  * cross_prod3d:
 c      compute the cross product of two vectors
 c  * zcross_prod3d:
 c      compute the cross product of two complex vectors
+c  * dzcross_prod3d:
+c      compute the cross product of a real vector and a complex vector 
 c  * dot_cross_prod3d:
 c      compute x \cdot (y \times z)
 c  * cross_cross_prod3d:
@@ -113,6 +115,37 @@ c
 c
 c
 c
+c
+        subroutine dzcross_prod3d(x,y,z)
+c------------------
+c  This subroutine computes the cross product of a real vector
+c  with a complex vector
+c
+c  Input arguments:
+c
+c    - x: double precision(3)
+c        input vector 1
+c    - y: double complex(3)
+c        input vector 2
+c  
+c  Output arguments:
+c
+c    - z: double complex(3)
+c        x \times y
+c---------------------
+        implicit real *8 (a-h,o-z)
+        real *8, intent(in) :: x(3)
+        complex *16, intent(in) :: y(3)
+        complex *16, intent(out) :: z(3)
+c
+c       z = x \cross y
+c
+        z(1)=x(2)*y(3)-x(3)*y(2)
+        z(2)=x(3)*y(1)-x(1)*y(3)
+        z(3)=x(1)*y(2)-x(2)*y(1)
+c
+        return
+        end
 c
         subroutine dot_cross_prod3d(x,y,z,d)
 c------------------

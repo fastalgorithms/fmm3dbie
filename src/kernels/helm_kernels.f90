@@ -415,3 +415,103 @@ end subroutine h3d_sprime_diff
 
 
 
+
+
+
+
+
+subroutine h3d_sgradx(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(*),dpars(ndd)
+  complex *16 val
+  integer ipars(ndi)
+  complex *16 :: zk,ima
+
+  real *8 over4pi
+  data over4pi/0.07957747154594767d0/
+  data ima/(0.0d0,1.0d0)/
+  !
+  ! returns the normal derivative of the single layer kernel
+  !
+
+  dx=targinfo(1)-srcinfo(1)
+  dy=targinfo(2)-srcinfo(2)
+  dz=targinfo(3)-srcinfo(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+
+  val =  -dx*(1.0d0 - ima*zk*r)*exp(ima*zk*r)/(r**3)*over4pi
+
+  return
+end subroutine h3d_sgradx
+
+
+
+
+
+
+
+
+subroutine h3d_sgrady(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(*),dpars(ndd)
+  complex *16 :: val
+  integer ipars(ndi)
+  complex *16 :: zk,ima
+
+  real *8 over4pi
+  data over4pi/0.07957747154594767d0/
+  data ima/(0.0d0,1.0d0)/
+  !
+  ! returns the normal derivative of the single layer kernel
+  !
+
+  dx=targinfo(1)-srcinfo(1)
+  dy=targinfo(2)-srcinfo(2)
+  dz=targinfo(3)-srcinfo(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+
+  val =  -dy*(1.0d0 - ima*zk*r)*exp(ima*zk*r)/(r**3)*over4pi
+
+  return
+end subroutine h3d_sgrady
+
+
+
+
+
+
+
+
+
+
+
+subroutine h3d_sgradz(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(*),dpars(ndd)
+  complex *16 :: val
+  integer ipars(ndi)
+  complex *16 :: zk,ima
+
+  real *8 over4pi
+  data over4pi/0.07957747154594767d0/
+  data ima/(0.0d0,1.0d0)/
+  !
+  ! returns the normal derivative of the single layer kernel
+  !
+
+  dx=targinfo(1)-srcinfo(1)
+  dy=targinfo(2)-srcinfo(2)
+  dz=targinfo(3)-srcinfo(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+
+  val =  -dz*(1.0d0 - ima*zk*r)*exp(ima*zk*r)/(r**3)*over4pi
+
+  return
+end subroutine h3d_sgradz
+
+
+
+
