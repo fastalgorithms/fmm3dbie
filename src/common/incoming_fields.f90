@@ -115,8 +115,8 @@ end subroutine point_source_vector_helmholtz
 subroutine fieldsED(zk,P0,points,n,E,H,vf,init)
 implicit none
 ! a small electric dipole; that is: A=vf*exp(ima*zk*r)/r
-! H=zk*curlA
-! E=zk/(-ima*zk)*curlcurlA
+! H=curlA
+! E=1/(-ima*zk)*curlcurlA
 	
 	!List of calling arguments
 	integer, intent(in) :: n,init
@@ -139,22 +139,22 @@ implicit none
 			H(2,i)=0
 			H(3,i)=0
 		endif
-            dx=points(1,i)-P0(1)
-            dy=points(2,i)-P0(2)
-            dz=points(3,i)-P0(3)
-            r=sqrt(dx**2+dy**2+dz**2)
-            R1=(ima*zk/r**2-1/r**3)
-            R2=((ima*zk)**2/r**3-3*ima*zk/r**4+3/r**5)
-            au1=(zk**2/r+R1)*exp(ima*zk*r)/(-ima*zk)
-            au2=dx*vf(1)+dy*vf(2)
-            au2=au2+dz*vf(3)
-            au2=au2*R2*exp(ima*zk*r)/(-ima*zk)
-            E(1,i)=E(1,i)+(vf(1)*au1+dx*au2)
-            E(2,i)=E(2,i)+(vf(2)*au1+dy*au2)
-            E(3,i)=E(3,i)+(vf(3)*au1+dz*au2)
-            H(1,i)=H(1,i)+(dy*vf(3)-dz*vf(2))*R1*exp(ima*zk*r)
-            H(2,i)=H(2,i)+(dz*vf(1)-dx*vf(3))*R1*exp(ima*zk*r)
-            H(3,i)=H(3,i)+(dx*vf(2)-dy*vf(1))*R1*exp(ima*zk*r)
+			dx=points(1,i)-P0(1)
+			dy=points(2,i)-P0(2)
+			dz=points(3,i)-P0(3)
+			r=sqrt(dx**2+dy**2+dz**2)
+			R1=(ima*zk/r**2-1/r**3)
+			R2=((ima*zk)**2/r**3-3*ima*zk/r**4+3/r**5)
+			au1=(zk**2/r+R1)*exp(ima*zk*r)/(-ima*zk)
+			au2=dx*vf(1)+dy*vf(2)
+			au2=au2+dz*vf(3)
+			au2=au2*R2*exp(ima*zk*r)/(-ima*zk)
+			E(1,i)=E(1,i)+(vf(1)*au1+dx*au2)
+			E(2,i)=E(2,i)+(vf(2)*au1+dy*au2)
+			E(3,i)=E(3,i)+(vf(3)*au1+dz*au2)
+			H(1,i)=H(1,i)+(dy*vf(3)-dz*vf(2))*R1*exp(ima*zk*r)
+			H(2,i)=H(2,i)+(dz*vf(1)-dx*vf(3))*R1*exp(ima*zk*r)
+			H(3,i)=H(3,i)+(dx*vf(2)-dy*vf(1))*R1*exp(ima*zk*r)
       enddo
 return
 end subroutine fieldsED
@@ -163,8 +163,8 @@ end subroutine fieldsED
 subroutine fieldsMD(zk,P0,points,n,E,H,vf,initial)
 implicit none
 ! a small magnetic dipole; that is: F=vf*exp(ima*zk*r)/r
-! E=zk*curlF
-! H=zk/(ima*zk)*curlcurlF
+! E=curlF
+! H=1/(ima*zk)*curlcurlF
 
 	!List of calling arguments
 	integer, intent(in) :: n,initial
@@ -425,3 +425,169 @@ implicit none
       
 return
 end subroutine fieldsMDomega
+!
+!
+!
+!
+!
+
+subroutine fieldsEDdpie(zk,P0,points,n,ndtarg,vf,init,E,H,A,pot,gradpot)
+implicit none
+! a small electric dipole; that is: A=vf*exp(ima*zk*r)/r
+! H=curlA
+! E=1/(-ima*zk)*curlcurlA
+	
+	!List of calling arguments
+	integer, intent(in) :: n,init,ndtarg
+	real ( kind = 8 ), intent(in) :: P0(3),points(ndtarg,n)
+	complex ( kind = 8 ), intent(in) :: vf(3),zk
+	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n),A(3,n)
+	complex ( kind = 8 ), intent(out) :: pot(n),gradpot(3,n)
+	
+	!List of local variables
+	real ( kind = 8 ) dx,dy,dz,r
+	complex ( kind = 8 ) R1,R2,au1,au2,ima,myexp
+	complex ( kind = 8 ) e_aux1,e_aux2,e_aux3,a_aux1,a_aux2,a_aux3
+	integer i
+	
+	ima = (0.0d0,1.0d0)
+
+      if (init .eq. 0) then
+	    do i=1,n
+			E(1,i)=0.0d0
+			E(2,i)=0.0d0
+			E(3,i)=0.0d0
+			H(1,i)=0.0d0
+			H(2,i)=0.0d0
+			H(3,i)=0.0d0
+			A(1,i)=0.0d0
+			A(2,i)=0.0d0
+			A(3,i)=0.0d0
+			pot(i)=0.0d0
+			gradpot(1,i)=0.0d0
+			gradpot(2,i)=0.0d0
+			gradpot(3,i)=0.0d0
+	    enddo
+      endif
+	  do i=1,n
+    	dx=points(1,i)-P0(1)
+		dy=points(2,i)-P0(2)
+		dz=points(3,i)-P0(3)
+		r=sqrt(dx**2+dy**2+dz**2)
+		myexp=exp(ima*zk*r)
+		R1=(ima*zk/r**2-1/r**3)
+		R2=((ima*zk)**2/r**3-3*ima*zk/r**4+3/r**5)
+		au1=(zk**2/r+R1)*myexp/(-ima*zk)
+		au2=dx*vf(1)+dy*vf(2)
+		au2=au2+dz*vf(3)
+		au2=au2*R2*myexp/(-ima*zk)
+		e_aux1=(vf(1)*au1+dx*au2)
+		E(1,i)=E(1,i)+e_aux1
+		e_aux2=(vf(2)*au1+dy*au2)
+		E(2,i)=E(2,i)+e_aux2
+		e_aux3=(vf(3)*au1+dz*au2)
+		E(3,i)=E(3,i)+e_aux3
+		H(1,i)=H(1,i)+(dy*vf(3)-dz*vf(2))*R1*myexp
+		H(2,i)=H(2,i)+(dz*vf(1)-dx*vf(3))*R1*myexp
+		H(3,i)=H(3,i)+(dx*vf(2)-dy*vf(1))*R1*myexp
+		pot(i)=pot(i)+R1*myexp/(-ima*zk)*(dx*vf(1)+dy*vf(2)+dz*vf(3))
+		a_aux1=myexp/r*vf(1)
+		A(1,i)=A(1,i)+a_aux1
+		a_aux2=myexp/r*vf(2)
+		A(2,i)=A(2,i)+a_aux2
+		a_aux3=myexp/r*vf(3)
+		A(3,i)=A(3,i)+a_aux3
+		gradpot(1,i)=gradpot(1,i)+e_aux1-ima*zk*a_aux1
+		gradpot(2,i)=gradpot(2,i)+e_aux2-ima*zk*a_aux2
+		gradpot(3,i)=gradpot(3,i)+e_aux3-ima*zk*a_aux3
+      enddo
+
+!      do i=1,n
+!	    dx=points(1,i)-P0(1)
+!		dy=points(2,i)-P0(2)
+!		dz=points(3,i)-P0(3)
+!		r=sqrt(dx**2+dy**2+dz**2)
+!		myexp=exp(ima*zk*r)
+!		R1=(ima*zk/r**2-1/r**3)
+
+!       pot(i)=pot(i)+myexp/r
+!		gradpot(1,i)=gradpot(1,i)+dx*R1*myexp
+!	    gradpot(2,i)=gradpot(2,i)+dy*R1*myexp
+!		gradpot(3,i)=gradpot(3,i)+dz*R1*myexp
+!	  enddo
+
+
+return
+end subroutine fieldsEDdpie
+
+
+subroutine fieldsMDdpie(zk,P0,points,n,ndtarg,vf,initial,E,H,A,pot,gradpot)
+implicit none
+! a small magnetic dipole; that is: F=vf*exp(ima*zk*r)/r
+! E=curlF
+! H=1/(ima*zk)*curlcurlF
+
+	!List of calling arguments
+	integer, intent(in) :: n,initial,ndtarg
+	real ( kind = 8 ), intent(in) :: P0(3),points(ndtarg,n)
+	complex ( kind = 8 ), intent(in) :: vf(3),zk
+	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n),A(3,n)
+	complex ( kind = 8 ), intent(out) :: pot(n), gradpot(3,n)
+	
+	!List of local variables
+	real ( kind = 8 ) dx,dy,dz,r
+	complex ( kind = 8 ) R1,R2,au1,au2,ima,e_aux1,e_aux2,e_aux3,myexp
+	integer i
+	
+	ima = (0.0d0,1.0d0)
+
+    if (initial .eq. 0) then
+	  do i=1,n
+        E(1,i)=0.0d0
+        E(2,i)=0.0d0
+        E(3,i)=0.0d0
+        H(1,i)=0.0d0
+        H(2,i)=0.0d0
+        H(3,i)=0.0d0
+        A(1,i)=0.0d0
+        A(2,i)=0.0d0
+        A(3,i)=0.0d0
+		pot(i)=0.0d0
+		gradpot(1,i)=0.0d0
+		gradpot(2,i)=0.0d0
+		gradpot(3,i)=0.0d0
+	  enddo
+    endif
+
+	do i=1,n
+		dx=points(1,i)-P0(1)
+		dy=points(2,i)-P0(2)
+		dz=points(3,i)-P0(3)
+		r=sqrt(dx**2+dy**2+dz**2)
+		myexp=exp(ima*zk*r)
+		R1=(ima*zk/r**2-1/r**3)
+		R2=((ima*zk)**2/r**3-3*ima*zk/r**4+3/r**5)
+		au1=(zk**2/r+R1)*myexp/(ima*zk)
+		au2=dx*vf(1)+dy*vf(2)
+		au2=au2+dz*vf(3)
+		au2=au2*R2*myexp/(ima*zk)
+		H(1,i)=H(1,i)+(vf(1)*au1+dx*au2)
+		H(2,i)=H(2,i)+(vf(2)*au1+dy*au2)
+		H(3,i)=H(3,i)+(vf(3)*au1+dz*au2)
+		e_aux1=(dy*vf(3)-dz*vf(2))*R1*myexp
+		E(1,i)=E(1,i)+e_aux1
+		e_aux2=(dz*vf(1)-dx*vf(3))*R1*myexp
+		E(2,i)=E(2,i)+e_aux2
+		e_aux3=(dx*vf(2)-dy*vf(1))*R1*myexp
+		E(3,i)=E(3,i)+e_aux3
+		A(1,i)=A(1,i)+e_aux1/(ima*zk)
+	    A(2,i)=A(2,i)+e_aux2/(ima*zk)
+		A(3,i)=A(3,i)+e_aux3/(ima*zk)
+!		pot(i)=pot(i)+0.0d0
+!		gradpot(1,i)=gradpot(1,i)+0.0d0
+!		gradpot(2,i)=gradpot(2,i)+0.0d0
+!		gradpot(3,i)=gradpot(3,i)+0.0d0
+	enddo
+      
+return
+end subroutine fieldsMDdpie

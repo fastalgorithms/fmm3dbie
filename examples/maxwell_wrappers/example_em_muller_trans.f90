@@ -63,28 +63,17 @@
       write (*,*) 'ep1: ',ep1
 
 
-!      xyz_in(1) = 0.11d0
-!      xyz_in(2) = 0.0d-5
-!      xyz_in(3) = 0.37d0
-
-!      xyz_out(1) = -3.5d0
-!      xyz_out(2) = 3.1d0
-!      xyz_out(3) = 20.1d0
       
-      !fname = '../../geometries/sphere_192_o03.go3'
+      fname = '../../geometries/sphere_768_o03.go3'
 
 
       xyz_in(1) = 0.11d0
       xyz_in(2) = 0.0d-5
-      xyz_in(3) = 1.37d0
+      xyz_in(3) = 0.37d0
 
       xyz_out(1) = -3.5d0
       xyz_out(2) = 3.1d0
-      xyz_out(3) = 20.1d0
-
-      fname = '../../../../Geometries_go3/' // &
-       & 'simplest_cube_quadratic_v4_o04_r02.go3'
-
+      xyz_out(3) = 5.1d0
 
 !
 !	Open geometry
@@ -123,10 +112,10 @@
       allocate(errs(numit+1))
 
 !
-!	Specify
+!	Specify tolerance
 !
 
-      eps = 1d-5
+      eps = 1d-4
       eps_gmres=1d-5
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      

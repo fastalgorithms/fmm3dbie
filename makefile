@@ -96,7 +96,8 @@ LOBJS = $(LAP)/lap_comb_dir.o
 EM = src/maxwell_wrappers
 EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 	$(EM)/em_nrccie_pec.o $(EM)/em_auCKi_pec.o \
-	$(EM)/em_dfie_trans.o
+	$(EM)/em_dfie_trans.o $(EM)/em_adpie_pec.o \
+	$(EM)/em_sdpie_pec.o
 
 # Stokes wrappers
 STOK = src/stok_wrappers

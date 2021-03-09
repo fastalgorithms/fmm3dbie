@@ -63,10 +63,6 @@ FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
 .PHONY: all clean 
 
 OBJECTS = example_em_dpie_pec.o \
-  $ ../../src/maxwell_wrappers/em_adpie_pec.o \
-  $ ../../src/maxwell_wrappers/em_sdpie_pec.o \
-  $ ../../src/common/incoming_fields_v2.o \
-  $ ../../src/kernels/DPIE_kernels_v3.o \
 #
 # use only the file part of the filename, then manually specify
 # the build location

@@ -534,6 +534,30 @@ implicit none
 
 return
 end subroutine get_nSkb
+!
+!
+!
+!
+!
+subroutine get_nSknxb(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,my_exp,r,nSknxb)
+implicit none
+	!nSk(nxb)
+
+	!List of calling arguments
+	real ( kind = 8 ), intent(in) :: ru_s(3),rv_s(3),n_s(3)
+	real ( kind = 8 ), intent(in) :: ru_t(3),rv_t(3),n_t(3)
+	real ( kind = 8 ), intent(in) :: dr(3),r
+	complex ( kind = 8 ), intent(in) :: my_exp
+	complex ( kind = 8 ), intent(out) :: nSknxb(1,2)
+	
+ 	!List of local variables
+	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3)
+
+	nSknxb(1,1)=DOT_PRODUCT(n_t,rv_s)*my_exp/r
+	nSknxb(1,2)=-DOT_PRODUCT(n_t,ru_s)*my_exp/r
+
+return
+end subroutine get_nSknxb
 
 
 subroutine get_ngradSklambda(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r,ngradSklambda)
