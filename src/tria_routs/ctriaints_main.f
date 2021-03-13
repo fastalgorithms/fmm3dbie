@@ -58,7 +58,11 @@ c        target, source triangle combination and compute the
 c        integral
 c
 c          strategy 2: 
-c             Purely adaptive integration on triangles
+c             Purely adaptive integration on triangles.
+c             if number of triangles exceeds ntrimax, then
+c             adaptive integration is restarted after allocating
+c             more triangles
+c           
 c
 c
 c          strategy 3:
@@ -67,7 +71,12 @@ c             the integrals on some coarse hierarchy decided
 c             based on the requested accuracy and from that
 c             point on, flag all triangles to be in
 c             the stack for refinement and use adaptive 
-c             integration from that point on
+c             integration from that point on.
+c 
+c             if number of triangles exceeds ntrimax, then
+c             computation for current target is currently
+c             halted there and the subroutine returns
+c             outside the code
 c 
 c        
 c        input arguments:

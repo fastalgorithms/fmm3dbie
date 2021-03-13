@@ -571,6 +571,8 @@ c
       integer nlmax,ltree
       real *8, allocatable :: tvs(:,:,:),da(:)
       integer, allocatable :: ichild_start(:)
+      real *8, allocatable :: tvs2(:,:,:),da2(:)
+      integer, allocatable :: ichild_start2(:)
 
       integer ntri,ntrimax,nlev,itri,istart,i,j,k
       integer ier,itarg,jj,jstart,npts
@@ -584,17 +586,21 @@ c
       integer nqpols
       real *8, allocatable :: sigvals(:,:),sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
+      real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
+      real *8, allocatable :: srcvals2(:,:),qwts2(:)
       integer itmp
 
       character *1 transa,transb
       real *8 alpha,beta
       integer lda,ldb,ldc
+      integer nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
       
       
 c
 c      get the tree
 c
       nlmax = 20
+      ntmaxuse = ntrimax
 
       ltree = 2*(nlmax+1) + 6*ntri
 
@@ -697,8 +703,8 @@ c
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
 
 
-
-          call dtriaadap(eps,nqorder,nqpols,nlmax,ntrimax,ntri,
+ 1111     continue
+          call dtriaadap(eps,nqorder,nqpols,nlmax,ntmaxuse,ntri,
      1          ichild_start,tvs,da,uvsq,wts, 
      1          norder,npols,srccoefs(1,1,itri),
      2          npmax,srcvals,
@@ -707,7 +713,64 @@ c
      3          rat1,rat2,rsc1,
      3          rat1p,rat2p,rsc1p,
      3          fker,ndd,dpars,ndz,zpars,ndi,ipars,
-     3          cintvals(1,itarg))
+     3          cintvals(1,itarg),ier)
+           if(ier.eq.4) then
+             ntmaxuse0 = ntmaxuse*4
+             npmax0 = ntmaxuse0*nqpols
+             allocate(sigvals2(npols,npmax))
+             allocate(sigvalsdens2(nppols,npmax))
+             allocate(srcvals2(12,npmax),qwts2(npmax))
+             allocate(ichild_start2(ntmaxuse),tvs2(2,3,ntmaxuse))
+             allocate(da2(ntmaxuse))
+             nn1 = npols*npmax
+             nn2 = nppols*npmax
+             nn3 = 12*npmax
+             nn4 = ntri*6
+             call dcopy(nn1,sigvals,1,sigvals2,1)
+             call dcopy(nn2,sigvalsdens,1,sigvalsdens2,1)
+             call dcopy(nn3,srcvals,1,srcvals2,1)
+             call dcopy(npmax,qwts,1,qwts2,1)
+             do ii=1,ntri
+               ichild_start2(ii) = ichild_start(ii)
+             enddo
+             call dcopy(nn4,tvs,1,tvs2,1)
+             call dcopy(ntri,da,1,da2,1)
+
+
+             deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
+             deallocate(tvs,da)
+
+
+             allocate(sigvals(npols,npmax0))
+             allocate(sigvalsdens(nppols,npmax0))
+             allocate(srcvals(12,npmax0),qwts(npmax0))
+             allocate(ichild_start(ntmaxuse0),tvs(2,3,ntmaxuse0))
+             allocate(da(ntmaxuse0))
+
+             do ii=1,ntmaxuse0
+               ichild_start(ii) = -1
+             enddo
+
+             call dcopy(nn1,sigvals2,1,sigvals,1)
+             call dcopy(nn2,sigvalsdens2,1,sigvalsdens,1)
+             call dcopy(nn3,srcvals2,1,srcvals,1)
+             call dcopy(npmax,qwts2,1,qwts,1)
+             do ii=1,ntri
+               ichild_start(ii) = ichild_start2(ii)
+             enddo
+             call dcopy(nn4,tvs2,1,tvs,1)
+             call dcopy(ntri,da2,1,da,1)
+
+             npmax = npmax0
+             ntmaxuse = ntmaxuse0
+             call prinf('restarting adaptive inetgration with ntri=*',
+     1             ntmaxuse,1)
+
+
+             deallocate(sigvals2,sigvalsdens2,srcvals2,ichild_start2)
+             deallocate(tvs2,da2,qwts2)
+             goto 1111
+          endif
         enddo
 
         do i=1,ntri
@@ -731,7 +794,7 @@ c
      3             rat1,rat2,rsc1,
      3             rat1p,rat2p,rsc1p,
      3             fker,ndd,dpars,ndz,zpars,ndi,
-     3             ipars,cintall)
+     3             ipars,cintall,ier)
 
 c
 c       this subroutine adaptively computes the integral
@@ -856,7 +919,7 @@ c
      3      rat1p,rat2p,rsc1p,
      3      fker,ndd,dpars,
      3      ndz,zpars,ndi,ipars,cvals,istack,nproclist0,
-     4      xkernvals,cintall)
+     4      xkernvals,cintall,ier)
       
       return
       end
@@ -873,7 +936,7 @@ c
      3      rat1p,rat2p,rsc1p,
      3      fker,ndd,dpars,ndz,
      3      zpars,ndi,ipars,cvals,istack,nproclist0,xkernvals,
-     4      cintall)
+     4      cintall,ier)
       
 
       implicit real *8 (a-h,o-z)
@@ -911,6 +974,7 @@ c
       integer lda,ldb,ldc
       external fker
       
+      ier = 0
       allocate(uvtmp(2,kpols))
 
 c
@@ -942,6 +1006,7 @@ c
             if(ntri+4.gt.ntmax) then
                print *, "Too many triangles in dtriaadap"
                print *, "Exiting without computing anything"
+               ier = 4
 
                return
             endif
@@ -1454,7 +1519,7 @@ c
      3      ndtarg,xyztarg(1,itarg),
      3      rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
      3      fker,ndd,dpars,ndz,zpars,ndi,ipars,cvals,istack,nproclist0,
-     4      xkernvals,cintvals(1,itarg))
+     4      xkernvals,cintvals(1,itarg),ier)
 
       
         enddo
@@ -1914,6 +1979,8 @@ c
       integer nlmax,ltree
       real *8, allocatable :: tvs(:,:,:),da(:)
       integer, allocatable :: ichild_start(:)
+      real *8, allocatable :: tvs2(:,:,:),da2(:)
+      integer, allocatable :: ichild_start2(:)
 
       integer ntri,ntrimax,nlev,itri,istart,i,j,k
       integer ier,itarg,jj,jstart,npts
@@ -1927,17 +1994,21 @@ c
       integer nqpols
       real *8, allocatable :: sigvals(:,:),sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
+      real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
+      real *8, allocatable :: srcvals2(:,:),qwts2(:)
       integer itmp
 
       character *1 transa,transb
       real *8 alpha,beta
       integer lda,ldb,ldc
+      integer nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
       
       
 c
 c      get the tree
 c
       nlmax = 20
+      ntmaxuse = ntrimax
 
       ltree = 2*(nlmax+1) + 6*ntri
 
@@ -2040,8 +2111,8 @@ c
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
 
-
-          call dtriaadap_vec(eps,nqorder,nqpols,nlmax,ntrimax,ntri,
+ 1111     continue
+          call dtriaadap_vec(eps,nqorder,nqpols,nlmax,ntmaxuse,ntri,
      1          ichild_start,tvs,da,uvsq,wts, 
      1          norder,npols,srccoefs(1,1,itri),
      2          npmax,srcvals,
@@ -2049,7 +2120,64 @@ c
      3          xyztarg(1,itarg),
      3          rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
      3          fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,
-     3          cintvals(1,1,itarg))
+     3          cintvals(1,1,itarg),ier)
+           if(ier.eq.4) then
+             ntmaxuse0 = ntmaxuse*4
+             npmax0 = ntmaxuse0*nqpols
+             allocate(sigvals2(npols,npmax))
+             allocate(sigvalsdens2(nppols,npmax))
+             allocate(srcvals2(12,npmax),qwts2(npmax))
+             allocate(ichild_start2(ntmaxuse),tvs2(2,3,ntmaxuse))
+             allocate(da2(ntmaxuse))
+             nn1 = npols*npmax
+             nn2 = nppols*npmax
+             nn3 = 12*npmax
+             nn4 = ntri*6
+             call dcopy(nn1,sigvals,1,sigvals2,1)
+             call dcopy(nn2,sigvalsdens,1,sigvalsdens2,1)
+             call dcopy(nn3,srcvals,1,srcvals2,1)
+             call dcopy(npmax,qwts,1,qwts2,1)
+             do ii=1,ntri
+               ichild_start2(ii) = ichild_start(ii)
+             enddo
+             call dcopy(nn4,tvs,1,tvs2,1)
+             call dcopy(ntri,da,1,da2,1)
+
+
+             deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
+             deallocate(tvs,da)
+
+
+             allocate(sigvals(npols,npmax0))
+             allocate(sigvalsdens(nppols,npmax0))
+             allocate(srcvals(12,npmax0),qwts(npmax0))
+             allocate(ichild_start(ntmaxuse0),tvs(2,3,ntmaxuse0))
+             allocate(da(ntmaxuse0))
+
+             do ii=1,ntmaxuse0
+               ichild_start(ii) = -1
+             enddo
+
+             call dcopy(nn1,sigvals2,1,sigvals,1)
+             call dcopy(nn2,sigvalsdens2,1,sigvalsdens,1)
+             call dcopy(nn3,srcvals2,1,srcvals,1)
+             call dcopy(npmax,qwts2,1,qwts,1)
+             do ii=1,ntri
+               ichild_start(ii) = ichild_start2(ii)
+             enddo
+             call dcopy(nn4,tvs2,1,tvs,1)
+             call dcopy(ntri,da2,1,da,1)
+
+             npmax = npmax0
+             ntmaxuse = ntmaxuse0
+             call prinf('restarting adaptive inetgration with ntri=*',
+     1             ntmaxuse,1)
+
+
+             deallocate(sigvals2,sigvalsdens2,srcvals2,ichild_start2)
+             deallocate(tvs2,da2,qwts2)
+             goto 1111
+           endif
         enddo
 
         do i=1,ntri
@@ -2071,7 +2199,7 @@ c
      2             qwts,sigvals,nporder,nppols,sigvalsdens,ndtarg,xt,
      3             rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
      3             fker,nd,ndd,dpars,ndz,zpars,ndi,
-     3             ipars,cintall)
+     3             ipars,cintall,ier)
 
 c
 c       this subroutine adaptively computes the integral
@@ -2205,7 +2333,7 @@ c
      3      ndtarg,xt,rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
      3      fker,nd,ndd,dpars,ndz,
      3      zpars,ndi,ipars,cvals,istack,nproclist0,
-     4      xkernvals,cintall)
+     4      xkernvals,cintall,ier)
       
       return
       end
@@ -2221,7 +2349,7 @@ c
      3      ndtarg,xt,rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
      3      fker,nd,ndd,dpars,ndz,
      3      zpars,ndi,ipars,cvals,istack,nproclist0,xkernvals,
-     4      cintall)
+     4      cintall,ier)
       
 
       implicit real *8 (a-h,o-z)
@@ -2267,6 +2395,8 @@ c
       ksigpols = nppols
       kfine = 4*kpols
 
+      ier = 0
+
 
       do ilev=0,nlmax
         idone = 1
@@ -2290,7 +2420,7 @@ c
             if(ntri+4.gt.ntmax) then
                print *, "Too many triangles in dtriaadap"
                print *, "Exiting without computing anything"
-
+               ier = 4
                return
             endif
             
@@ -2830,7 +2960,7 @@ c
      3      rat1,rat2,rsc1,rat1p,rat2p,rsc1p,
      3      fker,nd,ndd,dpars,ndz,zpars,ndi,ipars,cvals,istack,
      3      nproclist0,
-     4      xkernvals,cintvals(1,1,itarg))
+     4      xkernvals,cintvals(1,1,itarg),ier)
 
       
         enddo
