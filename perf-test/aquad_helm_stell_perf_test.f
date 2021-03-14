@@ -8,9 +8,12 @@
       integer ipars(2)
       integer, allocatable :: row_ptr(:),col_ind(:)
       integer, allocatable :: iquad(:)
+      integer, allocatable :: col_ptr(:),row_ind(:)
+      integer, allocatable :: iper(:)
       real *8, allocatable :: srcover(:,:),wover(:)
       complex *16, allocatable :: uval(:),dudnval(:)
       complex *16, allocatable :: sigmaover(:),slp_near(:),dlp_near(:)
+      complex *16, allocatable :: slp_near_ex(:),dlp_near_ex(:)
       complex *16, allocatable :: pot(:),potslp(:),potdlp(:)
       complex *16, allocatable :: potslp2(:)
 
@@ -34,22 +37,52 @@
       pi = atan(done)*4
 
 
-c
-c       select geometry type
-c       igeomtype = 1 => sphere
-c       igeomtype = 2 => stellarator
-c 
       igeomtype = 2
-      if(igeomtype.eq.1) ipars(1) = 1
-      if(igeomtype.eq.2) ipars(1) = 5
+      iasp = 3
+      iref = 0
+      iprec = 4
 
-      if(igeomtype.eq.1) then
-        npatches = 12*(4**ipars(1))
+
+      if(iasp.eq.1) then
+        ipars(1) = 5
+        ipars(2) = 15
       endif
-      if(igeomtype.eq.2) then
-        ipars(2) = ipars(1)*3
-        npatches = 2*ipars(1)*ipars(2)
+
+      if(iasp.eq.2) then
+        ipars(1) = 6
+        ipars(2) = 12
       endif
+
+      if(iasp.eq.3) then
+        ipars(1) = 9
+        ipars(2) = 9
+      endif
+
+      if(iasp.eq.4) then
+        ipars(1) = 12
+        ipars(2) = 6
+      endif
+
+      if(iasp.eq.5) then
+        ipars(1) = 15
+        ipars(2) = 5
+      endif
+
+      if(iprec.eq.0) eps = 0.5001d-2
+      if(iprec.eq.1) eps = 0.5001d-3
+      if(iprec.eq.2) eps = 0.5001d-6
+      if(iprec.eq.3) eps = 0.5001d-9
+      if(iprec.eq.4) eps = 0.5001d-12
+
+      ipars(1) = ipars(1)*2**(iref)
+      ipars(2) = ipars(2)*2**(iref)
+
+      npatches = 2*ipars(1)*ipars(2)
+
+      norder = 8 
+      npols = (norder+1)*(norder+2)/2
+      write(fname,'(a,i1,a,i1,a,i1,a)') 'data/stell_aquad_iasp_',iasp,
+     1  '_iref_',iref,'_norder_',norder,'.dat'
 
 
       zk = 1.0d0
@@ -77,8 +110,6 @@ c
         xyz_out(3) = 20.1d0
       endif
 
-      norder = 3 
-      npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
       allocate(srcvals(12,npts),srccoefs(9,npts))
@@ -144,6 +175,8 @@ c    find near field
 c
       iptype = 1
       call get_rfacs(norder,iptype,rfac,rfac0)
+      rfac = 2.75d0
+      rfac0 = 1.25d0
       do i=1,npatches 
         rad_near(i) = rads(i)*rfac
       enddo
@@ -162,37 +195,13 @@ c
 
       nquad = iquad(nnz+1)-1
       allocate(slp_near(nquad),dlp_near(nquad))
+      allocate(slp_near_ex(nquad),dlp_near_ex(nquad))
 
 
+      
       ndtarg = 3
-
-      eps = 0.50001d-3
-
       ikerorder = -1
 
-
-      call cpu_time(t1)
-      call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
-     1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zk,
-     2    nnz,row_ptr,col_ind,rfac,nfars,ixyzso)
-      call cpu_time(t2)
-      tfar = t2-t1
-
-
-      npts_over = ixyzso(npatches+1)-1
-
-      print *, "npts_over=",npts_over
-
-
-      allocate(srcover(12,npts_over),sigmaover(npts_over),
-     1         wover(npts_over))
-
-          
-      call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
-     1   srccoefs,srcvals,nfars,ixyzso,npts_over,srcover)
-
-      call get_qwts(npatches,nfars,ixyzso,iptype,npts_over,
-     1        srcover,wover)
 
 
       do i=1,nquad
@@ -200,23 +209,28 @@ c
         dlp_near(i) = 0
       enddo
 
+      print *, "done reading1"
+
 
 
       call cpu_time(t1)
+C$       t1 = omp_get_wtime()      
 
       zpars(1) = zk
       zpars(2) = 1.0d0
       zpars(3) = 0.0d0
 
       iquadtype = 1
+      call prin2('eps=*',eps,1)
+      call prinf('npatches=*',npatches,1)
 
 cc      goto 1111
-
       call getnearquad_helm_comb_dir(npatches,norders,
      1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
      1      iquad,
      1      rfac0,nquad,slp_near)
+      call prin2('done with slp*',i,0)
 
       
       zpars(2) = 0.0d0
@@ -228,91 +242,67 @@ cc      goto 1111
      1      rfac0,nquad,dlp_near)
       
       call cpu_time(t2)
+C$      t2 = omp_get_wtime()      
       tquadgen = t2-t1
+      print *, "done quadgen"
+      call prin2('tquadgen=*',tquadgen,1)
 
 
+      allocate(col_ptr(npatches+1),row_ind(nnz),iper(nnz))
+      call rsc_to_csc(npatches,npts,nnz,row_ptr,col_ind,col_ptr,
+     1   row_ind,iper)
+      call prinf('col_ptr=*',col_ptr,20)
+      call prinf('row_ind=*',row_ind,20)
 
-      ifinout = 1     
-
-      zpars(2) = 1.0d0
-      zpars(3) = 0.0d0
-
-
-      call cpu_time(t1)
-
-      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,slp_near,
-     3  dudnval,nfars,npts_over,ixyzso,srcover,wover,potslp)
-
-
-      zpars(2) = 0.0d0
-      zpars(3) = 1.0d0
-
-
-      call lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
-     3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)
-
-
-      call cpu_time(t2)
-      tlpcomp = t2-t1
-
+      open(unit=23,file=fname,action='readwrite',form='unformatted',
+     1  access='stream')
+      read(unit=23) slp_near_ex
+      read(unit=23) dlp_near_ex
+      call prin2('slp_near=*',slp_near,24)
+      call prin2('slp_near_ex=*',slp_near_ex,24)
 
 c
+c  now compute accuracy
 c
-c      compute error
-c
-      errl2 = 0
-      rl2 = 0
-      do i=1,npts
-        pot(i) = (potslp(i) - potdlp(i))*2
-        errl2 = errl2 + abs(uval(i)-pot(i))**2*wts(i)
-        rl2 = rl2 + abs(uval(i))**2*wts(i)
+      rrat = 0.0d0
+      do ipatch=1,npatches
+        
+        rsc = wts(ixyzs(ipatch)) 
+        do j=ixyzs(ipatch),ixyzs(ipatch+1)-1
+          if(wts(j).lt.rsc) rsc = wts(j)
+        enddo
+        rsc = sqrt(rsc)
+        npols = ixyzs(ipatch+1)-ixyzs(ipatch)
+        eps_test = eps*rsc
+        eps_test = max(eps_test,1.0d-14)
+        do j=row_ind(ipatch),row_ind(ipatch+1)-1
+          jquadstart = iquad(iper(j))
+          do l=1,npols
+            erra = abs(slp_near_ex(jquadstart+l-1) - 
+     1          slp_near(jquadstart+l-1))
+            errb = abs(dlp_near_ex(jquadstart+l-1) - 
+     1          dlp_near(jquadstart+l-1))
+            if(errb.gt.erra) erra = errb
+            rrat0 = erra/eps_test
+            if(rrat0.gt.rrat) rrat = rrat0 
+          enddo
+        enddo
       enddo
 
+      call get_quadparams_adap(eps,nqorder,eps_adap,nlev,nqorder_f)
 
-      err = sqrt(errl2/rl2)
-
-      call prin2('error in greens identity=*',err,1)
-
-      i1 = 0
-      if(err.lt.1.0d-2) i1 = 1
-
-      allocate(potslp2(npts))
-
-      zpars(2) = 1.0d0
-      zpars(3) = 0.0d0
-      
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
-     2  uvs_targ,eps,zpars,dudnval,potslp2)
+      open(unit=33,file='data/res-sum.dat',access='append')
+ 1231 format(2x,i1,2x,e11.5,2x,i2,2x,e11.5,2(2x,i2),2(2x,e11.5))      
+      write(33,1231) iasp,eps,nqorder,eps_adap,nlev,nqorder_f,tquadgen,
+     1     rrat 
+      write(*,1231) iasp,eps,nqorder,eps_adap,nlev,nqorder_f,tquadgen,
+     1     rrat 
 
 
-      errl2 = 0
-      rl2 = 0
-      do i=1,npts
 
-        errl2 = errl2 + abs(potslp(i)-potslp2(i))**2*wts(i)
-        rl2 = rl2 + abs(potslp(i))**2*wts(i) 
-      enddo
-      errl2 = sqrt(errl2/rl2)
 
-      call prin2('error in simpler calling interface for lp eval=*',
-     1   errl2,1)
 
-      i2 = 0
-      if(errl2.lt.1.0d-12) i2 = 1
-      ntests = 2
 
-      nsuccess = i1+i2
-
-      open(unit=33,file='../../print_testres.txt',access='append')
-      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
-     1  ' out of ',ntests,' in helm_wrappers testing suite'
-      close(33)
-      
       stop
       end
 

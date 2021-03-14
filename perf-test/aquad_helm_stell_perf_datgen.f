@@ -34,22 +34,46 @@
       pi = atan(done)*4
 
 
-c
-c       select geometry type
-c       igeomtype = 1 => sphere
-c       igeomtype = 2 => stellarator
-c 
       igeomtype = 2
-      if(igeomtype.eq.1) ipars(1) = 1
-      if(igeomtype.eq.2) ipars(1) = 5
+      iasp = 5
+      iref = 0
+      iprec = 0
 
-      if(igeomtype.eq.1) then
-        npatches = 12*(4**ipars(1))
+
+      if(iasp.eq.1) then
+        ipars(1) = 5
+        ipars(2) = 15
       endif
-      if(igeomtype.eq.2) then
-        ipars(2) = ipars(1)*3
-        npatches = 2*ipars(1)*ipars(2)
+
+      if(iasp.eq.2) then
+        ipars(1) = 6
+        ipars(2) = 12
       endif
+
+      if(iasp.eq.3) then
+        ipars(1) = 9
+        ipars(2) = 9
+      endif
+
+      if(iasp.eq.4) then
+        ipars(1) = 12
+        ipars(2) = 6
+      endif
+
+      if(iasp.eq.5) then
+        ipars(1) = 15
+        ipars(2) = 5
+      endif
+
+      ipars(1) = ipars(1)*2**(iref)
+      ipars(2) = ipars(2)*2**(iref)
+
+      npatches = 2*ipars(1)*ipars(2)
+
+      norder = 8 
+      npols = (norder+1)*(norder+2)/2
+      write(fname,'(a,i1,a,i1,a,i1,a)') 'data/stell_aquad_iasp_',iasp,
+     1  '_iref_',iref,'_norder_',norder,'.dat'
 
 
       zk = 1.0d0
@@ -77,8 +101,6 @@ c
         xyz_out(3) = 20.1d0
       endif
 
-      norder = 3 
-      npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
       allocate(srcvals(12,npts),srccoefs(9,npts))
@@ -144,6 +166,8 @@ c    find near field
 c
       iptype = 1
       call get_rfacs(norder,iptype,rfac,rfac0)
+      rfac = 2.75d0
+      rfac0 = 1.25d0
       do i=1,npatches 
         rad_near(i) = rads(i)*rfac
       enddo
@@ -166,7 +190,7 @@ c
 
       ndtarg = 3
 
-      eps = 0.50001d-3
+      eps = 0.50001d-12
 
       ikerorder = -1
 
@@ -277,42 +301,14 @@ c
 
       call prin2('error in greens identity=*',err,1)
 
-      i1 = 0
-      if(err.lt.1.0d-2) i1 = 1
 
-      allocate(potslp2(npts))
-
-      zpars(2) = 1.0d0
-      zpars(3) = 0.0d0
+      open(unit=23,file=fname,action='readwrite',form='unformatted',
+     1  access='stream')
+      write(unit=23) slp_near
+      write(unit=23) dlp_near
       
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
-     2  uvs_targ,eps,zpars,dudnval,potslp2)
+      close(23)
 
-
-      errl2 = 0
-      rl2 = 0
-      do i=1,npts
-
-        errl2 = errl2 + abs(potslp(i)-potslp2(i))**2*wts(i)
-        rl2 = rl2 + abs(potslp(i))**2*wts(i) 
-      enddo
-      errl2 = sqrt(errl2/rl2)
-
-      call prin2('error in simpler calling interface for lp eval=*',
-     1   errl2,1)
-
-      i2 = 0
-      if(errl2.lt.1.0d-12) i2 = 1
-      ntests = 2
-
-      nsuccess = i1+i2
-
-      open(unit=33,file='../../print_testres.txt',access='append')
-      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
-     1  ' out of ',ntests,' in helm_wrappers testing suite'
-      close(33)
-      
       stop
       end
 

@@ -287,10 +287,10 @@ c
 
         ii = ixyzs(ipatch)
         call cross_prod3d(srcvals(4,ii),srcvals(7,ii),tmp)
-        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(1)**2
         do i=2,npols
           call cross_prod3d(srcvals(4,ii+i-1),srcvals(7,ii+i-1),tmp)
-          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(i)**2
           if(rr.lt.rsc) rsc = rr
         enddo
         epsp = eps_adap*rsc**0.25d0
@@ -696,10 +696,10 @@ c
 
         ii = ixyzs(ipatch)
         call cross_prod3d(srcvals(4,ii),srcvals(7,ii),tmp)
-        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(1)**2
         do i=2,npols
           call cross_prod3d(srcvals(4,ii+i-1),srcvals(7,ii+i-1),tmp)
-          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(i)**2
           if(rr.lt.rsc) rsc = rr
         enddo
         epsp = eps_adap*rsc**0.25d0

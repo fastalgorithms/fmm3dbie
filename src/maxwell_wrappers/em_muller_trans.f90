@@ -911,7 +911,8 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
 
       iquadtype = 1
 
-!!      eps2 = 1.0d-8
+!      goto 1111
+
 
       print *, "starting to generate near quadrature"
       call cpu_time(t1)
@@ -925,7 +926,8 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
 !C$      t2 = omp_get_wtime()     
 
       call prin2('quadrature generation time=*',t2-t1,1)
-      
+     
+ 1111 continue     
       print *, "done generating near quadrature, now starting gmres"
 
 
@@ -1859,23 +1861,27 @@ implicit none
 		call fieldsEDomega(omega,ep1,mu1,Pt,P0,1,E02,H02,vf,0)
 		call fieldsMDomega(omega,ep1,mu1,Pt,P0,1,E02,H02,vf,1)
 
-		write (*,*) 'Errors at the EXTERIOR region:'
-		error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+abs(Et1(3)-Et2(3))**2)
-!		write (*,*) 'Error E: ', error_E
-		write (*,*) 'Relative Error in E: ', error_E/sqrt(abs(Et2(1))**2+abs(Et2(2))**2+abs(Et2(3))**2)
-		
-		error_H=sqrt(abs(Ht1(1)-Ht2(1))**2+abs(Ht1(2)-Ht2(2))**2+abs(Ht1(3)-Ht2(3))**2)
-!		write (*,*) 'Error H: ', error_H
-		write (*,*) 'Relative Error in H: ', error_H/sqrt(abs(Ht2(1))**2+abs(Ht2(2))**2+abs(Ht2(3))**2)
+        write (*,*) 'Errors at the EXTERIOR region:'
+        error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+abs(Et1(3)-Et2(3))**2)
+        call prin2('Et1=*',Et1,6)
+        call prin2('Et2=*',Et2,6)
+        write (*,*) 'Absolute Error in E: ', error_E
+        write (*,*) 'Relative Error in E: ', error_E/sqrt(abs(Et2(1))**2+abs(Et2(2))**2+abs(Et2(3))**2)
 
-		write (*,*) 'Errors at the INTERIOR region:'
-		error_E=sqrt(abs(E01(1)-E02(1))**2+abs(E01(2)-E02(2))**2+abs(E01(3)-E02(3))**2)
-!		write (*,*) 'Error E: ', error_E
-		write (*,*) 'Relative Error in E: ', error_E/sqrt(abs(E02(1))**2+abs(E02(2))**2+abs(E02(3))**2)
-		
-		error_H=sqrt(abs(H01(1)-H02(1))**2+abs(H01(2)-H02(2))**2+abs(H01(3)-H02(3))**2)
-!		write (*,*) 'Error H: ', error_H
-		write (*,*) 'Relative Error in H: ', error_H/sqrt(abs(H02(1))**2+abs(H02(2))**2+abs(H02(3))**2)
+        error_H=sqrt(abs(Ht1(1)-Ht2(1))**2+abs(Ht1(2)-Ht2(2))**2+abs(Ht1(3)-Ht2(3))**2)
+        write (*,*) 'Absolute Error in H: ', error_H
+        write (*,*) 'Relative Error in H: ', error_H/sqrt(abs(Ht2(1))**2+abs(Ht2(2))**2+abs(Ht2(3))**2)
+
+        write (*,*) 'Errors at the INTERIOR region:'
+        call prin2('Et1=*',E01,6)
+        call prin2('Et2=*',E02,6)
+        error_E=sqrt(abs(E01(1)-E02(1))**2+abs(E01(2)-E02(2))**2+abs(E01(3)-E02(3))**2)
+        write (*,*) 'Absolute Error in E: ', error_E
+        write (*,*) 'Relative Error in E: ', error_E/sqrt(abs(E02(1))**2+abs(E02(2))**2+abs(E02(3))**2)
+
+        error_H=sqrt(abs(H01(1)-H02(1))**2+abs(H01(2)-H02(2))**2+abs(H01(3)-H02(3))**2)
+        write (*,*) 'Absolute Error in H: ', error_H
+        write (*,*) 'Relative Error in H: ', error_H/sqrt(abs(H02(1))**2+abs(H02(2))**2+abs(H02(3))**2)
 
 return
 end subroutine test_accuracy_em_muller_trans
@@ -1985,368 +1991,6 @@ end subroutine em_muller_trans_FMM_targ
 
 
 
-subroutine em_dfie_trans(srcinfo, ndt,targinfo,ndd, dpars,ndz,zpars,&
- &ndi,ipars,E_val)
-implicit none
-
-! this function provides the near field kernel that will use
-! zgetnearquad_ggq_guru 
-! through getnearquad_DFIE
-
-    !List of calling arguments
-	integer, intent(in) :: ndt,ndd,ndz,ndi
-	real ( kind = 8 ), intent(in) :: srcinfo(12)
-	real ( kind = 8 ), intent(in) :: targinfo(ndt)
-	integer, intent(in) :: ipars(ndi)
-	real ( kind = 8 ), intent(in) :: dpars(ndd)
-	complex ( kind = 8 ), intent(in) :: zpars(ndz)
-	complex ( kind = 8 ), intent(out) :: E_val
-	
-	!List of local variables
-	real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3)
-	real ( kind = 8 ) ru_t(3),rv_t(3),n_t(3)
-	real ( kind = 8 ) du(3), dv(3),sour(3),targ(3)
-	real ( kind = 8 ) r, dr(3),aux_real
-  real ( kind = 8 ) c_aux,c_aux_A,c_aux_B,c_aux_C,c_aux_D
-  real ( kind = 8 ) xprod_aux3(3),xprod_aux4(3)	
-	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3)
-	complex ( kind = 8 ) R1_0,R1_1,R2_0,R2_1,ima	
-	complex ( kind = 8 ) my_exp_0,my_exp_1,omega,ep0	
-	complex ( kind = 8 ) mu0,ep1,mu1,zk0,zk1,z_aux_0,z_aux_1
-	real ( kind = 8 ) pi
-	integer count1,count2
-	
-	pi=3.1415926535897932384626433832795028841971d0
-	ima=(0.0d0,1.0d0)
-	omega=zpars(1)
-	ep0=zpars(2)
-	mu0=zpars(3)
-	ep1=zpars(4)
-	mu1=zpars(5)
-	
-	sour(1)=srcinfo(1)
-	sour(2)=srcinfo(2)
-	sour(3)=srcinfo(3)
-	
-	n_s(1)=srcinfo(10)
-	n_s(2)=srcinfo(11)
-	n_s(3)=srcinfo(12)	
-
-	targ(1)=targinfo(1)
-	targ(2)=targinfo(2)
-	targ(3)=targinfo(3)
-
-	n_t(1)=targinfo(10)
-	n_t(2)=targinfo(11)
-	n_t(3)=targinfo(12)
-
-	dr(1)=targ(1)-sour(1)
-	dr(2)=targ(2)-sour(2)
-	dr(3)=targ(3)-sour(3)
-	
-	r=sqrt((dr(1))**2+(dr(2))**2+(dr(3))**2)
-	
-	zk0=omega*sqrt(ep0*mu0)
-	zk1=omega*sqrt(ep1*mu1)
-
-!R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-!R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-	
-	
-!R2_0=((ima*zk0)**2/r**3-3.0d0*ima*zk0/r**4+3.0d0/r**5)*exp(ima*zk0*r)/&
-!&(4.0d0*pi)
-!R2_1=((ima*zk1)**2/r**3-3.0d0*ima*zk1/r**4+3.0d0/r**5)*exp(ima*zk1*r)/&
-!&(4.0d0*pi)
-	 
-!my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-!my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-	
-	call orthonormalize(srcinfo(4:6),n_s,ru_s,rv_s)
-	call orthonormalize(targinfo(4:6),n_t,ru_t,rv_t)
-
-    if (ipars(1).eq.1) then
-      if (ipars(2).eq.1) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-	  	call my_cross_v2(dr,ru_s,xprod_aux1)		
-		c_aux=-DOT_PRODUCT(xprod_aux1,rv_t)
-		E_val=c_aux*(mu0*R1_0-mu1*R1_1)
-!		write (*,*) 'dentro', E_val
-!E_mat(1,1)=mu0*nxcurlSk0a(1,1)-mu1*nxcurlSk1a(1,1)
-	  elseif (ipars(2).eq.2) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-    	call my_cross_v2(dr,rv_s,xprod_aux2)
-	  	c_aux=-DOT_PRODUCT(xprod_aux2,rv_t)
-		E_val=c_aux*(mu0*R1_0-mu1*R1_1)
-!E_mat(1,2)=mu0*nxcurlSk0a(1,2)-mu1*nxcurlSk1a(1,2)
-	  elseif (ipars(2).eq.3) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-	    call my_cross_v2(n_t,n_s,xprod_aux1)
-	    c_aux=DOT_PRODUCT(ru_t,xprod_aux1)
-	    E_val=c_aux/r*(-mu0*my_exp_0+mu1*my_exp_1)	  
-!E_mat(1,3)=-mu0*nxSk0nrho(1,1)+mu1*nxSk1nrho(1,1)
-	  elseif (ipars(2).eq.4) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(rv_t,ru_s)
-        E_val=-c_aux/r*(ep0*mu0*my_exp_0-ep1*mu1*my_exp_1)
-!E_mat(1,4)=ep0*mu0*nxSk0b(1,1)-ep1*mu1*nxSk1b(1,1)
-	  elseif (ipars(2).eq.5) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(rv_t,rv_s)
-        e_val=-c_aux/r*(ep0*mu0*my_exp_0-ep1*mu1*my_exp_1)
-!E_mat(1,5)=ep0*mu0*nxSk0b(1,2)-ep1*mu1*nxSk1b(1,2)
-	  else
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(rv_t,dr)
-        E_val=-c_aux*(R1_0-R1_1)
-!E_mat(1,6)=nxgradSk0lambda(1,1)-nxgradSk1lambda(1,1)
-	  endif
-	elseif (ipars(1).eq.2) then
-      if (ipars(2).eq.1) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-		call my_cross_v2(dr,ru_s,xprod_aux1)
-	  	c_aux=DOT_PRODUCT(xprod_aux1,ru_t)
-		E_val=c_aux*(mu0*R1_0-mu1*R1_1)
-!E_mat(2,1)=mu0*nxcurlSk0a(2,1)-mu1*nxcurlSk1a(2,1)
-	  elseif (ipars(2).eq.2) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-		call my_cross_v2(dr,rv_s,xprod_aux2)
-	  	c_aux=DOT_PRODUCT(xprod_aux2,ru_t)
-		E_val=c_aux*(mu0*R1_0-mu1*R1_1)	  
-!E_mat(2,2)=mu0*nxcurlSk0a(2,2)-mu1*nxcurlSk1a(2,2)
-	  elseif (ipars(2).eq.3) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-	  	call my_cross_v2(n_t,n_s,xprod_aux1)
-	    c_aux=DOT_PRODUCT(rv_t,xprod_aux1)
-	    E_val=c_aux/r*(-mu0*my_exp_0+mu1*my_exp_1)
-!E_mat(2,3)=-mu0*nxSk0nrho(2,1)+mu1*nxSk1nrho(2,1)
-	  elseif (ipars(2).eq.4) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(ru_t,ru_s)
-	    E_val=c_aux/r*(ep0*mu0*my_exp_0-ep1*mu1*my_exp_1)
-!E_mat(2,4)=ep0*mu0*nxSk0b(2,1)-ep1*mu1*nxSk1b(2,1)
-	  elseif (ipars(2).eq.5) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-	  	c_aux=DOT_PRODUCT(ru_t,rv_s)
-		E_val=c_aux/r*(ep0*mu0*my_exp_0-ep1*mu1*my_exp_1)
-!E_mat(2,5)=ep0*mu0*nxSk0b(2,2)-ep1*mu1*nxSk1b(2,2)
-	  else
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(ru_t,dr)
-        E_val=c_aux*(R1_0-R1_1)
-!E_mat(2,6)=nxgradSk0lambda(2,1)-nxgradSk1lambda(2,1)
-	  endif
-	elseif (ipars(1).eq.3) then
-      if (ipars(2).eq.1) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        R1_0=(ima*zk0*r-1.0d0)/r**3*my_exp_0
-        R1_1=(ima*zk1*r-1.0d0)/r**3*my_exp_1
-        R2_0=((ima*zk0)**2/r**3-3.0d0*ima*zk0/r**4+3.0d0/r**5)*&
-		 &exp(ima*zk0*r)/(4.0d0*pi)
-        R2_1=((ima*zk1)**2/r**3-3.0d0*ima*zk1/r**4+3.0d0/r**5)*&
-		 &exp(ima*zk1*r)/(4.0d0*pi)
-	    c_aux_A=DOT_PRODUCT(rv_t,ru_s)
-	    c_aux_B=DOT_PRODUCT(rv_t,ru_s)
-	    c_aux_C=DOT_PRODUCT(rv_t,dr)
-	    c_aux_D=DOT_PRODUCT(ru_s,-dr)
-	    z_aux_0=zk0**2*(-c_aux_A*my_exp_0/r)+(-c_aux_B*R1_0)-&
-		 &(-c_aux_C*c_aux_D*R2_0)
-	    z_aux_1=zk1**2*(-c_aux_A*my_exp_1/r)+(-c_aux_B*R1_1)-&
-		 &(-c_aux_C*c_aux_D*R2_1)
-	    E_val=z_aux_0-z_aux_1
-!E_mat(3,1)=(nxcurlcurlSk0a(1,1)-nxcurlcurlSk1a(1,1))
-	  elseif (ipars(2).eq.2) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        R1_0=(ima*zk0*r-1.0d0)/r**3*my_exp_0
-        R1_1=(ima*zk1*r-1.0d0)/r**3*my_exp_1
-        R2_0=((ima*zk0)**2/r**3-3.0d0*ima*zk0/r**4+3.0d0/r**5)*&
-		 &exp(ima*zk0*r)/(4.0d0*pi)
-        R2_1=((ima*zk1)**2/r**3-3.0d0*ima*zk1/r**4+3.0d0/r**5)*&
-		 &exp(ima*zk1*r)/(4.0d0*pi)
-	  	c_aux_A=DOT_PRODUCT(rv_t,rv_s)
-	    c_aux_B=DOT_PRODUCT(rv_t,rv_s)
-	    c_aux_C=DOT_PRODUCT(rv_t,dr)
-	    c_aux_D=DOT_PRODUCT(rv_s,-dr)
-	    z_aux_0=zk0**2*(-c_aux_A*my_exp_0/r)+(-c_aux_B*R1_0)-&
-		 &(-c_aux_C*c_aux_D*R2_0)
-        z_aux_1=zk1**2*(-c_aux_A*my_exp_1/r)+(-c_aux_B*R1_1)-&
-		 &(-c_aux_C*c_aux_D*R2_1)
-        E_val=z_aux_0-z_aux_1
-!E_mat(3,2)=(nxcurlcurlSk0a(1,2)-nxcurlcurlSk1a(1,2))
-	  elseif (ipars(2).eq.3) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        call my_cross_v2(dr, n_s, xprod_aux1)
-        c_aux=DOT_PRODUCT(rv_t,xprod_aux1)
-        E_val=-c_aux*(-R1_0+R1_1)	
-!E_mat(3,3)=-nxcurlSk0nrho(1,1)+nxcurlSk1nrho(1,1)
-	  elseif (ipars(2).eq.4) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-		call my_cross_v2(dr,ru_s,xprod_aux1)
-		c_aux=-DOT_PRODUCT(xprod_aux1,rv_t)
-		E_val=c_aux*(ep0*R1_0-ep1*R1_1)
-!E_mat(3,4)=ep0*nxcurlSk0a(1,1)-ep1*nxcurlSk1a(1,1)
-	  elseif (ipars(2).eq.5) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-		call my_cross_v2(dr,rv_s,xprod_aux2)
-	  	c_aux=-DOT_PRODUCT(xprod_aux2,rv_t)
-		E_val=c_aux*(ep0*R1_0-ep1*R1_1)
-!E_mat(3,5)=ep0*nxcurlSk0a(1,2)-ep1*nxcurlSk1a(1,2)
-	  else
-	    E_val=0.0d0
-	  endif
-	elseif (ipars(1).eq.4) then
-      if (ipars(2).eq.1) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        R1_0=(ima*zk0*r-1.0d0)/r**3*my_exp_0
-        R1_1=(ima*zk1*r-1.0d0)/r**3*my_exp_1
-        R2_0=((ima*zk0)**2/r**3-3.0d0*ima*zk0/r**4+3.0d0/r**5)*&
-		 &exp(ima*zk0*r)/(4.0d0*pi)
-        R2_1=((ima*zk1)**2/r**3-3.0d0*ima*zk1/r**4+3.0d0/r**5)*&
-		 &exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux_A=DOT_PRODUCT(ru_t,ru_s)
-        c_aux_B=DOT_PRODUCT(ru_t,ru_s)
-        c_aux_C=DOT_PRODUCT(ru_t,dr)
-        c_aux_D=DOT_PRODUCT(ru_s,-dr)
-        z_aux_0=zk0**2*(c_aux_A*my_exp_0/r)+(+c_aux_B*R1_0)-&
-		 &(+c_aux_C*c_aux_D*R2_0)
-        z_aux_1=zk1**2*(c_aux_A*my_exp_1/r)+(+c_aux_B*R1_1)-&
-		 &(+c_aux_C*c_aux_D*R2_1)
-        E_val=z_aux_0-z_aux_1
-!E_mat(4,1)=(nxcurlcurlSk0a(2,1)-nxcurlcurlSk1a(2,1))
-	  elseif (ipars(2).eq.2) then	
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        R1_0=(ima*zk0*r-1.0d0)/r**3*my_exp_0
-        R1_1=(ima*zk1*r-1.0d0)/r**3*my_exp_1
-        R2_0=((ima*zk0)**2/r**3-3.0d0*ima*zk0/r**4+3.0d0/r**5)*&
-		 &exp(ima*zk0*r)/(4.0d0*pi)
-        R2_1=((ima*zk1)**2/r**3-3.0d0*ima*zk1/r**4+3.0d0/r**5)*&
-		 &exp(ima*zk1*r)/(4.0d0*pi)
-	  	c_aux_A=DOT_PRODUCT(ru_t,rv_s)
-	    c_aux_B=DOT_PRODUCT(ru_t,rv_s)
-	    c_aux_C=DOT_PRODUCT(ru_t,dr)
-	    c_aux_D=DOT_PRODUCT(rv_s,-dr)
-	    z_aux_0=zk0**2*(c_aux_A*my_exp_0/r)+(+c_aux_B*R1_0)-&
-		 &(+c_aux_C*c_aux_D*R2_0)
-	    z_aux_1=zk1**2*(c_aux_A*my_exp_1/r)+(+c_aux_B*R1_1)-&
-		 &(+c_aux_C*c_aux_D*R2_1)
-        E_val=z_aux_0-z_aux_1
-!E_mat(4,2)=(nxcurlcurlSk0a(2,2)-nxcurlcurlSk1a(2,2))
-	  elseif (ipars(2).eq.3) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        call my_cross_v2(dr, n_s, xprod_aux1)
-        c_aux=DOT_PRODUCT(ru_t,xprod_aux1)
-        E_val=c_aux*(-R1_0+R1_1)
-!E_mat(4,3)=-nxcurlSk0nrho(2,1)+nxcurlSk1nrho(2,1)
-	  elseif (ipars(2).eq.4) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-		call my_cross_v2(dr,ru_s,xprod_aux1)
-	  	c_aux=DOT_PRODUCT(xprod_aux1,ru_t)
-		E_val=c_aux*(ep0*R1_0-ep1*R1_1)
-!E_mat(4,4)=ep0*nxcurlSk0a(2,1)-ep1*nxcurlSk1a(2,1)
-	  elseif (ipars(2).eq.5) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-		call my_cross_v2(dr,rv_s,xprod_aux2)
-	  	c_aux=DOT_PRODUCT(xprod_aux2,ru_t)
-		E_val=c_aux*(ep0*R1_0-ep1*R1_1)	  
-!E_mat(4,5)=ep0*nxcurlSk0a(2,2)-ep1*nxcurlSk1a(2,2)
-	  else
-	    E_val=0.0d0
-	  endif
-	elseif (ipars(1).eq.5) then
-      if (ipars(2).eq.1) then
-	    E_val=0.0d0
-	  elseif (ipars(2).eq.2) then
-        E_val=0.0d0
-	  elseif (ipars(2).eq.3) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(n_s,dr)
-        E_val=-c_aux*(mu0*R1_0-mu1*R1_1)
-!E_mat(5,3)=mu0*Dk0rho(1,1)-mu1*Dk1rho(1,1)
-      elseif (ipars(2).eq.4) then	  
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(dr,ru_s)
-        E_val=c_aux*(ep0*mu0*R1_0-ep1*mu1*R1_1)
-!E_mat(5,4)=ep0*mu0*divSk0b(1,1)-ep1*mu1*divSk1b(1,1)
-	  elseif (ipars(2).eq.5) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(dr,rv_s)
-        E_val=c_aux*(ep0*mu0*R1_0-ep1*mu1*R1_1)
-!E_mat(5,5)=ep0*mu0*divSk0b(1,2)-ep1*mu1*divSk1b(1,2)
-	  else
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-	    E_val=(-zk0**2*my_exp_0+zk1**2*my_exp_1)/r
-!E_mat(5,6)=-zk0**2*Sk0lambda(1,1)+zk1**2*Sk1lambda(1,1)
-	  endif
-	else
-      if (ipars(2).eq.1) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        call my_cross_v2(dr, ru_s, xprod_aux1)
-        c_aux=DOT_PRODUCT(n_t,xprod_aux1)
-        E_val=c_aux*(ep0*mu0*R1_0-ep1*mu1*R1_1)	  
-!E_mat(6,1)=ep0*mu0*ncurlSk0a(1,1)-ep1*mu1*ncurlSk1a(1,1)
-	  elseif (ipars(2).eq.2) then
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        call my_cross_v2(dr, rv_s, xprod_aux2)
-        c_aux=DOT_PRODUCT(n_t,xprod_aux2)
-        E_val=c_aux*(ep0*mu0*R1_0-ep1*mu1*R1_1)
-!E_mat(6,2)=ep0*mu0*ncurlSk0a(1,2)-ep1*mu1*ncurlSk1a(1,2)
-	  elseif (ipars(2).eq.3) then
-        c_aux=DOT_PRODUCT(n_t,n_s)
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        E_val=c_aux/r*(-ep0*mu0*my_exp_0+ep1*mu1*my_exp_1)
-!E_mat(6,3)=-ep0*mu0*nSk0nrho(1,1)+ep1*mu1*nSk1nrho(1,1)
-	  elseif (ipars(2).eq.4) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(n_t,ru_s)
-        E_val=c_aux/r*(mu0*ep0**2*my_exp_0-mu1*ep1**2*my_exp_1)
-!E_mat(6,4)=mu0*ep0**2*nSk0b(1,1)-mu1*ep1**2*nSk1b(1,1)
-	  elseif (ipars(2).eq.5) then
-        my_exp_0=exp(ima*zk0*r)/(4.0d0*pi)
-        my_exp_1=exp(ima*zk1*r)/(4.0d0*pi)
-        c_aux=DOT_PRODUCT(n_t,rv_s)
-        E_val=c_aux/r*(mu0*ep0**2*my_exp_0-mu1*ep1**2*my_exp_1)
-!E_mat(6,5)=mu0*ep0**2*nSk0b(1,2)-mu1*ep1**2*nSk1b(1,2)
-	  else
-        c_aux=DOT_PRODUCT(n_t,dr)
-        R1_0=(ima*zk0*r-1.0d0)/r**3*exp(ima*zk0*r)/(4.0d0*pi)
-        R1_1=(ima*zk1*r-1.0d0)/r**3*exp(ima*zk1*r)/(4.0d0*pi)
-        E_val=c_aux*(ep0*R1_0-ep1*R1_1)
-!E_mat(6,6)=ep0*ngradSk0lambda(1,1)-ep1*ngradSk1lambda(1,1)
-	  endif
-	endif
-
-return
-end subroutine em_dfie_trans
-
 
 
 subroutine em_muller_trans_FMM2(eps,zpars,ns,nt,srcvals,targvals,wts,&
@@ -2375,6 +2019,7 @@ implicit none
 	  real ( kind = 8 ), allocatable :: targets(:,:),v_vect_t(:,:)
 
     complex ( kind = 8 ), allocatable :: a_vect(:,:,:),b_vect(:,:,:)
+    complex ( kind = 8 ), allocatable :: b_vect_t(:,:,:)
     complex ( kind = 8 ), allocatable :: lambda(:,:),rho(:,:)
     complex ( kind = 8 ), allocatable :: E(:,:,:),curlE(:,:,:),divE(:,:)
     complex ( kind = 8 ) ima,zk0,zk1
@@ -2384,69 +2029,80 @@ implicit none
     integer count1,count2,nd
     integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
 
-	  ima=(0.0d0,1.0d0)
+    ima=(0.0d0,1.0d0)
 
-	  omega=zpars(1)
-	  ep0=zpars(2)
-	  mu0=zpars(3)
-	  ep1=zpars(4)
-	  mu1=zpars(5)
-	
-	  zk0=omega*sqrt(ep0*mu0)
-	  zk1=omega*sqrt(ep1*mu1)
+    omega=zpars(1)
+    ep0=zpars(2)
+    mu0=zpars(3)
+    ep1=zpars(4)
+    mu1=zpars(5)
+
+    zk0=omega*sqrt(ep0*mu0)
+    zk1=omega*sqrt(ep1*mu1)
 
     nd=2
     allocate(a_vect(nd,3,ns))
     allocate(b_vect(nd,3,ns))
+    allocate(b_vect_t(nd,3,nt))
     allocate(lambda(nd,ns))
-	  allocate(rho(nd,ns))
+    allocate(rho(nd,ns))
     allocate(E(nd,3,nt))
     allocate(curlE(nd,3,nt))
     allocate(divE(nd,nt))
-	  allocate(n_vect_s(3,ns))
-	  allocate(n_vect_t(3,nt))
-	  allocate(u_vect_s(3,ns))
-	  allocate(v_vect_s(3,ns))
-	  allocate(u_vect_t(3,nt))
-	  allocate(v_vect_t(3,nt))
-	  allocate(source(3,ns))
-	  allocate(targets(3,nt))
+    allocate(n_vect_s(3,ns))
+    allocate(n_vect_t(3,nt))
+    allocate(u_vect_s(3,ns))
+    allocate(v_vect_s(3,ns))
+    allocate(u_vect_t(3,nt))
+    allocate(v_vect_t(3,nt))
+    allocate(source(3,ns))
+    allocate(targets(3,nt))
 
-	do count1=1,ns
+    do count1=1,ns
       n_vect_s(:,count1)=srcvals(10:12,count1)
       source(:,count1)=srcvals(1:3,count1)
-	enddo
-	call orthonormalize_all(srcvals(4:6,:),srcvals(10:12,:),u_vect_s,&
-	 &v_vect_s,ns)
-	
-	do count1=1,nt
+    enddo
+    call orthonormalize_all(srcvals(4:6,:),srcvals(10:12,:),u_vect_s,&
+       &v_vect_s,ns)
+
+    do count1=1,nt
       n_vect_t(:,count1)=targvals(10:12,count1)
       targets(:,count1)=targvals(1:3,count1)
-	enddo
-	call orthonormalize_all(targvals(4:6,:),targvals(10:12,:),u_vect_t,&
-	 &v_vect_t,nt)
-	
+    enddo
+    call orthonormalize_all(targvals(4:6,:),targvals(10:12,:),u_vect_t,&
+        &v_vect_t,nt)
 
 
     do count1=1,ns
-		  a_vect(1,1,count1)=(b_u(count1)*u_vect_s(1,count1)+b_v(count1)*v_vect_s(1,count1))/(-ima*omega)
-		  a_vect(1,2,count1)=(b_u(count1)*u_vect_s(2,count1)+b_v(count1)*v_vect_s(2,count1))/(-ima*omega)
-		  a_vect(1,3,count1)=(b_u(count1)*u_vect_s(3,count1)+b_v(count1)*v_vect_s(3,count1))/(-ima*omega)
-				
-      b_vect(1,1,count1)=(a_u(count1)*u_vect_s(1,count1)+a_v(count1)*v_vect_s(1,count1))*mu0
-      b_vect(1,2,count1)=(a_u(count1)*u_vect_s(2,count1)+a_v(count1)*v_vect_s(2,count1))*mu0
-      b_vect(1,3,count1)=(a_u(count1)*u_vect_s(3,count1)+a_v(count1)*v_vect_s(3,count1))*mu0
+      a_vect(1,1,count1)=(b_u(count1)*u_vect_s(1,count1) + &
+         b_v(count1)*v_vect_s(1,count1))/(-ima*omega)
+      a_vect(1,2,count1)=(b_u(count1)*u_vect_s(2,count1) + &
+         b_v(count1)*v_vect_s(2,count1))/(-ima*omega)
+      a_vect(1,3,count1)=(b_u(count1)*u_vect_s(3,count1) + &
+         b_v(count1)*v_vect_s(3,count1))/(-ima*omega)
+      b_vect(1,1,count1)=(a_u(count1)*u_vect_s(1,count1) + &
+        a_v(count1)*v_vect_s(1,count1))*mu0
+      b_vect(1,2,count1)=(a_u(count1)*u_vect_s(2,count1) + &
+        a_v(count1)*v_vect_s(2,count1))*mu0
+      b_vect(1,3,count1)=(a_u(count1)*u_vect_s(3,count1) + &
+        a_v(count1)*v_vect_s(3,count1))*mu0
 
 
-		  b_vect(2,1,count1)=(b_u(count1)*u_vect_s(1,count1)+b_v(count1)*v_vect_s(1,count1))*ep0
-		  b_vect(2,2,count1)=(b_u(count1)*u_vect_s(2,count1)+b_v(count1)*v_vect_s(2,count1))*ep0
-		  b_vect(2,3,count1)=(b_u(count1)*u_vect_s(3,count1)+b_v(count1)*v_vect_s(3,count1))*ep0
-				
-      a_vect(2,1,count1)=(a_u(count1)*u_vect_s(1,count1)+a_v(count1)*v_vect_s(1,count1))/(ima*omega)
-      a_vect(2,2,count1)=(a_u(count1)*u_vect_s(2,count1)+a_v(count1)*v_vect_s(2,count1))/(ima*omega)
-      a_vect(2,3,count1)=(a_u(count1)*u_vect_s(3,count1)+a_v(count1)*v_vect_s(3,count1))/(ima*omega)
+      b_vect(2,1,count1)=(b_u(count1)*u_vect_s(1,count1) + &
+        b_v(count1)*v_vect_s(1,count1))*ep0
+      b_vect(2,2,count1)=(b_u(count1)*u_vect_s(2,count1) + &
+        b_v(count1)*v_vect_s(2,count1))*ep0
+      b_vect(2,3,count1)=(b_u(count1)*u_vect_s(3,count1) + &
+        b_v(count1)*v_vect_s(3,count1))*ep0
 
-	  enddo
+      a_vect(2,1,count1)=(a_u(count1)*u_vect_s(1,count1) + &
+        a_v(count1)*v_vect_s(1,count1))/(ima*omega)
+      a_vect(2,2,count1)=(a_u(count1)*u_vect_s(2,count1) + &
+        a_v(count1)*v_vect_s(2,count1))/(ima*omega)
+      a_vect(2,3,count1)=(a_u(count1)*u_vect_s(3,count1) + &
+        a_v(count1)*v_vect_s(3,count1))/(ima*omega)
+
+     enddo
 
     !Computing the full operator
     ifa_vect=1
@@ -2457,34 +2113,41 @@ implicit none
     ifcurlE=1
     ifdivE=0
 
-	call Vector_Helmholtz_targ2_vect(nd,eps,zk0,ns,source,wts,ifa_vect,a_vect,&
-	 &ifb_vect,b_vect,iflambda,lambda,ifrho,rho,n_vect_s,ifE,E,ifcurlE,&
-	 &curlE,ifdivE,divE,nt,targets,thresh,ifdir)
-
-!	call Vector_Helmholtz_targ(eps,izk,ns,source,wts,ifa_vect,a_vect,ifb_vect,&
-!	 &b_vect,iflambda,lambda,ifrho,rho,n_vect_s,ifE,E,ifcurlE,curlE,ifdivE,divE,nt,targets)
+    call Vector_Helmholtz_targ2_vect(nd,eps,zk0,ns,source,wts, &
+      ifa_vect,a_vect,&
+      ifb_vect,b_vect,iflambda,lambda,ifrho,rho,n_vect_s,ifE,E,ifcurlE,&
+      curlE,ifdivE,divE,nt,targets,thresh,ifdir)
 
     do count1=1,nt
-        b_vect(1,1,count1)=n_vect_t(2,count1)*curlE(1,3,count1)-n_vect_t(3,count1)*curlE(1,2,count1)
-        b_vect(1,2,count1)=n_vect_t(3,count1)*curlE(1,1,count1)-n_vect_t(1,count1)*curlE(1,3,count1)
-        b_vect(1,3,count1)=n_vect_t(1,count1)*curlE(1,2,count1)-n_vect_t(2,count1)*curlE(1,1,count1)
+        b_vect_t(1,1,count1)=n_vect_t(2,count1)*curlE(1,3,count1)-&
+          n_vect_t(3,count1)*curlE(1,2,count1)
+        b_vect_t(1,2,count1)=n_vect_t(3,count1)*curlE(1,1,count1)-&
+          n_vect_t(1,count1)*curlE(1,3,count1)
+        b_vect_t(1,3,count1)=n_vect_t(1,count1)*curlE(1,2,count1)-&
+          n_vect_t(2,count1)*curlE(1,1,count1)
 
-        b_vect(2,1,count1)=n_vect_t(2,count1)*curlE(2,3,count1)-n_vect_t(3,count1)*curlE(2,2,count1)
-        b_vect(2,2,count1)=n_vect_t(3,count1)*curlE(2,1,count1)-n_vect_t(1,count1)*curlE(2,3,count1)
-        b_vect(2,3,count1)=n_vect_t(1,count1)*curlE(2,2,count1)-n_vect_t(2,count1)*curlE(2,1,count1)
+        b_vect_t(2,1,count1)=n_vect_t(2,count1)*curlE(2,3,count1)-&
+          n_vect_t(3,count1)*curlE(2,2,count1)
+        b_vect_t(2,2,count1)=n_vect_t(3,count1)*curlE(2,1,count1)-&
+          n_vect_t(1,count1)*curlE(2,3,count1)
+        b_vect_t(2,3,count1)=n_vect_t(1,count1)*curlE(2,2,count1)-&
+          n_vect_t(2,count1)*curlE(2,1,count1)
     enddo
 
     do count1=1,nt
-        AA_u(count1)=b_vect(1,1,count1)*u_vect_t(1,count1)+b_vect(1,2,count1)*u_vect_t(2,count1)&
-		   &+b_vect(1,3,count1)*u_vect_t(3,count1)
-        AA_v(count1)=b_vect(1,1,count1)*v_vect_t(1,count1)+b_vect(1,2,count1)*v_vect_t(2,count1)&
-		   &+b_vect(1,3,count1)*v_vect_t(3,count1)
+      AA_u(count1)=b_vect_t(1,1,count1)*u_vect_t(1,count1) + &
+          b_vect_t(1,2,count1)*u_vect_t(2,count1) + &
+          b_vect_t(1,3,count1)*u_vect_t(3,count1)
+      AA_v(count1)=b_vect_t(1,1,count1)*v_vect_t(1,count1) + &
+          b_vect_t(1,2,count1)*v_vect_t(2,count1) +  &
+          b_vect_t(1,3,count1)*v_vect_t(3,count1)
 
-        BB_u(count1)=b_vect(2,1,count1)*u_vect_t(1,count1)+b_vect(2,2,count1)*u_vect_t(2,count1)&
-         &+b_vect(2,3,count1)*u_vect_t(3,count1)
-        BB_v(count1)=b_vect(2,1,count1)*v_vect_t(1,count1)+b_vect(2,2,count1)*v_vect_t(2,count1)&
-         &+b_vect(2,3,count1)*v_vect_t(3,count1)
-
+      BB_u(count1)=b_vect_t(2,1,count1)*u_vect_t(1,count1) + &
+          b_vect_t(2,2,count1)*u_vect_t(2,count1) + &
+          b_vect_t(2,3,count1)*u_vect_t(3,count1)
+      BB_v(count1)=b_vect_t(2,1,count1)*v_vect_t(1,count1) + &
+          b_vect_t(2,2,count1)*v_vect_t(2,count1) + &
+          b_vect_t(2,3,count1)*v_vect_t(3,count1)
     enddo
 
 
@@ -2492,21 +2155,33 @@ implicit none
 
 
     do count1=1,ns
-		    a_vect(1,1,count1)=(b_u(count1)*u_vect_s(1,count1)+b_v(count1)*v_vect_s(1,count1))/(-ima*omega)
-		    a_vect(1,2,count1)=(b_u(count1)*u_vect_s(2,count1)+b_v(count1)*v_vect_s(2,count1))/(-ima*omega)
-		    a_vect(1,3,count1)=(b_u(count1)*u_vect_s(3,count1)+b_v(count1)*v_vect_s(3,count1))/(-ima*omega)
-				
-        b_vect(1,1,count1)=(a_u(count1)*u_vect_s(1,count1)+a_v(count1)*v_vect_s(1,count1))*mu1
-        b_vect(1,2,count1)=(a_u(count1)*u_vect_s(2,count1)+a_v(count1)*v_vect_s(2,count1))*mu1
-        b_vect(1,3,count1)=(a_u(count1)*u_vect_s(3,count1)+a_v(count1)*v_vect_s(3,count1))*mu1
+      a_vect(1,1,count1)=(b_u(count1)*u_vect_s(1,count1) + &
+         b_v(count1)*v_vect_s(1,count1))/(-ima*omega)
+      a_vect(1,2,count1)=(b_u(count1)*u_vect_s(2,count1) + &
+         b_v(count1)*v_vect_s(2,count1))/(-ima*omega)
+      a_vect(1,3,count1)=(b_u(count1)*u_vect_s(3,count1) + &
+            b_v(count1)*v_vect_s(3,count1))/(-ima*omega)
 
-        b_vect(2,1,count1)=(b_u(count1)*u_vect_s(1,count1)+b_v(count1)*v_vect_s(1,count1))*ep1
-		    b_vect(2,2,count1)=(b_u(count1)*u_vect_s(2,count1)+b_v(count1)*v_vect_s(2,count1))*ep1
-		    b_vect(2,3,count1)=(b_u(count1)*u_vect_s(3,count1)+b_v(count1)*v_vect_s(3,count1))*ep1
-				
-        a_vect(2,1,count1)=(a_u(count1)*u_vect_s(1,count1)+a_v(count1)*v_vect_s(1,count1))/(ima*omega)
-        a_vect(2,2,count1)=(a_u(count1)*u_vect_s(2,count1)+a_v(count1)*v_vect_s(2,count1))/(ima*omega)
-        a_vect(2,3,count1)=(a_u(count1)*u_vect_s(3,count1)+a_v(count1)*v_vect_s(3,count1))/(ima*omega)
+      b_vect(1,1,count1)=(a_u(count1)*u_vect_s(1,count1) + &
+        a_v(count1)*v_vect_s(1,count1))*mu1
+      b_vect(1,2,count1)=(a_u(count1)*u_vect_s(2,count1) + &
+        a_v(count1)*v_vect_s(2,count1))*mu1
+      b_vect(1,3,count1)=(a_u(count1)*u_vect_s(3,count1) + &
+        a_v(count1)*v_vect_s(3,count1))*mu1
+
+      b_vect(2,1,count1)=(b_u(count1)*u_vect_s(1,count1) + &
+        b_v(count1)*v_vect_s(1,count1))*ep1
+      b_vect(2,2,count1)=(b_u(count1)*u_vect_s(2,count1) + &
+        b_v(count1)*v_vect_s(2,count1))*ep1
+      b_vect(2,3,count1)=(b_u(count1)*u_vect_s(3,count1) + &
+        b_v(count1)*v_vect_s(3,count1))*ep1
+
+      a_vect(2,1,count1)=(a_u(count1)*u_vect_s(1,count1) + &
+        a_v(count1)*v_vect_s(1,count1))/(ima*omega)
+      a_vect(2,2,count1)=(a_u(count1)*u_vect_s(2,count1) + &
+        a_v(count1)*v_vect_s(2,count1))/(ima*omega)
+      a_vect(2,3,count1)=(a_u(count1)*u_vect_s(3,count1) + &
+        a_v(count1)*v_vect_s(3,count1))/(ima*omega)
     enddo
 
     ifa_vect=1
@@ -2517,48 +2192,64 @@ implicit none
     ifcurlE=1
     ifdivE=0
 
-	  call Vector_Helmholtz_targ2_vect(nd,eps,zk1,ns,source,wts,ifa_vect,a_vect,&
-	   &ifb_vect,b_vect,iflambda,lambda,ifrho,rho,n_vect_s,ifE,E,ifcurlE,&
-	   &curlE,ifdivE,divE,nt,targets,thresh,ifdir)
+    call Vector_Helmholtz_targ2_vect(nd,eps,zk1,ns,source,wts, &
+      ifa_vect,a_vect,ifb_vect,b_vect,iflambda,lambda,ifrho,rho, &
+      n_vect_s,ifE,E,ifcurlE,curlE,ifdivE,divE,nt,targets,thresh, &
+      ifdir)
 
 
     do count1=1,nt
-        b_vect(1,1,count1)=n_vect_t(2,count1)*curlE(1,3,count1)-n_vect_t(3,count1)*curlE(1,2,count1)
-        b_vect(1,2,count1)=n_vect_t(3,count1)*curlE(1,1,count1)-n_vect_t(1,count1)*curlE(1,3,count1)
-        b_vect(1,3,count1)=n_vect_t(1,count1)*curlE(1,2,count1)-n_vect_t(2,count1)*curlE(1,1,count1)
+      b_vect_t(1,1,count1)=n_vect_t(2,count1)*curlE(1,3,count1)- &
+        n_vect_t(3,count1)*curlE(1,2,count1)
+      b_vect_t(1,2,count1)=n_vect_t(3,count1)*curlE(1,1,count1)-&
+        n_vect_t(1,count1)*curlE(1,3,count1)
+      b_vect_t(1,3,count1)=n_vect_t(1,count1)*curlE(1,2,count1)-&
+        n_vect_t(2,count1)*curlE(1,1,count1)
 
-        b_vect(2,1,count1)=n_vect_t(2,count1)*curlE(2,3,count1)-n_vect_t(3,count1)*curlE(2,2,count1)
-        b_vect(2,2,count1)=n_vect_t(3,count1)*curlE(2,1,count1)-n_vect_t(1,count1)*curlE(2,3,count1)
-        b_vect(2,3,count1)=n_vect_t(1,count1)*curlE(2,2,count1)-n_vect_t(2,count1)*curlE(2,1,count1)
+      b_vect_t(2,1,count1)=n_vect_t(2,count1)*curlE(2,3,count1)-&
+        n_vect_t(3,count1)*curlE(2,2,count1)
+      b_vect_t(2,2,count1)=n_vect_t(3,count1)*curlE(2,1,count1)-&
+        n_vect_t(1,count1)*curlE(2,3,count1)
+      b_vect_t(2,3,count1)=n_vect_t(1,count1)*curlE(2,2,count1)-&
+        n_vect_t(2,count1)*curlE(2,1,count1)
     enddo
 
     do count1=1,nt
-        AA_u(count1)=AA_u(count1)-(b_vect(1,1,count1)*u_vect_t(1,count1)+b_vect(1,2,count1)*u_vect_t(2,count1)&
-		     &+b_vect(1,3,count1)*u_vect_t(3,count1))
-        AA_v(count1)=AA_v(count1)-(b_vect(1,1,count1)*v_vect_t(1,count1)+b_vect(1,2,count1)*v_vect_t(2,count1)&
-		     &+b_vect(1,3,count1)*v_vect_t(3,count1))
+        AA_u(count1)=AA_u(count1) - &
+          (b_vect_t(1,1,count1)*u_vect_t(1,count1) + &
+           b_vect_t(1,2,count1)*u_vect_t(2,count1) + &
+           b_vect_t(1,3,count1)*u_vect_t(3,count1))
+        AA_v(count1)=AA_v(count1) - &
+          (b_vect_t(1,1,count1)*v_vect_t(1,count1) + &
+           b_vect_t(1,2,count1)*v_vect_t(2,count1) + &
+           b_vect_t(1,3,count1)*v_vect_t(3,count1))
 
-        BB_u(count1)=BB_u(count1)-(b_vect(2,1,count1)*u_vect_t(1,count1)+b_vect(2,2,count1)*u_vect_t(2,count1)&
-		     &+b_vect(2,3,count1)*u_vect_t(3,count1))
-        BB_v(count1)=BB_v(count1)-(b_vect(2,1,count1)*v_vect_t(1,count1)+b_vect(2,2,count1)*v_vect_t(2,count1)&
-		     &+b_vect(2,3,count1)*v_vect_t(3,count1))
+        BB_u(count1)=BB_u(count1) - &
+          (b_vect_t(2,1,count1)*u_vect_t(1,count1) + &
+           b_vect_t(2,2,count1)*u_vect_t(2,count1) + &
+           b_vect_t(2,3,count1)*u_vect_t(3,count1))
+
+        BB_v(count1)=BB_v(count1) - &
+         (b_vect_t(2,1,count1)*v_vect_t(1,count1) + &
+          b_vect_t(2,2,count1)*v_vect_t(2,count1) + &
+          b_vect_t(2,3,count1)*v_vect_t(3,count1))
     enddo
-	
-	deallocate(a_vect)
-	deallocate(b_vect)
-	deallocate(lambda)
-	deallocate(rho)
-	deallocate(E)
-	deallocate(curlE)
-	deallocate(divE)
-	deallocate(u_vect_s)
-	deallocate(v_vect_s)
-	deallocate(n_vect_s)
-	deallocate(source)
-	deallocate(u_vect_t)
-	deallocate(v_vect_t)
-	deallocate(n_vect_t)
-	deallocate(targets)
+
+    deallocate(a_vect)
+    deallocate(b_vect)
+    deallocate(lambda)
+    deallocate(rho)
+    deallocate(E)
+    deallocate(curlE)
+    deallocate(divE)
+    deallocate(u_vect_s)
+    deallocate(v_vect_s)
+    deallocate(n_vect_s)
+    deallocate(source)
+    deallocate(u_vect_t)
+    deallocate(v_vect_t)
+    deallocate(n_vect_t)
+    deallocate(targets)
 
 return
 end subroutine em_muller_trans_FMM2
