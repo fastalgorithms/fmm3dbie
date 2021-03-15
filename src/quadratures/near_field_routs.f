@@ -920,40 +920,68 @@ c
       
       nlev = 1
 
-      if(iprec.eq.0) then
-        nqorder = 12
-        eps_adap = 1.0d-2
-        nqorder_f = 8
+      if(norder.ge.4) then
+        if(iprec.eq.0) then
+          nqorder = 12
+          eps_adap = 1.0d-2
+          nqorder_f = 8
+        endif
+
+        if(iprec.eq.1) then
+          nqorder= 12
+          eps_adap = 0.2d-2
+          nqorder_f = 10
+        endif
+
+        if(iprec.eq.2) then
+          nqorder = 16
+          eps_adap = 0.1d-4
+          nqorder_f = 16
+        endif
+
+        if(iprec.eq.3) then
+          nqorder = 22
+          eps_adap = 7.0d-8
+          nqorder_f = 22
+        endif
+
+        if(iprec.eq.4) then
+          nqorder = 30
+          eps_adap = 3.0d-10
+          nqorder_f = 30
+        endif
+      else
+        if(iprec.eq.0) then
+          nqorder = 8
+          eps_adap = 1.0d-2
+          nqorder_f = 4
+        endif
+
+        if(iprec.eq.1) then
+          nqorder= 8
+          eps_adap = 0.2d-2
+          nqorder_f = 6
+        endif
+
+        if(iprec.eq.2) then
+          nqorder = 12
+          eps_adap = 0.1d-4
+          nqorder_f = 12
+        endif
+
+        if(iprec.eq.3) then
+          nqorder = 16
+          eps_adap = 3.0d-8
+          nqorder_f = 20
+        endif
+
+        if(iprec.eq.4) then
+          nqorder = 24
+          eps_adap = 2.0d-10
+          nqorder_f = 26
+        endif
       endif
 
-      if(iprec.eq.1) then
-        nqorder= 12
-        eps_adap = 0.2d-2
-        nqorder_f = 10
-      endif
-
-      if(iprec.eq.2) then
-        nqorder = 16
-        eps_adap = 0.1d-4
-        nqorder_f = 16
-      endif
-
-      if(iprec.eq.3) then
-        nqorder = 22
-        eps_adap = 7.0d-8
-        nqorder_f = 22
-      endif
-
-      if(iprec.eq.4) then
-        nqorder = 30
-        eps_adap = 3.0d-10
-        nqorder_f = 30
-      endif
-
-      call prinf('nqorder=*',nqorder,1)
-      call prinf('nqorder_f=*',nqorder_f,1)
-      call prin2('eps_adap=*',eps_adap,1)
-      call prinf('nlev=*',nlev,1)
 
 
       return

@@ -35,7 +35,7 @@
 
 
       igeomtype = 2
-      iasp = 5
+      iasp = 4
       iref = 0
       iprec = 0
 
@@ -70,7 +70,7 @@
 
       npatches = 2*ipars(1)*ipars(2)
 
-      norder = 8 
+      norder = 4 
       npols = (norder+1)*(norder+2)/2
       write(fname,'(a,i1,a,i1,a,i1,a)') 'data/stell_aquad_iasp_',iasp,
      1  '_iref_',iref,'_norder_',norder,'.dat'

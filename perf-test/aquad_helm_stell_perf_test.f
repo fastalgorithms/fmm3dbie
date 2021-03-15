@@ -79,7 +79,7 @@
 
       npatches = 2*ipars(1)*ipars(2)
 
-      norder = 8 
+      norder = 4 
       npols = (norder+1)*(norder+2)/2
       write(fname,'(a,i1,a,i1,a,i1,a)') 'data/stell_aquad_iasp_',iasp,
      1  '_iref_',iref,'_norder_',norder,'.dat'
@@ -176,7 +176,8 @@ c
       iptype = 1
       call get_rfacs(norder,iptype,rfac,rfac0)
       rfac = 2.75d0
-      rfac0 = 1.25d0
+      rfac0 = 2.75d0
+      if(1.eq.1) rfac0 = 1.25d0
       do i=1,npatches 
         rad_near(i) = rads(i)*rfac
       enddo
