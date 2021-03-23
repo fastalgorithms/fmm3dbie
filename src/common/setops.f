@@ -190,7 +190,6 @@ c
 c
 c
 c
-c
       subroutine setdecomp(n,a,m,b,naintb,aintb,iaintba,iaintbb,naintbc,
      1   aintbc,iaintbc)
 
@@ -306,6 +305,9 @@ c
 
       return
       end
+c
+c
+c
 c
 c
 c
