@@ -58,6 +58,8 @@
 !      get_surf_div - compute the surface divergence of a vector field
 !         defined on a surface
 !
+!      col_ind_to_patch_node_ind - convert a list of column
+!         indices to a list of patch and node indices
 !
 !         
 
@@ -1600,5 +1602,52 @@ subroutine get_surf_div_tri(nd,norder,npols,ff,f,df)
 
   return
 end subroutine get_surf_div_tri
+!
+!
+!
+!
 
+subroutine col_ind_to_patch_node_ind(npatches,ixyzs,ncol,col_ind, &
+  patch_ind,node_ind)
 
+  implicit none
+  integer, intent(in) :: npatches,ixyzs(npatches+1),ncol
+  integer, intent(in) :: col_ind(ncol)
+  integer, intent(out) :: patch_ind(ncol),node_ind(ncol)
+
+  integer i,j,j0,npols
+
+  npols = ixyzs(2)-ixyzs(1)
+  do i=1,ncol
+    node_ind(i) = mod(col_ind(i),npols)
+    patch_ind(i) = col_ind(i)/npols+1
+    if(node_ind(i).eq.0) then
+      node_ind(i) = npols
+      patch_ind(i) = patch_ind(i) - 1
+    endif
+  enddo
+
+!  call sorti(ncol,col_ind,iper)
+!
+!  do i=1,ncol
+!    col_ind_sort(i) = col_ind(iper(i))
+!    patch_ind(i) = 0
+!    node_ind(i) = 0
+!  enddo
+!
+!
+!  j0 = 1
+!  do i=1,ncol
+!    do j=j0,npatches
+!      if(ixyzs(j+1).gt.col_ind_sort(i)) then
+!        patch_ind(iper(i)) = j
+!        node_ind(iper(i)) = col_ind(iper(i))-ixyzs(j)+1
+!        j0 = j
+!        goto 1111
+!      endif
+!    enddo
+! 1111 continue  
+!  enddo
+  
+
+end subroutine col_ind_to_patch_node_ind
