@@ -190,10 +190,9 @@ c
 c
 c
 c
+c
       subroutine setdecomp(n,a,m,b,naintb,aintb,iaintba,iaintbb,naintbc,
      1   aintbc,iaintbc)
-
-
       implicit real *8 (a-h,o-z)
       integer n,a(n),m,b(m),aintb(n),iaintba(n),aintbc(n),iaintbc(n)
       integer iaintbb(n)
@@ -273,20 +272,27 @@ c
 
       naintb = iabint
 
-
-      iabint = 1
-      iabintc = 0
-      do i=1,n
-         if(i.ne.iaintba(iabint)) then
-           iabintc = iabintc + 1
-           aintbc(iabintc) = asort(i)
-           iaintbc(iabintc) = i
-         else
-           iabint = iabint+1
-           if(iabint.gt.naintb) iabint=naintb
-         endif
-      enddo
-      naintbc = iabintc
+      if(naintb.eq.0) then
+        naintbc = n
+        do i=1,n
+          aintbc(i) = asort(i)
+          iaintbc(i) = i
+        enddo
+      else
+        iabint = 1
+        iabintc = 0
+        do i=1,n
+          if(i.ne.iaintba(iabint)) then
+            iabintc = iabintc + 1
+            aintbc(iabintc) = asort(i)
+            iaintbc(iabintc) = i
+          else
+            iabint = iabint+1
+            if(iabint.gt.naintb) iabint=naintb
+          endif
+        enddo
+        naintbc = iabintc
+      endif
 
 
 
