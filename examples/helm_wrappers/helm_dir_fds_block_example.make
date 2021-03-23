@@ -61,7 +61,7 @@ FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
 
 .PHONY: all clean 
 
-OBJECTS =  helm_dir_fds_woversamp_example.o \
+OBJECTS =  helm_dir_fds_block_example.o \
 
 
 #

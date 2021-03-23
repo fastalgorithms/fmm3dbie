@@ -19,12 +19,14 @@
       real *8, allocatable :: errs(:)
       complex * 16 zpars(3)
       integer, allocatable :: irand(:),isort(:),isum(:)
+      integer, allocatable :: jrand(:),jsort(:)
       real *8, allocatable :: rrand(:)
-      complex *16, allocatable :: xmat(:,:)
+      complex *16, allocatable :: xmat(:,:),xmattmp(:,:)
       integer, allocatable :: itarg(:),jsrc(:)
-      integer, allocatable :: col_ptr(:),row_ind(:)
       complex *16, allocatable :: zent(:)
       integer numit,niter
+      integer ifwrite
+      integer, allocatable :: row_ind(:),col_ind(:)
 
       complex *16 pot,potex,ztmp,ima
 
@@ -43,8 +45,8 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 1
-      if(igeomtype.eq.2) ipars(1) = 10
+      if(igeomtype.eq.1) ipars(1) = 2
+      if(igeomtype.eq.2) ipars(1) = 20
 
       if(igeomtype.eq.1) then
         npatches = 12*(4**ipars(1))
@@ -58,7 +60,7 @@ c
       zk = 1.11d0+ima*0.0d0
       zpars(1) = zk 
       zpars(2) = -3.0d0
-      zpars(3) = 0.0d0
+      zpars(3) = 1.0d0
 
       if(igeomtype.eq.1) then
         xyz_out(1) = 3.17d0
@@ -76,7 +78,7 @@ c
         xyz_out(3) = 20.1d0
       endif
 
-      norder = 4 
+      norder = 3 
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
@@ -131,12 +133,12 @@ c
      1     rhs(i))
       enddo
 
-      
 
-      eps = 0.51d-6
+      eps = 0.51d-3
 
-      call helm_comb_dir_fds_mem(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,nifds,nrfds,nzfds)
+      call helm_comb_dir_fds_block_mem(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,eps,zpars,ifwrite,nifds,nrfds,
+     1  nzfds)
 
       call prinf('nifds=*',nifds,1)
       call prinf('nrfds=*',nrfds,1)
@@ -145,100 +147,64 @@ c
       allocate(ifds(nifds),rfds(nrfds),zfds(nzfds))
 
       
-      call helm_comb_dir_fds_init(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,zfds)
-
-
-
-
-c
-c       create a permutation of indices from 1 to npts**2
-c       and divide them into nbat random sized partitions
-c
-      nn = npts**2
-      allocate(irand(nn),isort(nn))
-      do i=1,nn
-        irand(i) = hkrand(0)*nn
-      enddo
-
-      call sorti(nn,irand,isort)
-
-      nbat = 50
-      allocate(rrand(nbat))
-      ra = 0
-      do i=1,nbat
-        rrand(i) = hkrand(0)
-        ra = ra + rrand(i)
-      enddo
-
-   
-      do i=1,nbat
-         rrand(i) = rrand(i)/ra
-         irand(i) = rrand(i)*nn
-      enddo
-
-      allocate(isum(nbat+1))
-
-      isum(1) = 1
-      call cumsum(nbat,irand,isum(2))
+      call helm_comb_dir_fds_block_init(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nzfds,zfds)
       
+      allocate(irand(npts),isort(npts))
+      allocate(jrand(npts),jsort(npts))
 
-      if(isum(nbat+1).lt.nn+1) isum(nbat+1) = nn+1
+      do i=1,npts
+        irand(i) = hkrand(0)*npts
+        jrand(i) = hkrand(0)*npts
+      enddo
 
 
-      allocate(col_ptr(npts+1))
+      call sorti(npts,irand,isort)
+      call sorti(npts,jrand,jsort)
+
       allocate(xmat(npts,npts))
+      allocate(row_ind(npts),col_ind(npts))
 
       do i=1,npts
         do j=1,npts
-          xmat(i,j) = 0
+          xmat(j,i) = 0
         enddo
       enddo
 
+
+      nbat = 30
+      npbat = (npts+0.0d0)/(nbat+0.0d0)
       do ibat=1,nbat
-        nent = isum(ibat+1)-isum(ibat)
-
-        allocate(zent(nent),row_ind(nent),itarg(nent),jsrc(nent))
-        do i=1,nent
-          iind = isort(isum(ibat)+i-1)
-
-          idiv = iind/npts
-          idiv = idiv+1
-          irem = iind - (idiv-1)*npts
-          if(irem.eq.0) then
-            idiv = idiv - 1
-            irem = npts
-          endif
-
-          jsrc(i) = irem
-          itarg(i) = idiv
-
+        istart = (ibat-1)*npbat+1
+        iend = min(npts,ibat*npbat)
+        nrow = iend-istart+1
+        do i=1,nrow
+          row_ind(i) = isort(istart+i-1)
         enddo
 
-
-        call conv_to_csc(nent,npts,itarg,jsrc,col_ptr,row_ind)
-
-
-        
-
-        
-        
-        
-        call helm_comb_dir_fds_matgen(npatches,norders,ixyzs,iptype,
-     1     npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,rfds,nzfds,
-     2     zfds,nent,col_ptr,row_ind,zent)
-
-        
-       
-cc        call prinf('col_ptr=*',col_ptr,npts+1)
-
-        do i=1,npts
-          do j=col_ptr(i),col_ptr(i+1)-1
-            xmat(row_ind(j),i) = zent(j)
+        do jbat=1,nbat
+          jstart = (jbat-1)*npbat+1
+          jend = min(npts,jbat*npbat)
+          ncol = jend-jstart+1
+          do j=1,ncol
+            col_ind(j) = jsort(jstart+j-1)
           enddo
-        enddo
 
-        deallocate(zent,row_ind,itarg,jsrc)
+          allocate(xmattmp(nrow,ncol))
+
+          call helm_comb_dir_fds_block_matgen(npatches,norders,
+     1     ixyzs,iptype,npts,srccoefs,srcvals,wts,eps,zpars,nifds,
+     2     ifds,nzfds,zfds,nrow,row_ind,ncol,col_ind,ifwrite,xmattmp)
+          
+
+          
+          do j=1,ncol
+            do i=1,nrow
+              xmat(row_ind(i),col_ind(j))=xmattmp(i,j)
+            enddo
+          enddo
+          deallocate(xmattmp)
+        enddo
       enddo
 
       do i=1,npts
@@ -250,10 +216,11 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
       enddo
 
 
+
       call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
      2  uvs_targ,eps,zpars,rhs,sigma2)
-
+      
       err = 0
       ra = 0
       do i=1,npts
@@ -264,8 +231,8 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
       call prin2('error in matvec=*',err,1)
 
 
-
-      zid = -(-1)**(ifinout)*2*pi*zpars(3)
+      ifinout = 0 
+      zid = -(-1)**(ifinout)*zpars(3)/2.0d0
       do i=1,npts
         xmat(i,i) = xmat(i,i) + zid 
       enddo

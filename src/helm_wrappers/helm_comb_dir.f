@@ -26,20 +26,20 @@ c       and neither of them currently used oversampling.
 c       The fast direct solver routines are currently in beta
 c       mode
 c
-c       helm_comb_dir_fds_mem - get memory requirements for initialization
+c       helm_comb_dir_fds_csc_mem - get memory requirements for initialization
 c          routine for subsequent calls to fast direct solver
 c
-c       helm_comb_dir_fds_init - initialize various arrays to be later 
+c       helm_comb_dir_fds_csc_init - initialize various arrays to be later 
 c          used for fast direct solver
 c
-c       helm_comb_dir_fds_matgen - query entries of the combined field
+c       helm_comb_dir_fds_csc_matgen - query entries of the combined field
 c          representation matrix (input indices must be in column 
 c          sparse compressed format, and must be preceeded by a call
 c          to helm_comb_dir_fds_init)
 c
-c       helm_comb_dir_fds_mem_woversamp,
-c       helm_comb_dir_fds_init_woversamp,
-c       helm_comb_dir_fds_matgen_woversamp
+c       helm_comb_dir_fds_block_mem,
+c       helm_comb_dir_fds_block_init,
+c       helm_comb_dir_fds_block_matgen
 c           (routines analogous to the three routines above but which
 c             do not include any oversampling, also on input
 c             are a collection of row indices and column indices and on
@@ -1855,7 +1855,7 @@ c
 c
 c
 c
-      subroutine helm_comb_dir_fds_mem(npatches,norders,ixyzs,
+      subroutine helm_comb_dir_fds_csc_mem(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,nrfds,nzfds)
 c
 cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
@@ -2013,7 +2013,7 @@ c
 c
 c
 
-      subroutine helm_comb_dir_fds_init(npatches,norders,ixyzs,
+      subroutine helm_comb_dir_fds_csc_init(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,
      2     rfds,nzfds,zfds)
 cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
@@ -2210,7 +2210,7 @@ c
 c
 c
 
-      subroutine helm_comb_dir_fds_matgen(npatches,norders,ixyzs,
+      subroutine helm_comb_dir_fds_csc_matgen(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,nrfds,
      2     rfds,nzfds,zfds,nent_csc,col_ptr,row_ind,zmatent)
 cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
@@ -2468,7 +2468,7 @@ c
 c
 c
 c
-      subroutine helm_comb_dir_fds_mem_woversamp(npatches,norders,ixyzs,
+      subroutine helm_comb_dir_fds_block_mem(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,zpars,ifwrite,
      2     nifds,nrfds,nzfds)
 c
@@ -2606,7 +2606,7 @@ c
 c
 c
 
-      subroutine helm_comb_dir_fds_init_woversamp(npatches,norders,
+      subroutine helm_comb_dir_fds_block_init(npatches,norders,
      1     ixyzs,iptype,npts,srccoefs,srcvals,eps,zpars,nifds,ifds,
      2     nzfds,zfds)
 cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
@@ -2750,7 +2750,7 @@ c
 c
 c
 
-      subroutine helm_comb_dir_fds_matgen_woversamp(npatches,norders,
+      subroutine helm_comb_dir_fds_block_matgen(npatches,norders,
      1     ixyzs,iptype,npts,srccoefs,srcvals,wts,eps,zpars,nifds,ifds,
      2     nzfds,zfds,nrow,row_ind,ncol,col_ind,ifwrite,zmat)
 cf2py   intent(in) npatches,norders,ixyzs,iptype,npts
@@ -2787,11 +2787,13 @@ c
       integer, allocatable :: naintb(:),naintbc(:)
 
       integer icol_ptr,iiper,irow_ind
+      real *8 over4pi
 
       procedure (), pointer :: fker
       complex *16 alpha,beta
       external h3d_slp, h3d_dlp, h3d_comb
       character *100 fname
+      data over4pi/0.07957747154594767d0/
 
 
 c
@@ -2846,7 +2848,7 @@ C$OMP END PARALLEL DO
       if(ifcharge.eq.1) then
 C$OMP PARALLEL DO      
         do i=1,ncol
-          zcharge(i) = wts(col_ind(i))*alpha
+          zcharge(i) = wts(col_ind(i))*alpha*over4pi
         enddo
 C$OMP END PARALLEL DO        
       endif
@@ -2854,9 +2856,12 @@ C$OMP END PARALLEL DO
       if(ifdipole.eq.1) then
 C$OMP PARALLEL DO      
         do i=1,ncol
-          zdipvec(1,i) = srcvals(10,col_ind(i))*wts(col_ind(i))*beta
-          zdipvec(2,i) = srcvals(11,col_ind(i))*wts(col_ind(i))*beta
-          zdipvec(3,i) = srcvals(12,col_ind(i))*wts(col_ind(i))*beta
+          zdipvec(1,i) = srcvals(10,col_ind(i))*wts(col_ind(i))*beta*
+     1       over4pi
+          zdipvec(2,i) = srcvals(11,col_ind(i))*wts(col_ind(i))*beta*
+     1       over4pi
+          zdipvec(3,i) = srcvals(12,col_ind(i))*wts(col_ind(i))*beta*
+     1       over4pi
         enddo
 C$OMP END PARALLEL DO        
       endif

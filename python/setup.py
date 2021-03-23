@@ -29,9 +29,12 @@ helm = []
 com = []
 surf = []
 stok = []
-helm.append('helm_comb_dir_fds_mem')
-helm.append('helm_comb_dir_fds_init')
-helm.append('helm_comb_dir_fds_matgen')
+helm.append('helm_comb_dir_fds_csc_mem')
+helm.append('helm_comb_dir_fds_csc_init')
+helm.append('helm_comb_dir_fds_csc_matgen')
+helm.append('helm_comb_dir_fds_block_mem')
+helm.append('helm_comb_dir_fds_block_init')
+helm.append('helm_comb_dir_fds_block_matgen')
 helm.append('lpcomp_helm_comb_dir')
 com.append('conv_to_csc')
 surf.append('surf_vals_to_coefs')
