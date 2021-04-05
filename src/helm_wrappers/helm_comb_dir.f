@@ -1986,6 +1986,8 @@ c
       bigint = bigint*npts*2
       lmem8 = lmem8 + bigint
 
+
+
       lmem8 = lmem8 + numit*(numit+5)*2 + npts*2
 
 
@@ -2096,6 +2098,8 @@ c
       lmem8 = lmem8 + nquad*2
       rmem = lmem8*8/1024/1024/1024
 
+      ifcharge = 0
+      ifdipole = 0
       if(abs(zpars(2)).gt.1.0d-16) ifcharge = 1
       if(abs(zpars(3)).gt.1.0d-16) ifdipole = 1
 
@@ -2112,7 +2116,7 @@ C$OMP END PARALLEL DO
 
       iper = 0
       rmemfmm = 0
-      call hfmm3d_memest(1,eps,zpars(1),npts_over,srcover,ifcharge,
+      call hfmm3d_memest(1,eps,zpars(1),npts_over,sources,ifcharge,
      1   ifdipole,iper,ifpgh,npts,targs,ifpghtarg,rmemfmm)
       rmem = rmem + rmemfmm
       

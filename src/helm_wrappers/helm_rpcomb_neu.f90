@@ -1185,6 +1185,269 @@
 !
 !
 !
+!        
+      subroutine helm_rpcomb_neu_solver_memest(npatches,norders,ixyzs, &
+        iptype,npts,srccoefs,srcvals,eps,zpars,numit,rmem)
+!
+!
+!  This subroutine is the memory estimation routine for
+!  the Helmholtz Neumann problem
+!  solver where the potential
+!  is represented as a right preconditioned 
+!  combined field integral representation.
+!
+!
+!  Representation:
+!    u = S_{k}[\rho]+i*alpha*D_{k}[S_{i|k|}[\rho]]
+!
+!  Boundary condition:
+!    u'=f
+!
+!  The linear system is solved iteratively using GMRES
+!  until a relative residual of eps_gmres is reached
+!
+!
+!  Input:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization on each patch 
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!    - npts: integer
+!        total number of discretization points on the boundary
+!    - srccoefs: real *8 (9,npts)
+!        koornwinder expansion coefficients of xyz, dxyz/du,
+!        and dxyz/dv on each patch. 
+!        For each point 
+!          * srccoefs(1:3,i) is xyz info
+!          * srccoefs(4:6,i) is dxyz/du info
+!          * srccoefs(7:9,i) is dxyz/dv info
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the 
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!    - eps: real *8
+!        precision requested for computing quadrature and fmm
+!        tolerance
+!    - zpars: complex *16 (2)
+!        kernel parameters (Referring to formula (1))
+!          * zpars(1) = k 
+!          * zpars(2) = alpha
+!    - numit: integer
+!        max number of gmres iterations
+!      
+!
+!  output
+!    - rmem: double precision
+!        estimated memory required by code in GB. Note that
+!        this is meant to serve as an estimate only. 
+!        The exact memory usage might be between (0.75,1.25)*rmem
+!        The memory estimate may not be reliable for a
+!        very small number of points
+! 
+!
+!
+      implicit none
+      integer npatches,norder,npols,npts
+      integer ifinout
+      integer norders(npatches),ixyzs(npatches+1)
+      integer iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps
+      complex *16 zpars(3)
+      real *8 rmem
+
+      integer *8 lmem8,bigint
+      real *8 rmemfmm
+      real *8, allocatable :: targs(:,:)
+      integer, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_targ(:,:)
+      integer ndtarg,ntarg
+
+      real *8 rres,eps2
+      integer niter
+
+
+      integer nover,npolso,nptso
+      integer nnz,nquad
+      integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
+      complex *16, allocatable :: wnear(:)
+
+      real *8, allocatable :: srcover(:,:),wover(:),sources(:,:)
+      integer, allocatable :: ixyzso(:),novers(:)
+
+      real *8, allocatable :: cms(:,:),rads(:),rad_near(:) 
+
+      integer i,j,jpatch,jquadstart,jstart
+
+      integer ipars,ifcharge,ifdipole,ifpgh,ifpghtarg
+      real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
+
+
+      real *8 ttot,done,pi
+      real *8 rfac,rfac0
+      integer iptype_avg,norder_avg
+      integer ikerorder, iquadtype,npts_over,iper
+
+!
+!
+!       gmres variables
+!
+      integer numit,k,l
+      complex *16 temp
+      
+      bigint = numit+1
+      bigint = bigint*npts*2
+      lmem8 = lmem8 + bigint
+
+
+
+      lmem8 = lmem8 + numit*(numit+5)*2 + npts*2
+
+
+      done = 1
+      pi = atan(done)*4
+
+
+!
+!
+!        setup targets as on surface discretization points
+! 
+      ndtarg = 3
+      ntarg = npts
+      allocate(targs(ndtarg,npts),uvs_targ(2,ntarg),ipatch_id(ntarg))
+      lmem8 = lmem8 + ndtarg*npts + 3*ntarg 
+
+!$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        targs(1,i) = srcvals(1,i)
+        targs(2,i) = srcvals(2,i)
+        targs(3,i) = srcvals(3,i)
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
+      enddo
+!$OMP END PARALLEL DO   
+
+
+!
+!    initialize patch_id and uv_targ for on surface targets
+!
+      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, &
+       ipatch_id,uvs_targ)
+
+!
+!
+!        this might need fixing
+!
+      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+
+      call get_rfacs(norder_avg,iptype_avg,rfac,rfac0)
+
+
+      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+      lmem8 = lmem8 + 5*npatches
+
+      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, &
+          srccoefs,cms,rads)
+
+!$OMP PARALLEL DO DEFAULT(SHARED) 
+      do i=1,npatches
+        rad_near(i) = rads(i)*rfac
+      enddo
+!$OMP END PARALLEL DO      
+
+!
+!    find near quadrature correction interactions
+!
+      print *, "entering find near mem"
+      call findnearmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
+      print *, "nnz=",nnz
+
+      allocate(row_ptr(npts+1),col_ind(nnz))
+      
+      call findnear(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr, &
+             col_ind)
+
+      allocate(iquad(nnz+1)) 
+      lmem8 = lmem8 + npts+1+ 2*nnz
+      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind, &
+              iquad)
+
+      ikerorder = 0
+
+
+!
+!    estimate oversampling for far-field, and oversample geometry
+!
+
+      allocate(novers(npatches),ixyzso(npatches+1))
+      lmem8 = lmem8 + 2*npatches + 1
+
+      print *, "beginning far order estimation"
+
+      call get_far_order(eps,npatches,norders,ixyzs,iptype,cms, &
+         rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1), &
+         nnz,row_ptr,col_ind,rfac,novers,ixyzso)
+
+      npts_over = ixyzso(npatches+1)-1
+
+      allocate(srcover(12,npts_over),wover(npts_over))
+      lmem8 = lmem8 + 15*npts_over
+
+      call oversample_geom(npatches,norders,ixyzs,iptype,npts, &
+        srccoefs,srcvals,novers,ixyzso,npts_over,srcover)
+
+      call get_qwts(npatches,novers,ixyzso,iptype,npts_over, &
+             srcover,wover)
+
+
+!
+!   compute near quadrature correction
+!
+      nquad = iquad(nnz+1)-1
+      allocate(wnear(nquad))
+      lmem8 = lmem8 + nquad*2*4
+      rmem = lmem8*8/1024/1024/1024
+
+      ifcharge = 1
+      ifdipole = 0
+      if(abs(zpars(2)).gt.1.0d-16) ifdipole = 1
+
+      ifpgh = 0
+      ifpghtarg = 2
+      allocate(sources(3,npts_over))
+!$OMP PARALLEL DO DEFAULT(SHARED)      
+      do i=1,npts_over
+        sources(1,i) = srcover(1,i)
+        sources(2,i) = srcover(2,i)
+        sources(3,i) = srcover(3,i)
+      enddo
+!$OMP END PARALLEL DO      
+
+      iper = 0
+      rmemfmm = 0
+      call hfmm3d_memest(1,eps,zpars(1),npts_over,sources,ifcharge, &
+        ifdipole,iper,ifpgh,npts,targs,ifpghtarg,rmemfmm)
+      rmem = rmem + rmemfmm
+      
+!
+      return
+      end
+!
+!
+!
+!
+!
 !
 !
       subroutine lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,&

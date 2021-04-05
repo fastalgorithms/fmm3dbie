@@ -110,6 +110,11 @@ c
 
       eps_gmres = 0.5d-6
 
+      call helm_rpcomb_neu_solver_memest(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,eps,zpars,numit,rmem)
+      
+      call prin2('estimated memory=*',rmem,1)
+
       call helm_rpcomb_neu_solver(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
      2  niter,errs,rres,sigma,sigma1)

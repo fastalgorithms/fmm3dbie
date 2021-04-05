@@ -44,7 +44,7 @@
       xyz_out(2) = 3.1d0
       xyz_out(3) = 20.1d0
 
-      fname = '../../geometries/sphere_768_o05.go3'
+      fname = '../../geometries/sphere_192_o03.go3'
       
       call open_gov3_geometry_mem(fname,npatches,npts)
 
