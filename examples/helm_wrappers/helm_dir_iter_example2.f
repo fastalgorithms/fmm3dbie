@@ -44,7 +44,7 @@
       xyz_out(2) = 3.1d0
       xyz_out(3) = 20.1d0
 
-      fname = '../../geometries/sphere_192_o03.go3'
+      fname = '../../geometries/sphere_768_o05.go3'
       
       call open_gov3_geometry_mem(fname,npatches,npts)
 
@@ -80,6 +80,19 @@
 
       eps = 0.51d-6
       eps_gmres = eps
+c
+c  estimate memory required
+c
+
+      call cpu_time(t1)
+C$      t1 = omp_get_wtime()      
+      call helm_comb_dir_solver_memest(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,eps,zpars,numit,rmem)
+      call cpu_time(t2)
+C$      t2 = omp_get_wtime()      
+      call prin2('memory required in GB=*',rmem,1)
+      call prin2('time taken in memory estimation code=*',t2-t1,1)
+
 
       call helm_comb_dir_solver(npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
