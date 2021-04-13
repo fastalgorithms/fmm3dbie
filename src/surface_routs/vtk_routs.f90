@@ -211,8 +211,6 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
    allocate(sigma_coefs(npts))
    call surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
      sigma,sigma_coefs)
-
-
  
 !
 !   estimate kovers, nps 
@@ -240,7 +238,6 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
   nps(1) = nps(1) - 1
 
   allocate(xyzs(3,npout),splot(npout))
-  call prinf('npout=*',npout,1)
 
 !
 !   get uvs of all patches of type = 1
