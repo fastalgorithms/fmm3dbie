@@ -36,17 +36,17 @@ beta = -2.0
 zpars = np.array([zk,alpha,beta],dtype=complex)
 eps = 0.51e-6
 
-nifds,nrfds,nzfds = h3.helm_comb_dir_fds_mem(norders,ixyzs,iptype,srccoefs,srcvals,
+nifds,nrfds,nzfds = h3.helm_comb_dir_fds_csc_mem(norders,ixyzs,iptype,srccoefs,srcvals,
   eps,zpars)
 
-ifds,rfds,zfds = h3.helm_comb_dir_fds_init(norders,ixyzs,iptype,srccoefs,srcvals,eps,
+ifds,rfds,zfds = h3.helm_comb_dir_fds_csc_init(norders,ixyzs,iptype,srccoefs,srcvals,eps,
   zpars,nifds,nrfds,nzfds)
 
 nent = npts**2
 col_ptr = np.arange(npts+1)*npts+1
 row_ind = np.tile(np.arange(npts)+1,npts)
 
-xmat = h3.helm_comb_dir_fds_matgen(norders,ixyzs,iptype,srccoefs,srcvals,
+xmat = h3.helm_comb_dir_fds_csc_matgen(norders,ixyzs,iptype,srccoefs,srcvals,
   eps,zpars,ifds,rfds,zfds,col_ptr,row_ind)
 
 xmat = xmat.reshape(npts,npts).transpose()

@@ -15,6 +15,7 @@ list_files.append('../src/surface_routs/vtk_routs.f90')
 list_files.append('../src/stok_wrappers/stok_comb_vel.f')
 list_files.append('../src/kernels/stok_kernels.f90')
 list_files.append('../src/surface_routs/write_go3.f90')
+list_files.append('../src/kernels/DPIE_kernels.f90')
 
 FLIBS = os.getenv('FMMBIE_LIBS')
 FLIBS = FLIBS.rstrip().split(' ')
@@ -37,12 +38,14 @@ helm.append('helm_comb_dir_fds_block_init')
 helm.append('helm_comb_dir_fds_block_matgen')
 helm.append('lpcomp_helm_comb_dir')
 com.append('conv_to_csc')
+com.append('orthonormalize_all')
 surf.append('surf_vals_to_coefs')
 surf.append('get_qwts')
 surf.append('get_patch_id_uvs')
 surf.append('surf_vtk_plot')
 surf.append('surf_vtk_plot_scalar')
 surf.append('surf_vtk_plot_vec')
+surf.append('surf_vtk_plot_zvec')
 stok.append('lpcomp_stok_comb_vel')
 stok.append('stok_comb_vel_solver')
 stok.append('stok_comb_vel_matgen')
@@ -65,7 +68,7 @@ ext_helm = Extension(
     sources=list_files,
     f2py_options=['only:']+helm+com+surf+stok+[':'],
 #    extra_f77_compile_args=FFLAGS,
-#    extra_f90_compile_args=FFLAGS,
+    extra_f90_compile_args=["-std=legacy"],
     extra_link_args=FLIBS
 )
 

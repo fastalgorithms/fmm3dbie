@@ -578,6 +578,8 @@ end subroutine get_ngradSklambda
 
 
 subroutine orthonormalize_all(du,normal,ru,rv,ns)
+!f2py intent(in) du, normal, ns
+!f2py intent(out) ru,rv
 implicit none
 
     !List of calling arguments
