@@ -86,7 +86,7 @@ FOBJS = $(FMML)/hfmm3d_ndiv.o $(FMML)/lfmm3d_ndiv.o
 # Helmholtz wrappers
 HELM = src/helm_wrappers
 HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o \
-	$(HELM)/helm_comb_trans.o
+	$(HELM)/helm_comb_trans.o $(HELM)/helm_rpcomb_imp.o
 
 # Laplace wrappers
 LAP = src/lap_wrappers
