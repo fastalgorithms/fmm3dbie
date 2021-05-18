@@ -14,6 +14,10 @@
 !      vtk_write_plane - write a structured grid of data defined on
 !       a plane
 !
+!      vtk_write_plane_vec - write a structured grid of data defined on
+!       a plane
+!
+!
 subroutine surf_quadratic_msh_vtk_plot(npatches,norders,ixyzs,iptype, &
   npts,srccoefs,srcvals,fname,title)
 !
@@ -407,6 +411,50 @@ end subroutine vtk_write_plane
 !
 !
 !
+!
+!
+subroutine vtk_write_plane_vec(ndims,ntarg,xyz,dxyz,f,title,fname)
+!
+!   writes data for a structured grid on a plane in vtk format
+!
+  implicit none
+  integer ndims(3),ntarg,i,iunit1
+  real *8 xyz(3),dxyz(3),f(3,ntarg)
+  character (len=*) fname,title
+
+  print *, "Here - in vtk_write_plane"
+  
+
+  iunit1 = 877
+  open(unit = iunit1, file=trim(fname), status='replace')
+
+  write(iunit1,'(a)') "# vtk DataFile Version 3.0"
+  write(iunit1,'(a)') trim(title)
+  write(iunit1,'(a)') "ASCII"
+  write(iunit1,'(a)') "DATASET STRUCTURED_POINTS"
+  write(iunit1,'(a,i6,i6,i6)') "DIMENSIONS ", ndims(1),ndims(2),ndims(3)
+  write(iunit1,'(a,e11.5,1x,e11.5,1x,e11.5)') "ORIGIN ", &
+    xyz(1),xyz(2),xyz(3)
+  write(iunit1,'(a,e11.5,1x,e11.5,1x,e11.5)') "SPACING ", &
+    dxyz(1),dxyz(2),dxyz(3)
+  write(iunit1,'(a)') ""
+  write(iunit1,'(a,i9)') "POINT_DATA ",ntarg 
+  write(iunit1,'(a,i4)') "SCALARS vec_comps float ", 3
+  write(iunit1,'(a)') "LOOKUP_TABLE default"
+  do i = 1,ntarg
+    write(iunit1,'(3(E11.5,2x))') f(1,i),f(2,i),f(3,i)
+  end do
+  close(iunit1)
+
+
+
+end subroutine vtk_write_plane_vec
+!
+!
+!
+!
+!
+
 
 
 subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
