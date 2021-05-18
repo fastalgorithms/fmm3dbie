@@ -202,21 +202,23 @@ install: $(STATICLIB) $(DYNAMICLIB)
 #
 # testing routines
 #
-test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf
+test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quad
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
 	cd test/surface_routs; ./int2-surf
 	cd test/tria_routs; ./int2-tria
+	cd test/quadratures; ./int2-quad
 	cat print_testres.txt
 	rm print_testres.txt
 
-test-dyn: $(DYNAMICLIB) test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn
+test-dyn: $(DYNAMICLIB) test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn test/quad-dyn
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
 	cd test/surface_routs; ./int2-surf
 	cd test/tria_routs; ./int2-tria
+	cd test/quadratures; ./int2-quad
 	cat print_testres.txt
 	rm print_testres.txt
 
@@ -238,6 +240,10 @@ test/tria: $(TTOBJS)
 	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) lib-static/$(STATICLIB) $(LIBS) 
 
 
+test/quad:
+	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad lib-static/$(STATICLIB) $(LIBS) 
+
+
 #
 # Linking test files to dynamic libraries
 #
@@ -257,6 +263,10 @@ test/surf-dyn:
 
 test/tria-dyn: $(TTOBJS)
 	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
+
+
+test/quad-dyn:
+	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
 
 
 #
