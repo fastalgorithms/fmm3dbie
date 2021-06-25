@@ -763,8 +763,8 @@ c
 
              npmax = npmax0
              ntmaxuse = ntmaxuse0
-             call prinf('restarting adaptive inetgration with ntri=*',
-     1             ntmaxuse,1)
+c             print *, "restrating adaptive integration with ntri=",
+c     1          ntmaxuse
 
 
              deallocate(sigvals2,sigvalsdens2,srcvals2,ichild_start2)
@@ -1004,8 +1004,8 @@ c            compute necessary info
 c
 
             if(ntri+4.gt.ntmax) then
-               print *, "Too many triangles in dtriaadap"
-               print *, "Exiting without computing anything"
+c               print *, "Too many triangles in dtriaadap"
+c               print *, "Exiting without computing anything"
                ier = 4
 
                return
@@ -2170,8 +2170,8 @@ c
 
              npmax = npmax0
              ntmaxuse = ntmaxuse0
-             call prinf('restarting adaptive inetgration with ntri=*',
-     1             ntmaxuse,1)
+c             call prinf('restarting adaptive inetgration with ntri=*',
+c     1             ntmaxuse,1)
 
 
              deallocate(sigvals2,sigvalsdens2,srcvals2,ichild_start2)
@@ -2418,8 +2418,8 @@ c            compute necessary info
 c
 
             if(ntri+4.gt.ntmax) then
-               print *, "Too many triangles in dtriaadap"
-               print *, "Exiting without computing anything"
+c               print *, "Too many triangles in dtriaadap"
+c               print *, "Exiting without computing anything"
                ier = 4
                return
             endif
