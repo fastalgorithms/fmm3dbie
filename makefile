@@ -113,7 +113,7 @@ QUAD = src/quadratures
 QOBJS = $(QUAD)/far_field_routs.o \
 	$(QUAD)/ggq-selfquad-routs.o $(QUAD)/ggq-quads.o \
 	$(QUAD)/ggq-selfquad.o \
-	$(QUAD)/near_field_routs.o 
+	$(QUAD)/near_field_routs.o $(QUAD)/near_quad_sub.o
 
 # Surface wrappers
 SURF = src/surface_routs
