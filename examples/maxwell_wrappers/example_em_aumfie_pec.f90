@@ -87,7 +87,7 @@
       niter = 0
       allocate(errs(numit+1))
 
-      eps = 1d-6
+      eps = 1d-3
       eps_gmres=1d-10
 
       call cpu_time(t1)

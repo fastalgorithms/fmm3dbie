@@ -38,7 +38,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 1
+      if(igeomtype.eq.1) ipars(1) = 0
       if(igeomtype.eq.2) ipars(1) = 5*2
 
       if(igeomtype.eq.1) then

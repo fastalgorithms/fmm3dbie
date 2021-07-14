@@ -39,7 +39,7 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 2
+      igeomtype = 2 
       if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 5
 
@@ -210,7 +210,6 @@ c
 
       iquadtype = 1
 
-cc      goto 1111
 
       call getnearquad_helm_comb_dir(npatches,norders,
      1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
@@ -226,13 +225,11 @@ cc      goto 1111
      1      ipatch_id,uvs_targ,eps,zpars,iquadtype,
      1      nnz,row_ptr,col_ind,iquad,
      1      rfac0,nquad,dlp_near)
-      
+ 1111 continue      
       call cpu_time(t2)
       tquadgen = t2-t1
 
 
-
-      ifinout = 1     
 
       zpars(2) = 1.0d0
       zpars(3) = 0.0d0
@@ -250,7 +247,7 @@ cc      goto 1111
       zpars(3) = 1.0d0
 
 
-      call lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
+      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
      3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)

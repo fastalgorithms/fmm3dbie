@@ -366,7 +366,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   alpha = 1
   beta = 0
   
-  call dgemm(transa,transb,9,npols,npols,alpha,srccoefs,9,pmat,npols,&
+  call dgemm_f77(transa,transb,9,npols,npols,alpha,srccoefs,9,pmat,npols,&
      beta,srctmp,12)
 
   call cross_prod3d(srctmp(4,1),srctmp(7,1),tmp)
@@ -398,7 +398,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   alpha = 1
   beta = 0
   
-  call dgemm(transa,transb,9,npolsf,npols,alpha,srccoefs,9,pmat,npols,&
+  call dgemm_f77(transa,transb,9,npolsf,npols,alpha,srccoefs,9,pmat,npols,&
      beta,srctmp,12)
 
   do jpt=1,npolsf
@@ -445,7 +445,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
     alpha = 1
     beta = 0
   
-    call dgemm(transa,transb,9,npolsf,npols,alpha,srccoefs,9,pmat, &
+    call dgemm_f77(transa,transb,9,npolsf,npols,alpha,srccoefs,9,pmat, &
        npols,beta,srctmp,12)
 
 

@@ -341,7 +341,7 @@ c
      2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
         
-        call zrmatmatt(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
+        call zrmatmatt_f77(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
 c
 c
 c       fill out far part of single layer
@@ -353,7 +353,7 @@ c
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
      3      ndi,ipars,npts_f,qnodes,qwts,sints_f)
         
-        call zrmatmatt(ntarg_f,npols,sints_f,npols,umatr,svtmp_f)
+        call zrmatmatt_f77(ntarg_f,npols,sints_f,npols,umatr,svtmp_f)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
 c
@@ -750,7 +750,7 @@ c
      2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
         
-        call dgemm('t','n',npols,ntarg_n,npols,done,umatr,npols,
+        call dgemm_f77('t','n',npols,ntarg_n,npols,done,umatr,npols,
      1     sints_n,npols,dzero,svtmp_n,npols)
 c
 c
@@ -763,7 +763,7 @@ c
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
      3      ndi,ipars,npts_f,qnodes,qwts,sints_f)
         
-        call dgemm('t','n',npols,ntarg_f,npols,done,umatr,npols,
+        call dgemm_f77('t','n',npols,ntarg_f,npols,done,umatr,npols,
      1     sints_f,npols,dzero,svtmp_f,npols)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
@@ -941,7 +941,7 @@ c
 
       alpha = 1.0d0
       beta = 0.0d0
-      call dgemv('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
+      call dgemv_f77('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
      1      srcvals,1)
       
 
@@ -976,7 +976,7 @@ c
       ldb = npols
       ldc = 12
 
-      call dgemm(transa,transb,9,ns,npols,alpha,
+      call dgemm_f77(transa,transb,9,ns,npols,alpha,
      1      srccoefs,lda,sigvals,ldb,beta,srctmp,ldc)
 
 
@@ -999,7 +999,7 @@ c
 
       deallocate(srctmp,qwts,sigvals)
 
-      call zrmatmatt(1,npols,fint,npols,umat,zquad)
+      call zrmatmatt_f77(1,npols,fint,npols,umat,zquad)
 
       return
       end
@@ -1126,7 +1126,7 @@ c
 
       alpha = 1.0d0
       beta = 0.0d0
-      call dgemv('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
+      call dgemv_f77('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
      1      srcvals,1)
       
 
@@ -1161,7 +1161,7 @@ c
       ldb = npols
       ldc = 12
 
-      call dgemm(transa,transb,9,ns,npols,alpha,
+      call dgemm_f77(transa,transb,9,ns,npols,alpha,
      1      srccoefs,lda,sigvals,ldb,beta,srctmp,ldc)
 
 
@@ -1184,7 +1184,8 @@ c
 
       deallocate(srctmp,qwts,sigvals)
 
-      call dgemv('t',npols,npols,done,umat,npols,fint,1,dzero,dquad,1)
+      call dgemv_f77('t',npols,npols,done,umat,npols,fint,1,dzero,
+     1   dquad,1)
 
       return
       end

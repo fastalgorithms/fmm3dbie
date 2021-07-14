@@ -47,7 +47,7 @@
 !	Electromagnetic parameters
 !
   
-      omega=0.5d-1
+      omega=1.1d0
       ep0=1.0d0
       mu0=1.0d0
       ep1=1.200d0
@@ -64,7 +64,7 @@
 
 
       
-      fname = '../../geometries/sphere_768_o03.go3'
+      fname = '../../geometries/sphere_192_o03.go3'
 
 
       xyz_in(1) = 0.11d0
@@ -116,7 +116,7 @@
 !
 
       eps = 1d-4
-      eps_gmres=1d-5
+      eps_gmres=1d-6
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      
       call em_muller_trans_solver(npatches,norders,ixyzs,iptype,npts,&

@@ -36,9 +36,9 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 1
-      if(igeomtype.eq.2) ipars(1) = 20
+      igeomtype = 2
+      if(igeomtype.eq.1) ipars(1) = 2
+      if(igeomtype.eq.2) ipars(1) = 10
 
       if(igeomtype.eq.1) then
         npatches = 12*(4**ipars(1))
@@ -244,7 +244,7 @@ cc      goto 1111
       dpars(2) = 1.0d0
 
 
-      call lpcomp_lap_comb_dir_setsub(npatches,norders,ixyzs,
+      call lpcomp_lap_comb_dir_addsub(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      2  eps,dpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
      3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)

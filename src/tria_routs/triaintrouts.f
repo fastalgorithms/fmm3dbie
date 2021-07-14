@@ -119,7 +119,7 @@ c
 
         da = 1
 
-        call dgemm(transa,transb,9,nqpts,npols,alpha,
+        call dgemm_f77(transa,transb,9,nqpts,npols,alpha,
      1     srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
 
    
@@ -147,7 +147,7 @@ c
         alpha_c = 1
         beta_c = 0
 
-      call zgemm(transa,transb,nppols,ntarg0,nqpts,alpha_c,sigvals,
+      call zgemm_f77(transa,transb,nppols,ntarg0,nqpts,alpha_c,sigvals,
      1   nppols,xkernvals,nqpts,beta_c,cintvals(1,itargptr(ipatch)),
      2   nppols)
       
@@ -476,7 +476,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm(transa,transb,9,npmax,npols,alpha,
+        call dgemm_f77(transa,transb,9,npmax,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -700,7 +700,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm(transa,transb,9,nqpols,npols,alpha,
+        call dgemm_f77(transa,transb,9,nqpols,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
         call get_norms_qwts_tri(nqpols,wts,srcvals,da,qwts)
 
@@ -1045,7 +1045,7 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm(transa,transb,9,kpols,npols,alpha,
+              call dgemm_f77(transa,transb,9,kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
               call get_norms_qwts_tri(kpols,wts,srcvals(1,istart),
@@ -1471,7 +1471,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm(transa,transb,9,npts0,npols,alpha,
+        call dgemm_f77(transa,transb,9,npts0,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -1886,7 +1886,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm(transa,transb,9,npmax,npols,alpha,
+        call dgemm_f77(transa,transb,9,npmax,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -1925,14 +1925,11 @@ c
             endif
           enddo
 
-c
-c          TODO:  fix this to call mkl blas with single thread
-c
           transa = 'n'
           transb = 't'
           alpha_c = 1
           beta_c = 0
-          call zgemm(transa,transb,nd,nppols,npts,alpha_c,
+          call zgemm_f77(transa,transb,nd,nppols,npts,alpha_c,
      1      fkervals,nd,sigmatmp,nppols,beta_c,cintvals(1,1,itarg),
      2      nd)
 
@@ -2122,7 +2119,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm(transa,transb,9,nqpols,npols,alpha,
+        call dgemm_f77(transa,transb,9,nqpols,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
         call get_norms_qwts_tri(nqpols,wts,srcvals,da,qwts)
 
@@ -2466,7 +2463,7 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm(transa,transb,9,kpols,npols,alpha,
+              call dgemm_f77(transa,transb,9,kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
               call get_norms_qwts_tri(kpols,wts,srcvals(1,istart),
@@ -2910,7 +2907,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm(transa,transb,9,npts0,npols,alpha,
+        call dgemm_f77(transa,transb,9,npts0,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 

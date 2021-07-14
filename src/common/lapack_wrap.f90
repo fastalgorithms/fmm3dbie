@@ -1,7 +1,5 @@
 ! (c) Mike O'Neil
 !
-! A few interfaces by Manas Rachh
-!
 ! this file contains basic common-sense wrappers for lapack routines,
 ! that way you never need to call the complicated routine with
 ! several parameters...

@@ -809,7 +809,7 @@ implicit none
   complex ( kind = 8 ), allocatable :: sigma_vect(:,:,:), dipvect_vect(:,:,:,:)
   complex ( kind = 8 ), allocatable :: gradE_vect(:,:,:,:)
   integer count1,count2,nd_hfmm3d
-  integer ier
+  integer ier,j
   integer ifcharge,ifdipole,ifpot,ifgrad
   real ( kind = 8 ) pi
 	
@@ -820,22 +820,26 @@ implicit none
   allocate(dipvect_vect(nd,3,3,ns))
   allocate(gradE_vect(nd,3,3,nt))	
 
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2)
   do count1=1,nt
    do count2=1,nd
     E(count2,1,count1)=0.0d0
     E(count2,2,count1)=0.0d0
     E(count2,3,count1)=0.0d0
-	  gradE_vect(count2,1,1,count1)=0.0d0
-	  gradE_vect(count2,1,2,count1)=0.0d0
-	  gradE_vect(count2,1,3,count1)=0.0d0
-	  gradE_vect(count2,2,1,count1)=0.0d0
-	  gradE_vect(count2,2,2,count1)=0.0d0
-	  gradE_vect(count2,2,3,count1)=0.0d0
-	  gradE_vect(count2,3,1,count1)=0.0d0
-	  gradE_vect(count2,3,2,count1)=0.0d0
-	  gradE_vect(count2,3,3,count1)=0.0d0
+    gradE_vect(count2,1,1,count1)=0.0d0
+    gradE_vect(count2,1,2,count1)=0.0d0
+    gradE_vect(count2,1,3,count1)=0.0d0
+    gradE_vect(count2,2,1,count1)=0.0d0
+    gradE_vect(count2,2,2,count1)=0.0d0
+    gradE_vect(count2,2,3,count1)=0.0d0
+    gradE_vect(count2,3,1,count1)=0.0d0
+    gradE_vect(count2,3,2,count1)=0.0d0
+    gradE_vect(count2,3,3,count1)=0.0d0
    enddo
   enddo
+!$OMP END PARALLEL DO    
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2)
   do count1=1,ns
    do count2=1,nd
     sigma_vect(count2,1,count1)=0.0d0
@@ -855,18 +859,22 @@ implicit none
     dipvect_vect(count2,3,3,count1)=0.0d0
    enddo
   enddo
+!$OMP END PARALLEL DO    
 
   if (ifrho.eq.1) then
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2)
    do count1=1,ns
    do count2=1,nd
-	sigma_vect(count2,1,count1)=sigma_vect(count2,1,count1)+norm_vect(1,count1)*rho(count2,count1)
-	sigma_vect(count2,2,count1)=sigma_vect(count2,2,count1)+norm_vect(2,count1)*rho(count2,count1)
-	sigma_vect(count2,3,count1)=sigma_vect(count2,3,count1)+norm_vect(3,count1)*rho(count2,count1)
+    sigma_vect(count2,1,count1)=sigma_vect(count2,1,count1)+norm_vect(1,count1)*rho(count2,count1)
+    sigma_vect(count2,2,count1)=sigma_vect(count2,2,count1)+norm_vect(2,count1)*rho(count2,count1)
+    sigma_vect(count2,3,count1)=sigma_vect(count2,3,count1)+norm_vect(3,count1)*rho(count2,count1)
    enddo
    enddo
+!$OMP END PARALLEL DO    
   endif
 
   if (ifb_vect.eq.1) then
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2)
     do count1=1,ns
     do count2=1,nd
       sigma_vect(count2,1,count1)=sigma_vect(count2,1,count1)+b_vect(count2,1,count1)
@@ -874,9 +882,11 @@ implicit none
       sigma_vect(count2,3,count1)=sigma_vect(count2,3,count1)+b_vect(count2,3,count1)
     enddo
     enddo
+!$OMP END PARALLEL DO    
   endif
 
   if (iflambda.eq.1) then
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2)
     do count1=1,ns
     do count2=1,nd
       dipvect_vect(count2,1,1,count1)=dipvect_vect(count2,1,1,count1)-lambda(count2,count1)
@@ -884,45 +894,47 @@ implicit none
       dipvect_vect(count2,3,3,count1)=dipvect_vect(count2,3,3,count1)-lambda(count2,count1)
     enddo
     enddo
+!$OMP END PARALLEL DO    
   endif
 
   if (ifa_vect.eq.1) then
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2)
     do count1=1,ns
     do count2=1,nd
-!!            dipvect_x(1,count1)=dipvect_x(1,count1)+0.0d0
       dipvect_vect(count2,1,2,count1)=dipvect_vect(count2,1,2,count1)-a_vect(count2,3,count1)
       dipvect_vect(count2,1,3,count1)=dipvect_vect(count2,1,3,count1)+a_vect(count2,2,count1)
 
       dipvect_vect(count2,2,1,count1)=dipvect_vect(count2,2,1,count1)+a_vect(count2,3,count1)
-!!            dipvect_y(2,count1)=dipvect_y(2,count1)+0.0d0
       dipvect_vect(count2,2,3,count1)=dipvect_vect(count2,2,3,count1)-a_vect(count2,1,count1)
 
       dipvect_vect(count2,3,1,count1)=dipvect_vect(count2,3,1,count1)-a_vect(count2,2,count1)
       dipvect_vect(count2,3,2,count1)=dipvect_vect(count2,3,2,count1)+a_vect(count2,1,count1)
-!!            dipvect_z(3,count1)=dipvect_z(3,count1)+0.0d0
     enddo
     enddo
+!$OMP END PARALLEL DO    
   endif
-	
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2)
   do count1=1,ns
     do count2=1,nd
     sigma_vect(count2,1,count1)=sigma_vect(count2,1,count1)*wts(count1)
     sigma_vect(count2,2,count1)=sigma_vect(count2,2,count1)*wts(count1)
     sigma_vect(count2,3,count1)=sigma_vect(count2,3,count1)*wts(count1)
-		
+
     dipvect_vect(count2,1,1,count1)=dipvect_vect(count2,1,1,count1)*wts(count1)
     dipvect_vect(count2,1,2,count1)=dipvect_vect(count2,1,2,count1)*wts(count1)
     dipvect_vect(count2,1,3,count1)=dipvect_vect(count2,1,3,count1)*wts(count1)
-		
+
     dipvect_vect(count2,2,1,count1)=dipvect_vect(count2,2,1,count1)*wts(count1)
     dipvect_vect(count2,2,2,count1)=dipvect_vect(count2,2,2,count1)*wts(count1)
     dipvect_vect(count2,2,3,count1)=dipvect_vect(count2,2,3,count1)*wts(count1)
-		
+
     dipvect_vect(count2,3,1,count1)=dipvect_vect(count2,3,1,count1)*wts(count1)
     dipvect_vect(count2,3,2,count1)=dipvect_vect(count2,3,2,count1)*wts(count1)
     dipvect_vect(count2,3,3,count1)=dipvect_vect(count2,3,3,count1)*wts(count1)
     enddo
   enddo
+!$OMP END PARALLEL DO    
 
   ifcharge=1
   ifdipole=1
@@ -942,33 +954,35 @@ implicit none
   endif
     
   nd_hfmm3d=3*nd
+
+  if(ifdir.eq.0) print *, "Starting fmm"
   if ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.&
-   &(ifdipole.eq.1)) then	
+   &(ifdipole.eq.1)) then
     if (ifdir.eq.1) then
       call h3ddirectcdg(nd_hfmm3d,zk,source,sigma_vect,dipvect_vect,ns&
-	   &,targets,nt,E,gradE_vect,thresh)
+       &,targets,nt,E,gradE_vect,thresh)
     else
       call hfmm3d_t_cd_g_vec(nd_hfmm3d,eps,zk,ns,source,sigma_vect,dipvect_vect&
-	   &,nt,targets,E,gradE_vect,ier)
+       &,nt,targets,E,gradE_vect,ier)
     endif
   elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.&
    &(ifdipole.eq.1)) then
     if (ifdir.eq.1) then
       call h3ddirectcdp(nd_hfmm3d,zk,source,sigma_vect,dipvect_vect,ns&
-	   &,targets,nt,E,thresh)
+       &,targets,nt,E,thresh)
     else
-	  call hfmm3d_t_cd_p_vec(nd_hfmm3d,eps,zk,ns,source,sigma_vect,dipvect_vect&
-	   &,nt,targets,E,ier)
+      call hfmm3d_t_cd_p_vec(nd_hfmm3d,eps,zk,ns,source,sigma_vect,dipvect_vect&
+        &,nt,targets,E,ier)
     endif
   elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.&
    &(ifdipole.eq.0)) then
     if (ifdir.eq.1) then
       call h3ddirectcg(nd_hfmm3d,zk,source,sigma_vect,ns,targets,nt,E,gradE_vect&
-	   &,thresh)
+        &,thresh)
     else
       call hfmm3d_t_c_g_vec(nd_hfmm3d,eps,zk,ns,source,sigma_vect,nt,targets,E,&
-	   &gradE_vect,ier)
-	endif	
+        &gradE_vect,ier)
+   endif
   elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.&
    &(ifdipole.eq.0)) then
     if (ifdir.eq.1) then
@@ -979,11 +993,11 @@ implicit none
   elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.0).and.&
    &(ifdipole.eq.1)) then
     if (ifdir.eq.1) then
-	  call h3ddirectdg(nd_hfmm3d,zk,source,dipvect_vect,ns,targets,nt,E,&
-	   &gradE_vect,thresh)
+      call h3ddirectdg(nd_hfmm3d,zk,source,dipvect_vect,ns,targets,nt,E,&
+      &gradE_vect,thresh)
     else
       call hfmm3d_t_d_g_vec(nd_hfmm3d,eps,zk,ns,source,dipvect_vect,nt,targets&
-	   &,E,gradE_vect,ier)
+      &,E,gradE_vect,ier)
     endif
   elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.0).and.&
    &(ifdipole.eq.1)) then
@@ -994,32 +1008,46 @@ implicit none
     endif
   endif
 
+  if(ifdir.eq.0) print *, "ending fmm"
+
   if (ifdivE.eq.1) then
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2)
     do count1=1,nt
     do count2=1,nd
       divE(count2,count1)=gradE_vect(count2,1,1,count1)+gradE_vect(count2,2,2,count1)+&
-	   &gradE_vect(count2,3,3,count1)			
+      &gradE_vect(count2,3,3,count1)
       divE(count2,count1)=divE(count2,count1)/(4.0d0*pi)
     enddo
     enddo
+!$OMP END PARALLEL DO    
   endif
   if (ifE.eq.1) then
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2,j)
     do count1=1,nt
+    do j=1,3
     do count2=1,nd
-      E(count2,:,count1)=E(count2,:,count1)/(4.0d0*pi)
+      E(count2,j,count1)=E(count2,j,count1)/(4.0d0*pi)
     enddo
     enddo
+    enddo
+!$OMP END PARALLEL DO    
   endif
 
   if (ifcurlE.eq.1) then
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(count1,count2,j)
     do count1=1,nt
     do count2=1,nd
       curlE(count2,1,count1)=gradE_vect(count2,3,2,count1)-gradE_vect(count2,2,3,count1)
       curlE(count2,2,count1)=gradE_vect(count2,1,3,count1)-gradE_vect(count2,3,1,count1)
-      curlE(count2,3,count1)=gradE_vect(count2,2,1,count1)-gradE_vect(count2,1,2,count1)			 
-      curlE(count2,:,count1)=curlE(count2,:,count1)/(4.0d0*pi)
+      curlE(count2,3,count1)=gradE_vect(count2,2,1,count1)-gradE_vect(count2,1,2,count1)
+    enddo
+    do j=1,3
+    do count2=1,nd
+      curlE(count2,j,count1)=curlE(count2,j,count1)/(4.0d0*pi)
     enddo
     enddo
+    enddo
+!$OMP END PARALLEL DO    
   endif
 
     deallocate(sigma_vect)
