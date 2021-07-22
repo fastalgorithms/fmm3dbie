@@ -1,12 +1,10 @@
 This subroutine evaluates the layer potential for the representation 
 
-
 .. math ::
 
-    u = 4 \pi(\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
+   u = \mathcal{S}_{k}[\sigma] + i\alpha D_{k}[S_{i|k|}[\sigma]]
 
-Note: the $4\pi$ scaling is included to be consistent with the FMM3D
-libraries. For targets on the boundary, this routine only computes
+For targets on the boundary, this routine only computes
 the principal value part, the identity term corresponding to the jump
 in the layer potential is not included in the layer potential.
 
@@ -43,13 +41,14 @@ Input arguments:
       set to 0 by default
   - eps: double precision
       precision requested
-  - zpars: double complex (3)
+  - zpars: double complex (2)
       kernel parameters (Referring to formula above)
       zpars(1) = k 
       zpars(2) = $\alpha$
-      zpars(3) = $\beta$
-   - sigma: double complex(npts)
-       density for layer potential
+  - sigma: double complex(npts)
+      density for layer potential
+  - siksigma: double complex(npts)
+      $\mathcal{S}_{i|k|}[\sigma]$ returned by solver
 
 Output arguments
   - pot: double complex(ntarg)

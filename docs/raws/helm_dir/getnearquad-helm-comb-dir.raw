@@ -1,0 +1,76 @@
+This subroutine generates the near field quadrature for the
+representation
+
+.. math ::
+
+   u = \alpha \mathcal{S}_{k}[\sigma] + \beta D_{k}[\sigma] \,,
+
+where the near field is specified by the user in row sparse compressed
+format
+
+Input arguments:
+
+    - npatches: integer
+        number of patches
+    - norders: integer(npatches)
+        order of discretization on each patch
+    - ixyzs: integer(npatches+1)
+        ixyzs(i) denotes the starting location in srccoefs, and
+        srcvals array where information for patch i begins
+    - iptype: integer(npatches)
+        type of patch
+    - npts: integer
+        total number of points on the boundary
+    - srccoefs: double precision (9,npts)
+        koornwinder exapansion coefficients for x, $\partial_{u} x$, and
+        $\partial_{v} x$
+    - srcvals: double precision (12,npts)
+        x,$\partial_{u} x$, $\partial_{v} x$, and $n$ sampled at
+        discretization nodes
+    - ndtarg: integer
+        leading dimension of target array
+    - ntarg: integer
+        number of targets
+    - targs: double precision (ndtarg,ntarg)
+        target information. Note the first three entries must be the
+        cartesian components of the target
+    - ipatch_id: integer(ntarg)
+         id of patch of target i, id= -1/0 if target is off-surface
+    - uvs_targ: double precision (2,ntarg)
+         local uv coordinates on patch, if target is on surface
+    - eps: double precision
+         precision requested for computing quadrature and fmm tolerance
+    - zpars: double complex(3)
+         kernel parameters, zpars(1)=k, zpars(2)=$\alpha$,
+         zpars(3)=$\beta$
+    - iquadtype: integer
+         quadrature type
+
+         - iquadtype = 1: for generalized gaussian quadrature+adaptive
+           integration
+    - nnz: integer
+         number of non-zero target-patch interactions
+    - row_ptr: integer(ntarg+1) 
+         row_ptr(i) is the starting location in the
+         col-ind list where the list of patches in the near field of target
+         i start. If row_ptr(i) <= j < row_ptr(i+1), then target(i) and
+         patch col_ind(j) are in the near-field of each other
+    - col_ind: integer(nnz)
+         list of patches which interact with the targets. See `example
+         <near_reps.html#nearreps-exmp>`_
+    - iquad: integer(nnz)
+          iquad(i) is the location in the quadrature array where the
+          matrix entries corresponding to the interaction of target i,
+          and patch col_ind(j) start in wnear array
+    - rfac0: double precision
+          radius parameter for switiching between adaptive integration
+          and oversampled smooth quadrature in quadrature generation
+          routine (note this is different from the radius parameter 
+          used for identifying the near field)
+    - nquad: integer
+          size of wnear array
+
+Output arguments:
+    - wnear: double complex(nquad)
+          near field quadrature correction
+

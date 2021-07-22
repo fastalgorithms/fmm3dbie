@@ -1,0 +1,69 @@
+This subroutine solves the transmission boundary value
+problem using the combined field integral representation
+
+
+.. math::
+
+   u_{1} &= \varepsilon_{1}^2 \mathcal{S}_{k_{1}}[\lambda] + \varepsilon_{1} \mathcal{D}_{k_{1}}[\rho] \,, \\
+   u_{0} &= \varepsilon_{0}^2 \mathcal{S}_{k_{0}}[\lambda] + \varepsilon_{0} \mathcal{D}_{k_{0}}[\rho] \,.
+
+The integral equation on the boundary is given by
+
+.. math::
+   
+   f &=  \frac{(\varepsilon_{0} + \varepsilon_{1})}{2} \rho + 
+   (\varepsilon_{0} \mathcal{D}_{k_{0}} - \varepsilon_{1} 
+   \mathcal{D}_{k_{1}})[\rho] + 
+   (\varepsilon_{0}^2 \mathcal{S}_{k_{0}} - \varepsilon_{1}^2 
+   \mathcal{S}_{k_{1}})[\lambda] \, , \\ 
+   g &=  -\frac{(\varepsilon_{0} + \varepsilon_{1})}{2} \lambda + 
+   (\mathcal{D}_{k_{0}}' - \mathcal{D}_{k_{1}}')[\rho] + 
+   (\varepsilon_{0} \mathcal{S}_{k_{0}}' - \varepsilon_{1} 
+   \mathcal{S}_{k_{1}}')[\lambda] \, , \\ 
+
+where f,g are the boundary data, and $k_{j} = \omega \sqrt{\mu_{j}} 
+\sqrt{\varepsilon_{j}}$, $j=0,1$.
+
+Input arguments:
+
+    - npatches: integer
+        number of patches
+    - norders: integer(npatches)
+        order of discretization on each patch
+    - ixyzs: integer(npatches+1)
+        ixyzs(i) denotes the starting location in srccoefs, and
+        srcvals array where information for patch i begins
+    - iptype: integer(npatches)
+        type of patch
+    - npts: integer
+        total number of points on the boundary
+    - srccoefs: double precision (9,npts)
+        koornwinder exapansion coefficients for x, $\partial_{u} x$, and
+        $\partial_{v} x$
+    - srcvals: double precision (12,npts)
+        x,$\partial_{u} x$, $\partial_{v} x$, and $n$ sampled at
+        discretization nodes
+    - eps: double precision
+         precision requested for computing quadrature and fmm tolerance
+    - zpars: double complex(5)
+         kernel parameters, zpars(1)=$\omega$, zpars(2)=$\varepsilon_{0}$,
+         zpars(3)=$\mu_{0}$, zpars(4)=$\varepsilon_{1}$, zpars(5) = $\mu_{1}$
+    - rhs: double complex(2 . npts)
+         rhs(1:npts) is boundary data f, and rhs((npts+1):(2 $\cdot$ npts))
+         is boundary data g
+    - eps_gmres: double precision
+         gmres tolerance requested
+    - numit: integer
+         max number of gmres iterations
+    
+Output arguments:
+    - niter: integer
+         number of gmres iterations required for relative residual
+    - errs: double precision(1:niter)
+         relative residual as a function of iteration number
+    - rres: double precision
+         relative residual of the computed solution
+    - sigma: double complex(2 . npts)
+         sigma(1:npts) = density of single layer potential ($\lambda$ above) ,
+         sigma((npts+1):(2 $\cdot$ npts)) = density of double layer potential ($\rho$ above) 
+    

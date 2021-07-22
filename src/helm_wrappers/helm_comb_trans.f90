@@ -634,7 +634,6 @@
 !  Representations:
 !    u1 = ep1^2 S_{k1}[\lambda]+ep1*D_{k1}[\rho] 
 !    u0 = ep0^2 S_{k0}[\lambda]+ep0*D_{k0}[\rho] 
-!    u = S_{k}[\rho]+i*alpha*D_{k}[S_{i|k|}[\rho]]
 !
 !  Boundary condition:
 !    u0-u1=f

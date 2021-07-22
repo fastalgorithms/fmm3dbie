@@ -1,0 +1,69 @@
+This subroutine solves the interior or exterior Impedance boundary value
+problem using the right preconditioned combined field integral representation
+
+.. math ::
+
+   u = \mathcal{S}_{k}[\sigma] + i\alpha D_{k}[S_{i|k|}[\sigma]]
+
+The integral equation on the boundary is given by
+
+.. math::
+   
+   f =  \frac{(-i\alpha \mp 2)\sigma}{4} + \mathcal{S}_{k}'[\sigma] +
+   i \alpha (D_{k}' - D_{i|k|}')S_{i|k|}[\sigma] + 
+   i \alpha (S_{i|k|}')^2[\sigma] + 
+   ik \lambda (S_{k} + ik D_{k} S_{i|k|} [\sigma])+ 
+   \frac{ik}{2} S_{i|k|}[\sigma]\, ,
+
+where f is the boundary data, and sign of the constant is positive for
+the exterior problem, and negative for the interior problem. 
+
+Input arguments:
+
+    - npatches: integer
+        number of patches
+    - norders: integer(npatches)
+        order of discretization on each patch
+    - ixyzs: integer(npatches+1)
+        ixyzs(i) denotes the starting location in srccoefs, and
+        srcvals array where information for patch i begins
+    - iptype: integer(npatches)
+        type of patch
+    - npts: integer
+        total number of points on the boundary
+    - srccoefs: double precision (9,npts)
+        koornwinder exapansion coefficients for x, $\partial_{u} x$, and
+        $\partial_{v} x$
+    - srcvals: double precision (12,npts)
+        x,$\partial_{u} x$, $\partial_{v} x$, and $n$ sampled at
+        discretization nodes
+    - eps: double precision
+         precision requested for computing quadrature and fmm tolerance
+    - zpars: double complex(2)
+         kernel parameters, zpars(1)=k, zpars(2)=$\alpha$
+    - zlams: double complex(npts)
+         impedance function at discretization points
+    - ifinout: integer
+         flag fpr interior or exterior problems (normals assumed to be
+         pointing in the exertior of the region)
+         -  ifinout = 0, interior problem
+         -  ifinout = 1, exterior problem
+    - rhs: double complex(npts)
+         boundary data f
+    - eps_gmres: double precision
+         gmres tolerance requested
+    - numit: integer
+         max number of gmres iterations
+    
+Output arguments:
+    - niter: integer
+         number of gmres iterations required for relative residual
+    - errs: double precision(1:niter)
+         relative residual as a function of iteration number
+    - rres: double precision
+         relative residual of the computed solution
+    - sigma: double complex(npts)
+         solution of integral equation
+    - siksigma: double complex(npts)
+         returns $\mathcal{S}_{i|k|}[\sigma]$ required for post-processing
+    
