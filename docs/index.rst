@@ -43,9 +43,9 @@ Helmholtz single and double layer potentials given by
 
 .. math::
    
-   \mathcal{S}_{k}[\sigma](x) &= \int_{\Gamma}
+   \mathcal{S}_{k}[\sigma](x) &= \frac{1}{4\pi}\int_{\Gamma}
    \frac{e^{ik\|x-y\|}}{\|x-y\|} \sigma(y) dS_{y} \\
-   \mathcal{D}_{k}[\sigma](x) &= \int_{\Gamma}
+   \mathcal{D}_{k}[\sigma](x) &= \frac{1}{4\pi}\int_{\Gamma}
    \nabla_{y} \frac{e^{ik\|x-y\|}}{\|x-y\|} \cdot n(y) \sigma(y) dS_{y} \, ,
 
 and $n(y)$ is the normal to the surface $\Gamma$ at $y$. On imposing the
@@ -79,8 +79,10 @@ formats.
    lquad
    surface_reps
    near_reps
+   layer_pot
    wrappers
    helm_wrappers
+   lap_wrappers
    build_wrappers
    build_quadratures
    ref

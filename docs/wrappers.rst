@@ -35,3 +35,4 @@ user callable routines::
 List of wrappers:
 
 - `Helmholtz <helm_wrappers.html#hwrap>`__ 
+- `Laplace <lap_wrappers.html#lwrap>`__

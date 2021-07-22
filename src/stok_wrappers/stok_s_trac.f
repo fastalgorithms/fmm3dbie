@@ -48,13 +48,11 @@ c
      3   iquad,rfac0,nquad,wnear)
 c
 c       this subroutine generates the near field quadrature
-c       for the *traction* of the representation u = 4\pi S
+c       for the *traction* of the representation u =  S
 c       where S is the Stokes single layer potential.
 c       the near field is specified by the user 
 c       in row sparse compressed format.
 c
-c
-c        Note: the 4 \pi scaling is included to be consistent with the FMM
 c
 c
 c       The quadrature is computed by the following strategy
@@ -256,10 +254,7 @@ c
 c
 c  .. math ::
 c  
-c      u = 4 \pi \mathcal{S} 
-c
-c  Note: the $4\pi$ scaling is included to be consistent with the FMM3D
-c     libraries.
+c      u = \mathcal{S} 
 c
 c     NOTE: TARGETS MUST BE ON BOUDNARY, i.e. targs array must be
 c     length 12 with surface normal information in targs(10:12,i)
@@ -460,12 +455,10 @@ c
 c
 c
 c      this subroutine evaluates the layer potential for
-c      the traction of the representation u = 4\pi S 
+c      the traction of the representation u = S 
 c      where S is the single layer potential for the Stokes operator.
 c      the near field is precomputed and stored
 c      in the row sparse compressed format.
-c
-c       Note the 4\pi scaling is included to be consistent with the FMM
 c
 c
 c     The fmm is used to accelerate the far-field and 
@@ -630,7 +623,9 @@ c
       real *8 e11,e12,e13,e21,e22,e23,e31,e32,e33,p,dn1,dn2,dn3
       real *8 w11,w12,w13,w21,w22,w23,w31,w32,w33,sig1,sig2,sig3
       real *8 tmp3(3), gradv(3,3)
+      real *8 over4pi
 
+      data over4pi/0.07957747154594767d0/
       parameter (ntarg0=1)
 
       ns = nptso
@@ -665,9 +660,9 @@ C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
         sources(2,i) = srcover(2,i)
         sources(3,i) = srcover(3,i)
 
-        stoklet(1,i) = sigmaover(1,i)*whtsover(i)
-        stoklet(2,i) = sigmaover(2,i)*whtsover(i)
-        stoklet(3,i) = sigmaover(3,i)*whtsover(i)
+        stoklet(1,i) = sigmaover(1,i)*whtsover(i)*over4pi
+        stoklet(2,i) = sigmaover(2,i)*whtsover(i)*over4pi
+        stoklet(3,i) = sigmaover(3,i)*whtsover(i)*over4pi
       enddo
 C$OMP END PARALLEL DO      
 
@@ -1206,7 +1201,7 @@ c       the identity scaling (z) is defined via did below,
 c       and K represents the action of the principal value 
 c       part of the matvec
 c
-      did = (-1)**(ifinout)*2*pi
+      did = (-1)**(ifinout)/2
 
 
       niter=0

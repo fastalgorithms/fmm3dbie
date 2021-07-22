@@ -43,6 +43,8 @@ subroutine st3d_slp_vec(nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   
   complex *16 :: zk
   real *8 :: val(nd)
+  real *8 over4pi
+  data over4pi/0.07957747154594767d0/
 
 !f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
@@ -70,15 +72,15 @@ subroutine st3d_slp_vec(nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   dxdz = dx*dz*rinv3
   dydz = dy*dz*rinv3
   
-  val(1) = rinv + dx*dx*rinv3
-  val(2) = dxdy
-  val(3) = dxdz
-  val(4) = dxdy
-  val(5) = rinv + dy*dy*rinv3
-  val(6) = dydz
-  val(7) = dxdz
-  val(8) = dydz
-  val(9) = rinv + dz*dz*rinv3
+  val(1) = (rinv + dx*dx*rinv3)*over4pi
+  val(2) = dxdy*over4pi
+  val(3) = dxdz*over4pi
+  val(4) = dxdy*over4pi
+  val(5) = (rinv + dy*dy*rinv3)*over4pi
+  val(6) = dydz*over4pi
+  val(7) = dxdz*over4pi
+  val(8) = dydz*over4pi
+  val(9) = (rinv + dz*dz*rinv3)*over4pi
 
 
   return
@@ -91,7 +93,8 @@ subroutine st3d_slp(src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   integer ipars(ndi)
 
   complex *16 :: zk
-  real *8 :: val, dr(3)
+  real *8 :: val, dr(3),over4pi
+  data over4pi/0.07957747154594767d0/
 !f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
 
@@ -125,7 +128,7 @@ subroutine st3d_slp(src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   diag = 0.0d0
   if (i .eq. j) diag = rinv
 
-  val = diag + dxi*dxj*rinv3
+  val = (diag + dxi*dxj*rinv3)*over4pi
 
   return
 end subroutine st3d_slp
@@ -142,9 +145,10 @@ subroutine st3d_dlp_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   complex *16 :: zk
-  real *8 :: val(nd)
+  real *8 :: val(nd),over4pi
 
   real *8 :: src(3), srcnorm(3)
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the Stokes double layer kernel
   !
@@ -171,7 +175,7 @@ subroutine st3d_dlp_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   dprod = dx*srcnorm(1) + dy*srcnorm(2) + dz*srcnorm(3)
 
   r=sqrt(dx**2+dy**2+dz**2)
-  rinv5 = 3.0d0*dprod*(1.0d0/r)**5
+  rinv5 = 3.0d0*dprod*(1.0d0/r)**5*over4pi
 
   dxdy = dx*dy*rinv5
   dxdz = dx*dz*rinv5
@@ -199,9 +203,10 @@ subroutine st3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz, &
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   complex *16 :: zk
-  real *8 :: val
+  real *8 :: val,over4pi
 
   real *8 :: src(3), srcnorm(3), dr(3)
+  data over4pi/0.07957747154594767d0/
   !
   ! returns one entry of the Stokes double layer kernel
   !
@@ -230,7 +235,7 @@ subroutine st3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz, &
   dprod = dx*srcnorm(1) + dy*srcnorm(2) + dz*srcnorm(3)
 
   r=sqrt(dx**2+dy**2+dz**2)
-  rinv5 = 3.0d0*dprod*(1.0d0/r)**5
+  rinv5 = 3.0d0*dprod*(1.0d0/r)**5*over4pi
 
   dr(1) = dx
   dr(2) = dy
@@ -254,7 +259,8 @@ subroutine st3d_comb_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   complex *16 :: zk
   real *8 :: val(nd)
 
-  real *8 :: src(3), srcnorm(3), alpha, beta
+  real *8 :: src(3), srcnorm(3), alpha, beta,over4pi
+  data over4pi/0.07957747154594767d0/
   !
   ! returns the Stokes combined layer kernel
   !
@@ -293,9 +299,9 @@ subroutine st3d_comb_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   rinv = 1.0d0/r
   rinv3 = 0.5d0*rinv**3*alpha
   rinv5 = 3.0d0*dprod*rinv**5*beta
-  rinv = 0.5d0*rinv*alpha
+  rinv = 0.5d0*rinv*alpha*over4pi
 
-  dcomb = rinv3+rinv5
+  dcomb = (rinv3+rinv5)*over4pi
   
   dxdy = dx*dy*dcomb
   dxdz = dx*dz*dcomb
@@ -325,7 +331,8 @@ subroutine st3d_comb(srcinfo,ndt,targ,ndd,dpars,ndz, &
   complex *16 :: zk
   real *8 :: val
 
-  real *8 :: src(3), srcnorm(3), dr(3)
+  real *8 :: src(3), srcnorm(3), dr(3),over4pi
+  data over4pi/0.07957747154594767d0/
   !
   ! returns one entry of the Stokes double layer kernel
   !
@@ -373,6 +380,7 @@ subroutine st3d_comb(srcinfo,ndt,targ,ndd,dpars,ndz, &
   val = dxi*dxj*dcomb
 
   if (i .eq. j) val = val + rinv
+  val = val*over4pi
 
   return
 end subroutine st3d_comb
@@ -384,8 +392,8 @@ subroutine st3d_strac_vec(nd,srcinfo,ndt,targinfo, &
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
   integer ipars(ndi)
-  real *8 :: val(9), targ(3), src(3), targnorm(3)
-  complex *16 :: zk
+  real *8 :: val(9), targ(3), src(3), targnorm(3),over4pi
+  data over4pi/0.07957747154594767d0/
 !f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
 
@@ -418,7 +426,7 @@ subroutine st3d_strac_vec(nd,srcinfo,ndt,targinfo, &
   dprod = dx*targnorm(1) + dy*targnorm(2) + dz*targnorm(3)
 
   r=sqrt(dx**2+dy**2+dz**2)
-  rinv5 = -3.0d0*dprod*(1.0d0/r)**5
+  rinv5 = -3.0d0*dprod*(1.0d0/r)**5*over4pi
 
   dxdy = dx*dy*rinv5
   dxdz = dx*dz*rinv5
@@ -443,7 +451,9 @@ subroutine st3d_strac(srcinfo,ndt,targinfo,ndd,dpars, &
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
   integer ipars(ndi)
-  real *8 :: val, targ(3), src(3), targnorm(3), dr(3)
+  real *8 :: val, targ(3), src(3), targnorm(3), dr(3),over4pi
+  data over4pi/0.07957747154594767d0/
+  
 !f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
 
@@ -489,7 +499,7 @@ subroutine st3d_strac(srcinfo,ndt,targinfo,ndd,dpars, &
   dxi = dr(i)
   dxj = dr(j)
   
-  val = dxi*dxj*rinv5
+  val = dxi*dxj*rinv5*over4pi
 
   return
 end subroutine st3d_strac

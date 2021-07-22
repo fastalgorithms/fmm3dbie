@@ -42,14 +42,13 @@ c
      3     iquad,rfac0,nquad,wnear)
 c     
 c       this subroutine generates the near field quadrature
-c       for the velocity of the representation u = 4\pi(alpha S + beta D)
-c     where S is the Stokes single layer potential and D
-c     the double layer potential.
+c       for the velocity of the representation u = (alpha S + beta D)
+c       where S is the Stokes single layer potential and D
+c       the double layer potential.
 c       the near field is specified by the user 
 c       in row sparse compressed format.
 c
 c
-c        Note: the 4 \pi scaling is included to be consistent with the FMM
 c
 c
 c       The quadrature is computed by the following strategy
@@ -260,10 +259,8 @@ c
 c
 c  .. math ::
 c  
-c      u = 4 \pi (\alpha \mathcal{S} + \beta \mathcal{D})
+c      u = (\alpha \mathcal{S} + \beta \mathcal{D})
 c
-c  Note: the $4\pi$ scaling is included to be consistent with the FMM3D
-c     libraries.
 c
 c     NOTE: TARGETS MUST BE ON BOUDNARY, i.e. targs array must be
 c     length 12 with surface normal information in targs(10:12,i)
@@ -490,12 +487,10 @@ c
 c     
 c
 c      this subroutine evaluates the layer potential for
-c      the traction of the representation u = 4\pi (\alpha S + \beta D)
+c      the traction of the representation u =  (\alpha S + \beta D)
 c      where S is the single layer potential for the Stokes operator.
 c      the near field is precomputed and stored
 c      in the row sparse compressed format.
-c
-c       Note the 4\pi scaling is included to be consistent with the FMM
 c
 c
 c     The fmm is used to accelerate the far-field and 
@@ -663,7 +658,8 @@ c
 
       real *8 ttot,done,pi
 
-      real *8 potv(3),pv,gradv(3,3)
+      real *8 potv(3),pv,gradv(3,3),over4pi
+      data over4pi/0.07957747154594767d0/
 
 
       parameter (nd=1,ntarg0=1)
@@ -696,8 +692,8 @@ c
 c
 c       set relevatn parameters for the fmm
 c
-      alpha = dpars(1)
-      beta = dpars(2)
+      alpha = dpars(1)*over4pi
+      beta = dpars(2)*over4pi
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
       do i=1,ns
         sources(1,i) = srcover(1,i)
@@ -1236,7 +1232,7 @@ c       the identity scaling (z) is defined via did below,
 c       and K represents the action of the principal value 
 c       part of the matvec
 c
-      did = -(-1)**(ifinout)*2*pi*beta
+      did = -(-1)**(ifinout)*beta/2
 
 
       niter=0
@@ -1702,7 +1698,7 @@ C$OMP$PRIVATE(w21,w22,w23,w31,w32,w33)
 C$OMP END PARALLEL DO
      
 
-      did = -(-1)**(ifinout)*2*pi*beta
+      did = -(-1)**(ifinout)*beta/2
       do i=1,3*npts
          xmat(i,i) = xmat(i,i) + did
       enddo
