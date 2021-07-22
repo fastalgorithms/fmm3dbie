@@ -1543,12 +1543,12 @@
 
       allocate(pottmp2(ntarg))
 
-!!!$OMP PARALLEL DO DEFAULT(SHARED)
+!$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
         pottmp2(i) = 0
         pot(i) = 0
       enddo
-!!!$OMP END PARALLEL DO
+!$OMP END PARALLEL DO
       
       
 !
