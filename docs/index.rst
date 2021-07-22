@@ -10,7 +10,7 @@ Boundary integral solvers in 3D (BIE3D)
     :width: 60%
     :align: center
 	    
-`fmm3dbie <https://gitlab.com/fastalgorithms/fmm3dbie>`_ 
+`fmm3dbie <https://github.com/fastalgorithms/fmm3dbie>`_ 
 is a set of libraries to solve constant coefficient elliptic boundary value
 problems on surfaces in three dimensions.
 The library currently supports Dirichlet and Neumann boundary value

@@ -4,7 +4,7 @@ Installation
 Obtaining fmm3dbie
 ******************
 
-The source code can be downloaded from https://gitlab.com/fastalgorithms/fmm3dbie 
+The source code can be downloaded from https://github.com/fastalgorithms/fmm3dbie 
 
 
 Dependencies
@@ -99,7 +99,7 @@ Type ``make`` to see a list of other build options (language
 interfaces, etc). Please see ``examples/`` for sample drivers.
 
 If there is an error in testing on a standard set-up,
-please file a bug report as a New Issue at https://gitlab.com/fastalgorithms/fmm3dbie/issues
+please file a bug report as a New Issue at https://github.com/fastalgorithms/fmm3dbie/issues
 
 Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
