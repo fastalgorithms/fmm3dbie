@@ -219,8 +219,8 @@ htmlhelp_basename = 'bie3ddoc'
 # To fix location of equation numbering. Barnett tried 6/19/18
 # see https://samnicholls.net/2016/06/15/how-to-sphinx-readthedocs/
 def setup(app):
-    app.add_stylesheet('theme_overrides.css')
-    app.add_stylesheet('custom.css')
+    app.add_css_file('theme_overrides.css')
+    app.add_css_file('custom.css')
 # it doesn't fail if this file not found in _static  :(
 
 # -- Options for LaTeX output ---------------------------------------------
