@@ -83,6 +83,7 @@ formats.
    wrappers
    helm_wrappers
    lap_wrappers
+   stok_wrappers
    build_wrappers
    build_quadratures
    ref

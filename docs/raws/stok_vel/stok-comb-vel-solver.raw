@@ -1,0 +1,62 @@
+This subroutine solves the interior or exterior velocity boundary value
+problem using the combined field integral representation
+
+.. math ::
+
+   u = \alpha \mathcal{S}^{\textrm{stok}}[\sigma] + \beta D^{\textrm{stok}}[\sigma]
+
+The integral equation on the boundary is given by
+
+.. math::
+   
+   f = \pm \frac{\beta \sigma}{2} + \alpha \mathcal{S}^{\textrm{stok}}[\sigma] +
+   \beta D^{\textrm{stok}}[\sigma] \, ,
+
+where f is the boundary data, and sign of the constant is positive for
+the exterior problem, and negative for the interior problem. 
+
+Input arguments:
+
+    - npatches: integer
+        number of patches
+    - norders: integer(npatches)
+        order of discretization on each patch
+    - ixyzs: integer(npatches+1)
+        ixyzs(i) denotes the starting location in srccoefs, and
+        srcvals array where information for patch i begins
+    - iptype: integer(npatches)
+        type of patch
+    - npts: integer
+        total number of points on the boundary
+    - srccoefs: double precision (9,npts)
+        koornwinder exapansion coefficients for x, $\partial_{u} x$, and
+        $\partial_{v} x$
+    - srcvals: double precision (12,npts)
+        x,$\partial_{u} x$, $\partial_{v} x$, and $n$ sampled at
+        discretization nodes
+    - eps: double precision
+         precision requested for computing quadrature and fmm tolerance
+    - dpars: double precision(3)
+         kernel parameters, dpars(1)=$\alpha$, dpars(2)=$\beta$
+    - ifinout: integer
+         flag fpr interior or exterior problems (normals assumed to be
+         pointing in the exertior of the region)
+         -  ifinout = 0, interior problem
+         -  ifinout = 1, exterior problem
+    - rhs: double precision(3,npts)
+         boundary data f
+    - eps_gmres: double precision
+         gmres tolerance requested
+    - numit: integer
+         max number of gmres iterations
+    
+Output arguments:
+    - niter: integer
+         number of gmres iterations required for relative residual
+    - errs: double precision(1:niter)
+         relative residual as a function of iteration number
+    - rres: double precision
+         relative residual of the computed solution
+    - sigma: double precision(3,npts)
+         solution of integral equation
+    

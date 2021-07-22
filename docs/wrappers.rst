@@ -36,3 +36,4 @@ List of wrappers:
 
 - `Helmholtz <helm_wrappers.html#hwrap>`__ 
 - `Laplace <lap_wrappers.html#lwrap>`__
+- `Stokes <stok_wrappers.html$swrap>`__
