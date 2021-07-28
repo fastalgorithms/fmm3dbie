@@ -1,7 +1,4 @@
 !    This file contains the following user callable subroutines
-!      test_geom_qual - test the quality of the geometry, compute
-!         the error in xyz, dxyz/du, dxyz/dv
-!
 !      surf_fun_error - estimate the resolution of a function on
 !         a surface
 !
@@ -65,76 +62,6 @@
 
 
 
-
-subroutine test_geom_qual(npatches,norders,ixyzs,iptype,npts,srcvals, &
-     srccoefs,errs)
-!
-!
-!       this subroutine obtains some the following error metrics
-!       on the geometry
-!       
-!       If a_{nm} are the coeffs of xyz,dxyzdu,dxyzdv in 
-!       the koornwinder expansion
-!       
-!       Then the error per patch is defined as
-!       \sqrt{\sum_{n+m>nhead} |a_{nm}|^2}*|\Gamma_{i}|
-!       where \Gamma_{i} is the local surface area of the patch
-!       This metric has been a good indicator in the past
-!       as a measure of the absolute interpolation
-!       error on patches
-!
-!       Note: this might need to be scaled by 1/|\Gamma|
-!       to get a sense of relative interpolation error
-!
-!       input:
-!         npatches - number patches
-!         norders(npatches) - order of discretization
-!         ixyzs(npatches+1) - starting location of nodes on patch i
-!         iptype(npatches) - type of patch
-!           iptype = 1, triangular patch discretized with RV ndoes
-!         npts - total number of discretization points
-!         srcvals(12,npts) - xyz, dxyz/du,dxyz/dv, normals at all nodes
-!         srccoefs(9,npts) - koornwinder expansion coeffs
-!                         of geometry info
-!       output:
-!         errs(9) - max error in xyz, dxyz/du, dxyz/dv
-!         
-!       
-! 
- 
-      integer npatches,norders(npatches),npts
-      integer ixyzs(npatches+1),iptype(npatches)
-      real *8 srccoefs(9,npts),errs(*),srcvals(12,npts),tmp(3)
-      real *8, allocatable :: err_p(:,:),rsurf(:),qwts(:)
-
-
-      allocate(rsurf(npatches),qwts(npts))
-
-
-
-      call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
-
-      do i=1,npatches
-        rsurf(i) = 0
-        istart = ixyzs(i)
-        npols = ixyzs(i+1)-ixyzs(i)
-
-        do j=1,npols
-          jpt = istart+j-1
-          rsurf(i) = rsurf(i) + qwts(jpt)
-        enddo
-      enddo
-
-
-      allocate(err_p(9,npatches))
-      nd = 9
-      call surf_fun_error(nd,npatches,norders,ixyzs,iptype,npts, &
-        rsurf,srccoefs,err_p,errs)
-        
-      return
-      end
-
-!
 !
 !
 !
@@ -142,7 +69,7 @@ subroutine test_geom_qual(npatches,norders,ixyzs,iptype,npts,srcvals, &
 !
 
 subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
-   npts,rsc,dcoefs,errp,errm)
+   npts,dvals,wts,errp,errm)
 
 !
 !  This subroutine computes the error in resolving
@@ -155,51 +82,102 @@ subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
 !  ixyzs(npatches+1) - location where expansion coeffs for patch i start
 !  iptype(npatches) - type of patch
 !      iptype = 1, triangular patch with RV nodes
-!  dcoefs(nd,npts) - koornwinder expansion coeffs
-!  rsc(npatches) - scaling parameter for each patch
+!  dvals(nd,npts) - values of the function at discretization
+!                   nodes
+!  wts(npts) - quadrature weights for integrating smooth functions on
+!              the surface
 !  
 !
 !  output:
-!  errp(nd,npatches) - error per patch
-!  errm(nd) - max of errp
+!  errp(npatches) - error per patch
+!  errm - max of errp
 !
 
   implicit real *8 (a-h,o-z)
   integer norders(npatches),ixyzs(npatches+1)
   integer iptype(npatches)
-  real *8 dcoefs(nd,npts),errp(nd,npatches),errm(nd)
-  real *8 rsc(npatches)
+  real *8 dvals(nd,npts),errp(npatches),errm
+  real *8 wts(npts)
+  real *8, allocatable :: dcoefs(:,:),dtail(:,:),uvs(:,:),pols(:)
+  real *8 rl2s,rl2tails
 
-  
-  do idim=1,nd
-    errm(idim) = 0
+  allocate(dcoefs(nd,npts),dtail(nd,npts))
+
+  do i=1,npts
+    do idim=1,nd
+      dcoefs(idim,i) = 0
+      dtail(idim,i) = 0
+    enddo
   enddo
 
+  call surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
+   dvals,dcoefs)
+  
+  
+  errm = 0
+  rl2s = 0
+  rl2tails = 0
+
+
+  nmax = 20
+  npmax = (nmax+1)*(nmax+2)
+
+  allocate(uvs(2,npmax),pols(npmax))
   do ip=1,npatches
     norder = norders(ip)
     istart0 = ixyzs(ip)
     npols = ixyzs(ip+1)-ixyzs(ip)
 
     if(iptype(ip).eq.1) then
-      if(norder.le.4) norderhead = norder-1
-      if(norder.gt.4) norderhead = norder-2
-      istart = (norderhead+1)*(norderhead+2)/2 + 1
-      rn = sqrt(npols-istart+1.0d0)
+      norderhead = norder-1
+      i1 = (norderhead+1)*(norderhead+2)/2
+      call get_vioreanu_nodes(norder,npols,uvs)
     endif
 
 
-    do idim=1,nd
-      errp(idim,ip) = 0
-      do i=istart,npols
-        errp(idim,ip) = errp(idim,ip)+dcoefs(idim,i+istart0-1)**2
+    if(iptype(ip).eq.1) then
+      do i=1,npols
+        ipt = ixyzs(ip)+i-1
+        call koorn_pols(uvs(1,i),norder,npols,pols)
+        do idim=1,nd
+          dtail(idim,ipt) = 0
+          do j=i1+1,npols
+            ic = ixyzs(ip)+j-1
+            dtail(idim,ipt) = dtail(idim,ipt) + pols(j)*dcoefs(idim,ic)
+          enddo
+        enddo
       enddo
-!      errp(idim,ip) = sqrt(errp(idim,ip))*rsc(ip)
-      errp(idim,ip) = sqrt(errp(idim,ip))
-      if(errp(idim,ip).gt.errm(idim)) errm(idim) = errp(idim,ip)
-    enddo
-  enddo
-end subroutine surf_fun_error
+    endif
 
+    errp(ip) = 0
+    do idim=1,nd
+      do i=1,npols
+        ipt = ixyzs(ip)+i-1
+        errp(ip) = errp(ip) + dtail(idim,ipt)**2*wts(ipt)
+        rl2s = rl2s + dvals(idim,ipt)**2*wts(ipt)
+        rl2tails = rl2tails + dtail(idim,ipt)**2*wts(ipt)
+      enddo
+    enddo
+    errp(ip) = sqrt(errp(ip))
+    if(errp(ip).gt.errm) errm = errp(ip)
+  enddo
+  
+  rl2s = sqrt(rl2s)
+  rl2tails = sqrt(rl2tails)
+
+  do ip=1,npatches
+    errp(ip) = errp(ip)/errm*rl2tails/rl2s
+  enddo
+
+  errm = rl2tails/rl2s
+
+
+end subroutine surf_fun_error
+!
+!
+!
+!
+!
 
 
 
