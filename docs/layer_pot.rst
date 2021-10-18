@@ -45,7 +45,7 @@ denote the Stokes single and double layer potentials given by
 
 .. math::
 
-   \mathcal{S}^{\textrm{stok}}[\sigma](x) &= \frac{1}{8\pi}\int_{\Gamma}
+   \mathcal{S}^{\textrm{stok}}[\sigma](x) &= \int_{\Gamma}
    \mathcal{G}^{\textrm{stok}}(x,y) \sigma(y) \, dS_{y} \\
    \mathcal{D}^{\textrm{stok}}[\sigma](x) &= \int_{\Gamma}
    \mathcal{T}^{\textrm{stok}} \cdot n(y) \sigma(y) dS_{y} \, ,
@@ -54,7 +54,7 @@ where $n(y)$ as before is the normal to the surface $\Gamma$ at $y$,
 $\mathcal{G}^{\textrm{stok}}(x,y)$ is the Stokeslet given by, 
 
 .. math::
-   \mathcal{G}^{\textrm{stok}}=\frac{1}{8\pi \|x-y\|}
+   \mathcal{G}^{\textrm{stok}}(x,y)=\frac{1}{8\pi \|x-y\|^3}
    \begin{bmatrix}
    (x_{1}-y_{1})^2 + \|x-y \|^2 & (x_{1}-y_{1})(x_{2}-y_{2}) &
    (x_{1}-y_{1})(x_{3}-y_{3}) \\ 
@@ -79,8 +79,8 @@ a vector $v$ is given by
    (x_{3}-y_{3})^2  
    \end{bmatrix} \, .
 
-The operators $\mathcal{S}^{\textrm{stok}}'[\sigma]$ 
-and $\mathcal{D}^{\textrm{stok}}'[\sigma]$ 
+The operators $(\mathcal{S}^{\textrm{stok}})'[\sigma]$ 
+and $(\mathcal{D}^{\textrm{stok}})'[\sigma]$ 
 denote the principal value or the finite part of the 
 surface traction
 associated with the layer potentials $u = \mathcal{S}^{\textrm{stok}}[\sigma]$ 
