@@ -7,10 +7,11 @@
       character *100 fname
       integer ipars(2)
       integer, allocatable :: row_ptr(:),col_ind(:)
-      integer, allocatable :: iquad(:)
+      integer, allocatable :: iquad(:),iquadsub(:)
       real *8, allocatable :: srcover(:,:),wover(:)
       complex *16, allocatable :: uval(:),dudnval(:)
       complex *16, allocatable :: sigmaover(:),slp_near(:),dlp_near(:)
+      complex *16, allocatable :: slp_nearsub(:),dlp_nearsub(:)
       complex *16, allocatable :: pot(:),potslp(:),potdlp(:)
       complex *16, allocatable :: potslp2(:)
 
@@ -39,7 +40,7 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 2 
+      igeomtype = 1
       if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 5
 
@@ -77,10 +78,12 @@ c
         xyz_out(3) = 20.1d0
       endif
 
-      norder = 3 
+      norder = 9
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
+      print *, "npatches=",npatches
+      print *, "npts=",npts
       allocate(srcvals(12,npts),srccoefs(9,npts))
       allocate(targs(3,npts))
       ifplot = 0
@@ -166,7 +169,7 @@ c
 
       ndtarg = 3
 
-      eps = 0.50001d-3
+      eps = 0.50001d-6
 
       ikerorder = -1
 
@@ -200,6 +203,17 @@ c
         dlp_near(i) = 0
       enddo
 
+      allocate(iquadsub(nnz+1)) 
+      call get_iquad_rsc(npatches,ixyzso,npts,nnz,row_ptr,col_ind,
+     1         iquadsub)
+
+      nquadsub = iquadsub(nnz+1)-1
+      allocate(slp_nearsub(nquadsub),dlp_nearsub(nquadsub))
+
+      do i=1,nquadsub
+        slp_nearsub(i) = 0
+        dlp_nearsub(i) = 0
+      enddo
 
 
       call cpu_time(t1)
@@ -225,6 +239,26 @@ c
      1      ipatch_id,uvs_targ,eps,zpars,iquadtype,
      1      nnz,row_ptr,col_ind,iquad,
      1      rfac0,nquad,dlp_near)
+
+      zpars(1) = zk
+      zpars(2) = 1.0d0
+      zpars(3) = 0.0d0
+
+      iquadtype = 1
+
+
+      call getnearquadsub_helm_comb_dir(npatches,norders,
+     1      ixyzso,iptype,npts_over,srcover,wover,ndtarg,npts,targs,
+     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     1      iquadsub,nquadsub,slp_nearsub)
+
+      
+      zpars(2) = 0.0d0
+      zpars(3) = 1.0d0
+      call getnearquadsub_helm_comb_dir(npatches,norders,
+     1      ixyzso,iptype,npts_over,srcover,wover,ndtarg,npts,targs,
+     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     1      iquadsub,nquadsub,dlp_nearsub)
  1111 continue      
       call cpu_time(t2)
       tquadgen = t2-t1
@@ -237,20 +271,27 @@ c
 
       call cpu_time(t1)
 
-      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
+c      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
+c     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+c     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,slp_near,
+c     3  dudnval,nfars,npts_over,ixyzso,srcover,wover,potslp)
+
+      call lpcomp_helm_comb_dir_addsub2(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,slp_near,
-     3  dudnval,nfars,npts_over,ixyzso,srcover,wover,potslp)
+     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,iquadsub,nquadsub,
+     3  slp_near,slp_nearsub,dudnval,nfars,npts_over,ixyzso,srcover,
+     4  wover,potslp)
 
 
       zpars(2) = 0.0d0
       zpars(3) = 1.0d0
 
 
-      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
+      call lpcomp_helm_comb_dir_addsub2(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
-     3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)
+     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,iquadsub,nquadsub,
+     3  dlp_near,dlp_nearsub,uval,nfars,npts_over,ixyzso,srcover,
+     4  wover,potdlp)
 
 
       call cpu_time(t2)
