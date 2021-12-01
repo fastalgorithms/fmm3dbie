@@ -2708,7 +2708,7 @@ c
 c      now multiply wquadf by ximat
 c
         ixist = ifds(iximat+ipatch-1) + 13*npts_over
-        call zrmatmatt_f77(naintbc,npolso,wquadf,npols,rfds(ixist),
+        call zrmatmatt(naintbc,npolso,wquadf,npols,rfds(ixist),
      1        wquadf2)
         
         do i=1,naintbc

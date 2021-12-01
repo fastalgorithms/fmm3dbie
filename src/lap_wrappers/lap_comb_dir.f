@@ -2578,7 +2578,7 @@ c
 c      now multiply wquadf by ximat
 c
         ixist = ifds(iximat+ipatch-1) + 13*npts_over+2
-        call dgemm_f77('t','n',npols,naintbc,npolso,done,rfds(ixist),
+        call dgemm_guru('t','n',npols,naintbc,npolso,done,rfds(ixist),
      1    npolso,wquadf,npolso,dzero,wquadf2,npols)
         
         do i=1,naintbc

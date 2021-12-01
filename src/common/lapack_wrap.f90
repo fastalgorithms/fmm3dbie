@@ -278,7 +278,8 @@ subroutine dinverse(n, a, info, ainv)
   implicit double precision (a-h,o-z)
   double precision :: a(n,n), ainv(n,n)
   
-  double precision, allocatable :: ipiv(:), work(:)
+  double precision, allocatable :: work(:)
+  integer, allocatable :: ipiv(:)
 
   !
   ! call the LAPACK routine to compute the inverse of the matrix a
@@ -791,5 +792,69 @@ subroutine zrmatmatt(m, n, a, k, b, c)
 
   return
 end subroutine zrmatmatt
+!
+!
+!
+!
+!
+!
+subroutine dgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
+  double precision alpha,beta
+  integer k,lda,ldb,ldc,m,n
+  character transa,transb
 
+  double precision a(lda,*),b(ldb,*),c(ldc,*)
+
+  call dgemm(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
+
+  return
+end subroutine dgemm_guru
+!
+!
+!
+!
+!
+subroutine zgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
+  double complex alpha,beta
+  integer k,lda,ldb,ldc,m,n
+  character transa,transb
+
+  double complex a(lda,*),b(ldb,*),c(ldc,*)
+
+  call zgemm(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
+
+  return
+end subroutine zgemm_guru
+!
+!
+!
+!
+!
+subroutine dgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
+  double precision alpha,beta
+  integer incx,incy,lda,m,n
+  character trans
+  
+  double precision a(lda,*),x(*),y(*)
+
+  call dgemv(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
+
+  return
+end subroutine dgemv_guru
+!
+!
+!
+!
+!
+subroutine zgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
+  double complex alpha,beta
+  integer incx,incy,lda,m,n
+  character trans
+  
+  double complex a(lda,*),x(*),y(*)
+
+  call zgemv(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
+
+  return
+end subroutine zgemv_guru
 
