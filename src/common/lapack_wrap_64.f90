@@ -300,7 +300,7 @@ subroutine dinverse(n, a, info, ainv)
   
   double precision, allocatable :: work(:)
   integer *8, allocatable :: ipiv(:)
-  integer *8 inc,incy,n2,n1,info1,lwork
+  integer *8 incx,incy,n2,n1,info1,lwork
 
   !
   ! call the LAPACK routine to compute the inverse of the matrix a

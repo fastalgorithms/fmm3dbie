@@ -251,11 +251,6 @@ c
 
       call gen_xg_unif_nodes(nlev,nqorder_f,nnodes,npts_f,qnodes,qwts)
 
-      norder = norders(1)
-      npols = ixyzs(2)-ixyzs(1)
-      allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-      allocate(wts(npols))
-      call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
 
       t1 = second()
 C$        t1 = omp_get_wtime()
@@ -266,12 +261,19 @@ C$OMP$PRIVATE(ii,ii2,i,jpatch,svtmp2,iiif,l,ntarg2m)
 C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder,irad)
+C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
 C$OMP$PRIVATE(epsp,rsc,tmp)
 
       do ipatch=1,npatches
         
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
         norder = norders(ipatch)
+        allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
+        allocate(wts(npols))
+
+        if(iptype(ipatch).eq.1) then
+          call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
+        endif
 
         if(norder.le.4) then
           irad = 1
@@ -401,13 +403,13 @@ c
 
         deallocate(xyztarg2,svtmp2,svtmp_f,svtmp_n,sints_f,sints_n)
         deallocate(targ_near,targ_far,iind_near,iind_far)
+        deallocate(uvs,umatr,vmatr,wts)
       enddo
 C$OMP END PARALLEL DO      
 
       t2 = second()
 C$      t2 = omp_get_wtime()     
 
-      deallocate(uvs,umatr,vmatr,wts)
 
       return
       end
