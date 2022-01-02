@@ -83,10 +83,6 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o \
 	$(COM)/rigidbodies.o 
 
-# FMM wrappers
-FMML = src/fmm_wrappers
-FOBJS = $(FMML)/hfmm3d_ndiv.o $(FMML)/lfmm3d_ndiv.o 
-
 # Helmholtz wrappers
 HELM = src/helm_wrappers
 HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o \
@@ -141,7 +137,7 @@ COMOBJS += $(COM)/lapack_wrap.o
 endif
 
 
-OBJS = $(COMOBJS) $(EMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS)
 
 
 

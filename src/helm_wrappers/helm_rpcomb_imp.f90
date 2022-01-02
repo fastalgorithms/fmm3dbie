@@ -124,7 +124,8 @@
       integer row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
       complex *16 wnear(nquad,6)
 
-      real *8, allocatable :: ipatch_id(:),uvs_targ(:,:)
+      integer, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_targ(:,:)
 
 
       complex *16 alpha,beta,ima,zk
