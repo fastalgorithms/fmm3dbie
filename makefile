@@ -42,7 +42,7 @@ STATICLIB = $(LIBNAME).a
 LIMPLIB = $(DYNAMICLIB)
 
 LFMMLINKLIB = -lfmm3d
-LLINKLIB = -$(LIBNAME)
+LLINKLIB = $(subst lib, -l, $(LIBNAME))
 
 
 # For your OS, override the above by placing make variables in make.inc
