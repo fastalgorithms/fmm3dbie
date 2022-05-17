@@ -35,9 +35,13 @@ subroutine zvecvec(n, x, y, cd)
   complex *16, intent(in) :: x(n), y(n)
   complex *16, intent(out) :: cd
   complex *16 zdotu
+  integer *8 n1,one
+
+  n1 = n
+  one = 1
 
   cd = 0
-  cd = zdotu(n,x,1,y,1)
+  cd = zdotu(n1,x,one,y,one)
   return
 end subroutine zvecvec
 
@@ -96,6 +100,7 @@ subroutine ztranspose(m, n, a)
   integer, intent(in) :: m,n
   double complex, intent(inout) :: a(*)
   double complex, allocatable :: at(:)
+  integer *8 mn,incx,incy
 
   allocate(at(m*n))
 
@@ -107,7 +112,10 @@ subroutine ztranspose(m, n, a)
 
   incx = 1
   incy = 1
-  call zcopy(m*n, at, incx, a, incy)
+
+  mn = m*n
+
+  call zcopy(mn, at, incx, a, incy)
 
   deallocate(at)
   
@@ -152,6 +160,9 @@ subroutine zeigs(n, a, info, vleft, zlams, vright)
   character :: jobvl, jobvr
   double precision, allocatable :: dwork(:)
   complex *16, allocatable :: work(:), atemp(:,:)
+  integer *8 lwork,info1,ldvr,ldvl,n1
+
+  n1 = n
 
   jobvl = 'V'
   jobvr = 'V'
@@ -170,13 +181,14 @@ subroutine zeigs(n, a, info, vleft, zlams, vright)
     end do
   end do
 
-  call zgeev(jobvl, jobvr, n, atemp, n, zlams, vleft, &
-      ldvl, vright, ldvr, work, lwork, dwork, info)  
+  call zgeev(jobvl, jobvr, n1, atemp, n1, zlams, vleft, &
+      ldvl, vright, ldvr, work, lwork, dwork, info1) 
+  info = info1
 
   if (info .ne. 0) then
     !call prinf('in zeigs, info = *', info, 1)
     print *, "in zeigs, info = ", info
-    stop
+    return
   endif
   
   return
@@ -194,6 +206,11 @@ subroutine zsvd(m, n, a, u, s, vt)
   character :: jobu, jobvt
   double precision, allocatable :: dwork(:)
   complex *16, allocatable :: work(:), atemp(:,:)
+
+  integer *8 info,lwork,ldvt,ldu,lda,m1,n1
+
+  m1 = m
+  n1 = n
   
   !
   ! note: V^* is returned, not V
@@ -215,7 +232,7 @@ subroutine zsvd(m, n, a, u, s, vt)
     end do
   end do
   
-  call zgesvd(jobu, jobvt, m, n, atemp, lda, s, u, ldu, &
+  call zgesvd(jobu, jobvt, m1, n1, atemp, lda, s, u, ldu, &
       vt, ldvt, work, lwork, dwork, info)
 
   if (info .ne. 0) then
@@ -238,10 +255,13 @@ subroutine dsvd(m, n, a, u, s, vt)
 
   character :: jobu, jobvt
   double precision, allocatable :: work(:), atemp(:,:)
+  integer *8 info,lwork,ldvt,ldu,lda,m1,n1
   
   !
   ! note: V^* is returned, not V
   !
+  m1 = m
+  n1 = n
   jobu = 'S'
   jobvt = 'S'
   lda = m
@@ -258,7 +278,7 @@ subroutine dsvd(m, n, a, u, s, vt)
     end do
   end do
   
-  call dgesvd(jobu, jobvt, m, n, atemp, lda, s, u, ldu, &
+  call dgesvd(jobu, jobvt, m1, n1, atemp, lda, s, u, ldu, &
       vt, ldvt, work, lwork, info)
 
   if (info .ne. 0) then
@@ -279,7 +299,8 @@ subroutine dinverse(n, a, info, ainv)
   double precision :: a(n,n), ainv(n,n)
   
   double precision, allocatable :: work(:)
-  integer, allocatable :: ipiv(:)
+  integer *8, allocatable :: ipiv(:)
+  integer *8 incx,incy,n2,n1,info1,lwork
 
   !
   ! call the LAPACK routine to compute the inverse of the matrix a
@@ -293,15 +314,19 @@ subroutine dinverse(n, a, info, ainv)
   !   ainv - the inverse of a, computed using Gaussian elimination
   !
   !
+
+  n1 = n
+  n2 = n*n
   incx = 1
   incy = 1
-  call dcopy(n*n, a, incx, ainv, incy)
+  call dcopy(n2, a, incx, ainv, incy)
   allocate(ipiv(n))
-  call dgetrf(n, n, ainv, n, ipiv, info)
+  call dgetrf(n1, n1, ainv, n1, ipiv, info1)
 
   lwork = 10*n
   allocate(work(lwork))
-  call dgetri(n, ainv, n, ipiv, work, lwork, info)
+  call dgetri(n1, ainv, n1, ipiv, work, lwork, info1)
+  info  = info1
 
   return
 end subroutine dinverse
@@ -316,6 +341,7 @@ subroutine zinverse(n, a, info, ainv)
 
   integer, allocatable :: ipiv(:)
   complex *16, allocatable :: work(:)
+  integer *8 n1,n2,incx,incy,lwork,info1
 
   !
   ! call the LAPACK routine to compute the inverse of the matrix a
@@ -329,19 +355,23 @@ subroutine zinverse(n, a, info, ainv)
   !   ainv - the inverse of a, computed using Gaussian elimination
   !
   !
+  n1 = n
+  n2 = n*n
   incx = 1
   incy = 1
-  call zcopy(n*n, a, incx, ainv, incy)
+  call zcopy(n2, a, incx, ainv, incy)
 
   allocate(ipiv(n))
-  call zgetrf(n, n, ainv, n, ipiv, info)
+  call zgetrf(n1, n1, ainv, n1, ipiv, info1)
 
   lwork = 20*n
   allocate(work(lwork))
-  call zgetri(n, ainv, n, ipiv, work, lwork, info)
+  call zgetri(n1, ainv, n1, ipiv, work, lwork, info1)
+  info = info1
 
   return
 end subroutine zinverse
+
 
 
 
@@ -351,7 +381,8 @@ subroutine dgausselim(n, a, rhs, info, sol, dcond)
   implicit double precision (a-h,o-z)
   double precision :: a(n,n), rhs(n), sol(n)
   
-  integer, allocatable :: ipiv(:), iwork(:)
+  integer *8, allocatable :: ipiv(:), iwork(:)
+  integer *8 info1,n1,lda,ldafldb,ldx,nrhs
   double precision, allocatable :: af(:,:), rscales(:), cscales(:), work(:)
   character *1 :: fact, trans, equed
   !
@@ -365,6 +396,9 @@ subroutine dgausselim(n, a, rhs, info, sol, dcond)
   allocate(cscales(n))
   allocate(work(5*n))
   allocate(iwork(n))
+
+  n1 = n
+  info1 = 0
   
   fact = 'N'
   trans = 'N'
@@ -375,11 +409,12 @@ subroutine dgausselim(n, a, rhs, info, sol, dcond)
   ldb = n
   ldx = n
   
-  call dgesvx( fact, trans, n, nrhs, a, lda, af, ldaf, ipiv, &
+  call dgesvx( fact, trans, n1, nrhs, a, lda, af, ldaf, ipiv, &
       equed, rscales, cscales, rhs, ldb, sol, ldx, dcond, ferr, berr, &
-      work, iwork, info )
+      work, iwork, info1 )
 
-  dcond = 1/dcond
+  dcond = 1.0d0/dcond
+  info = info1
   
   return
 end subroutine dgausselim
@@ -389,8 +424,9 @@ subroutine dgausselim_vec(n, a, k, rhs, info, sol, dcond)
   implicit double precision (a-h,o-z)
   double precision :: a(n,n), rhs(n,k), sol(n,k)
   
-  integer, allocatable :: ipiv(:), iwork(:)
+  integer *8, allocatable :: ipiv(:), iwork(:)
   double precision, allocatable :: af(:,:), rscales(:), cscales(:), work(:)
+  integer *8 n1,lda,ldaf,nrhs,ldb,ldx,info1
   character *1 :: fact, trans, equed
   !
   ! This a wrapper for double precision Gaussian elimination in
@@ -413,12 +449,15 @@ subroutine dgausselim_vec(n, a, k, rhs, info, sol, dcond)
   equed = 'N'
   ldb = n
   ldx = n
+  n1 = n
   
-  call dgesvx( fact, trans, n, nrhs, a, lda, af, ldaf, ipiv, &
+  
+  call dgesvx( fact, trans, n1, nrhs, a, lda, af, ldaf, ipiv, &
       equed, rscales, cscales, rhs, ldb, sol, ldx, dcond, ferr, berr, &
-      work, iwork, info )
+      work, iwork, info1 )
 
-  dcond = 1/dcond
+  dcond = 1.0d0/dcond
+  info = info1
   
   return
 end subroutine dgausselim_vec
@@ -437,16 +476,20 @@ subroutine dleastsq(m,n,a,nrhs,rhs,eps,info,sol,irank)
   real *8 a(m,n), rhs(m,nrhs), sol(n,nrhs), eps
   ! local  
   real *8, allocatable :: work(:), atemp(:,:), rhstemp(:,:)
-  integer, allocatable :: ipiv(:)
+  integer *8, allocatable :: ipiv(:)
   real *8 dcond
 
-  integer lwork, lda, ldb, i, j, mn, mn2, nb, nb1, nb2, nb3, nb4
-  integer lwkmin, lwkopt
+  integer *8 lwork, lda, ldb, i, j, mn, mn2, nb, nb1, nb2, nb3, nb4
+  integer *8 lwkmin, lwkopt
 
-  integer ilaenv
+  integer *8 ilaenv,info1,m1,n1,irank1
 
   dcond = 1d0/eps
   dcond = eps
+
+
+  m1 = m
+  n1 = n
 
   dcond = 1d-8
   
@@ -486,14 +529,17 @@ subroutine dleastsq(m,n,a,nrhs,rhs,eps,info,sol,irank)
   lda = m
   ldb = mn2
 
-  call dgelsy(m,n,nrhs,atemp,lda,rhstemp,ldb,ipiv,dcond, &
-       irank,work,lwork,info)
+  call dgelsy(m1,n1,nrhs,atemp,lda,rhstemp,ldb,ipiv,dcond, &
+       irank1,work,lwork,info1)
 
   do i = 1,nrhs
      do j = 1,n
         sol(j,i) = rhstemp(j,i)
      enddo
   enddo
+
+  info = info1
+  irank = irank1
 
   return
 end subroutine dleastsq
@@ -504,10 +550,11 @@ subroutine zgausselim(n, a, rhs, info, sol, dcond)
   implicit double precision (a-h,o-z)
   complex *16 :: a(n,n), rhs(n), sol(n)
   
-  integer, allocatable :: ipiv(:)
+  integer *8, allocatable :: ipiv(:)
   double precision, allocatable :: rscales(:), cscales(:), rwork(:)
   complex *16, allocatable :: af(:,:), work(:)
   character *1 :: fact, trans, equed
+  integer *8 info1,n1,lda,ldf,nrhs,ldb,ldx
   !
   ! just a wrapper for the lapack routine...
   ! a is untouched
@@ -533,11 +580,14 @@ subroutine zgausselim(n, a, rhs, info, sol, dcond)
   equed = 'N'
   ldb = n
   ldx = n
+
+  n1 = n
   
-  call zgesvx(fact, trans, n, nrhs, a, lda, af, ldaf, ipiv, &
+  call zgesvx(fact, trans, n1, nrhs, a, lda, af, ldaf, ipiv, &
       equed, rscales, cscales, rhs, ldb, sol, ldx, dcond, ferr, berr, &
-      work, rwork, info)
-  dcond = 1/dcond
+      work, rwork, info1)
+  dcond = 1.0d0/dcond
+  info = info1
 
   deallocate(ipiv, af, rscales, cscales, work, rwork)
   
@@ -553,10 +603,11 @@ subroutine dgausselim_zrhs(n, a, rhs, info, sol, dcond)
   implicit double precision (a-h,o-z)
   double precision :: a(n,n), rhs(2,n), sol(2,n)
   
-  integer, allocatable :: ipiv(:), iwork(:)
+  integer *8, allocatable :: ipiv(:), iwork(:)
   double precision, allocatable :: af(:,:), rscales(:), cscales(:), work(:)
   double precision, allocatable :: x(:,:), b(:,:)
   character *1 :: fact, trans, equed
+  integer *8 n1,info1,nrhs,lda,ldaf,ldb,ldx
   !
   ! just a wrapper for the lapack routine...
   ! a is untouched
@@ -578,22 +629,24 @@ subroutine dgausselim_zrhs(n, a, rhs, info, sol, dcond)
   equed = 'N'
   ldb = n
   ldx = n
+  n1 = n
 
   do i = 1,n
     b(i,1) = rhs(1,i)
     b(i,2) = rhs(2,i)
   end do
   
-  call dgesvx( fact, trans, n, nrhs, a, lda, af, ldaf, ipiv, &
+  call dgesvx( fact, trans, n1, nrhs, a, lda, af, ldaf, ipiv, &
       equed, rscales, cscales, b, ldb, x, ldx, dcond, ferr, berr, &
-      work, iwork, info )
+      work, iwork, info1 )
 
   do i = 1,n
     sol(1,i) = x(i,1)
     sol(2,i) = x(i,2)
   end do
   
-  dcond = 1/dcond
+  dcond = 1.0d0/dcond
+  info = info1
 
   !call prin2('x = *', x, 2*n)
   !stop
@@ -610,13 +663,16 @@ subroutine zmatvec(m, n, a, x, y)
   complex *16 :: a(m,n), x(n), y(m)
   character *1 :: trans
   complex *16 :: alpha, beta
+  integer *8 incx,incy,m1,n1
 
   trans = 'N'
   alpha = 1
   incx = 1
   beta = 0
   incy = 1
-  call zgemv(trans, m, n, alpha, a, m, x, incx, beta, y, incy)
+  m1 = m
+  n1 = n
+  call zgemv(trans, m1, n1, alpha, a, m1, x, incx, beta, y, incy)
 
   return
 end subroutine zmatvec
@@ -630,13 +686,16 @@ subroutine dmatvec(m, n, a, x, y)
   double precision :: a(m,n), x(n), y(m)
   character *1 :: trans
   double precision :: alpha, beta
+  integer *8 m1,n1,incx,incy
 
   trans = 'N'
   alpha = 1
   incx = 1
   beta = 0
   incy = 1
-  call dgemv(trans, m, n, alpha, a, m, x, incx, beta, y, incy)
+  m1 = m
+  n1 = n
+  call dgemv(trans, m1, n1, alpha, a, m1, x, incx, beta, y, incy)
 
   return
 end subroutine dmatvec
@@ -675,6 +734,7 @@ subroutine dmatzvec_saved(m, n, a, x, y)
 
   double precision, allocatable :: xr(:), xi(:), yr(:), yi(:)
   complex *16 :: ima
+  integer *8 incx,incy,m1,n1
 
   allocate(xr(n), xi(n))
   allocate(yr(m), yi(m))
@@ -685,14 +745,16 @@ subroutine dmatzvec_saved(m, n, a, x, y)
   incx = 1
   beta = 0
   incy = 1
+  m1 = m
+  n1 = n
 
   do i = 1,n
     xr(i) = dble(x(i))
     xi(i) = imag(x(i))
   end do
 
-  call dgemv(trans, m, n, alpha, a, m, xr, incx, beta, yr, incy)
-  call dgemv(trans, m, n, alpha, a, m, xi, incx, beta, yi, incy)
+  call dgemv(trans, m1, n1, alpha, a, m1, xr, incx, beta, yr, incy)
+  call dgemv(trans, m1, n1, alpha, a, m1, xi, incx, beta, yi, incy)
 
   do i = 1,m
     y(i) = yr(i) + ima*yi(i)
@@ -712,6 +774,7 @@ subroutine zmatmat(m, n, a, k, b, c)
   complex *16 :: a(m,n), b(n,k), c(m,k)
   character *1 :: transa, transb
   complex *16 :: alpha, beta
+  integer *8 lda,ldb,ldc,m1,n1,k1
 
   !
   ! note different dimensions than usual...
@@ -724,7 +787,11 @@ subroutine zmatmat(m, n, a, k, b, c)
   ldb = n
   ldc = m
 
-  call zgemm(transa, transb, m, k, n, alpha, a, lda, b, ldb, &
+  m1 = m
+  n1 = n
+  k1 = k 
+
+  call zgemm(transa, transb, m1, k1, n1, alpha, a, lda, b, ldb, &
       beta, c, ldc)
 
   return
@@ -739,6 +806,7 @@ subroutine dmatmat(m, n, a, k, b, c)
   double precision :: a(m,n), b(n,k), c(m,k)
   character *1 :: transa, transb
   double precision :: alpha, beta
+  integer *8 m1,n1,k1,lda,ldb,ldc
 
   !
   ! note different dimensions than usual...
@@ -750,8 +818,11 @@ subroutine dmatmat(m, n, a, k, b, c)
   lda = m
   ldb = n
   ldc = m
+  m1 = m
+  n1 = n
+  k1 = k
 
-  call dgemm(transa, transb, m, k, n, alpha, a, lda, b, ldb, &
+  call dgemm(transa, transb, m1, k1, n1, alpha, a, lda, b, ldb, &
       beta, c, ldc)
 
   return
@@ -774,10 +845,16 @@ subroutine zrmatmatt(m, n, a, k, b, c)
   character *1 :: transa, transb
   complex *16 :: alpha, beta
 
+  integer *8 nk,incx,incy,m1,n1,k1
+
 
   allocate(bz(n,k))
   call zzero(n*k,bz)
-  call dcopy(n*k,b,1,bz,2)
+
+  nk = n*k
+  incx = 1
+  incy = 2
+  call dcopy(nk,b,incx,bz,incy)
 
   !
   ! note different dimensions than usual...
@@ -786,9 +863,12 @@ subroutine zrmatmatt(m, n, a, k, b, c)
   transb = 'N'
   alpha = 1
   beta = 0
+  k1 = k
+  n1 = n
+  m1 = m
 
-  call zgemm(transa, transb, k, m, n, alpha, bz, n, a, n, &
-      beta, c, k)
+  call zgemm(transa, transb, k1, m1, n1, alpha, bz, n1, a, n1, &
+      beta, c, k1)
 
   return
 end subroutine zrmatmatt
@@ -801,11 +881,19 @@ end subroutine zrmatmatt
 subroutine dgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
   double precision alpha,beta
   integer k,lda,ldb,ldc,m,n
+  integer *8 k1,lda1,ldb1,ldc1,m1,n1
   character transa,transb
 
   double precision a(lda,*),b(ldb,*),c(ldc,*)
 
-  call dgemm(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
+  k1 = k
+  lda1 = lda
+  ldb1 = ldb
+  ldc1 = ldc
+  m1 = m
+  n1 = n
+
+  call dgemm(transa,transb,m1,n1,k1,alpha,a,lda1,b,ldb1,beta,c,ldc1)
 
   return
 end subroutine dgemm_guru
@@ -817,11 +905,19 @@ end subroutine dgemm_guru
 subroutine zgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
   double complex alpha,beta
   integer k,lda,ldb,ldc,m,n
+  integer *8 k1,lda1,ldb1,ldc1,m1,n1
   character transa,transb
 
   double complex a(lda,*),b(ldb,*),c(ldc,*)
 
-  call zgemm(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
+  k1 = k
+  lda1 = lda
+  ldb1 = ldb
+  ldc1 = ldc
+  m1 = m
+  n1 = n
+
+  call zgemm(transa,transb,m1,n1,k1,alpha,a,lda1,b,ldb1,beta,c,ldc1)
 
   return
 end subroutine zgemm_guru
@@ -833,11 +929,18 @@ end subroutine zgemm_guru
 subroutine dgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
   double precision alpha,beta
   integer incx,incy,lda,m,n
+  integer *8 incx1,incy1,lda1,m1,n1
   character trans
   
   double precision a(lda,*),x(*),y(*)
 
-  call dgemv(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
+  lda1 = lda
+  incx1 = incx
+  incy1 = incy
+  m1 = m
+  n1 = n
+
+  call dgemv(trans,m1,n1,alpha,a,lda1,x,incx1,beta,y,incy1)
 
   return
 end subroutine dgemv_guru
@@ -849,12 +952,20 @@ end subroutine dgemv_guru
 subroutine zgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
   double complex alpha,beta
   integer incx,incy,lda,m,n
+  integer *8 incx1,incy1,lda1,m1,n1
   character trans
   
   double complex a(lda,*),x(*),y(*)
 
-  call zgemv(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
+  lda1 = lda
+  incx1 = incx
+  incy1 = incy
+  m1 = m
+  n1 = n
+
+  call zgemv(trans,m1,n1,alpha,a,lda1,x,incx1,beta,y,incy1)
 
   return
 end subroutine zgemv_guru
+
 

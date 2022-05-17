@@ -32,13 +32,17 @@ LIBS = -lm
 DYLIBS = -lm
 F2PYDYLIBS = -lm -lblas -llapack
 
-LIBNAME=libfmm3dbie
+LIBNAME=$(PREFIX_LIBNAME)
+ifeq ($(LIBNAME),)
+	LIBNAME=libfmm3dbie
+endif
+
 DYNAMICLIB = $(LIBNAME).so
 STATICLIB = $(LIBNAME).a
 LIMPLIB = $(DYNAMICLIB)
 
 LFMMLINKLIB = -lfmm3d
-LLINKLIB = -lfmm3dbie
+LLINKLIB = $(subst lib, -l, $(LIBNAME))
 
 
 # For your OS, override the above by placing make variables in make.inc
@@ -72,16 +76,12 @@ DYLIBS += $(LBLAS) $(LDBLASINC)
 # Common objects
 COM = src/common
 COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
-	$(COM)/dlaran.o $(COM)/lapack_wrap.o $(COM)/lapack_f77.o \
+	$(COM)/dlaran.o $(COM)/lapack_f77.o \
 	$(COM)/legeexps.o $(COM)/prini_new.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o \
 	$(COM)/rigidbodies.o 
-
-# FMM wrappers
-FMML = src/fmm_wrappers
-FOBJS = $(FMML)/hfmm3d_ndiv.o $(FMML)/lfmm3d_ndiv.o 
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
@@ -128,8 +128,16 @@ TOBJS = $(TRIA)/ctriaints_main.o $(TRIA)/koornexps.o \
 	$(TRIA)/triaintrouts.o $(TRIA)/dtriaints_main.o \
 	$(TRIA)/triasymq.o $(TRIA)/triatreerouts.o $(TRIA)/dtriaintrouts.o
 
+ifeq ($(BLAS_64),ON)
+COMOBJS += $(COM)/lapack_wrap_64.o
+endif
 
-OBJS = $(COMOBJS) $(EMOBJS) $(FOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS)
+ifneq ($(BLAS_64),ON)
+COMOBJS += $(COM)/lapack_wrap.o
+endif
+
+
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS)
 
 
 

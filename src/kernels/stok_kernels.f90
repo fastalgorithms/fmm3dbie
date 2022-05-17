@@ -120,7 +120,7 @@ subroutine st3d_slp(src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   dxi = dr(i)
   dxj = dr(j)
   
-  r=sqrt(dx**2+dy**2+dz**2)
+  r=sqrt(dr(1)**2+dr(2)**2+dr(3)**2)
   rinv = 1.0d0/r
   rinv3 = 0.5d0*rinv**3
   rinv = 0.5d0*rinv

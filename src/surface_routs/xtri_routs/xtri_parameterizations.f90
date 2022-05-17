@@ -201,14 +201,6 @@ end subroutine xtri_stell_eval
 
 
 
-
-
-
-
-
-
-
-
 subroutine xtri_rectmesh_ani(umin, umax, vmin, vmax, nu, nv, &
     nover, maxtri, ntri, triaskel)
   implicit real *8 (a-h,o-z)

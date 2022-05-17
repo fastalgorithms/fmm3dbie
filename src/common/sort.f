@@ -80,7 +80,7 @@ C===================================================================
       INTEGER   N,INDEX(N)
       INTEGER   DATA(N)
  
-      INTEGER   LSTK(31),RSTK(31),ISTK
+      INTEGER   LSTK(200),RSTK(200),ISTK
       INTEGER   L,R,I,J,P,INDEXP,INDEXT
       integer      DATAP
  

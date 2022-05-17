@@ -385,7 +385,7 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
 
       istart = ixyzs(i)
       istartover = ixyzso(i)
-      call dgemm_f77(transa,transb,9,nfar_pols,npols,alpha, &
+      call dgemm_guru(transa,transb,9,nfar_pols,npols,alpha, &
           srccoefs(1,istart),9,pmat,npols,beta,srcover(1,istartover),12)
       do j=1,nfar_pols
         jpt = istartover+j-1
@@ -559,7 +559,7 @@ subroutine oversample_fun_tri(nd,norder,npols,u,nfar,nfar_pols, &
   transb = 't'
   alpha = 1
   beta = 0
-  call dgemm_f77(transa,transb,nd,npols,npols,alpha,u,nd,umat0,npols,&
+  call dgemm_guru(transa,transb,nd,npols,npols,alpha,u,nd,umat0,npols,&
      beta,ucoefs,nd)
 
   allocate(pmat(npols,nfar_pols))
@@ -570,7 +570,7 @@ subroutine oversample_fun_tri(nd,norder,npols,u,nfar,nfar_pols, &
 
   transa = 'n'
   transb = 'n'
-  call dgemm_f77(transa,transb,nd,nfar_pols,npols,alpha, &
+  call dgemm_guru(transa,transb,nd,nfar_pols,npols,alpha, &
         ucoefs,nd,pmat,npols,beta,uover,nd)
  
 end subroutine oversample_fun_tri
@@ -678,7 +678,7 @@ subroutine vals_to_coefs_tri(nd,norder,npols,u,ucoefs)
   transb = 't'
   alpha = 1
   beta = 0
-  call dgemm_f77(transa,transb,nd,npols,npols,alpha,u,nd,umat0,npols,&
+  call dgemm_guru(transa,transb,nd,npols,npols,alpha,u,nd,umat0,npols,&
      beta,ucoefs,nd)
  
 end subroutine vals_to_coefs_tri 

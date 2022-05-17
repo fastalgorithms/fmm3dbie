@@ -251,6 +251,7 @@ c
 
       call gen_xg_unif_nodes(nlev,nqorder_f,nnodes,npts_f,qnodes,qwts)
 
+
       t1 = second()
 C$        t1 = omp_get_wtime()
 
@@ -267,6 +268,12 @@ C$OMP$PRIVATE(epsp,rsc,tmp)
         
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
         norder = norders(ipatch)
+        allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
+        allocate(wts(npols))
+
+        if(iptype(ipatch).eq.1) then
+          call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
+        endif
 
         if(norder.le.4) then
           irad = 1
@@ -276,10 +283,6 @@ C$OMP$PRIVATE(epsp,rsc,tmp)
           irad = 3
         endif
 
-        allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-        allocate(wts(npols))
-        if(iptype(ipatch).eq.1) 
-     1     call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
 c
 c  estimate rescaling of epsp needed to account for the scale of the
 c    patch 
@@ -341,7 +344,7 @@ c
      2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
         
-        call zrmatmatt_f77(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
+        call zrmatmatt(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
 c
 c
 c       fill out far part of single layer
@@ -353,7 +356,7 @@ c
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
      3      ndi,ipars,npts_f,qnodes,qwts,sints_f)
         
-        call zrmatmatt_f77(ntarg_f,npols,sints_f,npols,umatr,svtmp_f)
+        call zrmatmatt(ntarg_f,npols,sints_f,npols,umatr,svtmp_f)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
 c
@@ -750,7 +753,7 @@ c
      2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
         
-        call dgemm_f77('t','n',npols,ntarg_n,npols,done,umatr,npols,
+        call dgemm_guru('t','n',npols,ntarg_n,npols,done,umatr,npols,
      1     sints_n,npols,dzero,svtmp_n,npols)
 c
 c
@@ -763,7 +766,7 @@ c
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
      3      ndi,ipars,npts_f,qnodes,qwts,sints_f)
         
-        call dgemm_f77('t','n',npols,ntarg_f,npols,done,umatr,npols,
+        call dgemm_guru('t','n',npols,ntarg_f,npols,done,umatr,npols,
      1     sints_f,npols,dzero,svtmp_f,npols)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
@@ -941,7 +944,7 @@ c
 
       alpha = 1.0d0
       beta = 0.0d0
-      call dgemv_f77('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
+      call dgemv_guru('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
      1      srcvals,1)
       
 
@@ -976,7 +979,7 @@ c
       ldb = npols
       ldc = 12
 
-      call dgemm_f77(transa,transb,9,ns,npols,alpha,
+      call dgemm_guru(transa,transb,9,ns,npols,alpha,
      1      srccoefs,lda,sigvals,ldb,beta,srctmp,ldc)
 
 
@@ -999,7 +1002,7 @@ c
 
       deallocate(srctmp,qwts,sigvals)
 
-      call zrmatmatt_f77(1,npols,fint,npols,umat,zquad)
+      call zrmatmatt(1,npols,fint,npols,umat,zquad)
 
       return
       end
@@ -1126,7 +1129,7 @@ c
 
       alpha = 1.0d0
       beta = 0.0d0
-      call dgemv_f77('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
+      call dgemv_guru('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
      1      srcvals,1)
       
 
@@ -1161,7 +1164,7 @@ c
       ldb = npols
       ldc = 12
 
-      call dgemm_f77(transa,transb,9,ns,npols,alpha,
+      call dgemm_guru(transa,transb,9,ns,npols,alpha,
      1      srccoefs,lda,sigvals,ldb,beta,srctmp,ldc)
 
 
@@ -1184,7 +1187,7 @@ c
 
       deallocate(srctmp,qwts,sigvals)
 
-      call dgemv_f77('t',npols,npols,done,umat,npols,fint,1,dzero,
+      call dgemv_guru('t',npols,npols,done,umat,npols,fint,1,dzero,
      1   dquad,1)
 
       return

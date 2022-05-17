@@ -969,7 +969,7 @@ c
 
       integer ipars
       complex *16 zpars
-      real *8 timeinfo(10),t1,t2,omp_get_wtime
+      real *8 timeinfo(10),t1,t2,omp_get_wtime,timeinfo_fmm(6)
 
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp1(:,:),srctmp2(:,:)
@@ -1125,7 +1125,7 @@ c
 C$      t1 = omp_get_wtime()      
       call lfmm3d_ndiv(nd,eps,ns,sources,ifcharge,charges,
      1  ifdipole,dipvec,iper,ifpgh,tmp,tmp,tmp,ntarg,targvals,ifpghtarg,
-     1  pot,tmp,tmp,ndiv,idivflag,ifnear,ier)
+     1  pot,tmp,tmp,ndiv,idivflag,ifnear,timeinfo_fmm,ier)
       call cpu_time(t2)
 C$      t2 = omp_get_wtime()
 
@@ -2578,7 +2578,7 @@ c
 c      now multiply wquadf by ximat
 c
         ixist = ifds(iximat+ipatch-1) + 13*npts_over+2
-        call dgemm_f77('t','n',npols,naintbc,npolso,done,rfds(ixist),
+        call dgemm_guru('t','n',npols,naintbc,npolso,done,rfds(ixist),
      1    npolso,wquadf,npolso,dzero,wquadf2,npols)
         
         do i=1,naintbc

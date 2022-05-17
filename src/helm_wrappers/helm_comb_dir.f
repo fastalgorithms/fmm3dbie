@@ -1573,6 +1573,7 @@ c
 
       integer ipars
       real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
+      real *8 timeinfo_fmm(6)
 
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp1(:,:),srctmp2(:,:)
@@ -1727,7 +1728,7 @@ c
 C$      t1 = omp_get_wtime()      
       call hfmm3d_ndiv(nd,eps,zpars(1),ns,sources,ifcharge,charges,
      1  ifdipole,dipvec,iper,ifpgh,tmp,tmp,tmp,ntarg,targvals,ifpghtarg,
-     1  pot,tmp,tmp,ndiv,idivflag,ifnear,ier)
+     1  pot,tmp,tmp,ndiv,idivflag,ifnear,timeinfo_fmm,ier)
       call cpu_time(t2)
 C$      t2 = omp_get_wtime()
 
@@ -3309,7 +3310,7 @@ c
 c      now multiply wquadf by ximat
 c
         ixist = ifds(iximat+ipatch-1) + 13*npts_over
-        call zrmatmatt_f77(naintbc,npolso,wquadf,npols,rfds(ixist),
+        call zrmatmatt(naintbc,npolso,wquadf,npols,rfds(ixist),
      1        wquadf2)
         
         do i=1,naintbc
