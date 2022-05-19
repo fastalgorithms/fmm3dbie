@@ -53,10 +53,10 @@ c
 c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-        subroutine self_quadrature_new(irad, verts0, x0, y0, dr,
+        subroutine self_quadrature_new(irad, verts0, nv,x0, y0, dr,
      1    nquad, xs, ys, whts)
         implicit double precision (a-h,o-z)
-        dimension verts(2,3),dr(3,2),a(2,2),ainv(2,2),verts0(2,3)
+        dimension verts(2,nv),dr(3,2),a(2,2),ainv(2,2),verts0(2,nv)
         dimension xs(*),ys(*),whts(*),b(3,2)
 c
 c       Return a quadrature formula for evaluating integrals of the
@@ -98,7 +98,7 @@ c
 c       Apply the inverse of A to the vertices of the triangle T in
 c       order to find the vertices of the triangle T_0.
 c
-        do i=1,3
+        do i=1,nv
           x = verts0(1,i)-x0
           y = verts0(2,i)-y0
 c
@@ -139,11 +139,11 @@ c
 c
 c
 c
-        subroutine pv_self_quadrature_new(irad,verts0,x0,y0,dr,
+        subroutine pv_self_quadrature_new(irad,verts0,nv,x0,y0,dr,
      1       nquad,xs,ys,whts)
         implicit double precision (a-h,o-z)
         integer irad
-        dimension verts(2,3),dr(3,2),a(2,2),ainv(2,2),verts0(2,3)
+        dimension verts(2,nv),dr(3,2),a(2,2),ainv(2,2),verts0(2,nv)
         dimension xs(*),ys(*),whts(1),b(3,2)
 c
 c       Return a quadrature formula for evaluating integrals of the
@@ -186,7 +186,7 @@ c
 c       Apply the inverse of A to the vertices of the triangle T in
 c       order to find the vertices of the triangle T_0.
 c
-        do i=1,3
+        do i=1,nv
           x = verts0(1,i)-x0
           y = verts0(2,i)-y0
 c

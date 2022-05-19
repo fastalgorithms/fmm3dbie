@@ -439,7 +439,7 @@ c
 
       do itri=istart,iend
         instart = (itri-istart)*nnodes + 1
-        call mapuv(tvs(1,1,itri),nnodes,qnodes0,qnodes(1,instart))
+        call mapuv_tri(tvs(1,1,itri),nnodes,qnodes0,qnodes(1,instart))
         do i=1,nnodes
           qwts(instart+i-1) = qwts0(i)/4**nlev
         enddo
@@ -478,7 +478,7 @@ c
 c
 c--------------------------------------------------------------------------------
         
-      subroutine mapuv(verts,kpols,uvs,uvout)
+      subroutine mapuv_tri(verts,kpols,uvs,uvout)
       implicit real *8 (a-h,o-z)
       integer kpols
       real *8 verts(2,3),uvs(2,kpols),uvout(2,kpols)

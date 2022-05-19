@@ -334,6 +334,7 @@ c
 
         istart = ixyzs(ipatch)
 
+
 c
 c       fill out near part of single layer
 c
@@ -388,7 +389,8 @@ c
 
           if(ipatch.eq.jpatch) then
             call zget_ggq_self_quad_pt(ipv,norder,npols,
-     1      uvs_targ(1,jtarg),umatr,srccoefs(1,istart),ndtarg,
+     1      uvs_targ(1,jtarg),iptype(ipatch),
+     2      umatr,srccoefs(1,istart),ndtarg,
      2      targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,wnear(iqstart+1))
           endif
@@ -798,8 +800,8 @@ c
 
           if(ipatch.eq.jpatch) then
             call dget_ggq_self_quad_pt(ipv,norder,npols,
-     1      uvs_targ(1,jtarg),umatr,srccoefs(1,istart),ndtarg,
-     2      targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
+     1      uvs_targ(1,jtarg),iptype(ipatch),umatr,srccoefs(1,istart),
+     2      ndtarg,targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,wnear(iqstart+1))
           endif
 
@@ -832,7 +834,7 @@ c
 c
 c
 
-      subroutine zget_ggq_self_quad_pt(ipv,norder,npols,uvs,umat,
+      subroutine zget_ggq_self_quad_pt(ipv,norder,npols,uvs,iptype,umat,
      1   srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
      2   ipars,zquad)
 c
@@ -857,6 +859,11 @@ c    - npols: integer
 c        number of discretization nodes on patch
 c    - uvs: double precision(2)
 c        local u,v coordinates of target
+c    - iptype: integer
+c        patch type:
+c          * iptype = 1, patch type is standard right simplex with
+c           vertices  (0,0),(1,0),(1,1)
+c          * iptype = 11, patch type is standard unit square (-1,1)^2
 c    - umat: double precision(npols,npols)
 c        values to coefficient matrix
 c    - srccoefs: double precision (9,npts)
@@ -918,7 +925,7 @@ c
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
-      real *8 uv(2),verts(2,3)
+      real *8 uv(2),verts(2,4)
       real *8 alpha,beta
       complex *16 fval
       complex *16, allocatable :: fint(:),fvals(:)
@@ -929,12 +936,29 @@ c
       nmax = 10000
       allocate(ws(nmax),xs(nmax),ys(nmax))
       allocate(fvals(npols))
-      verts(1,1) = 0
-      verts(2,1) = 0
-      verts(1,2) = 1
-      verts(2,2) = 0
-      verts(1,3) = 0
-      verts(2,3) = 1
+      if(iptype.eq.1) then
+        nv = 3
+        verts(1,1) = 0
+        verts(2,1) = 0
+        verts(1,2) = 1
+        verts(2,2) = 0
+        verts(1,3) = 0
+        verts(2,3) = 1
+      endif
+      if(iptype.eq.2) then
+         nv = 4
+         verts(1,1) = -1
+         verts(2,1) = -1
+
+         verts(1,2) = 1
+         verts(2,2) = -1
+
+         verts(1,3) = 1
+         verts(2,3) = 1
+         
+         verts(1,4) = -1
+         verts(2,4) = 1
+      endif
       allocate(fint(npols),sigvalstmp(npols))
 
 c
@@ -953,12 +977,12 @@ c
       enddo
       ns = 0
       if(ipv.eq.0) then
-        call self_quadrature_new(irad,verts,uvs(1),
+        call self_quadrature_new(irad,verts,nv,uvs(1),
      1    uvs(2),srcvals(4),ns,xs,ys,ws)
       endif
 
       if(ipv.eq.1) then
-        call pv_self_quadrature_new(irad,verts,uvs(1),
+        call pv_self_quadrature_new(irad,verts,nv,uvs(1),
      1    uvs(2),srcvals(4),ns,xs,ys,ws)
       endif
      
@@ -1013,8 +1037,8 @@ c
 c
 c
 
-      subroutine dget_ggq_self_quad_pt(ipv,norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
+      subroutine dget_ggq_self_quad_pt(ipv,norder,npols,uvs,iptype,
+     1   umat,srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
      2   ipars,dquad)
 c
 c
@@ -1038,6 +1062,11 @@ c    - npols: integer
 c        number of discretization nodes on patch
 c    - uvs: double precision(2)
 c        local u,v coordinates of target
+c    - iptype: integer
+c        patch type:
+c          * iptype = 1, patch type is standard right simplex with
+c           vertices  (0,0),(1,0),(1,1)
+c          * iptype = 11, patch type is standard unit square (-1,1)^2
 c    - umat: double precision(npols,npols)
 c        values to coefficient matrix
 c    - srccoefs: double precision (9,npts)
@@ -1099,7 +1128,7 @@ c
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
-      real *8 uv(2),verts(2,3)
+      real *8 uv(2),verts(2,4)
       real *8 alpha,beta
       real *8 fval
       real *8, allocatable :: fint(:),fvals(:)
@@ -1114,12 +1143,29 @@ c
       nmax = 10000
       allocate(ws(nmax),xs(nmax),ys(nmax))
       allocate(fvals(npols))
-      verts(1,1) = 0
-      verts(2,1) = 0
-      verts(1,2) = 1
-      verts(2,2) = 0
-      verts(1,3) = 0
-      verts(2,3) = 1
+      if(iptype.eq.1) then
+        nv = 3
+        verts(1,1) = 0
+        verts(2,1) = 0
+        verts(1,2) = 1
+        verts(2,2) = 0
+        verts(1,3) = 0
+        verts(2,3) = 1
+      endif
+      if(iptype.eq.11) then
+         nv = 4
+         verts(1,1) = -1
+         verts(2,1) = -1
+
+         verts(1,2) = 1
+         verts(2,2) = -1
+
+         verts(1,3) = 1
+         verts(2,3) = 1
+         
+         verts(1,4) = -1
+         verts(2,4) = 1
+      endif
       allocate(fint(npols),sigvalstmp(npols))
 
 c
@@ -1138,12 +1184,12 @@ c
       enddo
       ns = 0
       if(ipv.eq.0) then
-        call self_quadrature_new(irad,verts,uvs(1),
+        call self_quadrature_new(irad,verts,nv,uvs(1),
      1    uvs(2),srcvals(4),ns,xs,ys,ws)
       endif
 
       if(ipv.eq.1) then
-        call pv_self_quadrature_new(irad,verts,uvs(1),
+        call pv_self_quadrature_new(irad,verts,nv,uvs(1),
      1    uvs(2),srcvals(4),ns,xs,ys,ws)
       endif
      
