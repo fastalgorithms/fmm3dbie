@@ -580,6 +580,134 @@ end subroutine oversample_fun_tri
 !
 !
 
+
+subroutine oversample_fun_surf_transpose(nd,npatches,norders,ixyzs,iptype,npts, &
+   uover,nfars,ixyzso,nptso,u)
+!
+!  This subroutine oversamples a function defined on a surface
+!
+!  input
+!    nd - integer
+!      number of functions
+!    npatches - integer
+!      number of patches on the surface
+!    norders - integer(npatches)
+!      order of discretization of patch i
+!    ixyzs - integer(npatches+1)
+!      starting location of points on patch i
+!    iptype - integer(npatches)
+!      type of patch
+!      iptype = 1, triangle discretized using RV nodes
+!    npts - integer
+!      total number of points on the surface
+!    uover - real *8 (nd,npts)
+!      oversampled functions at the discretization points on the surface
+!    nfars - integer(npatches)
+!      oversampled order of patch i
+!    ixyzso - integer(npatches+1)
+!      starting location of oversampled points on patch i
+!    nptso - integer
+!      total number of oversampled points
+!  
+!
+!  output
+!    u - real *8 (nd,nptso)
+!       apply oversample transpose
+!    
+   
+
+  implicit none
+  integer nd,npatches,norders(npatches),ixyzs(npatches+1)
+  integer iptype(npatches),npts
+  real *8 u(nd,npts)
+  integer nfars(npatches),ixyzso(npatches+1),nptso
+  real *8 uover(nd,nptso)
+  integer i,istart,istarto,npols,npolso
+
+  do i=1,npatches
+    istart = ixyzs(i)
+    istarto = ixyzso(i)
+    npols = ixyzs(i+1)-ixyzs(i)
+    npolso = ixyzso(i+1) - ixyzso(i)
+    if(iptype(i).eq.1) &
+      call oversample_fun_tri_transpose(nd,norders(i),npols,uover(1,istart),&
+      nfars(i),npolso,u(1,istarto))
+  enddo
+
+end subroutine oversample_fun_surf_transpose
+
+!
+!
+!
+!
+subroutine oversample_fun_tri_transpose(nd,norder,npols,uover,nfar,nfar_pols, &
+    u)
+!
+!  This subroutine oversample a function on the standard triangle
+!
+!  input
+!    nd - integer
+!       number of functions
+!    norder - integer
+!       order of original discretization
+!    npols - integer
+!       number of discretization points corresponding to norder
+!       npols = (norder+1)*(norder+2)/2
+!    uover - real *8 (nd,npols)
+!       oversampled function values tabulated at original grid
+!    nfar - integer
+!       oversampled order of discretization
+!    nfar_pols - integer
+!       number of discretization nodes corresponding to oversampled
+!         order
+!    
+!  output
+!    u - real *8 (nd,nfar_pols)
+!      apply oversample transpose
+!
+  implicit none
+  integer norder,npover,nd,npols,nfar
+  real *8 u(nd,npols),uover(nd,nfar_pols)
+  real *8, allocatable :: ucoefs(:,:)
+  real *8, allocatable :: pmat(:,:),pols(:)
+  real *8, allocatable :: uvs(:,:),umat(:,:),vmat(:,:),wts(:)
+  real *8, allocatable :: umat0(:,:),uvs0(:,:),vmat0(:,:),wts0(:)
+  character *1 transa,transb
+  real *8 alpha, beta
+  integer i,nfar_pols
+
+  allocate(uvs(2,nfar_pols),wts(nfar_pols))
+  allocate(umat(nfar_pols,nfar_pols),vmat(nfar_pols,nfar_pols))
+  allocate(ucoefs(nd,npols))
+  allocate(umat0(npols,npols),vmat0(npols,npols),uvs0(2,npols))
+  allocate(wts0(npols))
+  allocate(pmat(npols,nfar_pols))
+
+  call vioreanu_simplex_quad(nfar,nfar_pols,uvs,umat,vmat,wts)
+  alpha = 1
+  beta = 0
+
+  do i=1,nfar_pols
+    call koorn_pols(uvs(1,i),norder,npols,pmat(1,i))
+  enddo
+  transa = 'n'
+  transb = 't'
+  call dgemm_guru(transa,transb,nd,npols,nfar_pols,alpha, &
+       uover,nd,pmat,npols,beta,ucoefs,nd)
+
+  call vioreanu_simplex_quad(norder,npols,uvs0,umat0,vmat0,wts0)
+  transa = 'n'
+  transb = 'n'
+  call dgemm_guru(transa,transb,nd,npols,npols,alpha,ucoefs,nd,umat0,npols,&
+       beta,u,nd)
+
+end subroutine oversample_fun_tri_transpose
+!
+!
+!
+!
+!
+
 subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
    u,ucoefs)
 

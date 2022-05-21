@@ -247,18 +247,28 @@ c
       iquadtype = 1
 
 
-      call getnearquadsub_helm_comb_dir(npatches,norders,
-     1      ixyzso,iptype,npts_over,srcover,wover,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
-     1      iquadsub,nquadsub,slp_nearsub)
+c      call getnearquadsub_helm_comb_dir(npatches,norders,
+c     1      ixyzso,iptype,npts_over,srcover,wover,ndtarg,npts,targs,
+c     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+c     1      iquadsub,nquadsub,slp_nearsub)
+
+      call getnearquadsub_helm_comb_dir_low_mem(npatches,norders,
+     1   ixyzso,iptype,npts_over,srcover,wover,ndtarg,npts,targs,
+     2   ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     3   iquad,nquad,slp_near,ixyzs,nfars,npts)
+
 
       
       zpars(2) = 0.0d0
       zpars(3) = 1.0d0
-      call getnearquadsub_helm_comb_dir(npatches,norders,
-     1      ixyzso,iptype,npts_over,srcover,wover,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
-     1      iquadsub,nquadsub,dlp_nearsub)
+c      call getnearquadsub_helm_comb_dir(npatches,norders,
+c     1      ixyzso,iptype,npts_over,srcover,wover,ndtarg,npts,targs,
+c     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+c     1      iquadsub,nquadsub,dlp_nearsub)
+      call getnearquadsub_helm_comb_dir_low_mem(npatches,norders,
+     1   ixyzso,iptype,npts_over,srcover,wover,ndtarg,npts,targs,
+     2   ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     3   iquad,nquad,dlp_near,ixyzs,nfars,npts)
  1111 continue      
       call cpu_time(t2)
       tquadgen = t2-t1
