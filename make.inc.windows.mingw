@@ -1,0 +1,30 @@
+# makefile overrides
+# OS:       windows
+# Compiler: mingw
+# OpenMP:   default enabled unless specified
+#
+
+FFLAGS= -fPIC -O3 -funroll-loops -std=legacy -fno-underscoring 
+
+DYNAMICLIB = $(LIBNAME).dll
+LIMPLIB = $(LIBNAME)_dll.lib
+
+
+LLINKLIB = -llibfmm3dbie_dll -llibfmm3d_dll
+
+DYLIBS +=  -Wl,--out-implib,$(LIMPLIB)
+
+LBLAS = -lmwlapack -lmwblas
+LDBLASINC = -LC:\lib -LC:\mingw-w64\mingw64\bin -LC:\MATLAB\R2020b\bin\win64 
+
+ifeq ($(PREFIX_FMM),)
+    FMM_INSTALL_DIR=C:/lib
+endif
+
+ifeq ($(PREFIX),)
+    FMMBIE_INSTALL_DIR=C:/lib
+endif
+
+
+MINGW_LPATH=C:/mingw-w64/mingw64/lib/gcc/x86_64-w64-mingw32/8.1.0
+MEXLIBS = -lmex -lmat -lmx -lgfortran -lquadmath -L${MINGW_LPATH}
