@@ -249,7 +249,8 @@ c
       npts_f = ntri_f*nnodes
       allocate(qnodes(2,npts_f),qwts(npts_f))
 
-      call gen_xg_unif_nodes(nlev,nqorder_f,nnodes,npts_f,qnodes,qwts)
+      call gen_xg_unif_nodes_tri(nlev,nqorder_f,nnodes,npts_f,
+     1   qnodes,qwts)
 
 
       t1 = second()
@@ -662,7 +663,8 @@ c
       npts_f = ntri_f*nnodes
       allocate(qnodes(2,npts_f),qwts(npts_f))
 
-      call gen_xg_unif_nodes(nlev,nqorder_f,nnodes,npts_f,qnodes,qwts)
+      call gen_xg_unif_nodes_tri(nlev,nqorder_f,nnodes,npts_f,
+     1   qnodes,qwts)
 
       t1 = second()
 C$        t1 = omp_get_wtime()

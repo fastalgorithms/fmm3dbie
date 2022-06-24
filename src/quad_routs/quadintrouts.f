@@ -1,84 +1,119 @@
 c
+c  Notes: The subroutines in this file assume that all patches
+c  are discretized with the same order and same type of
+c  polynomials
 c
-c        routines in this file
-c         
-c           cquadints_adap - completely adaptive integration
+c  Typical usage of this subroutine is with one patch only
+c
+c  Routines in this file
+c   - cquadints_adap: completely adaptive integration
 c                       for the quad patch
 c
-c           cquadints_wnodes - compute integration with prescribed nodes
+c   - cquadints_wnodes: compute integration with prescribed nodes
 c                       and weights
 c           
 c
-c         We integrate against chebyshev polynomials on the standard
-c          patch [-1,1]^2
+c  We integrate against chebyshev/legendre of full order or 
+c  total order polynomials on the standard patch [-1,1]^2
 c                       
 c
 c
-c
-c
-c
 
-      subroutine cquadints_wnodes(npatches,norder,ttype,npols,
+      subroutine cquadints_wnodes(npatches,norder,ipoly,ttype,npols,
      1    srccoefs,ndtarg,ntarg,xyztarg,itargptr,ntargptr,
      2    nporder,nppols,fker,ndd,dpars,ndz,zpars,ndi,ipars,
      3    nqpts,qnodes,qwts,cintvals)
 c
-c       this subroutine computes the integrals
+c  This subroutine computes the integrals
 c
-c       \int_{[-1,1]^2} K(x_{i},\rho_{m}(y)) B_{n}(y) J_{m}(y) dy \, , 
+c    \int_{[-1,1]^2} K(x_{i},\rho_{m}(y)) B_{n}(y) J_{m}(y) dy \, , 
 c
-c        B_{n}(y) are the tensor product legendre polynomials on
-c        [-1,1]^2 of either total degree or full degree 
+c  B_{n}(y) are either tensor product legendre polynomials or
+c  Chebyshev polynomials on   [-1,1]^2 of either total degree 
+c  or full degree 
 c
-c        J_{m}(y) = det(D\rho_{m}^{T} \cdot D\rho_{m})
+c     J_{m}(y) = det(D\rho_{m}^{T} \cdot D\rho_{m})
 c
-c        The maps \rho_{m} are stored as coefficients of 
-c        tensor product legnedre expansion of xyz(u,v)
-c        of either total degree or full degree, along with
-c        expansions of first derivative information of
-c        xyz with respect to u,v
+c  The maps \rho_{m} are stored in the same basis as the 
+c  basis functions used in the integration  along with
+c  expansions of first derivative information of xyz with 
+c  respect to u,v
 c       
-c        The subroutine uses prescribed nodes and weights
-c        to compute the integrals.
+c  The subroutine uses prescribed nodes and weights to compute 
+c  the integrals.
 c
 c
-c        input arguments:
-c        eps:     requested precision 
 c
-c        intype:   quadrature node type
-c                   intype = 1, tensor product gauss-legendre nodes
-c                   intype = 2, xiao gimbutas nodes
-c   
-c        norder: order of polynomials on the patch 
-c        npols = norder*norder, number of polynomials to be integrated 
-c        ntarg - total number of target points
-c        xyztarg(3,ntarg) - location of target points 
-c        nqmax - max number of quads to be used on base quad
-c        fker - function handle for evaluating the kernel k
+c  Input arguments:
+c    - npatches: integer
+c        number of patches
+c    - norder: integer
+c        discretization order of patches
+c    - ipoly: integer
+c        Type of polynomial to be used
+c        * ipoly = 0, Legendre polynomials
+c        * ipoly = 1, Chebyshev polynomials
+c    - ttype: character
+c        type of number of polynomials used
+c        * ttype = 'F' or 'f', full degree polynomials
+c        * ttype = 'T' or 't', total degree polynomials
+c    - npols: integer
+c        Number of polynomials 
+c        npols = norder*norder if ttype = 'F'
+c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
+c    - srccoefs: real *8 (9,npols,npatches)
+c        coefficients of basis expansion of xyz coordinates,
+c        dxyz/du, and dxyz/dv
+c    - ndtarg: integer
+c        leading dimension of target info array. Must be at least
+c        3, and those components must correspond to the xyz
+c        coordinates
+c    - ntarg: integer
+c        number of targets
+c    - xyztarg: real *8 (ndtarg,ntarg)
+c        target information
+c    - itargptr: integer(npatches)
+c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
+c        are the relevant set of targets for patch i
+c    - ntargptr: integer(npatches)
+c        ntargptr(i) is the number of relevant targets for patch i
+c    - nporder: integer
+c        order of basis functions to be integrated
+c    - nppols: integer
+c        number of basis functions to be integrated
+c        * nppols = nporder*nporder, if ttype = 'F'
+c        * nppols = (nporder+1)*(nporder+2)/2, if ttype = 'T'
+c    - fker: function handle
+c        function handle for evaluating the kernel K
+c        * expected calling sequence,
+c            fker(y,ndtarg,x,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c        The output 'f' is complex for this subroutine
+c    - ndd: integer
+c        number of real parameters
+c    - dpars: real *8 (ndd)
+c        real parameters for the fker routine
+c    - ndz: integer
+c        number of complex parameters
+c    - zpars: complex *16 (ndz)
+c        complex parameters for the fker routine
+c    - ndi: integer
+c        number of integer parameters
+c    - ipars: integer(ndi)
+c        integer parameters for the fker routine
+c    - nqpts: integer
+c        number of quadrature points used in the
+c        integration routine
+c    - qnodes: real *8 (2,nqpts)
+c        location of quadrature nodes on (-1,1)^2
+c    - qwts: real *8 (nqpts)
+c        the corresponding quadrature weights
 c 
-c               expected calling sequence
-c               fker(x,y,ynorms,dpars,zpars,ipars,f)
+c  Output arguments:
+c    - cintvals: complex *16 (npols,ntarg)
+c        Integral against all basis functions from patches
+c        to targets
 c
-c               x \in \mathbb{R}^{3}, y \in \mathbb{R}^{2}
-c               
-c               the output is assumed to be complex for the time
-c               being
-c
-c         dpars(*) - real parameters for the fker routine
-c         zpars(*) - complex parameters for the fker routine
-c         ipars(*) - integer parameters for the fker routine
-c         nqpts - number of quadrature nodes
-c         qnodes(2,nqpts) - location of quadrature nodes on [-1,1]^2
-c         qwts(nqpts) - quadrature weights
-c
-c         output:
-c
-c         cintvals(npols,ntarg) - integrals at all targets
-c                                  for all tensor product
-c                                  legendre polynomials
-c
-c
-c
+c------------------------------------- 
 c
       implicit none
       integer norder,npols,ntarg,ipars(*),nqpts
