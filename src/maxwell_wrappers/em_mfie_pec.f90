@@ -184,7 +184,11 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
 
       return
       end subroutine getnearquad_em_mfie_pec
-
+!
+!
+!
+!
+!
 
       subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
@@ -440,11 +444,11 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
           jstart = ixyzso(jpatch)-1
           npover = ixyzso(jpatch+1)-ixyzso(jpatch)
           do l=1,npover
-			ii = ii+1
-			srctmp2(:,ii) = srcover(:,jstart+l)            
-			ctmp2_u(ii)=sigmaover(jstart+l)
-			ctmp2_v(ii)=sigmaover(jstart+l+ns)
-			wtmp2(ii)=whtsover(jstart+l)
+            ii = ii+1
+            srctmp2(:,ii) = srcover(:,jstart+l)            
+            ctmp2_u(ii)=sigmaover(jstart+l)
+            ctmp2_v(ii)=sigmaover(jstart+l+ns)
+            wtmp2(ii)=whtsover(jstart+l)
           enddo
         enddo
 	  call em_mfie_pec_FMM(eps,zpars,nss,ntarg0,srctmp2,targs(:,i),wtmp2,&
@@ -1161,7 +1165,7 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
         enddo
 
         do k=1,it-1
-          temp = cs(k)*hmat(k,it)+sn(k)*hmat(k+1,it)
+          temp = cs(k)*hmat(k,it)+conjg(sn(k))*hmat(k+1,it)
           hmat(k+1,it) = -sn(k)*hmat(k,it)+cs(k)*hmat(k+1,it)
           hmat(k,it) = temp
         enddo
@@ -1170,7 +1174,7 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
 
         call zrotmat_gmres(hmat(it,it),ztmp,cs(it),sn(it))
           
-        hmat(it,it) = cs(it)*hmat(it,it)+sn(it)*wnrm2
+        hmat(it,it) = cs(it)*hmat(it,it)+conjg(sn(it))*wnrm2
         svec(it1) = -sn(it)*svec(it)
         svec(it) = cs(it)*svec(it)
         rmyerr = abs(svec(it1))/rb
