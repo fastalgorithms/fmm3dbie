@@ -1629,3 +1629,173 @@ subroutine col_ind_to_patch_node_ind(npatches,ixyzs,ncol,col_ind, &
   
 
 end subroutine col_ind_to_patch_node_ind
+
+
+
+
+subroutine get_surf_interp_mat_targ_mem(npatches,ixyzs,ntarg, &
+  ipatchtarg,lmem)
+!
+!  This subroutine estimates the memory required for storing an
+!  interpolation matrix for a given collection of targets
+!  on surface whose patch id have already been identified
+!
+!  Input arguments:
+!
+!    - npatches: integer
+!        number of patches
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - ntarg: integer
+!        number of targets
+!    - ipatchtarg: integer(ntarg)
+!        patch id of target i
+!
+!  Output arguments:
+!    - lmem: integer
+!        memory required for storing the interpolation matrix
+
+  implicit none
+  integer, intent(in) :: npatches,ixyzs(npatches+1),ntarg
+  integer, intent(in) :: ipatchtarg(ntarg)
+  integer, intent(out) :: lmem
+
+!  Temporary variables
+ 
+  integer i,ipatch,itarg
+
+  lmem = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:lmem) private(i) 
+  do itarg=1,ntarg
+    i = ipatchtarg(itarg)
+    lmem = lmem + ixyzs(i+1) - ixyzs(i) 
+  enddo
+!$OMP END PARALLEL DO  
+
+end subroutine get_surf_interp_mat_targ_mem
+!
+!
+!
+!
+!
+subroutine get_surf_interp_mat_targ(npatches,norders,ixyzs,iptype,npts,ntarg, &
+  ipatchtarg,uvs_targ,lmem,xmattarg,ixmattarg)
+!
+!  This subroutine constructs the
+!  interpolation matrix for a given collection of targets
+!  on surface whose patch id have already been identified
+!
+!  This subroutine currently implements a slow version
+!
+!  Input arguments:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        discretization order of patches
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        number of points on surface
+!    - ntarg: integer
+!        number of targets
+!    - ipatchtarg: integer(ntarg)
+!        patch id of target i
+!    - uvs_targ: real *8 (2,ntarg)
+!        local uv coordinates of targets on surface
+!    - lmem: integer
+!        memory required to store the interpolation matrix
+!
+!  Output arguments:
+!    - xmattarg: real *8 (lmem)
+!        the interpolation matrix
+!    - ixmattarg: integer(ntarg+1)
+!        location where interpolation matrix for target i begins
+
+  implicit none
+  integer, intent(in) :: npatches,npts
+  integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
+  integer, intent(in) :: iptype(npatches)
+  integer, intent(in) :: ntarg
+  integer, intent(in) :: ipatchtarg(ntarg)
+  real *8, intent(in) :: uvs_targ(2,ntarg)
+  integer, intent(in) :: lmem
+  real *8, intent(out) :: xmattarg(lmem)
+  integer, intent(out) :: ixmattarg(ntarg+1)
+
+!  Temporary variables
+ 
+  integer i,ipatch,itarg,lmem0
+  integer, allocatable :: nxmattarg(:)
+
+  real *8, allocatable :: umat(:,:,:),pols(:),uvs(:,:)
+  integer, allocatable :: iuni(:),iuniind(:),nordertarg(:)
+  integer incx,incy,iind,norder,npmax,npols,nuni
+  real *8 alpha,beta
+
+  allocate(nxmattarg(ntarg))
+
+!$OMP PARALLEL DO DEFAULT(SHARED) private(i) 
+  do itarg=1,ntarg
+    i = ipatchtarg(itarg)
+    nxmattarg(itarg) = ixyzs(i+1) - ixyzs(i) 
+  enddo
+!$OMP END PARALLEL DO  
+
+  
+ ixmattarg(1) = 1
+ nxmattarg(1) = nxmattarg(1)+1
+ call cumsum(ntarg,nxmattarg,ixmattarg(2))
+
+ npmax = maxval(nxmattarg)
+ allocate(pols(npmax))
+
+ allocate(nordertarg(ntarg))
+
+!$OMP PARALLEL DO DEFAULT(SHARED)
+ do i=1,ntarg
+   nordertarg(i) = norders(ipatchtarg(i))
+ enddo
+!$OMP END PARALLEL DO 
+
+
+ allocate(iuni(ntarg),iuniind(ntarg))
+ call get_iuni1_omp(ntarg,nordertarg,nuni,iuni,iuniind) 
+ allocate(umat(npmax,npmax,nuni),uvs(2,npmax))
+
+ do i=1,nuni
+   norder = iuni(i)
+   if(iptype(iuni(i)).eq.1) then
+     npols = (norder+1)*(norder+2)/2
+     call get_vioreanu_nodes(norder,npols,uvs)
+     call koorn_vals2coefs(norder,npols,uvs,umat(1:npols,1:npols,i))
+   endif
+ enddo
+ 
+ alpha = 1.0d0
+ beta = 0.0d0
+ incx = 1
+ incy = 1
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itarg,ipatch,iind,pols,npols,norder)
+  do itarg=1,ntarg
+    ipatch = ipatchtarg(itarg)
+    iind = iuniind(itarg)
+    norder = norders(ipatch)
+    npols = (norder+1)*(norder+2)/2 
+    call koorn_pols(uvs_targ(1,itarg),norders(ipatch),npols,pols)
+    
+    call dgemv_guru('t',npols,npols,alpha,umat(1,1,iind),npmax,pols,incx, &
+      beta,xmattarg(ixmattarg(itarg)),incy)
+
+  enddo
+!$OMP END PARALLEL DO 
+
+
+
+ 
+
+end subroutine get_surf_interp_mat_targ
