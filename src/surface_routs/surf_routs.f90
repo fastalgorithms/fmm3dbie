@@ -538,9 +538,9 @@ subroutine oversample_fun_tri(nd,norder,npols,u,nfar,nfar_pols, &
   integer i,nfar_pols
 
 
-  allocate(uvs(2,nfar_pols),wts(nfar_pols))
-  allocate(umat(nfar_pols,nfar_pols),vmat(nfar_pols,nfar_pols))
-  call vioreanu_simplex_quad(nfar,nfar_pols,uvs,umat,vmat,wts)
+  allocate(uvs(2,nfar_pols))
+!  call vioreanu_simplex_quad(nfar,nfar_pols,uvs,umat,vmat,wts)
+  call get_vioreanu_nodes(nfar,nfar_pols,uvs)
 
   allocate(ucoefs(nd,npols))
 
