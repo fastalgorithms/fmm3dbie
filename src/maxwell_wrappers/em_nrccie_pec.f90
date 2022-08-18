@@ -1,7 +1,7 @@
-subroutine getnearquad_em_nrccie_pec(npatches,norders,&
- &ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
- &ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
- &iquad,rfac0,nquad,wnear)
+      subroutine getnearquad_em_nrccie_pec(npatches,norders,&
+       ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
+       ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
+       iquad,rfac0,nquad,wnear)
 !
 !  This subroutine generates the near field quadrature
 !  for the integral equation:
@@ -23,7 +23,6 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
 !
 !  The recommended parameter for rfac0 is 1.25d0
 !   
-!
 !  input:
 !    npatches - integer
 !      number of patches
@@ -75,11 +74,10 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
 !    eps - real *8
 !      precision requested
 !
-!    zpars - complex *16 (3)
+!    zpars - complex *16 (2)
 !      kernel parameters
 !      zpars(1) = k 
 !      zpars(2) = alpha
-!      zpars(3) = - (not used)
 !
 !    iquadtype - integer
 !      quadrature type
@@ -109,7 +107,7 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
 !      number of entries in wnear
 !
 !    output
-!      wnear - complex *16 (9*nquad) the desired near field quadrature
+!      wnear - complex *16 (nquad,9) the desired near field quadrature
 !
 
       implicit none 
@@ -119,17 +117,17 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
       integer ndtarg,ntarg
       integer iquadtype
       real *8 targs(ndtarg,ntarg)
-      complex *16 zpars(3)
+      complex *16 zpars(2)
       integer nnz,ipars(2)
       real *8 dpars(1)
       integer row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
-      complex *16 wnear(9*nquad)
+      complex *16 wnear(nquad,9)
 
       integer ipatch_id(ntarg)
       real *8 uvs_targ(2,ntarg)
 
       complex *16 alpha,beta
-      integer i,j,ndi,ndd,ndz
+      integer i,j,ndi,ndd,ndz,iuse
 
       integer ipv
 
@@ -137,78 +135,37 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
 !      external h3d_slp, h3d_dlp, h3d_comb
 
       procedure (), pointer :: fker
-	  external  fker_em_nrccie_pec_s
+      external  fker_em_nrccie_pec_s
 
-     ndz=3
-	 ndd=1
-	 ndi=2
-	 ipv=1
+       ndz=2
+       ndd=1
+       ndi=2
+       ipv=1
 
-      fker =>  fker_em_nrccie_pec_s
-	  ipars(1)=1
-	  ipars(2)=1
-	  call zgetnearquad_ggq_guru(npatches,norders,ixyzs,iptype,npts,&
-	   &srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,ipv,&
-	   &fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,&
-	   &rfac0,nquad,wnear(1:nquad))
-      ipars(1)=1
-	  ipars(2)=2
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,iptype,npts,&
-	   &srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,ipv,&
-	   &fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,&
-	   &rfac0,nquad,wnear(nquad+1:2*nquad))
-      ipars(1)=1
-	  ipars(2)=3
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,iptype,npts,&
-	   &srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,ipv,&
-	   &fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,&
-	   &rfac0,nquad,wnear(2*nquad+1:3*nquad))
-      ipars(1)=2
-	  ipars(2)=1
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,iptype,npts,&
-	   &srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,ipv,&
-	   &fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,&
-	   &rfac0,nquad,wnear(3*nquad+1:4*nquad))
-      ipars(1)=2
-	  ipars(2)=2
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,iptype,npts,&
-	   &srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,ipv,&
-	   &fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,&
-	   &rfac0,nquad,wnear(4*nquad+1:5*nquad))
-      ipars(1)=2
-	  ipars(2)=3
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,iptype,npts,&
-	   &srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,ipv,&
-	   &fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,&
-	   &rfac0,nquad,wnear(5*nquad+1:6*nquad))
-	  ipars(1)=3
-	  ipars(2)=1
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,iptype,npts,&
-	   &srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,ipv,&
-	   &fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,&
-	   &rfac0,nquad,wnear(6*nquad+1:7*nquad))
-	  ipars(1)=3
-	  ipars(2)=2
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,iptype,npts,&
-	   &srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,ipv,&
-	   &fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,&
-	   &rfac0,nquad,wnear(7*nquad+1:8*nquad))
-	  ipars(1)=3
-	  ipars(2)=3
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,iptype,npts,&
-	   &srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,eps,ipv,&
-	   &fker,ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,&
-	   &rfac0,nquad,wnear(8*nquad+1:9*nquad))
+       fker =>  fker_em_nrccie_pec_s
 
-      return
-      end subroutine getnearquad_em_nrccie_pec
+       do j=1,3
+         do i=1,3
+           ipars(1)=j
+           ipars(2)=i
+           iuse = (j-1)*3+i
+           call zgetnearquad_ggq_guru(npatches,norders,ixyzs, &
+             iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs, &
+             ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars, &
+             ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad, &
+             wnear(1,iuse))
+         enddo
+       enddo
+
+       return
+       end subroutine getnearquad_em_nrccie_pec
 
 
 
       subroutine lpcomp_em_nrccie_pec_addsub(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-     &eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,sigma,novers,&
-     &nptso,ixyzso,srcover,whtsover,pot,wnear)
+     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
+     eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,sigma,novers,&
+     nptso,ixyzso,srcover,whtsover,pot,wnear)
 !
 !
 !  this subroutine evaluates the layer potential for
@@ -355,9 +312,9 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
       integer iquad(nnz+1)
       complex *16 sigma(3*npts)
       complex *16 pot(3*ntarg)
-	  
-	  complex *16 wnear(9*nquad)
-	  
+  
+      complex *16 wnear(nquad,9)
+   
       integer novers(npatches+1)
       integer nover,npolso,nptso
       real *8 srcover(12,nptso),whtsover(nptso)
@@ -383,7 +340,7 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
       
       complex *16 zdotu,pottmp
       complex *16, allocatable :: ctmp2_u(:),ctmp2_v(:),ctmp2_s(:)
-	  complex *16, allocatable :: dtmp2(:,:)
+      complex *16, allocatable :: dtmp2(:,:)
       real *8 radexp,epsfmm
 
       integer ipars(2)
@@ -393,7 +350,7 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
       real *8, allocatable :: srctmp2(:,:)
       real *8 thresh,ra
       real *8 rr,rmin
-      integer nss,ii,l,npover
+      integer nss,ii,l,npover,nmax
 
       integer nd,ntarg0
 
@@ -401,9 +358,12 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
 
       parameter (nd=1,ntarg0=1)
 
+
       ns = nptso
       done = 1
       pi = atan(done)*4
+
+
 
            
       ifpgh = 0
@@ -411,11 +371,22 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
       allocate(sources(3,ns),targvals(3,ntarg))
       allocate(charges(ns),dipvec(3,ns))
       allocate(sigmaover(3*ns))
+      call cpu_time(t1)
+!$      t1=omp_get_wtime()      
+      call get_near_corr_max(ntarg,row_ptr,nnz,col_ind,npatches, &
+        ixyzso,nmax)
+      call cpu_time(t2)
+!$      t2=omp_get_wtime()     
+      print *, "get near corr max time=",t2-t1
+
+      call cpu_time(t1)
+!$      t1=omp_get_wtime()      
 
 ! 
 !       oversample density
 !
 
+      call prinf('novers=*',novers,10)
       call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
       call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
@@ -427,14 +398,27 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
       ra = 0
 
       call get_fmm_thresh(12,ns,srcover,12,npts,srcvals,thresh)
+      call cpu_time(t2)
+!$      t2=omp_get_wtime()      
+      
+
+      print *, "preproc time=",t2-t1
 !
 !       fmm call
 !
       ifdir=0 ! (This is to activate the FMM, not direct calculation)
-	 
-	  call em_nrccie_pec_FMM(eps,zpars,ns,npts,srcover,targs,whtsover,&
+ 
+     call cpu_time(t1)
+!$     t1 = omp_get_wtime()     
+     call em_nrccie_pec_FMM(eps,zpars,ns,npts,srcover,targs,whtsover,&
        &sigmaover(1:ns),sigmaover(ns+1:2*ns),sigmaover(2*ns+1:3*ns),&
        &pot(1:npts),pot(npts+1:2*npts),pot(2*npts+1:3*npts),thresh,ifdir)
+     call cpu_time(t2)
+!$     t2 = omp_get_wtime()     
+     
+     timeinfo(1) = t2-t1
+
+     print *, "fmm time=",timeinfo(1)
 
 !
 !        compute threshold for ignoring local computation
@@ -448,10 +432,10 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
 
 
       call cpu_time(t1)
-!C$      t1 = omp_get_wtime()
+!$      t1 = omp_get_wtime()
 
-!C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
-!C$OMP$PRIVATE(jstart,pottmp,npols)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart) &
+!$OMP PRIVATE(jstart,pottmp,npols,l)
       do i=1,ntarg
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -459,88 +443,95 @@ subroutine getnearquad_em_nrccie_pec(npatches,norders,&
           jquadstart = iquad(j)
           jstart = ixyzs(jpatch) 
           do l=1,npols
-            pot(i) = pot(i) + wnear(jquadstart+l-1)*&
-			 &sigma(jstart+l-1)
-            pot(i) = pot(i) + wnear(nquad+jquadstart+l-1)*&
-			 &sigma(jstart+l-1+npts)
-            pot(i) = pot(i) + wnear(2*nquad+jquadstart+l-1)*&
-			 &sigma(jstart+l-1+2*npts)
+            pot(i) = pot(i) + wnear(jquadstart+l-1,1)*  &
+               sigma(jstart+l-1)
+            pot(i) = pot(i) + wnear(jquadstart+l-1,2)*  &
+               sigma(jstart+l-1+npts)
+            pot(i) = pot(i) + wnear(jquadstart+l-1,3)*  &
+               sigma(jstart+l-1+2*npts)
 
-            pot(i+npts) = pot(i+npts) + wnear(3*nquad+jquadstart+l-1)*&
-			 &sigma(jstart+l-1)
-            pot(i+npts) = pot(i+npts) + wnear(4*nquad+jquadstart+l-1)*&
-			 &sigma(jstart+l-1+npts)
-            pot(i+npts) = pot(i+npts) + wnear(5*nquad+jquadstart+l-1)*&
-			 &sigma(jstart+l-1+2*npts)
+            pot(i+npts) = pot(i+npts) + wnear(jquadstart+l-1,4)*  &
+               sigma(jstart+l-1)
+            pot(i+npts) = pot(i+npts) + wnear(jquadstart+l-1,5)*  &
+               sigma(jstart+l-1+npts)
+            pot(i+npts) = pot(i+npts) + wnear(jquadstart+l-1,6)*  &
+               sigma(jstart+l-1+2*npts)
 
-            pot(i+2*npts) = pot(i+2*npts) + wnear(6*nquad+jquadstart+l-1)*&
-			 &sigma(jstart+l-1)
-            pot(i+2*npts) = pot(i+2*npts) + wnear(7*nquad+jquadstart+l-1)*&
-			 &sigma(jstart+l-1+npts)
-            pot(i+2*npts) = pot(i+2*npts) + wnear(8*nquad+jquadstart+l-1)*&
-			 &sigma(jstart+l-1+2*npts)
+            pot(i+2*npts) = pot(i+2*npts) + wnear(jquadstart+l-1,7)*  &
+               sigma(jstart+l-1)
+            pot(i+2*npts) = pot(i+2*npts) + wnear(jquadstart+l-1,8)*  &
+               sigma(jstart+l-1+npts)
+            pot(i+2*npts) = pot(i+2*npts) + wnear(jquadstart+l-1,9)*  &
+               sigma(jstart+l-1+2*npts)
           enddo
         enddo
       enddo
-!C$OMP END PARALLEL DO
+!$OMP END PARALLEL DO
 
+      call cpu_time(t2)
+!$      t2 = omp_get_wtime()
+      timeinfo(2) = t2-t1
+
+      print *, "near comp add time=",timeinfo(2)
 !
 !     Remove near contribution of the FMM
 !
-
-!C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2)
-!C$OMP$PRIVATE(ctmp2_u,ctmp2_v,wtmp2,nss,l,jstart,ii,E,npover)
-      ifdir=1
+      
+      allocate(srctmp2(12,nmax),ctmp2_u(nmax),ctmp2_v(nmax))
+      allocate(ctmp2_s(nmax),wtmp2(nmax))
+      call cpu_time(t1)
+!$      t1 = omp_get_wtime()
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,ifdir) &
+!$OMP PRIVATE(ii,j,jpatch,jstart,npover,l,E,srctmp2,ctmp2_u,ctmp2_v) & 
+!$OMP PRIVATE(ctmp2_s,wtmp2,nss)
       do i=1,ntarg
+        ifdir = 1
         nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          nss = nss + ixyzso(jpatch+1)-ixyzso(jpatch)
-        enddo
-        allocate(srctmp2(12,nss),ctmp2_u(nss),ctmp2_v(nss))
-        allocate(ctmp2_s(nss),wtmp2(nss))
-
-        rmin = 1.0d6
-        ii = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           jstart = ixyzso(jpatch)-1
           npover = ixyzso(jpatch+1)-ixyzso(jpatch)
           do l=1,npover
-			ii = ii+1
-			srctmp2(:,ii) = srcover(:,jstart+l)            
-			ctmp2_u(ii)=sigmaover(jstart+l)
-			ctmp2_v(ii)=sigmaover(jstart+l+ns)
-			ctmp2_s(ii)=sigmaover(jstart+l+2*ns)
-			wtmp2(ii)=whtsover(jstart+l)
+            nss = nss+1
+            srctmp2(:,nss) = srcover(:,jstart+l)            
+            ctmp2_u(nss)=sigmaover(jstart+l)
+            ctmp2_v(nss)=sigmaover(jstart+l+ns)
+            ctmp2_s(nss)=sigmaover(jstart+l+2*ns)
+
+            wtmp2(nss)=whtsover(jstart+l)
           enddo
         enddo
-	  call em_nrccie_pec_FMM(eps,zpars,nss,ntarg0,srctmp2,targs(:,i),wtmp2,&
-       &ctmp2_u,ctmp2_v,ctmp2_s,&
-       &E(1),E(2),E(3),thresh,ifdir)
+        E(1:3) = 0
+       call em_nrccie_pec_FMM(eps,zpars,nss,ntarg0,srctmp2,targs(:,i),wtmp2,&
+         &ctmp2_u,ctmp2_v,ctmp2_s,&
+         &E(1),E(2),E(3),thresh,ifdir)
 
-	    pot(i) = pot(i) - E(1)
-	    pot(i+ntarg) = pot(i+ntarg) - E(2)
-	    pot(i+2*ntarg) = pot(i+2*ntarg) - E(3)		
+        pot(i) = pot(i) - E(1)
+        pot(i+ntarg) = pot(i+ntarg) - E(2)
+        pot(i+2*ntarg) = pot(i+2*ntarg) - E(3)
 
-        deallocate(srctmp2,ctmp2_u,ctmp2_v,ctmp2_s,wtmp2)
       enddo
       
       call cpu_time(t2)
-!C$      t2 = omp_get_wtime()     
+!$      t2 = omp_get_wtime()     
 
-      timeinfo(2) = t2-t1
+      timeinfo(3) = t2-t1
+      print *, "near comp sub time=",timeinfo(2)
+      deallocate(srctmp2,ctmp2_u,ctmp2_v,ctmp2_s,wtmp2)
 
 
 !!      call prin2('quadrature time=*',timeinfo,2)
       
-      ttot = timeinfo(1) + timeinfo(2)
-!!      call prin2('time in lpcomp=*',ttot,1)
-
+      ttot = timeinfo(1) + timeinfo(2) +timeinfo(3)
+      call prin2('time in lpcomp=*',ttot,1)
+      call prin2('timeinfo=*',timeinfo,3)
       return
       end subroutine lpcomp_em_nrccie_pec_addsub
-	  
-
+!
+!
+!
+!
+!
 subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,&
      &rhs,eps_gmres,niter,errs,rres,soln)
@@ -687,7 +678,7 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
       integer nnz,nquad
       integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
 
-      complex *16, allocatable :: wnear(:)
+      complex *16, allocatable :: wnear(:,:)
 
       real *8, allocatable :: srcover(:,:),wover(:)
       integer, allocatable :: ixyzso(:),novers(:)
@@ -744,12 +735,14 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
       ndtarg = 12
       ntarg = npts
       allocate(targs(ndtarg,npts),uvs_targ(2,ntarg),ipatch_id(ntarg))
-!C$OMP PARALLEL DO DEFAULT(SHARED)
+!C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j,i)
       do i=1,ntarg
-		targs(:,i)=srcvals(:,i)
-		ipatch_id(i) = -1
-		uvs_targ(1,i) = 0
-		uvs_targ(2,i) = 0
+        do j=1,12
+          targs(j,i)=srcvals(j,i)
+        enddo
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
       enddo
 !C$OMP END PARALLEL DO   
 
@@ -758,7 +751,7 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
 !    initialize patch_id and uv_targ for on surface targets
 !
       call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts,&
-     &ipatch_id,uvs_targ)
+        ipatch_id,uvs_targ)
 
 !
 !
@@ -810,19 +803,19 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
       print *, "beginning far order estimation"
 
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,&
-     &rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),&
-     &nnz,row_ptr,col_ind,rfac,novers,ixyzso)
+        rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zpars(1),&
+        nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
       print *, "npts_over=",npts_over
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
-      call oversample_geom(npatches,norders,ixyzs,iptype,npts,&
-     &srccoefs,srcvals,novers,ixyzso,npts_over,srcover)
+      call oversample_geom(npatches,norders,ixyzs,iptype,npts, &
+        srccoefs,srcvals,novers,ixyzso,npts_over,srcover)
 
-      call get_qwts(npatches,novers,ixyzso,iptype,npts_over,&
-     &srcover,wover)
+      call get_qwts(npatches,novers,ixyzso,iptype,npts_over, &
+        srcover,wover)
 
 
 !
@@ -830,30 +823,29 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
 !
       nquad = iquad(nnz+1)-1
       print *, "nquad=",nquad
-      allocate(wnear(9*nquad))
-      
-!C$OMP PARALLEL DO DEFAULT(SHARED)      
-      do i=1,9*nquad
-		wnear(i)=0
+      allocate(wnear(nquad,9))
+      do j=1,9
+!$OMP PARALLEL DO DEFAULT(SHARED)      
+        do i=1,nquad
+          wnear(i,j)=0
+        enddo
+!$OMP END PARALLEL DO    
       enddo
-!C$OMP END PARALLEL DO    
 
 
       iquadtype = 1
 
-!!      eps2 = 1.0d-8
-
       print *, "starting to generate near quadrature"
       call cpu_time(t1)
-!C$      t1 = omp_get_wtime()      
+!$      t1 = omp_get_wtime()      
 
       call getnearquad_em_nrccie_pec(npatches,norders,&
-     &ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
-     &ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
-     &iquad,rfac0,nquad,wnear)
-	 	 
+        ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
+        ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
+        iquad,rfac0,nquad,wnear)
+ 
       call cpu_time(t2)
-!C$      t2 = omp_get_wtime()     
+!$      t2 = omp_get_wtime()     
 
       call prin2('quadrature generation time=*',t2-t1,1)
       
@@ -907,11 +899,11 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
 !        evaluation routine  
 !
 
-        call lpcomp_em_nrccie_pec_addsub(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
-     &eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,&
-     &vmat(1,it),novers,npts_over,ixyzso,srcover,wover,wtmp,&
-	 &wnear)
+        call lpcomp_em_nrccie_pec_addsub(npatches,norders,ixyzs, &
+        iptype,npts,srccoefs,srcvals,ndtarg,npts,targs, &
+        eps,zpars,nnz,row_ptr,col_ind,iquad,nquad, &
+        vmat(1,it),novers,npts_over,ixyzso,srcover,wover,wtmp, &
+        wnear)
 
         do k=1,it
           hmat(k,it) = 0
@@ -993,11 +985,11 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
 !
 
 
-          call lpcomp_em_nrccie_pec_addsub(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
-     &eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,&
-     &soln,novers,npts_over,ixyzso,srcover,wover,wtmp,&
-	 &wnear)
+          call lpcomp_em_nrccie_pec_addsub(npatches,norders,ixyzs, &
+           iptype,npts,srccoefs,srcvals,ndtarg,npts,targs, &
+           eps,zpars,nnz,row_ptr,col_ind,iquad,nquad, &
+           soln,novers,npts_over,ixyzso,srcover,wover,wtmp, &
+           wnear)
 
             
           do i=1,npts
@@ -1011,9 +1003,11 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
 !
       return
       end subroutine em_nrccie_pec_solver
-
-
-
+!
+!
+!
+!  CONTINUE FROM HERE
+!
 subroutine fker_em_nrccie_pec_s(srcinfo, ndt,targinfo,ndd, dpars,ndz,zpars,&
  &ndi,ipars,E_val)
 implicit none
