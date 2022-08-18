@@ -56,8 +56,8 @@ c
       endif
 
 
-      dpars(1) = 1.1d0
-      dpars(2) = 0
+      dpars(1) = -1.1d0
+      dpars(2) = 1.2d0
       if(igeomtype.eq.1) then
         xyz_out(1) = 3.17d0
         xyz_out(2) = -0.03d0
@@ -263,9 +263,8 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
       err = sqrt(err/ra)
       call prin2('error in matvec=*',err,1)
 
-
-
-      did = -(-1)**(ifinout)*2*pi*dpars(2)
+      ifinout = 0
+      did = -(-1)**(ifinout)*dpars(2)/2
       do i=1,npts
         xmat(i,i) = xmat(i,i) + did 
       enddo

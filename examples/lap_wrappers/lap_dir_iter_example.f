@@ -47,8 +47,11 @@ c
         npatches = 2*ipars(1)*ipars(2)
       endif
 
-
-      dpars(1) = 1.0d0
+c
+c  note if D+S is used for interior problem then the error is too high due to 
+c  null space
+c
+      dpars(1) = -1.0d0
       dpars(2) = 1.0d0 
 
       if(igeomtype.eq.1) then
@@ -160,8 +163,8 @@ c
      1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
      2  uvs_targ,eps,dpars,sigma,pot)
 
-      call prin2('potex=*',potex,2)
-      call prin2('pot=*',pot,2)
+      call prin2('potex=*',potex,1)
+      call prin2('pot=*',pot,1)
       erra = abs(pot-potex)/abs(potex)
       call prin2('relative error=*',erra,1)
 
