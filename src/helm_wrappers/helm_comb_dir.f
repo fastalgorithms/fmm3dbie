@@ -1558,7 +1558,7 @@ C$OMP$PRIVATE(jstart,pottmp,npols,l)
           jstart = ixyzso(jpatch)
           do l=1,npols
             pot(i) = pot(i) -
-     1               0*wnearsub(jquadstart+l-1)*sigmaover(jstart+l-1)
+     1               wnearsub(jquadstart+l-1)*sigmaover(jstart+l-1)
           enddo
         enddo
       enddo
@@ -1631,6 +1631,347 @@ c
 c
 c
 c
+c
+      subroutine lpcomp_helm_comb_dir_addsub_low_mem(npatches,norders,
+     1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
+     2   eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,
+     3   wnear,sigma,novers,nptso,ixyzso,srcover,whtsover,pot)
+c
+c
+c      this subroutine evaluates the layer potential for
+c      the representation u = (\alpha S_{k} + \beta D_{k}) 
+c      where the near field is precomputed and stored
+c      in the row sparse compressed format.
+c
+c     The fmm is used to accelerate the far-field and 
+c     near-field interactions are handled via precomputed quadrature
+c
+c
+c     Using add and subtract - no need to call tree and set fmm parameters
+c      can directly call existing fmm library
+c
+c
+c       input:
+c         npatches - integer
+c            number of patches
+c
+c         norders- integer(npatches)
+c            order of discretization on each patch 
+c
+c         ixyzs - integer(npatches+1)
+c            ixyzs(i) denotes the starting location in srccoefs,
+c               and srcvals array corresponding to patch i
+c   
+c         iptype - integer(npatches)
+c            type of patch
+c             iptype = 1, triangular patch discretized using RV nodes
+c
+c         npts - integer
+c            total number of discretization points on the boundary
+c 
+c         srccoefs - real *8 (9,npts)
+c            koornwinder expansion coefficients of xyz, dxyz/du,
+c            and dxyz/dv on each patch. 
+c            For each point srccoefs(1:3,i) is xyz info
+c                           srccoefs(4:6,i) is dxyz/du info
+c                           srccoefs(7:9,i) is dxyz/dv info
+c
+c         srcvals - real *8 (12,npts)
+c             xyz(u,v) and derivative info sampled at the 
+c             discretization nodes on the surface
+c             srcvals(1:3,i) - xyz info
+c             srcvals(4:6,i) - dxyz/du info
+c             srcvals(7:9,i) - dxyz/dv info
+c             srcvals(10:12,i) - normals info
+c 
+c         ndtarg - integer
+c            leading dimension of target array
+c        
+c         ntarg - integer
+c            number of targets
+c
+c         targs - real *8 (ndtarg,ntarg)
+c            target information
+c
+c          eps - real *8
+c             precision requested
+c
+c          zpars - complex *16 (3)
+c              kernel parameters (Referring to formula (1))
+c              zpars(1) = k 
+c              zpars(2) = alpha
+c              zpars(3) = beta
+c
+c           nnz - integer *8
+c             number of source patch-> target interactions in the near field
+c 
+c           row_ptr - integer(ntarg+1)
+c              row_ptr(i) is the pointer
+c              to col_ind array where list of relevant source patches
+c              for target i start
+c
+c           col_ind - integer (nnz)
+c               list of source patches relevant for all targets, sorted
+c               by the target number
+c
+c           iquad - integer(nnz+1)
+c               location in wnear array where quadrature for col_ind(i)
+c               starts
+c
+c           nquad - integer
+c               number of entries in wnear
+c
+c           wnear - complex *16(nquad)
+c               the near field quadrature correction
+c
+c           sigma - complex *16(npts)
+c               density for layer potential
+c
+c           novers - integer(npatches)
+c              order of discretization for oversampled sources and
+c               density
+c
+c         ixyzso - integer(npatches+1)
+c            ixyzso(i) denotes the starting location in srcover,
+c               corresponding to patch i
+c   
+c           nptso - integer
+c              total number of oversampled points
+c
+c           srcover - real *8 (12,nptso)
+c              oversampled set of source information
+c
+c           whtsover - real *8 (nptso)
+c             smooth quadrature weights at oversampled nodes
+c
+c
+c         output
+c           pot - complex *16(npts)
+c              layer potential evaluated at the target points
+c
+c           
+c               
+c
+      implicit none
+      integer, intent(in) :: npatches,npts
+      integer, intent(in) :: ndtarg,ntarg
+      integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer, intent(in) :: ixyzso(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      complex *16, intent(in) :: zpars(3)
+      integer, intent(in) :: nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
+      integer, intent(in) :: iquad(nnz+1)
+      complex *16, intent(in) :: wnear(nquad),sigma(npts)
+      integer, intent(in) :: novers(npatches+1)
+      integer, intent(in) :: nptso
+      real *8, intent(in) :: srcover(12,nptso),whtsover(nptso)
+      complex *16, intent(out) :: pot(ntarg)
+
+      integer norder,npols,nover,npolso
+      complex *16, allocatable :: potsort(:)
+
+      real *8, allocatable :: sources(:,:),targvals(:,:)
+      complex *16, allocatable :: charges(:),dipvec(:,:),sigmaover(:)
+      integer ns,nt
+      complex *16 alpha,beta
+      integer ifcharge,ifdipole
+      integer ifpgh,ifpghtarg
+      complex *16 tmp(10),val
+
+      real *8 xmin,xmax,ymin,ymax,zmin,zmax,sizey,sizez,boxsize
+
+
+      integer i,j,jpatch,jquadstart,jstart
+
+
+      integer ifaddsub
+
+      integer ntj
+      
+      complex *16 zdotu,pottmp
+      real *8 radexp,epsfmm
+
+      integer ipars
+      real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
+
+      real *8, allocatable :: radsrc(:)
+      real *8, allocatable :: srctmp2(:,:)
+      complex *16, allocatable :: ctmp2(:),dtmp2(:,:)
+      real *8 thresh,ra
+      real *8 rr,rmin
+      real *8 over4pi
+      integer nss,ii,l,npover
+      integer nmax,ier,iper
+
+      integer nd,ntarg0
+
+      real *8 ttot,done,pi
+      data over4pi/0.07957747154594767d0/
+
+      parameter (nd=1,ntarg0=1)
+
+      ns = nptso
+      done = 1
+      pi = atan(done)*4
+
+c
+c    estimate max number of sources in neear field of 
+c    any target
+c
+      nmax = 0
+      call get_near_corr_max(ntarg,row_ptr,nnz,col_ind,npatches,
+     1  ixyzso,nmax)
+      allocate(srctmp2(3,nmax),ctmp2(nmax),dtmp2(3,nmax))
+           
+      ifpgh = 0
+      ifpghtarg = 1
+      allocate(sources(3,ns),targvals(3,ntarg))
+      allocate(charges(ns),dipvec(3,ns))
+      allocate(sigmaover(ns))
+
+c 
+c       oversample density
+c
+
+      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype, 
+     1    npts,sigma,novers,ixyzso,ns,sigmaover)
+
+
+      ra = 0
+
+
+c
+c       set relevatn parameters for the fmm
+c
+      alpha = zpars(2)*over4pi
+      beta = zpars(3)*over4pi
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
+      do i=1,ns
+        sources(1,i) = srcover(1,i)
+        sources(2,i) = srcover(2,i)
+        sources(3,i) = srcover(3,i)
+
+        charges(i) = sigmaover(i)*whtsover(i)*alpha
+        dipvec(1,i) = sigmaover(i)*whtsover(i)*srcover(10,i)*beta
+        dipvec(2,i) = sigmaover(i)*whtsover(i)*srcover(11,i)*beta
+        dipvec(3,i) = sigmaover(i)*whtsover(i)*srcover(12,i)*beta
+      enddo
+C$OMP END PARALLEL DO      
+
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+      do i=1,ntarg
+        targvals(1,i) = targs(1,i)
+        targvals(2,i) = targs(2,i)
+        targvals(3,i) = targs(3,i)
+      enddo
+C$OMP END PARALLEL DO      
+
+      ifcharge = 1
+      ifdipole = 1
+
+      if(alpha.eq.0) ifcharge = 0
+      if(beta.eq.0) ifdipole = 0
+
+c
+c
+c       call the fmm
+c
+
+      call cpu_time(t1)
+C$      t1 = omp_get_wtime()      
+      call hfmm3d(nd,eps,zpars(1),ns,sources,ifcharge,charges,
+     1  ifdipole,dipvec,iper,ifpgh,tmp,tmp,tmp,ntarg,targvals,ifpghtarg,
+     1  pot,tmp,tmp,ier)
+      call cpu_time(t2)
+C$      t2 = omp_get_wtime()
+
+      timeinfo(1) = t2-t1
+
+
+c
+c        compute threshold for ignoring local computation
+c
+      call get_fmm_thresh(3,ns,sources,3,ntarg,targvals,thresh)
+
+c
+c       add in precomputed quadrature
+
+      call cpu_time(t1)
+C$      t1 = omp_get_wtime()
+
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
+C$OMP$PRIVATE(jstart,pottmp,npols,l)
+      do i=1,ntarg
+        do j=row_ptr(i),row_ptr(i+1)-1
+          jpatch = col_ind(j)
+          npols = ixyzs(jpatch+1)-ixyzs(jpatch)
+          jquadstart = iquad(j)
+          jstart = ixyzs(jpatch) 
+          do l=1,npols
+            pot(i) = pot(i) + wnear(jquadstart+l-1)*sigma(jstart+l-1)
+          enddo
+        enddo
+      enddo
+C$OMP END PARALLEL DO
+
+
+c
+
+cC$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2)
+cC$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,ii,val,npover)
+c      do i=1,ntarg
+c        nss = 0
+c        do j=row_ptr(i),row_ptr(i+1)-1
+c          jpatch = col_ind(j)
+c          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+c            nss = nss+1
+c            srctmp2(1,nss) = srcover(1,l)
+c            srctmp2(2,nss) = srcover(2,l)
+c            srctmp2(3,nss) = srcover(3,l)
+c
+c            if(ifcharge.eq.1) ctmp2(nss) = charges(l)
+c            if(ifdipole.eq.1) then
+c              dtmp2(1,nss) = dipvec(1,l)
+c              dtmp2(2,nss) = dipvec(2,l)
+c              dtmp2(3,nss) = dipvec(3,l)
+c            endif
+c          enddo
+c        enddo
+c
+c        val = 0
+c        if(ifcharge.eq.1.and.ifdipole.eq.0) then
+c          call h3ddirectcp(nd,zpars(1),srctmp2,ctmp2,
+c     1        nss,targvals(1,i),ntarg0,val,thresh)
+c        endif
+c
+c        if(ifcharge.eq.0.and.ifdipole.eq.1) then
+c          call h3ddirectdp(nd,zpars(1),srctmp2,dtmp2,
+c     1          nss,targvals(1,i),ntarg0,val,thresh)
+c        endif
+c
+c        if(ifcharge.eq.1.and.ifdipole.eq.1) then
+c          call h3ddirectcdp(nd,zpars(1),srctmp2,ctmp2,dtmp2,
+c     1          nss,targvals(1,i),ntarg0,val,thresh)
+c        endif
+c        pot(i) = pot(i) - val
+c      enddo
+      
+      call cpu_time(t2)
+C$      t2 = omp_get_wtime()     
+
+      timeinfo(2) = t2-t1
+
+
+cc      call prin2('quadrature time=*',timeinfo,2)
+      
+      ttot = timeinfo(1) + timeinfo(2)
+cc      call prin2('time in lpcomp=*',ttot,1)
+
+      
+      return
+      end
+
 c
       subroutine lpcomp_helm_comb_dir_setsub(npatches,norders,ixyzs,
      1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,

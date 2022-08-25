@@ -683,7 +683,8 @@ subroutine oversample_fun_tri_transpose(nd,norder,npols,uover,nfar,nfar_pols, &
   allocate(wts0(npols))
   allocate(pmat(npols,nfar_pols))
 
-  call vioreanu_simplex_quad(nfar,nfar_pols,uvs,umat,vmat,wts)
+  call get_vioreanu_nodes(nfar,nfar_pols,uvs)
+!  call vioreanu_simplex_quad(nfar,nfar_pols,uvs,umat,vmat,wts)
   alpha = 1
   beta = 0
 
