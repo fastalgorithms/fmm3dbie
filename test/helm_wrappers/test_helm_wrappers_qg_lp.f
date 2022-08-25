@@ -286,11 +286,17 @@ c     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
 c     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,slp_near,
 c     3  dudnval,nfars,npts_over,ixyzso,srcover,wover,potslp)
 
-      call lpcomp_helm_comb_dir_addsub2(npatches,norders,ixyzs,
+c      call lpcomp_helm_comb_dir_addsub2(npatches,norders,ixyzs,
+c     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
+c     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,iquadsub,nquadsub,
+c     3  slp_near,slp_nearsub,dudnval,nfars,npts_over,ixyzso,srcover,
+c     4  wover,potslp)
+
+      call lpcomp_helm_comb_dir_addsub_low_mem(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,iquadsub,nquadsub,
-     3  slp_near,slp_nearsub,dudnval,nfars,npts_over,ixyzso,srcover,
-     4  wover,potslp)
+     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,slp_near,
+     3  dudnval,nfars,npts_over,ixyzso,srcover,wover,potslp)
+
 
 
       zpars(2) = 0.0d0
