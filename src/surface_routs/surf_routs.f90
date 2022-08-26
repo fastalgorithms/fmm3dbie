@@ -1629,3 +1629,94 @@ subroutine col_ind_to_patch_node_ind(npatches,ixyzs,ncol,col_ind, &
   
 
 end subroutine col_ind_to_patch_node_ind
+
+
+
+
+subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,fname,title)
+!
+!-----------------------------
+!  This subroutine creates a vtk file which contains the following scalar fields:
+!    * points per wavelength
+!    * patch distortion
+!    * estimated error in surface representation if order>=2, else error is
+!      set to 0
+!
+!  Input arguments:
+!    - dlam: real *8
+!        wavelength
+!    - nd: integer
+!        number of functions
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!    - fname: character (len=*)
+!        file name to which info needs to be written
+!
+   implicit none 
+   real *8, intent(in) :: dlam
+   integer, intent(in) :: npatches,norders(npatches),ixyzs(npatches+1)
+   integer, intent(in) :: iptype(npatches),npts
+   real *8, intent(in) :: srcvals(12,npts),srccoefs(9,npts)
+   character (len=*) :: fname,title
+
+   real *8, allocatable :: dppw(:),pdis(:),errp(:)
+   real *8, allocatable :: sigma(:,:),cms(:,:),rads(:),qwts(:)
+   character (len=10), dimension(3) :: scalar_names
+
+   integer nsc,nd,ip,j,i
+   real *8 errm
+   
+
+   nsc = 10
+
+   scalar_names(1) = 'ppw'
+   scalar_names(2) = 'distortion'
+   scalar_names(3) = 'surf_err'
+
+   allocate(dppw(npatches),pdis(npatches),errp(npatches))
+   allocate(cms(3,npatches),rads(npatches))
+   call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, &
+    srccoefs,cms,rads)
+
+   do i=1,npatches
+     dppw(i) = (norders(i)+0.0d0)/(rads(i)/dlam)
+   enddo
+   allocate(qwts(npts))
+   call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
+
+   call get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
+    srccoefs,srcvals,qwts,pdis)
+
+   call surf_fun_error(9,npatches,norders,ixyzs,iptype, &
+     npts,srcvals(1:9,1:npts),qwts,errp,errm)
+
+   nd = 3
+   allocate(sigma(3,npts))
+   do ip=1,npatches
+     do j=ixyzs(ip),ixyzs(ip+1)-1
+       sigma(1,j) = dppw(ip)
+       sigma(2,j) = pdis(ip)
+       sigma(3,j) = errp(ip)
+     enddo
+   enddo
+
+   call surf_vtk_plot_scalar_many(nd,npatches,norders,ixyzs,iptype, &
+     npts,srccoefs,srcvals,sigma,nsc,scalar_names,fname,title)
+
+
+
+end subroutine plot_surface_info_all
