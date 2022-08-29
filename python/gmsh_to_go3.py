@@ -62,7 +62,7 @@ print('Model ' + gmsh.model.getCurrent() + ' (' +
 # pairs:
 entities = gmsh.model.getEntities()
 
-supportedTypes = [2,9,22,21,25]
+supportedTypes = [2,9,21,23,25]
 ndim = 3
 
 for e in entities:
