@@ -84,6 +84,9 @@ def coef2val(nume,npols,ndim,ePos,eCoef,vmatr):
 
 @njit(parallel=True)
 def get_normal_du_dv(nume,npols,order,ePos,eDu,eDv,eNormal):
+    nd_ptr = val_to_ptr(nb.int32(1))
+    order_ptr = val_to_ptr(nb.int32(order))
+    npols_ptr = val_to_ptr(nb.int32(npols))
     for ielem in prange(0,nume):
         ptcnt = ielem*npols
         ex = ePos[0][ielem*npols:(ielem+1)*npols]
@@ -92,9 +95,6 @@ def get_normal_du_dv(nume,npols,order,ePos,eDu,eDv,eNormal):
         exduv = np.empty((npols,2),dtype=np.float64)
         eyduv = np.empty((npols,2),dtype=np.float64)
         ezduv = np.empty((npols,2),dtype=np.float64)
-        nd_ptr = val_to_ptr(nb.int32(1))
-        order_ptr = val_to_ptr(nb.int32(order))
-        npols_ptr = val_to_ptr(nb.int32(npols))
         srout_normal_du_dv(nd_ptr,order_ptr,npols_ptr,ex.ctypes,exduv.ctypes)
         srout_normal_du_dv(nd_ptr,order_ptr,npols_ptr,ey.ctypes,eyduv.ctypes)
         srout_normal_du_dv(nd_ptr,order_ptr,npols_ptr,ez.ctypes,ezduv.ctypes)
