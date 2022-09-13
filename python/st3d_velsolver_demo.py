@@ -148,7 +148,7 @@ usurf = h3.lpcomp_stok_comb_vel(norders,ixyzs,iptype,srccoefs,srcvals,
 # Note routine only returns principal value part of the double
 # layer potential on surface. Fix the identity term
 #
-usurf = usurf - soln2*dpars[1]*(-1.0)**(ifinout)*2*np.pi
+usurf = usurf - soln2*dpars[1]*(-1.0)**(ifinout)/2
 rhs = np.reshape(rhs,(3,npts),'F')
 err = np.linalg.norm((usurf[0,:]-rhs[0,:])*np.sqrt(wts))/np.linalg.norm(rhs[0,:]*np.sqrt(wts))
 print("error in computing velocity on boundary = ",str(err))
