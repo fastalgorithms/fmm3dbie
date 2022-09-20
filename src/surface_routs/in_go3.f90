@@ -36,7 +36,7 @@ implicit none
 	real ( kind = 8 ), allocatable :: uv(:,:),umatr(:,:),vmatr(:,:),w(:)
     integer i
 
-    open(UNIT=18, FILE=filename, STATUS='OLD', ACTION='READ', IOSTAT=ierror)
+    open(UNIT=18, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
 
         read(18,*) norder
         read(18,*) count1
@@ -156,7 +156,7 @@ implicit none
     integer ( kind = 4 ) umio,count1,count2,flag,aux
     integer :: ierror,norder
 	
-        open(UNIT=18, FILE=filename, STATUS='OLD', ACTION='READ', IOSTAT=ierror)
+        open(UNIT=18, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
 
         read(18,*) norder
         read(18,*) ntri

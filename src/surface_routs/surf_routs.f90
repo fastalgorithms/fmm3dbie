@@ -719,20 +719,23 @@ subroutine get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
   real *8 srcvals(12,npts),qwts(npts),tmp(3)
   integer istart
   real *8, allocatable :: wts0(:)
-
+  integer nmax,npmax
+  
+  nmax = maxval(norders(1:npatches))
+  npmax = (nmax+1)*(nmax+2)/2
+  allocate(wts0(npmax))
 
   do i=1,npatches
     istart = ixyzs(i)
     npols = ixyzs(i+1)-ixyzs(i)
-    allocate(wts0(npols))
     if(iptype(i).eq.1) call get_vioreanu_wts(norders(i),npols,wts0)
     do j=1,npols
       ipt = istart + j-1
       call cross_prod3d(srcvals(4,ipt),srcvals(7,ipt),tmp)
       qwts(ipt) = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts0(j)
     enddo
-    deallocate(wts0)
   enddo
+  deallocate(wts0)
 end subroutine get_qwts
 
 !
@@ -897,7 +900,7 @@ subroutine get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
   integer npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
   integer npts
   real *8 srccoefs(9,npts),srcvals(12,npts),qwts(npts),pdis(npatches)
-  real *8 rtmp,srat
+  real *8 rtmp,srat,vtmp(3)
   integer i,istart,j,ipt,npols
 
   
@@ -915,6 +918,7 @@ subroutine get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
     enddo
     pdis(i) = sqrt(pdis(i)/rtmp)
   enddo
+  return
 end subroutine get_patch_distortion
 
 
@@ -1695,8 +1699,10 @@ subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
    do i=1,npatches
      dppw(i) = (norders(i)+0.0d0)/(rads(i)/dlam)
    enddo
+
    allocate(qwts(npts))
    call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
+
 
    call get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
     srccoefs,srcvals,qwts,pdis)
