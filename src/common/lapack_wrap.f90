@@ -9,6 +9,27 @@
 !     dgausselim - real matrix, real rhs, real solution
 !     dgausselim_zrhs - real matrix, complex rhs, compex solution
 !
+subroutine dcopy_guru(n,a,incx,b,incy)
+  implicit real *8 (a-h,o-z)
+
+  integer n,incx,incy
+  integer n1,incx1,incy1
+
+  real *8 a(*),b(*)
+
+  n1 = n
+  incx1 = incx
+  incy1 = incy
+  
+  call dcopy(n1, a, incx1, b, incy1)
+
+  return
+end subroutine dcopy_guru
+!
+!
+!
+!
+
 subroutine zvecvec(n, x, y, cd)
 !
 !-----------------
