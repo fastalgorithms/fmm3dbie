@@ -1080,7 +1080,7 @@ subroutine vtk_scatter_plot_scalar(n,xyzs,f,fname,title)
   write(iunit1,'(a)') "# vtk DataFile Version 3.0"
   write(iunit1,'(a)') trim(title)
   write(iunit1,'(a)') "ASCII"
-  write(iunit1,'(a)') "DATASET UNSTRUCTURED_GRID"
+  write(iunit1,'(a)') "DATASET POLYDATA"
   write(iunit1,'(a,i9,a)') "POINTS ", n, " float"
 
   do i = 1,n
@@ -1090,7 +1090,7 @@ subroutine vtk_scatter_plot_scalar(n,xyzs,f,fname,title)
   write(iunit1,'(a)') ""
   write(iunit1,'(a,i9)') "POINT_DATA ", n
   
-  write(iunit1,'(a,a,a,i4)') "SCALARS scat float ", 1
+  write(iunit1,'(a,i4)') "SCALARS scat float ", 1
   write(iunit1,'(a)') "LOOKUP_TABLE default"
   do i = 1,n
     write(iunit1,'(E11.5)') f(i)
