@@ -4,6 +4,10 @@ c  This file contains the following user callable routines:
 c  
 c  * dot_prod3d:
 c      compute the dot product of two vectors
+c  * zdot_prod3d:
+c      computes the dot product of two complex vectors (no conjugation)
+c  * dzdot_prod3d:
+c      computes the dot product of a real vector and a complex vector
 c  * cross_prod3d: 
 c      compute the cross product of two vectors
 c  * zcross_prod3d:
@@ -45,6 +49,70 @@ c----------------
 c
         return
         end
+c
+c
+c
+c
+c
+        subroutine zdot_prod3d(x,y,d)
+c
+c------------------
+c  This subroutine computes the dot product of two vectors
+c
+c  Input arguments:
+c
+c    - x: double complex(3)
+c        input vector 1
+c    - y: double complex(3)
+c        input vector 2
+c  
+c  Output arguments:
+c
+c    - d: double complex
+c        x \cdot y
+c
+c----------------
+        implicit real *8 (a-h,o-z)
+        double complex, intent(in) :: x(3),y(3)
+        double complex, intent(out) :: d
+
+        d=x(1)*y(1)+x(2)*y(2)+x(3)*y(3)
+c
+        return
+        end
+c
+c
+c
+c
+        subroutine dzdot_prod3d(x,y,d)
+c
+c------------------
+c  This subroutine computes the dot product of 
+c  a real vector with a complex vector
+c
+c  Input arguments:
+c
+c    - x: double precision(3)
+c        input vector 1
+c    - y: double complex(3)
+c        input vector 2
+c  
+c  Output arguments:
+c
+c    - d: double complex
+c        x \cdot y
+c
+c----------------
+        implicit real *8 (a-h,o-z)
+        double precision, intent(in) :: x(3)
+        double complex, intent(in) :: y(3)
+        double complex, intent(out) :: d
+
+        d=x(1)*y(1)+x(2)*y(2)+x(3)*y(3)
+c
+        return
+        end
+c
 c
 c
 c
