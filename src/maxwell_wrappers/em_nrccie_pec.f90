@@ -1427,6 +1427,9 @@ implicit none
     call fieldsED(zk,Pt,P0,1,Et2,Ht2,vf,0)
     call fieldsMD(zk,Pt,P0,1,Et2,Ht2,vf,1)
 
+    call prin2('Et2=*',Et2,6)
+    call prin2('Ht2=*',Ht2,6)
+
 !	
 !   Here we are testing the extintion theorem,
 !   that's why we ADD incoming and scattered fields.
@@ -1693,14 +1696,12 @@ implicit none
 !        value of the magnetic field at the target points
 !
 
-subroutine em_nrccie_pec_FMM_targ_oversamp(eps,zk,npatches,norders, &
-    ixyzs,iptype,npts,srcvals,wts,nt,targ,novers,nptso,ixyso,srcover, &
-    whtsover,a_u,a_v,rho_in,E,H)
 ! List of calling arguments
     
     real *8 eps
     complex *16 zk
     integer npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
+    integer npts
     real *8 srcvals(12,npts),wts(npts)
     integer nt
     real *8 targ(3,nt)
@@ -1712,6 +1713,7 @@ subroutine em_nrccie_pec_FMM_targ_oversamp(eps,zk,npatches,norders, &
 
 !    List of local variables
 
+    real *8, allocatable :: source(:,:)
     complex *16, allocatable :: b_vect(:,:)
     complex *16, allocatable :: a_vect_over(:,:),b_vect_over(:,:),rho_over(:)
     complex *16, allocatable :: lambda_over(:)
@@ -1737,11 +1739,11 @@ subroutine em_nrccie_pec_FMM_targ_oversamp(eps,zk,npatches,norders, &
     allocate(b_vect(3,npts))
 
     do i=1,npts
-     b_vect(1:3,i)=a_u(i)*u(1:3,count1) + a_v(i)*v(1:3,i)
+     b_vect(1:3,i)=a_u(i)*u(1:3,i) + a_v(i)*v(1:3,i)
     enddo
 
     allocate(a_vect_over(3,nptso),b_vect_over(3,nptso))
-    allocate(lambda_over(3,nptso),rho_over(nptso))
+    allocate(lambda_over(nptso),rho_over(nptso))
 
     a_vect_over = 0
     lambda_over = 0
@@ -1751,7 +1753,6 @@ subroutine em_nrccie_pec_FMM_targ_oversamp(eps,zk,npatches,norders, &
       b_vect,novers,ixyzso,nptso,b_vect_over)
 
     allocate(source(3,nptso))
-    allocate(rnover(3,nptso))
 
     do i=1,nptso
       rnover(1:3,i) = srcover(10:12,i)
@@ -1779,7 +1780,7 @@ subroutine em_nrccie_pec_FMM_targ_oversamp(eps,zk,npatches,norders, &
       divE,nt,targ)
     
     call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,npts, &
-      rho_in,nover,ixyzso,nptso,rho_over)
+      rho_in,novers,ixyzso,nptso,rho_over)
 
     do i=1,nptso
      rho_over(i)=rho_over(i)*whtsover(i)
