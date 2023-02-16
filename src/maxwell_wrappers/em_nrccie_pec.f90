@@ -1400,57 +1400,61 @@ implicit none
 !
 
     !List of calling arguments
-	complex ( kind = 8 ), intent(in) :: zpars(3)
+    complex ( kind = 8 ), intent(in) :: zpars(3)
     integer, intent(in) :: ns
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),eps_FMM
     real ( kind = 8 ), intent(in) :: wts(ns),P0(3),Pt(3)
-	complex ( kind = 8 ), intent(in) :: sol(3*ns),vf(3)
-	
-    !List of local variables
-	complex ( kind = 8 ) a_u00,a_v00,zk,alpha
-	complex ( kind = 8 ) ima, R1, R2,Et1(3),Et2(3),aux_cmp,Ht2(3),Ht1(3)
-	real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3),sour(3),r,dr(3)
-	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),error_E,error_H
-	real ( kind = 8 ) pi
+    complex ( kind = 8 ), intent(in) :: sol(3*ns),vf(3)
 
-	integer count1
-	
-	ima=(0.0d0,1.0d0)
-	pi=3.1415926535897932384626433832795028841971d0
-	zk=zpars(1)
-	alpha=zpars(2)
-	
-	write (*,*) 'P0',P0
-	call em_nrccie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,1,P0,wts,sol(1:ns),&
-	 &sol(ns+1:2*ns),sol(2*ns+1:3*ns),Et1,Ht1)
-		
-	call fieldsED(zk,Pt,P0,1,Et2,Ht2,vf,0)
-	call fieldsMD(zk,Pt,P0,1,Et2,Ht2,vf,1)
+!   List of local variables
+    complex ( kind = 8 ) a_u00,a_v00,zk,alpha
+    complex ( kind = 8 ) ima, R1, R2,Et1(3),Et2(3),aux_cmp,Ht2(3),Ht1(3)
+    real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3),sour(3),r,dr(3)
+    real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),error_E,error_H
+    real ( kind = 8 ) pi
+
+    integer count1
+
+    ima=(0.0d0,1.0d0)
+    pi=3.1415926535897932384626433832795028841971d0
+    zk=zpars(1)
+    alpha=zpars(2)
+
+    write (*,*) 'P0',P0
+    call em_nrccie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,1,P0,wts,sol(1:ns),&
+      sol(ns+1:2*ns),sol(2*ns+1:3*ns),Et1,Ht1)
+      
+    call fieldsED(zk,Pt,P0,1,Et2,Ht2,vf,0)
+    call fieldsMD(zk,Pt,P0,1,Et2,Ht2,vf,1)
+
+    call prin2('Et2=*',Et2,6)
+    call prin2('Ht2=*',Ht2,6)
 
 !	
 !   Here we are testing the extintion theorem,
 !   that's why we ADD incoming and scattered fields.
 !
 
-	error_E=sqrt(abs(Et1(1)+Et2(1))**2+abs(Et1(2)+Et2(2))**2+&
-	 &abs(Et1(3)+Et2(3))**2)
+    error_E=sqrt(abs(Et1(1)+Et2(1))**2+abs(Et1(2)+Et2(2))**2+&
+        abs(Et1(3)+Et2(3))**2)
 !	write (*,*) 'Error E: ', error_E
-	write (*,*) 'Relative Error E: ', error_E/&
-	 &sqrt(abs(Et2(1))**2+abs(Et2(2))**2+abs(Et2(3))**2)
-		
-	error_H=sqrt(abs(Ht1(1)+Ht2(1))**2+abs(Ht1(2)+Ht2(2))**2+&
-	 &abs(Ht1(3)+Ht2(3))**2)
-!	write (*,*) 'Error H: ', error_H
-	write (*,*) 'Relative Error H: ', error_H/&
-	 &sqrt(abs(Ht2(1))**2+abs(Ht2(2))**2+abs(Ht2(3))**2)
-		
-return
+    write (*,*) 'Relative Error E: ', error_E/&
+     sqrt(abs(Et2(1))**2+abs(Et2(2))**2+abs(Et2(3))**2)
+
+    error_H=sqrt(abs(Ht1(1)+Ht2(1))**2+abs(Ht1(2)+Ht2(2))**2+&
+      abs(Ht1(3)+Ht2(3))**2)
+    write (*,*) 'Relative Error H: ', error_H/ &
+        sqrt(abs(Ht2(1))**2+abs(Ht2(2))**2+abs(Ht2(3))**2)
+
+  return
 end subroutine test_accuracy_em_nrccie_pec
-
-
-
+!
+!
+!
+!
+!
 subroutine em_nrccie_pec_FMM_targ(eps,zk,ns,srcvals,nt,targ,wts,a_u,a_v,&
- &rho_in,E,H)
+    rho_in,E,H)
 implicit none
 !
 !  This funciton computes the fields E,H at a given point using the FMM
@@ -1507,8 +1511,8 @@ implicit none
 !
 
     !List of calling arguments
-	real ( kind = 8 ), intent(in) :: eps
-	complex ( kind = 8 ), intent(in) :: zk
+    real ( kind = 8 ), intent(in) :: eps
+    complex ( kind = 8 ), intent(in) :: zk
     integer, intent(in) :: ns,nt
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),targ(3,nt)
     real ( kind = 8 ), intent(in) :: wts(ns)
@@ -1516,39 +1520,39 @@ implicit none
     complex ( kind = 8 ), intent(out) :: E(3,nt),H(3,nt)
 
     !List of local variables
-	real ( kind = 8 ), allocatable :: n_vect(:,:),u_vect(:,:),v_vect(:,:)
-	real ( kind = 8 ), allocatable :: source(:,:)
+    real ( kind = 8 ), allocatable :: n_vect(:,:),u_vect(:,:),v_vect(:,:)
+    real ( kind = 8 ), allocatable :: source(:,:)
 
     complex ( kind = 8 ), allocatable :: a_vect(:,:),b_vect(:,:)
-	complex ( kind = 8 ), allocatable :: lambda(:),rho(:)
+    complex ( kind = 8 ), allocatable :: lambda(:),rho(:)
     complex ( kind = 8 ), allocatable :: curlE(:,:),gradpot(:,:),divE(:)
-	complex ( kind = 8 ) ima
+    complex ( kind = 8 ) ima
 
     integer count1,count2,ier
     integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
-	real ( kind = 8 ) pi
-	pi=3.1415926535897932384626433832795028841971d0
+    real ( kind = 8 ) pi
+    pi=3.1415926535897932384626433832795028841971d0
 
-	ima=(0.0d0,1.0d0)
+    ima=(0.0d0,1.0d0)
 
     allocate(a_vect(3,ns))
     allocate(b_vect(3,ns))
     allocate(lambda(ns))
-	allocate(rho(ns))
+    allocate(rho(ns))
     allocate(curlE(3,nt))
     allocate(gradpot(3,nt))
-	allocate(divE(nt))
-	
-	allocate(n_vect(3,ns))
-	allocate(u_vect(3,ns))
-	allocate(v_vect(3,ns))
-	allocate(source(3,ns))
+    allocate(divE(nt))
 
-	do count1=1,ns
-     n_vect(:,count1)=srcvals(10:12,count1)
-     source(:,count1)=srcvals(1:3,count1)
-	enddo
-	call orthonormalize_all(srcvals(4:6,:),srcvals(10:12,:),u_vect,v_vect,ns)
+    allocate(n_vect(3,ns))
+    allocate(u_vect(3,ns))
+    allocate(v_vect(3,ns))
+    allocate(source(3,ns))
+
+    do count1=1,ns
+      n_vect(:,count1)=srcvals(10:12,count1)
+      source(:,count1)=srcvals(1:3,count1)
+    enddo
+    call orthonormalize_all(srcvals(4:6,:),srcvals(10:12,:),u_vect,v_vect,ns)
 
     do count1=1,ns
      b_vect(1,count1)=a_u(count1)*u_vect(1,count1)+&
@@ -1558,8 +1562,8 @@ implicit none
      b_vect(3,count1)=a_u(count1)*u_vect(3,count1)+&
       &a_v(count1)*v_vect(3,count1)
     enddo
-	
-    !Computing the full operator
+
+!  Computing the full operator
     ifa_vect=0
     ifb_vect=1
     iflambda=0
@@ -1568,48 +1572,246 @@ implicit none
     ifcurlE=1
     ifdivE=0
 
-	call Vector_Helmholtz_targ(eps,zk,ns,source,wts,ifa_vect,a_vect,&
-	 &ifb_vect,b_vect,iflambda,lambda,ifrho,rho,n_vect,ifE,E,ifcurlE,H,&
-	 &ifdivE,divE,nt,targ)
+    call Vector_Helmholtz_targ(eps,zk,ns,source,wts,ifa_vect,a_vect,&
+     ifb_vect,b_vect,iflambda,lambda,ifrho,rho,n_vect,ifE,E,ifcurlE,H,&
+     ifdivE,divE,nt,targ)
 
-	do count1=1,ns
+    do count1=1,ns
      rho(count1)=rho_in(count1)*wts(count1)
-	enddo
+    enddo
 
 
     !Computing the full operator
     call hfmm3d_t_c_g(eps,zk,ns,source,rho,nt,targ,divE,gradpot,ier)
 
 
-	do count1=1,nt
+    do count1=1,nt
      gradpot(:,count1)=gradpot(:,count1)/(4.0d0*pi)
      divE(count1)=divE(count1)/(4.0d0*pi)
-	enddo
-	
+    enddo
 
-	do count1=1,nt
-     E(1,count1)=ima*zk*E(1,count1)-gradpot(1,count1)
-     E(2,count1)=ima*zk*E(2,count1)-gradpot(2,count1)
-     E(3,count1)=ima*zk*E(3,count1)-gradpot(3,count1)
-	enddo
+    do count1=1,nt
+      E(1,count1)=ima*zk*E(1,count1)-gradpot(1,count1)
+      E(2,count1)=ima*zk*E(2,count1)-gradpot(2,count1)
+      E(3,count1)=ima*zk*E(3,count1)-gradpot(3,count1)
+    enddo
 
-	deallocate(a_vect)
-	deallocate(b_vect)
-	deallocate(lambda)
-	deallocate(curlE)
-	deallocate(rho)
-	deallocate(gradpot)
-	deallocate(divE)
+    deallocate(a_vect)
+    deallocate(b_vect)
+    deallocate(lambda)
+    deallocate(curlE)
+    deallocate(rho)
+    deallocate(gradpot)
+    deallocate(divE)
 
-	deallocate(u_vect)
-	deallocate(v_vect)
-	deallocate(n_vect)
-	deallocate(source)
+    deallocate(u_vect)
+    deallocate(v_vect)
+    deallocate(n_vect)
+    deallocate(source)
 
-return
+  return
 end subroutine em_nrccie_pec_FMM_targ
+!
+!
+!
+!
+!
+!
+!
+subroutine em_nrccie_pec_FMM_targ_oversamp(eps,zk,npatches,norders, &
+    ixyzs,iptype,npts,srcvals,nt,targ,wts,novers,nptso,ixyzso,srcover, &
+    whtsover,a_u,a_v,rho_in,E,H)
+implicit none
+!
+!  This funciton computes the fields E,H at a given point using the FMM
+!
+!  It doesn't contain near field corrections (it's for debugging purposes)   
+!
+!  It uses an oversampled quadrature rule just to avoid some near evaluation
+!  routines although it won't be perfect for near points even after the correction
+!
+!  The representation for the potentials is:
+!  Representation:
+!
+!    H=curlS_{k}[J]
+!
+!    E=ikS_{k}[J]-gradS_{k}[rho]
+!
+!  it requires as input \rho and \rho_2:=S_{ik}[\rho]
+!
+!
+!  input:
+!    - eps: real *8
+!        precision requested
+!    - zk: complex *16 
+!        wavenumber
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization on each patch 
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!    - npts: integer
+!        total number of discretization points on the boundary
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the 
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!    - wts: real *8 (npts)
+!        quadrature weights for integrating smooth functions
+!    - nt: integer
+!        number of targets
+!    - targs: real *8 (3,nt)
+!        target locations
+!    - novers: integer(npatches)
+!        order of discretization for oversampled sources and
+!        density
+!    - nptso: integer
+!        total number of oversampled points
+!    - ixyzso: integer(npatches+1)
+!        ixyzso(i) denotes the starting location in srcover,
+!        corresponding to patch i
+!    - srcover: real *8 (12,nptso)
+!        oversampled set of source information
+!    - whtsover: real *8 (nptso)
+!        smooth quadrature weights at oversampled nodes
+!    - a_u,a_v: complex *16 (npts)
+!        two components of the tanget induced current J on the surface
+!        along the srcvals(4:6,i) and srcvals(10:12,i) \times srcvals(4:6,i)
+!        directions
+!    - rho_in: complex *16 (npts)
+!        induced charge on the surface
+!
+!  Output arguments:
+!    - E: complex *16(3,nt)
+!        value of the electric field at the target points
+!    - H: complex *16(3,nt)
+!        value of the magnetic field at the target points
+!
+
+! List of calling arguments
+    
+    real *8 eps
+    complex *16 zk
+    integer npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
+    integer npts
+    real *8 srcvals(12,npts),wts(npts)
+    integer nt
+    real *8 targ(3,nt)
+    integer novers(npatches),nptso,ixyzso(npatches+1)
+    real *8 srcover(12,nptso),whtsover(nptso)
+    complex *16 a_u(npts),a_v(npts),rho_in(npts)
+    
+    complex *16 E(3,nt),H(3,nt)
+
+!    List of local variables
+
+    real *8, allocatable :: source(:,:)
+    complex *16, allocatable :: b_vect(:,:)
+    complex *16, allocatable :: a_vect_over(:,:),b_vect_over(:,:),rho_over(:)
+    complex *16, allocatable :: lambda_over(:)
+
+    complex *16, allocatable :: curlE(:,:),gradpot(:,:),divE(:)
+
+    real *8, allocatable :: u(:,:),v(:,:),rn(:,:)
+    real *8, allocatable :: rnover(:,:)
 
 
+    complex ( kind = 8 ) ima
+
+    integer count1,count2,ier,i
+    integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
+    real *8 pi
+    pi=3.1415926535897932384626433832795028841971d0
+
+    ima=(0.0d0,1.0d0)
+
+    allocate(u(3,npts),v(3,npts),rn(3,npts),rnover(3,nptso))
+    call orthonormalize_all(srcvals(4:6,:),srcvals(10:12,:),u,v,npts)
+
+    allocate(b_vect(3,npts))
+
+    do i=1,npts
+     b_vect(1:3,i)=a_u(i)*u(1:3,i) + a_v(i)*v(1:3,i)
+    enddo
+
+    allocate(a_vect_over(3,nptso),b_vect_over(3,nptso))
+    allocate(lambda_over(nptso),rho_over(nptso))
+
+    a_vect_over = 0
+    lambda_over = 0
+    rho_over = 0
+
+    call oversample_fun_surf(6,npatches,norders,ixyzs,iptype,npts, &
+      b_vect,novers,ixyzso,nptso,b_vect_over)
+
+    allocate(source(3,nptso))
+
+    do i=1,nptso
+      rnover(1:3,i) = srcover(10:12,i)
+      source(1:3,i) = srcover(1:3,i)
+    enddo
+
+
+    allocate(curlE(3,nt))
+    allocate(gradpot(3,nt))
+    allocate(divE(nt))
+
+
+!  Computing the full operator
+    ifa_vect=0
+    ifb_vect=1
+    iflambda=0
+    ifrho=0
+    ifE=1
+    ifcurlE=1
+    ifdivE=0
+
+    call Vector_Helmholtz_targ(eps,zk,nptso,source,whtsover, &
+      ifa_vect,a_vect_over,ifb_vect,b_vect_over,iflambda, &
+      lambda_over,ifrho,rho_over,rnover,ifE,E,ifcurlE,H,ifdivE, &
+      divE,nt,targ)
+    
+    call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,npts, &
+      rho_in,novers,ixyzso,nptso,rho_over)
+
+    do i=1,nptso
+     rho_over(i)=rho_over(i)*whtsover(i)
+    enddo
+
+
+! Computing the full operator
+    ier = 0 
+    call hfmm3d_t_c_g(eps,zk,nptso,source,rho_over,nt,targ,divE,gradpot,ier)
+
+
+    do count1=1,nt
+       gradpot(:,count1)=gradpot(:,count1)/(4.0d0*pi)
+       divE(count1)=divE(count1)/(4.0d0*pi)
+    enddo
+
+    do count1=1,nt
+      E(1,count1)=ima*zk*E(1,count1)-gradpot(1,count1)
+      E(2,count1)=ima*zk*E(2,count1)-gradpot(2,count1)
+      E(3,count1)=ima*zk*E(3,count1)-gradpot(3,count1)
+    enddo
+
+
+
+  return
+end subroutine em_nrccie_pec_FMM_targ_oversamp
+!
+!
+!
+!
+!
 subroutine 	get_rhs_em_nrccie_pec(P0,vf,alpha,ns,srcvals,zk,RHS)
 implicit none
 !

@@ -17,6 +17,9 @@
 !      vtk_write_plane_vec - write a structured grid of data defined on
 !       a plane
 !
+!      vtk_scatter_plot_scalar - write a scatter plot of points with function
+!      values
+!
 !
 subroutine surf_quadratic_msh_vtk_plot(npatches,norders,ixyzs,iptype, &
   npts,srccoefs,srcvals,fname,title)
@@ -1043,3 +1046,56 @@ subroutine surf_vtk_plot_zvec(npatches,norders,ixyzs,iptype, &
 end subroutine surf_vtk_plot_zvec
 !
 !
+
+
+subroutine vtk_scatter_plot_scalar(n,xyzs,f,fname,title)
+!
+!  this subroutine creates a scatter plot of points with
+!  given function values
+!
+!  Input arguments:
+!    - n: integer
+!        number of points
+!    - xyzs: real *8 (3,n)
+!         xyz coordinates of the points
+!    - f: real *8(n)
+!         function values
+!    - fname: character*
+!         file name for writing out vtk file
+!    - title: character*
+!         title of plot
+!
+  implicit none
+  integer n
+  character (len=*) fname,title
+  real *8 xyzs(3,n),f(n)
+
+  integer i
+  integer iunit1
+
+  
+  iunit1 = 877
+  open(unit = iunit1, file=trim(fname), status='replace')
+
+  write(iunit1,'(a)') "# vtk DataFile Version 3.0"
+  write(iunit1,'(a)') trim(title)
+  write(iunit1,'(a)') "ASCII"
+  write(iunit1,'(a)') "DATASET POLYDATA"
+  write(iunit1,'(a,i9,a)') "POINTS ", n, " float"
+
+  do i = 1,n
+    write(iunit1,"(E11.5,2(2x,e11.5))") xyzs(1,i), xyzs(2,i), xyzs(3,i)
+  end do
+
+  write(iunit1,'(a)') ""
+  write(iunit1,'(a,i9)') "POINT_DATA ", n
+  
+  write(iunit1,'(a,i4)') "SCALARS scat float ", 1
+  write(iunit1,'(a)') "LOOKUP_TABLE default"
+  do i = 1,n
+    write(iunit1,'(E11.5)') f(i)
+  enddo
+
+  close(iunit1)
+
+end subroutine vtk_scatter_plot_scalar
