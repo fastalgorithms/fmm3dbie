@@ -7,6 +7,5 @@ function obj = load_from_file(ff)
     srcvals = dat(3:end);
     srcvals = reshape(srcvals,[npts,12]);
     srcvals = srcvals';
-    obj = surfer(npatches,norder,srcvals);
-    
+    obj = surfer(npatches,norder,srcvals);    
 end
