@@ -1,8 +1,8 @@
 function [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(obj)
-    srcvals = horzcat(obj.srcvals{:});
-    srccoefs = horzcat(obj.srccoefs{:});
+    srcvals = [obj.srcvals{:}];
+    srccoefs = [obj.srccoefs{:}];
     ixyzs = obj.ixyzs;
     iptype = obj.iptype;
     norders = obj.norders;
-    wts = vertcat(obj.weights{:});
+    wts = cat(1,obj.weights{:});
 end

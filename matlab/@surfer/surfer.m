@@ -53,7 +53,7 @@ classdef surfer
                 
                 
                 
-            elseif(length(norders)==npatches)c
+            elseif(length(norders)==npatches)
                 obj.norders = norders;
                 [norders_uni,~,iuse] = unique(norders);
                 nuni = length(norders_uni);
@@ -97,7 +97,7 @@ classdef surfer
          [varargout] = plot(obj,varargin);
          a = area(obj);
          [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(obj);
-         [objout,varargout] = oversample_geometry(obj,novers);
+         [objout,varargout] = oversample(obj,novers);
         
     end
     methods(Static)

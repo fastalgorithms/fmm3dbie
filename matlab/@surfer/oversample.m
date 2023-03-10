@@ -1,4 +1,4 @@
-function [objout,varargout] = oversample_geometry(obj,nover)
+function [objout,varargout] = oversample(obj,nover)
 %
 %  Oversamples the given geometry given a current discretization
 %  and a patchwise oversampling parameter, or a common oversampling

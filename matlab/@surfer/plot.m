@@ -36,27 +36,43 @@ if ( (~holdState && strcmpi(showSurface, 'auto')) || strcmpi(showSurface, 'on') 
         
     end
     
+    
+    
+    ntot = sum([ns{inuni(1:obj.npatches)}]) + 3*obj.npatches;
+    Ttot = cat(1,T{inuni(1:obj.npatches)});
+    xall = zeros(ntot,1);
+    yall = zeros(ntot,1);
+    zall = zeros(ntot,1);
+    
+    
+    istart = 0;
+    itstart = 0;
+    
     for k = 1:obj.npatches
         scl = 0.01;
         
         
         n = ns{inuni(k)};
-        x = zeros(n+3,1);
-        y = zeros(n+3,1);
-        z = zeros(n+3,1);
-        x(1:n) = obj.srcvals{k}(1,:);
-        y(1:n) = obj.srcvals{k}(2,:);
-        z(1:n) = obj.srcvals{k}(3,:);
         
-        nend = (n+1):(n+3);
-        x(nend) = obj.srccoefs{k}(1,:)*pols{inuni(k)};
-        y(nend) = obj.srccoefs{k}(2,:)*pols{inuni(k)};
-        z(nend) = obj.srccoefs{k}(3,:)*pols{inuni(k)};
+        xall(istart+(1:n)) = obj.srcvals{k}(1,:);
+        yall(istart+(1:n)) = obj.srcvals{k}(2,:);
+        zall(istart+(1:n)) = obj.srcvals{k}(3,:);
         
-        trisurf(T{inuni(k)},x,y,z,z,...
-                'EdgeColor', 'None', ...
-                'AmbientStrength', 0.6, 'DiffuseStrength', 0.4, 'SpecularStrength', 0.3);
+        nend = istart + ((n+1):(n+3));
+        xall(nend) = obj.srccoefs{k}(1,:)*pols{inuni(k)};
+        yall(nend) = obj.srccoefs{k}(2,:)*pols{inuni(k)};
+        zall(nend) = obj.srccoefs{k}(3,:)*pols{inuni(k)};
+        
+        [ntt,~] = size(T{inuni(k)});
+        Ttot(itstart+(1:ntt),:) = Ttot(itstart+(1:ntt),:) + istart;
+        istart = istart + n+3;
+        itstart = itstart + ntt;
+        
     end
+    
+    trisurf(Ttot,xall,yall,zall,zall,...
+            'EdgeColor', 'None', ...
+            'AmbientStrength', 0.6, 'DiffuseStrength', 0.4, 'SpecularStrength', 0.3);
 end
 
 if ( ~holdState )
