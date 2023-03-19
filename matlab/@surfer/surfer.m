@@ -8,9 +8,7 @@ classdef surfer
 
 
     
-    properties 
-        srcvals
-        srccoefs
+    properties
         iptype
         weights
         norders
@@ -21,6 +19,16 @@ classdef surfer
         npts
     end
     
+   	properties(SetAccess=private)
+        r
+        du
+        dv
+        n
+    end
+    properties (Access = private)
+        srcvals
+        srccoefs
+    end    
     properties (Hidden)
         ixyzs
         ifcurv
@@ -78,10 +86,11 @@ classdef surfer
                 iind = obj.ixyzs(i):(obj.ixyzs(i+1)-1);
                 obj.srcvals{i} = srcvals(:,iind);
                 obj.srccoefs{i} = obj.srcvals{i}(1:9,:)*umats{iuse(i)}';
-                ru = obj.srcvals{i}(4:6,:);
-                rv = obj.srcvals{i}(7:9,:);
-                
-                da = vecnorm(cross(ru,rv),2).*rwts{iuse(i)};
+                du = obj.srcvals{i}(4:6,:);
+                dv = obj.srcvals{i}(7:9,:);
+                %du = obj.du{i}(:,:);
+                %dv = obj.dv{i}(:,:);
+                da = vecnorm(cross(du,dv),2).*rwts{iuse(i)};
                 obj.weights{i} = da(:);         
             end
             obj.ifcurv = 0;
@@ -91,6 +100,11 @@ classdef surfer
             obj.ffforminv = cell(npatches,1);
             obj.ffform = cell(npatches,1);
             
+            sv = [obj.srcvals{:}];
+            obj.r  = sv(1:3,:);
+            obj.du = sv(4:6,:);
+            obj.dv = sv(7:9,:);
+            obj.n  = sv(10:12,:);
         end
         
         
@@ -98,8 +112,11 @@ classdef surfer
          a = area(obj);
          [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(obj);
          [objout,varargout] = oversample(obj,novers);
+         [objout,varargout] = affine_transf(obj,mat,shift);
+         [varargout] = scatter(obj,varargin);
         
     end
+
     methods(Static)
         obj = load_from_file(fname,varargin);
         obj = sphere(varargin);

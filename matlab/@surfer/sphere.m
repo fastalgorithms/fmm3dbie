@@ -1,4 +1,4 @@
-function [obj] = sphere(norder,nu,nref)
+function [obj] = sphere_surf(norder,nu,nref)
 % Generate the triangulation of a sphere
 % through projecting out a cube discretized with
 % nu \times nu patches in each direction, refined

@@ -49,11 +49,8 @@ if ( (~holdState && strcmpi(showSurface, 'auto')) || strcmpi(showSurface, 'on') 
     itstart = 0;
     
     for k = 1:obj.npatches
-        scl = 0.01;
-        
         
         n = ns{inuni(k)};
-        
         xall(istart+(1:n)) = obj.srcvals{k}(1,:);
         yall(istart+(1:n)) = obj.srcvals{k}(2,:);
         zall(istart+(1:n)) = obj.srcvals{k}(3,:);

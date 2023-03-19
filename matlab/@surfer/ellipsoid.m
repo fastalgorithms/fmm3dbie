@@ -1,4 +1,4 @@
-function [obj] = ellipsoid(abc,rmax,norder,nref)
+function [obj] = ellipsoid_patch(abc,rmax,norder,nref)
 % Generate the triangulation of an ellipsoid
 % by considering it an axissymmetric problem
 %
@@ -127,8 +127,8 @@ function [obj] = ellipsoid(abc,rmax,norder,nref)
     srcvals(5,:) = dyduuse(:)';
     srcvals(6,:) = dzduuse(:)';
 
-    dxdvuse = a*(cos(x).*cos(y).*dxdv - sin(x).*sin(y).*dxdv);
-    dydvuse = b*(cos(x).*sin(y).*dxdv + sin(x).*cos(y).*dxdv);
+    dxdvuse = a*(cos(x).*cos(y).*dxdv - sin(x).*sin(y).*dydv);
+    dydvuse = b*(cos(x).*sin(y).*dxdv + sin(x).*cos(y).*dydv);
     dzdvuse = -c*sin(x).*dxdv;
 
     srcvals(7,:) = dxdvuse(:)';
@@ -136,7 +136,8 @@ function [obj] = ellipsoid(abc,rmax,norder,nref)
     srcvals(9,:) = dzdvuse(:)';
 
     dn = cross(srcvals(4:6,:),srcvals(7:9,:));
-    srcvals(10:12,:) = dn./repmat(vecnorm(dn,1),[3,1]);
+%   srcvals(10:12,:) = dn./repmat(vecnorm(dn,1),[3,1]);
+    srcvals(10:12,:) = dn./repmat(vecnorm(dn),[3,1]);
 
     obj = surfer(npatches,norder,srcvals); 
 
