@@ -1,7 +1,8 @@
 License and Copyright
+=======================
 
 fmm3dbie is Copyright 2020 The Simons Foundation, Inc., Michael O'Neil,
-and Felipe Vico.
+and Felipe Vico, with the exception of a few files listed below.
 
 fmm3dbie is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -18,12 +19,33 @@ WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 General Public License for more details.
 
+Exceptions
+===========
+The files `src/quadratures/ggq-selfquadrouts.f`, `src/quadratures/ggq-selfquad.f`,
+and all files in `src/quadratures/ggq-self-quads/` are copyright James Bremer
+and released under version 2 of the GPL.
+
+The file `src/tria_routs/triasymq.f` is copyright Zydrunas Gimbutas and Hong Xiao
+and released under version 2 of the GPL.
+
+References
+===========
 In addition, we kindly ask you to acknowledge fmm3dbie and its authors
 in any program or publication in which you use the software. (You are
 not required to do so; it is up to your common sense to decide whether
 you want to comply with this request or not.) For general
 publications, we suggest referencing:
 
-L. Greengard, M. O'Neil, M. Rachh, and F. Vico, "Efficient implementations of 
-fast multipole methods with locally-corrected quadratures - I", in preparation.
+- `Greengard, L., O'Neil, M., Rachh, M., & Vico, F. (2021). Fast multipole methods for 
+the evaluation of layer potentials with locally-corrected quadratures. 
+Journal of Computational Physics: X, 10, 100092.`
+
+- `Bremer, J., & Gimbutas, Z. (2013). On the numerical evaluation of the singular 
+integrals of scattering theory. Journal of Computational Physics, 251, 327-343.` 
+
+- `Xiao, H., & Gimbutas, Z. (2010). A numerical algorithm for the construction of 
+efficient quadrature rules in two and higher dimensions. Computers & mathematics with 
+applications, 59(2), 663-676.` 
+
+
 
