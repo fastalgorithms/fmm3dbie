@@ -4,6 +4,9 @@ License and Copyright
 fmm3dbie is Copyright 2020 The Simons Foundation, Inc., Michael O'Neil,
 and Felipe Vico, with the exception of a few files listed below.
 
+The subroutines in src/quadratures/ggq-selfquad.f and src/quadratures/ggq-selfquad-routs.f are Copyright James Bremer; 
+and the subroutines in src/tria_routs/triasymq.f are Copyright Zydrunas Gimbutas and Hong Xiao.
+
 fmm3dbie is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
 Free Software Foundation; either version 2 of the License, or (at your

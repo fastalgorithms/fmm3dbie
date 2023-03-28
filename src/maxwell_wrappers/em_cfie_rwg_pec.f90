@@ -2,8 +2,9 @@
 !  This file contains the following user callable routines
 !  for solving Maxwell equations using the mfie integral
 !  represenation:
-!    getnearquad_em_mfie_pec: routine for generating the near
-!     field quadrature correction  
+!
+!    getnearquad_em_cfie_rwg_pec: routine for generating the near field
+!                                 quadrature correction
 !
 !
 !
@@ -12,15 +13,15 @@
 
 
 
-subroutine getnearquad_em_cfie_rwg_pec(npatches,norders,&
-  ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-  ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
-  iquad,rfac0,nquad,wnear)
-!
-!  This subroutine generates the near field quadrature
-!  for the MFIE integral equation:
-!
-!  J/2-M_{k}[J]= n \times H_inc
+subroutine getnearquad_em_cfie_rwg_pec(npatches, norders, &
+  ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs,&
+  ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, &
+  iquad, rfac0, nquad, wnear)
+  !
+  !  This subroutine generates the near field quadrature
+  !  for the CFIE integral equation:
+  !
+  !  J/2-M_{k}[J]= n \times H_inc
 !
 !  and the additional operator ikn·S_{k}[J] to get the charge therm
 !  from n·E_inc in a separate solver if E is needed.
@@ -109,77 +110,169 @@ subroutine getnearquad_em_cfie_rwg_pec(npatches,norders,&
 !        The desired near field quadrature
 !              
 
-      implicit none 
-      integer, intent(in) :: npatches,norders(npatches),npts,nquad
-      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
-      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
-      real *8, intent(in) :: rfac0
-      integer, intent(in) :: ndtarg,ntarg
-      integer, intent(in) :: iquadtype
-      real *8, intent(in) :: targs(ndtarg,ntarg)
-      complex *16, intent(in) :: zpars(3)
-      integer, intent(in) :: nnz
-      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
-      integer, intent(in) :: ipatch_id(ntarg)
-      real *8, intent(in) :: uvs_targ(2,ntarg)
-      complex *16, intent(out) :: wnear(5*nquad)
-      integer ipars(2)
-      real *8 dpars(1)
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches),npts,nquad
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+  real *8, intent(in) :: rfac0
+  integer, intent(in) :: ndtarg,ntarg
+  integer, intent(in) :: iquadtype
+  real *8, intent(in) :: targs(ndtarg,ntarg)
+  complex *16, intent(in) :: zpars(3)
+  integer, intent(in) :: nnz
+  integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+  integer, intent(in) :: ipatch_id(ntarg)
+  real *8, intent(in) :: uvs_targ(2,ntarg)
+  complex *16, intent(out) :: wnear(5*nquad)
+  integer ipars(2)
+  real *8 dpars(1)
 
-      complex *16 alpha,beta
-      integer i,j,ndi,ndd,ndz
+  complex *16 alpha,beta
+  integer i,j,ndi,ndd,ndz
 
-      integer ipv
+  integer ipv
 
-      procedure (), pointer :: fker
-      external  fker_em_cfie_rwg_pec
+  procedure (), pointer :: fker
+  external  fker_em_cfie_rwg_pec
 
-     ndz=3
-     ndd=1
-     ndi=2
-     ipv=0
+  ndz=3
+  ndd=1
+  ndi=2
+  ipv=0
 
-     fker =>  fker_em_cfie_rwg_pec
-     ipars(1)=1
-     ipars(2)=1
-     call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-     &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,&
-     &ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(1:nquad))
+  fker =>  fker_em_cfie_rwg_pec
 
-      ipars(1)=1
-      ipars(2)=2
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-     &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
-     &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(nquad+1:2*nquad))
+  ipars(1)=1
+  ipars(2)=1
+  call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
+       iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
+       ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,&
+       ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(1:nquad))
+
+  ipars(1)=1
+  ipars(2)=2
+  call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
+       iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
+       ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
+       nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(nquad+1:2*nquad))
  
-      ipars(1)=2
-      ipars(2)=1
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-     &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
-     &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(2*nquad+1:3*nquad))
+  ipars(1)=2
+  ipars(2)=1
+  call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
+       iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
+       ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
+       nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(2*nquad+1:3*nquad))
 
-      ipars(1)=2
-      ipars(2)=2
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-     &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
-     &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(3*nquad+1:4*nquad))
+  ipars(1)=2
+  ipars(2)=2
+  call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
+       iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
+       ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
+       nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(3*nquad+1:4*nquad))
 
-      ipars(1)=0
-      ipars(2)=0
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-     &ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
-     &nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(4*nquad+1:5*nquad))
+  ipars(1)=0
+  ipars(2)=0
+  call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
+       iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
+       ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,ndi,ipars,&
+       nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(4*nquad+1:5*nquad))
 
-      return
-      end subroutine getnearquad_em_cfie_rwg_pec
+  return
+end subroutine getnearquad_em_cfie_rwg_pec
 
 
-      subroutine lpcomp_em_cfie_rwg_pec_addsub(npatches,norders,ixyzs,&
+
+
+
+subroutine fker_em_cfie_rwg_pec(srcinfo,ndt,targinfo,ndd,dpars,ndz,zpars,&
+     ndi,ipars,E_val)
+  implicit none
+  !
+  ! this function provides the near field kernel that will use
+  ! zgetnearquad_ggq_guru through getnearquad_em_cfie_rwg_pec
+  !
+
+  ! List of calling arguments
+  integer, intent(in) :: ndt,ndd,ndz,ndi
+  real ( kind = 8 ), intent(in) :: srcinfo(12)
+  real ( kind = 8 ), intent(in) :: targinfo(ndt)
+  integer, intent(in) :: ipars(ndi)
+  real ( kind = 8 ), intent(in) :: dpars(ndd)
+  complex ( kind = 8 ), intent(in) :: zpars(ndz)
+  complex ( kind = 8 ), intent(out) :: E_val
+
+  ! List of local variables
+  complex ( kind = 8 ) E_mat(2,2)
+  real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3)
+  real ( kind = 8 ) ru_t(3),rv_t(3),n_t(3)
+  real ( kind = 8 ) du(3), dv(3),sour(3),targ(3)
+  real ( kind = 8 ) r, dr(3),aux_real
+
+  complex ( kind = 8 ) nxcurlSka(2,2),nxnxSkb(2,2)
+  complex ( kind = 8 ) ngradSklambda,nSkb(1,2)
+
+  real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),xprod_aux3(3),xprod_aux4(3)
+  complex ( kind = 8 ) R1, ima,my_exp, zk,alpha,Sklambda(1,1),beta
+  real ( kind = 8 ) pi
+
+
+  pi=3.1415926535897932384626433832795028841971d0
+  ima=(0.0d0,1.0d0)
+  zk=zpars(1)
+  alpha=zpars(2)
+  beta=zpars(3)
+
+  sour(1)=srcinfo(1)
+  sour(2)=srcinfo(2)
+  sour(3)=srcinfo(3)
+
+  n_s(1)=srcinfo(10)
+  n_s(2)=srcinfo(11)
+  n_s(3)=srcinfo(12)
+
+  targ(1)=targinfo(1)
+  targ(2)=targinfo(2)
+  targ(3)=targinfo(3)
+
+  n_t(1)=targinfo(10)
+  n_t(2)=targinfo(11)
+  n_t(3)=targinfo(12)
+
+  dr(1)=targ(1)-sour(1)
+  dr(2)=targ(2)-sour(2)
+  dr(3)=targ(3)-sour(3)
+  r=sqrt((dr(1))**2+(dr(2))**2+(dr(3))**2)
+
+  R1=(ima*zk*r-1.0d0)/r**3*exp(ima*zk*r)/(4.0d0*pi)
+  my_exp=exp(ima*zk*r)/(4.0d0*pi)
+
+  call orthonormalize(srcinfo(4:6),n_s,ru_s,rv_s)
+  call orthonormalize(targinfo(4:6),n_t,ru_t,rv_t)
+
+  if ((ipars(1).eq.0) .and. (ipars(2).eq.0)) then
+     call get_Sklambda(my_exp,r,Sklambda)
+     E_val=beta/(ima*zk)*Sklambda(1,1)
+  else
+     call get_nxnxSkb(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,my_exp,r,nxnxSkb)
+     call get_nxcurlSka(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r,&
+          nxcurlSka)
+     E_mat(1,1)=alpha*(-nxcurlSka(1,1)) - beta*ima*zk*nxnxSkb(1,1)
+     E_mat(1,2)=alpha*(-nxcurlSka(1,2))-beta*ima*zk*nxnxSkb(1,2)
+     E_mat(2,1)=alpha*(-nxcurlSka(2,1))-beta*ima*zk*nxnxSkb(2,1)
+     E_mat(2,2)=alpha*(-nxcurlSka(2,2))-beta*ima*zk*nxnxSkb(2,2)
+
+     E_val=E_mat(ipars(1),ipars(2))
+
+  endif
+
+  return
+end subroutine fker_em_cfie_rwg_pec
+
+
+
+
+
+subroutine lpcomp_em_cfie_rwg_pec_addsub(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
      &eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,sigma,novers,&
      &nptso,ixyzso,srcover,whtsover,pot,wnear,&
@@ -526,9 +619,14 @@ subroutine getnearquad_em_cfie_rwg_pec(npatches,norders,&
   deallocate(pot_rwg_aux)
 
       return
-      end subroutine lpcomp_em_cfie_rwg_pec_addsub
+end subroutine lpcomp_em_cfie_rwg_pec_addsub
 
-      subroutine em_cfie_rwg_solver(npatches,norders,ixyzs,&
+
+
+
+
+
+subroutine em_cfie_rwg_solver(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,&
      &rhs,eps_gmres,niter,errs,rres,soln,rhs_nE,&
      &rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder,wts)
@@ -986,99 +1084,13 @@ subroutine getnearquad_em_cfie_rwg_pec(npatches,norders,&
       enddo
 !
       return
-      end subroutine em_cfie_rwg_solver
+end subroutine em_cfie_rwg_solver
 
 
 
 
 
 
-
-
-
-
-subroutine fker_em_cfie_rwg_pec(srcinfo,ndt,targinfo,ndd,dpars,ndz,zpars,&
- &ndi,ipars,E_val)
-implicit none
-
-! this function provides the near field kernel that will use 
-! zgetnearquad_ggq_guru through getnearquad_em_mfie_pec
-
-    !List of calling arguments
-	integer, intent(in) :: ndt,ndd,ndz,ndi
-	real ( kind = 8 ), intent(in) :: srcinfo(12)
-	real ( kind = 8 ), intent(in) :: targinfo(ndt)
-	integer, intent(in) :: ipars(ndi)
-	real ( kind = 8 ), intent(in) :: dpars(ndd)
-	complex ( kind = 8 ), intent(in) :: zpars(ndz)
-	complex ( kind = 8 ), intent(out) :: E_val
-
-	
-	!List of local variables
-	complex ( kind = 8 ) E_mat(2,2)
-	real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3)
-	real ( kind = 8 ) ru_t(3),rv_t(3),n_t(3)
-	real ( kind = 8 ) du(3), dv(3),sour(3),targ(3)
-	real ( kind = 8 ) r, dr(3),aux_real
-	
-	complex ( kind = 8 ) nxcurlSka(2,2),nxnxSkb(2,2)
-	complex ( kind = 8 ) ngradSklambda,nSkb(1,2)
-
-	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),xprod_aux3(3),xprod_aux4(3)
-	complex ( kind = 8 ) R1, ima,my_exp, zk,alpha,Sklambda(1,1),beta
-	real ( kind = 8 ) pi
-	
-	pi=3.1415926535897932384626433832795028841971d0
-	ima=(0.0d0,1.0d0)
-	zk=zpars(1)
-	alpha=zpars(2)
-	beta=zpars(3)
-	    
-	sour(1)=srcinfo(1)
-	sour(2)=srcinfo(2)
-	sour(3)=srcinfo(3)
-	
-	n_s(1)=srcinfo(10)
-	n_s(2)=srcinfo(11)
-	n_s(3)=srcinfo(12)	
-
-	targ(1)=targinfo(1)
-	targ(2)=targinfo(2)
-	targ(3)=targinfo(3)
-
-	n_t(1)=targinfo(10)
-	n_t(2)=targinfo(11)
-	n_t(3)=targinfo(12)
-
-	dr(1)=targ(1)-sour(1)
-	dr(2)=targ(2)-sour(2)
-	dr(3)=targ(3)-sour(3)
-	r=sqrt((dr(1))**2+(dr(2))**2+(dr(3))**2)
-	
-	  R1=(ima*zk*r-1.0d0)/r**3*exp(ima*zk*r)/(4.0d0*pi)
-	  my_exp=exp(ima*zk*r)/(4.0d0*pi)
-		
-	  call orthonormalize(srcinfo(4:6),n_s,ru_s,rv_s)
-	  call orthonormalize(targinfo(4:6),n_t,ru_t,rv_t)
-
-    if ((ipars(1).eq.0).and.(ipars(2).eq.0)) then
-    	call get_Sklambda(my_exp,r,Sklambda)
-      E_val=beta/(ima*zk)*Sklambda(1,1)
-    else
-      call get_nxnxSkb(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,my_exp,r,nxnxSkb)
-	    call get_nxcurlSka(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r,&
-	     &nxcurlSka)
-	    E_mat(1,1)=alpha*(-nxcurlSka(1,1))-beta*ima*zk*nxnxSkb(1,1)
-	    E_mat(1,2)=alpha*(-nxcurlSka(1,2))-beta*ima*zk*nxnxSkb(1,2)
-	    E_mat(2,1)=alpha*(-nxcurlSka(2,1))-beta*ima*zk*nxnxSkb(2,1)
-	    E_mat(2,2)=alpha*(-nxcurlSka(2,2))-beta*ima*zk*nxnxSkb(2,2)
-
-	    E_val=E_mat(ipars(1),ipars(2))
-
-    endif
-
-return
-end subroutine fker_em_cfie_rwg_pec
 
 
 subroutine em_cfie_rwg_pec_FMM(eps,zpars,ns,nt,srcvals,targvals,wts,a_u,a_v,&
@@ -1724,10 +1736,12 @@ end subroutine em_cfie_pec_FMM_targ
 
 
 
-subroutine 	get_rhs_em_cfie_rwg_pec(P0,vf,ns,srcvals,zpars,RHS,&
- &rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder,wts)
-implicit none
 
+
+
+subroutine get_rhs_em_cfie_rwg_pec(P0,vf,ns,srcvals,zpars,RHS, &
+     rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder,wts)
+implicit none
 !
 !  This function obtains the right hand side for the MFIE formulation
 !  for the integral boundary equation:
@@ -1813,6 +1827,8 @@ implicit none
 
 return
 end subroutine get_rhs_em_cfie_rwg_pec
+
+
 
 
 
@@ -1942,6 +1958,9 @@ end subroutine em_cfie_sphere_proxi2
 
 
 
+
+
+
 subroutine 	get_rhs_em_cfie_rwg_pec_sphere2(P0,vf,ns,srcvals,zpars,RHS,&
  &rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder,wts)
 implicit none
@@ -2055,13 +2074,8 @@ end subroutine get_rhs_em_cfie_rwg_pec_sphere2
 
 
 
-
-
-
-
-
-subroutine 	get_rhs_em_cfie_rwg_pec_sphere3(P0,vf,ns,srcvals,zpars,RHS,&
- &rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder,wts)
+subroutine get_rhs_em_cfie_rwg_pec_sphere3(P0,vf,ns,srcvals,zpars,RHS,&
+     rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder,wts)
 implicit none
 
 !
@@ -2185,7 +2199,7 @@ end subroutine get_rhs_em_cfie_rwg_pec_sphere3
 
 
 
-subroutine 	get_rhs_em_cfie_rwg_pec_sphere(P0,vf,ns,srcvals,zpars,RHS,&
+subroutine get_rhs_em_cfie_rwg_pec_sphere(P0,vf,ns,srcvals,zpars,RHS,&
  &rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder,wts)
 implicit none
 

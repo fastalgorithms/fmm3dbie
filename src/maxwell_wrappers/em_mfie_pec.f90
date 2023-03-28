@@ -836,7 +836,7 @@ subroutine getnearquad_em_mfie_pec(npatches,norders,&
 !    - srccoefs: real *8 (9,npts)
 !        koornwinder expansion coefficients of xyz, dxyz/du,
 !        and dxyz/dv on each patch. 
-!        For each point 
+!        For each point
 !          * srccoefs(1:3,i) is xyz info
 !          * srccoefs(4:6,i) is dxyz/du info
 !          * srccoefs(7:9,i) is dxyz/dv info
