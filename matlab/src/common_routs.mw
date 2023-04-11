@@ -1,0 +1,47 @@
+%-----------------------------------------
+@function [novers] = get_oversampling_parameters(eps,S,Q)
+%
+%  get_oversampling_parameters
+%    Estimates the oversampling parameter required to evaluate 
+%    layer potentials
+%  
+%  Syntax
+%     novers = get_oversampling_parameters(eps,S,Q);
+%
+%   Input arguments
+%     * eps: tolerance
+%     * S: surfer object
+%     * Q: quadrature correction info struct
+%
+%   Output arguments
+%     * novers: discretization order of oversampled patches
+%
+%   Note: If Q.rfac is empty, then novers = S.norders;  
+% 
+    if(~isfield(Q,'rfac'))
+        novers = S.norders;
+        return;
+    else
+       [~,srccoefs,norders,ixyzs,iptype,~] = surfer.extract_arrays(S); 
+       targs = Q.targinfo.xyzs;
+       [ndtarg,ntarg] = size(targs);
+       ikerorder = -1;
+       if(isfield(Q,'kernel_order'))
+         ikerorder = Q.kernel_order;
+       end
+
+       zk = complex(0);
+       if(isfield(Q,'wavenumber'))
+         zk = complex(Q.wavenumber);
+       end
+       rfac = Q.rfac;
+       npatches = S.npatches;
+       novers = zeros(npatches,1);
+       ixyzso = zeros(npatches+1,1);
+       npatp1 = npatches+1;
+
+       [cms,rads] = surfer.get_centroids(S);
+       # FORTRAN get_far_order(double[1] eps, int[1] nptaches, int[npatches] norders, int[npatp1] ixyzs, double[3,npatches] cms, double[npatches] rads, int[1] npts, double[9,npts] srccoefs,  int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, dcomplex[1] zk, 
+       
+    end
+end
