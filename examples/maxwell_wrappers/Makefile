@@ -44,7 +44,7 @@ endif
 
 ifeq ($(HOST),gcc-openmp)
     FC = gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy 
 endif
 
 ifeq ($(HOST),intel)

@@ -1,3 +1,7 @@
+
+
+
+
 subroutine rwg2vr(srcvals,ns,norder,ntri,npoints,points,triang,rwg,nrwg,coefrwg,coefvr)
 implicit none
 
@@ -131,8 +135,10 @@ end subroutine rwg2vr
 
 
 
+
+
 subroutine vr2rwg_vector(srcvals,wts,ns,norder,ntri,npoints,&
- &points,triang,rwg,nrwg,coefvr,coefrwg)
+    points,triang,rwg,nrwg,coefvr,coefrwg)
 implicit none
 
   !List of calling arguments
@@ -260,7 +266,11 @@ end subroutine vr2rwg_vector
 
 
 
-subroutine vr2rwg_scalar(srcvals,wts,ns,norder,ntri,npoints,points,triang,rwg,nrwg,coefvr,coefrwg)
+
+
+
+subroutine vr2rwg_scalar(srcvals,wts,ns,norder,ntri,npoints,points,triang, &
+      rwg,nrwg,coefvr,coefrwg)
 implicit none
 
   !List of calling arguments
@@ -377,6 +387,11 @@ implicit none
 
 return
 end subroutine vr2rwg_scalar
+
+
+
+
+
 
 
 subroutine rwg_basis(ntri,npoints,points,triang,rwg,nrwg)
@@ -517,6 +532,11 @@ return
 end subroutine rwg_basis
 
 
+
+
+
+
+
 subroutine add_rwg(t1,t2,rwg,ntri)
 implicit none
 
@@ -555,6 +575,10 @@ return
 end subroutine add_rwg
 
 
+
+
+
+
 subroutine share_wedge(t1,t2,triang,ntri,sol)
 implicit none
 
@@ -587,6 +611,10 @@ implicit none
 
 return
 end subroutine share_wedge
+
+
+
+
 
 
 
@@ -718,6 +746,10 @@ return
 end subroutine fix_tri_geom
 
 
+
+
+
+
 subroutine my_cross_v3(a, b, c)
 implicit none
 
@@ -729,6 +761,10 @@ implicit none
         c(3) = a(1) * b(2) - a(2) * b(1)
 
 end subroutine my_cross_v3
+
+
+
+
 
 
 subroutine collapse_tri(point_num1,point_num2,tri_map,nspace,npoints)
@@ -751,6 +787,10 @@ implicit none
 
 return
 end subroutine collapse_tri
+
+
+
+
 
 
 subroutine add_tri(tri_num,point_num,tri_map,nspace,npoints)
@@ -778,10 +818,11 @@ end subroutine add_tri
 
 
 
+
+
 !
 !
 !  This file contains the input routines for opening .a.tri files
-
 
 subroutine open_tri_mem(filename,ntri,npoints)
 implicit none
@@ -957,6 +998,12 @@ return
 end subroutine orthonormalize_v2
 
 
+
+
+
+
+
+
 subroutine go32tri(srcvals,srccoefs,norder,ns,wts,N,npoints_est,triang,points,ntri,npoints)
 implicit none
 
@@ -1084,12 +1131,21 @@ return
 end subroutine go32tri
 
 
-subroutine open_go3_4_rwg(fname,npts_aux,npatches_aux,norder,npatches,norders,ixyzs,&
-     &iptype,npts,srcvals,srccoefs,wts,N,npoints_est,nrwg,rwg,vert_flat,&
-     &tri_flat,n_vert_flat,n_tri_flat)
-implicit none
 
-    !List of calling arguments
+
+
+
+
+subroutine open_go3_4_rwg(fname,npts_aux,npatches_aux,norder,npatches, &
+    norders,ixyzs,&
+    iptype,npts,srcvals,srccoefs,wts,N,npoints_est,nrwg,rwg,vert_flat,&
+    tri_flat,n_vert_flat,n_tri_flat)
+  implicit none
+  !
+  ! This routine ...
+  !
+
+  ! List of calling arguments
     character (len=*), intent(in) :: fname
     integer, intent(in) :: npts_aux,npatches_aux,norder,npatches
     integer, intent(out) :: norders(npatches)
@@ -1111,9 +1167,9 @@ implicit none
     real ( kind = 8 ), allocatable :: srcvals_aux(:,:),srccoefs_aux(:,:),wts_aux(:)
     integer npols,norder_aux,i
 
-      allocate(srcvals_aux(12,npts_aux),srccoefs_aux(9,npts_aux))
-      allocate(ixyzs_aux(npatches_aux+1),iptype_aux(npatches_aux),norders_aux(npatches_aux))
-      allocate(wts_aux(npts_aux))
+  allocate(srcvals_aux(12,npts_aux),srccoefs_aux(9,npts_aux))
+  allocate(ixyzs_aux(npatches_aux+1),iptype_aux(npatches_aux),norders_aux(npatches_aux))
+  allocate(wts_aux(npts_aux))
 
       call open_gov3_geometry(fname,npatches_aux,norders_aux,ixyzs_aux,&
        &iptype_aux,npts_aux,srcvals_aux,srccoefs_aux,wts_aux)
@@ -1124,7 +1180,8 @@ implicit none
 	  
       call go32tri(srcvals_aux,srccoefs_aux,norder_aux,npts_aux,wts_aux,N,&
        &npoints_est,tri_flat,vert_flat,n_tri_flat,n_vert_flat)
-      call rwg_basis(n_tri_flat,n_vert_flat,vert_flat,tri_flat,rwg,nrwg)
+      
+       call rwg_basis(n_tri_flat,n_vert_flat,vert_flat,tri_flat,rwg,nrwg)
 
       call tri2go3(tri_flat,vert_flat,n_tri_flat,n_vert_flat,srcvals,srccoefs,norder,npts,wts)
 

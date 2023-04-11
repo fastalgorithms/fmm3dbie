@@ -1,7 +1,6 @@
 !
-!  This file contains the following user callable routines
-!  for solving Maxwell equations using the mfie integral
-!  represenation:
+!  This file contains the following user callable routines for solving Maxwell
+!  equations using the Combined Field Integral Equation (CFIE):
 !
 !    getnearquad_em_cfie_rwg_pec: routine for generating the near field
 !                                 quadrature correction
@@ -18,8 +17,8 @@ subroutine getnearquad_em_cfie_rwg_pec(npatches, norders, &
   ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, &
   iquad, rfac0, nquad, wnear)
   !
-  !  This subroutine generates the near field quadrature
-  !  for the CFIE integral equation:
+  !  This subroutine generates the near field quadrature for the CFIE integral
+  !  equation:
   !
   !  J/2-M_{k}[J]= n \times H_inc
 !
