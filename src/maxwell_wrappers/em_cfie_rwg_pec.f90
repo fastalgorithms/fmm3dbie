@@ -5,6 +5,8 @@
 !    getnearquad_em_cfie_rwg_pec: routine for generating the near field
 !                                 quadrature correction
 !
+!    em_cfie_rwg_solver:          solves the CFIE using RWG basis functions
+!
 !
 !
 
@@ -1308,86 +1310,88 @@ implicit none
 
 return
 end subroutine em_cfie_rwg_pec_FMM
-!
-!
-!
-!
-!
-!
-subroutine test_accuracy_em_cfie_rwg_pec(eps_FMM,sol,zpars,ns,wts,srcvals,&
- &P0,vf,Pt,rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder)
-implicit none
 
-!
-!  This function test the accuracy of the solution computed in the exterior
-!  region by testing the extintion theorem in the interior region.
-!
-!  input:
-!    eps_FMM - real *8
-!      epsilon for the fmm call
-!
-!    sol - complex *16(2*ns)
-!      induced charge and current on the surface
-!      sol(1:ns) - first component of  J along
-!      the srcvals(4:6,i) direction
-!      sol(ns+1:2*ns) - second component of J along
-!      the (srcvals(10:12,i) x srcvals(4:6,i)) direction
-!
-!    zpars - complex *16(3)
-!      kernel parameters
-!      zpars(1) = k 
-!      zpars(2) = - (not used)
-!      zpars(3) = - (not used)
-!
-!    ns - integer
-!      number of sources
-!
-!    wts - real *8(ns)
-!      smooth quadrature weights at original nodes	
-!
-!    srcvals - real *8(12,ns)
-!      xyz(u,v) and derivative info sampled at the 
-!      discretization nodes on the surface
-!      srcvals(1:3,i) - xyz info
-!      srcvals(4:6,i) - dxyz/du info
-!      srcvals(7:9,i) - dxyz/dv info
-!
-!    P0 - real * 8(3)
-!      location of the source point at the INTERIOR region
-!            
-!    vf - complex *16(3)
-!      Orientation of the magnetic and electric dipoles located at Pt 
-!
-!    Pt - real * 8(3)
-!      location of the source point at the EXTERIOR region
-!
+
+
+
+
+
+subroutine test_accuracy_em_cfie_rwg_pec(eps_FMM, sol, zpars, ns, wts, &
+     srcvals, &
+     P0, vf, Pt, rwg, nrwg, vert_flat, tri_flat, n_vert_flat, n_tri_flat, &
+     norder)
+  implicit none
+  !
+  !  This function test the accuracy of the solution computed in the
+  !  exterior region by testing the extintion theorem in the interior
+  !  region.
+  !
+  !  input:
+  !    eps_FMM - real *8
+  !      epsilon for the fmm call
+  !
+  !    sol - complex *16(2*ns)
+  !      induced charge and current on the surface
+  !      sol(1:ns) - first component of  J along
+  !      the srcvals(4:6,i) direction
+  !      sol(ns+1:2*ns) - second component of J along
+  !      the (srcvals(10:12,i) x srcvals(4:6,i)) direction
+  !
+  !    zpars - complex *16(3)
+  !      kernel parameters
+  !      zpars(1) = k 
+  !      zpars(2) = - (not used)
+  !      zpars(3) = - (not used)
+  !
+  !    ns - integer
+  !      number of sources
+  !
+  !    wts - real *8(ns)
+  !      smooth quadrature weights at original nodes	
+  !
+  !    srcvals - real *8(12,ns)
+  !      xyz(u,v) and derivative info sampled at the 
+  !      discretization nodes on the surface
+  !      srcvals(1:3,i) - xyz info
+  !      srcvals(4:6,i) - dxyz/du info
+  !      srcvals(7:9,i) - dxyz/dv info
+  !
+  !    P0 - real * 8(3)
+  !      location of the source point at the INTERIOR region
+  !            
+  !    vf - complex *16(3)
+  !      Orientation of the magnetic and electric dipoles located at Pt 
+  !
+  !    Pt - real * 8(3)
+  !      location of the source point at the EXTERIOR region
+  !
 	
 
-  !List of calling arguments
-	complex ( kind = 8 ), intent(in) :: zpars(3)
+  ! List of calling arguments
+  complex ( kind = 8 ), intent(in) :: zpars(3)
   integer, intent(in) :: ns
   real ( kind = 8 ), intent(in) :: srcvals(12,ns),eps_FMM
   real ( kind = 8 ), intent(in) :: wts(ns),P0(3),Pt(3)
-	complex ( kind = 8 ), intent(in) :: sol(nrwg),vf(3)
-
+  complex ( kind = 8 ), intent(in) :: sol(nrwg),vf(3)
+  
   integer, intent(in) :: nrwg,n_vert_flat,n_tri_flat,norder
   integer, intent(in) :: rwg(4,nrwg),tri_flat(3,n_tri_flat)
   real ( kind = 8 ), intent(in) :: vert_flat(3,n_vert_flat)
 
   !List of local variables
-	complex ( kind = 8 ) a_u00,a_v00,zk,alpha,beta
-	complex ( kind = 8 ) ima, R1, R2,Et1(3),Et2(3),aux_cmp,Ht2(3),Ht1(3)
-	real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3),sour(3),r,dr(3)
-	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),error_E,error_H
-	real ( kind = 8 ) pi
-
+  complex ( kind = 8 ) a_u00,a_v00,zk,alpha,beta
+  complex ( kind = 8 ) ima, R1, R2,Et1(3),Et2(3),aux_cmp,Ht2(3),Ht1(3)
+  real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3),sour(3),r,dr(3)
+  real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),error_E,error_H
+  real ( kind = 8 ) pi
+  
   complex ( kind = 8 ), allocatable :: sol_aux(:), sol_aux2(:)
 
-	integer count1
+  integer count1
 	
-	ima=(0.0d0,1.0d0)
-	pi=3.1415926535897932384626433832795028841971d0
-	zk=zpars(1)
+  ima=(0.0d0,1.0d0)
+  pi=3.1415926535897932384626433832795028841971d0
+  zk=zpars(1)
   alpha=zpars(2)
   beta=zpars(3)
 	
@@ -1396,58 +1400,70 @@ implicit none
   do count1=1,nrwg
     sol_aux(count1)=1.0d0
   enddo
-  call rwg2vr(srcvals,ns,norder,n_tri_flat,n_vert_flat,vert_flat,tri_flat,rwg,nrwg,sol,sol_aux)
 
-	write (*,*) 'P0',P0
-!	call em_mfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,1,P0,wts,sol_aux(1:ns),&
-!	 &sol_aux(ns+1:2*ns),Ht1)
+  call rwg2vr(srcvals, ns, norder,n_tri_flat,n_vert_flat,vert_flat,&
+       tri_flat,rwg,nrwg,sol,sol_aux)
 
-	call em_cfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,1,P0,wts,sol_aux(1:ns),&
-	 &sol_aux(ns+1:2*ns),sol_aux(2*ns+1:3*ns),Et1,Ht1)
+  write (*,*) 'P0',P0
+  !	call em_mfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,1,P0,wts,sol_aux(1:ns),&
+  !	 &sol_aux(ns+1:2*ns),Ht1)
 
-	call fieldsED(zk,Pt,P0,1,Et2,Ht2,vf,0)
-	call fieldsMD(zk,Pt,P0,1,Et2,Ht2,vf,1)
+  call em_cfie_pec_FMM_targ(eps_FMM, zk, ns, srcvals, 1, P0, wts, sol_aux(1:ns), &
+       sol_aux(ns+1:2*ns), sol_aux(2*ns+1:3*ns), Et1, Ht1)
+
+  call fieldsED(zk, Pt, P0, 1, Et2, Ht2, vf, 0)
+  call fieldsMD(zk, Pt, P0, 1, Et2, Ht2, vf, 1)
 
 
-!    Et2(1)=exp(ima*zk*P0(3))
-!    Et2(2)=0.0d0
-!    Et2(3)=0.0d0
+  !    Et2(1)=exp(ima*zk*P0(3))
+  !    Et2(2)=0.0d0
+  !    Et2(3)=0.0d0
+  
+  !    Ht2(1)=0.0d0
+  !    Ht2(2)=exp(ima*zk*P0(3))
+  !    Ht2(3)=0.0d0
+  
+  !    write (*,*) srcvals(1,count1)*srcvals(4,count1)+srcvals(2,count1)*srcvals(5,count1)+srcvals(3,count1)*srcvals(6,count1)
+  ! write (*,*) 'AHORA!!!'
+  ! call em_sphere_pec(P0(1),P0(2),P0(3),1.0d0,40,zk,Et2,Ht2)
+  
+  !	
+  !   Here we are testing the extintion theorem, 
+  !   that's why we ADD incoming and scattered fields.
+  !
 
-!    Ht2(1)=0.0d0
-!    Ht2(2)=exp(ima*zk*P0(3))
-!    Ht2(3)=0.0d0
+  print *
+  print *  
+  error_H=sqrt(abs(Ht1(1)+Ht2(1))**2+abs(Ht1(2)+Ht2(2))**2 &
+       + abs(Ht1(3)+Ht2(3))**2)
+  ! write (*,*) 'Absolute error in H: ', error_H
+  write (*,*) 'Relative error in H: ', error_H/&
+       sqrt(abs(Ht2(1))**2+abs(Ht2(2))**2+abs(Ht2(3))**2)
 
-!    write (*,*) srcvals(1,count1)*srcvals(4,count1)+srcvals(2,count1)*srcvals(5,count1)+srcvals(3,count1)*srcvals(6,count1)
-! write (*,*) 'AHORA!!!'
-! call em_sphere_pec(P0(1),P0(2),P0(3),1.0d0,40,zk,Et2,Ht2)
+  error_E=sqrt(abs(Et1(1)+Et2(1))**2+abs(Et1(2)+Et2(2))**2+&
+       &abs(Et1(3)+Et2(3))**2)
 
-!	
-!   Here we are testing the extintion theorem, 
-!   that's why we ADD incoming and scattered fields.
-!
-		
-	error_H=sqrt(abs(Ht1(1)+Ht2(1))**2+abs(Ht1(2)+Ht2(2))**2+&
-	 &abs(Ht1(3)+Ht2(3))**2)
-!	write (*,*) 'Error H: ', error_H
-	write (*,*) 'Relative Error H: ', error_H/&
-	 &sqrt(abs(Ht2(1))**2+abs(Ht2(2))**2+abs(Ht2(3))**2)
-
-	error_E=sqrt(abs(Et1(1)+Et2(1))**2+abs(Et1(2)+Et2(2))**2+&
-	 &abs(Et1(3)+Et2(3))**2)
-!	write (*,*) 'Error H: ', error_H
+ !	write (*,*) 'Error H: ', error_H
 	write (*,*) 'Relative Error E: ', error_E/&
 	 &sqrt(abs(Et2(1))**2+abs(Et2(2))**2+abs(Et2(3))**2)
 
+ print *
        write (*,*) 'E field 1:', Et1(1),Et2(1)
        write (*,*) 'E field 2:', Et1(2),Et2(2)
        write (*,*) 'E field 3:', Et1(3),Et2(3)
 
+ print *
        write (*,*) 'H field 1:', Ht1(1),Ht2(1)
        write (*,*) 'H field 2:', Ht1(2),Ht2(2)
        write (*,*) 'H field 3:', Ht1(3),Ht2(3)
 write (*,*) 'ahora now'
 return
 end subroutine test_accuracy_em_cfie_rwg_pec
+
+
+
+
+
 
 
 subroutine test_accuracy_em_cfie_rwg_pec_sphere(eps_FMM,sol,zpars,ns,wts,srcvals,&
@@ -2188,69 +2204,61 @@ end subroutine get_rhs_em_cfie_rwg_pec_sphere3
 
 
 
+subroutine get_rhs_em_cfie_rwg_pec_sphere(P0, vf, ns, srcvals, zpars, &
+     RHS, rwg, nrwg, vert_flat, tri_flat, n_vert_flat, n_tri_flat, &
+     norder, wts)
+  implicit none
 
-
-
-
-
-
-
-
-
-
-subroutine get_rhs_em_cfie_rwg_pec_sphere(P0,vf,ns,srcvals,zpars,RHS,&
- &rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder,wts)
-implicit none
-
-!
-!  This function obtains the right hand side for the MFIE formulation
-!  for the integral boundary equation:
-!
-!			J/2 - M_{k}[J] = nxH_inc 
-!
-!  input:
-!    P0 - real * 8 (3)
-!      location of the source point at the exterior region
-!      WARNING! notice that this formulation uses a representation theorem
-!      for the incoming field in the interior region (MFIE) therefore
-!      therefore it only works for incoming fields generated by sources in
-!      the exterior region (or at infinity like plane waves)
-!
-!    vf - complex *16(3)
-!      Orientation of the magnetic and electric dipoles located at P0 
-!
-!    alpha - complex *16
-!      parameter in the combined formulation
-!   
-!    ns - integer
-!      total number of points on the surface
-!
-!    srcvals - real *8(12,ns)
-!      xyz(u,v) and derivative info sampled at the 
-!      discretization nodes on the surface
-!      srcvals(1:3,i) - xyz info
-!      srcvals(4:6,i) - dxyz/du info
-!      srcvals(7:9,i) - dxyz/dv info
-!
-!    zk - complex *16
-!      Helmholtz parameter 
-!
-!    output:
-!      RHS - complex  *16(2*ns)
-!        right hand side
-!          RHS(1:ns) - first component of  nxH_inc along
-!          the srcvals(4:6,i) direction
-!          RHS(ns+1:2*ns) - second component of nxH_inc along
-!          the (srcvals(10:12,i) x srcvals(4:6,i)) direction
-!
-
-	!List of calling arguments
-	integer ( kind = 4 ), intent(in) :: ns
-	real ( kind = 8 ), intent(in) :: P0(3)
-	complex ( kind = 8 ), intent(in) :: vf(3)
-	real ( kind = 8 ), intent(in) :: srcvals(12,ns)
-	complex ( kind = 8 ), intent(in) :: zpars(3)
-	complex ( kind = 8 ), intent(out) :: RHS(nrwg)
+  !
+  !  This function obtains the right hand side for the MFIE formulation
+  !  for the integral boundary equation:
+  !
+  !			J/2 - M_{k}[J] = nxH_inc 
+  !
+  !  input:
+  !    P0 - real * 8 (3)
+  !      location of the source point at the exterior region
+  !      WARNING! notice that this formulation uses a representation theorem
+  !      for the incoming field in the interior region (MFIE) therefore
+  !      therefore it only works for incoming fields generated by sources in
+  !      the exterior region (or at infinity like plane waves)
+  !
+  !    vf - complex *16(3)
+  !      Orientation of the electric dipole located at P0 
+  !
+  !    alpha - complex *16
+  !      parameter in the combined formulation
+  !   
+  !    ns - integer
+  !      total number of points on the surface
+  !
+  !    srcvals - real *8(12,ns)
+  !      xyz(u,v) and derivative info sampled at the 
+  !      discretization nodes on the surface
+  !      srcvals(1:3,i) - xyz info
+  !      srcvals(4:6,i) - dxyz/du info
+  !      srcvals(7:9,i) - dxyz/dv info
+  !      srcvals(10:12,i) - the unit normal 
+  !
+  !    zk - complex *16
+  !      Helmholtz parameter 
+  !
+  !    output:
+  !      RHS - complex  *16(2*ns)
+  !        right hand side
+  !          RHS(1:ns) - first component of  nxH_inc along
+  !          the srcvals(4:6,i) direction
+  !          RHS(ns+1:2*ns) - second component of nxH_inc along
+  !          the (srcvals(10:12,i) x srcvals(4:6,i)) direction
+  !
+  
+  !List of calling arguments
+  integer ( kind = 4 ), intent(in) :: ns
+  real ( kind = 8 ), intent(in) :: P0(3)
+  complex ( kind = 8 ), intent(in) :: vf(3)
+  real ( kind = 8 ), intent(in) :: srcvals(12,ns)
+  complex ( kind = 8 ), intent(in) :: zpars(3)
+  complex ( kind = 8 ), intent(out) :: RHS(nrwg)
 
   integer, intent(in) :: nrwg,n_vert_flat,n_tri_flat,norder
   integer, intent(in) :: rwg(4,nrwg),tri_flat(3,n_tri_flat)
@@ -2258,25 +2266,25 @@ implicit none
   real ( kind = 8 ), intent(in) :: wts(ns)
 
 	
-	!List of local variables
-	complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
-	integer count1
-	real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
+  !List of local variables
+  complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
+  integer count1
+  real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
   complex ( kind = 8 ), allocatable :: rhs_aux(:)
   complex ( kind = 8 ) zk, alpha, beta
   complex ( kind = 8 ) ima
 		
   data ima/(0.0d0,1.0d0)/
 
-	allocate(E(3,ns), H(3,ns))
+  allocate(E(3,ns), H(3,ns))
   allocate(rhs_aux(2*ns))
 
-  zk=zpars(1)
-  alpha=zpars(2)
-  beta=zpars(3)
+  zk = zpars(1)
+  alpha = zpars(2)
+  beta = zpars(3)
 
-!	call fieldsED(zk,P0,srcvals,ns,E,H,vf,0)
-!	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,1)
+  ! call fieldsED(zk,P0,srcvals,ns,E,H,vf,0)
+  ! call fieldsMD(zk,P0,srcvals,ns,E,H,vf,1)
 
 
   do count1=1,ns
@@ -2288,20 +2296,22 @@ implicit none
     H(2,count1)=exp(ima*zk*srcvals(3,count1))
     H(3,count1)=0.0d0
 
-!    write (*,*) srcvals(1,count1)*srcvals(4,count1)+srcvals(2,count1)*srcvals(5,count1)+srcvals(3,count1)*srcvals(6,count1)
+    !  write (*,*) srcvals(1,count1)*srcvals(4,count1) &
+    !       +srcvals(2,count1)*srcvals(5,count1) &
+    !       +srcvals(3,count1)*srcvals(6,count1)
   enddo
 
 
-	do count1=1,ns	
-	  call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),ru,rv)		
-	  rhs_aux(count1)=-DOT_PRODUCT(rv,H(:,count1))
-	  rhs_aux(ns+count1)=DOT_PRODUCT(ru,H(:,count1))
-    rhs_aux(count1)=alpha*rhs_aux(count1)-beta*DOT_PRODUCT(ru,E(:,count1))
-	  rhs_aux(ns+count1)=alpha*rhs_aux(ns+count1)-beta*DOT_PRODUCT(rv,E(:,count1))
-	enddo
+  do count1=1,ns	
+     call orthonormalize(srcvals(4:6,count1), srcvals(10:12,count1),ru,rv)		
+     rhs_aux(count1) = -DOT_PRODUCT(rv, H(:,count1))
+     rhs_aux(ns+count1) = DOT_PRODUCT(ru, H(:,count1))
+     rhs_aux(count1) = alpha*rhs_aux(count1) - beta*DOT_PRODUCT(ru,E(:,count1))
+     rhs_aux(ns+count1) = alpha*rhs_aux(ns+count1) - beta*DOT_PRODUCT(rv,E(:,count1))
+  enddo
 
-  call vr2rwg_vector(srcvals,wts,ns,norder,n_tri_flat,n_vert_flat,vert_flat,&
-   &tri_flat,rwg,nrwg,rhs_aux,RHS)
+  call vr2rwg_vector(srcvals, wts, ns, norder, n_tri_flat, n_vert_flat, &
+       vert_flat, tri_flat, rwg, nrwg, rhs_aux, rhs)
 
 return
 end subroutine get_rhs_em_cfie_rwg_pec_sphere

@@ -55,16 +55,21 @@ program efie_rwg_open
 
   zk = 2.0d-1
   zk = 1.0d0
-  !      zk=4.4934d0 this frequency is interesting to test the resonance
+  !
+  ! zk=4.4934d0 this frequency is interesting to test the resonance
   ! of a mfie on a sphere of radius 1
-  !https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=4334247
-
+  ! https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=4334247
+  !
   zpars(1) = zk
   zpars(2) = 0.0d0
   zpars(3) = -1.0d0
 
-  !zpars(2) and zpars(3) must be real and with different sign to avoid resonances
-
+  !
+  ! zpars(2) and zpars(3) must be real and with different sign to
+  ! avoid resonances, they are the coupling parameters between the
+  ! MFIE and EFIE
+  !
+  
   xyz_in(1) = 0.11d0
   xyz_in(2) = 0.0d-5
   xyz_in(3) = 0.37d0
@@ -109,10 +114,11 @@ program efie_rwg_open
        tri_flat, n_vert_flat, n_tri_flat)
 
 
-  ! plot the surface
-  
-  
-  stop
+  !call prinf('norder = *', norder, 1)
+  !call prinf('norders = *', norders, npatches)
+  ! plot the surface  
+  call surf_vtk_plot(npatches, norders, ixyzs, iptype, &
+       npts, srccoefs, srcvals, 'efie_rwg_open.vtk', 'the scatterer')
 
 
   norder = norders(1)
@@ -132,8 +138,15 @@ program efie_rwg_open
   write (*,*) 'about to get rhs'
 
 
-  call get_rhs_em_cfie_rwg_pec_sphere(xyz_out,vf,npts,srcvals,zpars,RHS_vect,&
-       rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder,wts)
+  call get_rhs_em_cfie_rwg_pec_sphere(xyz_out, vf, npts, srcvals, zpars, &
+       rhs_vect, rwg, nrwg, vert_flat, tri_flat, n_vert_flat, &
+       n_tri_flat, norder, wts)
+
+
+  
+  !call surf_vtk_plot_scalar(npatches, norders, ixyzs, iptype, &
+  !     npts, srccoefs, srcvals, rhs_vect, 'efie_rwg_open_rhs.vtk', &
+  !     'right hand side')
 
 
 
@@ -158,9 +171,10 @@ program efie_rwg_open
  
   print *
   print *
-  call test_accuracy_em_cfie_rwg_pec_sphere(eps,a_vect,zpars,npts,wts, &
-       srcvals,xyz_in,vf,xyz_out,&
-       rwg,nrwg,vert_flat,tri_flat,n_vert_flat,n_tri_flat,norder)
+  call test_accuracy_em_cfie_rwg_pec_sphere(eps, a_vect, zpars, &
+       npts, wts, &
+       srcvals, xyz_in, vf, xyz_out, &
+       rwg, nrwg, vert_flat, tri_flat, n_vert_flat, n_tri_flat, norder)
 
   stop
 end program efie_rwg_open

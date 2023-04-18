@@ -150,33 +150,33 @@ end subroutine surf_quadratic_msh_vtk_plot
 !
 subroutine surf_vtk_plot(npatches,norders,ixyzs,iptype,npts,srccoefs,&
    srcvals,fname,title)
-!
-!
-!
-!
-!  This subroutine writes a vtk file to plot the surface
-!  
-!f2py intent(in) npatches,norders,ixyzs,iptype,npts,srccoefs
-!f2py intent(in) srcvals,fname,title
-!
-   implicit none
-   integer npatches,norders(npatches),ixyzs(npatches+1),npts
-   integer iptype(npatches)
-   real *8 srccoefs(9,npts),srcvals(12,npts)
-   real *8, allocatable :: sigma(:)
-   character (len=*) fname,title
+  !
+  ! This subroutine writes a vtk file to plot the surface as a
+  ! collection of flat triangles, independent of the underlying order
+  ! of the discretization
+  !
+  !  
+  !f2py intent(in) npatches,norders,ixyzs,iptype,npts,srccoefs
+  !f2py intent(in) srcvals,fname,title
+  !
+  implicit none
+  integer npatches,norders(npatches),ixyzs(npatches+1),npts
+  integer iptype(npatches)
+  real *8 srccoefs(9,npts),srcvals(12,npts)
+  real *8, allocatable :: sigma(:)
+  character (len=*) fname,title
 
-   integer i
+  integer i
    
-   allocate(sigma(npts))
-!$OMP PARALLEL DO DEFAULT(SHARED)   
-   do i=1,npts
+  allocate(sigma(npts))
+  !$OMP PARALLEL DO DEFAULT(SHARED)   
+  do i=1,npts
      sigma(i) = srcvals(3,i)
-   enddo
-!$OMP END PARALLEL DO
+  enddo
+  !$OMP END PARALLEL DO
 
   call surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype,npts,  &
-    srccoefs,srcvals,sigma,fname,title)
+       srccoefs,srcvals,sigma,fname,title)
 
 end subroutine surf_vtk_plot
 !

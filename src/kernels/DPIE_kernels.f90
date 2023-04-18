@@ -599,26 +599,34 @@ return
 end subroutine orthonormalize_all
 
 
+
+
+
+
 subroutine orthonormalize(du,normal,ru,rv)
-implicit none
+  implicit none
 
-    !List of calling arguments
-	real ( kind = 8 ), intent(in) :: du(3), normal(3)
-	real ( kind = 8 ), intent(out) :: ru(3), rv(3)
+  !List of calling arguments
+  real ( kind = 8 ), intent(in) :: du(3), normal(3)
+  real ( kind = 8 ), intent(out) :: ru(3), rv(3)
 
-	!List of local variables
-	real ( kind = 8 ) aux
+  !List of local variables
+  real ( kind = 8 ) aux
 
-	aux=sqrt(du(1)**2+du(2)**2+du(3)**2)
+  aux=sqrt(du(1)**2+du(2)**2+du(3)**2)
 	
-	ru(1)=du(1)/aux
-	ru(2)=du(2)/aux
-	ru(3)=du(3)/aux
+  ru(1)=du(1)/aux
+  ru(2)=du(2)/aux
+  ru(3)=du(3)/aux
 		
-	call my_cross_v2(normal, ru, rv)
-
-return
+  call my_cross_v2(normal, ru, rv)
+  return
 end subroutine orthonormalize
+
+
+
+
+
 
 subroutine my_cross_v2(a, b, c)
 implicit none
