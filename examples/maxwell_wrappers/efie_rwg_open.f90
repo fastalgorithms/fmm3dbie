@@ -109,7 +109,11 @@ program efie_rwg_open
        tri_flat, n_vert_flat, n_tri_flat)
 
 
+  ! plot the surface
+  
+  
   stop
+
 
   norder = norders(1)
   allocate(sigma(npts),rhs(npts))

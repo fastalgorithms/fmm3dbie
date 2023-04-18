@@ -137,8 +137,8 @@ end subroutine rwg2vr
 
 
 
-subroutine vr2rwg_vector(srcvals,wts,ns,norder,ntri,npoints,&
-    points,triang,rwg,nrwg,coefvr,coefrwg)
+subroutine vr2rwg_vector(srcvals, wts, ns, norder, ntri, npoints, &
+    points, triang, rwg, nrwg, coefvr, coefrwg)
 implicit none
 
   !List of calling arguments
@@ -1136,36 +1136,45 @@ end subroutine go32tri
 
 
 
-subroutine open_go3_4_rwg(fname,npts_aux,npatches_aux,norder,npatches, &
-    norders,ixyzs,&
-    iptype,npts,srcvals,srccoefs,wts,N,npoints_est,nrwg,rwg,vert_flat,&
-    tri_flat,n_vert_flat,n_tri_flat)
+subroutine open_go3_4_rwg(fname, npts_aux, npatches_aux, norder, npatches, &
+     norders, ixyzs, &
+     iptype, npts, srcvals, srccoefs, wts, N, npoints_est, &
+     nrwg, rwg, vert_flat, &
+     tri_flat, n_vert_flat, n_tri_flat)
   implicit none
   !
-  ! This routine ...
+  ! This routine opens a file in g03 format and converts it to
+  ! something rwg functions can live on
   !
+  ! Input:
+  !   fname -
+  !   npts_aux -
+  !
+  ! Output:
+  !
+  !
+  
+  ! variables in calling sequence
+  character (len=*), intent(in) :: fname
+  integer, intent(in) :: npts_aux,npatches_aux,norder,npatches
+  integer, intent(out) :: norders(npatches)
+  integer, intent(out) :: ixyzs(npatches+1)
+  integer, intent(out) :: iptype(npatches)
+  integer, intent(in) :: npts
+  double precision, intent(out) :: srcvals(12,npts)
+  double precision, intent(out) :: srccoefs(9,npts)
+  double precision, intent(out) :: wts(npts)
+  integer, intent(in) :: N,npoints_est
+  integer, intent(out) :: nrwg
+  integer, intent(out) :: rwg(4,3*npatches)
+  double precision, intent(out) :: vert_flat(3,npoints_est)
+  integer, intent(out) :: tri_flat(3,npatches)
+  integer, intent(out) :: n_vert_flat,n_tri_flat
 
-  ! List of calling arguments
-    character (len=*), intent(in) :: fname
-    integer, intent(in) :: npts_aux,npatches_aux,norder,npatches
-    integer, intent(out) :: norders(npatches)
-    integer, intent(out) :: ixyzs(npatches+1)
-    integer, intent(out) :: iptype(npatches)
-    integer, intent(in) :: npts
-    real ( kind = 8 ), intent(out) :: srcvals(12,npts)
-    real ( kind = 8 ), intent(out) :: srccoefs(9,npts)
-    real ( kind = 8 ), intent(out) :: wts(npts)
-    integer, intent(in) :: N,npoints_est
-    integer, intent(out) :: nrwg
-    integer, intent(out) :: rwg(4,3*npatches)
-    real ( kind = 8 ), intent(out) :: vert_flat(3,npoints_est)
-    integer, intent(out) :: tri_flat(3,npatches)
-    integer, intent(out) :: n_vert_flat,n_tri_flat
-
-    !List of local variables
-    integer, allocatable :: norders_aux(:),ixyzs_aux(:),iptype_aux(:)
-    real ( kind = 8 ), allocatable :: srcvals_aux(:,:),srccoefs_aux(:,:),wts_aux(:)
-    integer npols,norder_aux,i
+  !List of local variables
+  integer, allocatable :: norders_aux(:),ixyzs_aux(:),iptype_aux(:)
+  double precision, allocatable :: srcvals_aux(:,:),srccoefs_aux(:,:),wts_aux(:)
+  integer :: npols,norder_aux,i
 
   allocate(srcvals_aux(12,npts_aux),srccoefs_aux(9,npts_aux))
   allocate(ixyzs_aux(npatches_aux+1),iptype_aux(npatches_aux),norders_aux(npatches_aux))
@@ -1199,10 +1208,14 @@ end subroutine open_go3_4_rwg
 
 
 
+
+
+
+
 subroutine open_go3_4_rwg_v2(srcvals_aux,srccoefs_aux,wts_aux,ixyzs_aux,iptype_aux,norders_aux,&
      & npts_aux,npatches_aux,norder,npatches,norders,ixyzs,&
-     &iptype,npts,srcvals,srccoefs,wts,N,npoints_est,nrwg,rwg,vert_flat,&
-     &tri_flat,n_vert_flat,n_tri_flat)
+     &iptype,npts,srcvals,srccoefs,wts,N,npoints_est,nrwg,rwg&
+     &,vert_flat, tri_flat,n_vert_flat,n_tri_flat)
 implicit none
 
     !List of calling arguments
