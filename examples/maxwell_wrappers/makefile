@@ -44,7 +44,6 @@ endif
 
 ifeq ($(HOST),gcc-openmp)
     FC = gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy 
 endif
 
 ifeq ($(HOST),intel)
@@ -57,8 +56,20 @@ ifeq ($(HOST),intel-openmp)
     FFLAGS= -O3 -fPIC -march=native -qopenmp
 endif
 
+
+FC = gfortran
+FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy 
+CC = gcc
+
+
 FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
-#-L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
+
+
+# For your OS, override the above by placing make variables in make.inc
+-include make.inc
+
+
+
 
 .PHONY: usage clean list
 
