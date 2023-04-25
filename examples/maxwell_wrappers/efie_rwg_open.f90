@@ -55,6 +55,7 @@ program efie_rwg_open
 
   zk = 2.0d-1
   zk = 1.0d0
+  zk = 2.75d0
   !
   ! zk=4.4934d0 this frequency is interesting to test the resonance
   ! of a mfie on a sphere of radius 1
@@ -138,7 +139,11 @@ program efie_rwg_open
   write (*,*) 'about to get rhs'
 
 
-  call get_rhs_em_cfie_rwg_pec_sphere(xyz_out, vf, npts, srcvals, zpars, &
+  !call get_rhs_em_cfie_rwg_pec_sphere(xyz_out, vf, npts, srcvals, zpars, &
+  !     rhs_vect, rwg, nrwg, vert_flat, tri_flat, n_vert_flat, &
+  !     n_tri_flat, norder, wts)
+
+  call get_rhs_em_cfie_rwg_pec(xyz_out, vf, npts, srcvals, zpars, &
        rhs_vect, rwg, nrwg, vert_flat, tri_flat, n_vert_flat, &
        n_tri_flat, norder, wts)
 
@@ -171,7 +176,12 @@ program efie_rwg_open
  
   print *
   print *
-  call test_accuracy_em_cfie_rwg_pec_sphere(eps, a_vect, zpars, &
+  !call test_accuracy_em_cfie_rwg_pec_sphere(eps, a_vect, zpars, &
+  !      npts, wts, &
+  !      srcvals, xyz_in, vf, xyz_out, &
+  !      rwg, nrwg, vert_flat, tri_flat, n_vert_flat, n_tri_flat, norder)
+
+  call test_accuracy_em_cfie_rwg_pec(eps, a_vect, zpars, &
        npts, wts, &
        srcvals, xyz_in, vf, xyz_out, &
        rwg, nrwg, vert_flat, tri_flat, n_vert_flat, n_tri_flat, norder)

@@ -69,7 +69,10 @@ end subroutine driver_analytic_sphere_pw_pec
 
 
 
-subroutine em_sphere_pec(x,y,z,r0,nmax,zk,E,H)
+
+
+
+subroutine em_sphere_pec(x, y, z, r0, nmax, zk, E, H)
 implicit none
 
   !List of calling arguments
@@ -88,48 +91,49 @@ implicit none
   real ( kind = 8 ) pol_leg(1,nmax), polp_leg(1,nmax)
   complex ( kind = 8 ) er,etheta,ephi,hr,htheta,hphi
 
-    data ima/(0.0d0,1.0d0)/
+  data ima/(0.0d0,1.0d0)/
 
-    r_t=sqrt(x**2+y**2+z**2)
-    th_t=atan2(sqrt(x**2+y**2),z)
-    phi_t=atan2(y,x)
+  r_t=sqrt(x**2+y**2+z**2)
+  th_t=atan2(sqrt(x**2+y**2),z)
+  phi_t=atan2(y,x)
 
-    er=0.0d0
-    etheta=0.0d0
-    ephi=0.0d0
+  er=0.0d0
+  etheta=0.0d0
+  ephi=0.0d0
 
-    hr=0.0d0
-    htheta=0.0d0
-    hphi=0.0d0
+  hr=0.0d0
+  htheta=0.0d0
+  hphi=0.0d0
 
     
-    zr=real(zk*r_t)
-    zr0=real(zk*r0)
+  zr=real(zk*r_t)
+  zr0=real(zk*r0)
 
-!    write (*,*) zk*r_t,zr
-!    write (*,*) zk*r0,zr0
-!    stop
+  !    write (*,*) zk*r_t,zr
+  !    write (*,*) zk*r0,zr0
+  !    stop
 
-    call riccati_hpp(nmax,zr,h_val,hp_val,hpp_val)
-    call riccati_jp(nmax,zr0,j_val0,jp_val0)
-    call riccati_hpp(nmax,zr0,h_val0,hp_val0,hpp_val0)
+  call riccati_hpp(nmax,zr,h_val,hp_val,hpp_val)
+  call riccati_jp(nmax,zr0,j_val0,jp_val0)
+  call riccati_hpp(nmax,zr0,h_val0,hp_val0,hpp_val0)
 
-    call legasfuno1(1,nmax,cos(th_t),pol_leg,polp_leg)
+  call legasfuno1(1,nmax,cos(th_t),pol_leg,polp_leg)
 
-!    do count=1,nmax
-!      polp_leg(1,count)=-polp_leg(1,count)/sin(th_t)
-!    enddo
+  !    do count=1,nmax
+  !      polp_leg(1,count)=-polp_leg(1,count)/sin(th_t)
+  !    enddo
 
-!    call p_polynomial_value ( 1, nmax, cos(th_t), pol_leg)
-!    call p_polynomial_prime ( 1, nmax, cos(th_t), polp_leg )
+  !    call p_polynomial_value ( 1, nmax, cos(th_t), pol_leg)
+  !    call p_polynomial_prime ( 1, nmax, cos(th_t), polp_leg )
 
 
-    do count=1,nmax
+  do count=1,nmax
       an=(1.0d0/((-ima)**count))*(2*count+1)/(count*(count+1))
       bn=-an*jp_val0(count)/hp_val0(count)
       cn=-an*j_val0(count)/h_val0(count)
 
       er=er+ima*cos(phi_t)*bn*(hpp_val(count)+h_val(count))*pol_leg(1,count)
+
       etheta=etheta+cos(phi_t)/zr*(-ima*bn*hp_val(count)*polp_leg(1,count)*sin(th_t)-cn*h_val(count)*pol_leg(1,count)/sin(th_t))
       ephi=ephi+sin(phi_t)/(zr)*(-ima*bn*hp_val(count)*pol_leg(1,count)/sin(th_t)-cn*h_val(count)*polp_leg(1,count)*sin(th_t));
            
@@ -152,28 +156,7 @@ end subroutine em_sphere_pec
 
 
 
-!subroutine riccati_hp(n,x,val,valp)
-!implicit none
 
-  !List of calling arguments
-!  real ( kind = 8 ), intent(in) :: x
-!  integer, intent(in) :: n
-!  complex ( kind = 8 ), intent(out) :: val(0:n),valp(0:n)
-
-  !List of local variables
-!  real ( kind = 8 ) pi
-!  complex ( kind = 8 ) h(0:n),hp(0:n)
-
-!    pi=3.1415926535897932384626433832795028841971d0
-
-!    call riccati_h(n,x,val)
-    
-!    do count1=0:n
-!      val(count1)=sqrt(pi*x/2.0d0)*h(count1)
-!    enddo
-
-!return
-!end subroutine riccati_hp
 
 
 subroutine riccati_hpp(n,x,val,valp,valpp)
@@ -205,6 +188,36 @@ return
 end subroutine riccati_hpp
 
 
+
+
+
+!subroutine riccati_hp(n,x,val,valp)
+!implicit none
+
+  !List of calling arguments
+!  real ( kind = 8 ), intent(in) :: x
+!  integer, intent(in) :: n
+!  complex ( kind = 8 ), intent(out) :: val(0:n),valp(0:n)
+
+  !List of local variables
+!  real ( kind = 8 ) pi
+!  complex ( kind = 8 ) h(0:n),hp(0:n)
+
+!    pi=3.1415926535897932384626433832795028841971d0
+
+!    call riccati_h(n,x,val)
+    
+!    do count1=0:n
+!      val(count1)=sqrt(pi*x/2.0d0)*h(count1)
+!    enddo
+
+!return
+!end subroutine riccati_hp
+
+
+
+
+
 subroutine riccati_hp(n,x,val,valp)
 implicit none
 
@@ -230,6 +243,10 @@ implicit none
 
 return
 end subroutine riccati_hp
+
+
+
+
 
 
 subroutine riccati_jp(n,x,val,valp)
@@ -350,6 +367,10 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
         END
 
 
+
+
+
+        
         INTEGER FUNCTION MSTA1(X,MP)
 
 !      ===================================================
@@ -380,6 +401,11 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
         END
 
 
+
+
+
+
+        
         INTEGER FUNCTION MSTA2(X,N,MP)
 
 !      ===================================================
