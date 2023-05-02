@@ -93,7 +93,7 @@ LAP = src/lap_wrappers
 LOBJS = $(LAP)/lap_comb_dir.o
 
 # Maxwell wrappers
-EM = src/maxwell_wrappers
+EM = src/maxwell
 EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 	$(EM)/em_nrccie_pec.o $(EM)/em_auCKi_pec.o \
 	$(EM)/em_dfie_trans.o $(EM)/em_adpie_pec.o \

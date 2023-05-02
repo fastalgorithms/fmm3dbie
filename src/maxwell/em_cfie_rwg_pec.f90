@@ -1186,7 +1186,10 @@ implicit none
 
   integer count1,count2,ier
   integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE,nd
-	real ( kind = 8 ) pi
+  real ( kind = 8 ) pi
+
+  double precision :: t7, t8, omp_get_wtime
+  
 	pi=3.1415926535897932384626433832795028841971d0
 
 	ima=(0.0d0,1.0d0)
@@ -1245,9 +1248,21 @@ implicit none
     ifcurlE=1
     ifdivE=0
 
+
+!      call cpu_time(t7)
+!$      t7 = omp_get_wtime()     
+    
 	call Vector_Helmholtz_targ2(eps,zk,ns,source,wts,ifa_vect,a_vect,&
 	 &ifb_vect,b_vect,iflambda,lambda,ifrho,rho,n_vect_s,ifE,E,ifcurlE&
 	 &,curlE,ifdivE,divE,nt,targets,thresh,ifdir)
+
+!       call cpu_time(t8)
+!$      t8 = omp_get_wtime()     
+!       if (ifdir .eq. 0) then
+!          print *, 'time in vector_helmholtz_targ2 = ', t8-t7
+!       end if
+       
+       
 
     do count1=1,nt
 	  b_vect_t(1,count1)=n_vect_t(2,count1)*curlE(3,count1)-&
