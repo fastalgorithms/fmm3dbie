@@ -36,15 +36,21 @@ default: usage
 usage:
 	@echo ""
 	@echo "-------------------------------------------------------------------------"
-	@echo "Makefile for Maxwell examplee, please specify what to make:"
+	@echo "Makefile for boundary integral examplee, please specify what to make:"
 	@echo ""
 	@echo "  make maxwell/"
 	@echo "         pec/"
 	@echo "           efie_rwg_open ........... scattering from an open surface"
+	@echo "                                     using the electric field int eq"
+	@echo "           nrccie................... scattering using the non-resonant"
+	@echo "                                     charge-current int eq"
 	@echo "         dielectric/"
 	@echo "         hybrid/"
 	@echo ""
 	@echo "  make clean ....................... remove all .o files and executables"
+	@echo ""
+	@echo "All executables are built into the 'build/' directory, and should be"
+	@echo "run from that directory."
 	@echo ""
 	@echo "For faster (multicore) making, append the flag -j"
 	@echo "-------------------------------------------------------------------------"
@@ -68,10 +74,17 @@ usage:
 
 
 
-efie_rwg_open: efie_rwg_open.o
-	$(FC) $(FFLAGS) -o efie_rwg_open efie_rwg_open.o $(FEND)
-	./efie_rwg_open
+maxwell/pec/efie_rwg_open: maxwell/pec/efie_rwg_open.o
+	mkdir -p build
+	$(FC) $(FFLAGS) -o build/efie_rwg_open maxwell/pec/efie_rwg_open.o $(FEND)
+	cd ./build && ./efie_rwg_open
+
+maxwell/pec/nrccie: maxwell/pec/em_nrccie_example.o
+	mkdir -p build
+	rm -f build/*
+	$(FC) $(FFLAGS) -o build/em_nrccie_example maxwell/pec/em_nrccie_example.o $(FEND)
+	cd ./build && ./em_nrccie_example
 
 clean:
-	rm -f efie_rwg_open.o
-	rm -f efie_rwg_open
+	rm -f maxwell/pec/*.o
+	rm -f build/*
