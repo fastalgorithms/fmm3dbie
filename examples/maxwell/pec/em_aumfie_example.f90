@@ -1,131 +1,153 @@
-      implicit real *8 (a-h,o-z) 
-      real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
-      real *8, allocatable :: wts(:),rsigma(:)
-      integer ipars(2)
+program em_aumfie_example
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+  implicit real *8 (a-h,o-z) 
+  real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
+  real *8, allocatable :: wts(:),rsigma(:)
+  integer ipars(2)
 
-      real *8 xyz_out(3),xyz_in(3)
-      complex *16, allocatable :: sigma(:),rhs(:)
-      complex *16, allocatable :: sigma2(:),rhs2(:)
+  integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      complex ( kind = 8 ), allocatable :: a_vect(:),RHS_vect(:),rhs_nE(:),rhs_nE_aux(:),a_s(:)
-      complex *16 vf(3)
-
-
-      real *8, allocatable :: errs(:)
-      real *8 thet,phi
-      complex * 16 zpars(3)
-      integer numit,niter
-      character *200 title,fname,fname1,fname2
-
-      integer ipatch_id
-      real *8 uvs_targ(2)
-
-      logical isout0,isout1
-
-      complex *16 pot,potex,ztmp,ima,zk
-      complex *16 alpha_rhs
-
-      integer count1
-
-      data ima/(0.0d0,1.0d0)/
+  real *8 xyz_out(3),xyz_in(3)
+  complex *16, allocatable :: sigma(:),rhs(:)
+  complex *16, allocatable :: sigma2(:),rhs2(:)
+  
+  complex ( kind = 8 ), allocatable :: a_vect(:),RHS_vect(:),rhs_nE(:),rhs_nE_aux(:),a_s(:)
+  complex *16 vf(3)
 
 
-      call prini(6,13)
+  real *8, allocatable :: errs(:)
+  real *8 thet,phi
+  complex * 16 zpars(3)
+  integer numit,niter
+  character *200 title,fname,fname1,fname2
 
-      done = 1
-      pi = atan(done)*4
+  integer ipatch_id
+  real *8 uvs_targ(2)
 
-      zk = 2.0d-1
-      zk=8.d-1
-      zpars(1) = zk 
-      zpars(2) = 1.0d0
-      zpars(3) = 0.0d0
+  logical isout0,isout1
 
-      xyz_in(1) = 0.11d0
-      xyz_in(2) = 0.0d-5
-      xyz_in(3) = 0.37d0
+  complex *16 pot,potex,ztmp,ima,zk
+  complex *16 alpha_rhs
 
-      xyz_out(1) = -3.5d0
-      xyz_out(2) = 3.1d0
-      xyz_out(3) = 20.1d0
+  integer count1
+
+  data ima/(0.0d0,1.0d0)/
+
+
+  call prini(6,13)
+
+  done = 1
+  pi = atan(done)*4
+
+  zk = 2.0d-1
+  zk=8.d-1
+  zpars(1) = zk 
+  zpars(2) = 1.0d0
+  zpars(3) = 0.0d0
+
+  xyz_in(1) = 0.11d0
+  xyz_in(2) = 0.0d-5
+  xyz_in(3) = 0.37d0
+
+  xyz_out(1) = -3.5d0
+  xyz_out(2) = 3.1d0
+  xyz_out(3) = 20.1d0
       
-      fname = '../../geometries/sphere_192_o03.go3'
-      call open_gov3_geometry_mem(fname,npatches,npts)
+  fname = '../../geometries/sphere_192_o03.go3'
+  print *
+  print *, 'loading file ', trim(fname)
+  call open_gov3_geometry_mem(fname, npatches, npts)
 
-      call prinf('npatches=*',npatches,1)
-      call prinf('npts=*',npts,1)
+  call prinf('npatches =*',npatches,1)
+  call prinf('npts =*',npts,1)
 
-      allocate(srcvals(12,npts),srccoefs(9,npts))
-      allocate(ixyzs(npatches+1),iptype(npatches),norders(npatches))
-      allocate(wts(npts))
+  allocate(srcvals(12,npts),srccoefs(9,npts))
+  allocate(ixyzs(npatches+1),iptype(npatches),norders(npatches))
+  allocate(wts(npts))
 
-      call open_gov3_geometry(fname,npatches,norders,ixyzs,&
-     &iptype,npts,srcvals,srccoefs,wts)
+  ! open the geometry and plot it
+  call open_gov3_geometry(fname,npatches,norders,ixyzs,&
+       iptype,npts,srcvals,srccoefs,wts)
 
+  call surf_vtk_plot(npatches, norders, ixyzs, iptype, &
+       npts, srccoefs, srcvals, 'aumfie_surface.vtk', 'the scatterer')
 
-      norder = norders(1)
-      allocate(sigma(npts),rhs(npts))
-      allocate(sigma2(npts),rhs2(npts))
+  norder = norders(1)
+  ! allocate some room for the solution
+  allocate(sigma(npts),rhs(npts))
+  allocate(sigma2(npts),rhs2(npts))
+  allocate(a_vect(2*npts),rhs_vect(2*npts),rhs_nE(npts), &
+       rhs_nE_aux(npts),a_s(npts))
   
-      allocate(a_vect(2*npts),RHS_vect(2*npts),rhs_nE(npts), &
-        rhs_nE_aux(npts),a_s(npts))
-      ifinout = 1
+  thet = hkrand(0)*pi
+  phi = hkrand(0)*2*pi
   
-      thet = hkrand(0)*pi
-      phi = hkrand(0)*2*pi
+  vf(1)=1.0d0
+  vf(2)=2.0d0
+  vf(3)=3.0d0
+  print *
+  print *, '. . . generating the right hand side for MFIE'
+  call get_rhs_em_mfie_pec(xyz_out,vf,zpars(2),npts,srcvals, &
+       zpars(1),rhs_vect)
+
+    
+  ! set some parameters and call the solver
+  numit = 400
+  niter = 0
+  allocate(errs(numit+100))
+
+  eps = 1d-3
+  eps_gmres=1d-10
+  ifinout = 1
   
-      vf(1)=1.0d0
-      vf(2)=2.0d0
-      vf(3)=3.0d0
-      call get_rhs_em_mfie_pec(xyz_out,vf,zpars(2),npts,srcvals, &
-        zpars(1),RHS_vect)
+  call cpu_time(t1)
+  !$  t1 = omp_get_wtime()      
+  call em_mfie_solver(npatches, norders, ixyzs, iptype, npts, &
+       srccoefs, srcvals, eps, zpars, numit, ifinout, rhs_vect, &
+       eps_gmres, &
+       niter, errs, rres, a_vect, rhs_nE)
 
-
-      numit = 400
-      niter = 0
-      allocate(errs(numit+1))
-
-      eps = 1d-3
-      eps_gmres=1d-10
-
-      call cpu_time(t1)
-!C$      t1 = omp_get_wtime()      
-      call em_mfie_solver(npatches,norders,ixyzs,iptype,npts,&
-     &srccoefs,srcvals,eps,zpars,numit,ifinout,RHS_vect,eps_gmres,&
-     &niter,errs,rres,a_vect,rhs_nE)
- 
-      call test_accuracy_em_mfie_pec(eps,a_vect,zpars,npts,wts, &
-        srcvals,xyz_in,vf,xyz_out)
-
-      call get_rhs_em_aumfie_pec(xyz_out,vf,zpars(2),npts,srcvals,&
-        zpars(1),rhs_nE_aux)
+  print *
+  call prinf('from mfie solve, gmres niter=*',niter,1)
+  call prin2('from mfie solve, rres=*',rres,1)
+  call prin2('from mfie solve, errs=*',errs,niter)
   
-      do count1=1,npts
-        rhs_nE(count1)=rhs_nE(count1)+rhs_nE_aux(count1)
-      enddo
-      call prinf('niter=*',niter,1)
-      call prin2('rres=*',rres,1)
-      call prin2('errs=*',errs,niter)
+  
+  ! estimate the accuracy in the mfie solve
+  call test_accuracy_em_mfie_pec(eps, a_vect, zpars, npts, wts, &
+       srcvals, xyz_in, vf, xyz_out)
 
-      call em_aumfie_solver(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,&
-     &rhs_nE,eps_gmres,niter,errs,rres,a_s)
+  
+  call get_rhs_em_aumfie_pec(xyz_out,vf,zpars(2),npts,srcvals,&
+       zpars(1), rhs_nE_aux)
+  
+  do count1=1,npts
+     rhs_nE(count1)=rhs_nE(count1)+rhs_nE_aux(count1)
+  enddo
 
-      call cpu_time(t2)
-!C$       t2 = omp_get_wtime()
-      call prin2('analytic solve time=*',t2-t1,1)
+  
+  call em_aumfie_solver(npatches,norders,ixyzs,&
+       &iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,&
+       &rhs_nE,eps_gmres,niter,errs,rres,a_s)
+
+  call cpu_time(t2)
+  !$       t2 = omp_get_wtime()
+  print *
+  call prin2('analytic solve time=*',t2-t1,1)
 
 
-!
-!  Test accuracy of solution
-!
-      call test_accuracy_em_aumfie_pec(eps,a_vect,a_s,zpars,npts,wts,&
-        srcvals,xyz_in,vf,xyz_out)
+  !
+  ! Test accuracy of solution
+  !
+  call test_accuracy_em_aumfie_pec(eps,a_vect,a_s,zpars,npts,wts,&
+       srcvals,xyz_in,vf,xyz_out)
 
       stop
-      end
+end program em_aumfie_example
+
+
+
+
 
 
 

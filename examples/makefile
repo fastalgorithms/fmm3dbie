@@ -40,6 +40,7 @@ usage:
 	@echo ""
 	@echo "  make maxwell/"
 	@echo "         pec/"
+	@echo "           aumfie .................. solve the mfie, then resolve for charge"
 	@echo "           efie_rwg_open ........... scattering from an open surface"
 	@echo "                                     using the electric field int eq"
 	@echo "           nrccie................... scattering using the non-resonant"
@@ -73,6 +74,11 @@ usage:
 
 
 
+
+maxwell/pec/aumfie: maxwell/pec/em_aumfie_example.o
+	mkdir -p build
+	$(FC) $(FFLAGS) -o build/em_aumfie_example maxwell/pec/em_aumfie_example.o $(FEND)
+	cd ./build && ./em_aumfie_example
 
 maxwell/pec/efie_rwg_open: maxwell/pec/efie_rwg_open.o
 	mkdir -p build
