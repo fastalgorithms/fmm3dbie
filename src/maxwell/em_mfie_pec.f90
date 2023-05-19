@@ -890,7 +890,7 @@ subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
 !    - rhs_nE: complx *16(npts)
 !        ikn·S_{k}[J] which can be used for computing the charge term
 !        from n·E_inc using the em_aumfie_pec solver
-!				 
+!
 
       implicit none
       integer npatches,norder,npols,npts
@@ -1963,7 +1963,7 @@ subroutine get_rhs_em_mfie_pec(p0, vf, alpha, ns, srcvals, zk,rhs)
   !  This function obtains the right hand side for the MFIE
   !  formulation for the integral boundary equation:
   !
-  !			J/2 - M_{k}[J] = nxH_inc
+  !         J/2 - M_{k}[J] = nxH_inc
   !
   !  input:
   !    P0 - real * 8 (3)

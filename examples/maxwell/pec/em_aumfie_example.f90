@@ -1,28 +1,29 @@
 program em_aumfie_example
 
-  implicit real *8 (a-h,o-z) 
-  real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
-  real *8, allocatable :: wts(:),rsigma(:)
-  integer ipars(2)
+  implicit double precision (a-h,o-z) 
+  double precision, allocatable :: srcvals(:,:),srccoefs(:,:)
+  double precision, allocatable :: wts(:),rsigma(:)
+  integer :: ipars(2)
 
   integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-  real *8 xyz_out(3),xyz_in(3)
+  double precision xyz_out(3),xyz_in(3)
   complex *16, allocatable :: sigma(:),rhs(:)
   complex *16, allocatable :: sigma2(:),rhs2(:)
   
-  complex ( kind = 8 ), allocatable :: a_vect(:),RHS_vect(:),rhs_nE(:),rhs_nE_aux(:),a_s(:)
-  complex *16 vf(3)
+  complex *16, allocatable :: a_vect(:),RHS_vect(:),rhs_nE(:),rhs_nE_aux(:),a_s(:)
+  complex *16 :: vf(3), e0(3), kvec(3)
+  double complex, allocatable :: ein(:,:), hin(:,:), jvec(:,:)
+  double complex :: uvec(3), vvec(3)
 
 
-  real *8, allocatable :: errs(:)
-  real *8 thet,phi
+  double precision, allocatable :: errs(:)
   complex * 16 zpars(3)
   integer numit,niter
   character *200 title,fname,fname1,fname2
 
   integer ipatch_id
-  real *8 uvs_targ(2)
+  double precision uvs_targ(2)
 
   logical isout0,isout1
 
@@ -39,8 +40,10 @@ program em_aumfie_example
   done = 1
   pi = atan(done)*4
 
-  zk = 2.0d-1
-  zk=8.d-1
+  ! set some parameters, wavelength, wavenumber, etc.
+  dlam = 1.0d0
+  zk = 2*pi/dlam
+
   zpars(1) = zk 
   zpars(2) = 1.0d0
   zpars(3) = 0.0d0
@@ -79,16 +82,31 @@ program em_aumfie_example
   allocate(a_vect(2*npts),rhs_vect(2*npts),rhs_nE(npts), &
        rhs_nE_aux(npts),a_s(npts))
   
-  thet = hkrand(0)*pi
-  phi = hkrand(0)*2*pi
-  
+
+  print *
+  print *, '. . . generating the right hand side for MFIE'
+
   vf(1)=1.0d0
   vf(2)=2.0d0
   vf(3)=3.0d0
-  print *
-  print *, '. . . generating the right hand side for MFIE'
-  call get_rhs_em_mfie_pec(xyz_out,vf,zpars(2),npts,srcvals, &
-       zpars(1),rhs_vect)
+
+  e0(1) = 1
+  e0(2) = 0
+  e0(3) = 0
+  kvec(1) = 0
+  kvec(2) = 1
+  kvec(3) = 0
+  allocate( ein(3,npts), hin(3,npts) )
+  call em_planewave(e0, zk, kvec, npts, srcvals, ein, hin)
+
+
+
+
+
+
+
+  call get_rhs_em_mfie_pec(xyz_out, vf, zpars(2), npts, srcvals, &
+       zpars(1), rhs_vect)
 
     
   ! set some parameters and call the solver
@@ -111,7 +129,15 @@ program em_aumfie_example
   call prinf('from mfie solve, gmres niter=*',niter,1)
   call prin2('from mfie solve, rres=*',rres,1)
   call prin2('from mfie solve, errs=*',errs,niter)
-  
+
+  ! convert the solution a_vect into regular cartesian 3-vectors and plot it
+  allocate( jvec(3,npts) )
+  do i = 1,npts
+     uvec(1)
+     jvec(1,i) = a_vect(i)*srcvals(4,i)
+  end do
+
+
   
   ! estimate the accuracy in the mfie solve
   call test_accuracy_em_mfie_pec(eps, a_vect, zpars, npts, wts, &
@@ -149,22 +175,91 @@ end program em_aumfie_example
 
 
 
+subroutine em_planewave(e0, zk, kvec, npts, srcvals, efield, hfield)
+  implicit double precision (a-h,o-z)
+  !
+  ! Author: Mike O'Neil
+  ! Email:  moneil@flatironinstitute.org
+  ! Date:   May 19, 2023
+  !
+  ! This subroutine evaluates the electromagnetic linearly polarized planewave
+  ! described by the electric polarization vector e0 and wavevector kvec. In
+  ! order to satisfy Maxwell's equations:
+  !
+  !   curl(E) = ikH, curl(H) = -ikE
+  !    div(E) = 0,    div(H) = 0
+  !
+  ! it must be the case that magnetic polarization vector h0 = kvec X e0
+  !
+  ! Input:
+  !   e0 - the electric field linear polarization direction
+  !   zk - the complex valued wavenumber
+  !   kvec - the wave propagation direction, up in the exponent
+  !   npts - number of points at which to evaluate the planewave
+  !   srcvals(12,npts) - the points at which to evaluate the planewave,
+  !       it's assumed that the first 3 components contain the x,y,z coordinates
+  !
+  ! Output:
+  !   efield - the electric field at all the srcvals
+  !   hfield - the magnetic field at all the srcvals
+  !
+
+  ! calling sequence variables
+  complex *16 :: e0(3), zk, kvec(3), efield(3,npts), hfield(3,npts)
+  double precision :: srcvals(12,npts)
+
+  ! local variables
+  complex *16 :: h0(3), ima, zp, cd
+
+  ! check that e0 is orthgonal to kvec first, and that kvec has length 1,
+  ! otherwise something will go wrong
+  dd = 0
+  dd = e0(1)*dconjg(kvec(1)) + e0(2)*dconjg(kvec(2)) + e0(3)*dconjg(kvec(3))
+  dnorm = abs(e0(1))**2 + abs(e0(2))**2 + abs(e0(3))**2
+  dnorm = sqrt(dnorm)
+  if (abs(dd)/dnorm .gt. 1.0d-12) then
+     call prin2('inner product in em_planewave= *', dd, 1)
+     stop
+  end if
+
+  ! compute the magnetic polarization vector, h0 = kvec X e0
+  h0(1) = kvec(2)*e0(3) - kvec(3)*e0(2)
+  h0(2) = kvec(3)*e0(1) - kvec(1)*e0(3)
+  h0(3) = kvec(1)*e0(2) - kvec(2)*e0(1)
+
+  ima = (0,1)
+  do i = 1,npts
+     zp = kvec(1)*srcvals(1,i) + kvec(2)*srcvals(2,i) + kvec(3)*srcvals(3,i)
+     cd = exp(ima*zk*zp)
+     efield(1,i) = e0(1)*cd
+     efield(2,i) = e0(2)*cd
+     efield(3,i) = e0(3)*cd
+     hfield(1,i) = h0(1)*cd
+     hfield(2,i) = h0(2)*cd
+     hfield(3,i) = h0(3)*cd
+  end do
+
+  return
+end subroutine em_planewave
+
+
+
 
 
 
       subroutine setup_geom(igeomtype,norder,npatches,ipars,& 
      &srcvals,srccoefs,ifplot,fname)
-      implicit real *8 (a-h,o-z)
+      implicit double precision (a-h,o-z)
       integer igeomtype,norder,npatches,ipars(*),ifplot
       character (len=*) fname
-      real *8 srcvals(12,*), srccoefs(9,*)
-      real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
+      double precision srcvals(12,*), srccoefs(9,*)
+      double precision, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
 
-      real *8, pointer :: ptr1,ptr2,ptr3,ptr4
+      double precision, pointer :: ptr1,ptr2,ptr3,ptr4
       integer, pointer :: iptr1,iptr2,iptr3,iptr4
-      real *8, target :: p1(10),p2(10),p3(10),p4(10)
-      real *8, allocatable, target :: triaskel(:,:,:)
-      real *8, allocatable, target :: deltas(:,:)
+      double precision, target :: p1(10),p2(10),p3(10),p4(10)
+      double precision, allocatable, target :: triaskel(:,:,:)
+      double precision, allocatable, target :: deltas(:,:)
       integer, allocatable :: isides(:)
       integer, target :: nmax,mmax
 
@@ -274,9 +369,9 @@ end program em_aumfie_example
 !       order of discretization
 !    npts - integer
 !       total number of discretization points on the surface
-!    srccoefs - real *8 (9,npts)
+!    srccoefs - double precision (9,npts)
 !       koornwinder expansion coefficients of geometry info
-!    xyzout -  real *8 (3)
+!    xyzout -  double precision (3)
 !       point to be tested
 !
 !  output: 
@@ -286,16 +381,16 @@ end program em_aumfie_example
 
       implicit none
       integer npatches,norder,npts,npols
-      real *8 srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
-      real *8 tmp(3)
-      real *8 dpars,done,pi
-      real *8, allocatable :: rsurf(:),err_p(:,:) 
+      double precision srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
+      double precision tmp(3)
+      double precision dpars,done,pi
+      double precision, allocatable :: rsurf(:),err_p(:,:) 
       integer ipars,norderhead,nd
       complex *16, allocatable :: sigma_coefs(:,:), sigma_vals(:,:)
       complex *16 zk,val
 
       integer ipatch,j,i
-      real *8 ra,ds
+      double precision ra,ds
       logical isout
 
       done = 1
