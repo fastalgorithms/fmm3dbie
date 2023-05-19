@@ -316,25 +316,25 @@ end subroutine scalarPW
 
 
 
-subroutine my_cross(a, b, c)
-implicit none
-    real ( kind = 8 ), intent(in) :: a(3)
-	complex ( kind = 8 ), intent(in) :: b(3)
-	complex ( kind = 8 ), intent(out) :: c(3)
-        c(1) = a(2) * b(3) - a(3) * b(2)
-        c(2) = a(3) * b(1) - a(1) * b(3)
-        c(3) = a(1) * b(2) - a(2) * b(1)
-end subroutine my_cross
+!subroutine my_cross(a, b, c)
+!implicit none
+!    real ( kind = 8 ), intent(in) :: a(3)
+!	complex ( kind = 8 ), intent(in) :: b(3)
+!	complex ( kind = 8 ), intent(out) :: c(3)
+!        c(1) = a(2) * b(3) - a(3) * b(2)
+!        c(2) = a(3) * b(1) - a(1) * b(3)
+!        c(3) = a(1) * b(2) - a(2) * b(1)
+!end subroutine my_cross
 
 
-subroutine my_dot(a, b, p)
-implicit none
-    real ( kind = 8 ), intent(in) :: a(3)
-	complex ( kind = 8 ), intent(in) :: b(3)
-	complex ( kind = 8 ), intent(out) :: p
-
-        p = a(1)*b(1)+a(2)*b(2)+a(3)*b(3)
-end subroutine my_dot
+!subroutine my_dot(a, b, p)
+!implicit none
+!    real ( kind = 8 ), intent(in) :: a(3)
+!	complex ( kind = 8 ), intent(in) :: b(3)
+!	complex ( kind = 8 ), intent(out) :: p
+!
+!        p = a(1)*b(1)+a(2)*b(2)+a(3)*b(3)
+!end subroutine my_dot
 
 
 

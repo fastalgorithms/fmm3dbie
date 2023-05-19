@@ -64,7 +64,7 @@ implicit none
     rz=(Pb(3)-Pa(3))*uv(1,:)+(Pc(3)-Pa(3))*uv(2,:)+Pa(3)-P1(3)
 
     ! ahora falta escalarlo y proyectar
-    call my_cross_v3(P2-P1, P3-P1, n_vect)
+    call cross_prod3d(P2-P1, P3-P1, n_vect)
     A_t=norm2(n_vect)/2.0d0
     ln=norm2(P3-P2)
     r_aux=ln/(2.0d0*A_t)
@@ -106,7 +106,7 @@ implicit none
     rz=(Pb(3)-Pa(3))*uv(1,:)+(Pc(3)-Pa(3))*uv(2,:)+Pa(3)-P1(3)
 
     ! ahora falta escalarlo y proyectar
-    call my_cross_v3(P2-P1, P3-P1, n_vect)
+    call cross_prod3d(P2-P1, P3-P1, n_vect)
     A_t=norm2(n_vect)/2.0d0
     ln=norm2(P3-P2)
     r_aux=ln/(2.0d0*A_t)
@@ -202,7 +202,7 @@ implicit none
     rz=(Pb(3)-Pa(3))*uv(1,:)+(Pc(3)-Pa(3))*uv(2,:)+Pa(3)-P1(3)
 
     ! ahora falta escalarlo y proyectar
-    call my_cross_v3(P2-P1, P3-P1, n_vect)
+    call cross_prod3d(P2-P1, P3-P1, n_vect)
     A_t=norm2(n_vect)/2.0d0
     ln=norm2(P3-P2)
     r_aux=ln/(2.0d0*A_t)
@@ -243,7 +243,7 @@ implicit none
     rz=(Pb(3)-Pa(3))*uv(1,:)+(Pc(3)-Pa(3))*uv(2,:)+Pa(3)-P1(3)
 
     ! ahora falta escalarlo y proyectar
-    call my_cross_v3(P2-P1, P3-P1, n_vect)
+    call cross_prod3d(P2-P1, P3-P1, n_vect)
     A_t=norm2(n_vect)/2.0d0
     ln=norm2(P3-P2)
     r_aux=ln/(2.0d0*A_t)
@@ -334,7 +334,7 @@ implicit none
     rz=(Pb(3)-Pa(3))*uv(1,:)+(Pc(3)-Pa(3))*uv(2,:)+Pa(3)-P1(3)
 
     ! ahora falta escalarlo y proyectar
-    call my_cross_v3(P2-P1, P3-P1, n_vect)
+    call cross_prod3d(P2-P1, P3-P1, n_vect)
     A_t=norm2(n_vect)/2.0d0
     ln=norm2(P3-P2)
     r_aux=ln/(2.0d0*A_t)
@@ -371,7 +371,7 @@ implicit none
     rz=(Pb(3)-Pa(3))*uv(1,:)+(Pc(3)-Pa(3))*uv(2,:)+Pa(3)-P1(3)
 
     ! ahora falta escalarlo y proyectar
-    call my_cross_v3(P2-P1, P3-P1, n_vect)
+    call cross_prod3d(P2-P1, P3-P1, n_vect)
     A_t=norm2(n_vect)/2.0d0
     ln=norm2(P3-P2)
     r_aux=ln/(2.0d0*A_t)
@@ -725,12 +725,12 @@ implicit none
       Pa1=points(:,triang(1,count1))
       Pb1=points(:,triang(2,count1))
       Pc1=points(:,triang(3,count1))
-      call my_cross_v3(Pb1-Pa1, Pc1-Pa1, n1)
+      call cross_prod3d(Pb1-Pa1, Pc1-Pa1, n1)
       Pa2=points_out(:,triang_out(1,count1))
       Pb2=points_out(:,triang_out(2,count1))
       Pc2=points_out(:,triang_out(3,count1))
 
-      call my_cross_v3(Pb2-Pa2, Pc2-Pa2, n2)
+      call cross_prod3d(Pb2-Pa2, Pc2-Pa2, n2)
 !      write (*,*) 'dotprod: ',DOT_PRODUCT(n1,n2),n1,n2,Pb1-Pa1, Pc1-Pa1
 !      read (*,*)
 
@@ -749,18 +749,19 @@ end subroutine fix_tri_geom
 
 
 
-
 subroutine my_cross_v3(a, b, c)
-implicit none
+  implicit none
 
-    real ( kind = 8 ), intent(in) :: a(3),b(3)
-    real ( kind = 8 ), intent(out) :: c(3)
+  real ( kind = 8 ), intent(in) :: a(3),b(3)
+  real ( kind = 8 ), intent(out) :: c(3)
 
-        c(1) = a(2) * b(3) - a(3) * b(2)
-        c(2) = a(3) * b(1) - a(1) * b(3)
-        c(3) = a(1) * b(2) - a(2) * b(1)
+  c(1) = a(2) * b(3) - a(3) * b(2)
+  c(2) = a(3) * b(1) - a(1) * b(3)
+  c(3) = a(1) * b(2) - a(2) * b(1)
 
+  return
 end subroutine my_cross_v3
+
 
 
 
@@ -890,7 +891,7 @@ implicit none
       srcvals(8,npols*(count1-1)+count2)=(Pc(2)-Pa(2))
       srcvals(9,npols*(count1-1)+count2)=(Pc(3)-Pa(3))
 
-      call my_cross_v3(Pb-Pa, Pc-Pa, n_vect)
+      call cross_prod3d(Pb-Pa, Pc-Pa, n_vect)
       n_vect=n_vect/norm2(n_vect)
 
       srcvals(10,npols*(count1-1)+count2)=n_vect(1)
@@ -903,7 +904,7 @@ implicit none
 	
   do count1=1,ntri
     do count2=1,npols
-	  call my_cross_v3(srcvals(4:6,icount),srcvals(7:9,icount),aux_vect)
+	  call cross_prod3d(srcvals(4:6,icount),srcvals(7:9,icount),aux_vect)
 	    aux_real=sqrt(aux_vect(1)**2+aux_vect(2)**2+aux_vect(3)**2)
 		wts(icount)=w(count2)*aux_real
 		icount=icount+1
@@ -992,7 +993,7 @@ implicit none
 	ru(2)=du(2)/aux
 	ru(3)=du(3)/aux
 		
-	call my_cross_v3(normal, ru, rv)
+	call cross_prod3d(normal, ru, rv)
 
 return
 end subroutine orthonormalize_v2

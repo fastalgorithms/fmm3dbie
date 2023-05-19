@@ -99,7 +99,7 @@ program em_aumfie_example
   allocate( ein(3,npts), hin(3,npts) )
   call em_planewave(e0, zk, kvec, npts, srcvals, ein, hin)
 
-
+  ! compute the rhs, -alpha n \times
 
 
 
@@ -133,8 +133,10 @@ program em_aumfie_example
   ! convert the solution a_vect into regular cartesian 3-vectors and plot it
   allocate( jvec(3,npts) )
   do i = 1,npts
-     uvec(1)
-     jvec(1,i) = a_vect(i)*srcvals(4,i)
+     !call orthonormalize(srcvals(4,i),srcvals(), uvec, vvec)
+     jvec(1,i) = a_vect(i)*uvec(1) + a_vect(npts+i)*vvec(1)
+     jvec(2,i) = a_vect(i)*uvec(2) + a_vect(npts+i)*vvec(2)
+     jvec(3,i) = a_vect(i)*uvec(3) + a_vect(npts+i)*vvec(3)
   end do
 
 

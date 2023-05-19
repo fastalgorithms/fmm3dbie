@@ -21,6 +21,9 @@ c      compute x \times (y \times z)
 c  * dot_cross_cross_prod3d
 c      compute x \cdot (y \times (z \times w))
 c
+C  The following routines were written by Felipe Vico and added by Mike O'Neil
+C
+C  * orthonormalize
 c
 c
         subroutine dot_prod3d(x,y,d)
@@ -318,3 +321,65 @@ c
 c
 c
 c
+
+        subroutine orthonormalize_all(du,normal,ru,rv,ns)
+c!f2py intent(in) du, normal, ns
+c!f2py intent(out) ru,rv
+        implicit none
+c       !List of calling arguments
+        integer, intent(in) :: ns
+        double precision, intent(in) :: du(3,ns), normal(3,ns)
+        double precision, intent(out) :: ru(3,ns), rv(3,ns)
+
+c       !List of local variables
+        double precision :: aux
+        integer :: j
+
+        do j=1,ns
+           call orthonormalize(du(:,j), normal(:,j), ru(:,j), rv(:,j))
+         enddo
+
+        return
+        end
+
+
+
+
+
+
+        subroutine orthonormalize(du,normal,ru,rv)
+        implicit none
+c
+c       !List of calling arguments
+        double precision, intent(in) :: du(3), normal(3)
+        double precision, intent(out) :: ru(3), rv(3)
+c
+c       !List of local variables
+        double precision :: aux
+c
+        aux=sqrt(du(1)**2+du(2)**2+du(3)**2)
+        ru(1)=du(1)/aux
+        ru(2)=du(2)/aux
+        ru(3)=du(3)/aux
+c
+        call cross_prod3d(normal, ru, rv)
+c        call my_cross_v2(normal, ru, rv)
+        return
+        end
+
+
+
+
+
+
+csubroutine my_cross_v2(a, b, c)
+cimplicit none
+c
+c    real ( kind = 8 ), intent(in) :: a(3),b(3)
+c    real ( kind = 8 ), intent(out) :: c(3)
+c
+c        c(1) = a(2) * b(3) - a(3) * b(2)
+c        c(2) = a(3) * b(1) - a(1) * b(3)
+c        c(3) = a(1) * b(2) - a(2) * b(1)
+c
+cend subroutine my_cross_v2
