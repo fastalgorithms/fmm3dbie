@@ -347,8 +347,12 @@ c       !List of local variables
 
 
 
-        subroutine orthonormalize(du,normal,ru,rv)
+        subroutine orthonormalize(du, normal, ru, rv)
         implicit none
+c
+c       This routine computes:
+C           ru = du / ||du||
+C           rv = normal X ru
 c
 c       !List of calling arguments
         double precision, intent(in) :: du(3), normal(3)
