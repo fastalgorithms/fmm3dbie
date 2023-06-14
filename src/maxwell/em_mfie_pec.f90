@@ -2018,8 +2018,8 @@ subroutine get_rhs_em_mfie_pec(p0, vf, alpha, ns, srcvals, zk,rhs)
 
 	call fieldsED(zk,P0,srcvals,ns,E,H,vf,0)
 	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,1)
-	do count1=1,ns	
-	  call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),ru,rv)		
+	do count1=1,ns
+	  call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),ru,rv)
 	  RHS(count1)=-DOT_PRODUCT(rv,H(:,count1))
 	  RHS(ns+count1)=DOT_PRODUCT(ru,H(:,count1))
 	enddo

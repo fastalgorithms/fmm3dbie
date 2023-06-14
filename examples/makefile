@@ -11,7 +11,7 @@ LLINKLIB = -lfmm3dbie
 
 
 FC = gfortran
-FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy 
+FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy
 CC = gcc
 
 
