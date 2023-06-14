@@ -150,17 +150,17 @@ implicit none
 
     !List of calling arguments
     character (len=*), intent(in) :: filename
-	integer ( kind = 4 ), intent(out) :: npoints,ntri
-	
+    integer ( kind = 4 ), intent(out) :: npoints,ntri
+
     !List of local variables
     integer ( kind = 4 ) umio,count1,count2,flag,aux
     integer :: ierror,norder
-	
+
         open(UNIT=18, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
 
         read(18,*) norder
         read(18,*) ntri
-		npoints=(norder+1)*(norder+2)/2*ntri
+        npoints=(norder+1)*(norder+2)/2*ntri
 
         close (18)
 

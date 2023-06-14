@@ -1,4 +1,4 @@
-function [obj] = ellipsoid_patch(abc,rmax,norder,nref)
+function [obj] = ellipsoid(abc,rmax,norder,nref)
 % Generate the triangulation of an ellipsoid
 % by considering it an axissymmetric problem
 %
@@ -8,7 +8,7 @@ function [obj] = ellipsoid_patch(abc,rmax,norder,nref)
 % Input
 %  - abc: double(3) semi-axes along coordinate directions of the ellipsoid
 %           ([1;1;1] == unit sphere)
-%  - rmax: max patch diameter (0.5)
+%  - rmax: max patch diameter (0.25)
 %  - norder: order of discretization on each patch (3)
 %  - nref: additional refinement of patches (0)
     if(nargin < 1)

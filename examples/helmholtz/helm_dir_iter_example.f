@@ -49,6 +49,7 @@ c
 
 
       zk = 1.11d0+ima*0.0d0
+cc      zk = 1.0d-6
       zpars(1) = zk 
       zpars(2) = ima*zk
       zpars(3) = 1.0d0 

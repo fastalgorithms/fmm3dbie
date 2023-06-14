@@ -1,6 +1,6 @@
 # makefile overrides
 # OS:       macOS
-# Compiler: gfortran 9.X
+# Compiler: gfortran, clang
 # OpenMP:   enabled
 # BLAS:     framework acceralate
 #
@@ -8,10 +8,10 @@
 #           Check gfortran version number 
 #
 
-CC=gcc-9
-CXX=g++-9
-FC=gfortran-9
-FFLAGS= -fPIC -O3 -march=native -funroll-loops 
+CC=gcc
+CXX=g++
+FC=gfortran
+FFLAGS= -fPIC -O3 -march=native -funroll-loops -std=legacy 
 
 ifeq ($(PREFIX),)
     FMMBIE_INSTALL_DIR=/usr/local/lib
@@ -28,4 +28,10 @@ OMPLIBS = -lgomp
 LBLAS=-framework accelerate
 
 
+#MATLAB interface:
+FDIR=$$(dirname `gfortran --print-file-name libgfortran.dylib`)
+MFLAGS +=-L${FDIR}
+MEX = $(shell ls -d /Applications/MATLAB_R20**.app)/bin/mex
 
+#MWRAP location
+MWRAP=~/git/mwrap/mwrap

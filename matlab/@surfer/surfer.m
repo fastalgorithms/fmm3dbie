@@ -17,6 +17,7 @@ classdef surfer
         ffforminv
         npatches
         npts
+        srccoefs
     end
     
    	properties(SetAccess=private)
@@ -27,7 +28,7 @@ classdef surfer
     end
     properties (Access = private)
         srcvals
-        srccoefs
+        
     end    
     properties (Hidden)
         ixyzs

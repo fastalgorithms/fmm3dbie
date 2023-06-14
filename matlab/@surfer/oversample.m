@@ -29,7 +29,7 @@ function [objout,varargout] = oversample(obj,nover)
     
     
     [ntmp_uni,~,intmp] = unique(ntmp,'rows');
-    nuni = length(ntmp_uni);
+    nuni = size(ntmp_uni,1);
     
     vmats = cell(nuni,1);
     umats = cell(nuni,1);

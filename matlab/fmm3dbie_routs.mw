@@ -1,0 +1,529 @@
+%
+%%   Common routines
+%%
+%
+%-------------------------------------------------
+@ src/get_oversampling_parameters.m
+function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
+%
+%  get_oversampling_parameters
+%     subroutine to estimate the oversampling paramters for a given
+%     surface, and set of quadrature corrections stored in Q
+%  
+%  Syntax
+%    Q = get_oversampling_parameters(S,Q,eps)
+%
+%  Input arguments
+%    * S: surfer object, see README.md in matlab for details
+%    * Q: quadrature correction struct, necessary components are
+%            Q.targinfo, Q.rfac, Q.wavenumber, Q.row_ptr, Q.col_ind
+%    * eps: tolerance
+%
+    
+%
+%  extract arrays
+%
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+
+    n3 = 3;
+
+    cms = zeros(3,npatches);
+    rads = zeros(npatches,1);
+    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npatp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+
+    novers = zeros(npatches,1);
+    ixyzso = zeros(npatp1,1);
+
+    targinfo = Q.targinfo;
+
+    targs = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+
+    ntp1 = ntarg + 1;
+    zk = Q.wavenumber;
+    ikerorder = Q.kernel_order;
+    row_ptr = Q.row_ptr;
+    col_ind = Q.col_ind;
+    nnz = length(col_ind);
+    rfac = Q.rfac;
+
+
+    # FORTRAN get_far_order(double[1] eps, int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, double[3,npatches] cms, double[npatches] rads, int[1] npts, double[n9,npts] srccoefs, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[1] ikerorder, dcomplex[1] zk, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, double[1] rfac, inout int[npatches] novers, inout int[npatp1] ixyzso);
+    varargout{1} = ixyzso;
+
+end
+
+
+
+%-------------------------------------------------
+%
+%%
+%%   Helmholtz dirichlet routines
+%
+%
+%-------------------------------------------------
+
+@ +helm3d/+dirichlet/eval.m 
+function p = eval(S,zpars,sigma,eps,varargin)
+%
+%  helm3d.dirichlet.eval
+%    Evaluates the helmholtz dirichlet layer potential at a collection 
+%    of targets
+%
+%  Syntax
+%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps)
+%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo)
+%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo,opts)
+%
+%  Integral representation
+%     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
+%
+%  S_{k}, D_{k}: helmholtz single and double layer potential
+%  
+%  k, \alpha, beta = zpars(1:3)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * zpars: kernel parameters
+%        zpars(1) - wave number
+%        zpars(2) - single layer strength
+%        zpars(3) - double layer strength
+%    * sigma: layer potential density
+%    * eps: precision requested
+%    * targinfo: target info (optional)
+%       targinfo.r = (3,nt) target locations
+%       targinfo.du = u tangential derivative info
+%       targinfo.dv = v tangential derivative info
+%       targinfo.n = normal info
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * opts: options struct
+%        opts.nonsmoothonly - use smooth quadrature rule for evaluating
+%           layer potential (false)
+%    
+%
+
+
+%
+%
+% Todo: Fix varargin
+%
+    if(nargin < 6) 
+      opts = [];
+    end
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
+    end
+
+% Extract arrays
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+
+    if(nargin < 5)
+      targinfo = [];
+      targinfo.r = S.r;
+      targinfo.du = S.du;
+      targinfo.dv = S.dv;
+      targinfo.n = S.n;
+      patch_id  = zeros(npts,1);
+      uvs_targ = zeros(2,npts);
+      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
+      targinfo.patch_id = patch_id;
+      targinfo.uvs_targ = uvs_targ;
+      opts = []
+    end
+
+    ff = 'rsc';
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+% Compute quadrature corrections    
+    if(~nonsmoothonly) 
+      opts_quad = [];
+      opts_quad.format = 'rsc';
+%
+%  For now Q is going to be a struct with 'quad_format', 
+%  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
+%  and either, 'wnear', 'row_ind', 'col_ptr', or
+%  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
+%  if nkernel is >1
+%
+
+      [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+      nnz = length(Q.col_ind);
+      nquad = Q.iquad(end)-1;
+    else
+      opts_qcorr = [];
+      opts_qcorr.type = 'complex';
+      Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+    end
+    nnzp1 = nnz+1; 
+
+    [novers] = get_oversampling_parameters(S,Q,eps);
+    Sover = oversample(S,novers);
+
+
+% Extract oversampled arrays
+
+    [srcover,~,~,ixyzso,~,wover] = extract_arrays(Sover);
+    nptso = Sover.npts; 
+
+% Extract quadrature arrays
+    row_ptr = Q.row_ptr;
+    col_ind = Q.col_ind;
+    iquad = Q.iquad;
+    wnear = Q.wnear;
+
+
+    p = complex(zeros(ntarg,1));
+
+% Call the layer potential evaluator
+    # FORTRAN lpcomp_helm_comb_dir_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, dcomplex[3] zpars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, dcomplex[nquad] wnear, dcomplex[npts] sigma, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, inout dcomplex[ntarg] p);   
+end    
+%
+%
+%
+%----------------------------------
+%
+@ +helm3d/+dirichlet/get_quadrature_correction.m 
+function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
+%
+%  helm3d.dirichlet.get_quadrature_correction
+%    This subroutine returns the near quadrature correction
+%    for the combined field representation with density supported
+%    on the surface S, and targets given by targinfo 
+%    as a sparse matrix/rsc format 
+%
+%  Syntax
+%   Q = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps)
+%   Q = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo)
+%   Q = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts)
+%
+%  Integral representation
+%     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
+%
+%  S_{k}, D_{k}: helmholtz single and double layer potential
+%  
+%  k, \alpha, beta = zpars(1:3)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * zpars: kernel parameters
+%        zpars(1) - wave number
+%        zpars(2) - single layer strength
+%        zpars(3) - double layer strength
+%    * eps: precision requested
+%    * targinfo: target info (optional)
+%       targinfo.r = (3,nt) target locations
+%       targinfo.du = u tangential derivative info
+%       targinfo.dv = v tangential derivative info
+%       targinfo.n = normal info
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * opts: options struct
+%        opts.format - Storage format for sparse matrices
+%           'rsc' - row sparse compressed format
+%           'csc' - column sparse compressed format
+%           'sparse' - sparse matrix format
+%        opts.quadtype - quadrature type, currently only 'ggq' supported
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+
+
+    if(nargin < 4)
+      targinfo = [];
+      targinfo.r = S.r;
+      targinfo.du = S.du;
+      targinfo.dv = S.dv;
+      targinfo.n = S.n;
+      patch_id  = zeros(npts,1);
+      uvs_targ = zeros(2,npts);
+      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
+      targinfo.patch_id = patch_id;
+      targinfo.uvs_targ = uvs_targ;
+      opts = []
+    end
+
+    ff = 'rsc';
+    if(isfield(opts,'format'))
+       ff = opts.format;
+    end
+
+    if(~(strcmpi(ff,'rsc') || strcmpi(ff,'csc') || strcmpi(ff,'sparse')))
+       fprintf('invalid quadrature format, reverting to rsc format\n');
+       ff = 'rsc';
+    end
+
+
+    targs = extract_targ_array(targinfo); 
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    
+    if(isfield(targinfo,'patch_id'))
+      patch_id = targinfo.patch_id;
+    else
+      patch_id = zeros(ntarg,1);
+    end
+
+    if(isfield(targinfo,'uvs_targ') )
+      uvs_targ = targinfo.uvs_targ;
+    else
+      uvs_targ = zeros(2,ntarg);
+    end
+
+    if(length(patch_id)~=ntarg)
+      fprintf('Incorrect size of patch id in target info struct. Aborting! \n');
+    end
+
+    [n1,n2] = size(uvs_targ);
+    if(n1 ~=2 && n2 ~=ntarg)
+      fprintf('Incorrect size of uvs_targ array in targinfo struct. Aborting! \n');
+    end
+
+
+    
+    iptype0 = iptype(1);
+    norder0 = norders(1);
+    rfac = 0.0;
+    rfac0 = 0.0;
+    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    
+
+    cms = zeros(3,npatches);
+    rads = zeros(npatches,1);
+    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+
+    rad_near = rads*rfac;
+    nnz = 0;
+    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+
+    row_ptr = zeros(ntarg+1,1);
+    col_ind = zeros(nnz,1);
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
+
+    iquad = zeros(nnz+1,1);
+    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+
+    nquad = iquad(nnz+1)-1;
+    wnear = complex(zeros(nquad,1));
+    iquadtype = 1;
+    if(isfield(opts,'quadtype'))
+      if(strcmpi(opts.quadtype,'ggq'))
+         iquadtype = 1;
+      else
+        fprintf('Unsupported quadrature type, reverting to ggq\n');
+        iquadtype = 1;
+      end
+    end
+    # FORTRAN getnearquad_helm_comb_dir(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[npts] patch_id, double[2,npts] uvs_targ,double[1] eps,dcomplex[3] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] wnear);
+    
+    Q = [];
+    Q.targinfo = targinfo;
+    Q.ifcomplex = 1;
+    Q.wavenumber = zpars(1);
+    Q.kernel_order = -1;
+    Q.rfac = rfac;
+    Q.nquad = nquad;
+    
+
+    if(abs(zpars(3)) > 1e-16)
+        Q.kernel_order = 0;
+    end
+
+    if(strcmpi(ff,'rsc'))
+        Q.iquad = iquad;
+        Q.wnear = wnear;
+        Q.row_ptr = row_ptr;
+        Q.col_ind = col_ind;
+    elseif(strcmpi(ff,'csc'))
+        col_ptr = zeros(npatches+1,1);
+        row_ind = zeros(nnz,1);
+        iper = zeros(nnz,1);
+        npatp1 = npatches+1;
+        # FORTRAN rsc_to_csc(int[1] npatches, int[1] ntarg, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, inout int[npatp1] col_ptr, inout int[nnz] row_ind, inout int[nnz] iper); 
+        Q.iquad = iquad;
+        Q.iper = iper;
+        Q.wnear = wnear;
+        Q.col_ptr = col_ptr;
+        Q.row_ind = row_ind;
+    else
+        spmat = surfer.conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
+        Q.spmat = spmat;
+    end
+    
+end
+%
+%
+%
+%
+%-------------------------------------------------
+
+@ +helm3d/+dirichlet/solver.m 
+function sigma = solver(S,zpars,rhs,eps,varargin)
+%
+%  helm3d.dirichlet.solver
+%    Solve the helmholtz dirichlet boundary value problem
+%
+%  Syntax
+%   sigma = helm3d.dirichlet.solver(S,zpars,sigma,eps)
+%   sigma = helm3d.dirichlet.solver(S,zpars,sigma,eps,opts)
+%
+%  Integral representation
+%     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
+%
+%  S_{k}, D_{k}: helmholtz single and double layer potential
+%  
+%  k, \alpha, beta = zpars(1:3)
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * zpars: kernel parameters
+%        zpars(1) - wave number
+%        zpars(2) - single layer strength
+%        zpars(3) - double layer strength
+%    * rhs: boundary data 
+%    * eps: precision requested
+%    * opts: options struct
+%        opts.nonsmoothonly - use smooth quadrature rule for evaluating
+%           layer potential (false)
+%        opts.eps_gmres - tolerance to which linear system is to be
+%           solved (eps_gmres = eps)
+%        opts.maxit - maximum number of gmres iterations (200)
+%        opts.ifout - whether to solve interior problem or not (1)
+%        
+%
+%  Output arguemnts:
+%    * sigma: layer potential density
+%    
+%
+    
+    if(nargin < 5) 
+      opts = [];
+    end
+
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
+    end
+
+    eps_gmres = eps;
+    if(isfield(opts,'eps_gmres'))
+      eps_gmres = opts.eps_gmres;
+    end
+
+    maxit = 200
+    if(isfield(opts,'maxit'))
+      maxit = opts.maxit;
+    end
+
+    ifout = 1;
+    if(isfield(opts,'ifout'))
+      ifout = opts.ifout;
+    end
+
+% Extract arrays
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+
+    targinfo = [];
+    targinfo.r = S.r;
+    targinfo.du = S.du;
+    targinfo.dv = S.dv;
+    targinfo.n = S.n;
+    patch_id  = zeros(npts,1);
+    uvs_targ = zeros(2,npts);
+    # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
+    targinfo.patch_id = patch_id;
+    targinfo.uvs_targ = uvs_targ;
+
+    ff = 'rsc';
+
+    nptsp1 = npts+1;
+
+% Compute quadrature corrections    
+    if(~nonsmoothonly) 
+      opts_quad = [];
+      opts_quad.format = 'rsc';
+%
+%  For now Q is going to be a struct with 'quad_format', 
+%  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
+%  and either, 'wnear', 'row_ind', 'col_ptr', or
+%  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
+%  if nkernel is >1
+%
+
+      [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+      nnz = length(Q.col_ind);
+      nquad = Q.iquad(end)-1;
+    else
+      opts_qcorr = [];
+      opts_qcorr.type = 'complex';
+      Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+    end
+    nnzp1 = nnz+1; 
+
+    [novers] = get_oversampling_parameters(S,Q,eps);
+    Sover = oversample(S,novers);
+
+
+% Extract oversampled arrays
+
+    [srcover,~,~,ixyzso,~,wover] = extract_arrays(Sover);
+    nptso = Sover.npts; 
+
+% Extract quadrature arrays
+    row_ptr = Q.row_ptr;
+    col_ind = Q.col_ind;
+    iquad = Q.iquad;
+    wnear = Q.wnear;
+
+
+    sigma = complex(zeros(npts,1));
+    niter = 0;
+    errs = zeros(maxit+1,1);
+    maxitp1 = maxit + 1;
+    rres = 0;
+
+% Call the layer potential evaluator
+    # FORTRAN lpcomp_helm_comb_dir_solver_guru(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals, double[1] eps, dcomplex[3] zpars, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, dcomplex[nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma);  
+
+    errs = errs(1:niter);
+    varargout{1} = errs;
+    varargout{2} = rres;
+    varargout{3} = Q;
+end    
+%
+%
+%

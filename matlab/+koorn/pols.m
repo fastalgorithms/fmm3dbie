@@ -58,7 +58,7 @@ function [pols]=pols(nmax,uv)
   for k=1:nmax
     pkm1 = pk;
     pk = pkp1;
-    pkp1 = ((2*k+1)*z.*pk - k*pkm1)/(k+1);
+    pkp1 = ((2*k+1)*z.*pk - k*pkm1.*y.*y)/(k+1);
     legpols(:,k+2) = pkp1;
   end
 

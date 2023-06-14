@@ -1421,89 +1421,73 @@ c
      1    iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,
      2    rhs,eps_gmres,niter,errs,rres,soln)
 c
+c--------------
+c  This subroutine solves the helmholtz dirichlet problem
+c  on the interior or exterior of an object where the potential
+c  is represented as a combined field integral equation.
 c
-c        this subroutine solves the helmholtz dirichlet problem
-c     on the interior or exterior of an object where the potential
-c     is represented as a combined field integral equation.
+c  This subroutine is the simple interface as opposed to the 
+c  _solver_guru( routine which is called after initialization
+c  in this routine.
 c
 c
-c     Representation:
-c        u = \alpha S_{k} + \beta D_{k}
+c  .. math ::
+c  
+c      u = (\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
+c
 c     
-c     The linear system is solved iteratively using GMRES
-c     until a relative residual of eps_gmres is reached
+c  The linear system is solved iteratively using GMRES
+c  until a relative residual of eps_gmres is reached
 c
 c
-c       input:
-c         npatches - integer
-c            number of patches
+c  Input:
+c    - npatches: integer
+c        number of patches
+c    - norders: integer(npatches)
+c        order of discretization on each patch 
+c    - ixyzs: integer(npatches+1)
+c        ixyzs(i) denotes the starting location in srccoefs,
+c        and srcvals array where information for patch i begins
+c    - iptype: integer(npatches)
+c        type of patch
+c    - npts: integer
+c        total number of discretization points on the boundary
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefficients of x, $\partial_{u} x$,
+c        and $\partial_{v} x$. 
+c    - srcvals: double precision (12,npts)
+c        x, $\partial_{u} x$, $\partial_{v} x$, and $n$ sampled at
+c        discretization nodes
+c    - eps: double precision
+c        FMM tolerance
+c    - zpars: double complex (3)
+c        kernel parameters (Referring to formula above)
+c        * zpars(1) = k 
+c        * zpars(2) = $\alpha$
+c        * zpars(3) = $\beta$
+c    - numit: integer
+c        max number of gmres iterations
+c    - ifinout: integer
+c        flag for interior or exterior problems (normals assumed to 
+c        be pointing in exterior of region)
+c        * ifinout = 0, interior problem
+c        * ifinout = 1, exterior problem
+c    - rhs: double complex(npts)
+c        boundary data
+c    - eps_gmres: real *8
+c        gmres tolerance requested
 c
-c         norders- integer(npatches)
-c            order of discretization on each patch 
-c
-c         ixyzs - integer(npatches+1)
-c            ixyzs(i) denotes the starting location in srccoefs,
-c               and srcvals array corresponding to patch i
-c   
-c         iptype - integer(npatches)
-c            type of patch
-c             iptype = 1, triangular patch discretized using RV nodes
-c
-c         npts - integer
-c            total number of discretization points on the boundary
-c 
-c         srccoefs - real *8 (9,npts)
-c            koornwinder expansion coefficients of xyz, dxyz/du,
-c            and dxyz/dv on each patch. 
-c            For each point srccoefs(1:3,i) is xyz info
-c                           srccoefs(4:6,i) is dxyz/du info
-c                           srccoefs(7:9,i) is dxyz/dv info
-c
-c         srcvals - real *8 (12,npts)
-c             xyz(u,v) and derivative info sampled at the 
-c             discretization nodes on the surface
-c             srcvals(1:3,i) - xyz info
-c             srcvals(4:6,i) - dxyz/du info
-c             srcvals(7:9,i) - dxyz/dv info
-c 
-c          eps - real *8
-c             precision requested for computing quadrature and fmm
-c             tolerance
-c
-c          zpars - complex *16 (3)
-c              kernel parameters (Referring to formula (1))
-c              zpars(1) = k 
-c              zpars(2) = alpha
-c              zpars(3) = beta
-c
-c          ifinout - integer
-c              flag for interior or exterior problems (normals assumed to 
-c                be pointing in exterior of region)
-c              ifinout = 0, interior problem
-c              ifinout = 1, exterior problem
-c
-c           rhs - complex *16(npts)
-c              right hand side
-c
-c           eps_gmres - real *8
-c                gmres tolerance requested
-c
-c           numit - integer
-c              max number of gmres iterations
-c
-c         output
-c           niter - integer
-c              number of gmres iterations required for relative residual
-c          
-c           errs(1:iter) - relative residual as a function of iteration
-c              number
-c 
-c           rres - real *8
-c              relative residual for computed solution
-c              
-c           soln - complex *16(npts)
-c              density which solves the dirichlet problem
-c
+c  output
+c    - niter: integer
+c        number of gmres iterations required for relative residual
+c        to converge to eps_gmres
+c    - errs: real *8 (1:niter)
+c        relative residual as a function of iteration number
+c    - rres: real *8
+c        relative residual for computed solution
+c    - soln: double complex(npts)
+c        solution of integral equation
+c--------------------------
 c
       implicit none
       integer npatches,norder,npols,npts
@@ -1688,6 +1672,202 @@ C$      t2 = omp_get_wtime()
       call prin2('quadrature generation time=*',t2-t1,1)
       
       print *, "done generating near quadrature, now starting gmres"
+c
+c
+c  call the guru gmres solver
+c
+      call helm_comb_dir_solver_guru(npatches,norders,ixyzs,
+     1    iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,
+     2    rhs,nnz,row_ptr,col_ind,iquad,nquad,wnear,novers,
+     3    npts_over,ixyzso,srcover,wover,eps_gmres,niter,
+     4    errs,rres,soln)
+c
+      return
+      end
+c
+c
+c
+c
+c
+      subroutine helm_comb_dir_solver_guru(npatches,norders,ixyzs,
+     1    iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,
+     2    rhs,nnz,row_ptr,col_ind,iquad,nquad,wnear,novers,
+     3    npts_over,ixyzso,srcover,wover,eps_gmres,niter,
+     4    errs,rres,soln)
+c
+c--------------
+c  This subroutine solves the helmholtz dirichlet problem
+c  on the interior or exterior of an object where the potential
+c  is represented as a combined field integral equation.
+c
+c  This subroutine is the guru interface as opposed to the 
+c  _solver( routine which is the simplified interface.
+c  In particular this subroutine assumes that on input
+c  the quadrature corrections are already computed, 
+c  and the far orders are already estimated
+c
+c
+c
+c  .. math ::
+c  
+c      u = (\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
+c
+c     
+c  The linear system is solved iteratively using GMRES
+c  until a relative residual of eps_gmres is reached
+c
+c
+c  Input:
+c    - npatches: integer
+c        number of patches
+c    - norders: integer(npatches)
+c        order of discretization on each patch 
+c    - ixyzs: integer(npatches+1)
+c        ixyzs(i) denotes the starting location in srccoefs,
+c        and srcvals array where information for patch i begins
+c    - iptype: integer(npatches)
+c        type of patch
+c    - npts: integer
+c        total number of discretization points on the boundary
+c    - srccoefs: double precision (9,npts)
+c        koornwinder expansion coefficients of x, $\partial_{u} x$,
+c        and $\partial_{v} x$. 
+c    - srcvals: double precision (12,npts)
+c        x, $\partial_{u} x$, $\partial_{v} x$, and $n$ sampled at
+c        discretization nodes
+c    - eps: double precision
+c        FMM tolerance
+c    - zpars: double complex (3)
+c        kernel parameters (Referring to formula above)
+c        * zpars(1) = k 
+c        * zpars(2) = $\alpha$
+c        * zpars(3) = $\beta$
+c    - numit: integer
+c        max number of gmres iterations
+c    - ifinout: integer
+c        flag for interior or exterior problems (normals assumed to 
+c        be pointing in exterior of region)
+c        * ifinout = 0, interior problem
+c        * ifinout = 1, exterior problem
+c    - rhs: double complex(npts)
+c        boundary data
+c    - nnz: integer
+c        number of source patch-> target interactions in the near field
+c    - row_ptr: integer(npts+1)
+c        row_ptr(i) is the pointer
+c        to col_ind array where list of relevant source patches
+c        for target i start
+c    - col_ind: integer (nnz)
+c        list of source patches relevant for all targets, sorted
+c        by the target number
+c    - iquad: integer(nnz+1)
+c        location in wnear_ij array where quadrature for col_ind(i)
+c        starts 
+c    - nquad: integer
+c        number of near field entries corresponding to each source target
+c        pair. 
+c    - wnear: complex *16(nquad)
+c        The desired near field quadrature
+c    - novers: integer(npatches)
+c        order of discretization for oversampled sources and
+c        density
+c    - ixyzso: integer(npatches+1)
+c        ixyzso(i) denotes the starting location in srcover,
+c        corresponding to patch i
+c    - npts_over: integer
+c        total number of oversampled points
+c    - srcover: real *8 (12,npts_over)
+c        oversampled set of source information
+c    - wover: real *8 (npts_over)
+c        smooth quadrature weights at oversampled nodes
+c    - eps_gmres: real *8
+c        gmres tolerance requested
+c
+c  output
+c    - niter: integer
+c        number of gmres iterations required for relative residual
+c        to converge to eps_gmres
+c    - errs: real *8 (1:niter)
+c        relative residual as a function of iteration number
+c    - rres: real *8
+c        relative residual for computed solution
+c    - soln: double complex(npts)
+c        solution of integral equation
+c--------------------------
+      implicit none
+      integer npatches,norder,npols,npts
+      integer ifinout
+      integer norders(npatches),ixyzs(npatches+1)
+      integer iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
+      complex *16 zpars(3)
+      complex *16 rhs(npts)
+      complex *16 soln(npts)
+      integer nnz,nquad
+
+      integer row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
+      complex *16 wnear(nquad)
+
+      integer npts_over
+      real *8 :: srcover(12,npts_over),wover(npts_over)
+      integer :: ixyzso(npatches+1),novers(npatches)
+
+      
+      real *8, allocatable :: targs(:,:)
+      integer, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_targ(:,:)
+      integer ndtarg,ntarg
+
+      real *8 errs(numit+1)
+      real *8 rres,eps2
+      integer niter
+
+      integer nover,npolso,nptso
+
+
+      integer i,j,jpatch,jquadstart,jstart
+
+      integer ipars
+      real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
+
+
+      real *8 ttot,done,pi
+      real *8 rfac,rfac0
+      integer iptype_avg,norder_avg
+      integer ikerorder, iquadtype
+
+c
+c
+c       gmres variables
+c
+      complex *16 zid,ztmp
+      real *8 rb,wnrm2
+      integer numit,it,iind,it1,k,l
+      real *8 rmyerr
+      complex *16 temp
+      complex *16, allocatable :: vmat(:,:),hmat(:,:)
+      complex *16, allocatable :: cs(:),sn(:)
+      complex *16, allocatable :: svec(:),yvec(:),wtmp(:)
+
+
+      allocate(vmat(npts,numit+1),hmat(numit,numit))
+      allocate(cs(numit),sn(numit))
+      allocate(wtmp(npts),svec(numit+1),yvec(numit+1))
+
+
+      done = 1
+      pi = atan(done)*4
+
+      ndtarg = 12
+      ntarg = npts
+      allocate(targs(ndtarg,ntarg))
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j)
+      do i=1,npts
+        do j=1,12
+           targs(j,i) = srcvals(j,i)
+        enddo
+      enddo
+C$OMP END PARALLEL DO
 
 
 c

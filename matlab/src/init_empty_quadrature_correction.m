@@ -1,6 +1,6 @@
 function Q = init_empty_quadrature_correction(targinfo,opts)
     Q = [];
-    [~,ntarg] = size(targinfo.xyzs);
+    [~,ntarg] = size(targinfo.r);
     Q.targinfo = targinfo;
     Q.row_ptr = ones(ntarg+1,1);
     Q.nnz = 0;
