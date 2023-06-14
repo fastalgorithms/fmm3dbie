@@ -119,7 +119,7 @@ program em_aumfie_example
   allocate(errs(numit+100))
 
   eps = 1d-3
-  eps_gmres=1d-10
+  eps_gmres=1d-8
   ifinout = 1
   
   call cpu_time(t1)
@@ -258,11 +258,12 @@ end subroutine get_rhs_em_mfie_pec777
 
 
 
-subroutine em_field_electric_dipole(zk, P0, dipvec, n, lda, points, E, H, init)
+subroutine em_field_electric_dipole(zk, p0, dipvec, n, lda, points, &
+     efield, hfield, init)
   implicit none
   !
-  ! Generate the E&M field due to an electric dipole, i.e. the fields
-  ! are generated as
+  ! Generate the Maxwell field due to an electric dipole, i.e. the fields are
+  ! generated as
   !
   !     H = curl(A)
   !     E = 1/(-ima*zk) * curl(curl(A))
@@ -273,30 +274,39 @@ subroutine em_field_electric_dipole(zk, P0, dipvec, n, lda, points, E, H, init)
 
   ! Input:
   !   zk - the wavenumber
-  !   p0 - source of the dipole
-  !   targs - 
+  !   p0 - location of the dipole
+  !   dipvec - dipole direction, no assumption of magnitude, complex-valued
+  !   n - number of targets at which to evaluate field
+  !   points - evaluation locations, assumed to be dimension(3,n)
+  !   init - initialization switch,
+  !       0: set E,H to 0
+  !       1: increment current E,H values
   !
+  ! Output:
+  !   E, H - the electric and magnetic ields
+  !
+
   ! List of calling arguments
   integer, intent(in) :: n,init, lda
   double precision, intent(in) :: P0(3), points(3,n)
   complex *16, intent(in) :: dipvec(3), zk
-  complex *16, intent(out) :: E(3,n), H(3,n)
-	
+  complex *16, intent(out) :: efield(3,n), hfield(3,n)
+
   ! List of local variables
   double precision :: dx,dy,dz,r
-  complex *16 :: R1,R2,au1,au2,ima
+  complex *16 :: R1,R2,au1,au2,ima, cd
   integer :: i
-	
+
   ima = (0,1)
 
   if (init .eq. 0) then
      do i = 1,n
-        E(1,i)=0
-        E(2,i)=0
-        E(3,i)=0
-        H(1,i)=0
-        H(2,i)=0
-        H(3,i)=0
+        efield(1,i)=0
+        efield(2,i)=0
+        efield(3,i)=0
+        hfield(1,i)=0
+        hfield(2,i)=0
+        hfield(3,i)=0
      end do
   end if
   
@@ -310,18 +320,19 @@ subroutine em_field_electric_dipole(zk, P0, dipvec, n, lda, points, E, H, init)
      R1=(ima*zk/r**2-1/r**3)
      R2=((ima*zk)**2/r**3-3*ima*zk/r**4+3/r**5)
 
-     au1=(zk**2/r+R1)*exp(ima*zk*r)/(-ima*zk)
+     cd = exp(ima*zk*r)
+     au1=(zk**2/r+R1)*cd/(-ima*zk)
      au2=dx*dipvec(1)+dy*dipvec(2)
      au2=au2+dz*dipvec(3)
-     au2=au2*R2*exp(ima*zk*r)/(-ima*zk)
+     au2=au2*R2*cd/(-ima*zk)
 
-     E(1,i)=E(1,i)+(dipvec(1)*au1+dx*au2)
-     E(2,i)=E(2,i)+(dipvec(2)*au1+dy*au2)
-     E(3,i)=E(3,i)+(dipvec(3)*au1+dz*au2)
+     efield(1,i) = efield(1,i)+(dipvec(1)*au1+dx*au2)
+     efield(2,i) = efield(2,i)+(dipvec(2)*au1+dy*au2)
+     efield(3,i) = efield(3,i)+(dipvec(3)*au1+dz*au2)
 
-     H(1,i)=H(1,i)+(dy*dipvec(3)-dz*dipvec(2))*R1*exp(ima*zk*r)
-     H(2,i)=H(2,i)+(dz*dipvec(1)-dx*dipvec(3))*R1*exp(ima*zk*r)
-     H(3,i)=H(3,i)+(dx*dipvec(2)-dy*dipvec(1))*R1*exp(ima*zk*r)
+     hfield(1,i) = hfield(1,i)+(dy*dipvec(3)-dz*dipvec(2))*R1*cd
+     hfield(2,i) = hfield(2,i)+(dz*dipvec(1)-dx*dipvec(3))*R1*cd
+     hfield(3,i) = hfield(3,i)+(dx*dipvec(2)-dy*dipvec(1))*R1*cd
   enddo
 
   return
