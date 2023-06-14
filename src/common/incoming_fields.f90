@@ -188,12 +188,12 @@ implicit none
 	real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),zk
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
-	
+
 	!List of local variables
 	real ( kind = 8 ) dx,dy,dz,r
 	complex ( kind = 8 ) R1,R2,au1,au2,ima
 	integer i
-	
+
 	ima = (0.0d0,1.0d0)
 
 	do i=1,n
@@ -222,7 +222,7 @@ implicit none
 		E(2,i)=E(2,i)+(dz*vf(1)-dx*vf(3))*R1*exp(ima*zk*r)
 		E(3,i)=E(3,i)+(dx*vf(2)-dy*vf(1))*R1*exp(ima*zk*r)
 	enddo
-      
+
 return
 end subroutine fieldsMD
 
