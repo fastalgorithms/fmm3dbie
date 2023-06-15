@@ -35,7 +35,7 @@ c       select geometry type
 c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
-      igeomtype = 1
+      igeomtype = 2
       if(igeomtype.eq.1) ipars(1) = 2
       if(igeomtype.eq.2) ipars(1) = 10
 
@@ -80,8 +80,9 @@ c
 
       npts = npatches*npols
       allocate(srcvals(12,npts),srccoefs(9,npts))
-      ifplot = 0
 
+      ifplot = 1
+      fname = 'surface-geometry.vtk'
 
       call setup_geom(igeomtype,norder,npatches,ipars, 
      1       srcvals,srccoefs,ifplot,fname)

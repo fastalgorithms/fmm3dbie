@@ -9,8 +9,7 @@ program em_aumfie_example
 
   double precision xyz_out(3),xyz_in(3)
   complex *16, allocatable :: sigma(:),rhs(:)
-  complex *16, allocatable :: sigma2(:),rhs2(:)
-  
+
   complex *16, allocatable :: a_vect(:),RHS_vect(:),rhs_nE(:),rhs_nE_aux(:),a_s(:)
   complex *16 :: vf(3), e0(3), kvec(3)
   double complex, allocatable :: ein(:,:), hin(:,:), jvec(:,:)
@@ -18,12 +17,12 @@ program em_aumfie_example
 
 
   double precision, allocatable :: errs(:)
-  complex * 16 zpars(3)
-  integer numit,niter
-  character *200 title,fname,fname1,fname2
+  complex * 16 :: zpars(3)
+  integer :: numit,niter
+  character *200 :: title,fname,fname1,fname2
 
-  integer ipatch_id
-  double precision uvs_targ(2)
+  integer :: ipatch_id
+  double precision :: uvs_targ(2), ru(3), rv(3)
 
   logical isout0,isout1
 
@@ -77,8 +76,7 @@ program em_aumfie_example
 
   norder = norders(1)
   ! allocate some room for the solution
-  allocate(sigma(npts),rhs(npts))
-  allocate(sigma2(npts),rhs2(npts))
+  allocate( rhs(2*npts) )
   allocate(a_vect(2*npts),rhs_vect(2*npts),rhs_nE(npts), &
        rhs_nE_aux(npts),a_s(npts))
   
@@ -93,25 +91,29 @@ program em_aumfie_example
   e0(1) = 1
   e0(2) = 0
   e0(3) = 0
+
   kvec(1) = 0
   kvec(2) = 1
   kvec(3) = 0
+
+
+  print *, 'generating incoming field . . .'
   allocate( ein(3,npts), hin(3,npts) )
-  !!call em_planewave(e0, zk, kvec, npts, srcvals, ein, hin)
 
-  ! compute the rhs, -alpha n \times
+  call em_field_electric_dipole(zk, xyz_out, vf, npts, srcvals(1:3,:), &
+       ein, hin, 0)
+  call em_field_magnetic_dipole(zk, xyz_out, vf, npts, srcvals, ein, hin, 1)
 
+  ! now compute - n \times H
+  !do j = 1,npts
+  !   call orthonormalize(srcvals(4:6,j), srcvals(10:12,j), ru, rv)
+  !   call dzdot_prod3d(rv, hin(:,j), rhs_vect(j))
+  !   rhs_vect(j) = -rhs_vect(j)
+  !   call dzdot_prod3d(ru, hin(:,j), rhs_vect(npts+j))
+  !enddo
 
+  !call prin2('and again, rhs_vect = *', rhs_vect, 30)
 
-  !call em_field
-
-
-  call get_rhs_em_mfie_pec777(xyz_out, vf, zpars(2), npts, srcvals, &
-       zpars(1), rhs_vect)
-
-
-  call prin2('rhs_vect = *', rhs_vect, 30)
-  
     
   ! set some parameters and call the solver
   numit = 400
@@ -125,7 +127,8 @@ program em_aumfie_example
   call cpu_time(t1)
   !$  t1 = omp_get_wtime()      
   call em_mfie_solver(npatches, norders, ixyzs, iptype, npts, &
-       srccoefs, srcvals, eps, zpars, numit, ifinout, rhs_vect, &
+       srccoefs, srcvals, eps, zpars, numit, ifinout, &
+       ein, hin, rhs_vect, &
        eps_gmres, &
        niter, errs, rres, a_vect, rhs_nE)
 
@@ -234,26 +237,27 @@ subroutine get_rhs_em_mfie_pec777(p0, vf, alpha, ns, srcvals, zk,rhs)
   real ( kind = 8 ), intent(in) :: srcvals(12,ns)
   complex ( kind = 8 ), intent(in) :: zk,alpha
   complex ( kind = 8 ), intent(out) :: RHS(2*ns)
-	
+
   !List of local variables
-  complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
+  complex ( kind = 8 ), allocatable :: efield(:,:), hfield(:,:)
   integer :: count1, lda
   real ( kind = 8 ) :: ru(3),rv(3),cross_aux(3), dnorm
   
-  allocate(E(3,ns), H(3,ns))
+  allocate(efield(3,ns), hfield(3,ns))
   
-  call em_field_electric_dipole(zk, P0, vf, ns, srcvals(1:3,:), E, H, 0)
-  call em_field_magnetic_dipole(zk, P0, vf, ns, srcvals, E, H, 1)
+  call em_field_electric_dipole(zk, P0, vf, ns, srcvals(1:3,:), &
+       efield, hfield, 0)
+  call em_field_magnetic_dipole(zk, P0, vf, ns, srcvals, efield, hfield, 1)
 
   ! now compute - n \times H
   do count1=1,ns
 
      call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),ru,rv)
 
-     call dzdot_prod3d(rv, H(:,count1), rhs(count1))
+     call dzdot_prod3d(rv, hfield(:,count1), rhs(count1))
      rhs(count1) = -rhs(count1)
 
-     call dzdot_prod3d(ru, H(:,count1), rhs(ns+count1))
+     call dzdot_prod3d(ru, hfield(:,count1), rhs(ns+count1))
 
   enddo
 

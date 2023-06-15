@@ -793,9 +793,10 @@ subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
       end subroutine lpcomp_em_mfie_pec_addsub_last
 
 
-      subroutine em_mfie_solver(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,&
-     &rhs,eps_gmres,niter,errs,rres,soln,rhs_nE)
+subroutine em_mfie_solver(npatches, norders, ixyzs, &
+     iptype, npts, srccoefs, srcvals, eps, zpars, numit, ifinout, &
+     ein, hin, &
+     rhs,eps_gmres,niter,errs,rres,soln,rhs_nE)
 !
 !
 !		This subroutine solves the Scattering Maxwell p.e.c. problem.
@@ -826,7 +827,7 @@ subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
 !    - npatches: integer
 !        number of patches
 !    - norders: integer(npatches)
-!        order of discretization on each patch 
+!        order of discretization on each patch
 !    - ixyzs: integer(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
@@ -837,13 +838,13 @@ subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        koornwinder expansion coefficients of xyz, dxyz/du,
-!        and dxyz/dv on each patch. 
+!        and dxyz/dv on each patch.
 !        For each point
 !          * srccoefs(1:3,i) is xyz info
 !          * srccoefs(4:6,i) is dxyz/du info
 !          * srccoefs(7:9,i) is dxyz/dv info
 !    - srcvals: real *8 (12,npts)
-!        xyz(u,v) and derivative info sampled at the 
+!        xyz(u,v) and derivative info sampled at the
 !        discretization nodes on the surface
 !          * srcvals(1:3,i) - xyz info
 !          * srcvals(4:6,i) - dxyz/du info
@@ -854,14 +855,16 @@ subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
 !        tolerance
 !    - zpars: complex *16 (2)
 !        kernel parameters (Referring to formula (1))
-!          * zpars(1) = k 
+!          * zpars(1) = k
 !          * zpars(2) = alpha
 !    - numit: integer
 !        max number of gmres iterations
 !    - ifinout: integer
 !        ifinout = 0, interior problem
 !        ifinout = 1, exterior problem
-!      
+!    - ein, hin: double complex
+!        the incoming e and h field, given as 3-vectors at each of
+!        the srcvals points
 !    - rhs: complex *16(2*npts)
 !        right hand side
 !         rhs(1:npts)
@@ -891,10 +894,12 @@ subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
 !        ikn·S_{k}[J] which can be used for computing the charge term
 !        from n·E_inc using the em_aumfie_pec solver
 !
-
       implicit none
-      integer npatches,norder,npols,npts
-      integer ifinout
+
+      ! calling sequence variables
+      integer :: npatches,norder,npols,npts
+      integer :: ifinout
+      double complex :: ein(3,npts), hin(3,npts)
       integer norders(npatches),ixyzs(npatches+1)
       integer iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
@@ -937,6 +942,9 @@ subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
       integer ikerorder, iquadtype,npts_over
 	  integer n_var
 
+   ! local variables
+   double precision :: ru(3), rv(3)
+
 !
 !
 !       gmres variables
@@ -966,6 +974,15 @@ subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
 
       done = 1
       pi = atan(done)*4
+
+      ! generate the rhs, -n \times H
+      do j = 1,npts
+         call orthonormalize(srcvals(4:6,j), srcvals(10:12,j), ru, rv)
+         call dzdot_prod3d(rv, hin(:,j), rhs(j))
+         rhs(j) = -rhs(j)
+         call dzdot_prod3d(ru, hin(:,j), rhs(npts+j))
+      enddo
+
 
 
 !
@@ -1117,6 +1134,8 @@ subroutine lpcomp_em_mfie_pec_addsub(npatches,norders,ixyzs,&
       enddo
 
 
+
+      !
 !
       do i=1,n_var
         rb = rb + abs(rhs(i))**2
