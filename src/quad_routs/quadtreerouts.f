@@ -504,7 +504,7 @@ c--------
             qnodes(1,ipt) = xc + qnodes0(1,i)*bs/2
             qnodes(2,ipt) = yc + qnodes0(2,i)*bs/2
 
-            qwts(ipt) = qwts0(i)/4*bs*bs
+            qwts(ipt) = qwts0(i)*bs*bs/4
           enddo
         enddo
       enddo

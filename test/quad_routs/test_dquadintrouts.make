@@ -73,7 +73,7 @@ QUAD = ../../src/quad_routs
 default: all
 
 
-OBJECTS = test_quadintrouts.o \
+OBJECTS = test_dquadintrouts.o \
     $(COM)/polytens.o \
     $(QUAD)/squarearbq.o \
     $(COM)/hkrand.o \
@@ -83,8 +83,8 @@ OBJECTS = test_quadintrouts.o \
     $(COM)/lapack_wrap.o \
     $(COM)/dotcross3d.o \
     $(COM2)/prini.o \
-    $(QUAD)/cquadintrouts.o \
-    $(QUAD)/cquadints_main.o \
+    $(QUAD)/dquadintrouts.o \
+    $(QUAD)/dquadints_main.o \
     $(QUAD)/quadtreerouts.o \
 
 all: $(OBJECTS) 

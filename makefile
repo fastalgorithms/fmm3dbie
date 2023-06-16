@@ -81,7 +81,8 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o \
-	$(COM)/rigidbodies.o 
+	$(COM)/rigidbodies.o $(COM)/polytens.o \
+	$(COM)/chebexps.o
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
@@ -128,6 +129,12 @@ TOBJS = $(TRIA)/ctriaints_main.o $(TRIA)/koornexps.o \
 	$(TRIA)/triaintrouts.o $(TRIA)/dtriaints_main.o \
 	$(TRIA)/triasymq.o $(TRIA)/triatreerouts.o $(TRIA)/dtriaintrouts.o
 
+# Triangle adaptive integration routines
+QUAD2 = src/quad_routs
+QOBJS2 = $(QUAD2)/cquadints_main.o \
+	$(QUAD2)/cquadintrouts.o $(QUAD2)/dquadints_main.o \
+	$(QUAD2)/squarearbq.o $(QUAD2)/quadtreerouts.o $(QUAD2)/dquadintrouts.o
+
 ifeq ($(BLAS_64),ON)
 COMOBJS += $(COM)/lapack_wrap_64.o
 endif
@@ -137,7 +144,7 @@ COMOBJS += $(COM)/lapack_wrap.o
 endif
 
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
 
 
 
