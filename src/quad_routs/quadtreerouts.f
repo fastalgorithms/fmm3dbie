@@ -130,14 +130,19 @@ c
       nlev = 0
 
       nquad = 1
+c
+c  check whether da needs to be rescaled
+c
       da(1) = 1.0d0
-      qverts(1,1,1) = 0
-      qverts(2,1,1) = 0
+
+
+      qverts(1,1,1) = -1
+      qverts(2,1,1) = -1
 
       qverts(1,2,1) = 1
-      qverts(2,2,1) = 0
+      qverts(2,2,1) = -1
       
-      qverts(1,3,1) = 0
+      qverts(1,3,1) = -1
       qverts(2,3,1) = 1
 
 
