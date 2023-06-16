@@ -1,6 +1,6 @@
 EXEC = int2-quad
 HOST = gcc
-#HOST = gcc-openmp
+HOST = gcc-openmp
 #HOST = intel
 #HOST = intel-ompenmp
 
@@ -44,7 +44,7 @@ endif
 
 ifeq ($(HOST),gcc-openmp)
     FC = gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=x86-64 -fopenmp -std=legacy 
 endif
 
 ifeq ($(HOST),intel)
@@ -57,7 +57,7 @@ ifeq ($(HOST),intel-openmp)
     FFLAGS= -O3 -fPIC -march=native -qopenmp
 endif
 
-FEND = -framework accelerate
+FEND = -lopenblas
 
 
 

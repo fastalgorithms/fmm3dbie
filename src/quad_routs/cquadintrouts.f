@@ -194,7 +194,6 @@ c
 c
 c       generate the density values
 c
-C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,pols_tmp)     
       do i=1,nqpts
         call polytens_pols_2d(ipoly,qnodes(1,i),norder,
      1     ttype,rsigvals(1,i))
@@ -204,7 +203,6 @@ C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,pols_tmp)
           sigvals(j,i) = pols_tmp(j)
         enddo
       enddo
-C$OMP END PARALLEL DO      
 
 
       ntargmax = maxval(ntargptr(:))
@@ -1210,6 +1208,7 @@ c
       istack(1) = 1
 
 
+
       call quadadap_main(eps,kpols,nlmax,nqmax,nquad,ichild_start,
      1      tvs,da,uvsq,wts,norder,ipoly,ttype,npols,srccoefs,
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,
@@ -1458,9 +1457,9 @@ c               print *, "Exiting without computing anything"
               istart = (j-1)*kpols+1
               do i=1,kpols
                 ii = istart+i-1
-                call polytens_pols_2d(ipoly,uvtmp(1,i),norder-1,
+                call polytens_pols_2d(ipoly,uvtmp(1,i),norder,
      1            ttype,sigvals(1,ii))
-                call polytens_pols_2d(ipoly,uvtmp(1,i),nporder-1,
+                call polytens_pols_2d(ipoly,uvtmp(1,i),nporder,
      1            ttype,sigvalsdens(1,ii)) 
               enddo
               
@@ -1795,7 +1794,6 @@ c
         do j=1,ntarg
           iquadreltmp(j,i) = 0
         enddo
-        
       enddo
 
       
@@ -1901,9 +1899,9 @@ c
         istart = (iquad-1)*nqpols
         do i=1,nqpols
           ii = istart+i
-          call polytens_pols_2d(ipoly,uvtmp(1,i),norder-1,
+          call polytens_pols_2d(ipoly,uvtmp(1,i),norder,
      1      ttype,sigvals(1,ii))
-          call polytens_pols_2d(ipoly,uvtmp(1,i),nporder-1,
+          call polytens_pols_2d(ipoly,uvtmp(1,i),nporder,
      1      ttype,sigvalsdens(1,ii)) 
         enddo
       enddo
