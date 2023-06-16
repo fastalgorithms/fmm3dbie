@@ -456,63 +456,69 @@ c
       end
 
 c----------------------------------
-
-      subroutine gen_xg_unif_nodes_quad(nqorder,nnodes,nu,npts,qnodes,
-     1   qwts)
-c---------
-c  Task:
-c    Generates the quadrature nodes and weights on 
-c    nu \times nu grid of unifor m quads on [-1,1]^2
 c
-c  Input arguments:
-c    - nqorder: integer
-c        order of xiao-gimbutas nodes to be used
-c    - nnodes: integer
-c        number of xiao-gimbutas nodes of order nqorder
-c    - nu: integer
-c        number of quads in each direction
-c    - npts: integer
-c        total number of points (nu*nu*nnodes)
-c      
-c  Output arguments:
-c    - qnodes: real *8 (2,npts)
-c        quadrature nodes
-c    - qwts: real *8(npts)
-c        quadrature weights
-c--------
-
+c
+c
+c
+      subroutine gen_xg_unif_nodes_quad(nlev,nqorder,nnodes,npts,qnodes,
+     1   qwts)
       implicit real *8 (a-h,o-z)
+      real *8, allocatable :: tvs(:,:,:)
+      real *8, allocatable :: qnodes0(:,:),qwts0(:)
       real *8 qnodes(2,npts),qwts(npts)
-      real *8 qnodes0(2,nnodes),qwts0(nnodes)
-
-      call squarearbq(nqorder,qnodes0,qwts0,nnodes)
-
-      ra = 0
-      do i=1,nnodes
-        ra = ra + qwts0(i)
-      enddo
 
       
-      bs = 2.0d0/nu
-      do iquad = 1,nu
-        do jquad = 1,nu
-          xc = -1 + (jquad-1)*bs + bs/2
-          yc = -1 + (iquad-1)*bs + bs/2
 
-          do i=1,nnodes
-            ipt = ((iquad-1)*nu + jquad-1)*nnodes + i
-            qnodes(1,ipt) = xc + qnodes0(1,i)*bs/2
-            qnodes(2,ipt) = yc + qnodes0(2,i)*bs/2
+      nquad = (4**(nlev+1)-1)/3
 
-            qwts(ipt) = qwts0(i)*bs*bs/4
-          enddo
+      allocate(tvs(2,3,nquad))
+
+      tvs(1,1,1) = -1
+      tvs(2,1,1) = -1
+
+      tvs(1,2,1) = 1
+      tvs(2,2,1) = -1
+
+      tvs(1,3,1) = -1
+      tvs(2,3,1) = 1
+
+      allocate(qnodes0(2,nnodes),qwts0(nnodes))
+      nnodes0 = nnodes
+      call squarearbq(nqorder,qnodes0,qwts0,nnodes0)
+
+      do i=0,nlev-1
+        istart = (4**(i)-1)/3 + 1
+        nb = 4**i
+        iend = istart + nb-1
+
+        do iquadp = istart,iend
+          iquadc1 = (iquadp-istart)*4+iend
+c
+cc   compute the area element and the location of vertices
+c    of the children
+c
+          call getquadchildren(tvs(1,1,iquadp),tvs(1,1,iquadc1+1), 
+     1       tvs(1,1,iquadc1+2),tvs(1,1,iquadc1+3), 
+     2       tvs(1,1,iquadc1+4))   
         enddo
       enddo
 
 
+      istart = nquad-4**nlev+1
+      iend = nquad
+
+
+      do iquad=istart,iend
+        instart = (iquad-istart)*nnodes + 1
+        call mapuv_quad(tvs(1,1,iquad),nnodes,qnodes0,qnodes(1,instart))
+        do i=1,nnodes
+          qwts(instart+i-1) = qwts0(i)/4**nlev
+        enddo
+      enddo
+
       return
       end
-
+c
 c
 c
 c--------------------------------------------------------------------------------
