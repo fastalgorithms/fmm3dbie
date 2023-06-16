@@ -121,7 +121,7 @@ SURF = src/surface_routs
 SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
 	$(SURF)/xtri_routs/xtri_parameterizations.o \
 	$(SURF)/xtri_routs/xtri_plot.o $(SURF)/write_go3.o $(SURF)/in_gidmsh2.o \
-	$(SURF)/in_gmsh2.o
+	$(SURF)/in_gmsh2.o $(SURF)/patch_basis_routs.o
 
 # Triangle adaptive integration routines
 TRIA = src/tria_routs

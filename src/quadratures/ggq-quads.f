@@ -63,7 +63,7 @@ c                        full degree polynomials
 c    - npts: integer
 c        total number of discretization points on the boundary
 c    - srccoefs: double precision (9,npts)
-c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
@@ -305,21 +305,10 @@ C$OMP$PRIVATE(epsp,rsc,tmp,ipoly,ttype)
         norder = norders(ipatch)
         allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
         allocate(wts(npols))
-
-        if(iptype(ipatch).eq.1) then
-          call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
-        elseif(iptype(ipatch).eq.11) then
-          ipoly = 0
-          ttype = "F"
-          call polytens_exps_2d(ipoly,2,norder+1,ttype,uvs,umatr,
-     1      npols,vmatr,npols,wts)
         
-        elseif(iptype(ipatch).eq.12) then
-          ipoly = 1
-          ttype = "F"
-          call polytens_exps_2d(ipoly,2,norder+1,ttype,uvs,umatr,
-     1      npols,vmatr,npols,wts)
-        endif
+
+        call get_disc_exps(norder,npols,iptype(ipatch),uvs,
+     1     umatr,vmatr,wts)
 
         if(norder.le.4) then
           irad = 1
@@ -523,7 +512,7 @@ c                        full degree polynomials
 c    - npts: integer
 c        total number of discretization points on the boundary
 c    - srccoefs: double precision (9,npts)
-c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
@@ -776,19 +765,9 @@ C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
 
         allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
         allocate(wts(npols))
-        if(iptype(ipatch).eq.1) then
-          call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
-        elseif(iptype(ipatch).eq.11) then
-          ipoly = 0
-          ttype = "F"
-          call polytens_exps_2d(ipoly,2,norder+1,ttype,uvs,umatr,
-     1      npols,vmatr,npols,wts)
-        elseif(iptype(ipatch).eq.12) then
-          ipoly = 1
-          ttype = "F"
-          call polytens_exps_2d(ipoly,2,norder+1,ttype,uvs,umatr,
-     1      npols,vmatr,npols,wts)
-        endif
+
+        call get_disc_exps(norder,npols,iptype(ipatch),uvs,umatr,
+     1     vmatr,wts)
 
 c
 c  estimate rescaling of epsp needed to account for the scale of the
@@ -976,7 +955,7 @@ c                        full degree polynomials
 c    - umat: double precision(npols,npols)
 c        values to coefficient matrix
 c    - srccoefs: double precision (9,npts)
-c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
@@ -1073,16 +1052,7 @@ c
 c
 c       compute all source info at target point on patch
 c
-      if(iptype.eq.1) then
-c   RV triangle      
-        call koorn_pols(uvs,norder,npols,sigvalstmp)
-      elseif(iptype.eq.11) then
-c   GL quad "F"
-        call polytens_pols_2d(0,uvs,norder,'F',sigvalstmp)
-      elseif(iptype.eq.12) then
-c   T quad "F"      
-        call polytens_pols_2d(1,uvs,norder,'F',sigvalstmp)
-      endif
+      call get_basis_pols(uvs,norder,npols,iptype,sigvalstmp)
 
       alpha = 1.0d0
       beta = 0.0d0
@@ -1110,17 +1080,7 @@ c   T quad "F"
       do i=1,ns
         uv(1) = xs(i)
         uv(2) = ys(i)
-
-        if(iptype.eq.1) then
-c   RV triangle        
-          call koorn_pols(uv,norder,npols,sigvals(1,i))
-        elseif(iptype.eq.11) then
-c   GL quad "F"        
-          call polytens_pols_2d(0,uv,norder,'F',sigvals(1,i))
-        elseif(iptype.eq.12) then
-c   T quad "F"        
-          call polytens_pols_2d(1,uv,norder,'F',sigvals(1,i))
-        endif
+        call get_basis_pols(uv,norder,npols,iptype,sigvals(1,i))
       enddo
 
       transa = 'N'
@@ -1200,7 +1160,7 @@ c                        full degree polynomials
 c    - umat: double precision(npols,npols)
 c        values to coefficient matrix
 c    - srccoefs: double precision (9,npts)
-c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
@@ -1301,16 +1261,7 @@ c
 c
 c       compute all source info at target point on patch
 c
-      if(iptype.eq.1) then
-c   RV triangle      
-        call koorn_pols(uvs,norder,npols,sigvalstmp)
-      elseif(iptype.eq.11) then
-c   GL quad "F"
-        call polytens_pols_2d(0,uvs,norder,'F',sigvalstmp)
-      elseif(iptype.eq.12) then
-c   T quad "F"      
-        call polytens_pols_2d(1,uvs,norder,'F',sigvalstmp)
-      endif
+      call get_basis_pols(uvs,norder,npols,iptype,sigvalstmp)
 
       alpha = 1.0d0
       beta = 0.0d0
@@ -1338,16 +1289,7 @@ c   T quad "F"
       do i=1,ns
         uv(1) = xs(i)
         uv(2) = ys(i)
-        if(iptype.eq.1) then
-c   RV triangle        
-          call koorn_pols(uv,norder,npols,sigvals(1,i))
-        elseif(iptype.eq.11) then
-c   GL quad "F"        
-          call polytens_pols_2d(0,uv,norder,'F',sigvals(1,i))
-        elseif(iptype.eq.12) then
-c   T quad "F"        
-          call polytens_pols_2d(1,uv,norder,'F',sigvals(1,i))
-        endif
+        call get_basis_pols(uv,norder,npols,iptype,sigvals(1,i))
       enddo
 
       transa = 'N'
