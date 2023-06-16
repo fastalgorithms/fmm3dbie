@@ -148,7 +148,7 @@ c
       integer nqorder
       real *8 rfac
 
-      integer ipoly
+      integer ipoly,ier
       character *1 ttype
 
       integer ifmetric
@@ -160,14 +160,13 @@ c
       
 
 
-
       if(istrat.eq.1) then
           rn1 = 0
           n2 = 0
           call cquadints_dist(eps,intype,npatches,norder,ipoly,
      1        ttype,npols,srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,
      2        itargptr,ntargptr,nporder,nppols,nquadmax,fker,ndd,
-     3        dpars,ndz,zpars,ndi,ipars,nqorder,rfac,cintvals)
+     3        dpars,ndz,zpars,ndi,ipars,nqorder,rfac,cintvals,ier)
       endif
 
       if(istrat.eq.2) then

@@ -66,7 +66,11 @@
       ntarg = 3
       allocate(umatr(npols,npts),vmatr(npts,npols))
       allocate(uvs(2,npts),wts(npts))
-      call polytens_exps_nd(2,ipoly,itype,nqorder+1,ttype,uvs,
+      print *, "norder=",norder
+      print *, "npts=",npts
+      print *, "npols=",npols
+      itype = 2
+      call polytens_exps_nd(2,ipoly,itype,norder+1,ttype,uvs,
      1     umatr,npols,vmatr,npts,wts)
       thet = pi/0
       rr = 1.0d-0
@@ -102,7 +106,7 @@
         do i=1,npols
           do j=1,9
             srccoefs(j,i,ipatch) = 0
-            do l=1,npols
+            do l=1,npts
                srccoefs(j,i,ipatch) = srccoefs(j,i,ipatch) + umatr(i,l)*
      1            srcvals(j,l,ipatch)
             enddo
@@ -144,8 +148,6 @@ c
         do j=1,npols
           slp(j,i) = 0
           slp_ex(j,i) = 0
-          dlp(j,i) = 0
-          dlp_ex(j,i) = 0
         enddo
       enddo
 
@@ -219,9 +221,9 @@ c
 c
 c
 
-      subroutine hslp(x,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+      subroutine hslp(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
-      real *8 x(2),y(3),dpars(ndd)
+      real *8 x(2),y(ndt),dpars(ndd)
       complex *16 zpars(ndz),ima
       data ima/(0.0d0,1.0d0)/
       integer ipars(ndi)

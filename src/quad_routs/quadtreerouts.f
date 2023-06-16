@@ -321,10 +321,10 @@ c
       qvuse(1,4) = qverts(1,2)
       qvuse(2,4) = qverts(2,3)
 
-      call polytens_pols_2d(ipoly,qverts(1,1),norder,ttype,pols(1,1))
-      call polytens_pols_2d(ipoly,qverts(1,2),norder,ttype,pols(1,2))
-      call polytens_pols_2d(ipoly,qverts(1,3),norder,ttype,pols(1,3))
-      call polytens_pols_2d(ipoly,qverts(1,4),norder,ttype,pols(1,4))
+      call polytens_pols_2d(ipoly,qvuse(1,1),norder,ttype,pols(1,1))
+      call polytens_pols_2d(ipoly,qvuse(1,2),norder,ttype,pols(1,2))
+      call polytens_pols_2d(ipoly,qvuse(1,3),norder,ttype,pols(1,3))
+      call polytens_pols_2d(ipoly,qvuse(1,4),norder,ttype,pols(1,4))
 
 
       do i=1,npatches

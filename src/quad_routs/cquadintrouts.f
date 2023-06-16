@@ -456,6 +456,7 @@ c
 cc      max number of levels
 c
       nlmax = 20
+      print *, "nquadmax=",nquadmax
       allocate(quadcm(3,npatches,nquadmax),quadrad(npatches,nquadmax))
       allocate(qverts(2,3,nquadmax))
       allocate(iquadreltmp(ntarg,nquadmax))
@@ -467,7 +468,8 @@ c
         enddo
       enddo
 
-      
+      print *, "ntarg=",ntarg
+      print *,"here1"
       nquad = 0
       nlev = 0
       ier = 0
@@ -479,8 +481,8 @@ c
       
 
       if(ifp.eq.1) then
-        call getquadtree(npatches,norder,npols,srccoefs,ntarg,
-     1     xyzproxy,itargptr,ntargptr,nquadmax,nlmax,rfac,
+        call getquadtree(npatches,norder,ipoly,ttype,npols,srccoefs,
+     1    ntarg,xyzproxy,itargptr,ntargptr,nquadmax,nlmax,rfac,
      2     nquad,nlev,ichild_start,da,quadcm,quadrad,qverts,
      3     iquadreltmp,ier)
       else
@@ -491,11 +493,12 @@ c
             xyztargtmp(j,i) = xyztarg(j,i)
           enddo
         enddo
-        call getquadtree(npatches,norder,npols,srccoefs,ntarg,
-     1     xyztargtmp,itargptr,ntargptr,nquadmax,nlmax,rfac,nquad,
-     2     nlev,ichild_start,da,quadcm,quadrad,qverts,iquadreltmp,ier)
+        call getquadtree(npatches,norder,ipoly,ttype,npols,srccoefs,
+     1    ntarg,xyztargtmp,itargptr,ntargptr,nquadmax,nlmax,rfac,nquad,
+     2    nlev,ichild_start,da,quadcm,quadrad,qverts,iquadreltmp,ier)
         deallocate(xyztargtmp)
       endif
+
 
 
       
@@ -1811,7 +1814,8 @@ c
       
 
       if(ifp.eq.1) then
-        call getquadtree(npatches,norder,npols,srccoefs,ntarg,xyzproxy,
+        call getquadtree(npatches,norder,ipoly,ttype,npols,srccoefs,
+     1     ntarg,xyzproxy,
      1     itargptr,ntargptr,nquadmax,nlmax,rfac,nquad,nlev,
      2     ichild_start,da,quadcm,quadrad,tverts,iquadreltmp,ier)
       else
@@ -1821,8 +1825,8 @@ c
             xyztargtmp(j,i) = xyztarg(j,i)
           enddo
         enddo
-        call getquadtree(npatches,norder,npols,srccoefs,ntarg,
-     1     xyztargtmp,itargptr,ntargptr,nquadmax,nlmax,rfac,
+        call getquadtree(npatches,norder,ipoly,ttype,npols,srccoefs,
+     1    ntarg,xyztargtmp,itargptr,ntargptr,nquadmax,nlmax,rfac,
      2     nquad,nlev,ichild_start,da,quadcm,quadrad,tverts,
      3     iquadreltmp,ier)
         deallocate(xyztargtmp)

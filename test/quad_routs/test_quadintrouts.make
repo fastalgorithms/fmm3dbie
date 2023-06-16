@@ -1,6 +1,6 @@
 EXEC = int2-quad
-#HOST = gcc
-HOST = gcc-openmp
+HOST = gcc
+#HOST = gcc-openmp
 #HOST = intel
 #HOST = intel-ompenmp
 
@@ -39,7 +39,7 @@ endif
 
 ifeq ($(HOST),gcc)
     FC=gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native -std=legacy 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=x86-64 -std=legacy 
 endif
 
 ifeq ($(HOST),gcc-openmp)
@@ -57,13 +57,13 @@ ifeq ($(HOST),intel-openmp)
     FFLAGS= -O3 -fPIC -march=native -qopenmp
 endif
 
-FEND = -framework accelerate 
+FEND = -lopenblas
 
 
 
 # Test objects
 #
-COM = ../../src/Common
+COM = ../../src/common
 COM2 = ../../../FMM3D/src/Common
 QUAD = ../../src/quad_routs
 
