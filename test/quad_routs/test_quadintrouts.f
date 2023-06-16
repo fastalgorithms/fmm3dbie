@@ -1,6 +1,6 @@
       implicit real *8 (a-h,o-z)
       character *1 ttype
-      istrat = 1
+      istrat = 2
       ifp = 0
       intype = 1
       ipoly = 1
@@ -72,8 +72,8 @@
       itype = 2
       call polytens_exps_nd(2,ipoly,itype,norder+1,ttype,uvs,
      1     umatr,npols,vmatr,npts,wts)
-      thet = pi/0
-      rr = 1.0d-0
+      thet = pi/4
+      rr = 1.0d-1
 
       allocate(srccoefs(9,npols,npatches),srcvals(9,npols,npatches))
       do i=1,npols
@@ -135,11 +135,11 @@ c
 
       xyztarg(1,2) = 1.2d0*rr
       xyztarg(2,2) = 0.1d0*rr
-      xyztarg(3,2) = -2.0d0/7.0d0*rr -1.0d0
+      xyztarg(3,2) = 0.07d0*rr
 
       xyztarg(1,3) = cos(thet)*0.3d0 + sin(thet)*1.4d0+2.1d0
-      xyztarg(2,3) = -sin(thet)*0.3d0 + sin(thet)*1.4d0+1.1d0
-      xyztarg(3,3) = -3.0d0/7.0d0 - 1.0d0
+      xyztarg(2,3) = -sin(thet)*0.3d0 + cos(thet)*1.4d0+1.1d0
+      xyztarg(3,3) = -3.0d0/7.0d0
 
 
       allocate(slp(npols,ntarg),slp_ex(npols,ntarg))
@@ -151,25 +151,48 @@ c
         enddo
       enddo
 
-      eps = 1.0d-6
+      eps = 1.0d-7
       nqorder = 20
       nquadmax = 5000
-      nn = norder + 1
+      nn = norder + 2
 c
 c  fix exact integrals
 c
+      if(ipoly.eq.0) then
 
-      slp_ex(1,1) =  5.2060662105466030d0 + ima*3.8329924409148406d0
-      slp_ex(2,1) = 0 
-      slp_ex(nn,1) = 0.4103351431258097d0 + ima*0.0527184106855233d0
+      slp_ex(1,1) =  (6.899838821069959d0 + ima*0.439399599332262d0)*rr
+      slp_ex(2,1) = 0
+      slp_ex(3,1)=-(1.1719180979624943d0 + ima*0.0001182006028646d0)*rr
+      slp_ex(nn,1) = (0.3405043043598654d0+ima*0.0000590880402485d0)*rr
 
-      slp_ex(1,2) = 3.951622201719054d0+3.739912706597636d0*ima
-      slp_ex(2,2) = 0.3017426968132834d0+0.0519535961159559d0*ima 
-      slp_ex(nn,2) = -0.8521748769111288d0-0.1484084689967149d0*ima
+      slp_ex(1,2) = (3.614795901904284d0+0.438121009028853d0*ima)*rr
+      slp_ex(2,2) = (0.9639683319022886d0+0.0007078179268648d0*ima)*rr
+      slp_ex(3,2) = (0.2826784948826881d0 -0.0001175827259009d0*ima)*rr
+      slp_ex(nn,2)=(0.09978120448844031d0+0.00005898485078387d0*ima)*rr
 
-      slp_ex(1,3) = 2.568571723511053d0+3.512622598195679d0*ima 
-      slp_ex(2,3) = 0.5990712670972985d0+0.1501911845426824d0*ima
-      slp_ex(nn,3) = -0.8427156061556782d0-0.2145004609068398d0*ima
+      slp_ex(1,3) = 0.012006879138687d0+2.360367474473165d0*ima 
+      slp_ex(2,3) = 0.1956332609920277d0+0.1202248708046416d0*ima
+      slp_ex(3,3) = -(0.1332852606149804d0+0.0800745061632982d0*ima)
+      slp_ex(nn,3) = 0.7669879212478322d0+0.5576842720992313d0*ima
+
+      elseif(ipoly.eq.1) then
+
+      slp_ex(1,1) =  (6.899838821069959d0 + ima*0.439399599332262d0)*rr
+      slp_ex(2,1) = 0
+      slp_ex(3,1) = -(3.862503737639979d0+ima*0.146624133914574d0)*rr
+      slp_ex(nn,1) = (0.3405043043598654d0+ima*0.0000590880402485d0)*rr
+
+      slp_ex(1,2) = (3.614795901904284d0+0.438121009028853d0*ima)*rr
+      slp_ex(2,2) = (0.9639683319022886d0+0.0007078179268648d0*ima)*rr
+      slp_ex(3,2) =-(0.8280273074578440d0+0.1461971133108189d0*ima)*rr
+      slp_ex(nn,2)=(0.09978120448844031d0+0.00005898485078387d0*ima)*rr
+
+      slp_ex(1,3) = 0.012006879138687d0+2.360367474473165d0*ima 
+      slp_ex(2,3) = 0.1956332609920277d0+0.1202248708046416d0*ima
+      slp_ex(3,3) = -(0.1817159738662029d0+0.8935551663754526d0*ima)
+      slp_ex(nn,3) = 0.7669879212478322d0+0.5576842720992313d0*ima
+
+      endif
 
       rfac = 3.0d0
       ifmetric = 0
@@ -184,6 +207,7 @@ c
      1  npols,srccoefs,3,ntarg,xyztarg,ifp,xyztarg,itargptr,ntargptr,
      2  norder,npols,hslp,0,dpars,1,zpars,0,ipars,nqorder,nquadmax,
      3  rfac,slp,ifmetric,rn1,n2)
+
       
       errmax = 0.0d0
       do i=1,ntarg
@@ -194,14 +218,27 @@ c
         err1s = abs(slp(1,i)-slp_ex(1,i))
         err2s = abs(slp(2,i)-slp_ex(2,i))
         err3s = abs(slp(nn,i)-slp_ex(nn,i))
+        err4s = abs(slp(3,i)-slp_ex(3,i))
+
 
         if(err1s.gt.errmax) errmax = err1s
         if(err2s.gt.errmax) errmax = err2s
         if(err3s.gt.errmax) errmax = err3s
+        if(err4s.gt.errmax) errmax = err4s
+
+        write(*,'(a,5(2x,e11.5))'), "0,0 int=", real(slp(1,i)),
+     1    real(slp_ex(1,i)),imag(slp(1,i)),imag(slp_ex(1,i))
+        write(*,'(a,5(2x,e11.5))'), "1,0 int=", real(slp(2,i)),
+     1    real(slp_ex(2,i)),imag(slp(2,i)),imag(slp_ex(2,i))
+        write(*,'(a,5(2x,e11.5))'), "2,0 int=", real(slp(3,i)),
+     1    real(slp_ex(3,i)),imag(slp(3,i)),imag(slp_ex(3,i))
+        write(*,'(a,5(2x,e11.5))'), "0,0 int=", real(slp(nn,i)),
+     1    real(slp_ex(nn,i)),imag(slp(nn,i)),imag(slp_ex(nn,i))
 
         print *, "0,0 int=",err1s
         print *, "1,0 int=",err2s
         print *, "0,1 int=",err3s
+        print *, "2,0 int=",err4s
         print *, ""
         print *, ""
       enddo
@@ -223,13 +260,13 @@ c
 
       subroutine hslp(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
-      real *8 x(2),y(ndt),dpars(ndd)
+      real *8 x(3),y(ndt),dpars(ndd)
       complex *16 zpars(ndz),ima
       data ima/(0.0d0,1.0d0)/
       integer ipars(ndi)
       complex *16 f
-      
-      rr = sqrt((x(1)-y(1))**2 + (x(2)-y(2))**2 + y(3)**2)
+
+      rr = sqrt((x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2)
 
       f = exp(ima*zpars(1)*rr)/rr
 

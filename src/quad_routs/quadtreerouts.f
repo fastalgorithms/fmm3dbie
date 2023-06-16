@@ -583,7 +583,7 @@ c
           call cross_prod3d(srcvals(4,i),srcvals(7,i),srcvals(10,i))
           rr = sqrt(srcvals(10,i)**2 + srcvals(11,i)**2 + 
      1        srcvals(12,i)**2)
-          qwts(i) = rr*da*whts(i)/4
+          qwts(i) = rr*da*whts(i)
           srcvals(10,i) = srcvals(10,i)/rr
           srcvals(11,i) = srcvals(11,i)/rr
           srcvals(12,i) = srcvals(12,i)/rr

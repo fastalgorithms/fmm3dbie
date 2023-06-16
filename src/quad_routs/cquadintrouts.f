@@ -456,7 +456,6 @@ c
 cc      max number of levels
 c
       nlmax = 20
-      print *, "nquadmax=",nquadmax
       allocate(quadcm(3,npatches,nquadmax),quadrad(npatches,nquadmax))
       allocate(qverts(2,3,nquadmax))
       allocate(iquadreltmp(ntarg,nquadmax))
@@ -468,8 +467,6 @@ c
         enddo
       enddo
 
-      print *, "ntarg=",ntarg
-      print *,"here1"
       nquad = 0
       nlev = 0
       ier = 0
@@ -561,9 +558,8 @@ cc      call prinf('nqpols=*',nqpols,1)
       allocate(rsigtmp(nppols,npmax))
 
       allocate(uvtmp(2,nqpols))
-      alpha_c = 1
-      beta_c = 0
-
+      alpha_c = 1.0d0
+      beta_c = 0.0d0
 
       do iquad=1,nquad
         call mapuv_quad(qverts(1,1,iquad),nqpols,uvsq,uvtmp)

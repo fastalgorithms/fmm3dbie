@@ -57,7 +57,7 @@ ifeq ($(HOST),intel-openmp)
     FFLAGS= -O3 -fPIC -march=native -qopenmp
 endif
 
-FEND = -lopenblas
+FEND = -framework accelerate
 
 
 
@@ -93,6 +93,8 @@ all: $(OBJECTS)
 
 # implicit rules for objects (note -o ensures writes to correct dir)
 %.o: %.f %.h
+	$(FC) -c $(FFLAGS) $< -o $@
+%.o: %.f90 
 	$(FC) -c $(FFLAGS) $< -o $@
 
 clean: 
