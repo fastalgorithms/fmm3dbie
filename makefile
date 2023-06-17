@@ -10,7 +10,7 @@
 CC = gcc
 CXX = g++
 FC = gfortran
-FFLAGS = -fPIC -O3 -march=native -funroll-loops -std=legacy 
+FFLAGS = -fPIC -O3 -march=native -funroll-loops -std=legacy -w 
 
 # extra flags for multithreaded: C/Fortran, MATLAB
 OMPFLAGS =-fopenmp

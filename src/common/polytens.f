@@ -684,61 +684,46 @@ c
       end
 
       
-      subroutine polytens_ders_3d(ipoly,x,ndeg,type,idim,ders)
+      subroutine polytens_ders_2d(ipoly,x,ndeg,type,pols,ders)
 c
 c     type = 'F' full degree polynomials ((ndeg+1)**3)
 c     type = 'T' total degree polynomials ((ndeg+1)*(ndeg+2)*(ndeg+3)/6)
 c      
       implicit none
       integer ipoly,ndeg,npols,idim
-      real *8 x(3),ders(*),px(ndeg+1),py(ndeg+1),pz(ndeg+1),tmp(ndeg+1)
+      real *8 x(2),ders(2,*),px(ndeg+1),py(ndeg+1),tmp(ndeg+1)
+      real *8 pxder(ndeg+1),pyder(ndeg+1),pols(*)
       integer i,j,ipol, k, n
       character type
 
       n = ndeg + 1
 
       if (ipoly.eq.0) then
-         call legepols(x(1),ndeg,px)
-         call legepols(x(2),ndeg,py)
-         call legepols(x(3),ndeg,pz)
+         call legepolders(x(1),px,pxder,ndeg)
+         call legepolders(x(2),py,pyder,ndeg)
       elseif (ipoly.eq.1) then
-         call chebpols(x(1),ndeg,px)
-         call chebpols(x(2),ndeg,py)
-         call chebpols(x(3),ndeg,pz)
-      endif
-      if (idim .eq. 1) then
-         if (ipoly.eq.0) call legepolders(x(1),tmp,px,ndeg)
-         if (ipoly.eq.1) call chebpolders(x(1),tmp,px,ndeg)
-      endif
-
-      if (idim .eq. 2) then
-         if (ipoly.eq.0) call legepolders(x(2),tmp,py,ndeg)
-         if (ipoly.eq.1) call chebpolders(x(2),tmp,py,ndeg)
-      endif
-
-      if (idim .eq. 3) then
-         if (ipoly.eq.0) call legepolders(x(3),tmp,pz,ndeg)
-         if (ipoly.eq.1) call chebpolders(x(3),tmp,pz,ndeg)
+         call chebpolders(x(1),px,pxder,ndeg)
+         call chebpolders(x(2),py,pyder,ndeg)
       endif
 
       if (type .eq. 'f' .or. type .eq. 'F') then
          ipol = 0
          do i=1,n
             do j=1,n
-               do k = 1,n
-                  ipol = ipol + 1
-                  ders(ipol) = px(k)*py(j)*pz(i)
-               enddo
+               ipol = ipol + 1
+               pols(ipol) = px(j)*py(i)
+               ders(1,ipol) = pxder(j)*py(i)
+               ders(2,ipol) = px(j)*pyder(i)
             enddo
          enddo
       else if (type .eq. 't' .or. type .eq. 'T') then
          ipol = 0
          do i=1,n
             do j=1,n+1-i
-               do k = 1,n+2-i-j
-                  ipol = ipol + 1
-                  ders(ipol) = px(k)*py(j)*pz(i)
-               enddo
+               ipol = ipol + 1
+               pols(ipol) = px(j)*py(i)
+               ders(1,ipol) = pxder(j)*py(i)
+               ders(2,ipol) = px(j)*pyder(i)
             enddo
          enddo
       endif
