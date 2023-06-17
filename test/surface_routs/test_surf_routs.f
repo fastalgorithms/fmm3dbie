@@ -95,8 +95,8 @@ c
 
       ixyzs(npatches+1) = 1+npols*npatches
 
-      call surf_quadratic_msh_vtk_plot(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,'sph-msh.vtk','msh')
+c      call surf_quadratic_msh_vtk_plot(npatches,norders,ixyzs,iptype,
+c     1  npts,srccoefs,srcvals,'sph-msh.vtk','msh')
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 

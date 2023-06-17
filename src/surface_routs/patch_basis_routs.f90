@@ -527,7 +527,7 @@
         if(n1.eq.0.and.n2.eq.0) then
           nclash = 1
           iclash(nclash) = 1
-          iclash(nclash) = 1
+          iclashfar(nclash) = 1
           if(norder.eq.15) iclash(nclash) = 76
           if(norder.eq.18) iclash(nclash) = 106
 

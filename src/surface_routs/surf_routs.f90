@@ -533,7 +533,7 @@ subroutine oversample_fun_guru(nd,norder,npols,iptype,u,nfar,nfar_pols, &
 
 
   allocate(uvs(2,nfar_pols))
-  call get_disc_nodes(nfar,nfar_pols,uvs)
+  call get_disc_nodes(nfar,nfar_pols,iptype,uvs)
 
   allocate(ucoefs(nd,npols))
 
@@ -558,9 +558,9 @@ subroutine oversample_fun_guru(nd,norder,npols,iptype,u,nfar,nfar_pols, &
   allocate(pmat(npols,nfar_pols))
     
   do i=1,nfar_pols
-    call koorn_pols(uvs(1,i),norder,npols,pmat(1,i))
+    call get_basis_pols(uvs(1,i),norder,npols,iptype,pmat(1,i))
   enddo
-
+    
   transa = 'n'
   transb = 'n'
   call dgemm_guru(transa,transb,nd,nfar_pols,npols,alpha, &
@@ -1373,7 +1373,7 @@ subroutine get_surf_uv_grad_guru(nd,norder,npols,iptype,f,dfuv)
 
 
   do i=1,npols
-    call get_basis_ders(uv(1,i),norder,iptype,npols,pols,ders)
+    call get_basis_ders(uv(1,i),norder,npols,iptype,pols,ders)
     do j=1,npols
       do idim=1,nd
         dfuv(idim,1,i) = dfuv(idim,1,i) + ders(1,j)*fcoefs(idim,j)
