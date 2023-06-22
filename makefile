@@ -1,6 +1,8 @@
 # Makefile for fmm3dbie
 # # This is the only makefile; there are no makefiles in subdirectories.
 # Users should not need to edit this makefile (doing so would make it
+
+
 # hard to stay up to date with repo version). Rather in order to
 # change OS/environment-specific compilers and flags, create 
 # the file make.inc, which overrides the defaults below (which are 
@@ -121,7 +123,8 @@ SURF = src/surface_routs
 SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
 	$(SURF)/xtri_routs/xtri_parameterizations.o \
 	$(SURF)/xtri_routs/xtri_plot.o $(SURF)/write_go3.o $(SURF)/in_gidmsh2.o \
-	$(SURF)/in_gmsh2.o $(SURF)/patch_basis_routs.o
+	$(SURF)/in_gmsh2.o $(SURF)/patch_basis_routs.o \
+	$(SURF)/xquad_routs/xquad_parametrizations.o
 
 # Triangle adaptive integration routines
 TRIA = src/tria_routs
