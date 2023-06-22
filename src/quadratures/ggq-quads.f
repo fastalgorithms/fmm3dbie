@@ -284,6 +284,7 @@ c
 
       call gen_xg_unif_nodes_quad(nlev,nqorder_f,nnodes,npts_f_quad,
      1   qnodes_quad,qwts_quad)
+      ra = sum(qwts_quad)
 
 
 
@@ -305,6 +306,13 @@ C$OMP$PRIVATE(epsp,rsc,tmp,ipoly,ttype)
         norder = norders(ipatch)
         allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
         allocate(wts(npols))
+        if(iptype(ipatch).eq.11) ipoly = 0
+        if(iptype(ipatch).eq.12) ipoly = 1
+        ttype = "F"
+
+c        print *, "ipatch=",ipatch
+c        print *, "npols=",npols
+c        print *, "iptype(ipatch)=",iptype(ipatch)
         
 
         call get_disc_exps(norder,npols,iptype(ipatch),uvs,
@@ -374,6 +382,8 @@ c
 c       fill out near part of layer potential
 c
 
+        sints_n = 0
+        sints_f = 0
         if(iptype(ipatch).eq.1) 
      1      call ctriaints(epsp,istrat,intype,ntest0,norder,npols,
      1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
@@ -381,15 +391,16 @@ c
      3      ipars,nqorder,npmax,rfac,sints_n,ifmetric,rn1,n2)
         
         if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) 
-     1      call cquadints(epsp,istrat,intype,ntest0,norder,npols,
-     1      ipoly,ttype,srccoefs(1,istart),ndtarg,ntarg_n,targ_near,
+     1      call cquadints(epsp,istrat,intype,ntest0,norder,ipoly,
+     1      ttype,npols,srccoefs(1,istart),ndtarg,ntarg_n,targ_near,
      1      ifp,xyztarg2,itargptr,ntarg_n,norder,npols,fker,ndd,dpars,
      1      ndz,zpars,ndi,ipars,nqorder,npmax,rfac,sints_n,ifmetric,
      1      rn1,n2)
         
+
         call zrmatmatt(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
-c
-c       fill out far part of layer potential
+cc
+cc       fill out far part of layer potential
 c
         if(iptype(ipatch).eq.1) 
      1     call ctriaints_wnodes(ntest0,norder,npols,
@@ -1021,7 +1032,7 @@ c
 
       external fker
 
-      nmax = 10000
+      nmax = 20000
       allocate(ws(nmax),xs(nmax),ys(nmax))
       allocate(fvals(npols))
       if(iptype.eq.1) then

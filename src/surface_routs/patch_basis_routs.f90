@@ -71,7 +71,8 @@
 !
       integer ipoly,itype
       character * 1, ttype
-      real *8 umatr,vmatr,ldu,ldv
+      real *8 umatr,vmatr
+      integer ldu,ldv
       real *8 wts(1)
       
 
@@ -131,7 +132,8 @@
 !
       integer ipoly,itype
       character * 1, ttype
-      real *8 umatr,vmatr,ldu,ldv
+      real *8 umatr,vmatr
+      integer ldu,ldv
       real *8 uvs(2,npols)
 
       
@@ -191,7 +193,8 @@
 !
       integer ipoly,itype
       character * 1, ttype
-      real *8 umatr,vmatr,ldu,ldv
+      real *8 umatr,vmatr
+      integer ldu,ldv
       
 
       itype = 1
@@ -258,7 +261,7 @@
 !
       integer ipoly,itype
       character * 1, ttype
-      real *8 ldu,ldv
+      integer ldu,ldv
       
 
       itype = 2
@@ -273,6 +276,7 @@
       if(iptype.eq.12) ipoly = 1
 
       ttype = "F"
+
 
       if(iptype.eq.11.or.iptype.eq.12) then
         call polytens_exps_2d(ipoly,itype,norder+1,ttype,uvs,umatr,ldu, &

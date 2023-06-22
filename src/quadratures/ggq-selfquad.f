@@ -111,7 +111,7 @@ c
 c
 c       Fetch a quadrature on T_0 for radially singular functions.
 c
-        call raddiag(irad,verts,nquad,xs,ys,whts)
+        call raddiag(irad,verts,nv,nquad,xs,ys,whts)
 c
 c       Apply the mapping A to the quadrature formula.
 c
@@ -199,7 +199,7 @@ c
 c
 c       Fetch a quadrature on T_0 for radially singular functions.
 c
-        call pv_raddiag(irad,verts,nquad,xs,ys,whts)
+        call pv_raddiag(irad,verts,nv,nquad,xs,ys,whts)
 c
 c       Apply the mapping A to the quadrature formula.
 c

@@ -268,17 +268,10 @@ subroutine xquad_sphere_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
   b = (x1-x0)*(x2-x0) + (y1-y0)*(y2-y0) + (z1-z0)*(z2-z0)
   c = (x1-x0)*(x1-x0) + (y1-y0)*(y1-y0) + (z1-z0)*(z1-z0)
 
-  drdu = (a + v*b + u*c)/r
-  drdu2 = (r*c - r*drdu*drdu)/r/r
+  drdu = (x*dxdu+y*dydu+z*dzdu)/r
 
-  e = x0*(x2-x0) + y0*(y2-y0) + z0*(z2-z0)
-  f = b
-  g = (x2-x0)*(x2-x0) + (y2-y0)*(y2-y0) + (z2-z0)*(z2-z0)
 
-  drdv = (e + u*f + v*g)/r
-  drdv2 = (r*g - r*drdv*drdv)/r/r
-
-  drduv = (r*b - r*drdu*drdv)/r/r
+  drdv = (x*dxdv+y*dydv+z*dzdv)/r
 
   ! du
   dxyzduv(1,1) = (r*dxdu-x*drdu)/r/r
@@ -594,7 +587,6 @@ subroutine xquad_platonic(itype, nover, maxquad, &
     end if
 
     do i = 1,nnn
-
       call xquad_refine4_flat(quadinfo(1,1,i), verts1, &
           verts2, verts3, verts4)
       do j = 1,3
@@ -691,28 +683,28 @@ subroutine xquad_rsolid(itype, verts, nverts, ifaces, nfaces)
     kk=kk+1
     ifaces(1,kk)=1
     ifaces(2,kk)=2
-    ifaces(3,kk)=6
+    ifaces(3,kk)=5
 
     kk=kk+1
     ifaces(1,kk)=2
     ifaces(2,kk)=3
-    ifaces(3,kk)=7
-
-    kk=kk+1
-    ifaces(1,kk)=3
-    ifaces(2,kk)=4
-    ifaces(3,kk)=8
-
+    ifaces(3,kk)=6
 
     kk=kk+1
     ifaces(1,kk)=4
-    ifaces(2,kk)=1
-    ifaces(3,kk)=5
+    ifaces(2,kk)=8
+    ifaces(3,kk)=3
+
+
+    kk=kk+1
+    ifaces(1,kk)=1
+    ifaces(2,kk)=5
+    ifaces(3,kk)=4
 
     kk=kk+1
     ifaces(1,kk)=5
     ifaces(2,kk)=6
-    ifaces(3,kk)=7
+    ifaces(3,kk)=8
 
   endif
 
@@ -737,6 +729,8 @@ end subroutine xquad_rsolid
 subroutine xquad_genquadinfo(verts,nverts,ifaces,nfaces,quadinfo)
   implicit real *8 (a-h,o-z)
   dimension verts(3,1),ifaces(3,1),quadinfo(3,3,1)
+
+  call prinf('ifaces=*',ifaces,3*nfaces)
 
   do i=1,nfaces
 
@@ -772,6 +766,7 @@ subroutine xquad_refine4_flat(verts, verts1, verts2, verts3, verts4)
   v4(2) = verts(2,2) + verts(2,3) - verts(2,1)
   v4(3) = verts(3,2) + verts(3,3) - verts(3,1)
 
+
   !
   ! perform a refinement of a flat quad into four other flat
   ! quads
@@ -795,7 +790,6 @@ subroutine xquad_refine4_flat(verts, verts1, verts2, verts3, verts4)
   xyzm(1) = (verts(1,2) + verts(1,3))/2
   xyzm(2) = (verts(2,2) + verts(2,3))/2
   xyzm(3) = (verts(3,2) + verts(3,3))/2
-  
 
   
 

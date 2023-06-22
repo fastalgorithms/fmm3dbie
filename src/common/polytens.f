@@ -338,7 +338,7 @@ c          itype=4 only construct v
       real *8 x(2,*),w(*)
       real *8 u(ldu,*), v(ldv,*)
       real *8 x1d(n), w1d(n), u1d(n,n), v1d(n,n)
-      integer i,j,ipt,itype1d,io, jo,ipol
+      integer i,j,ipt,itype1d,ii, jo,ipol
       
       itype1d = 0
       if (itype .ge. 1) then
@@ -371,34 +371,36 @@ c          itype=4 only construct v
       endif
 
 
+
       if (itype .eq. 2 .or. itype .eq. 3) then
 c     construct u from 1d u
-         if (type .eq. 'f' .or. type .eq. 'F') then         
+         if (type .eq. 'f' .or. type .eq. 'F') then        
             ipt = 0
-            do io = 1,n
+            do ii = 1,n
             do jo = 1,n
                ipt = ipt + 1
                ipol = 0
                do i=1,n
                do j=1,n
                   ipol = ipol + 1
-                  u(ipol,ipt) =  u1d(i,io)*u1d(j,jo)
+                  u(ipol,ipt) =  u1d(i,ii)*u1d(j,jo)
                enddo
                enddo
             enddo
             enddo
+
 
          else if (type .eq. 't' .or. type .eq. 'T') then
 
             ipt = 0
-            do io = 1,n
+            do ii = 1,n
             do jo = 1,n
                ipt = ipt + 1
                ipol = 0
                do i=1,n
                do j=1,n+1-i
                   ipol = ipol + 1
-                  u(ipol,ipt) = u1d(i,io)*u1d(j,jo)
+                  u(ipol,ipt) = u1d(i,ii)*u1d(j,jo)
                enddo
                enddo
             enddo
@@ -410,14 +412,14 @@ c     construct u from 1d u
 c     construct v from 1d v
          if (type .eq. 'f' .or. type .eq. 'F') then         
             ipol = 0
-            do io = 1,n
+            do ii = 1,n
             do jo = 1,n
                ipol = ipol + 1
                ipt = 0
                do i=1,n
                do j=1,n
                   ipt = ipt + 1
-                  v(ipt,ipol) =  v1d(i,io)*v1d(j,jo)
+                  v(ipt,ipol) =  v1d(i,ii)*v1d(j,jo)
                enddo
                enddo
             enddo
@@ -426,14 +428,14 @@ c     construct v from 1d v
          else if (type .eq. 't' .or. type .eq. 'T') then
 
             ipol = 0
-            do io = 1,n
-            do jo = 1,n+1-io
+            do ii = 1,n
+            do jo = 1,n+1-ii
                ipol = ipol + 1
                ipt = 0
                do i=1,n
                do j=1,n
                   ipt = ipt + 1
-                  v(ipt,ipol) = v1d(i,io)*v1d(j,jo)
+                  v(ipt,ipol) = v1d(i,ii)*v1d(j,jo)
                enddo
                enddo
             enddo

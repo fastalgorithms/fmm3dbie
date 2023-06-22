@@ -37,9 +37,9 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 
 
-        subroutine raddiag(irad,verts,nquad,xs,ys,whts)
+        subroutine raddiag(irad,verts,nv,nquad,xs,ys,whts)
         implicit double precision (a-h,o-z)
-        dimension xs(*),ys(*),whts(*),verts(2,3)
+        dimension xs(*),ys(*),whts(*),verts(2,nv)
 c
 c       Return a quadrature for the evaluation of radially singular
 c       functions of the form (1) over an arbitrary triangle
@@ -77,17 +77,26 @@ c
 c
         x3 = verts(1,3)
         y3 = verts(2,3)
+        
 c
 c       Build quadratures for each subtriangle.
 c
-        call raddiag0(irad,x1,y1,x2,y2,nquad1,xs(1),ys(1),whts(1))
+        istart = 1
+        do iv=1,nv
+          x1 = verts(1,iv)
+          y1 = verts(2,iv)
+
+          ivn = iv+1
+          if(iv.eq.nv) ivn = 1
+
+          x2 = verts(1,ivn)
+          y2 = verts(2,ivn)
+          call raddiag0(irad,x1,y1,x2,y2,nquad1,xs(istart),ys(istart),
+     1        whts(istart))
+          istart = istart+nquad1
+        enddo
+        nquad = istart-1
 c
-        call raddiag0(irad,x1,y1,x3,y3,nquad2,xs(nquad1+1),
-     1    ys(nquad1+1),whts(nquad1+1))
-c
-        call raddiag0(irad,x2,y2,x3,y3,nquad3,xs(nquad1+nquad2+1),
-     1    ys(nquad1+nquad2+1),whts(nquad1+nquad2+1))
-        nquad=nquad1+nquad2+nquad3
 c
 
         return
@@ -290,9 +299,9 @@ c
 c
 c
 c
-      subroutine pv_raddiag(irad,verts,nquad,xs,ys,whts)
+      subroutine pv_raddiag(irad,verts,nv,nquad,xs,ys,whts)
       implicit double precision (a-h,o-z)
-      dimension xs(*),ys(*),whts(*),verts(2,3)
+      dimension xs(*),ys(*),whts(*),verts(2,nv)
       integer irad
 c
 c-------------
@@ -335,6 +344,7 @@ c
 c
 c       Extract the coordinates of the vertices.
 c
+      
       x1 = verts(1,1)
       y1 = verts(2,1)
 c
@@ -345,28 +355,43 @@ c
       y3 = verts(2,3)
 c
       call pv_linedist(x1,y1,x2,y2,dd1)
-      call pv_linedist(x2,y2,x3,y3,dd2)
-      call pv_linedist(x1,y1,x3,y3,dd3)
-c
-      rcut = min(dd1,dd2)
-      rcut = min(dd3,rcut)
+      rcut = dd1
+      istart = 1
+      nquad = 0
+
+      do iv=1,nv
+         x1 = verts(1,iv)
+         y1 = verts(2,iv)
+         
+         ivn = iv+1
+         if(iv.eq.nv) ivn = 1
+
+         x2 = verts(1,ivn)
+         y2 = verts(2,ivn)
+         call pv_linedist(x1,y1,x2,y2,dd1)
+         rcut = min(dd1,rcut)
+      enddo
+       
       rcut = rcut/2
+c
 c
 c       Build quadratures for each subtriangle.
 c
-      nquad = 0
 c
-      call pv_raddiag0(irad,x1,y1,x2,y2,nquad0,xs(nquad+1),
+      do iv=1,nv
+         x1 = verts(1,iv)
+         y1 = verts(2,iv)
+         
+         ivn = iv+1
+         if(iv.eq.nv) ivn = 1
+
+         x2 = verts(1,ivn)
+         y2 = verts(2,ivn)
+         call pv_raddiag0(irad,x1,y1,x2,y2,nquad0,xs(nquad+1),
      -    ys(nquad+1),whts(nquad+1),rcut,norder)
-      nquad = nquad+nquad0
-c
-      call pv_raddiag0(irad,x1,y1,x3,y3,nquad0,xs(nquad+1),
-     1    ys(nquad+1),whts(nquad+1),rcut,norder)
-      nquad = nquad+nquad0
-c
-      call pv_raddiag0(irad,x2,y2,x3,y3,nquad0,xs(nquad+1),
-     1    ys(nquad+1),whts(nquad+1),rcut,norder)
-      nquad = nquad+nquad0
+         nquad = nquad + nquad0
+      enddo
+
 c
       nlege = (norder/2)+1
       n     = 3*(norder+1)+2

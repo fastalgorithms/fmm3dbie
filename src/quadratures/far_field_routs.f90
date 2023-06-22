@@ -147,7 +147,7 @@ subroutine get_far_order(eps,npatches,norders,ixyzs,iptype,cms,rads,&
 
 
       
-     call get_far_order_guru(eps,norder,iptype(i),npols,cms(1,i),rad0,&
+     call get_far_order_guru(eps,norder,npols,iptype(i),cms(1,i),rad0,&
         srccoefs(1,istart),ikerorder,zk, &
         ndtarg,ntarg0,targtmp,nfars(i),npolsf)
     ixyzso(i+1) = ixyzso(i)+npolsf
@@ -160,7 +160,7 @@ end subroutine get_far_order
 
 
 
-subroutine get_far_order_guru(eps,norder,iptype,npols,cm,rad,srccoefs, &
+subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   ikerorder,zk,ndtarg,ntarg,targvals,nfar,npolsf)
 
 !
@@ -365,7 +365,6 @@ subroutine get_far_order_guru(eps,norder,iptype,npols,cm,rad,srccoefs, &
 !  by passing in srcvals as an input parameter
 !
 
-
   call get_disc_nodes_wts(norder,npols,iptype,uvs,wts)
   
   do i=1,npols
@@ -512,7 +511,7 @@ subroutine get_far_order_guru(eps,norder,iptype,npols,cm,rad,srccoefs, &
   iistart = nnn-1
   iistart = max(iistart,1)
   nfar = nfars(iistart)
-  npolsf = (nfar+1)*(nfar+2)/2 
+  call get_npols(iptype,nfar,npolsf)
 
 
 end subroutine get_far_order_guru

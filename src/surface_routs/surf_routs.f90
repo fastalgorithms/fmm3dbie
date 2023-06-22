@@ -721,7 +721,7 @@ subroutine get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
     istart = ixyzs(i)
     npols = ixyzs(i+1)-ixyzs(i)
     allocate(wts0(npols))
-    if(iptype(i).eq.1) call get_vioreanu_wts(norders(i),npols,wts0)
+    call get_disc_wts(norders(i),npols,iptype(i),wts0)
     do j=1,npols
       ipt = istart + j-1
       call cross_prod3d(srcvals(4,ipt),srcvals(7,ipt),tmp)
@@ -839,8 +839,7 @@ subroutine get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, &
     enddo
 
     npols = ixyzs(ip+1)-ixyzs(ip)
-    if(iptype(ip).eq.1) &
-      call get_vioreanu_nodes(norders(ip),npols,uvs_pts(1,ixyzs(ip)))
+    call get_disc_nodes(norders(ip),npols,iptype(ip),uvs_pts(1,ixyzs(ip)))
   enddo
 
 

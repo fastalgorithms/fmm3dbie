@@ -187,7 +187,7 @@ c
       character *1 transa,transb
 
       allocate(pols_tmp(npols))
-      allocate(sigvals(nppols,nqpts),xkernvals(nqpts,ntarg))
+      allocate(sigvals(nppols,nqpts))
       allocate(rsigvals(npols,nqpts))
 
 c
