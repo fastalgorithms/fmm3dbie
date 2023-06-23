@@ -715,20 +715,23 @@ subroutine get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
   real *8 srcvals(12,npts),qwts(npts),tmp(3)
   integer istart
   real *8, allocatable :: wts0(:)
-
+  integer nmax,npmax
+  
+  nmax = maxval(norders(1:npatches))
+  npmax = (nmax+1)*(nmax+1)
+  allocate(wts0(npmax))
 
   do i=1,npatches
     istart = ixyzs(i)
     npols = ixyzs(i+1)-ixyzs(i)
-    allocate(wts0(npols))
     call get_disc_wts(norders(i),npols,iptype(i),wts0)
     do j=1,npols
       ipt = istart + j-1
       call cross_prod3d(srcvals(4,ipt),srcvals(7,ipt),tmp)
       qwts(ipt) = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts0(j)
     enddo
-    deallocate(wts0)
   enddo
+  deallocate(wts0)
 end subroutine get_qwts
 
 !
@@ -892,7 +895,7 @@ subroutine get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
   integer npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
   integer npts
   real *8 srccoefs(9,npts),srcvals(12,npts),qwts(npts),pdis(npatches)
-  real *8 rtmp,srat
+  real *8 rtmp,srat,vtmp(3)
   integer i,istart,j,ipt,npols
 
   
@@ -910,6 +913,7 @@ subroutine get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
     enddo
     pdis(i) = sqrt(pdis(i)/rtmp)
   enddo
+  return
 end subroutine get_patch_distortion
 
 
@@ -1623,12 +1627,104 @@ subroutine col_ind_to_patch_node_ind(npatches,ixyzs,ncol,col_ind, &
 
 end subroutine col_ind_to_patch_node_ind
 
-!
-!
-!
-!
-!
 
+
+
+subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,fname,title)
+!
+!-----------------------------
+!  This subroutine creates a vtk file which contains the following scalar fields:
+!    * points per wavelength
+!    * patch distortion
+!    * estimated error in surface representation if order>=2, else error is
+!      set to 0
+!
+!  Input arguments:
+!    - dlam: real *8
+!        wavelength
+!    - nd: integer
+!        number of functions
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!    - fname: character (len=*)
+!        file name to which info needs to be written
+!
+   implicit none 
+   real *8, intent(in) :: dlam
+   integer, intent(in) :: npatches,norders(npatches),ixyzs(npatches+1)
+   integer, intent(in) :: iptype(npatches),npts
+   real *8, intent(in) :: srcvals(12,npts),srccoefs(9,npts)
+   character (len=*) :: fname,title
+
+   real *8, allocatable :: dppw(:),pdis(:),errp(:)
+   real *8, allocatable :: sigma(:,:),cms(:,:),rads(:),qwts(:)
+   character (len=10), dimension(3) :: scalar_names
+
+   integer nsc,nd,ip,j,i
+   real *8 errm
+   
+
+   nsc = 10
+
+   scalar_names(1) = 'ppw'
+   scalar_names(2) = 'distortion'
+   scalar_names(3) = 'surf_err'
+
+   allocate(dppw(npatches),pdis(npatches),errp(npatches))
+   allocate(cms(3,npatches),rads(npatches))
+   call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, &
+    srccoefs,cms,rads)
+
+   do i=1,npatches
+     dppw(i) = (norders(i)+0.0d0)/(rads(i)/dlam)
+   enddo
+
+   allocate(qwts(npts))
+   call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
+
+
+   call get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
+    srccoefs,srcvals,qwts,pdis)
+
+   call surf_fun_error(9,npatches,norders,ixyzs,iptype, &
+     npts,srcvals(1:9,1:npts),qwts,errp,errm)
+
+   nd = 3
+   allocate(sigma(3,npts))
+   do ip=1,npatches
+     do j=ixyzs(ip),ixyzs(ip+1)-1
+       sigma(1,j) = dppw(ip)
+       sigma(2,j) = pdis(ip)
+       sigma(3,j) = errp(ip)
+     enddo
+   enddo
+
+   call surf_vtk_plot_scalar_many(nd,npatches,norders,ixyzs,iptype, &
+     npts,srccoefs,srcvals,sigma,nsc,scalar_names,fname,title)
+
+
+
+end subroutine plot_surface_info_all
+!
+!
+!
+!
+!
+!
 
 
 subroutine getpatchinfo(npatches, patchpnt, par1, par2, par3, par4, &
@@ -1710,8 +1806,164 @@ subroutine getpatchinfo(npatches, patchpnt, par1, par2, par3, par4, &
 end subroutine getpatchinfo
 
 
+subroutine get_surf_interp_mat_targ_mem(npatches,ixyzs,ntarg, &
+  ipatchtarg,lmem)
+!
+!  This subroutine estimates the memory required for storing an
+!  interpolation matrix for a given collection of targets
+!  on surface whose patch id have already been identified
+!
+!  Input arguments:
+!
+!    - npatches: integer
+!        number of patches
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - ntarg: integer
+!        number of targets
+!    - ipatchtarg: integer(ntarg)
+!        patch id of target i
+!
+!  Output arguments:
+!    - lmem: integer
+!        memory required for storing the interpolation matrix
+
+  implicit none
+  integer, intent(in) :: npatches,ixyzs(npatches+1),ntarg
+  integer, intent(in) :: ipatchtarg(ntarg)
+  integer, intent(out) :: lmem
+
+!  Temporary variables
+
+  integer i,ipatch,itarg
+
+  lmem = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:lmem) private(i) 
+  do itarg=1,ntarg
+    i = ipatchtarg(itarg)
+    lmem = lmem + ixyzs(i+1) - ixyzs(i) 
+  enddo
+!$OMP END PARALLEL DO  
+
+end subroutine get_surf_interp_mat_targ_mem
+!
+!
+!
+!
+!
+subroutine get_surf_interp_mat_targ(npatches,norders,ixyzs,iptype,npts,ntarg, &
+  ipatchtarg,uvs_targ,lmem,xmattarg,ixmattarg)
+!
+!  This subroutine constructs the
+!  interpolation matrix for a given collection of targets
+!  on surface whose patch id have already been identified
+!
+!  This subroutine currently implements a slow version
+!
+!  Input arguments:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        discretization order of patches
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        number of points on surface
+!    - ntarg: integer
+!        number of targets
+!    - ipatchtarg: integer(ntarg)
+!        patch id of target i
+!    - uvs_targ: real *8 (2,ntarg)
+!        local uv coordinates of targets on surface
+!    - lmem: integer
+!        memory required to store the interpolation matrix
+!
+!  Output arguments:
+!    - xmattarg: real *8 (lmem)
+!        the interpolation matrix
+!    - ixmattarg: integer(ntarg+1)
+!        location where interpolation matrix for target i begins
+  implicit none
+  integer, intent(in) :: npatches,npts
+  integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
+  integer, intent(in) :: iptype(npatches)
+  integer, intent(in) :: ntarg
+  integer, intent(in) :: ipatchtarg(ntarg)
+  real *8, intent(in) :: uvs_targ(2,ntarg)
+  integer, intent(in) :: lmem
+  real *8, intent(out) :: xmattarg(lmem)
+  integer, intent(out) :: ixmattarg(ntarg+1)
+
+!  Temporary variables
+
+  integer i,ipatch,itarg,lmem0
+  integer, allocatable :: nxmattarg(:)
+
+  real *8, allocatable :: umat(:,:,:),pols(:),uvs(:,:)
+  integer, allocatable :: iuni(:),iuniind(:),nordertarg(:)
+  integer incx,incy,iind,norder,npmax,npols,nuni
+  real *8 alpha,beta
+
+  allocate(nxmattarg(ntarg))
+
+!$OMP PARALLEL DO DEFAULT(SHARED) private(i) 
+  do itarg=1,ntarg
+    i = ipatchtarg(itarg)
+    nxmattarg(itarg) = ixyzs(i+1) - ixyzs(i) 
+  enddo
+!$OMP END PARALLEL DO  
 
 
+ ixmattarg(1) = 1
+ nxmattarg(1) = nxmattarg(1)+1
+ call cumsum(ntarg,nxmattarg,ixmattarg(2))
+
+ npmax = maxval(nxmattarg)
+ allocate(pols(npmax))
+
+ allocate(nordertarg(ntarg))
+
+!$OMP PARALLEL DO DEFAULT(SHARED)
+ do i=1,ntarg
+   nordertarg(i) = norders(ipatchtarg(i))
+ enddo
+!$OMP END PARALLEL DO 
 
 
+ allocate(iuni(ntarg),iuniind(ntarg))
+ call get_iuni1_omp(ntarg,nordertarg,nuni,iuni,iuniind) 
+ allocate(umat(npmax,npmax,nuni),uvs(2,npmax))
 
+ do i=1,nuni
+   norder = iuni(i)
+   if(iptype(iuni(i)).eq.1) then
+     npols = (norder+1)*(norder+2)/2
+     call get_vioreanu_nodes(norder,npols,uvs)
+     call koorn_vals2coefs(norder,npols,uvs,umat(1:npols,1:npols,i))
+   endif
+ enddo
+
+ alpha = 1.0d0
+ beta = 0.0d0
+ incx = 1
+ incy = 1
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(itarg,ipatch,iind,pols,npols,norder)
+  do itarg=1,ntarg
+    ipatch = ipatchtarg(itarg)
+    iind = iuniind(itarg)
+    norder = norders(ipatch)
+    npols = (norder+1)*(norder+2)/2 
+    call koorn_pols(uvs_targ(1,itarg),norders(ipatch),npols,pols)
+
+    call dgemv_guru('t',npols,npols,alpha,umat(1,1,iind),npmax,pols,incx, &
+      beta,xmattarg(ixmattarg(itarg)),incy)
+
+  enddo
+!$OMP END PARALLEL DO 
+
+end subroutine get_surf_interp_mat_targ

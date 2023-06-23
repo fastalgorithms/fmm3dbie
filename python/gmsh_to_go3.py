@@ -12,7 +12,7 @@
 # run `make python-gmsh` in fmm3dbie root directory
 
 # test
-# run `python3 gmsh_to_go3.pyt gmsh_test1.msh`
+# run `python3 gmsh_to_go3.py gmsh_test1.msh`
 # check output gmsh_test1.msh.go3
 
 # The Python script convert gmsh to go3
@@ -62,7 +62,7 @@ print('Model ' + gmsh.model.getCurrent() + ' (' +
 # pairs:
 entities = gmsh.model.getEntities()
 
-supportedTypes = [2,9,22,21,25]
+supportedTypes = [2,9,21,23,25]
 ndim = 3
 
 for e in entities:
@@ -158,7 +158,7 @@ for e in entities:
                     indi = ipol + ielem*npols
                     for jpol in range(0,npols):
                         indj = int(elemNodeTags[elemTypeIter][jpol+ielem*numv])
-                        eCoef[idim][indi] = eCoef[idim][indi] + umatr[ipol][jpol]*nodeCoords[idim+(indj-1)*ndim]
+                        eCoef[idim][indi] = eCoef[idim][indi] + umatr[ipol][jpol]*gmsh.model.mesh.getNode(indj)[0][idim]
 
         print("coefs to vals")
         for ielem in range(0,nume):
@@ -205,7 +205,7 @@ for e in entities:
 #        print("end of processing element type: "+name)
 
         elemTypeIter = elemTypeIter + 1
-        f=open(fname,'x')
+        f=open(fname,'a')
         f.write(str(order))
         f.write('\n')
         f.close()

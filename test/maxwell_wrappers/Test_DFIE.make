@@ -17,7 +17,7 @@ ifneq ($(OS),Windows_NT)
         LDF = /usr/local/lib
     endif
     ifeq ($(UNAME_S),Linux)
-        LDF = ../../../fmm3dbie/lib
+        LDF = $(HOME)/lib
     endif
 endif
 
@@ -29,7 +29,7 @@ ifeq ($(HOST),gcc)
 endif
 
 ifeq ($(HOST),gcc-openmp)
-    FC = gfortran -L${LDF}
+    FC = gfortran -L${LDF} -std=legacy
     FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp
 endif
 
@@ -49,8 +49,8 @@ SURF=../../src/surface_routs
 
 OBJECTS =  Test_DFIE.o \
   $ ../../src/common/incoming_fields.o \
-  $ ../../src/maxwell_wrappers/DFIE.o \
-  $ ../../src/fmm_wrappers/common_Maxwell.o \
+  $ ../../src/maxwell/em_dfie.o \
+  $ ../../src/common/common_Maxwell.o \
   $ ../../src/kernels/DPIE_kernels.o \
 
 #

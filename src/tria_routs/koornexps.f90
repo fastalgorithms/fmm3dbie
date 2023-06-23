@@ -857,8 +857,11 @@ subroutine koornf_init(nmax, rat1, rat2, rsc1)
   
   do k = 0,nmax
      beta = 2*k+1
-     rat2(1,1,k) = (2+beta)/2
-     rat2(2,1,k) = -beta/2
+
+     if(nmax.gt.0) then
+       rat2(1,1,k) = (2+beta)/2
+       rat2(2,1,k) = -beta/2
+     endif
 
      do n = 1,nmax-k-1
         an = (2*n+beta+1)*(2*n+beta+2)/2/(n+1.0d0)/(n+beta+1)
@@ -964,7 +967,7 @@ subroutine koornf_pols(uv, nmax, npols, pols, rat1, rat2, rsc1)
   
   do k = 0,nmax
      jacpols(0,k) = 1
-     jacpols(1,k) = rat2(1,1,k)*x + rat2(2,1,k)
+     if(nmax.gt.0) jacpols(1,k) = rat2(1,1,k)*x + rat2(2,1,k)
 
      do n = 1,nmax-k-1
         jacpols(n+1,k) = (rat2(1,n+1,k)*x + rat2(2,n+1,k))*jacpols(n,k) + &

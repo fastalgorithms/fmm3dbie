@@ -18,6 +18,23 @@ FFLAGS = -fPIC -O3 -march=native -funroll-loops -std=legacy -w
 OMPFLAGS =-fopenmp
 OMPLIBS =-lgomp 
 
+# extra flags for multithreaded: C/Fortran, MATLAB
+OMPFLAGS =-fopenmp
+OMPLIBS =-lgomp 
+
+# flags for MATLAB MEX compilation..
+MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1
+MWFLAGS=-c99complex
+MOMPFLAGS = -D_OPENMP
+
+# location of MATLAB's mex compiler
+MEX=mex
+
+# For experts, location of Mwrap executable
+MWRAP=./mwrap/mwrap
+MEXLIBS=-lm -lstdc++ -ldl -lgfortran
+
+
 FMMBIE_INSTALL_DIR=$(PREFIX)
 ifeq ($(PREFIX),)
 	FMMBIE_INSTALL_DIR = ${HOME}/lib
@@ -43,9 +60,14 @@ DYNAMICLIB = $(LIBNAME).so
 STATICLIB = $(LIBNAME).a
 LIMPLIB = $(DYNAMICLIB)
 
+# dynamic libraries for matlab compilation
+MLIBNAME = $(LIBNAME)_matlab
+MDYNAMICLIB = $(MLIBNAME).so
+MLIMPLIB = $(MDYNAMICLIB)
+
 LFMMLINKLIB = -lfmm3d
 LLINKLIB = $(subst lib, -l, $(LIBNAME))
-
+MLLINKLIB = $(subst lib, -l, $(MLIBNAME))
 
 # For your OS, override the above by placing make variables in make.inc
 -include make.inc
@@ -66,6 +88,7 @@ ifneq ($(OMP),OFF)
   LIBS += $(OMPLIBS)
   DYLIBS += $(OMPLIBS)
   F2PYDYLIBS += $(OMPLIBS)
+  MEXLIBS += $(OMPLIBS)
 endif
 
 LIBS += $(LBLAS) $(LDBLASINC)
@@ -96,11 +119,12 @@ LAP = src/lap_wrappers
 LOBJS = $(LAP)/lap_comb_dir.o
 
 # Maxwell wrappers
-EM = src/maxwell_wrappers
+EM = src/maxwell
 EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 	$(EM)/em_nrccie_pec.o $(EM)/em_auCKi_pec.o \
 	$(EM)/em_dfie_trans.o $(EM)/em_adpie_pec.o \
-	$(EM)/em_sdpie_pec.o
+	$(EM)/em_sdpie_pec.o $(EM)/em_cfie_rwg_pec.o \
+	$(EM)/fix_tri.o $(EM)/analytic_sphere_pw_pec.o
 
 # Stokes wrappers
 STOK = src/stok_wrappers
@@ -138,39 +162,47 @@ QOBJS2 = $(QUAD2)/cquadints_main.o \
 	$(QUAD2)/cquadintrouts.o $(QUAD2)/dquadints_main.o \
 	$(QUAD2)/squarearbq.o $(QUAD2)/quadtreerouts.o $(QUAD2)/dquadintrouts.o
 
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+
+OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS)
+OBJS_64 += $(COM)/lapack_wrap_64.o
+
 ifeq ($(BLAS_64),ON)
-COMOBJS += $(COM)/lapack_wrap_64.o
+OBJS += $(COM)/lapack_wrap_64.o
 endif
 
 ifneq ($(BLAS_64),ON)
-COMOBJS += $(COM)/lapack_wrap.o
+OBJS += $(COM)/lapack_wrap.o
 endif
 
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
 
-
-
-
-.PHONY: usage lib install test test-dyn python 
+.PHONY: usage lib install test test-dyn python mex matlab-dyn 
 
 default: usage
 
 usage:
 	@echo "-------------------------------------------------------------------------"
 	@echo "Makefile for fmm3dbie. Specify what to make:"
-	@echo "  make install - compile and install the main library"
-	@echo "  make install PREFIX=(INSTALL_DIR) - compile and install the main library at custom location given by PREFIX"
-	@echo "  make lib - compile the main library (in lib/ and lib-static/)"
-	@echo "  make test - compile and run validation tests (will take around 30 secs)"
-	@echo "  make test-dyn - test successful installation by validation tests linked to dynamic library (will take a couple of mins)"
-	@echo "  make python - compile and test python interfaces using python"
-	@echo "  make objclean - removal all object files, preserving lib & MEX"
-	@echo "  make clean - also remove lib, MEX, py, and demo executables"
+	@echo "  make install      compile and install the main library"
+	@echo "  make install PREFIX=(INSTALL_DIR)  "
+	@echo "                    compile and install the main library at custom"
+	@echo "                    location given by PREFIX"
+	@echo "  make lib          compile the main library (in lib/ and lib-static/)"
+	@echo "  make test         compile and run validation tests (will take around 30 secs)"
+	@echo "  make test-dyn     test successful installation by validation tests linked "
+	@echo "                    to dynamic library (will take a couple of mins)"
+	@echo "  make matlab-dyn   compile matlab interfaces with dynamic library linking"
+	@echo "  make python       compile and test python interfaces using python"
+	@echo "  make objclean     removal all object files, preserving lib & MEX"
+	@echo "  make clean        also remove lib, MEX, py, and demo executables"
+	@echo "  make mex          generate matlab interfaces"
+	@echo "                    (for expert users only, requires mwrap)"
 	@echo ""
 	@echo "For faster (multicore) making, append the flag -j"
-	@echo "  'make [task] OMP=ON' for multi-threaded"
+	@echo "  'make [task] OMP=OFF' for single-threaded"
 	@echo "-------------------------------------------------------------------------"
+
 
 
 
@@ -181,6 +213,8 @@ usage:
 	$(FC) -c $(FFLAGS) $< -o $@
 %.o: %.f90 
 	$(FC) -c $(FFLAGS) $< -o $@
+%.o: %.c %.h
+	$(CC) -c $(CFLAGS) $< -o $@
 
 
 
@@ -203,6 +237,13 @@ $(DYNAMICLIB): $(OBJS)
 	mv $(DYNAMICLIB) lib/
 	[ ! -f $(LIMPLIB) ] || mv $(LIMPLIB) lib/
 
+$(MDYNAMICLIB): $(OBJS_64) 
+	$(FC) -shared -fPIC $(FFLAGS) $(OBJS_64) -o $(MDYNAMICLIB) $(DYLIBS) 
+	mv $(MDYNAMICLIB) lib/
+	[ ! -f $(MLIMPLIB) ] || mv $(MLIMPLIB) lib/
+	mkdir -p $(FMMBIE_INSTALL_DIR)
+	cp -f lib/$(MDYNAMICLIB) $(FMMBIE_INSTALL_DIR)/
+
 install: $(STATICLIB) $(DYNAMICLIB)
 	echo $(FMMBIE_INSTALL_DIR)
 	mkdir -p $(FMMBIE_INSTALL_DIR)
@@ -216,6 +257,23 @@ install: $(STATICLIB) $(DYNAMICLIB)
 	@echo " "
 	@echo "In order to link against the dynamic library, use -L"$(FMMBIE_INSTALL_DIR)  " "$(LLINKLIB) " -L"$(FMM_INSTALL_DIR)  " "$(LFMMLINKLIB)
 
+
+
+# matlab..
+#
+MWDIR = matlab
+MWF = fmm3dbie_routs
+GW = $(MWF)
+
+matlab-dyn:	$(MDYNAMICLIB) $(GW).c
+	$(MEX) $(MWDIR)/$(GW).c $(MFLAGS) \
+	-output $(MWDIR)/$(GW) $(MEXLIBS) -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB) -L$(FMMBIE_INSTALL_DIR) $(MLLINKLIB) 
+
+mex: $(MDYNAMICLIB)
+	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GW) -mb $(MWF).mw;\
+	$(MWRAP) $(MWFLAGS) -mex $(GW) -c $(GW).c $(MWF).mw;\
+	$(MEX) $(GW).c $(MFLAGS) \
+	-output $(GW) $(MEXLIBS) -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB) -L$(FMMBIE_INSTALL_DIR) $(MLLINKLIB); 
 
 #
 # testing routines

@@ -39,17 +39,14 @@ c
       implicit real *8 (a-h,o-z)
       real *8 a,b,c,s
 
-      if(b.eq.0) then
-        c = 1
-        s = 0
-      else if(abs(b).gt.abs(a)) then
-        temp = a/b
-        s = 1.0d0/sqrt(1.0d0+temp**2)
-        c = temp*s
+      if(a.eq.0) then
+        c = 0
+        s = 1
       else
         temp = b/a
         c = 1.0d0/sqrt(1.0d0+temp**2)
         s = temp*c
+
       endif
 
       return
@@ -86,16 +83,12 @@ c-----------------------
       implicit real *8 (a-h,o-z)
       complex *16 a,b,c,s,temp
 
-      if(b.eq.0) then
-        c = 1
-        s = 0
-      else if(abs(b).gt.abs(a)) then
-        temp = a/b
-        s = 1.0d0/sqrt(1.0d0+temp**2)
-        c = temp*s
+      if(a.eq.0) then
+        s = 1
+        c = 0
       else
         temp = b/a
-        c = 1.0d0/sqrt(1.0d0+temp**2)
+        c = 1.0d0/sqrt(1.0d0+abs(temp)**2)
         s = temp*c
       endif
 

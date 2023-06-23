@@ -1005,7 +1005,7 @@
 !$OMP END PARALLEL DO        
 
         do k=1,it-1
-          temp = cs(k)*hmat(k,it)+sn(k)*hmat(k+1,it)
+          temp = cs(k)*hmat(k,it)+conjg(sn(k))*hmat(k+1,it)
           hmat(k+1,it) = -sn(k)*hmat(k,it)+cs(k)*hmat(k+1,it)
           hmat(k,it) = temp
         enddo
@@ -1014,7 +1014,7 @@
 
         call zrotmat_gmres(hmat(it,it),ztmp,cs(it),sn(it))
           
-        hmat(it,it) = cs(it)*hmat(it,it)+sn(it)*wnrm2
+        hmat(it,it) = cs(it)*hmat(it,it)+conjg(sn(it))*wnrm2
         svec(it1) = -sn(it)*svec(it)
         svec(it) = cs(it)*svec(it)
         rmyerr = abs(svec(it1))/rb

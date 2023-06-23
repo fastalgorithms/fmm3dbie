@@ -311,7 +311,7 @@ C===================================================================
       INTEGER   N,INDEX(N)
       REAL *8   DATA(N)
  
-      INTEGER   LSTK(31),RSTK(31),ISTK
+      INTEGER   LSTK(200),RSTK(200),ISTK
       INTEGER   L,R,I,J,P,INDEXP,INDEXT
       REAL *8      DATAP
  

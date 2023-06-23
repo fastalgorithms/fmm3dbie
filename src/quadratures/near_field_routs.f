@@ -917,7 +917,7 @@ c
 
       nqorder = 10
       eps_adap = eps
-      
+      nqorder_f = 8 
       nlev = 1
 
       if(norder.ge.4) then

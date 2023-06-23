@@ -117,7 +117,7 @@ subroutine xtri_stell_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   ! triainfo - flat skeleton triangle info
   !
   !    Output:
-  ! xyz - point on the sphere
+  ! xyz - point on the stellarator
   ! dxyzduv - first and second derivative information
   !
   !
