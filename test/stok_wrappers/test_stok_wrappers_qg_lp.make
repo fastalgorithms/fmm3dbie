@@ -82,8 +82,6 @@ SOURCES =  test_stok_wrappers_qg_lp.f \
   $(COM)/cumsum.f \
   $(COM)/tree_lr_3d.f \
   $(COM)/rotmat_gmres.f \
-  $(FMM)/hfmm3d_ndiv.f \
-  $(FMM)/lfmm3d_ndiv.f \
   $(COM)/setops.f \
   $(TRIA)/triasymq.f \
   $(TRIA)/ctriaints_main.f \

@@ -1,4 +1,5 @@
-
+c
+c
 c
 c
 c     This file has the following user callable routines
@@ -10,9 +11,13 @@ c
 c         z - complex
 c         d - double precision
 c
-c
-c
-c
+c  TODO:
+c    * Fix behavior of getting quadrature nodes for different
+c      patch types for "far-near" part, currently
+c      nodes for both triangles are quads are generated. This needs
+c      to be changed to figuring out unique sets of patch types
+c      and storing the appropirate nodes and weights and then
+c      accessing them as needed in loop
 c
 c
 
@@ -51,10 +56,14 @@ c        and srcvals array corresponding to patch i
 c    - iptype: integer(npatches)
 c        type of patch
 c        *  iptype = 1, triangular patch discretized using RV nodes
+c        *  iptype = 11, quadrangular patch discretized using GL nodes,
+c                        full degree polynomials
+c        *  iptype = 12, quadrangular patch discretized using cheb nodes,
+c                        full degree polynomials
 c    - npts: integer
 c        total number of discretization points on the boundary
 c    - srccoefs: double precision (9,npts)
-c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
@@ -154,12 +163,16 @@ c
       real *8, allocatable :: xyztarg2(:,:)
       integer irad
 
-      real *8, allocatable :: qnodes(:,:),qwts(:)
+      real *8, allocatable :: qnodes_tri(:,:),qwts_tri(:)
+      real *8, allocatable :: qnodes_quad(:,:),qwts_quad(:)
       real *8 ra
 
       complex *16 ff1,ff2,cra1,cra2
       integer nlev, nqorder_f,norder_avg
       real *8 rfac0,rsc,rr,tmp(3),epsp
+
+      integer ipoly
+      character *1 ttype
 
       external fker
 c
@@ -212,9 +225,9 @@ c      number of source patches to be processed per batch
       ntest0 = 1
       itargptr = 1
 
-      ntrimax = 3000
+      npmax = 3000
       norder_avg = floor(sum(norders)/(npatches+0.0d0))
-      if(norder_avg.ge.8) ntrimax = 6000
+      if(norder_avg.ge.8) npmax = 6000
 
       rfac = 1.0d0
 c
@@ -240,16 +253,39 @@ c
 c      nqorder_f is the order of XG nodes on each of the smaller
 c      triangles
 c       
-c      
-      call get_quadparams_adap(eps,nqorder,eps_adap,nlev,nqorder_f)
+c 
+       
+
+c
+c    Get triangle parameters
+c
+      call get_quadparams_adap(eps,1,nqorder,eps_adap,nlev,nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
       
       ntri_f = 4**nlev
-      npts_f = ntri_f*nnodes
-      allocate(qnodes(2,npts_f),qwts(npts_f))
+      npts_f_tri = ntri_f*nnodes
+      allocate(qnodes_tri(2,npts_f_tri),qwts_tri(npts_f_tri))
 
-      call gen_xg_unif_nodes(nlev,nqorder_f,nnodes,npts_f,qnodes,qwts)
+      call gen_xg_unif_nodes_tri(nlev,nqorder_f,nnodes,npts_f_tri,
+     1   qnodes_tri,qwts_tri)
+
+c
+c   Get quad parameters
+c
+      
+      call get_quadparams_adap(eps,11,nqorder,eps_adap,nlev,nqorder_f)
+
+      call squarearbq_pts(nqorder_f,nnodes)
+      
+      nquad_f = 4**nlev
+      npts_f_quad = nquad_f*nnodes
+      allocate(qnodes_quad(2,npts_f_quad),qwts_quad(npts_f_quad))
+
+      call gen_xg_unif_nodes_quad(nlev,nqorder_f,nnodes,npts_f_quad,
+     1   qnodes_quad,qwts_quad)
+      ra = sum(qwts_quad)
+
 
 
       t1 = second()
@@ -262,7 +298,7 @@ C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder,irad)
 C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
-C$OMP$PRIVATE(epsp,rsc,tmp)
+C$OMP$PRIVATE(epsp,rsc,tmp,ipoly,ttype)
 
       do ipatch=1,npatches
         
@@ -270,10 +306,17 @@ C$OMP$PRIVATE(epsp,rsc,tmp)
         norder = norders(ipatch)
         allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
         allocate(wts(npols))
+        if(iptype(ipatch).eq.11) ipoly = 0
+        if(iptype(ipatch).eq.12) ipoly = 1
+        ttype = "F"
 
-        if(iptype(ipatch).eq.1) then
-          call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
-        endif
+c        print *, "ipatch=",ipatch
+c        print *, "npols=",npols
+c        print *, "iptype(ipatch)=",iptype(ipatch)
+        
+
+        call get_disc_exps(norder,npols,iptype(ipatch),uvs,
+     1     umatr,vmatr,wts)
 
         if(norder.le.4) then
           irad = 1
@@ -334,27 +377,42 @@ c
 
         istart = ixyzs(ipatch)
 
+
 c
-c       fill out near part of single layer
+c       fill out near part of layer potential
 c
 
+        sints_n = 0
+        sints_f = 0
         if(iptype(ipatch).eq.1) 
      1      call ctriaints(epsp,istrat,intype,ntest0,norder,npols,
      1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
      2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
-     3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
+     3      ipars,nqorder,npmax,rfac,sints_n,ifmetric,rn1,n2)
         
-        call zrmatmatt(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
-c
-c
-c       fill out far part of single layer
-c
+        if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) 
+     1      call cquadints(epsp,istrat,intype,ntest0,norder,ipoly,
+     1      ttype,npols,srccoefs(1,istart),ndtarg,ntarg_n,targ_near,
+     1      ifp,xyztarg2,itargptr,ntarg_n,norder,npols,fker,ndd,dpars,
+     1      ndz,zpars,ndi,ipars,nqorder,npmax,rfac,sints_n,ifmetric,
+     1      rn1,n2)
+        
 
+        call zrmatmatt(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
+cc
+cc       fill out far part of layer potential
+c
         if(iptype(ipatch).eq.1) 
      1     call ctriaints_wnodes(ntest0,norder,npols,
-     1     srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
+     1      srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
-     3      ndi,ipars,npts_f,qnodes,qwts,sints_f)
+     3      ndi,ipars,npts_f_tri,qnodes_tri,qwts_tri,sints_f)
+        if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) 
+     1     call cquadints_wnodes(ntest0,norder,ipoly,ttype,npols,
+     1      srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
+     2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
+     3      ndi,ipars,npts_f_quad,qnodes_quad,qwts_quad,sints_f)
+        
         
         call zrmatmatt(ntarg_f,npols,sints_f,npols,umatr,svtmp_f)
 c
@@ -388,7 +446,8 @@ c
 
           if(ipatch.eq.jpatch) then
             call zget_ggq_self_quad_pt(ipv,norder,npols,
-     1      uvs_targ(1,jtarg),umatr,srccoefs(1,istart),ndtarg,
+     1      uvs_targ(1,jtarg),iptype(ipatch),
+     2      umatr,srccoefs(1,istart),ndtarg,
      2      targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,wnear(iqstart+1))
           endif
@@ -457,10 +516,14 @@ c        and srcvals array corresponding to patch i
 c    - iptype: integer(npatches)
 c        type of patch
 c        *  iptype = 1, triangular patch discretized using RV nodes
+c        *  iptype = 11, quadrangular patch discretized using GL nodes,
+c                        full degree polynomials
+c        *  iptype = 12, quadrangular patch discretized using cheb nodes,
+c                        full degree polynomials
 c    - npts: integer
 c        total number of discretization points on the boundary
 c    - srccoefs: double precision (9,npts)
-c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
@@ -560,7 +623,8 @@ c
       real *8, allocatable :: xyztarg2(:,:)
       integer irad
 
-      real *8, allocatable :: qnodes(:,:),qwts(:)
+      real *8, allocatable :: qnodes_tri(:,:),qwts_tri(:)
+      real *8, allocatable :: qnodes_quad(:,:),qwts_quad(:)
       real *8 ra
 
       real *8 ff1,ff2,cra1,cra2
@@ -568,6 +632,9 @@ c
       real *8 rfac0,rsc,rr,tmp(3),epsp
       real *8 done,dzero
       integer norder_avg
+      integer ipoly
+      character *1 ttype
+
 
       external fker
 
@@ -623,9 +690,9 @@ c      number of source patches to be processed per batch
       ntest0 = 1
       itargptr = 1
 
-      ntrimax = 3000
+      npmax = 3000
       norder_avg = floor(sum(norders)/(npatches+0.0d0))
-      if(norder_avg.ge.8) ntrimax = 6000
+      if(norder_avg.ge.8) npmax = 6000
 
       rfac = 1.0d0
 c
@@ -652,15 +719,35 @@ c      nqorder_f is the order of XG nodes on each of the smaller
 c      triangles
 c       
 c      
-      call get_quadparams_adap(eps,nqorder,eps_adap,nlev,nqorder_f)
+c
+c    Get triangle parameters
+c
+      call get_quadparams_adap(eps,1,nqorder,eps_adap,nlev,nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
       
       ntri_f = 4**nlev
-      npts_f = ntri_f*nnodes
-      allocate(qnodes(2,npts_f),qwts(npts_f))
+      npts_f_tri = ntri_f*nnodes
+      allocate(qnodes_tri(2,npts_f_tri),qwts_tri(npts_f_tri))
 
-      call gen_xg_unif_nodes(nlev,nqorder_f,nnodes,npts_f,qnodes,qwts)
+      call gen_xg_unif_nodes_tri(nlev,nqorder_f,nnodes,npts_f_tri,
+     1   qnodes_tri,qwts_tri)
+
+c
+c   Get quad parameters
+c
+      
+      call get_quadparams_adap(eps,11,nqorder,eps_adap,nlev,nqorder_f)
+
+      call squarearbq_pts(nqorder_f,nnodes)
+      
+      nquad_f = 4**nlev
+      npts_f_quad = nquad_f*nnodes
+      allocate(qnodes_quad(2,npts_f_quad),qwts_quad(npts_f_quad))
+
+      call gen_xg_unif_nodes_quad(nlev,nqorder_f,nnodes,npts_f_quad,
+     1   qnodes_quad,qwts_quad)
+
 
       t1 = second()
 C$        t1 = omp_get_wtime()
@@ -672,7 +759,7 @@ C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder,irad)
 C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
-C$OMP$PRIVATE(rsc,tmp,epsp)
+C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
 
       do ipatch=1,npatches
         
@@ -689,8 +776,9 @@ C$OMP$PRIVATE(rsc,tmp,epsp)
 
         allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
         allocate(wts(npols))
-        if(iptype(ipatch).eq.1) 
-     1     call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
+
+        call get_disc_exps(norder,npols,iptype(ipatch),uvs,umatr,
+     1     vmatr,wts)
 
 c
 c  estimate rescaling of epsp needed to account for the scale of the
@@ -744,27 +832,38 @@ c
         istart = ixyzs(ipatch)
 
 c
-c       fill out near part of single layer
+c       fill out near part of layer potential
 c
 
         if(iptype(ipatch).eq.1) 
-     1      call dtriaints(eps_adap,istrat,intype,ntest0,norder,npols,
+     1      call dtriaints(epsp,istrat,intype,ntest0,norder,npols,
      1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
      2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
-     3      ipars,nqorder,ntrimax,rfac,sints_n,ifmetric,rn1,n2)
+     3      ipars,nqorder,npmax,rfac,sints_n,ifmetric,rn1,n2)
         
+        if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) 
+     1      call dquadints(epsp,istrat,intype,ntest0,norder,npols,
+     1      ipoly,ttype,srccoefs(1,istart),ndtarg,ntarg_n,targ_near,
+     1      ifp,xyztarg2,itargptr,ntarg_n,norder,npols,fker,ndd,dpars,
+     1      ndz,zpars,ndi,ipars,nqorder,npmax,rfac,sints_n,ifmetric,
+     1      rn1,n2)
+        
+
         call dgemm_guru('t','n',npols,ntarg_n,npols,done,umatr,npols,
      1     sints_n,npols,dzero,svtmp_n,npols)
 c
+c       fill out far part of layer potential
 c
-c       fill out far part of single layer
-c
-
         if(iptype(ipatch).eq.1) 
      1     call dtriaints_wnodes(ntest0,norder,npols,
-     1     srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
+     1      srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
-     3      ndi,ipars,npts_f,qnodes,qwts,sints_f)
+     3      ndi,ipars,npts_f_tri,qnodes_tri,qwts_tri,sints_f)
+        if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) 
+     1     call dquadints_wnodes(ntest0,norder,ipoly,ttype,npols,
+     1      srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
+     2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
+     3      ndi,ipars,npts_f_quad,qnodes_quad,qwts_quad,sints_f)
         
         call dgemm_guru('t','n',npols,ntarg_f,npols,done,umatr,npols,
      1     sints_f,npols,dzero,svtmp_f,npols)
@@ -798,8 +897,8 @@ c
 
           if(ipatch.eq.jpatch) then
             call dget_ggq_self_quad_pt(ipv,norder,npols,
-     1      uvs_targ(1,jtarg),umatr,srccoefs(1,istart),ndtarg,
-     2      targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
+     1      uvs_targ(1,jtarg),iptype(ipatch),umatr,srccoefs(1,istart),
+     2      ndtarg,targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,wnear(iqstart+1))
           endif
 
@@ -832,7 +931,7 @@ c
 c
 c
 
-      subroutine zget_ggq_self_quad_pt(ipv,norder,npols,uvs,umat,
+      subroutine zget_ggq_self_quad_pt(ipv,norder,npols,uvs,iptype,umat,
      1   srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
      2   ipars,zquad)
 c
@@ -857,10 +956,17 @@ c    - npols: integer
 c        number of discretization nodes on patch
 c    - uvs: double precision(2)
 c        local u,v coordinates of target
+c    - iptype: integer(npatches)
+c        type of patch
+c        *  iptype = 1, triangular patch discretized using RV nodes
+c        *  iptype = 11, quadrangular patch discretized using GL nodes,
+c                        full degree polynomials
+c        *  iptype = 12, quadrangular patch discretized using cheb nodes,
+c                        full degree polynomials
 c    - umat: double precision(npols,npols)
 c        values to coefficient matrix
 c    - srccoefs: double precision (9,npts)
-c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
@@ -918,7 +1024,7 @@ c
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
-      real *8 uv(2),verts(2,3)
+      real *8 uv(2),verts(2,4)
       real *8 alpha,beta
       complex *16 fval
       complex *16, allocatable :: fint(:),fvals(:)
@@ -926,21 +1032,38 @@ c
 
       external fker
 
-      nmax = 10000
+      nmax = 20000
       allocate(ws(nmax),xs(nmax),ys(nmax))
       allocate(fvals(npols))
-      verts(1,1) = 0
-      verts(2,1) = 0
-      verts(1,2) = 1
-      verts(2,2) = 0
-      verts(1,3) = 0
-      verts(2,3) = 1
+      if(iptype.eq.1) then
+        nv = 3
+        verts(1,1) = 0
+        verts(2,1) = 0
+        verts(1,2) = 1
+        verts(2,2) = 0
+        verts(1,3) = 0
+        verts(2,3) = 1
+      endif
+      if(iptype.eq.11.or.iptype.eq.12) then
+         nv = 4
+         verts(1,1) = -1
+         verts(2,1) = -1
+
+         verts(1,2) = 1
+         verts(2,2) = -1
+
+         verts(1,3) = 1
+         verts(2,3) = 1
+         
+         verts(1,4) = -1
+         verts(2,4) = 1
+      endif
       allocate(fint(npols),sigvalstmp(npols))
 
 c
 c       compute all source info at target point on patch
 c
-      call koorn_pols(uvs,norder,npols,sigvalstmp)
+      call get_basis_pols(uvs,norder,npols,iptype,sigvalstmp)
 
       alpha = 1.0d0
       beta = 0.0d0
@@ -953,12 +1076,12 @@ c
       enddo
       ns = 0
       if(ipv.eq.0) then
-        call self_quadrature_new(irad,verts,uvs(1),
+        call self_quadrature_new(irad,verts,nv,uvs(1),
      1    uvs(2),srcvals(4),ns,xs,ys,ws)
       endif
 
       if(ipv.eq.1) then
-        call pv_self_quadrature_new(irad,verts,uvs(1),
+        call pv_self_quadrature_new(irad,verts,nv,uvs(1),
      1    uvs(2),srcvals(4),ns,xs,ys,ws)
       endif
      
@@ -968,7 +1091,7 @@ c
       do i=1,ns
         uv(1) = xs(i)
         uv(2) = ys(i)
-        call koorn_pols(uv,norder,npols,sigvals(1,i))
+        call get_basis_pols(uv,norder,npols,iptype,sigvals(1,i))
       enddo
 
       transa = 'N'
@@ -1013,8 +1136,8 @@ c
 c
 c
 
-      subroutine dget_ggq_self_quad_pt(ipv,norder,npols,uvs,umat,
-     1   srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
+      subroutine dget_ggq_self_quad_pt(ipv,norder,npols,uvs,iptype,
+     1   umat,srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
      2   ipars,dquad)
 c
 c
@@ -1038,10 +1161,17 @@ c    - npols: integer
 c        number of discretization nodes on patch
 c    - uvs: double precision(2)
 c        local u,v coordinates of target
+c    - iptype: integer(npatches)
+c        type of patch
+c        *  iptype = 1, triangular patch discretized using RV nodes
+c        *  iptype = 11, quadrangular patch discretized using GL nodes,
+c                        full degree polynomials
+c        *  iptype = 12, quadrangular patch discretized using cheb nodes,
+c                        full degree polynomials
 c    - umat: double precision(npols,npols)
 c        values to coefficient matrix
 c    - srccoefs: double precision (9,npts)
-c        koornwinder expansion coefficients of xyz, dxyz/du,
+c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
@@ -1099,7 +1229,7 @@ c
       real *8, allocatable :: srctmp(:,:)
       real *8, allocatable :: qwts(:),sigvals(:,:)
       real *8, allocatable :: xs(:),ys(:),ws(:)
-      real *8 uv(2),verts(2,3)
+      real *8 uv(2),verts(2,4)
       real *8 alpha,beta
       real *8 fval
       real *8, allocatable :: fint(:),fvals(:)
@@ -1114,18 +1244,35 @@ c
       nmax = 10000
       allocate(ws(nmax),xs(nmax),ys(nmax))
       allocate(fvals(npols))
-      verts(1,1) = 0
-      verts(2,1) = 0
-      verts(1,2) = 1
-      verts(2,2) = 0
-      verts(1,3) = 0
-      verts(2,3) = 1
+      if(iptype.eq.1) then
+        nv = 3
+        verts(1,1) = 0
+        verts(2,1) = 0
+        verts(1,2) = 1
+        verts(2,2) = 0
+        verts(1,3) = 0
+        verts(2,3) = 1
+      endif
+      if(iptype.eq.11.or.iptype.eq.12) then
+         nv = 4
+         verts(1,1) = -1
+         verts(2,1) = -1
+
+         verts(1,2) = 1
+         verts(2,2) = -1
+
+         verts(1,3) = 1
+         verts(2,3) = 1
+         
+         verts(1,4) = -1
+         verts(2,4) = 1
+      endif
       allocate(fint(npols),sigvalstmp(npols))
 
 c
 c       compute all source info at target point on patch
 c
-      call koorn_pols(uvs,norder,npols,sigvalstmp)
+      call get_basis_pols(uvs,norder,npols,iptype,sigvalstmp)
 
       alpha = 1.0d0
       beta = 0.0d0
@@ -1138,12 +1285,12 @@ c
       enddo
       ns = 0
       if(ipv.eq.0) then
-        call self_quadrature_new(irad,verts,uvs(1),
+        call self_quadrature_new(irad,verts,nv,uvs(1),
      1    uvs(2),srcvals(4),ns,xs,ys,ws)
       endif
 
       if(ipv.eq.1) then
-        call pv_self_quadrature_new(irad,verts,uvs(1),
+        call pv_self_quadrature_new(irad,verts,nv,uvs(1),
      1    uvs(2),srcvals(4),ns,xs,ys,ws)
       endif
      
@@ -1153,7 +1300,7 @@ c
       do i=1,ns
         uv(1) = xs(i)
         uv(2) = ys(i)
-        call koorn_pols(uv,norder,npols,sigvals(1,i))
+        call get_basis_pols(uv,norder,npols,iptype,sigvals(1,i))
       enddo
 
       transa = 'N'

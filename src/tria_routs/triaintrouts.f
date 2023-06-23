@@ -452,7 +452,7 @@ cc      call prinf('nqpols=*',nqpols,1)
 
 
       do itri=1,ntri
-        call mapuv(tverts(1,1,itri),nqpols,uvsq,uvtmp)
+        call mapuv_tri(tverts(1,1,itri),nqpols,uvsq,uvtmp)
         istart = (itri-1)*nqpols
         do i=1,nqpols
           ii = istart+i
@@ -679,7 +679,7 @@ c        intialize sigvals for root triangle
 c
 
 
-      call mapuv(tvs(1,1,1),nqpols,uvsq,uvtmp)
+      call mapuv_tri(tvs(1,1,1),nqpols,uvsq,uvtmp)
       do i=1,nqpols
         call koornf_pols(uvtmp(1,i),norder,npols,
      1      sigvals(1,i),rat1,rat2,rsc1)
@@ -1027,7 +1027,7 @@ c               print *, "Exiting without computing anything"
             rr = 0.25d0*da(itri)
             do j=ntri+1,ntri+4
               da(j) = rr
-              call mapuv(tvs(1,1,j),kpols,uvsq,uvtmp)
+              call mapuv_tri(tvs(1,1,j),kpols,uvsq,uvtmp)
               istart = (j-1)*kpols+1
               do i=1,kpols
                  ii = istart+i-1
@@ -1445,7 +1445,7 @@ cc      call prinf('nqpols=*',nqpols,1)
 
 
       do itri=1,ntri0
-        call mapuv(tverts(1,1,itri),nqpols,uvsq,uvtmp)
+        call mapuv_tri(tverts(1,1,itri),nqpols,uvsq,uvtmp)
         istart = (itri-1)*nqpols
         do i=1,nqpols
           ii = istart+i
@@ -1861,7 +1861,7 @@ cc      call prinf('nqpols=*',nqpols,1)
 
 
       do itri=1,ntri
-        call mapuv(tverts(1,1,itri),nqpols,uvsq,uvtmp)
+        call mapuv_tri(tverts(1,1,itri),nqpols,uvsq,uvtmp)
         istart = (itri-1)*nqpols
         do i=1,nqpols
           ii = istart+i
@@ -2098,7 +2098,7 @@ c        intialize sigvals for root triangle
 c
 
 
-      call mapuv(tvs(1,1,1),nqpols,uvsq,uvtmp)
+      call mapuv_tri(tvs(1,1,1),nqpols,uvsq,uvtmp)
       do i=1,nqpols
         call koornf_pols(uvtmp(1,i),norder,npols,
      1      sigvals(1,i),rat1,rat2,rsc1)
@@ -2445,7 +2445,7 @@ c               print *, "Exiting without computing anything"
             rr = 0.25d0*da(itri)
             do j=ntri+1,ntri+4
               da(j) = rr
-              call mapuv(tvs(1,1,j),kpols,uvsq,uvtmp)
+              call mapuv_tri(tvs(1,1,j),kpols,uvsq,uvtmp)
               istart = (j-1)*kpols+1
               do i=1,kpols
                  ii = istart+i-1
@@ -2881,7 +2881,7 @@ cc      call prinf('nqpols=*',nqpols,1)
 
 
       do itri=1,ntri0
-        call mapuv(tverts(1,1,itri),nqpols,uvsq,uvtmp)
+        call mapuv_tri(tverts(1,1,itri),nqpols,uvsq,uvtmp)
         istart = (itri-1)*nqpols
         do i=1,nqpols
           ii = istart+i

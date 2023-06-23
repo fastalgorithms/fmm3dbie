@@ -427,7 +427,7 @@ c
       npts = ntri*nnodes
       allocate(qnodes(2,npts),qwts(npts))
 
-      call gen_xg_unif_nodes(nlev,nqorder,nnodes,npts,qnodes,qwts)
+      call gen_xg_unif_nodes_tri(nlev,nqorder,nnodes,npts,qnodes,qwts)
 
 
 

@@ -15,10 +15,10 @@
 !      oversample_fun_tri - oversample function on a triangle
 !
 !      surf_vals_to_coefs - given function values defined on a patch
-!         convert to its koornwinder expansion coeffs 
+!         convert to its basis expansion coeffs 
 !
 !      vals_to_coefs_tri - given function values defined on a patch
-!         convert to its koornwinder expansion coeffs 
+!         convert to its basis expansion coeffs 
 !
 !      get_qwts - compute smooth quadrature weights on the surface
 !
@@ -74,7 +74,7 @@ subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
 !
 !  This subroutine computes the error in resolving
 !  a function of the surface whose patchwise
-!  koornwinder expansion coefficients are provided
+!  basis expansion coefficients are provided
 !
 !  nd - number of functions
 !  npatches - number of patches
@@ -99,6 +99,7 @@ subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
   real *8 dvals(nd,npts),errp(npatches),errm
   real *8 wts(npts)
   real *8, allocatable :: dcoefs(:,:),dtail(:,:),uvs(:,:),pols(:)
+  integer, allocatable :: itailcoefs(:)
   real *8 rl2s,rl2tails
 
   allocate(dcoefs(nd,npts),dtail(nd,npts))
@@ -122,26 +123,24 @@ subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
   nmax = 20
   npmax = (nmax+1)*(nmax+2)
 
-  allocate(uvs(2,npmax),pols(npmax))
+  allocate(uvs(2,npmax),pols(npmax),itailcoefs(npmax))
   do ip=1,npatches
     norder = norders(ip)
     istart0 = ixyzs(ip)
     npols = ixyzs(ip+1)-ixyzs(ip)
+    call get_disc_nodes(norder,npols,iptype(ip),uvs)
+    call get_tail_coefs(norder,npols,iptype(ip),itailcoefs,ntailcoefs)
 
-    if(iptype(ip).eq.1) then
-      norderhead = norder-1
-      i1 = (norderhead+1)*(norderhead+2)/2
-      call get_vioreanu_nodes(norder,npols,uvs)
-    endif
 
 
     if(iptype(ip).eq.1) then
       do i=1,npols
         ipt = ixyzs(ip)+i-1
-        call koorn_pols(uvs(1,i),norder,npols,pols)
+        call get_basis_pols(uvs(1,i),norder,npols,iptype(ip),pols)
         do idim=1,nd
           dtail(idim,ipt) = 0
-          do j=i1+1,npols
+          do jj=1,ntailcoefs
+            j = itailcoefs(jj)
             ic = ixyzs(ip)+j-1
             dtail(idim,ipt) = dtail(idim,ipt) + pols(j)*dcoefs(idim,ic)
           enddo
@@ -204,7 +203,7 @@ subroutine get_centroid_rads(npatches,norders,ixyzs,iptype,npts, &
 !     npts - integer
 !         total number of discretization points
 !      srccoefs - real *8 (9,npts)
-!         koornwinder expansions of the geometry info
+!         basis expansions of the geometry info
 !           x,y,z,,dx/du,dy/du,dz/du,dx/dv,dy/dv,dz/dv
 !
 !
@@ -220,7 +219,7 @@ subroutine get_centroid_rads(npatches,norders,ixyzs,iptype,npts, &
   do i=1,npatches
     istart = ixyzs(i)
     npols = ixyzs(i+1)-ixyzs(i)
-    if(iptype(i).eq.1) call get_centroid_rads_tri(norders(i),npols, &
+    call get_centroid_rads_guru(norders(i),npols, iptype(i), &
       srccoefs(1,istart),cms(1,i),rads(i))
   enddo
 end subroutine get_centroid_rads
@@ -229,29 +228,22 @@ end subroutine get_centroid_rads
 !
 !
 
-subroutine get_centroid_rads_tri(norder,npols,srccoefs,cms,rads) 
-
-  integer norder,npols
+subroutine get_centroid_rads_guru(norder,npols,iptype,srccoefs,cms,rads) 
+  implicit none
+  integer norder,npols,iptype
   real *8 srccoefs(9,npols),cms(3),rads
-  real *8 uv(2,3)
-  real *8 xyz(3,3),rad
+  real *8 uv(2,4)
+  real *8 xyz(3,4),rad
   real *8, allocatable :: pols(:,:)
 
-  integer i,j,l,m,lpt,np
+  integer i,j,l,m,lpt,np,nv
+
+  call get_boundary_vertices(iptype,uv,nv)
   
 
-  uv(1,1) = 0
-  uv(2,1) = 0
-
-  uv(1,2) = 0
-  uv(2,2) = 1
-
-  uv(1,3) = 1
-  uv(2,3) = 0
-
-  allocate(pols(npols,3))
-  do i=1,3
-    call koorn_pols(uv(1,i),norder,npols,pols(1,i))
+  allocate(pols(npols,nv))
+  do i=1,nv
+    call get_basis_pols(uv(1,i),norder,npols,iptype,pols(1,i))
   enddo
 
   do l=1,3
@@ -262,7 +254,7 @@ subroutine get_centroid_rads_tri(norder,npols,srccoefs,cms,rads)
 !
 !     loop over all three vertices
 !
-  do j=1,3
+  do j=1,nv
     do m=1,3
       xyz(m,j) = 0
     enddo
@@ -275,22 +267,23 @@ subroutine get_centroid_rads_tri(norder,npols,srccoefs,cms,rads)
   enddo
 
   do m=1,3
-    do l=1,3
+    do l=1,nv
       cms(m) = cms(m) + xyz(m,l)
     enddo
-    cms(m) = cms(m)/3
+    cms(m) = cms(m)/nv
   enddo
 !
 !    compute radius of bounding sphere
 !
-  do m=1,3
+  do m=1,nv
     rad = (cms(1)-xyz(1,m))**2 + (cms(2)-xyz(2,m))**2 + &
         (cms(3)-xyz(3,m))**2
     if(rad.ge.rads) rads = rad
   enddo
   rads = sqrt(rads)
-end subroutine get_centroid_rads_tri
-!
+
+  return
+end subroutine get_centroid_rads_guru
 !
 !
 !
@@ -358,30 +351,36 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
 
   integer i,istart,istartover,nfar_pols,j,jpt,npols,l
   integer n1,n2,ipt,i1,i2
+  integer ic,nclash,nmax,npmax
+  integer, allocatable :: iclash(:),iclashfar(:)
 
 
   transa = 'n'
   transb = 'n'
   alpha = 1
   beta = 0
+
+  nmax = maxval(norders)
+  npmax = (nmax+1)*(nmax+1)
+  allocate(iclash(npmax),iclashfar(npmax))
+  
+
   do i=1,npatches
     nfar = nfars(i)
     norder = norders(i)
 
     if(nfar.ne.norder) then
-      if(iptype(i).eq.1) then
-        nfar_pols = ixyzso(i+1)-ixyzso(i)
-        npols = ixyzs(i+1)-ixyzs(i)
-        allocate(uvs(2,nfar_pols))
-        call get_vioreanu_nodes(nfar,nfar_pols,uvs)
+      nfar_pols = ixyzso(i+1)-ixyzso(i)
+      npols = ixyzs(i+1)-ixyzs(i)
+      allocate(uvs(2,nfar_pols))
+      call get_disc_nodes(nfar,nfar_pols,iptype(i),uvs)
 
 
-        allocate(pmat(npols,nfar_pols))
+      allocate(pmat(npols,nfar_pols))
     
-        do j=1,nfar_pols
-          call koorn_pols(uvs(1,j),norder,npols,pmat(1,j))
-        enddo
-      endif
+      do j=1,nfar_pols
+        call get_basis_pols(uvs(1,j),norder,npols,iptype(i),pmat(1,j))
+      enddo
 
       istart = ixyzs(i)
       istartover = ixyzso(i)
@@ -395,30 +394,21 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
         srcover(11,jpt) = tmp(2)/rr
         srcover(12,jpt) = tmp(3)/rr
       enddo
+      
+      nclash = 0
+      call get_clashing_indices(norder,npols,iptype(i),nfar,nfar_pols, &
+        iclash,iclashfar,nclash)
 
 !
 !    Fix clash in coordinates across orders
 !
-      if(iptype(i).eq.1) then
-        n1 = mod(norder,3)
-        n2 = mod(nfar,3)
-
-        if(n1.eq.0.and.n2.eq.0) then
-          i1 = 1
-          i2 = 1
-          if(norder.eq.15) i1 = 76
-          if(norder.eq.18) i1 = 106
-
-          if(nfar.eq.15) i2 = 76
-          if(nfar.eq.18) i2 = 106
-
-          ipt = ixyzs(i)+i1-1
-          jpt = ixyzso(i) + i2-1
-          do l=1,12
-            srcover(l,jpt) = srcvals(l,ipt)
-          enddo
-        endif
-      endif
+      do ic=1,nclash
+        ipt = ixyzs(i)+iclash(ic)-1
+        jpt = ixyzso(i) + iclashfar(ic)-1
+        do l=1,12
+          srcover(l,jpt) = srcvals(l,ipt)
+        enddo
+      enddo
       deallocate(uvs,pmat)
     else
       npols = ixyzs(i+1)-ixyzs(i)
@@ -486,8 +476,7 @@ subroutine oversample_fun_surf(nd,npatches,norders,ixyzs,iptype,npts, &
     istarto = ixyzso(i)
     npols = ixyzs(i+1)-ixyzs(i)
     npolso = ixyzso(i+1) - ixyzso(i)
-    if(iptype(i).eq.1) &
-      call oversample_fun_tri(nd,norders(i),npols,u(1,istart),&
+    call oversample_fun_guru(nd,norders(i),npols,iptype(i),u(1,istart),&
       nfars(i),npolso,uover(1,istarto))
   enddo
 
@@ -499,7 +488,7 @@ end subroutine oversample_fun_surf
 !
 !
 !
-subroutine oversample_fun_tri(nd,norder,npols,u,nfar,nfar_pols, &
+subroutine oversample_fun_guru(nd,norder,npols,iptype,u,nfar,nfar_pols, &
     uover)
 !
 !  This subroutine oversample a function on the standard triangle
@@ -511,7 +500,11 @@ subroutine oversample_fun_tri(nd,norder,npols,u,nfar,nfar_pols, &
 !       order of original discretization
 !    npols - integer
 !       number of discretization points corresponding to norder
-!       npols = (norder+1)*(norder+2)/2
+!    iptype - integer
+!       type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    u - real *8 (nd,npols)
 !       function values tabulated at original grid
 !    nfar - integer
@@ -534,13 +527,13 @@ subroutine oversample_fun_tri(nd,norder,npols,u,nfar,nfar_pols, &
   real *8, allocatable :: uvs(:,:),umat(:,:),vmat(:,:),wts(:)
   real *8, allocatable :: umat0(:,:),uvs0(:,:),vmat0(:,:),wts0(:)
   character *1 transa,transb
+  integer iptype
   real *8 alpha, beta
   integer i,nfar_pols
 
 
   allocate(uvs(2,nfar_pols))
-!  call vioreanu_simplex_quad(nfar,nfar_pols,uvs,umat,vmat,wts)
-  call get_vioreanu_nodes(nfar,nfar_pols,uvs)
+  call get_disc_nodes(nfar,nfar_pols,iptype,uvs)
 
   allocate(ucoefs(nd,npols))
 
@@ -548,7 +541,7 @@ subroutine oversample_fun_tri(nd,norder,npols,u,nfar,nfar_pols, &
   allocate(wts0(npols))
 
 
-  call vioreanu_simplex_quad(norder,npols,uvs0,umat0,vmat0,wts0)
+  call get_disc_exps(norder,npols,iptype,uvs0,umat0,vmat0,wts0)
 
 
 !
@@ -565,15 +558,15 @@ subroutine oversample_fun_tri(nd,norder,npols,u,nfar,nfar_pols, &
   allocate(pmat(npols,nfar_pols))
     
   do i=1,nfar_pols
-    call koorn_pols(uvs(1,i),norder,npols,pmat(1,i))
+    call get_basis_pols(uvs(1,i),norder,npols,iptype,pmat(1,i))
   enddo
-
+    
   transa = 'n'
   transb = 'n'
   call dgemm_guru(transa,transb,nd,nfar_pols,npols,alpha, &
         ucoefs,nd,pmat,npols,beta,uover,nd)
  
-end subroutine oversample_fun_tri
+end subroutine oversample_fun_guru
 !
 !
 !
@@ -622,8 +615,7 @@ subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
   do i=1,npatches
     istart = ixyzs(i)
     npols = ixyzs(i+1)-ixyzs(i)
-    if(iptype(i).eq.1) &
-      call vals_to_coefs_tri(nd,norders(i),npols,u(1,istart),&
+    call vals_to_coefs_guru(nd,norders(i),npols,iptype(i),u(1,istart),&
       ucoefs(1,istart))
   enddo
 
@@ -631,7 +623,7 @@ end subroutine surf_vals_to_coefs
 
 !
 !
-subroutine vals_to_coefs_tri(nd,norder,npols,u,ucoefs)
+subroutine vals_to_coefs_guru(nd,norder,npols,iptype,u,ucoefs)
 !
 !  This subroutine converts function to koornwinder expansion
 !  coefs
@@ -643,7 +635,11 @@ subroutine vals_to_coefs_tri(nd,norder,npols,u,ucoefs)
 !       order of original discretization
 !    npols - integer
 !       number of discretization points corresponding to norder
-!       npols = (norder+1)*(norder+2)/2
+!    iptype - integer
+!       type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    u - real *8 (nd,npols)
 !       function values tabulated at original grid
 !    
@@ -654,7 +650,7 @@ subroutine vals_to_coefs_tri(nd,norder,npols,u,ucoefs)
 
 
   implicit none
-  integer norder,nd,npols
+  integer norder,nd,npols,iptype
   real *8 u(nd,npols),ucoefs(nd,npols)
   real *8, allocatable :: umat0(:,:),uvs0(:,:),vmat0(:,:),wts0(:)
   character *1 transa,transb
@@ -667,7 +663,7 @@ subroutine vals_to_coefs_tri(nd,norder,npols,u,ucoefs)
   allocate(wts0(npols))
 
 
-  call vioreanu_simplex_quad(norder,npols,uvs0,umat0,vmat0,wts0)
+  call get_disc_exps(norder,npols,iptype,uvs0,umat0,vmat0,wts0)
 
 
 !
@@ -681,7 +677,7 @@ subroutine vals_to_coefs_tri(nd,norder,npols,u,ucoefs)
   call dgemm_guru(transa,transb,nd,npols,npols,alpha,u,nd,umat0,npols,&
      beta,ucoefs,nd)
  
-end subroutine vals_to_coefs_tri 
+end subroutine vals_to_coefs_guru 
 !
 !
 !
@@ -722,13 +718,13 @@ subroutine get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
   integer nmax,npmax
   
   nmax = maxval(norders(1:npatches))
-  npmax = (nmax+1)*(nmax+2)/2
+  npmax = (nmax+1)*(nmax+1)
   allocate(wts0(npmax))
 
   do i=1,npatches
     istart = ixyzs(i)
     npols = ixyzs(i+1)-ixyzs(i)
-    if(iptype(i).eq.1) call get_vioreanu_wts(norders(i),npols,wts0)
+    call get_disc_wts(norders(i),npols,iptype(i),wts0)
     do j=1,npols
       ipt = istart + j-1
       call cross_prod3d(srcvals(4,ipt),srcvals(7,ipt),tmp)
@@ -846,8 +842,7 @@ subroutine get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, &
     enddo
 
     npols = ixyzs(ip+1)-ixyzs(ip)
-    if(iptype(ip).eq.1) &
-      call get_vioreanu_nodes(norders(ip),npols,uvs_pts(1,ixyzs(ip)))
+    call get_disc_nodes(norders(ip),npols,iptype(ip),uvs_pts(1,ixyzs(ip)))
   enddo
 
 
@@ -1329,9 +1324,8 @@ subroutine get_surf_uv_grad(nd,npatches,norders,ixyzs,iptype,npts,f, &
   do i=1,npatches
     istart = ixyzs(i)
     npols = ixyzs(i+1)-ixyzs(i)
-    if(iptype(i).eq.1) &
-      call get_surf_uv_grad_tri(nd,norders(i),npols,f(1,istart),&
-        dfuv(1,1,istart))
+    call get_surf_uv_grad_guru(nd,norders(i),npols,iptype(i), &
+      f(1,istart),dfuv(1,1,istart))
   enddo
 
 
@@ -1339,7 +1333,7 @@ subroutine get_surf_uv_grad(nd,npatches,norders,ixyzs,iptype,npts,f, &
 end subroutine get_surf_uv_grad
 
 
-subroutine get_surf_uv_grad_tri(nd,norder,npols,f,dfuv)
+subroutine get_surf_uv_grad_guru(nd,norder,npols,iptype,f,dfuv)
 !
 !-----------------------------
 !  Compute the uv gradient of scalar function on a single triangular
@@ -1363,15 +1357,15 @@ subroutine get_surf_uv_grad_tri(nd,norder,npols,f,dfuv)
 !-----------------------------
 !
   implicit none
-  integer, intent(in) :: nd,norder,npols
+  integer, intent(in) :: nd,norder,npols,iptype
   real *8, intent(in) :: f(nd,npols)
   real *8, intent(out) :: dfuv(nd,2,npols)
   real *8 fcoefs(nd,npols),pols(npols),ders(2,npols)
   real *8 uv(2,npols)
   integer i,idim,j
 
-  call vals_to_coefs_tri(nd,norder,npols,f,fcoefs)
-  call get_vioreanu_nodes(norder,npols,uv)
+  call vals_to_coefs_guru(nd,norder,npols,iptype,f,fcoefs)
+  call get_disc_nodes(norder,npols,iptype,uv)
 
   do i=1,npols
     do idim=1,nd
@@ -1382,7 +1376,7 @@ subroutine get_surf_uv_grad_tri(nd,norder,npols,f,dfuv)
 
 
   do i=1,npols
-    call koorn_ders(uv(1,i),norder,npols,pols,ders)
+    call get_basis_ders(uv(1,i),norder,npols,iptype,pols,ders)
     do j=1,npols
       do idim=1,nd
         dfuv(idim,1,i) = dfuv(idim,1,i) + ders(1,j)*fcoefs(idim,j)
@@ -1392,7 +1386,7 @@ subroutine get_surf_uv_grad_tri(nd,norder,npols,f,dfuv)
   enddo
 
   return
-end subroutine get_surf_uv_grad_tri
+end subroutine get_surf_uv_grad_guru
 !
 !
 !
@@ -1501,9 +1495,8 @@ subroutine get_surf_div_fast(nd,npatches,norders,ixyzs,iptype,npts, &
   do i=1,npatches
     istart = ixyzs(i)
     npols = ixyzs(i+1)-ixyzs(i)
-    if(iptype(i).eq.1) &
-      call get_surf_div_tri(nd,norders(i),npols,ffform(1,1,istart), &
-        f(1,1,istart),df(1,istart))
+    call get_surf_div_guru(nd,norders(i),npols,iptype(i), &
+      ffform(1,1,istart),f(1,1,istart),df(1,istart))
   enddo
 
 
@@ -1516,7 +1509,7 @@ end subroutine get_surf_div_fast
 !
 !
 !
-subroutine get_surf_div_tri(nd,norder,npols,ff,f,df)
+subroutine get_surf_div_guru(nd,norder,npols,iptype,ff,f,df)
 !
 !-----------------------------
 !  Compute the surface divergence of a vector field on a single triangular
@@ -1542,7 +1535,7 @@ subroutine get_surf_div_tri(nd,norder,npols,ff,f,df)
 !-----------------------------
 !
   implicit none
-  integer, intent(in) :: nd,norder,npols
+  integer, intent(in) :: nd,norder,npols,iptype
   real *8, intent(in) :: f(nd,2,npols),ff(2,2,npols)
   real *8, intent(out) :: df(nd,npols)
   real *8 fcoefs(nd,2,npols),pols(npols),ders(2,npols)
@@ -1558,8 +1551,8 @@ subroutine get_surf_div_tri(nd,norder,npols,ff,f,df)
     enddo
   enddo
 
-  call vals_to_coefs_tri(2*nd,norder,npols,ftmp,fcoefs)
-  call get_vioreanu_nodes(norder,npols,uv)
+  call vals_to_coefs_guru(2*nd,norder,npols,iptype,ftmp,fcoefs)
+  call get_disc_nodes(norder,npols,iptype,uv)
 
   do i=1,npols
     do idim=1,nd
@@ -1569,7 +1562,7 @@ subroutine get_surf_div_tri(nd,norder,npols,ff,f,df)
 
 
   do i=1,npols
-    call koorn_ders(uv(1,i),norder,npols,pols,ders)
+    call get_basis_ders(uv(1,i),norder,npols,iptype,pols,ders)
     do j=1,npols
       do idim=1,nd
         df(idim,i) = df(idim,i) + ders(1,j)*fcoefs(idim,1,j) + &
@@ -1583,7 +1576,7 @@ subroutine get_surf_div_tri(nd,norder,npols,ff,f,df)
   enddo
 
   return
-end subroutine get_surf_div_tri
+end subroutine get_surf_div_guru
 !
 !
 !
@@ -1731,6 +1724,88 @@ end subroutine plot_surface_info_all
 !
 !
 !
+!
+
+
+subroutine getpatchinfo(npatches, patchpnt, par1, par2, par3, par4, &
+    npols, uvs, umatr, srcvals, srccoefs)
+  implicit real *8 (a-h,o-z)
+  real *8 :: uvs(2,npols), srcvals(12,*)
+  real *8 :: umatr(npols,npols),srccoefs(9,*)
+  external patchpnt
+
+  real *8 :: xyz(3), dxyzduv(3,10), xyznorm(3)
+  real *8 :: xyztang1(3), xyztang2(3)
+
+  !
+  !       This subroutine return all points, normals and tangents from
+  !       geometry descriptor
+  !
+  !       Input parameters:
+  !
+  !         npatches: integer: the number of patches
+  !         patchpnt: external: subroutine evaluating points along
+  !               the surface, given patch by patch, must be of the form
+  !                     patchpnt(ipatch,u,v,xyz,dxyzduv,par1,par2,par3,par4)
+  !         par1,par2,par3,par4: extra parameters
+  !         npols: integer: the total number of polynomials for each patch
+  !         uvs: real *8(2,npols): local u-discretization points for each patch
+  !         umatr: real *8(npols,npols): values to coeffs mapatchx on standard patch 
+  !
+  !       Output parameters:
+  !
+  !         srcvals: real *8(12,npts): geometry info with first derivatives
+  !               srcvals(1:3,:) - xyz
+  !               srcvals(4:6,:) - dxyz/du
+  !               srcvals(7:9,:) - dxyz/dv
+  !               srcvals(10:12,:) - xyznorms
+  !
+  !         srccoefs: real *8 (9,npts): geometry info as koornwinder expansion
+  !                     coefficients
+  !                    
+  !         npts: integer: the total number of points in discretization
+  !
+
+
+  do ipatch=1,npatches
+    do i=1,npols
+
+      u=uvs(1,i)
+      v=uvs(2,i)
+
+      ipt = (ipatch-1)*npols + i 
+
+      call patchpnt(ipatch,u,v,srcvals(1,ipt),srcvals(4,ipt),par1, &
+             par2,par3,par4)
+
+      call cross_prod3d(srcvals(4,ipt),srcvals(7,ipt),srcvals(10,ipt))
+
+      ds = sqrt(srcvals(10,ipt)**2 + srcvals(11,ipt)**2 + &
+              srcvals(12,ipt)**2)
+      srcvals(10,ipt) = srcvals(10,ipt)/ds
+      srcvals(11,ipt) = srcvals(11,ipt)/ds
+      srcvals(12,ipt) = srcvals(12,ipt)/ds
+
+    end do
+
+    do i=1,npols
+      ipt = (ipatch-1)*npols + i
+      do j=1,9
+        srccoefs(j,ipt) = 0
+        do l=1,npols
+          lpt = (ipatch-1)*npols + l
+          srccoefs(j,ipt) = srccoefs(j,ipt) + umatr(i,l)*srcvals(j,lpt)
+        end do
+      end do
+    end do
+  end do
+
+  npts = npatches*npols
+
+  return
+end subroutine getpatchinfo
+
+
 subroutine get_surf_interp_mat_targ_mem(npatches,ixyzs,ntarg, &
   ipatchtarg,lmem)
 !
@@ -1890,9 +1965,5 @@ subroutine get_surf_interp_mat_targ(npatches,norders,ixyzs,iptype,npts,ntarg, &
 
   enddo
 !$OMP END PARALLEL DO 
-
-
-
-
 
 end subroutine get_surf_interp_mat_targ

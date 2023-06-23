@@ -857,13 +857,11 @@ c
       rfac0 = 1.25d0
 
 
-      if(iptype.eq.1) then
 
-        if(norder.le.2) rfac = 2.75d0
-        if(norder.le.6.and.norder.gt.2) rfac = 2.0d0
-        if(norder.gt.6) rfac = 1.25d0
-        rfac0 = 1.25d0
-      endif
+      if(norder.le.2) rfac = 2.75d0
+      if(norder.le.6.and.norder.gt.2) rfac = 2.0d0
+      if(norder.gt.6) rfac = 1.25d0
+      rfac0 = 1.25d0
 
       
 
@@ -878,7 +876,7 @@ c
 c
 c
 
-      subroutine get_quadparams_adap(eps,nqorder,eps_adap,nlev,
+      subroutine get_quadparams_adap(eps,iptype,nqorder,eps_adap,nlev,
      1   nqorder_f)
 c
 c
@@ -889,6 +887,8 @@ c
 c        input:
 c          eps - real *8
 c             tolerance
+c          iptype - integer
+c             patch type
 c        outputs:
 c          nqorder - integer
 c             order of XG nodes to use on each triangle in the
@@ -905,7 +905,7 @@ c
       implicit none
       real *8 eps,eps_adap,eps0
       integer norder,nqorder,i,iprec
-      integer nlev,nqorder_f
+      integer nlev,nqorder_f,iptype
       
 
       iprec = 0

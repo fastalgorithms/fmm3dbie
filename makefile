@@ -1,6 +1,8 @@
 # Makefile for fmm3dbie
 # # This is the only makefile; there are no makefiles in subdirectories.
 # Users should not need to edit this makefile (doing so would make it
+
+
 # hard to stay up to date with repo version). Rather in order to
 # change OS/environment-specific compilers and flags, create 
 # the file make.inc, which overrides the defaults below (which are 
@@ -10,7 +12,7 @@
 CC = gcc
 CXX = g++
 FC = gfortran
-FFLAGS = -fPIC -O3 -march=native -funroll-loops -std=legacy
+FFLAGS = -fPIC -O3 -march=native -funroll-loops -std=legacy -w 
 
 # extra flags for multithreaded: C/Fortran, MATLAB
 OMPFLAGS =-fopenmp
@@ -104,7 +106,8 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o \
-	$(COM)/rigidbodies.o 
+	$(COM)/rigidbodies.o $(COM)/polytens.o \
+	$(COM)/chebexps.o
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
@@ -144,7 +147,8 @@ SURF = src/surface_routs
 SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
 	$(SURF)/xtri_routs/xtri_parameterizations.o \
 	$(SURF)/xtri_routs/xtri_plot.o $(SURF)/write_go3.o $(SURF)/in_gidmsh2.o \
-	$(SURF)/in_gmsh2.o
+	$(SURF)/in_gmsh2.o $(SURF)/patch_basis_routs.o \
+	$(SURF)/xquad_routs/xquad_parametrizations.o
 
 # Triangle adaptive integration routines
 TRIA = src/tria_routs
@@ -152,9 +156,15 @@ TOBJS = $(TRIA)/ctriaints_main.o $(TRIA)/koornexps.o \
 	$(TRIA)/triaintrouts.o $(TRIA)/dtriaints_main.o \
 	$(TRIA)/triasymq.o $(TRIA)/triatreerouts.o $(TRIA)/dtriaintrouts.o
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS)
+# Triangle adaptive integration routines
+QUAD2 = src/quad_routs
+QOBJS2 = $(QUAD2)/cquadints_main.o \
+	$(QUAD2)/cquadintrouts.o $(QUAD2)/dquadints_main.o \
+	$(QUAD2)/squarearbq.o $(QUAD2)/quadtreerouts.o $(QUAD2)/dquadintrouts.o
 
-OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+
+OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS)
 OBJS_64 += $(COM)/lapack_wrap_64.o
 
 ifeq ($(BLAS_64),ON)
@@ -268,17 +278,18 @@ mex: $(MDYNAMICLIB)
 #
 # testing routines
 #
-test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quad
+test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad 
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
 	cd test/surface_routs; ./int2-surf
 	cd test/tria_routs; ./int2-tria
+	cd test/quad_routs; ./int2-quad
 	cd test/quadratures; ./int2-quad
 	cat print_testres.txt
 	rm print_testres.txt
 
-test-dyn: $(DYNAMICLIB) test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn test/quad-dyn
+test-dyn: $(DYNAMICLIB) test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn test/quadrature-dyn test/quad-dyn
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
@@ -305,8 +316,12 @@ TTOBJS = test/tria_routs/test_triaintrouts.o test/tria_routs/test_dtriaintrouts.
 test/tria: $(TTOBJS)
 	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) lib-static/$(STATICLIB) $(LIBS) 
 
+QTOBJS = test/quad_routs/test_quadintrouts.o test/quad_routs/test_dquadintrouts.o 
 
-test/quad:
+test/quad: $(QTOBJS)
+	$(FC) $(FFLAGS) test/quad_routs/test_quadrouts.f -o test/quad_routs/int2-quad $(QTOBJS) lib-static/$(STATICLIB) $(LIBS) 
+
+test/quadrature:
 	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad lib-static/$(STATICLIB) $(LIBS) 
 
 
@@ -330,8 +345,11 @@ test/surf-dyn:
 test/tria-dyn: $(TTOBJS)
 	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
 
+test/quad-dyn: $(QTOBJS)
+	$(FC) $(FFLAGS) test/quad_routs/test_quadrouts.f -o test/quad_routs/int2-quad $(QTOBJS) -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
 
-test/quad-dyn:
+
+test/quadrature-dyn:
 	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
 
 

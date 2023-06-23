@@ -124,37 +124,35 @@ subroutine get_far_order(eps,npatches,norders,ixyzs,iptype,cms,rads,&
   do i=1,npatches
     npols = ixyzs(i+1)-ixyzs(i)
     istart = ixyzs(i)
-    if(iptype(i).eq.1) then
-       norder = norders(i)
+    norder = norders(i)
 
 
 !
 !      gather the targets
 !
-      ntarg0 = col_ptr(i+1)-col_ptr(i)
-      allocate(targtmp(ndtarg,ntarg0))
+    ntarg0 = col_ptr(i+1)-col_ptr(i)
+    allocate(targtmp(ndtarg,ntarg0))
 
-      ii = 0
-      do j=col_ptr(i),col_ptr(i+1)-1
-        jpt = row_ind(j)
-        ii = ii +1
-        do l=1,ndtarg
-          targtmp(l,ii) = targvals(l,jpt)
-        enddo
+    ii = 0
+    do j=col_ptr(i),col_ptr(i+1)-1
+      jpt = row_ind(j)
+      ii = ii +1
+      do l=1,ndtarg
+        targtmp(l,ii) = targvals(l,jpt)
       enddo
+    enddo
 
-      rad0 = rfac*rads(i)
+    rad0 = rfac*rads(i)
 
 
 
       
-      call get_far_order_tri(eps,norder,npols,cms(1,i),rad0, &
+     call get_far_order_guru(eps,norder,npols,iptype(i),cms(1,i),rad0,&
         srccoefs(1,istart),ikerorder,zk, &
         ndtarg,ntarg0,targtmp,nfars(i),npolsf)
-      ixyzso(i+1) = ixyzso(i)+npolsf
-      deallocate(targtmp)
+    ixyzso(i+1) = ixyzso(i)+npolsf
+    deallocate(targtmp)
 
-    endif
   enddo
 end subroutine get_far_order
 
@@ -162,14 +160,14 @@ end subroutine get_far_order
 
 
 
-subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
+subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   ikerorder,zk,ndtarg,ntarg,targvals,nfar,npolsf)
 
 !
 !  NOTE: This routine is not currently optimized for performance
 !
 !
-!  For a given triangular patch, this subroutine computes the 
+!  For a given patch, this subroutine computes the 
 !  quadrature order required to compute the far-field accurately
 !
 !  The method proceeds by computing the potential e^{ikr}/r (if ikerorder=-1)
@@ -177,7 +175,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 !  \Hessian e^{ikr}/r \cdot n \cdot n if ikerorder=1
 !  at the 10 furthest
 !  targets, and 15 targets randomly sprinkled on the boundary of
-!  the defintion of the near-field using a RV nodes of order 1,2,3,4,6,8,10,12
+!  the defintion of the near-field using a nodes of order 1,2,3,4,6,8,10,12
 !  and stops whenever the potential at all the targets has achieved the
 !  desired precision (in absolute value)
 !
@@ -188,9 +186,15 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 !    norder - integer
 !       order of patch
 !
+!    iptype - integer
+!       type of patch,
+!       * iptype =1, triangular patch with RV nodes
+!       * iptype =11, quad patch with GL nodes, and full degree polynomials
+!       * iptype =12, quad patch with Chebyshev nodes, and full degree
+!                       polynomnials
+!
 !    npols - integer
 !       number of discretization nodes on patch
-!       npols = (norder+1)*(norder+2)/2
 !
 !    cm - real *8 (3)
 !       centroid of patch
@@ -200,7 +204,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 !       far-field assumed to be defined via |x-cm|>rad
 !
 !    srccoefs - real *8 (9,npols)
-!       koornwinder expansion coeffs
+!       basis expansion coeffs
 !
 !    ikerorder - integer
 !       type of kernel
@@ -231,6 +235,7 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   real *8 eps,cm(3),rad,srccoefs(3,npols)
   real *8 targvals(ndtarg,ntarg)
   integer norder,npols,ndtarg,ntarg,nfar
+  integer iptype
   complex *16 zk
   real *8, allocatable :: targtest(:,:),dd(:)
   integer, allocatable :: indd(:)
@@ -250,7 +255,9 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   real *8 epsp
   real *8 tmp(3)
   integer nfars(10)
-  integer nmax,iseed1,iseed2 
+  integer nmax,iseed1,iseed2
+  integer ipoly
+  character *1 ttype
 
   character *1 transa,transb
 
@@ -329,11 +336,14 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 !
 
 !
-
+  ttype = "f"
+  if(iptype.eq.11) ipoly = 0
+  if(iptype.eq.12) ipoly = 1
 
 
   nomax = 16
-  npmax = (nomax+1)*(nomax+2)/2
+
+  npmax = (nomax+1)*(nomax+1)
   allocate(srctmp(12,npmax),sigmatmp(npmax),pmat(npols,npmax))
   allocate(uvs(2,npmax),wts(npmax),qwts(npmax))
 
@@ -354,11 +364,14 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 !  estimate scaling parameter. Can be optimized
 !  by passing in srcvals as an input parameter
 !
-  call get_vioreanu_nodes_wts(norder,npols,uvs,wts)
 
+  call get_disc_nodes_wts(norder,npols,iptype,uvs,wts)
+  
   do i=1,npols
-    call koorn_pols(uvs(1,i),norder,npols,pmat(1,i)) 
+    call get_basis_pols(uvs(1,i),norder,npols,iptype,pmat(1,i)) 
   enddo
+    
+
 
 
   transa = 'n'
@@ -383,13 +396,14 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 !  1 quadrature rule to start comparison
 !
 
-  nfar = nfars(iistart) 
-  npolsf = (nfar+1)*(nfar+2)/2
-  call get_vioreanu_nodes_wts(nfar,npolsf,uvs,wts)
+  nfar = nfars(iistart)
+  call get_npols(iptype,nfar,npolsf)
+
+  call get_disc_nodes_wts(nfar,npolsf,uvs,wts)
 
 
   do i=1,npolsf
-    call koorn_pols(uvs(1,i),norder,npols,pmat(1,i)) 
+    call get_basis_pols(uvs(1,i),norder,npols,iptype,pmat(1,i))
   enddo
 
 
@@ -430,13 +444,12 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
 
   do nnn=iistart+1,10
     nfar = nfars(nnn)
-
-    npolsf = (nfar+1)*(nfar+2)/2
-    call get_vioreanu_nodes_wts(nfar,npolsf,uvs,wts)
+    call get_npols(iptype,nfar,npolsf)
+    call get_disc_nodes_wts(nfar,npolsf,iptype,uvs,wts)
 
   
     do i=1,npolsf
-      call koorn_pols(uvs(1,i),norder,npols,pmat(1,i)) 
+      call get_basis_pols(uvs(1,i),norder,npols,iptype,pmat(1,i))
     enddo
 
 
@@ -498,10 +511,10 @@ subroutine get_far_order_tri(eps,norder,npols,cm,rad,srccoefs, &
   iistart = nnn-1
   iistart = max(iistart,1)
   nfar = nfars(iistart)
-  npolsf = (nfar+1)*(nfar+2)/2 
+  call get_npols(iptype,nfar,npolsf)
 
 
-end subroutine get_far_order_tri
+end subroutine get_far_order_guru
 !
 !
 !

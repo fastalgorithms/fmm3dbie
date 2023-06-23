@@ -390,7 +390,8 @@ c----------------------------------
 c
 c
 c
-      subroutine gen_xg_unif_nodes(nlev,nqorder,nnodes,npts,qnodes,qwts)
+      subroutine gen_xg_unif_nodes_tri(nlev,nqorder,nnodes,npts,qnodes,
+     1   qwts)
       implicit real *8 (a-h,o-z)
       real *8, allocatable :: tvs(:,:,:)
       real *8, allocatable :: qnodes0(:,:),qwts0(:)
@@ -439,7 +440,7 @@ c
 
       do itri=istart,iend
         instart = (itri-istart)*nnodes + 1
-        call mapuv(tvs(1,1,itri),nnodes,qnodes0,qnodes(1,instart))
+        call mapuv_tri(tvs(1,1,itri),nnodes,qnodes0,qnodes(1,instart))
         do i=1,nnodes
           qwts(instart+i-1) = qwts0(i)/4**nlev
         enddo
@@ -478,7 +479,7 @@ c
 c
 c--------------------------------------------------------------------------------
         
-      subroutine mapuv(verts,kpols,uvs,uvout)
+      subroutine mapuv_tri(verts,kpols,uvs,uvout)
       implicit real *8 (a-h,o-z)
       integer kpols
       real *8 verts(2,3),uvs(2,kpols),uvout(2,kpols)
@@ -519,20 +520,3 @@ c
 c
 c-------------------------------------------------
 
-      subroutine zmatvec_slow(m,n,a,x,y)
-      implicit real *8 (a-h,o-z)
-      complex *16 a(m,n),x(n),y(m)
-      
-      do i=1,m
-        y(i) = 0
-        do j=1,n
-          y(i) = y(i) + a(i,j)*x(j)
-        enddo
-      enddo
-        
-
-      return
-      end
-
-c
-c

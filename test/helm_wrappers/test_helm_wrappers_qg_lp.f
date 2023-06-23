@@ -36,15 +36,28 @@
 
 c
 c       select geometry type
-c       igeomtype = 1 => sphere
-c       igeomtype = 2 => stellarator
-c 
-      igeomtype = 2 
-      if(igeomtype.eq.1) ipars(1) = 1
+c       igeomtype = 1 => sphere, triangles
+c       igeomtype = 2 => stellarator, triangles
+c       igeomtype = 111 => sphere, quads, GL
+c       igeomtype = 121 => sphere, quads, Cheb
+c     
+      igeomtype = 111 
       if(igeomtype.eq.2) ipars(1) = 5
+      norder = 6 
 
-      if(igeomtype.eq.1) then
-        npatches = 12*(4**ipars(1))
+      if(igeomtype.eq.1.or.igeomtype.eq.111.or.igeomtype.eq.121) then
+        ipars(1) = 1
+        if(igeomtype.eq.1) then
+           npatches = 12*(4**ipars(1))
+           npols = (norder+1)*(norder+2)/2
+           iptype0 = 1
+        else
+           npatches = 6*(4**ipars(1))
+           npols = (norder+1)*(norder+1)
+           if(igeomtype.eq.111) iptype0 = 11
+           if(igeomtype.eq.121) iptype0 = 12
+        endif
+        
       endif
       if(igeomtype.eq.2) then
         ipars(2) = ipars(1)*3
@@ -57,7 +70,7 @@ c
       zpars(2) = 1.0d0
       zpars(3) = 0.0d0
 
-      if(igeomtype.eq.1) then
+      if(igeomtype.eq.1.or.igeomtype.eq.111.or.igeomtype.eq.121) then
         xyz_out(1) = 3.17d0
         xyz_out(2) = -0.03d0
         xyz_out(3) = 3.15d0
@@ -77,8 +90,6 @@ c
         xyz_out(3) = 20.1d0
       endif
 
-      norder = 3 
-      npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
       allocate(srcvals(12,npts),srccoefs(9,npts))
@@ -96,12 +107,13 @@ c
       do i=1,npatches
         norders(i) = norder
         ixyzs(i) = 1 +(i-1)*npols
-        iptype(i) = 1
+        iptype(i) = iptype0
       enddo
 
       ixyzs(npatches+1) = 1+npols*npatches
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
+      ra = sum(wts)
 
 
 
@@ -118,6 +130,15 @@ c
      1     ipars,uval(i))
         call h3d_sprime(xyz_out,12,srcvals(1,i),0,dpars,1,zpars,0,
      1     ipars,dudnval(i))
+      enddo
+
+c
+c  check normals
+c
+      do i=1,npts
+         x = srcvals(1,i)
+         rnx = srcvals(10,i)
+         if(abs(x-rnx).gt.1.0d-2) print *, i
       enddo
 
       ndtarg = 3
@@ -142,8 +163,8 @@ c
 c
 c    find near field
 c
-      iptype = 1
-      call get_rfacs(norder,iptype,rfac,rfac0)
+      call get_rfacs(norder,iptype0,rfac,rfac0)
+      rfac0 = rfac
       do i=1,npatches 
         rad_near(i) = rads(i)*rfac
       enddo
@@ -175,6 +196,8 @@ c
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
      1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zk,
      2    nnz,row_ptr,col_ind,rfac,nfars,ixyzso)
+c      nfars = norders
+c      ixyzso = ixyzs
       call cpu_time(t2)
       tfar = t2-t1
 
@@ -193,6 +216,9 @@ c
 
       call get_qwts(npatches,nfars,ixyzso,iptype,npts_over,
      1        srcover,wover)
+      raover = sum(wover)
+      print *, "surface area of sphere again=",raover
+      print *, "error in surface area of sphere=",abs(raover-4*pi)
 
 
       do i=1,nquad
@@ -255,6 +281,7 @@ c
 
       call cpu_time(t2)
       tlpcomp = t2-t1
+      
 
 
 c
@@ -331,17 +358,27 @@ c
       real *8, allocatable, target :: deltas(:,:)
       integer, allocatable :: isides(:)
       integer, target :: nmax,mmax
+      integer, allocatable :: iptype(:),ixyzs(:),norders(:)
 
       procedure (), pointer :: xtri_geometry
 
 
-      external xtri_stell_eval,xtri_sphere_eval
+      external xtri_stell_eval,xtri_sphere_eval,xquad_sphere_eval
       
-      npols = (norder+1)*(norder+2)/2
+      if(igeomtype.le.100) iptype0 = 1
+      if(igeomtype.gt.110.and.igeomtype.le.120) iptype0 = 11
+      if(igeomtype.gt.120.and.igeomtype.le.130) iptype0 = 12
+
+      if(iptype0.eq.1) npols = (norder+1)*(norder+2)/2
+      if(iptype0.eq.11.or.iptype0.eq.12) npols = (norder+1)**2
+
+      
       allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
       allocate(wts(npols))
 
-      call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
+      print *, "iptype0=",iptype0
+
+      call get_disc_exps(norder,npols,iptype0,uvs,umatr,vmatr,wts)
 
       if(igeomtype.eq.1) then
         itype = 2
@@ -367,6 +404,41 @@ c
 
         call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,ptr3,ptr4,
      1     npols,uvs,umatr,srcvals,srccoefs)
+      endif
+
+
+      if(igeomtype.eq.111.or.igeomtype.eq.121) then
+        itype = 2
+        allocate(triaskel(3,3,npatches))
+        allocate(isides(npatches))
+        npmax = npatches
+        ntri = 0
+        print *, "npatches=",npatches
+        call xquad_platonic(itype, ipars(1), npmax, ntri, 
+     1      triaskel, isides)
+        print *, "ntri=",ntri
+
+        xtri_geometry => xquad_sphere_eval
+        ptr1 => triaskel(1,1,1)
+        ptr2 => p2(1)
+        ptr3 => p3(1)
+        ptr4 => p4(1)
+
+ 
+        call getpatchinfo(npatches,xtri_geometry,ptr1,ptr2,ptr3,ptr4,
+     1     npols,uvs,umatr,srcvals,srccoefs)
+        allocate(iptype(npatches),ixyzs(npatches+1),norders(npatches))
+        if(ifplot.eq.1) then
+          do i=1,npatches
+            iptype(i) = iptype0
+            ixyzs(i) = (i-1)*npols + 1
+            norders(i) = norder
+          enddo
+          ixyzs(npatches+1) = npts+1
+          print *, "here0"
+          call surf_vtk_plot(npatches,norders,ixyzs,iptype,npts,
+     1       srccoefs,srcvals,'sphere-quad.vtk','a')
+        endif
       endif
 
       if(igeomtype.eq.2) then
