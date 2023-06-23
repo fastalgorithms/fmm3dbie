@@ -220,17 +220,18 @@ install: $(STATICLIB) $(DYNAMICLIB)
 #
 # testing routines
 #
-test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quad
+test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad 
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
 	cd test/surface_routs; ./int2-surf
 	cd test/tria_routs; ./int2-tria
+	cd test/quad_routs; ./int2-quad
 	cd test/quadratures; ./int2-quad
 	cat print_testres.txt
 	rm print_testres.txt
 
-test-dyn: $(DYNAMICLIB) test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn test/quad-dyn
+test-dyn: $(DYNAMICLIB) test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn test/quadrature-dyn test/quad-dyn
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
@@ -257,8 +258,12 @@ TTOBJS = test/tria_routs/test_triaintrouts.o test/tria_routs/test_dtriaintrouts.
 test/tria: $(TTOBJS)
 	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) lib-static/$(STATICLIB) $(LIBS) 
 
+QTOBJS = test/quad_routs/test_quadintrouts.o test/quad_routs/test_dquadintrouts.o 
 
-test/quad:
+test/quad: $(QTOBJS)
+	$(FC) $(FFLAGS) test/quad_routs/test_quadrouts.f -o test/quad_routs/int2-quad $(QTOBJS) lib-static/$(STATICLIB) $(LIBS) 
+
+test/quadrature:
 	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad lib-static/$(STATICLIB) $(LIBS) 
 
 
@@ -282,8 +287,11 @@ test/surf-dyn:
 test/tria-dyn: $(TTOBJS)
 	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
 
+test/quad-dyn: $(QTOBJS)
+	$(FC) $(FFLAGS) test/quad_routs/test_quadrouts.f -o test/quad_routs/int2-quad $(QTOBJS) -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
 
-test/quad-dyn:
+
+test/quadrature-dyn:
 	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
 
 
