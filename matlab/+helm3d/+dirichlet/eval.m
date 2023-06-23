@@ -47,7 +47,9 @@ function p = eval(S,zpars,sigma,eps,varargin)
 %
 % Todo: Fix varargin
 %
-    opts = [];
+    if(nargin < 6) 
+      opts = [];
+    end
     nonsmoothonly = false;
     if(isfield(opts,'nonsmoothonly'))
       nonsmoothonly = opts.nonsmoothonly;
@@ -125,6 +127,8 @@ function p = eval(S,zpars,sigma,eps,varargin)
     mex_id_ = 'lpcomp_helm_comb_dir_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], io dcomplex[x])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, wnear, sigma, novers, nptso, ixyzso, srcover, wover, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 3, 1, ntargp1, nnz, nnzp1, 1, nquad, npts, npatches, 1, npatp1, 12, nptso, nptso, ntarg);
 end    
-
+%
+%
+%
 %----------------------------------
 %
