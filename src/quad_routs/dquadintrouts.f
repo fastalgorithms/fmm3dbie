@@ -1221,7 +1221,8 @@ c
 c
 c
 c
-      subroutine dquadadap_main(eps,kpols,nlmax,nqmax,nquad,ichild_start,
+      subroutine dquadadap_main(eps,kpols,nlmax,nqmax,nquad,
+     1      ichild_start,
      1      tvs,da,uvsq,wts,norder,ipoly,ttype,npols,srccoefs,
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3      ndtarg,xt,
