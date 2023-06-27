@@ -5,8 +5,11 @@
 % Additional dependencies: chebfun
 %
 addpath(genpath('~/git/fmm3dbie/matlab'))
-% S = surfer.ellipsoid([1,1,1],0.5,6,0);
-% S = surfer.sphere_quad(6,nu,nref,iptype);
+
+% For triangles
+S = surfer.ellipsoid([1,1,1],0.5,6,0);
+
+% For quads
 S = surfer.sphere_quad(6,1,1);
 
 
@@ -36,6 +39,7 @@ p_ex = rhs*jn*hn*1j*zk;
 err1 = norm((p-p_ex).*sqrt(wts))/norm(rhs.*sqrt(wts));
 
 fprintf('Error in single layer potential=%d\n',err1);
+
 
 %% Now test the solver + kernel evaluation routines
 
