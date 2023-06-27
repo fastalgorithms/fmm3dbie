@@ -1,4 +1,4 @@
-function wts = weights(norder)
+function wts = rv_weights(norder)
         if(norder== 0)  
           wts(  1) =0.5000000000000000D+00;
         end

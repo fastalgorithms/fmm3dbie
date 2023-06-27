@@ -265,7 +265,7 @@ MWDIR = matlab
 MWF = fmm3dbie_routs
 GW = $(MWF)
 
-matlab-dyn:	$(MDYNAMICLIB) $(GW).c
+matlab-dyn:	$(MDYNAMICLIB) $(MWDIR)/$(GW).c
 	$(MEX) $(MWDIR)/$(GW).c $(MFLAGS) \
 	-output $(MWDIR)/$(GW) $(MEXLIBS) -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB) -L$(FMMBIE_INSTALL_DIR) $(MLLINKLIB) 
 

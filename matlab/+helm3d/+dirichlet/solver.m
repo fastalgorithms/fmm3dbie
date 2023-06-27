@@ -1,4 +1,4 @@
-function sigma = solver(S,zpars,rhs,eps,varargin)
+function [sigma,varargout] = solver(S,zpars,rhs,eps,varargin)
 %
 %  helm3d.dirichlet.solver
 %    Solve the helmholtz dirichlet boundary value problem
@@ -50,7 +50,7 @@ function sigma = solver(S,zpars,rhs,eps,varargin)
       eps_gmres = opts.eps_gmres;
     end
 
-    maxit = 200
+    maxit = 200;
     if(isfield(opts,'maxit'))
       maxit = opts.maxit;
     end
@@ -105,8 +105,10 @@ function sigma = solver(S,zpars,rhs,eps,varargin)
     end
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
-    Sover = oversample(S,novers);
+    % [novers] = get_oversampling_parameters(S,Q,eps);
+    % Sover = oversample(S,novers);
+    novers = norders;
+    Sover = S;
 
 
 % Extract oversampled arrays

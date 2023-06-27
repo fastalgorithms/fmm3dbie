@@ -1,4 +1,4 @@
-function [uvs]=nodes(norder)
+function [uvs]=rv_nodes(norder)
        if(norder== 0)  
           uvs(1,  1) =0.3333333333333333D+00;
           uvs(2,  1) =0.3333333333333334D+00;

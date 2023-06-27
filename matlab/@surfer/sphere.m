@@ -177,7 +177,7 @@ function [obj] = sphere(norder,nu,nref)
     srcvals(9,:) = dzdvuse(:)';
 
     dn = cross(srcvals(4:6,:),srcvals(7:9,:));
-    srcvals(10:12,:) = dn./repmat(vecnorm(dn,1),[3,1]);
+    srcvals(10:12,:) = dn./repmat(vecnorm(dn,2,1),[3,1]);
 
     obj = surfer(npatches,norder,srcvals);  
 

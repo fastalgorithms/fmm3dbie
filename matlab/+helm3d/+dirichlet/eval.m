@@ -74,7 +74,7 @@ function p = eval(S,zpars,sigma,eps,varargin)
 [patch_id, uvs_targ] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, patch_id, uvs_targ, 1, npatches, npatp1, npatches, 1, npts, 2, npts);
       targinfo.patch_id = patch_id;
       targinfo.uvs_targ = uvs_targ;
-      opts = []
+      opts = [];
     end
 
     ff = 'rsc';
@@ -82,6 +82,7 @@ function p = eval(S,zpars,sigma,eps,varargin)
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
+    
 
 % Compute quadrature corrections    
     if(~nonsmoothonly) 
@@ -105,8 +106,10 @@ function p = eval(S,zpars,sigma,eps,varargin)
     end
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
-    Sover = oversample(S,novers);
+    %[novers] = get_oversampling_parameters(S,Q,eps);
+    %Sover = oversample(S,novers);
+    novers = norders;
+    Sover = S;
 
 
 % Extract oversampled arrays
