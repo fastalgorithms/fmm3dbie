@@ -82,7 +82,6 @@ function p = eval(S,zpars,sigma,eps,varargin)
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
-    
 
 % Compute quadrature corrections    
     if(~nonsmoothonly) 

@@ -58,6 +58,57 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
 end
 
 
+%
+%
+%
+%
+%
+%-------------------------------------------------
+@ src/get_surface_laplacian.m
+function [surf_lap_p] = get_surface_laplacian(S,p)
+%
+%  
+%  surf_lap_p = get_surface_laplacian(S,p)
+%    This subrorutine evaluates the surface laplacian of a given 
+%    function p
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * p: input function on surface
+%
+%  Output arguments:
+%    * surf_lap_p: surface laplcian of p
+%
+
+% Extract arrays
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+
+    nd0 = 1;
+    n2 = 2;
+
+
+    dp = zeros(2,npts);
+    # FORTRAN get_surf_grad(int[1] nd0, int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[npts] p, inout double[n2,npts] dp);
+
+    surf_lap_p = zeros(size(p));
+    # FORTRAN get_surf_div(int[1] nd0, int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[n2,npts] dp, inout double[npts] surf_lap_p);
+
+    surf_lap_p = reshape(surf_lap_p,size(p));
+
+end
+
+
+
+%
+%
+%
+%
+%
+
 
 %-------------------------------------------------
 %
@@ -143,7 +194,7 @@ function p = eval(S,zpars,sigma,eps,varargin)
       # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
       targinfo.patch_id = patch_id;
       targinfo.uvs_targ = uvs_targ;
-      opts = []
+      opts = [];
     end
 
     ff = 'rsc';
@@ -388,7 +439,7 @@ end
 %-------------------------------------------------
 
 @ +helm3d/+dirichlet/solver.m 
-function sigma = solver(S,zpars,rhs,eps,varargin)
+function [sigma,varargout] = solver(S,zpars,rhs,eps,varargin)
 %
 %  helm3d.dirichlet.solver
 %    Solve the helmholtz dirichlet boundary value problem
@@ -440,7 +491,7 @@ function sigma = solver(S,zpars,rhs,eps,varargin)
       eps_gmres = opts.eps_gmres;
     end
 
-    maxit = 200
+    maxit = 200;
     if(isfield(opts,'maxit'))
       maxit = opts.maxit;
     end

@@ -107,7 +107,6 @@ function [sigma,varargout] = solver(S,zpars,rhs,eps,varargin)
 
     [novers] = get_oversampling_parameters(S,Q,eps);
     Sover = oversample(S,novers);
-    
 
 
 % Extract oversampled arrays

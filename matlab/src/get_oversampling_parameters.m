@@ -54,12 +54,9 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
 end
 
 
-
-%-------------------------------------------------
 %
-%%
-%%   Helmholtz dirichlet routines
+%
+%
 %
 %
 %-------------------------------------------------
-
