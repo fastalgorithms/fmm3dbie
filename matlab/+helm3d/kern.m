@@ -1,6 +1,6 @@
 
 function submat= kern(zk,srcinfo,targinfo,type,varargin)
-%CHNK.HELM3D.KERN standard Helmholtz layer potential kernels in 3D
+%HELM3D.KERN standard Helmholtz layer potential kernels in 3D
 % 
 % Syntax: submat = helm3d.kern(zk,srcinfo,targingo,type,varargin)
 %

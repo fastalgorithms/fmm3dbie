@@ -2,7 +2,7 @@
 % This file tests the Helmholtz single layer
 % potenial on the sphere
 %
-% Additional dependencies: chebfun
+% Additional dependencies: chebfun, surface-hps
 %
 addpath(genpath('~/git/fmm3dbie/matlab'))
 
@@ -10,10 +10,19 @@ addpath(genpath('~/git/fmm3dbie/matlab'))
 S = surfer.ellipsoid([1,1,1],0.5,6,0);
 
 % For quads
-S = surfer.sphere_quad(6,1,1);
+S = surfer.sphere_quad(6,1,2);
+
+% For dan meshes
+
+% dom = surfacemesh.sphere(7,2);
+% S = surfer.surface_hps_mesh_to_surfer(dom);
+
 
 
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
+rr2 = sum(wts);
+rr3 = norm(S.r-S.n);
+
 % tic, plot(S); toc;
 
 zk = 1.1;
@@ -27,7 +36,9 @@ ndeg = 2;
 jn = sqrt(pi/2/zk)*besselj(ndeg+0.5,zk);
 hn = sqrt(pi/2/zk)*besselh(ndeg+0.5,1,zk);
 f = spherefun.sphharm(ndeg,1);
-rhs = f(S.r(1,:),S.r(2,:),S.r(3,:));
+
+rr = sqrt(S.r(1,:).^2 + S.r(2,:).^2 + S.r(3,:).^2);
+rhs = f(S.r(1,:)./rr,S.r(2,:)./rr,S.r(3,:)./rr);
 
 rhs = rhs(:);
 eps = 1e-7;
@@ -60,6 +71,38 @@ dat = helm3d.kern(zk,S,targ_info,'c',zpars(2),zpars(3));
 
 pot = dat*(sig.*wts);
 pot_ex = helm3d.kern(zk,src_info,targ_info,'s');
-fprintf('Error in solver=%d\n',abs(pot-pot_ex)/abs(pot_ex));
+fprintf('Error in iterative solver=%d\n',abs(pot-pot_ex)/abs(pot_ex));
 
+%% Test matrix entry generator or fast direct solver depending on size of linear system
+P = zeros(S.npts,1);
+opts_quad = [];
+opts_quad.format='sparse';
+Q = helm3d.dirichlet.get_quadrature_correction(S,zpars, ...
+   eps,S,opts_quad);
+
+if(S.npts<100)
+    A = helm3d.dirichlet.matgen(1:S.npts,1:S.npts,S,zpars,P,Q); 
+    sig_ds = A\rhs;
+    pot_ds = dat*(sig_ds.*wts);
+    
+    fprintf('Error in direct solver=%d\n',abs(pot_ds-pot_ex)/abs(pot_ex));
+else
+    opts_matgen = [];
+    opts_matgen.l2scale = true;
+    Afun = @(i,j) helm3d.dirichlet.matgen(i,j,S,zpars,P,Q,opts_matgen);
+    pxyfun = @(x,slf,lst,p,l,ctr) helm3d.dirichlet.proxyfun(x,slf,lst, ...
+       p,l,ctr,zpars,S.n,S.wts);
+    occ = 256;
+    tol = 1e-5;
+    opts_flam = [];
+    opts_flam.zk = zpars(1);
+    opts_flam.verb = true;
+    B = rhs.*sqrt(S.wts);
+    F = srskelf_asym_new(Afun,S.r,occ,tol,pxyfun,opts_flam);
+    tic, X = srskelf_sv_nn(F,B); tsolve = toc;
+    sig_ds = X./sqrt(S.wts);
+    pot_ds = dat*(sig_ds.*wts);
+    
+    fprintf('Error in fast direct solver=%d\n',abs(pot_ds-pot_ex)/abs(pot_ex));
+end
 

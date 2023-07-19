@@ -24,7 +24,12 @@ classdef surfer
         r
         du
         dv
+        dru
+        drv
         n
+        wts
+        patch_id
+        uvs_targ
     end
     properties (Access = private)
         srcvals
@@ -76,26 +81,27 @@ classdef surfer
             norder_iptype(:,2) = obj.iptype;
             [no_ip_uni,~,iuse] = unique(norder_iptype,'rows');
             nuni = size(no_ip_uni,1);
+            rnodes = cell(nuni,1);
             rwts = cell(nuni,1);
             umats = cell(nuni,1);
             npols = cell(nuni,1);
             for i=1:nuni
                 ip0 = no_ip_uni(i,2);
                 if(ip0 == 1)
-                    rnodes = koorn.rv_nodes(no_ip_uni(i,1));
+                    rnodes{i} = koorn.rv_nodes(no_ip_uni(i,1));
                     rwts{i} = koorn.rv_weights(no_ip_uni(i,1));
-                    umats{i} = koorn.vals2coefs(no_ip_uni(i,1),rnodes); 
-                    npols{i} = size(rnodes,2);
+                    umats{i} = koorn.vals2coefs(no_ip_uni(i,1),rnodes{i}); 
+                    npols{i} = size(rnodes{i},2);
                 elseif(ip0==11)
-                    rnodes = polytens.lege_nodes(no_ip_uni(i,1));
+                    rnodes{i} = polytens.lege_nodes(no_ip_uni(i,1));
                     rwts{i} = polytens.lege_weights(no_ip_uni(i,1));
-                    umats{i} = polytens.lege_vals2coefs(no_ip_uni(i,1),rnodes);
-                    npols{i} = size(rnodes,2);
+                    umats{i} = polytens.lege_vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    npols{i} = size(rnodes{i},2);
                 elseif(ip0==12)
-                    rnodes = polytens.cheb_nodes(no_ip_uni(i,1));
+                    rnodes{i} = polytens.cheb_nodes(no_ip_uni(i,1));
                     rwts{i} = polytens.cheb_weights(no_ip_uni(i,1));
-                    umats{i} = polytens.cheb_vals2coefs(no_ip_uni(i,1),rnodes);
-                    npols{i} = size(rnodes,2);
+                    umats{i} = polytens.cheb_vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    npols{i} = size(rnodes{i},2);
                 else
                     fprintf('Invalid type of patch, exiting\n');
                     return
@@ -110,6 +116,8 @@ classdef surfer
             obj.ixyzs = cumsum(npts_per_patch);
             
             obj.npts = obj.ixyzs(end)-1;
+            obj.patch_id = zeros(obj.npts,1);
+            obj.uvs_targ = zeros(2,obj.npts);
             
             for i=1:npatches
                 iind = obj.ixyzs(i):(obj.ixyzs(i+1)-1);
@@ -118,7 +126,9 @@ classdef surfer
                 du = obj.srcvals{i}(4:6,:);
                 dv = obj.srcvals{i}(7:9,:);
                 da = vecnorm(cross(du,dv),2).*rwts{iuse(i)};
-                obj.weights{i} = da(:);         
+                obj.weights{i} = da(:);      
+                obj.patch_id(iind) = i;
+                obj.uvs_targ(1:2,iind) = rnodes{iuse(i)}; 
             end
             obj.ifcurv = 0;
             obj.ffform = 0;
@@ -128,10 +138,14 @@ classdef surfer
             obj.ffform = cell(npatches,1);
             
             sv = [obj.srcvals{:}];
+            obj.wts = cat(1,obj.weights{:});
             obj.r  = sv(1:3,:);
             obj.du = sv(4:6,:);
             obj.dv = sv(7:9,:);
             obj.n  = sv(10:12,:);
+            obj.dru = obj.du./repmat(vecnorm(obj.du,2,1),[3,1]);
+            drv = cross(obj.n,obj.du);
+            obj.drv = drv./repmat(vecnorm(drv,2,1),[3,1]);
         end
         
         

@@ -34,6 +34,6 @@ function spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear)
             spmat{i} = sparse(irow_ind,icol_ind,wnear(:,i),ntarg,npts);
         end
     else
-        spmat = sparse(irow_ind,icol_ind,wnear,ntarg,npts);
+        spmat = sparse(irow_ind,icol_ind,wnear,ntarg,S.npts);
     end    
 end

@@ -40,15 +40,15 @@ function A = matgen(i,j,S,zpars,P,Q,opts)
      end
      [I,J] = ndgrid(i,j);
      srcinfo = [];
-     srcinfo.r = S.r(:,i);
-     srcinfo.n = S.n(:,i);
+     srcinfo.r = S.r(:,j);
+     srcinfo.n = S.n(:,j);
      targinfo = [];
-     targinfo.r = S.r(:,j);
-     targinfo.n = S.n(:,j);
+     targinfo.r = S.r(:,i);
+     targinfo.n = S.n(:,i);
      if(nargin <=6)
        opts = [];
      end
-
+     
      ifdiag = 1;
      if(isfield(opts,'ifdiag'))
         ifdiag = opts.ifdiag;
@@ -59,13 +59,13 @@ function A = matgen(i,j,S,zpars,P,Q,opts)
         ifout = opts.ifout;
      end
 
-     ifl2scale = 0;
+     l2scale = 0;
      if(isfield(opts,'l2scale'))
-        ifl2scale = opts.l2scale;
+        l2scale = opts.l2scale;
      end
-     
-     A = bsxfun(@times,helm3d.dirichlet.kern(zpars(1),srcinfo,targinfo,'c',zpars(2),zpars(3)), ...
-            S.wts(j));
+     A1 = helm3d.kern(zpars(1),srcinfo, ...
+            targinfo,'c',zpars(2),zpars(3));
+     A = bsxfun(@times,A1,S.wts(j).');
 
      if(nargin > 4)
         M = spget_quadcorr(i,j,P,Q.spmat);
@@ -74,11 +74,11 @@ function A = matgen(i,j,S,zpars,P,Q,opts)
      end
 
      if(ifdiag)
-        A(I==J) = A(I==J) - (-1)**ifout*0.5*zpars(3) 
+        A(I==J) = A(I==J) - (-1)^ifout*0.5*zpars(3);
      end
 
      if(l2scale)
-        A = bsxfun(@times,sqrt(S.wts(i)).',A);
-        A = bsxfun(@times,A,1.0/sqrt(S.wts(j)));
+        A = bsxfun(@times,sqrt(S.wts(i)),A);
+        A = bsxfun(@times,A,1.0./sqrt(S.wts(j)'));
      end
 end

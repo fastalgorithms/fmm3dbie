@@ -314,12 +314,9 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
       targinfo.du = S.du;
       targinfo.dv = S.dv;
       targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = []
+      patch_id = S.patch_id;
+      uvs_targ = S.uvs_targ;
+      opts = [];
     end
 
     ff = 'rsc';
@@ -337,13 +334,13 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
     
-    if(isfield(targinfo,'patch_id'))
+    if(isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id'))
       patch_id = targinfo.patch_id;
     else
       patch_id = zeros(ntarg,1);
     end
 
-    if(isfield(targinfo,'uvs_targ') )
+    if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))
       uvs_targ = targinfo.uvs_targ;
     else
       uvs_targ = zeros(2,ntarg);
@@ -427,7 +424,7 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
         Q.col_ptr = col_ptr;
         Q.row_ind = row_ind;
     else
-        spmat = surfer.conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
+        spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
         Q.spmat = spmat;
     end
     
