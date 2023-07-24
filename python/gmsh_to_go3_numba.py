@@ -59,8 +59,8 @@ def get_f2py_function_address(capsule):
 dbl_p=ctypes.POINTER(ctypes.c_double)
 int_p =ctypes.POINTER(ctypes.c_int)
 functype = ctypes.CFUNCTYPE(ctypes.c_void_p,
-                            int_p,int_p,int_p,dbl_p,dbl_p)
-func_ptr=get_f2py_function_address(srout.get_surf_uv_grad_tri._cpointer)
+                            int_p,int_p,int_p,int_p,dbl_p,dbl_p)
+func_ptr=get_f2py_function_address(srout.get_surf_uv_grad_guru._cpointer)
 srout_normal_du_dv = functype(func_ptr)
 
 @njit(parallel=True)
@@ -87,6 +87,7 @@ def get_normal_du_dv(nume,npols,order,ePos,eDu,eDv,eNormal):
     nd_ptr = val_to_ptr(nb.int32(1))
     order_ptr = val_to_ptr(nb.int32(order))
     npols_ptr = val_to_ptr(nb.int32(npols))
+    iptype_ptr = val_to_ptr(nb.int32(1))
     for ielem in prange(0,nume):
         ptcnt = ielem*npols
         ex = ePos[0][ielem*npols:(ielem+1)*npols]
@@ -95,9 +96,9 @@ def get_normal_du_dv(nume,npols,order,ePos,eDu,eDv,eNormal):
         exduv = np.empty((npols,2),dtype=np.float64)
         eyduv = np.empty((npols,2),dtype=np.float64)
         ezduv = np.empty((npols,2),dtype=np.float64)
-        srout_normal_du_dv(nd_ptr,order_ptr,npols_ptr,ex.ctypes,exduv.ctypes)
-        srout_normal_du_dv(nd_ptr,order_ptr,npols_ptr,ey.ctypes,eyduv.ctypes)
-        srout_normal_du_dv(nd_ptr,order_ptr,npols_ptr,ez.ctypes,ezduv.ctypes)
+        srout_normal_du_dv(nd_ptr,order_ptr,npols_ptr,iptype_ptr,ex.ctypes,exduv.ctypes)
+        srout_normal_du_dv(nd_ptr,order_ptr,npols_ptr,iptype_ptr,ey.ctypes,eyduv.ctypes)
+        srout_normal_du_dv(nd_ptr,order_ptr,npols_ptr,iptype_ptr,ez.ctypes,ezduv.ctypes)
         for ipts in range(0,npols):
             dxyzu = [exduv[ipts][0], eyduv[ipts][0], ezduv[ipts][0]]
             dxyzv = [exduv[ipts][1], eyduv[ipts][1], ezduv[ipts][1]]

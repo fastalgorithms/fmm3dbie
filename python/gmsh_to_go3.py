@@ -177,9 +177,9 @@ for e in entities:
             ex = ex.reshape([1,npols])
             ey = ey.reshape([1,npols])
             ez = ez.reshape([1,npols])
-            exduv = srout.get_surf_uv_grad_tri(nd=1,norder=order,npols=npols,f=ex).reshape([2,npols])
-            eyduv = srout.get_surf_uv_grad_tri(nd=1,norder=order,npols=npols,f=ey).reshape([2,npols])
-            ezduv = srout.get_surf_uv_grad_tri(nd=1,norder=order,npols=npols,f=ez).reshape([2,npols])
+            exduv = srout.get_surf_uv_grad_guru(nd=1,norder=order,npols=npols,iptype=1,f=ex).reshape([2,npols])
+            eyduv = srout.get_surf_uv_grad_guru(nd=1,norder=order,npols=npols,iptype=1,f=ey).reshape([2,npols])
+            ezduv = srout.get_surf_uv_grad_guru(nd=1,norder=order,npols=npols,iptype=1,f=ez).reshape([2,npols])
             for ipts in range(0,npols):
                 dxyzu = [exduv[0][ipts], eyduv[0][ipts], ezduv[0][ipts]]
                 dxyzv = [exduv[1][ipts], eyduv[1][ipts], ezduv[1][ipts]]
