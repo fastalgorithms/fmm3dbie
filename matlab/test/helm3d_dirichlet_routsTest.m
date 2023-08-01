@@ -14,8 +14,8 @@ S = surfer.sphere_quad(6,1,2);
 
 % For dan meshes
 
-% dom = surfacemesh.sphere(7,2);
-% S = surfer.surface_hps_mesh_to_surfer(dom);
+dom = surfacemesh.sphere(7,2);
+S = surfer.surfacemesh_to_surfer(dom);
 
 
 
@@ -42,14 +42,25 @@ rhs = f(S.r(1,:)./rr,S.r(2,:)./rr,S.r(3,:)./rr);
 
 rhs = rhs(:);
 eps = 1e-7;
-p = helm3d.dirichlet.eval(S,zpars,rhs,eps);
 
+
+p = helm3d.dirichlet.eval(S,zpars,rhs,eps);
 
 p_ex = rhs*jn*hn*1j*zk;
 
 err1 = norm((p-p_ex).*sqrt(wts))/norm(rhs.*sqrt(wts));
 
 fprintf('Error in single layer potential=%d\n',err1);
+
+%% Now test eval routine with precomputed quadrature corrections
+opts_quad = [];
+opts_quad.format='rsc';
+Q = helm3d.dirichlet.get_quadrature_correction(S,zpars, ...
+   eps,S,opts_quad);
+p = helm3d.dirichlet.eval(S,zpars,rhs,eps,S,Q);
+err1 = norm((p-p_ex).*sqrt(wts))/norm(rhs.*sqrt(wts));
+
+fprintf('Error in single layer potential with precomp corr=%d\n',err1);
 
 
 %% Now test the solver + kernel evaluation routines

@@ -7,7 +7,8 @@ function p = eval(S,zpars,sigma,eps,varargin)
 %  Syntax
 %   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps)
 %   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo)
-%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo,opts)
+%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo,Q)
+%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo,Q,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
@@ -36,20 +37,42 @@ function p = eval(S,zpars,sigma,eps,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
+%    * Q: precomputed quadrature corrections struct (optional)
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
 %    
-%
-
 
 %
 %
 % Todo: Fix varargin
 %
-    if(nargin < 6) 
+    if(nargin < 7) 
       opts = [];
+    else
+      opts = varargin{3};
     end
+
+    isprecompq = true;
+    if(nargin < 6)
+       Q = [];
+       isprecompq = false;
+    else
+       Q = varargin{2}; 
+    end
+    
+    if(isprecompq)
+      if ~(strcmpi(Q.format,'rsc'))
+        fprintf('Invalid precomputed quadrature format\n');
+        fprintf('Ignoring quadrature corrections\n');
+        opts_qcorr = [];
+        opts_qcorr.type = 'complex';
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
+    end
+
     nonsmoothonly = false;
     if(isfield(opts,'nonsmoothonly'))
       nonsmoothonly = opts.nonsmoothonly;
@@ -75,6 +98,8 @@ function p = eval(S,zpars,sigma,eps,varargin)
       targinfo.patch_id = patch_id;
       targinfo.uvs_targ = uvs_targ;
       opts = [];
+    else
+      targinfo = varargin{1};
     end
 
     ff = 'rsc';
@@ -83,10 +108,11 @@ function p = eval(S,zpars,sigma,eps,varargin)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-% Compute quadrature corrections    
-    if(~nonsmoothonly) 
-      opts_quad = [];
-      opts_quad.format = 'rsc';
+% Compute quadrature corrections   
+    if ~isprecompq
+      if ~nonsmoothonly
+        opts_quad = [];
+        opts_quad.format = 'rsc';
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -95,14 +121,15 @@ function p = eval(S,zpars,sigma,eps,varargin)
 %  if nkernel is >1
 %
 
-      [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
-      nnz = length(Q.col_ind);
-      nquad = Q.iquad(end)-1;
-    else
-      opts_qcorr = [];
-      opts_qcorr.type = 'complex';
-      Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+        [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+      else
+        opts_qcorr = [];
+        opts_qcorr.type = 'complex';
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
     end
+    nquad = Q.iquad(end)-1;
+    nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
     [novers] = get_oversampling_parameters(S,Q,eps);
@@ -119,7 +146,6 @@ function p = eval(S,zpars,sigma,eps,varargin)
     col_ind = Q.col_ind;
     iquad = Q.iquad;
     wnear = Q.wnear;
-
 
     p = complex(zeros(ntarg,1));
 

@@ -12,9 +12,7 @@ classdef surfer
         iptype
         weights
         norders
-        curv
-        ffform
-        ffforminv
+        
         npatches
         npts
         srccoefs
@@ -30,6 +28,9 @@ classdef surfer
         wts
         patch_id
         uvs_targ
+        curv
+        ffform
+        ffforminv
     end
     properties (Access = private)
         srcvals
@@ -118,6 +119,8 @@ classdef surfer
             obj.npts = obj.ixyzs(end)-1;
             obj.patch_id = zeros(obj.npts,1);
             obj.uvs_targ = zeros(2,obj.npts);
+            obj.ffform = zeros(2,2,obj.npts);
+            obj.ffforminv = zeros(2,2,obj.npts);
             
             for i=1:npatches
                 iind = obj.ixyzs(i):(obj.ixyzs(i+1)-1);
@@ -125,6 +128,20 @@ classdef surfer
                 obj.srccoefs{i} = obj.srcvals{i}(1:9,:)*umats{iuse(i)}';
                 du = obj.srcvals{i}(4:6,:);
                 dv = obj.srcvals{i}(7:9,:);
+                dunormsq = sum(du.*du,1);
+                dvnormsq = sum(dv.*dv,1);
+                duv = sum(du.*dv,1);
+                ddinv = 1.0./dunormsq.*dvnormsq - duv.*duv;
+                obj.ffform(1,1,iind) = dunormsq;
+                obj.ffform(1,2,iind) = duv;
+                obj.ffform(2,1,iind) = duv;
+                obj.ffform(2,2,iind) = dvnormsq;
+                
+                obj.ffforminv(1,1,iind) = dvnormsq.*ddinv;
+                obj.ffforminv(1,2,iind) = -duv.*ddinv;
+                obj.ffforminv(2,1,iind) = -duv.*ddinv;
+                obj.ffforminv(2,2,iind) = dunormsq.*ddinv;
+                
                 da = vecnorm(cross(du,dv),2).*rwts{iuse(i)};
                 obj.weights{i} = da(:);      
                 obj.patch_id(iind) = i;
@@ -166,6 +183,6 @@ classdef surfer
         obj = sphere_quad(varargin);
         obj = ellipsoid(varargin);
         obj = axissym(fcurve,cparams,varargin);
-        obj = surface_hps_mesh_to_surfer(dom);
+        [obj,varargout] = surfacemesh_to_surfer(dom);
     end
 end

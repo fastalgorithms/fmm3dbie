@@ -60,14 +60,8 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
       targinfo.du = S.du;
       targinfo.dv = S.dv;
       targinfo.n = S.n;
-      patch_id  = S.patch_id;
+      patch_id = S.patch_id;
       uvs_targ = S.uvs_targ;
-      
-      uvs_targ = zeros(2,npts);
-      mex_id_ = 'get_patch_id_uvs(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io double[xx])';
-[patch_id, uvs_targ] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, patch_id, uvs_targ, 1, npatches, npp1, npatches, 1, npts, 2, npts);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
       opts = [];
     end
 
@@ -92,7 +86,7 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
       patch_id = zeros(ntarg,1);
     end
 
-    if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ') )
+    if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))
       uvs_targ = targinfo.uvs_targ;
     else
       uvs_targ = zeros(2,ntarg);
@@ -149,7 +143,6 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
         iquadtype = 1;
       end
     end
-    
     mex_id_ = 'getnearquad_helm_comb_dir(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[x])';
 [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, npts, 2, npts, 1, 3, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
     
@@ -160,12 +153,12 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
     Q.kernel_order = -1;
     Q.rfac = rfac;
     Q.nquad = nquad;
+    Q.format = ff;
     
 
     if(abs(zpars(3)) > 1e-16)
         Q.kernel_order = 0;
     end
-    
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;

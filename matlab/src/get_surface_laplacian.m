@@ -35,21 +35,8 @@ function [surf_lap_p] = get_surface_laplacian(S,p)
     surf_lap_p = reshape(surf_lap_p,size(p));
 
 end
-
-
-
 %
 %
 %
 %
 %
-
-
-%-------------------------------------------------
-%
-%%
-%%   Helmholtz dirichlet routines
-%
-%
-%-------------------------------------------------
-

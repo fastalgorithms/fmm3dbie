@@ -100,8 +100,77 @@ function [surf_lap_p] = get_surface_laplacian(S,p)
     surf_lap_p = reshape(surf_lap_p,size(p));
 
 end
+%
+%
+%
+%
+%
+@ src/get_surface_grad.m
+function [surf_grad] = get_surface_grad(S,p,varargin)
+%
+%
+%
+%  surf_grad = get_surfgrad(S,p)
+%     This subroutine evaluates the surface gradient of a given function
+%     p and returns the gradient in cartesian coordinates (default) or 
+%     in the dxyz/du, and dxyz/dv basis 
+%
+%  Input arguments:
+%    * S: surfer object
+%    * p: input function on surface
+%    * opts: options struct (optional)
+%        opts.iscartesian (true): return surface gradient in
+%           cartesian coordiantes if true, else return
+%           and dxyz/du and dxyz/dv components
+%
+%  Output arguments:
+%    * surf_grad: double (3,S.npts) or double (2,npts)
+%        depending on the flag opts.iscartesian
+%
+
+    opts = [];
+    if(nargin == 3)
+       opts = varargin{1};
+    end
+
+    iscartesian = true;
+    if(isfield(opts,'iscartesian'))
+        iscartesian = opts.iscartesian;
+    end
+     
+% Extract arrays
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+
+    if(isreal(p))
+        nd0 = 1;
+        p = reshape(p,[1,npts]);
+    else
+        nd0 = 2;
+        p = [real(p(:)) imag(p(:))].';
+    end
+    n2 = 2;
 
 
+    nduse = nd0*n2;
+
+
+
+    dp = zeros(nduse,npts);
+    # FORTRAN get_surf_grad(int[1] nd0, int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[nd0,npts] p, inout double[nduse,npts] dp);
+    
+    if(nd0 ~= 1)
+        dp = dp(1:2:4,1:npts) + 1j*dp(2:2:4,1:npts); 
+    end
+    if(~iscartesian)
+        surf_grad = dp;
+    else
+        surf_grad = repmat(dp(1,1:npts),[3,1]).*srcvals(4:6,1:npts) + repmat(dp(2,1:npts),[3,1]).*srcvals(7:9,1:npts);
+    end
+end
 
 %
 %
@@ -128,7 +197,8 @@ function p = eval(S,zpars,sigma,eps,varargin)
 %  Syntax
 %   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps)
 %   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo)
-%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo,opts)
+%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo,Q)
+%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo,Q,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
@@ -157,20 +227,42 @@ function p = eval(S,zpars,sigma,eps,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
+%    * Q: precomputed quadrature corrections struct (optional)
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
 %    
-%
-
 
 %
 %
 % Todo: Fix varargin
 %
-    if(nargin < 6) 
+    if(nargin < 7) 
       opts = [];
+    else
+      opts = varargin{3};
     end
+
+    isprecompq = true;
+    if(nargin < 6)
+       Q = [];
+       isprecompq = false;
+    else
+       Q = varargin{2}; 
+    end
+    
+    if(isprecompq)
+      if ~(strcmpi(Q.format,'rsc'))
+        fprintf('Invalid precomputed quadrature format\n');
+        fprintf('Ignoring quadrature corrections\n');
+        opts_qcorr = [];
+        opts_qcorr.type = 'complex';
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
+    end
+
     nonsmoothonly = false;
     if(isfield(opts,'nonsmoothonly'))
       nonsmoothonly = opts.nonsmoothonly;
@@ -195,6 +287,8 @@ function p = eval(S,zpars,sigma,eps,varargin)
       targinfo.patch_id = patch_id;
       targinfo.uvs_targ = uvs_targ;
       opts = [];
+    else
+      targinfo = varargin{1};
     end
 
     ff = 'rsc';
@@ -203,10 +297,11 @@ function p = eval(S,zpars,sigma,eps,varargin)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-% Compute quadrature corrections    
-    if(~nonsmoothonly) 
-      opts_quad = [];
-      opts_quad.format = 'rsc';
+% Compute quadrature corrections   
+    if ~isprecompq
+      if ~nonsmoothonly
+        opts_quad = [];
+        opts_quad.format = 'rsc';
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -215,14 +310,15 @@ function p = eval(S,zpars,sigma,eps,varargin)
 %  if nkernel is >1
 %
 
-      [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
-      nnz = length(Q.col_ind);
-      nquad = Q.iquad(end)-1;
-    else
-      opts_qcorr = [];
-      opts_qcorr.type = 'complex';
-      Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+        [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+      else
+        opts_qcorr = [];
+        opts_qcorr.type = 'complex';
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
     end
+    nquad = Q.iquad(end)-1;
+    nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
     [novers] = get_oversampling_parameters(S,Q,eps);
@@ -239,7 +335,6 @@ function p = eval(S,zpars,sigma,eps,varargin)
     col_ind = Q.col_ind;
     iquad = Q.iquad;
     wnear = Q.wnear;
-
 
     p = complex(zeros(ntarg,1));
 
@@ -401,6 +496,7 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
     Q.kernel_order = -1;
     Q.rfac = rfac;
     Q.nquad = nquad;
+    Q.format = ff;
     
 
     if(abs(zpars(3)) > 1e-16)
@@ -575,3 +671,5 @@ end
 %
 %
 %
+%
+

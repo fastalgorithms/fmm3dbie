@@ -19,4 +19,6 @@ function Q = init_empty_quadrature_correction(targinfo,opts)
     end
     Q.kernel_order = -1;
     Q.wavenumber = 0;
+    Q.rfac = 3;
+    Q.format = 'rsc';
 end
