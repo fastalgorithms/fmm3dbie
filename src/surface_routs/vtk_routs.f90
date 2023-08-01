@@ -259,8 +259,8 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
   
   nlmax = 5
   nuv = (4**(nlmax+1)-1)/3
-  allocate(uvs(2,4,nuv))
-  allocate(uvs_quad(2,3,nuv))
+  allocate(uvs(2,3,nuv))
+  allocate(uvs_quad(2,4,nuv))
 
 
   uvs(1,1,1) = 0
