@@ -6,4 +6,3 @@
 #
 
 LBLAS=-lopenblas
-LDBLASINC
