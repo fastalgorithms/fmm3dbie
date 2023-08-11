@@ -13,3 +13,6 @@ int2*
 *.so
 *.a
 *.vtk
+*.asv
+*.DS_STORE*
+*.msh*
