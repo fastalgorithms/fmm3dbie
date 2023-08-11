@@ -7,12 +7,17 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 % Let x be targets and y be sources for these formulas, with
 % n_x and n_y the corresponding unit normals at those points.
 %  
-% Kernels based on G(x,y) = exp(i*|x-y|)/(4*pi*|x-y|)
+% Kernels based on S:= G(x,y) = exp(i*|x-y|)/(4*pi*|x-y|)
 %
-% D(x,y) = \nabla_{n_y} G(x,y)
-% S(x,y) = G(x,y)
-% S'(x,y) = \nabla_{n_x} G(x,y)
-% nxS'(x,y) = n_x cross \nabla_{n_x} G(x,y)
+%
+% NxDelS       = n \times \nabla S [scalar]
+% NxCurlS      = n \times \nabla \times S [vector]
+% NdotCurlS    = n \cdot \nabla \times S [vector]
+% NdotS        = n \cdot S [vector]
+% NxS          = n \times S [vector]
+% NxCurlCurlS  = n \times \nabla \times \nabla \times S [vector]
+% NdotCurCurlS = n \cdot \nabla \times \nabla \times S [vector]
+% DeldotS      = \nabla \cdot S [vector]
 %
 % Input:
 %   zk - complex number, Maxwell wave number
@@ -37,7 +42,6 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %                type == 'NdotCurlS'
 %                type == 'NdotS'
 %                type == 'NxS'
-%                type == 'NxCurlS'
 %                type == 'NxCurlCurlS'
 %                type == 'NdotCurlCurlS'
 %                type == 'DeldotS'
