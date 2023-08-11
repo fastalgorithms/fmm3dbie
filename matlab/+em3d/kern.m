@@ -1,8 +1,8 @@
 
 function submat= kern(zk,srcinfo,targinfo,type,varargin)
-%MAX3D.KERN standard Helmholtz layer potential kernels in 3D
+%EM3D.KERN standard Helmholtz layer potential kernels in 3D
 % 
-% Syntax: submat = max3d.kern(zk,srcinfo,targingo,type,varargin)
+% Syntax: submat = em3d.kern(zk,srcinfo,targinfo,type,varargin)
 %
 % Let x be targets and y be sources for these formulas, with
 % n_x and n_y the corresponding unit normals at those points.
@@ -28,21 +28,15 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %                be provided. sprime requires normal info in
 %                targinfo.n.
 %   type - string, determines kernel type
-%                type == 'd', double layer kernel D
-%                type == 's', single layer kernel S
 %                type == 'sdu', derivative of single layer with respect to
 %                        u parameter
 %                type == 'sdv', derivative of single layer with respect to
 %                        v parameter
-%                type == 'sprime', normal derivative of single
-%                      layer S'
-%                type == 'c', combined layer kernel alph*S+beta*D
-%                type == 'NxSprime'
+%                type == 'NxDelS'
 %                type == 'NxCurlS'
 %                type == 'NdotCurlS'
 %                type == 'NdotS'
 %                type == 'NxS'
-%                type == 'NdotSprime'
 %                type == 'NxCurlS'
 %                type == 'NxCurlCurlS'
 %                type == 'NdotCurlCurlS'
@@ -57,7 +51,6 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %            rows equals the number of targets and the
 %            number of columns equals the number of sources  
 %
-% see also MAX3D.GREEN
   
 src = srcinfo.r;
 targ = targinfo.r;
@@ -65,27 +58,9 @@ targ = targinfo.r;
 [~,ns] = size(src);
 [~,nt] = size(targ);
 
-if strcmpi(type,'d')
-  srcnorm = srcinfo.n;
-  [~,grad] = max3d.green(zk,src,targ);
-  nx = repmat(srcnorm(1,:),nt,1);
-  ny = repmat(srcnorm(2,:),nt,1);
-  nz = repmat(srcnorm(3,:),nt,1);
-  submat = -(grad(:,:,1).*nx + grad(:,:,2).*ny+grad(:,:,3).*nz);
-end
-
-if strcmpi(type,'sprime') || strcmpi(type,'NdotSprime')
-  targnorm = targinfo.n;
-  [~,grad] = max3d.green(zk,src,targ);
-  nx = repmat((targnorm(1,:)).',1,ns);
-  ny = repmat((targnorm(2,:)).',1,ns);
-  nz = repmat((targnorm(3,:)).',1,ns);
-  submat = (grad(:,:,1).*nx + grad(:,:,2).*ny+grad(:,:,3).*nz);
-end
-
 if strcmpi(type,'sdu')
   du = targinfo.du;
-  [~,grad] = max3d.green(zk,src,targ);
+  [~,grad] = helm3d.green(zk,src,targ);
   dx = repmat((du(1,:)).',1,ns);
   dy = repmat((du(2,:)).',1,ns);
   dz = repmat((du(3,:)).',1,ns);
@@ -96,7 +71,7 @@ end
 
 if strcmpi(type,'sdv')
   dv = targinfo.dv;
-  [~,grad] = max3d.green(zk,src,targ);
+  [~,grad] = em3d.green(zk,src,targ);
   dx = repmat((dv(1,:)).',1,ns);
   dy = repmat((dv(2,:)).',1,ns);
   dz = repmat((dv(3,:)).',1,ns);
@@ -105,47 +80,11 @@ if strcmpi(type,'sdv')
       grad(:,:,3).*dz)./dn;
 end
 
-if strcmpi(type,'s')
-  submat = max3d.green(zk,src,targ);
-end
-
-if strcmpi(type,'dprime')
-  disp("unsupported kernel");
-  submat = 0;
-end
-
-if strcmpi(type,'c')
-%%%%%%
-%       .  .  .  alpha*S + beta*D
-%%%%%%
-  srcnorm = srcinfo.n;
-  alpha = varargin{1};
-  beta  = varargin{2};
-  [s,grad] = max3d.green(zk,src,targ);
-  nx = repmat(srcnorm(1,:),nt,1);
-  ny = repmat(srcnorm(2,:),nt,1);
-  nz = repmat(srcnorm(3,:),nt,1);
-  submat = -beta*(grad(:,:,1).*nx + grad(:,:,2).*ny+grad(:,:,3).*nz)...
-      +alpha*s;
-end
-
-if strcmpi(type,'all')
-  disp("unsupported kernel");
-  submat = 0;
-end
-
-
-if strcmpi(type,'trans1')
-  disp("unsupported kernel");
-  submat = 0;
-end
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if strcmpi(type,'NxSprime')
+if strcmpi(type,'NxDelS')
   targnorm = targinfo.n;
-  [~,grad] = max3d.green(zk,src,targ);
+  [~,grad] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
@@ -172,7 +111,7 @@ end
 
 if strcmpi(type,'NxCurlS')
   targnorm = targinfo.n;
-  [~,grad] = max3d.green(zk,src,targ);
+  [~,grad] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
@@ -237,7 +176,7 @@ end
 
 if strcmpi(type,'NdotS')
   targnorm = targinfo.n;
-  [gfun] = max3d.green(zk,src,targ);
+  [gfun] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
@@ -265,7 +204,7 @@ end
 if strcmpi(type,'NxS')
     
   targnorm = targinfo.n;
-  [gfun] = max3d.green(zk,src,targ);
+  [gfun] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
@@ -306,7 +245,7 @@ end
 if strcmpi(type,'NxCurlCurlS')
     
   targnorm = targinfo.n;
-  [gfun,~,hess] = max3d.green(zk,src,targ);
+  [gfun,~,hess] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
@@ -370,7 +309,7 @@ end
 if strcmpi(type,'NdotCurlCurlS')
     
   targnorm = targinfo.n;
-  [gfun,~,hess] = max3d.green(zk,src,targ);
+  [gfun,~,hess] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
@@ -431,7 +370,7 @@ end
 
 
 if strcmpi(type,'DeldotS')
-  [~,grad] = max3d.green(zk,src,targ);
+  [~,grad] = helm3d.green(zk,src,targ);
   
   drus = srcinfo.dru;
   dxus = repmat((drus(1,:)),nt,1);
@@ -452,7 +391,7 @@ end
 if strcmpi(type,'NdotCurlS')
     
   targnorm = targinfo.n;
-  [~,grad] = max3d.green(zk,src,targ);
+  [~,grad] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
