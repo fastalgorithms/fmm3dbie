@@ -1,0 +1,298 @@
+@function [S] = wtorus(radii,scales,nosc,nu,nv,norder)
+    npatches = double(2*nu*nv);
+    npols = int32((norder+1)*(norder+2)/2);
+    npts = double(npatches*npols);
+    srcvals = zeros(12,npts);
+    srccoefs = zeros(9,npts);
+    wts = zeros(npts,1);
+    iptype = zeros(npatches,1);
+    ixyzs = zeros(npatches+1,1);
+    norders = norder*ones(npatches,1);
+    npp1 = npatches+1;
+
+    ndsv = 12;
+    ndsc = 9;
+
+    nr = 3;
+
+    #FORTRAN get_wtorus_geom(double[3] radii,double[3] scales,int[1] nosc,int[1] nu,int[1] nv,int[1] npatches,int[1] norder,int[1] npts,inout int[npatches] norders,inout int[npp1] ixyzs,inout int[npatches] iptype,inout double[ndsv,npts] srcvals,inout double[ndsc,npts] srccoefs,inout double[npts] wts);
+
+    S = [];
+    S.norders = norders;
+    S.npatches = npatches;
+    S.npts = npts;
+    S.srcvals = srcvals;
+    S.srccoefs = srccoefs;
+    S.iptype = iptype;
+    S.wts = wts;
+    S.ixyzs = ixyzs;
+    
+
+end
+
+@function [S] = plane_a380(iref)
+    npatches = double(7834*(4^iref));
+    norder = 3;
+    npols = int32((norder+1)*(norder+2)/2);
+    npts = double(npatches*npols);
+    srcvals = zeros(12,npts);
+    srccoefs = zeros(9,npts);
+    wts = zeros(npts,1);
+    iptype = zeros(npatches,1);
+    ixyzs = zeros(npatches+1,1);
+    norders = norder*ones(npatches,1);
+    npp1 = npatches+1;
+
+    ndsv = 12;
+    ndsc = 9;
+
+    #FORTRAN get_plane_geom(int[1] iref,int[1] npatches,int[1] norder,int[1] npts,inout int[npatches] norders,inout int[npp1] ixyzs,inout int[npatches] iptype,inout double[ndsv,npts] srcvals,inout double[ndsc,npts] srccoefs,inout double[npts] wts);
+
+    S = [];
+    S.norders = norders;
+    S.npatches = npatches;
+    S.npts = npts;
+    S.srcvals = srcvals;
+    S.srccoefs = srccoefs;
+    S.iptype = iptype;
+    S.wts = wts;
+    S.ixyzs = ixyzs;
+    
+
+end
+
+@function [spmat] = helm_near_corr(S,zpars,eps)
+    npts = S.npts;
+    npatches = S.npatches;
+    ipatch_id = zeros(npts,1);
+    uvs_targ = zeros(2,npts);
+    norders = S.norders;
+    ixyzs = S.ixyzs;
+    iptype = S.iptype;
+    srcvals = S.srcvals;
+    srccoefs = S.srccoefs;
+    npp1 = npatches+1;
+
+    n3 = 3;
+    n9 = 9;
+    n12 = 12;
+    # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] ipatch_id, inout double[2,npts] uvs_targ);
+    
+    iptype0 = iptype(1);
+    norder0 = norders(1);
+    rfac = 0.0;
+    rfac0 = 0.0;
+    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    
+
+    cms = zeros(3,npatches);
+    rads = zeros(npatches,1);
+    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+
+    rad_near = rads*rfac;
+    ndtarg = 12;
+    nnz = 0;
+    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,npts] srcvals,int[1] npts,inout int[1] nnz);
+
+    row_ptr = zeros(npts+1,1);
+    col_ind = zeros(nnz,1);
+    nptsp1 = npts+1;
+    nnzp1 = nnz+1;
+    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,npts] srcvals, int[1] npts,inout int[nptsp1] row_ptr,inout int[nnz] col_ind); 
+
+    iquad = zeros(nnz+1,1);
+    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[nptsp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+
+    nquad = iquad(nnz+1)-1;
+    wnear = complex(zeros(nquad,1));
+    irowind = zeros(nquad,1);
+    icolind = zeros(nquad,1);
+    iquadtype = 1;
+    
+    # FORTRAN getnearquad_helm_comb_dir_spmat(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] npts,double[ndtarg,npts] srcvals, int[npts] ipatch_id, double[2,npts] uvs_targ,double[1] eps,dcomplex[3] zpars,int[1] iquadtype,int[1] nnz,int[nptsp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] wnear,inout int[nquad] irowind,inout int[nquad] icolind);
+    spmat = sparse(irowind,icolind,wnear,npts,npts);
+end
+
+
+
+@function [nterms] = h3dterms(boxsize,zk,eps)
+    nterms = 0;
+    # FORTRAN h3dterms(double[1] boxsize,dcomplex[1] zk,double[1] eps,inout int[1] nterms);
+end
+
+
+
+@function [pot] = lpcomp_helm_comb_dir(S,zpars,sigma,targs,eps)
+    [ndtarg,ntarg] = size(targs);
+    npts = S.npts;
+    npatches = S.npatches;
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    norders = S.norders;
+    ixyzs = S.ixyzs;
+    iptype = S.iptype;
+    srcvals = S.srcvals;
+    srccoefs = S.srccoefs;
+    npp1 = npatches+1;
+
+    n3 = 3;
+    n9 = 9;
+    n12 = 12;
+    pot = zeros(ntarg,1);
+    # FORTRAN lpcomp_helm_comb_dir(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, dcomplex[npts] sigma, inout dcomplex[ntarg] pot);
+    
+
+end
+
+@function [spmat] = helm_neu_near_corr(S,zpars,eps)
+    npts = S.npts;
+    npatches = S.npatches;
+    ipatch_id = zeros(npts,1);
+    uvs_targ = zeros(2,npts);
+    norders = S.norders;
+    ixyzs = S.ixyzs;
+    iptype = S.iptype;
+    srcvals = S.srcvals;
+    srccoefs = S.srccoefs;
+    npp1 = npatches+1;
+
+    n3 = 3;
+    n9 = 9;
+    n12 = 12;
+    # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] ipatch_id, inout double[2,npts] uvs_targ);
+    
+    iptype0 = iptype(1);
+    norder0 = norders(1);
+    rfac = 0.0;
+    rfac0 = 0.0;
+    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    
+
+    cms = zeros(3,npatches);
+    rads = zeros(npatches,1);
+    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+
+    rad_near = rads*rfac;
+    ndtarg = 12;
+    nnz = 0;
+    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,npts] srcvals,int[1] npts,inout int[1] nnz);
+
+    row_ptr = zeros(npts+1,1);
+    col_ind = zeros(nnz,1);
+    nptsp1 = npts+1;
+    nnzp1 = nnz+1;
+    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,npts] srcvals, int[1] npts,inout int[nptsp1] row_ptr,inout int[nnz] col_ind); 
+
+    iquad = zeros(nnz+1,1);
+    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[nptsp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+
+    nquad = iquad(nnz+1)-1;
+    wnear = complex(zeros(nquad,4));
+    irowind = zeros(nquad,1);
+    icolind = zeros(nquad,1);
+    iquadtype = 1;
+    
+    # FORTRAN getnearquad_helm_rpcomb_neu_spmat(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,double[1] eps,dcomplex[2] zpars,int[1] iquadtype,int[1] nnz,int[nptsp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad,4] wnear,inout int[nquad] irowind,inout int[nquad] icolind);
+    spmat = cell(1,4);
+    spmat{1} = sparse(irowind,icolind,wnear(:,1),npts,npts);
+    spmat{2} = sparse(irowind,icolind,wnear(:,2),npts,npts);
+    spmat{3} = sparse(irowind,icolind,wnear(:,3),npts,npts);
+    spmat{4} = sparse(irowind,icolind,wnear(:,4),npts,npts);
+end
+
+@function [spmat] = helm_trans_near_corr(S,zpars,eps)
+    npts = S.npts;
+    npatches = S.npatches;
+    ipatch_id = zeros(npts,1);
+    uvs_targ = zeros(2,npts);
+    norders = S.norders;
+    ixyzs = S.ixyzs;
+    iptype = S.iptype;
+    srcvals = S.srcvals;
+    srccoefs = S.srccoefs;
+    npp1 = npatches+1;
+
+    n3 = 3;
+    n9 = 9;
+    n12 = 12;
+    # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] ipatch_id, inout double[2,npts] uvs_targ);
+    
+    iptype0 = iptype(1);
+    norder0 = norders(1);
+    rfac = 0.0;
+    rfac0 = 0.0;
+    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    
+
+    cms = zeros(3,npatches);
+    rads = zeros(npatches,1);
+    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+
+    rad_near = rads*rfac;
+    ndtarg = 12;
+    nnz = 0;
+    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,npts] srcvals,int[1] npts,inout int[1] nnz);
+
+    row_ptr = zeros(npts+1,1);
+    col_ind = zeros(nnz,1);
+    nptsp1 = npts+1;
+    nnzp1 = nnz+1;
+    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,npts] srcvals, int[1] npts,inout int[nptsp1] row_ptr,inout int[nnz] col_ind); 
+
+    iquad = zeros(nnz+1,1);
+    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[nptsp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+
+    nquad = iquad(nnz+1)-1;
+    wnear = complex(zeros(nquad,4));
+    irowind = zeros(nquad,1);
+    icolind = zeros(nquad,1);
+    iquadtype = 1;
+    
+    # FORTRAN getnearquad_helm_comb_trans_spmat(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,double[1] eps,dcomplex[5] zpars,int[1] iquadtype,int[1] nnz,int[nptsp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad,4] wnear,inout int[nquad] irowind,inout int[nquad] icolind);
+    spmat = cell(1,4);
+    spmat{1} = sparse(irowind,icolind,wnear(:,1),npts,npts);
+    spmat{2} = sparse(irowind,icolind,wnear(:,2),npts,npts);
+    spmat{3} = sparse(irowind,icolind,wnear(:,3),npts,npts);
+    spmat{4} = sparse(irowind,icolind,wnear(:,4),npts,npts);
+end
+
+@function [S] = ellipsoid(a,b,c,rmax,ifc,norder)
+%
+% rmax maximum patch size
+% ifc is whether mesh is conforming or not
+%
+%
+
+    npatches = 0;
+    # FORTRAN get_ellipsoid_mem(double[1] a, double[1] b, double[1] c, double[1] rmax, int[1] ifc, inout int[1] npatches);
+    npatches = double(npatches);
+    npols = int32((norder+1)*(norder+2)/2);
+    npts = double(npatches*npols);
+    srcvals = zeros(12,npts);
+    srccoefs = zeros(9,npts);
+    wts = zeros(npts,1);
+    iptype = zeros(npatches,1);
+    ixyzs = zeros(npatches+1,1);
+    norders = norder*ones(npatches,1);
+    npp1 = npatches+1;
+
+    ndsv = 12;
+    ndsc = 9;
+
+    nr = 3;
+
+    #FORTRAN get_ellipsoid_geom(double[1] a, double[1] b, double[1] c, double[1] rmax, int[1] ifc, int[1] norder, int[1] npatches,int[1] npts,inout int[npatches] norders,inout int[npp1] ixyzs,inout int[npatches] iptype,inout double[ndsv,npts] srcvals,inout double[ndsc,npts] srccoefs);
+    #FORTRAN get_qwts(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[ndsv,npts] srcvals, inout double[npts] wts);
+    S = [];
+    S.norders = norders;
+    S.npatches = npatches;
+    S.npts = npts;
+    S.srcvals = srcvals;
+    S.srccoefs = srccoefs;
+    S.iptype = iptype;
+    S.wts = wts;
+    S.ixyzs = ixyzs;
+    
+
+end
+
