@@ -70,7 +70,7 @@ opts.l2scale = true;
 Afun_use = @(i, j) helm3d.transmission.matgen(i, j, S, zpars, P, qcorr,opts);
 
 zk0 = zpars(1)*sqrt(zpars(2)*zpars(3));
-zk1 = zpars(2)*sqrt(zpars(4)*zpars(5));
+zk1 = zpars(1)*sqrt(zpars(4)*zpars(5));
 zks = [zk0,zk1];
 % Set proxy function
 pxyfun_use = @(xx, slf, nbr, proxy, l, ctr) ...

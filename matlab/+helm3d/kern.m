@@ -103,21 +103,22 @@ end
 if strcmpi(type,'dprime')
     [~,~,hess] = helm3d.green(zk,src,targ);
     targnorm = targinfo.n;
-    nvect = zeros([3,nt,ns]);
-    nvect(1,:,:) = repmat((targnorm(1,:)).',1,ns);
-    nvect(2,:,:) = repmat((targnorm(2,:)).',1,ns);
-    nvect(3,:,:) = repmat((targnorm(3,:)).',1,ns);
+    nvect = zeros([nt,ns,3]);
+    nvect(:,:,1) = repmat((targnorm(1,:)).',1,ns);
+    nvect(:,:,2) = repmat((targnorm(2,:)).',1,ns);
+    nvect(:,:,3) = repmat((targnorm(3,:)).',1,ns);
     srcnorm = srcinfo.n;
-    nvecs = zeros([3,nt,ns]);
-    nvecs(1,:,:) = repmat((srcnorm(1,:)),nt,1);
-    nvecs(2,:,:) = repmat((srcnorm(2,:)),nt,1);
-    nvecs(3,:,:) = repmat((srcnorm(3,:)),nt,1);
+    nvecs = zeros([nt,ns,3]);
+    nvecs(:,:,1) = repmat((srcnorm(1,:)),nt,1);
+    nvecs(:,:,2) = repmat((srcnorm(2,:)),nt,1);
+    nvecs(:,:,3) = repmat((srcnorm(3,:)),nt,1);
 
     submat = zeros(nt,ns);
+
     for ii=1:3
         for jj=1:3
-            submat = submat - squeeze(nvecs(jj,:,:)).*squeeze(hess(:,:,ii,jj)) ...
-                .*squeeze(nvect(ii,:,:));
+            submat = squeeze(submat) - squeeze(nvecs(:,:,jj)).*squeeze(hess(:,:,ii,jj)) ...
+                .*squeeze(nvect(:,:,ii));
         end
     end
 end
