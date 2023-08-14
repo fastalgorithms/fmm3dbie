@@ -18,6 +18,7 @@ if isempty(i) || isempty(j)
 end
 
 [I, J] = ndgrid(i, j);
+Idiag = find(I==J);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -67,7 +68,10 @@ K_prime = bsxfun(@times,helm3d.kern(z_k,srcinfo,targinfo,'sprime'),area(j));
 K = bsxfun(@times,helm3d.kern(z_k,srcinfo,targinfo,'d'),area(j));
 Sl= bsxfun(@times,helm3d.kern(z_k,srcinfo,targinfo,'s'),area(j));
 T = bsxfun(@times,helm3d.kern(z_k,srcinfo,targinfo,'dprime'),area(j));
-
+K_prime(Idiag) = 0;
+K(Idiag)       = 0;
+Sl(Idiag)      = 0;
+T(Idiag)       = 0;
 
 %K0_prime = bsxfun(@times, helm_sound_hard_kernel(targets, sources, z_k0, nx), area(j));
 %K0 = bsxfun(@times, helm_dirichlet_kernel(targets, sources, z0dtmp, ny), area(j));
@@ -77,7 +81,10 @@ K0_prime = bsxfun(@times,helm3d.kern(z_k0,srcinfo,targinfo,'sprime'),area(j));
 K0 = bsxfun(@times,helm3d.kern(z_k0,srcinfo,targinfo,'d'),area(j));
 Sl0= bsxfun(@times,helm3d.kern(z_k0,srcinfo,targinfo,'s'),area(j));
 T0 = bsxfun(@times,helm3d.kern(z_k0,srcinfo,targinfo,'dprime'),area(j));
-
+K0_prime(Idiag) = 0;
+K0(Idiag)       = 0;
+Sl0(Idiag)      = 0;
+T0(Idiag)       = 0;
 
 % A11 
 A(1:2:end, 1:2:end) = -(deps*K-deps0*K0);
