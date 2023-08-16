@@ -1,15 +1,58 @@
+!
+!  Non resonant charge current integral equation (NRCCIE)
+!  for scattering from perfect electric conductors
+!
+!  PDE:
+!    \nabla \times E =  ik H
+!    \nabla \cdot  E =     0
+!    \nabla \times H = -ik E
+!    \nabla \cdot  H =     0
+!
+!  Boundary conditions
+!    n \times (E + E_in) = 0
+!    n \cdot  (E + E_in) = \rho
+!
+!    n \times (H + H_in) = J
+!    n \cdot  (H + H_in) = 0
+!  
+!
+!  Representation:
+!    H = \nabla \times S_{k} [J]
+!    E = ik S_{k} [J] - \nabla S_{k} [\rho]
+!
+!  Integral equations solve for [J,\rho] and obtained by imposing
+!
+!  -n \times (H + H_in) + J + \alpha (n \times n \times (E + E_in)) = 0
+!  -n \cdot  (E + E_in) + \rho + \alpha/ik \nabla \cdot E           = 0
+!
+!  and are given by
+!  J/2 - n \times \nabla S_{k} [J] + 
+!     \alpha (n \times n \times (ik S_{k} [J] - \nabla S_{k} [\rho])) = 
+!     n \times H_in - \alpha n \times n \times E_in      ----  (1)
+!
+!  \rho/2 + S_{k}'[\rho] - ik n \cdot S_{k} [J] + 
+!     \alpha (\nabla \cdot S_{k}[J] -ik S_{k}[\rho]) = n \cdot E_in 
+!
+!
+!  Like all other maxwell formulations, the vector densties and equation
+!  are expanded in a local orthonormal basis given by
+!  \partial_{u} xyz, and \bn \times \partial_{u} xyz appropriately 
+!  normalized. Let $\ru$ and $\rv$ denote those unit tangent vectors, 
+!  then the currents are given by
+!
+!  so J = j_{u} \ru + j_{v} \rv  
+!
+!  and equation (1) is imposed by dotting it with \ru and \rv
+
+
+
       subroutine getnearquad_em_nrccie_pec(npatches,norders,&
        ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
        ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
        iquad,rfac0,nquad,wnear)
 !
 !  This subroutine generates the near field quadrature
-!  for the integral equation:
-!
-!    J/2-M_{k}[J]+alpha·nxnx(ikS_{k}[J]-gradS_{k}[rho]) = 
-!      = nxH_inc + alpha nxnxE_inc
-!	 rho/2+S'_{k}[rho]-ikS_{k}[J]+alpha(divS_{k}[J]-ikS_{k}[rho]) = 
-!      = n·E_inc
+!  for the integral equation at the top of the file
 !
 !
 !  The quadrature is computed by the following strategy
@@ -22,89 +65,91 @@
 !  oversampled quadrature
 !
 !  The recommended parameter for rfac0 is 1.25d0
+!
+!  NOTES:
+!  This subroutine returns 9 kernels
+!  1) \ru \cdot (-n \times \nabla S_{k}  + \alpha n \times n \times S_{k})[j_{u} \ru]
+!  2) \ru \cdot (-n \times \nabla S_{k}  + \alpha n \times n \times S_{k})[j_{v} \rv]
+!  3) \ru \cdot (-\alpha n \times n \times \nabla S_{k}[\rho]) 
+!  4) \rv \cdot (-n \times \nabla S_{k}  + \alpha n \times n \times S_{k})[j_{u} \ru]
+!  5) \rv \cdot (-n \times \nabla S_{k}  + \alpha n \times n \times S_{k})[j_{v} \rv]
+!  6) \rv \cdot (-\alpha n \times n \times \nabla S_{k}[\rho])
+!  7) (-ik n \cdot S_{k} + \alpha \nabla \cdot S_{k})[j_{u} \ru]
+!  8) (-ik n \cdot S_{k} + \alpha \nabla \cdot S_{k})[j_{v} \rv]
+!  9) S_{k}'[\rho]
 !   
-!  input:
-!    npatches - integer
-!      number of patches
-!
-!    norders - integer(npatches)
-!      order of discretization on each patch 
-!
-!    ixyzs - integer(npatches+1)
-!      starting location of data on patch i
-!  
-!    iptype - integer(npatches)
-!      type of patch
-!      iptype = 1 -> triangular patch discretized with RV nodes
-!
-!    npts - integer
-!      total number of discretization points on the boundary
-!
-!    srccoefs - real *8 (9,npts)
-!      koornwinder expansion coefficients of xyz, dxyz/du,
-!      and dxyz/dv on each patch. 
-!      For each point srccoefs(1:3,i) is xyz info
-!        srccoefs(4:6,i) is dxyz/du info
-!        srccoefs(7:9,i) is dxyz/dv info
-!
-!    srcvals - real *8 (12,npts)
-!      xyz(u,v) and derivative info sampled at the 
-!      discretization nodes on the surface
-!      srcvals(1:3,i) - xyz info
-!      srcvals(4:6,i) - dxyz/du info
-!      srcvals(7:9,i) - dxyz/dv info
-! 
-!    ndtarg - integer
-!      leading dimension of target array
-!        
-!    ntarg - integer
-!      number of targets
-!
-!    targs - real *8 (ndtarg,ntarg)
-!      target information
-!
-!    ipatch_id - integer(ntarg)
-!      id of patch of target i, id = -1, if target is off-surface
-!
-!    uvs_targ - real *8 (2,ntarg)
-!      local uv coordinates on patch if on surface, otherwise
-!      set to 0 by default
-!      (maybe better to find closest uv on patch using newton)
-!            
-!    eps - real *8
-!      precision requested
-!
-!    zpars - complex *16 (2)
-!      kernel parameters
-!      zpars(1) = k 
-!      zpars(2) = alpha
-!
-!    iquadtype - integer
-!      quadrature type
-!      iquadtype = 1, use ggq for self + adaptive integration
-!      for rest
-! 
-!    nnz - integer
-!      number of source patch-> target interactions in the near field
-! 
-!    row_ptr - integer(ntarg+1)
-!      row_ptr(i) is the pointer
-!      to col_ind array where list of relevant source patches
-!      for target i start
-!
-!    col_ind - integer (nnz)
-!      list of source patches relevant for all targets, sorted
-!      by the target number
-!
-!    iquad - integer(nnz+1)
-!      location in wnear array where quadrature for col_ind(i)
-!      starts
-!
-!    rfac0 - integer
-!      radius parameter for near field
-!
-!    nquad - integer
-!      number of entries in wnear
+!  Input arguments:
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization on each patch 
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!        iptype = 11, quadrangular patch discretized with GL nodes
+!        iptype = 12, quadrangular patch discretized with Chebyshev nodes
+!    - npts: integer
+!        total number of discretization points on the boundary
+!    - srccoefs: real *8 (9,npts)
+!        koornwinder expansion coefficients of xyz, dxyz/du,
+!        and dxyz/dv on each patch. 
+!        For each point 
+!          * srccoefs(1:3,i) is xyz info
+!          * srccoefs(4:6,i) is dxyz/du info
+!          * srccoefs(7:9,i) is dxyz/dv info
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the 
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!    - ndtarg: integer
+!        leading dimension of target array, must be at least 12,
+!        with the first 12 components being identical to the srcvals
+!        structure
+!    - ntarg: integer
+!        number of targets
+!    - targs: real *8 (ndtarg,ntarg)
+!        target information
+!    - ipatch_id: integer(ntarg)
+!        patch on which target is on if on-surface, =-1/0 if 
+!        target is off-surface
+!    - uvs_targ: real *8 (2,ntarg)
+!        local uv coordinates on patch, if target is on surface
+!    - eps: real *8
+!        precision requested
+!    - zpars: complex *16 (2)
+!        kernel parameters
+!          * zpars(1) = k 
+!          * zpars(2) = alpha
+!    - iquadtype: integer
+!        quadrature type
+!          * iquadtype = 1, use ggq for self + adaptive integration
+!            for rest
+!    - nnz: integer
+!        number of source patch-> target interactions in the near field
+!    - row_ptr: integer(npts+1)
+!        row_ptr(i) is the pointer
+!        to col_ind array where list of relevant source patches
+!        for target i start
+!    - col_ind: integer (nnz)
+!        list of source patches relevant for all targets, sorted
+!        by the target number
+!    - iquad: integer(nnz+1)
+!        location in wnear_ij array where quadrature for col_ind(i)
+!        starts for a single kernel. In this case the different kernels
+!        are matrix entries are located at (m-1)*nquad+iquad(i), where
+!        m is the kernel number
+!    - rfac0: integer
+!        radius parameter for near field
+!    - nquad: integer
+!        number of near field entries corresponding to each source target
+!        pair. The size of wnear is 4*nquad since there are 4 kernels
+!        per source target pair
 !
 !    output
 !      wnear - complex *16 (nquad,9) the desired near field quadrature
@@ -532,9 +577,9 @@
 !
 !
 !
-subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,&
-     &rhs,eps_gmres,niter,errs,rres,soln)
+subroutine em_nrccie_pec_solver(npatches, norders, ixyzs, &
+     iptype, npts, srccoefs, srcvals, eps, zpars, numit, ifinout, &
+     rhs, eps_gmres, niter, errs, rres, soln)
 !
 !
 !  This subroutine solves the Scattering Maxwell p.e.c. problem.
@@ -550,28 +595,28 @@ subroutine em_nrccie_pec_solver(npatches,norders,ixyzs,&
 !
 !  Boundary conditions:
 !
-!    (1) + alpha nx(2)     -     b.c.1
+!    (1) + alpha nx(2)         b.c.1
 !
-!    (3) + alpha(4)        -     b.c.2
+!    (3) + alpha (4)           b.c.2
 !
 !    where:
 !
-!    nxH + nxH_inc = J     (1)
+!    n x H + n x H_inc = J     (1)
 !
-!    nxE + nxE_inc = 0     (2)
+!    n x E + n x E_inc = 0     (2)
 !
-!    n·E+n·E_inc = rho     (3)
+!    n · E + n · E_inc = rho   (3)
 !
-!    divE = 0              (4)
+!    (div E)/ik = 0                 (4)
 !
 !  The incoming fields must be 'compatible' (solutions to Maxwell's 
 !  equations in free space)
 !
 !  Boundary integral equation:
 !
-!    J/2-M_{k}[J]+alpha·nxnx(ikS_{k}[J]-gradS_{k}[rho]) = 
+!    J/2 - M_{k}[J] + alpha n x n x (ikS_{k}[J]-gradS_{k}[rho]) = 
 !      = nxH_inc + alpha nxnxE_inc
-!    rho/2+S'_{k}[rho]-ikS_{k}[J]+alpha(divS_{k}[J]-ikS_{k}[rho]) = 
+!    rho/2 + S_{k}'[rho] - ik n . S_{k}[J] + alpha (div S_{k}[J]-ikS_{k}[rho]) = 
 !      = n·E_inc
 !
 !  The linear system is solved iteratively using GMRES
@@ -1017,80 +1062,80 @@ implicit none
 !  through getnearquad_em_nrccie_pec
 
     !List of calling arguments
-	integer, intent(in) :: ndt,ndd,ndz,ndi
-	real ( kind = 8 ), intent(in) :: srcinfo(12)
-	real ( kind = 8 ), intent(in) :: targinfo(ndt)
-	integer, intent(in) :: ipars(ndi)
-	real ( kind = 8 ), intent(in) :: dpars(ndd)
-	complex ( kind = 8 ), intent(in) :: zpars(ndz)
-	complex ( kind = 8 ), intent(out) :: E_val
+    integer, intent(in) :: ndt,ndd,ndz,ndi
+    real ( kind = 8 ), intent(in) :: srcinfo(12)
+    real ( kind = 8 ), intent(in) :: targinfo(ndt)
+    integer, intent(in) :: ipars(ndi)
+    real ( kind = 8 ), intent(in) :: dpars(ndd)
+    complex ( kind = 8 ), intent(in) :: zpars(ndz)
+    complex ( kind = 8 ), intent(out) :: E_val
 
-	
-	!List of local variables
-	complex ( kind = 8 ) E_mat(3,3)
-	real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3)
-	real ( kind = 8 ) ru_t(3),rv_t(3),n_t(3)
-	real ( kind = 8 ) du(3), dv(3),sour(3),targ(3)
-	real ( kind = 8 ) r, dr(3),aux_real
-	complex ( kind = 8 ) nxcurlSka(2,2),Dkrho,nxnxSkb(2,2)
-	complex ( kind = 8 ) nxgradSklambda(2,1),nxnxgradSklambda(2,1),nSkb(1,2)
-	complex ( kind = 8 ) Sklambda,divSkb(1,2),ngradSklambda
-	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),xprod_aux3(3),xprod_aux4(3)
-	complex ( kind = 8 ) R1, ima,my_exp, zk,alpha
-	real ( kind = 8 ) pi
-	
-	pi=3.1415926535897932384626433832795028841971d0
-	ima=(0.0d0,1.0d0)
-	zk=zpars(1)
-	alpha=zpars(2)
-	    
-	sour(1)=srcinfo(1)
-	sour(2)=srcinfo(2)
-	sour(3)=srcinfo(3)
-	
-	n_s(1)=srcinfo(10)
-	n_s(2)=srcinfo(11)
-	n_s(3)=srcinfo(12)	
+    
+    !List of local variables
+    complex ( kind = 8 ) E_mat(3,3)
+    real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3)
+    real ( kind = 8 ) ru_t(3),rv_t(3),n_t(3)
+    real ( kind = 8 ) du(3), dv(3),sour(3),targ(3)
+    real ( kind = 8 ) r, dr(3),aux_real
+    complex ( kind = 8 ) nxcurlSka(2,2),Dkrho,nxnxSkb(2,2)
+    complex ( kind = 8 ) nxgradSklambda(2,1),nxnxgradSklambda(2,1),nSkb(1,2)
+    complex ( kind = 8 ) Sklambda,divSkb(1,2),ngradSklambda
+    real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),xprod_aux3(3),xprod_aux4(3)
+    complex ( kind = 8 ) R1, ima,my_exp, zk,alpha
+    real ( kind = 8 ) pi
+    
+    pi=3.1415926535897932384626433832795028841971d0
+    ima=(0.0d0,1.0d0)
+    zk=zpars(1)
+    alpha=zpars(2)
+        
+    sour(1)=srcinfo(1)
+    sour(2)=srcinfo(2)
+    sour(3)=srcinfo(3)
+    
+    n_s(1)=srcinfo(10)
+    n_s(2)=srcinfo(11)
+    n_s(3)=srcinfo(12)	
 
-	targ(1)=targinfo(1)
-	targ(2)=targinfo(2)
-	targ(3)=targinfo(3)
+    targ(1)=targinfo(1)
+    targ(2)=targinfo(2)
+    targ(3)=targinfo(3)
 
-	n_t(1)=targinfo(10)
-	n_t(2)=targinfo(11)
-	n_t(3)=targinfo(12)
+    n_t(1)=targinfo(10)
+    n_t(2)=targinfo(11)
+    n_t(3)=targinfo(12)
 
-	dr(1)=targ(1)-sour(1)
-	dr(2)=targ(2)-sour(2)
-	dr(3)=targ(3)-sour(3)
-	r=sqrt((dr(1))**2+(dr(2))**2+(dr(3))**2)
-	
-	R1=(ima*zk*r-1.0d0)/r**3*exp(ima*zk*r)/(4.0d0*pi)
-	my_exp=exp(ima*zk*r)/(4.0d0*pi)
-		
-	call orthonormalize(srcinfo(4:6),n_s,ru_s,rv_s)
-	call orthonormalize(targinfo(4:6),n_t,ru_t,rv_t)
+    dr(1)=targ(1)-sour(1)
+    dr(2)=targ(2)-sour(2)
+    dr(3)=targ(3)-sour(3)
+    r=sqrt((dr(1))**2+(dr(2))**2+(dr(3))**2)
+    
+    R1=(ima*zk*r-1.0d0)/r**3*exp(ima*zk*r)/(4.0d0*pi)
+    my_exp=exp(ima*zk*r)/(4.0d0*pi)
 
-	call get_nxcurlSka(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r,nxcurlSka)
-	call get_nxnxSkb(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,my_exp,r,nxnxSkb)
-	E_mat(1,1)=-nxcurlSka(1,1)+ima*zk*alpha*nxnxSkb(1,1)
-	E_mat(1,2)=-nxcurlSka(1,2)+ima*zk*alpha*nxnxSkb(1,2)
-	E_mat(2,1)=-nxcurlSka(2,1)+ima*zk*alpha*nxnxSkb(2,1)
-	E_mat(2,2)=-nxcurlSka(2,2)+ima*zk*alpha*nxnxSkb(2,2)
-	call get_nxnxgradSklambda(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r,&
-	 &nxnxgradSklambda)
-	E_mat(1,3)=-alpha*nxnxgradSklambda(1,1)
-	E_mat(2,3)=-alpha*nxnxgradSklambda(2,1)
-	call get_ngradSklambda(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r,&
-	 &ngradSklambda)
-	call get_Sklambda(my_exp,r,Sklambda)
-	E_mat(3,3)=ngradSklambda-ima*zk*alpha*Sklambda
-	call get_divSkb(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r,divSkb)
-	call get_nSkb(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,my_exp,r,nSkb)
-	E_mat(3,1)=-ima*zk*nSkb(1,1)+alpha*divSkb(1,1)
-	E_mat(3,2)=-ima*zk*nSkb(1,2)+alpha*divSkb(1,2)	
+    call orthonormalize(srcinfo(4:6),n_s,ru_s,rv_s)
+    call orthonormalize(targinfo(4:6),n_t,ru_t,rv_t)
 
-	E_val=E_mat(ipars(1),ipars(2))
+    call get_nxcurlSka(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r,nxcurlSka)
+    call get_nxnxSkb(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,my_exp,r,nxnxSkb)
+    E_mat(1,1)=-nxcurlSka(1,1)+ima*zk*alpha*nxnxSkb(1,1)
+    E_mat(1,2)=-nxcurlSka(1,2)+ima*zk*alpha*nxnxSkb(1,2)
+    E_mat(2,1)=-nxcurlSka(2,1)+ima*zk*alpha*nxnxSkb(2,1)
+    E_mat(2,2)=-nxcurlSka(2,2)+ima*zk*alpha*nxnxSkb(2,2)
+    call get_nxnxgradSklambda(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r, &
+      nxnxgradSklambda)
+    E_mat(1,3)=-alpha*nxnxgradSklambda(1,1)
+    E_mat(2,3)=-alpha*nxnxgradSklambda(2,1)
+    call get_ngradSklambda(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r, &
+      ngradSklambda)
+    call get_Sklambda(my_exp,r,Sklambda)
+    E_mat(3,3)=ngradSklambda-ima*zk*alpha*Sklambda
+    call get_divSkb(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,R1,my_exp,r,divSkb)
+    call get_nSkb(ru_s,rv_s,n_s,ru_t,rv_t,n_t,dr,my_exp,r,nSkb)
+    E_mat(3,1)=-ima*zk*nSkb(1,1)+alpha*divSkb(1,1)
+    E_mat(3,2)=-ima*zk*nSkb(1,2)+alpha*divSkb(1,2)
+
+    E_val=E_mat(ipars(1),ipars(2))
 
 return
 end subroutine fker_em_nrccie_pec_s
