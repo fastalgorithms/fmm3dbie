@@ -48,6 +48,9 @@ usage:
 	@echo "         dielectric/"
 	@echo "         hybrid/"
 	@echo ""
+	@echo "  make surfsmooth/"
+	@echo "         sphere .................... smooth a relatively benign sphere"
+	@echo ""
 	@echo "  make clean ....................... remove all .o files and executables"
 	@echo ""
 	@echo "All executables are built into the 'build/' directory, and should be"
@@ -90,6 +93,17 @@ maxwell/pec/nrccie: maxwell/pec/em_nrccie_example.o
 	rm -f build/*
 	$(FC) $(FFLAGS) -o build/em_nrccie_example maxwell/pec/em_nrccie_example.o $(FEND)
 	cd ./build && ./em_nrccie_example
+
+
+
+# surface smoothing routines
+surfsmooth/sphere: surfsmooth/ss_sphere.o
+	mkdir -p build
+	rm -f build/*
+	$(FC) $(FFLAGS) -o build/ss_sphere surfsmooth/ss_sphere.o $(FEND)
+	cd ./build && ./ss_sphere
+
+
 
 clean:
 	rm -f maxwell/pec/*.o
