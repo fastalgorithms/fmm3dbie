@@ -32,12 +32,14 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
+
       if(igeomtype.eq.1) ipars(1) = 0
       if(igeomtype.eq.2) ipars(1) = 10
 
       if(igeomtype.eq.1) then
         npatches = 12*(4**ipars(1))
       endif
+
       if(igeomtype.eq.2) then
         ipars(2) = ipars(1)*3
         npatches = 2*ipars(1)*ipars(2)
@@ -68,8 +70,8 @@ c
       ixyzs(npatches+1) = 1+npols*npatches
 
       dlam = 2*pi/real(zk)
-      call plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,'stell.vtk','a')
+      call plot_surface_info_all(dlam, npatches, norders, ixyzs, iptype,
+     1  npts, srccoefs, srcvals, 'stell.vtk', 'a')
 
       stop
       end
@@ -96,7 +98,7 @@ c
       procedure (), pointer :: xtri_geometry
 
 
-      external xtri_stell_eval,xtri_sphere_eval
+      external xtri_stell_eval, xtri_sphere_eval
       
       npols = (norder+1)*(norder+2)/2
       allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
@@ -130,6 +132,8 @@ c
      1     npols,uvs,umatr,srcvals,srccoefs)
       endif
 
+
+      
       if(igeomtype.eq.2) then
         done = 1
         pi = atan(done)*4
@@ -176,10 +180,15 @@ c
         call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,iptr3,iptr4,
      1     npols,uvs,umatr,srcvals,srccoefs)
       endif
+
+
       
       return  
       end
 
+
+
+      
 
       subroutine test_exterior_pt(npatches,norder,npts,srcvals,
      1   srccoefs,wts,xyzout,isout)
@@ -253,9 +262,3 @@ c
 
       return
       end
-
-   
-
-
-
-
