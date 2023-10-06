@@ -386,7 +386,7 @@ clean: objclean
 	rm -rf python/srout*.so
 
 objclean: 
-	rm -f $(OBJS) $(TTOBJS) $(QTOBJS) $(OBJS_64) 
+	rm -f $(OBJS) $(TTOBJS) $(QTOBJS) $(OBJS_64)
 	rm -f test/helm_wrappers/*.o test/common/*.o 
 	rm -f test/tria_routs/*.o 
 	rm -f test/lap_wrappers/*.o
