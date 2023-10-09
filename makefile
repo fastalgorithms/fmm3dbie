@@ -23,7 +23,8 @@ OMPFLAGS =-fopenmp
 OMPLIBS =-lgomp 
 
 # flags for MATLAB MEX compilation..
-MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1
+MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 LDFLAGS='-Wl,-rpath,${FMM_INSTALL_DIR}' 
+#MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 
 MWFLAGS=-c99complex
 MOMPFLAGS = -D_OPENMP
 
@@ -31,7 +32,7 @@ MOMPFLAGS = -D_OPENMP
 MEX=mex
 
 # For experts, location of Mwrap executable
-MWRAP=./mwrap/mwrap
+MWRAP=../../mwrap/mwrap
 MEXLIBS=-lm -lstdc++ -ldl -lgfortran
 
 
@@ -385,6 +386,12 @@ clean: objclean
 	rm -rf python/srout*.so
 
 objclean: 
-	rm -f $(OBJS) $(TOBJS)
+	rm -f $(OBJS) $(TTOBJS) $(QTOBJS) $(OBJS_64) 
 	rm -f test/helm_wrappers/*.o test/common/*.o 
-	rm -f test/tria_routs/*.o examples/helm_dir/*.o 
+	rm -f test/tria_routs/*.o 
+	rm -f test/lap_wrappers/*.o
+	rm -f test/maxwell_wrappers/*.o
+	rm -f test/quadratures/*.o
+	rm -f test/quad_routs/*.o
+	rm -f test/stok_wrappers/*.o
+	rm -f test/surface_routs/*.o

@@ -38,7 +38,7 @@ c       igeomtype = 2 => stellarator
 c 
       igeomtype = 2
       if(igeomtype.eq.1) ipars(1) = 2
-      if(igeomtype.eq.2) ipars(1) = 10
+      if(igeomtype.eq.2) ipars(1) = 4
 
       if(igeomtype.eq.1) then
         npatches = 12*(4**ipars(1))

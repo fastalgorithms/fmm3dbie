@@ -164,7 +164,6 @@ c
 c    find near field
 c
       call get_rfacs(norder,iptype0,rfac,rfac0)
-      rfac0 = rfac
       do i=1,npatches 
         rad_near(i) = rads(i)*rfac
       enddo
@@ -196,8 +195,6 @@ c
       call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
      1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zk,
      2    nnz,row_ptr,col_ind,rfac,nfars,ixyzso)
-c      nfars = norders
-c      ixyzso = ixyzs
       call cpu_time(t2)
       tfar = t2-t1
 

@@ -5,6 +5,7 @@
 % Additional dependencies: chebfun, surface-hps
 %
 addpath(genpath('~/git/fmm3dbie/matlab'))
+addpath(genpath('~/git/chebfun'))
 
 % For triangles
 S = surfer.ellipsoid([1,1,1],0.5,6,0);
@@ -14,8 +15,8 @@ S = surfer.sphere_quad(6,1,2);
 
 % For dan meshes
 
-dom = surfacemesh.sphere(7,2);
-S = surfer.surfacemesh_to_surfer(dom);
+% dom = surfacemesh.sphere(7,2);
+% S = surfer.surfacemesh_to_surfer(dom);
 
 
 
