@@ -33,9 +33,10 @@ void cisurf_read_msh(mesh *meshout, char *name, char *filename) {
   meshout->nverts = nverts;
   meshout->nelems = nelems;
 
-  // allocate space for all the vertices
-  meshout->verts = (double *)malloc(3*nverts*sizeof(double));
-
+  // allocate space for all the vertices and elements
+  meshout->verts = (double *) malloc( 3*nverts*sizeof(double) );
+  //meshout->elements = (meshElement *) malloc(nelems*sizeof(meshElement));
+  
   // load in the actual information
   long i, aux4, aux5, aux6, aux7, aux8;
   double x,y,z;
