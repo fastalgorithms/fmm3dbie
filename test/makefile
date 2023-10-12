@@ -74,9 +74,10 @@ usage:
 
 
 
-cisurf/load: cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o
+cisurf/load: cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o ../src/cisurf/cisurf_plots.o
 	mkdir -p build
-	$(CC) -o build/test_loadmesh cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o $(FEND)
+	$(CC) -o build/test_loadmesh cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o \
+            ../src/cisurf/cisurf_plots.o $(FEND)
 	cd ./build && ./test_loadmesh
 
 

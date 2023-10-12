@@ -60,8 +60,14 @@ typedef struct cisurfMesh {
 
 // function prototypes
 
+// - - - mesh loading routines - - -
 void cisurf_read_msh(mesh *meshout, char *name, char *filename);
 
 void cisurf_print_mesh_info( mesh *mesh1, long iflong);
 
 void cisurf_print_element_info( meshElement *elem );
+
+
+
+// - - - plotting routines - - -
+void cisurf_plot_mesh_vtk( mesh *mesh1, char *filename );

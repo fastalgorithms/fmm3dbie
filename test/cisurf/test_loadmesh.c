@@ -20,6 +20,9 @@ int main() {
 
   // print the mesh infor
   cisurf_print_mesh_info(&mesh1, 1);
+
+  // dump the mesh as a vtk file
+  cisurf_plot_mesh_vtk( &mesh1, "basemesh.vtk" );
   
   return 0;
 }

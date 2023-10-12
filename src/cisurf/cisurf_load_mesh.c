@@ -122,8 +122,8 @@ void cisurf_read_msh(mesh *meshout, char *name, char *filename) {
   fclose(fileptr);
 
 
-  cisurf_print_element_info( &(meshout->elements[25]) );
-  exit(0);
+  //cisurf_print_element_info( &(meshout->elements[25]) );
+  //exit(0);
   
   return;
 }
@@ -185,105 +185,4 @@ void cisurf_print_element_info( meshElement *elem ) {
 }
 
 
-
-/* subroutine readmsh(Geometry1, filename, norder_skel, norder_smooth) */
-/*   use ModType_Smooth_Surface */
-/*   implicit none */
-
-/*   !! This subroutine opens a msh file and loads the information in a */
-/*   !! variable of type Geometry */
-
-/*   ! */
-/*   ! Input */
-/*   !   filename - the file to read */
-/*   !   norder_skel - order to discretize the skeleton patches */
-/*   !   norder_smooth - order to discretize the smoothed patches */
-/*   ! */
-/*   ! Output */
-/*   !   Geometry1 - data structure for geometry */
-/*   ! */
-
-/*   !List of calling arguments */
-/*   type (Geometry), intent(inout) :: Geometry1 */
-/*   character(len=100), intent(in) :: filename */
-/*   integer :: n_order_sf, nsk, nsf */
-/*   integer  :: norder_skel, norder_smooth */
-  
-/*   integer umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8 */
-/*   integer :: ierror */
-
-
-/*   Geometry1%ifflat = 0 */
-
-/*   open(UNIT=8, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror) */
-/*   read(8,*) aux1,aux2,aux3,m, N */
-
-/*   print * */
-/*   print * */
-  
-/*   write (6,*) 'loading file ', trim(filename) */
-/*   write (13,*) 'loading file ', trim(filename) */
-
-/*   call prinf('ntri = *', n, 1) */
-/*   !call prinf('npoints = *', m, 1) */
-
-  
-
-/*   nsk = (norder_skel+1)*(norder_skel+2)/2 */
-/*   !call prinf('nsk = *', nsk, 1) */
-/*   !stop */
-
-/*   call prinf('num points on skeleton mesh = *', nsk*n, 1) */
-  
-/*   Geometry1%norder_skel = norder_skel */
-/*   Geometry1%nskel = nsk */
-
-/*   !Geometry1%norder_smooth = norder_smooth */
-/*   !Geometry1%nsmooth = n_order_sf */
-
-/*   Geometry1%norder_smooth = norder_smooth */
-/*   nsf = (norder_smooth+1)*(norder_smooth+2)/2 */
-/*   Geometry1%nsmooth = nsf */
-
-/*   call prinf('num points on smooth mesh = *', nsf*n, 1) */
-  
-/*   Geometry1%n_order_sf = nsf */
-/*   Geometry1%npoints=m */
-/*   Geometry1%ntri=N */
-/*   Geometry1%ntri_sk=N */
-/*   Geometry1%n_Sf_points=N*nsf */
-/*   Geometry1%n_Sk_points=N*nsk */
-
-/*   if (allocated(Geometry1%Points)) then */
-/*     deallocate(Geometry1%Points) */
-/*   endif */
-/*   if (allocated(Geometry1%Tri)) then */
-/*     deallocate(Geometry1%Tri) */
-/*   endif */
-
-/*   allocate(Geometry1%Points(3,m)) */
-/*   allocate(Geometry1%Tri(6,N)) */
-
-/*   do j=1,m */
-/*     read(8,*) aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8 */
-/*     read(8,*) Geometry1%Points(1,j),Geometry1%Points(2,j),Geometry1%Points(3,j) */
-/*   enddo */
-
-/*   read(8,*) aux1 */
-
-/*   do j=1,N */
-/*     read(8,*) aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8 */
-/*     read(8,*) aux1,aux2,aux3,aux4,aux5,aux6 */
-/*     Geometry1%Tri(1,j)=aux1 */
-/*     Geometry1%Tri(2,j)=aux2 */
-/*     Geometry1%Tri(3,j)=aux3 */
-/*     Geometry1%Tri(4,j)=aux4 */
-/*     Geometry1%Tri(5,j)=aux5 */
-/*     Geometry1%Tri(6,j)=aux6 */
-/*   enddo */
-  
-/*   close (8) */
-
-/*   return */
-/* end subroutine readmsh */
 
