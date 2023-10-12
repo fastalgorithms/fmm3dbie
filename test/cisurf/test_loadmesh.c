@@ -19,7 +19,7 @@ int main() {
   cisurf_read_msh(&mesh1, "a rounded avocado thing", filename);
 
   // print the mesh infor
-  cisurf_print_mesh_info(&mesh1);
+  cisurf_print_mesh_info(&mesh1, 1);
   
   return 0;
 }

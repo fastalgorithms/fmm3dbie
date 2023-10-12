@@ -12,12 +12,16 @@ LLINKLIB = -lfmm3dbie
 
 FC = gfortran
 FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy
-CC = gcc
 
+CC = gcc
+CFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp
+
+INCDIR = ../include
 
 FMMBIE_INSTALL_DIR = $(HOME)/lib
 FMM_INSTALL_DIR = $(HOME)/lib
-FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
+
+FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB) -lm
 
 
 # For your OS, override the above by placing make variables in make.inc
@@ -36,20 +40,11 @@ default: usage
 usage:
 	@echo ""
 	@echo "-------------------------------------------------------------------------"
-	@echo "Makefile for boundary integral examplee, please specify what to make:"
+	@echo "Makefile for boundary integral tests, please specify what to make:"
 	@echo ""
-	@echo "  make maxwell/"
-	@echo "         pec/"
-	@echo "           aumfie .................. solve the mfie, then resolve for charge"
-	@echo "           efie_rwg_open ........... scattering from an open surface"
-	@echo "                                     using the electric field int eq"
-	@echo "           nrccie................... scattering using the non-resonant"
-	@echo "                                     charge-current int eq"
-	@echo "         dielectric/"
-	@echo "         hybrid/"
-	@echo ""
-	@echo "  make surfsmooth/"
-	@echo "         sphere .................... smooth a relatively benign sphere"
+	@echo "  make cisurf/"
+	@echo "          load ..................... load and plot various base meshes"
+	@echo "          skeleton ................. construct a skeleton mesh"
 	@echo ""
 	@echo "  make clean ....................... remove all .o files and executables"
 	@echo ""
@@ -67,44 +62,24 @@ usage:
 # the build location
 #
 
+%.o : %.c
+	$(CC) -c $(CFLAGS) $< -o $@ -I$(INCDIR) -I.
+
 %.o : %.f  
-	$(FC) -c $(FFLAGS) $< -o $@ $(FEND)
+	$(FC) -c $(FFLAGS) $< -o $@
 
 %.o : %.f90  
-	$(FC) -c $(FFLAGS) $< -o $@ $(FEND)
+	$(FC) -c $(FFLAGS) $< -o $@
 
 
 
 
-
-
-maxwell/pec/aumfie: maxwell/pec/em_aumfie_example.o
+cisurf/load: cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o
 	mkdir -p build
-	$(FC) $(FFLAGS) -o build/em_aumfie_example maxwell/pec/em_aumfie_example.o $(FEND)
-	cd ./build && ./em_aumfie_example
-
-maxwell/pec/efie_rwg_open: maxwell/pec/efie_rwg_open.o
-	mkdir -p build
-	$(FC) $(FFLAGS) -o build/efie_rwg_open maxwell/pec/efie_rwg_open.o $(FEND)
-	cd ./build && ./efie_rwg_open
-
-maxwell/pec/nrccie: maxwell/pec/em_nrccie_example.o
-	mkdir -p build
-	rm -f build/*
-	$(FC) $(FFLAGS) -o build/em_nrccie_example maxwell/pec/em_nrccie_example.o $(FEND)
-	cd ./build && ./em_nrccie_example
-
-
-
-# surface smoothing routines
-surfsmooth/sphere: surfsmooth/ss_sphere.o
-	mkdir -p build
-	rm -f build/*
-	$(FC) $(FFLAGS) -o build/ss_sphere surfsmooth/ss_sphere.o $(FEND)
-	cd ./build && ./ss_sphere
-
+	$(CC) -o build/test_loadmesh cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o $(FEND)
+	cd ./build && ./test_loadmesh
 
 
 clean:
-	rm -f maxwell/pec/*.o
+	rm -f cisurf/*.o
 	rm -f build/*
