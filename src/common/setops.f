@@ -2,67 +2,67 @@ c----------------------------
 c  This file has the following user callable routines:
 c
 c    - setsub:
-c        given two integer sets a,b, compute a\ (a \cap b)^{c}, 
+c        given two integer(8) sets a,b, compute a\ (a \cap b)^{c}, 
 c        and b\ (a \cap b)^{c}
 c
 c    - setdecomp: 
-c        given two integer sets a,b, compute a \cap b and
+c        given two integer(8) sets a,b, compute a \cap b and
 c        a \cap b^{c} and mappings of the set a to various
 c        elements of either sets
 c
 c    - get_iuni1:
-c        compute list of unique integers from a given
-c        array of integers
+c        compute list of unique integer(8)s from a given
+c        array of integer(8)s
 c 
 c    - get_iuni1_omp: 
 c        open mp version of get_iuni1 (note the
 c        sorting routine needs to be updated to be openmped)
 c
 c    - get_iuni3: 
-c        compute list of unique integer triplets
-c        from a given collection of 3 integer arrays
+c        compute list of unique integer(8) triplets
+c        from a given collection of 3 integer(8) arrays
 c
 
       subroutine setsub(a,n,b,m,amb,namb,bma,nbma)
 c
 c-------------------------------
-c  Compute a \cap b^{c} and b \cap a^{c} for two integer
+c  Compute a \cap b^{c} and b \cap a^{c} for two integer(8)
 c  sets with unique elements
 c
 c  Input arguments:
 c
-c    - a: integer(n)
-c        integer array 1
-c    - n: integer
+c    - a: integer(8)(n)
+c        integer(8) array 1
+c    - n: integer(8)
 c        number of input elements for array 1
-c    - b: integer(m)
-c        integer array 2
-c    - m: integer 
+c    - b: integer(8)(m)
+c        integer(8) array 2
+c    - m: integer(8) 
 c        number of input elements for array 2
 c
 c  Output arguments:
 c
-c    - amb: integer(n) 
+c    - amb: integer(8)(n) 
 c        elements which are in a but not in b.
 c        On input of size (n), but only first namb
 c        entries are relevant.
-c    - namb: integer
+c    - namb: integer(8)
 c        number of elements in amb
-c    - bma: integer(m)
+c    - bma: integer(8)(m)
 c        elements which are in b but not in a.
 c        On input of size (n), but only first nbma
 c        entries are relevant.
-c    - nbma: integer
+c    - nbma: integer(8)
 c        number of elements in bma
 c---------------------------
 
       
       implicit real *8 (a-h,o-z)
-      integer, intent(in) :: n,m
-      integer, intent(in) :: a(n),b(m)
-      integer, intent(out) :: amb(n),bma(m)
-      integer, allocatable :: asort(:),bsort(:),w(:),abint(:)
-      integer, allocatable :: iabinta(:),iabintb(:)
+      integer(8), intent(in) :: n,m
+      integer(8), intent(in) :: a(n),b(m)
+      integer(8), intent(out) :: amb(n),bma(m)
+      integer(8), allocatable :: asort(:),bsort(:),w(:),abint(:)
+      integer(8), allocatable :: iabinta(:),iabintb(:)
 
       namb = 0
       nbma = 0
@@ -194,10 +194,10 @@ c
       subroutine setdecomp(n,a,m,b,naintb,aintb,iaintba,iaintbb,naintbc,
      1   aintbc,iaintbc)
       implicit real *8 (a-h,o-z)
-      integer n,a(n),m,b(m),aintb(n),iaintba(n),aintbc(n),iaintbc(n)
-      integer iaintbb(n)
-      integer, allocatable :: asort(:),bsort(:),iasort(:),ibsort(:)
-      integer nmin
+      integer(8) n,a(n),m,b(m),aintb(n),iaintba(n),aintbc(n),iaintbc(n)
+      integer(8) iaintbb(n)
+      integer(8), allocatable :: asort(:),bsort(:),iasort(:),ibsort(:)
+      integer(8) nmin
 
       
       allocate(asort(n),bsort(m),iasort(n),ibsort(m))
@@ -325,8 +325,8 @@ c        given an array a, find unique set of indices
 c        in the array and a mapping from where the indices
 c        are contained in the shorter array
 c
-      integer n, a(n),nuni,iuni(n),iuniind(n)
-      integer, allocatable :: iind(:),asort(:),iunisort(:)
+      integer(8) n, a(n),nuni,iuni(n),iuniind(n)
+      integer(8), allocatable :: iind(:),asort(:),iunisort(:)
 
       if(n.eq.0) then
         nuni = 0
@@ -368,8 +368,8 @@ c        given an array a, find unique set of indices
 c        in the array and a mapping from where the indices
 c        are contained in the shorter array
 c
-      integer n, a(n),nuni,iuni(n),iuniind(n)
-      integer, allocatable :: iind(:),asort(:),iunisort(:)
+      integer(8) n, a(n),nuni,iuni(n),iuniind(n)
+      integer(8), allocatable :: iind(:),asort(:),iunisort(:)
 
       allocate(iind(n),asort(n),iunisort(n))
       call sorti(n,a,iind)
@@ -410,9 +410,9 @@ c        given an array a, find unique set of indices
 c        in the array and a mapping from where the indices
 c        are contained in the shorter array
 c
-      integer n, a(n),b(n),c(n),nuni,iuni(3,n),iuniind(n)
-      integer, allocatable :: iind(:),asort(:),iunisort(:)
-      integer, allocatable :: bsort(:),csort(:)
+      integer(8) n, a(n),b(n),c(n),nuni,iuni(3,n),iuniind(n)
+      integer(8), allocatable :: iind(:),asort(:),iunisort(:)
+      integer(8), allocatable :: bsort(:),csort(:)
 
       allocate(iind(n),asort(n),iunisort(n),bsort(n),csort(n))
       call sorti(n,c,iind)
