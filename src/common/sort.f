@@ -1,7 +1,7 @@
 c      PROGRAM driver
 c      IMPLICIT NONE
-c      INTEGER xx(50)
-c      INTEGER n, index(50), i, index2(50)
+c      INTEGER(8) xx(50)
+c      INTEGER(8) n, index(50), i, index2(50)
 c
 c      n = 12
 c
@@ -41,13 +41,13 @@ ccccccccccccccccccccccccccccccccccccccccccccc
 
 C===================================================================
 C
-C     SORTRX -- SORT, integer input, indeX output
+C     SORTRX -- SORT, integer(8) input, indeX output
 C
 C
-C     Input:  N     INTEGER
-C             DATA  INTEGER
+C     Input:  N     INTEGER(8)
+C             DATA  INTEGER(8)
 C
-C     Output: INDEX INTEGER (DIMENSION N)
+C     Output: INDEX INTEGER(8) (DIMENSION N)
 C
 C This routine performs an in-memory sort of the first N elements of
 C array DATA, returning into array INDEX the indices of elements of
@@ -77,12 +77,12 @@ C Created:  15 Jul 1986  Len Moss
 C
 C===================================================================
  
-      INTEGER   N,INDEX(N)
-      INTEGER   DATA(N)
+      INTEGER(8)   N,INDEX(N)
+      INTEGER(8)   DATA(N)
  
-      INTEGER   LSTK(200),RSTK(200),ISTK
-      INTEGER   L,R,I,J,P,INDEXP,INDEXT
-      integer      DATAP
+      INTEGER(8)   LSTK(200),RSTK(200),ISTK
+      INTEGER(8)   L,R,I,J,P,INDEXP,INDEXT
+      integer(8)      DATAP
  
 C     QuickSort Cutoff
 C
@@ -90,7 +90,7 @@ C     Quit QuickSort-ing when a subsequence contains M or fewer
 C     elements and finish off at end with straight insertion sort.
 C     According to Knuth, V.3, the optimum value of M is around 9.
  
-      INTEGER   M
+      INTEGER(8)   M
       PARAMETER (M=9)
  
 C===================================================================
@@ -272,13 +272,13 @@ ccccccccccccccccccccccccccccccccccccccccccccc
 
 C===================================================================
 C
-C     SORTRX -- SORT, integer input, indeX output
+C     SORTRX -- SORT, integer(8) input, indeX output
 C
 C
-C     Input:  N     INTEGER
+C     Input:  N     INTEGER(8)
 C             DATA  REAL
 C
-C     Output: INDEX INTEGER (DIMENSION N)
+C     Output: INDEX INTEGER(8) (DIMENSION N)
 C
 C This routine performs an in-memory sort of the first N elements of
 C array DATA, returning into array INDEX the indices of elements of
@@ -308,11 +308,11 @@ C Created:  15 Jul 1986  Len Moss
 C
 C===================================================================
  
-      INTEGER   N,INDEX(N)
+      INTEGER(8)   N,INDEX(N)
       REAL *8   DATA(N)
  
-      INTEGER   LSTK(200),RSTK(200),ISTK
-      INTEGER   L,R,I,J,P,INDEXP,INDEXT
+      INTEGER(8)   LSTK(200),RSTK(200),ISTK
+      INTEGER(8)   L,R,I,J,P,INDEXP,INDEXT
       REAL *8      DATAP
  
 C     QuickSort Cutoff
@@ -321,7 +321,7 @@ C     Quit QuickSort-ing when a subsequence contains M or fewer
 C     elements and finish off at end with straight insertion sort.
 C     According to Knuth, V.3, the optimum value of M is around 9.
  
-      INTEGER   M
+      INTEGER(8)   M
       PARAMETER (M=9)
  
 C===================================================================
@@ -498,13 +498,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine sorti_para(n,data,index)
 C===================================================================
 C
-C     SORTRX -- SORT, integer input, indeX output
+C     SORTRX -- SORT, integer(8) input, indeX output
 C
 C
-C     Input:  N     INTEGER
-C             DATA  INTEGER
+C     Input:  N     INTEGER(8)
+C             DATA  INTEGER(8)
 C
-C     Output: INDEX INTEGER (DIMENSION N)
+C     Output: INDEX INTEGER(8) (DIMENSION N)
 C
 C This openmp threaded routine performs an sort of the first N elements
 C of array DATA, returning into array INDEX the indices of elements of
@@ -519,14 +519,14 @@ C
 C===================================================================
 
       implicit none
-      integer n,data(n),index(n)
-      integer nthreads,nelems,ielems,istart,iend,i,j,swap
+      integer(8) n,data(n),index(n)
+      integer(8) nthreads,nelems,ielems,istart,iend,i,j,swap
       integer(8) ithread
-      integer istart2,iend2,nelems2
-      integer, allocatable :: split(:)
-      integer, allocatable :: index2(:)
-      integer, external :: OMP_GET_THREAD_NUM, OMP_GET_NUM_THREADS
-      integer, external :: OMP_GET_MAX_THREADS
+      integer(8) istart2,iend2,nelems2
+      integer(8), allocatable :: split(:)
+      integer(8), allocatable :: index2(:)
+      integer(8), external :: OMP_GET_THREAD_NUM, OMP_GET_NUM_THREADS
+      integer(8), external :: OMP_GET_MAX_THREADS
 
       nthreads=1
 C$    nthreads=OMP_GET_MAX_THREADS()
@@ -645,14 +645,14 @@ C rearranged.
 C
 C===================================================================
       implicit none
-      integer n1,n2,nthreads,i,j,k,ns,indx,first,val,split1,split2
+      integer(8) n1,n2,nthreads,i,j,k,ns,indx,first,val,split1,split2
       integer(8) tmpk
-      integer split_size1,split_size2,n1tmp,n2tmp
-      integer istart1,istart2,istart3
-      integer data(*)
-      integer ind1(n1),ind2(n2),indout(n1+n2)
-      integer, allocatable :: split(:), split_size(:)
-      integer, allocatable :: split_ind1(:), split_ind2(:),indtmp(:)
+      integer(8) split_size1,split_size2,n1tmp,n2tmp
+      integer(8) istart1,istart2,istart3
+      integer(8) data(*)
+      integer(8) ind1(n1),ind2(n2),indout(n1+n2)
+      integer(8), allocatable :: split(:), split_size(:)
+      integer(8), allocatable :: split_ind1(:), split_ind2(:),indtmp(:)
       if(n1==0 .and. n2==0) return
       if(n1==0) then
 C$OMP PARALLEL DO DEFAULT(SHARED)
@@ -764,9 +764,9 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine merge_arr(data,ind1,ind2,n1,n2,indout,nthreads)
       implicit none
-      integer n1,n2,nthreads,i,j,k
-      integer data(*)
-      integer ind1(n1),ind2(n2),indout(n1+n2)
+      integer(8) n1,n2,nthreads,i,j,k
+      integer(8) data(*)
+      integer(8) ind1(n1),ind2(n2),indout(n1+n2)
 
       i=1
       j=1
@@ -802,10 +802,10 @@ c
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine lower_bound(data,ind,n,val,first)
-        integer data(*),ind(*),n
-        integer val
-        integer it,first
-        integer cnt,step
+        integer(8) data(*),ind(*),n
+        integer(8) val
+        integer(8) it,first
+        integer(8) cnt,step
 
         first=1
         cnt=n

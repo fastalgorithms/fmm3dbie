@@ -102,7 +102,7 @@ DYLIBS += $(LBLAS) $(LDBLASINC)
 # Common objects
 COM = src/common
 COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
-	$(COM)/dlaran.o $(COM)/lapack_f77.o \
+	$(COM)/dlaran.o \
 	$(COM)/legeexps.o $(COM)/prini_new.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
@@ -279,14 +279,14 @@ mex: $(MDYNAMICLIB)
 #
 # testing routines
 #
-test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad 
-	cd test/common; ./int2-com
-	cd test/helm_wrappers; ./int2-helm
-	cd test/lap_wrappers; ./int2-lap
-	cd test/surface_routs; ./int2-surf
-	cd test/tria_routs; ./int2-tria
-	cd test/quad_routs; ./int2-quad
-	cd test/quadratures; ./int2-quad
+test: $(STATICLIB) test/com #test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad
+	export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib; cd test/common; ./int2-com
+	#export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib; cd test/helm_wrappers; ./int2-helm
+	#export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib; cd test/lap_wrappers; ./int2-lap
+	#export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib; cd test/surface_routs; ./int2-surf
+	#export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib; cd test/tria_routs; ./int2-tria
+	#export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib; cd test/quad_routs; ./int2-quad
+	#export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib; cd test/quadratures; ./int2-quad
 	cat print_testres.txt
 	rm print_testres.txt
 

@@ -15,7 +15,7 @@ c     omega - real *8 (3), the vector determining the
 c                       infinitesimal rotation in the
 c                       formula above
 c     r0 - real *8 (3), reference point in formula above     
-c     nr - integer, number of points
+c     nr - integer(8), number of points
 c     r - real *8 (3,nr), array of point locations
 c
 c     output:
@@ -24,11 +24,11 @@ c     u - real *8 (3,nr), array of velocities
 c
 c      
       implicit none
-      integer nr
+      integer(8) nr
       real *8 u(3,nr),r(3,nr),r0(3),v(3),omega(3)
 c     local
       real *8 rtemp(3)
-      integer i
+      integer(8) i
       
       do i = 1,nr
          rtemp(1) = r(1,i)-r0(1)
@@ -55,7 +55,7 @@ c     for each i (in the least squares sense)
 c
 c     input:
 c
-c     nu - integer, number of velocities and points
+c     nu - integer(8), number of velocities and points
 c     u - real *8 (3,nu), array of velocities
 c     r - real *8 (3,nu), array of point locations
 c     r0 - real *8 (3), reference point in formula above
@@ -69,13 +69,13 @@ c                       infinitesimal rotation in the
 c                       formula above
 c      
       implicit none
-      integer nu
+      integer(8) nu
       real *8 u(3,nu),r(3,nu),r0(3),v(3),omega(3)
 c     local
 
       real *8, allocatable :: amat(:,:), rhs(:), sol(:)
       real *8 bmat(3,3), epsleast, rtemp(3)
-      integer m, n, i, j, nrhs, info, irank, istart
+      integer(8) m, n, i, j, nrhs, info, irank, istart
       
       m = nu*4
       n = 6
