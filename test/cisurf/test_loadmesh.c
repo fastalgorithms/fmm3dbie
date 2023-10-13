@@ -29,11 +29,14 @@ int main(int argc, char **argv) {
     filename = argv[1];
   }
   
+  printf("\n\n");
   printf("File to be loaded: %s\n", filename);
 
   
   baseMesh mesh1;
-  readMSH(&mesh1, "a rounded avocado thing", filename);
+  long id;
+  id = 1;
+  readMSH(&mesh1, id, "base mesh", filename);
 
   // print the mesh infor
   printBaseMeshInfo(&mesh1, 0);

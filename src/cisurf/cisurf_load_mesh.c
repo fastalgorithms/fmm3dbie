@@ -8,14 +8,16 @@
 
 
 
-void readMSH(baseMesh *meshout, char *name, char *filename) {
+void readMSH(baseMesh *meshout, long id, char *name, char *filename) {
   //
   // This routine reads in "filename" which is assumed to be a .msh
   // file and returns a data structure of mesh elements in meshout
   //
   FILE *fileptr;
 
-  printf("Loading geometry file: %s\n", filename);
+
+
+  printf("\n\nLoading geometry file: %s\n", filename);
   fileptr = fopen( filename, "r+" );
   if (fileptr == NULL) {
     printf("The file is not opened properly, exiting.");
@@ -26,13 +28,9 @@ void readMSH(baseMesh *meshout, char *name, char *filename) {
   long aux1, aux2, aux3, nverts, nelems; 
   fscanf(fileptr, "%ld %ld %ld %ld %ld", &aux1, &aux2, &aux3, &nverts, &nelems);
 
-  printf("after fscanf, aux1 = %ld\n", aux1);
-  printf("after fscanf, aux2 = %ld\n", aux2);
-  printf("after fscanf, aux3 = %ld\n", aux3);
-  printf("after fscanf, nverts = %ld\n", nverts);
-  printf("after fscanf, nelems = %ld\n", nelems);
 
   // assign some basic info to the mesh structure
+  meshout->id = id;
   meshout->name = name;
   meshout->nverts = nverts;
   meshout->nelems = nelems;
@@ -137,14 +135,15 @@ void printBaseMeshInfo( baseMesh *mesh1, long iflong ) {
   // print out the information contained in the mesh structure
   //
   printf("\n");
-  printf("- - - mesh information - - - \n");
+  printf("- - - - mesh information - - - - \n");
   printf("mesh.name   = %s\n", mesh1->name);
   printf("mesh.nverts = %ld\n", mesh1->nverts);
   printf("mesh.nelems = %ld\n", mesh1->nelems);
-  printf("\n");
 
   if (iflong == 1) {
-  
+
+    printf("\n");
+
     long i;
     for (i=0; i<mesh1->nverts; i++) {
       printf("vertex %d   = (%e %e %e)\n", i, mesh1->verts[3*i],

@@ -64,7 +64,7 @@ typedef struct baseMesh {
 // function prototypes
 
 // - - - mesh loading routines - - -
-void readMSH(baseMesh *meshout, char *name, char *filename);
+void readMSH(baseMesh *meshout, long id, char *name, char *filename);
 
 void printBaseMeshInfo( baseMesh *mesh1, long iflong);
 
