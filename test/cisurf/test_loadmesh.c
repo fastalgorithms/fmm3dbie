@@ -4,25 +4,43 @@
 // plot of them
 //
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "cisurf.h"
 
-int main() {
+int main(int argc, char **argv) {
 
 
-  char filename[] = "../../geometries/msh/round_2nd_tri.msh";
 
+  //printf("number of arguments received = %d\n", argc);
+
+  //long i;
+  //for (i=0; i<argc; i++) {
+  //  printf("argument %d is %s\n", i+1, argv[i]);
+  //}
+
+  char *filename;
+  
+  if (argc == 1) {
+    filename = "../../geometries/msh/round_2nd_tri.msh";
+  }
+  else {
+    filename = argv[1];
+  }
+  
   printf("File to be loaded: %s\n", filename);
 
-  mesh mesh1;
-  cisurf_read_msh(&mesh1, "a rounded avocado thing", filename);
+  
+  baseMesh mesh1;
+  readMSH(&mesh1, "a rounded avocado thing", filename);
 
   // print the mesh infor
-  cisurf_print_mesh_info(&mesh1, 1);
+  printBaseMeshInfo(&mesh1, 0);
 
   // dump the mesh as a vtk file
-  cisurf_plot_mesh_vtk( &mesh1, "basemesh.vtk" );
+  plotBaseMeshVTK( &mesh1, "basemesh.vtk" );
   
   return 0;
 }
+

@@ -1,14 +1,15 @@
 
 //
 // header file for cisurf routines, containing data structures for the
-// mesh, skeleton mesh, etc.
+// bash mesh, skeleton mesh, surface mesh, etc., and various function
+// prototypes
 //
 // (c) Mike O'Neil 2023
 //     moneil@flatironinstitute.org
 //
 
 
-typedef struct cisurfMeshElement {
+typedef struct baseElement {
 
   // an index number of the element
   long id;
@@ -32,16 +33,17 @@ typedef struct cisurfMeshElement {
   double centroid[3];
   double radius;
 
-} meshElement;
+} baseElement;
 
 
 
 
 
 
-typedef struct cisurfMesh {
+typedef struct baseMesh {
 
   // name the mesh?
+  long id;
   char *name;
   
   // total number of vertices
@@ -50,9 +52,10 @@ typedef struct cisurfMesh {
   
   // total number of elements, and an array of them
   long nelems;
-  meshElement *elements;
+  baseElement *elements;
   
-} mesh;
+} baseMesh;
+
 
 
 
@@ -61,13 +64,13 @@ typedef struct cisurfMesh {
 // function prototypes
 
 // - - - mesh loading routines - - -
-void cisurf_read_msh(mesh *meshout, char *name, char *filename);
+void readMSH(baseMesh *meshout, char *name, char *filename);
 
-void cisurf_print_mesh_info( mesh *mesh1, long iflong);
+void printBaseMeshInfo( baseMesh *mesh1, long iflong);
 
-void cisurf_print_element_info( meshElement *elem );
+void printBaseElementInfo( baseElement *elem );
 
 
 
 // - - - plotting routines - - -
-void cisurf_plot_mesh_vtk( mesh *mesh1, char *filename );
+void plotBaseMeshVTK( baseMesh *mesh1, char *filename );

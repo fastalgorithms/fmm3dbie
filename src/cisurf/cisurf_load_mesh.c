@@ -8,7 +8,7 @@
 
 
 
-void cisurf_read_msh(mesh *meshout, char *name, char *filename) {
+void readMSH(baseMesh *meshout, char *name, char *filename) {
   //
   // This routine reads in "filename" which is assumed to be a .msh
   // file and returns a data structure of mesh elements in meshout
@@ -58,7 +58,7 @@ void cisurf_read_msh(mesh *meshout, char *name, char *filename) {
   fscanf(fileptr, "%ld", &aux1);
   long nv;
 
-  meshout->elements = (meshElement *) malloc(nelems*sizeof(meshElement));
+  meshout->elements = (baseElement *) malloc(nelems*sizeof(baseElement));
   nv = 6;
   for (i=0; i<nelems; i++) {
     fscanf(fileptr, "%ld %ld %ld %ld %ld %ld %ld %ld", &aux1, &aux2, &aux3,
@@ -132,7 +132,7 @@ void cisurf_read_msh(mesh *meshout, char *name, char *filename) {
 
 
 
-void cisurf_print_mesh_info( mesh *mesh1, long iflong ) {
+void printBaseMeshInfo( baseMesh *mesh1, long iflong ) {
   //
   // print out the information contained in the mesh structure
   //
@@ -161,7 +161,7 @@ void cisurf_print_mesh_info( mesh *mesh1, long iflong ) {
 
 
 
-void cisurf_print_element_info( meshElement *elem ) {
+void printBaseElementInfo( baseElement *elem ) {
   //
   // print out the information contained in a single element
   //
