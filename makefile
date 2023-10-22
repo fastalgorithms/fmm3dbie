@@ -23,7 +23,7 @@ OMPFLAGS =-fopenmp
 OMPLIBS =-lgomp 
 
 # flags for MATLAB MEX compilation..
-MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 LDFLAGS='-Wl,-rpath,${FMM_INSTALL_DIR}' 
+MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 
 #MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 
 MWFLAGS=-c99complex
 MOMPFLAGS = -D_OPENMP
@@ -113,7 +113,8 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 # Helmholtz wrappers
 HELM = src/helm_wrappers
 HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o \
-	$(HELM)/helm_comb_trans.o $(HELM)/helm_rpcomb_imp.o
+	$(HELM)/helm_comb_trans.o $(HELM)/helm_rpcomb_imp.o \
+	$(HELM)/helm_s_neu.o 
 
 # Laplace wrappers
 LAP = src/lap_wrappers
