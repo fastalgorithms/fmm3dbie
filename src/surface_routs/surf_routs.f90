@@ -45,6 +45,9 @@
 !         form
 !
 !      get_surf_grad - compute surface gradient of a scalar function
+!      
+!      get_surf_grad_cartesian - compute the surface gradient expressed
+!         in cartesian coordinates
 !
 !      get_surf_grad_fast - compute surface gradient of a scalar function 
 !        (With precomputed inverse of first fundamental form)
@@ -54,6 +57,9 @@
 !
 !      get_surf_div - compute the surface divergence of a vector field
 !         defined on a surface
+!      
+!      get_surf_div_cartesian - compute the surface divergence of a vector
+!         function expressed in cartesian 
 !
 !      col_ind_to_patch_node_ind - convert a list of column
 !         indices to a list of patch and node indices
@@ -66,12 +72,6 @@
 !      
 !
 !         
-
-
-
-!
-!
-!
 !
 !
 
@@ -2152,3 +2152,189 @@ end subroutine get_mean_curvature
 !
 !
 !
+!
+!
+!
+subroutine get_surf_div_cartesian(nd,npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,fin,divf)
+!
+!-----------------------------
+!  Compute the surface divergence of vector function fin expressed in 
+!  cartesian coordinates
+!
+!  Input arguments:
+!    - nd: integer
+!        number of functions
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!
+!    - fin: double precision (nd,3,npts)
+!         vector function on surface
+!  Output arguments:
+!
+!    - divf: double precision(nd,npts)
+!        surface divergence 
+!        
+!-----------------------------
+!
+!
+
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches),nd
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer, intent(in) :: npts
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),fin(nd,3,npts)
+  real *8, intent(out) :: divf(nd,npts)
+  real *8, allocatable :: ffform(:,:,:)
+  real *8, allocatable :: dfuv(:,:,:,:)
+  real *8 E,F,G,W_sq,a(3),b(3),fdu(3),fdv(3)
+  integer i,istart,npols,j,l,nd3,idim
+
+  allocate(ffform(2,2,npts))
+
+
+
+  call get_first_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,ffform)
+
+  allocate(dfuv(nd,3,2,npts))
+! Calculating f_{u}, f_{v}} stored in dfuv
+  
+  nd3 = nd*3 
+  call get_surf_uv_grad(nd3,npatches,norders,ixyzs,iptype,npts,fin,dfuv)
+
+
+
+  do i=1,npts
+    E = ffform(1,1,i)
+    F = ffform(1,2,i)
+    G = ffform(2,2,i)
+    W_sq = E*G - F**2
+    do idim=1,nd
+      fdu(1) = dfuv(idim,1,1,i)
+      fdu(2) = dfuv(idim,2,1,i)
+      fdu(3) = dfuv(idim,3,1,i)
+      fdv(1) = dfuv(idim,1,2,i)
+      fdv(2) = dfuv(idim,2,2,i)
+      fdv(3) = dfuv(idim,3,2,i)
+      a(1) = (G*fdu(1)-F*fdv(1))/W_sq 
+      a(2) = (G*fdu(2)-F*fdv(2))/W_sq 
+      a(3) = (G*fdu(3)-F*fdv(3))/W_sq 
+      b(1) = (E*fdv(1)-F*fdu(1))/W_sq 
+      b(2) = (E*fdv(2)-F*fdu(2))/W_sq 
+      b(3) = (E*fdv(3)-F*fdu(3))/W_sq 
+
+
+      divf(idim,i) = a(1)*srcvals(4,i)+a(2)*srcvals(5,i)+a(3)*srcvals(6,i)+ &
+              b(1)*srcvals(7,i)+b(2)*srcvals(8,i)+b(3)*srcvals(9,i)
+    enddo 
+  enddo 
+
+  return
+end subroutine get_surf_div_cartesian
+!
+!
+!
+!
+!
+!
+subroutine get_surf_grad_cartesian(nd,npatches,norders,ixyzs,iptype,npts, &
+  srccoefs,srcvals,fin,gradf)
+!
+!-----------------------------
+!  Compute the surface gradient of scalar function fin expressed in 
+!  cartesian coordinates
+!
+!  Input arguments:
+!    - nd: integer
+!        number of functions
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!    - fin: double precision (nd,npts)
+!         vector function on surface
+!
+!  Output arguments:
+!
+!    - gradf: double precision(nd,3,npts)
+!        surface gradient 
+!        
+!-----------------------------
+!
+!
+
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches),nd
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer, intent(in) :: npts
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),fin(nd,npts)
+  real *8, intent(out) :: gradf(nd,3,npts)
+  real *8, allocatable :: ffforminv(:,:,:)
+  real *8, allocatable :: dfuv(:,:,:)
+  real *8 E,F1,F2,G,W_sq,a,b,fdu,fdv
+  integer i,istart,npols,j,l,idim
+
+  allocate(ffforminv(2,2,npts))
+
+
+
+  call get_inv_first_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,ffforminv)
+
+  allocate(dfuv(nd,2,npts))
+! Calculating f_{u}, f_{v}} stored in dfuv 
+ 
+  call get_surf_uv_grad(nd,npatches,norders,ixyzs,iptype,npts,fin,dfuv)
+
+
+
+  do i=1,npts
+    E = ffforminv(1,1,i)
+    F1 = ffforminv(1,2,i)
+    F2 = ffforminv(2,1,i)
+    G = ffforminv(2,2,i)
+
+    do idim=1,nd
+      fdu = dfuv(idim,1,i)
+      fdv = dfuv(idim,2,i)
+      a = E*fdu+F1*fdv
+      b = F2*fdu+G*fdv
+
+      gradf(idim,1,i) = a*srcvals(4,i) + b*srcvals(7,i)
+      gradf(idim,2,i) = a*srcvals(5,i) + b*srcvals(8,i)
+      gradf(idim,3,i) = a*srcvals(6,i) + b*srcvals(9,i)
+    enddo               
+  enddo 
+
+  return
+end subroutine get_surf_grad_cartesian
+!
+!
+!
+
+

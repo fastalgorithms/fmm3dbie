@@ -135,7 +135,7 @@ STOKOBJS = $(STOK)/stok_comb_vel.o
 # Kernels
 KER = src/kernels
 KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
-	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o
+	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/lap_bel_kernels.o
 
 # Quadrature wrappers
 QUAD = src/quadratures
@@ -163,10 +163,15 @@ QUAD2 = src/quad_routs
 QOBJS2 = $(QUAD2)/cquadints_main.o \
 	$(QUAD2)/cquadintrouts.o $(QUAD2)/dquadints_main.o \
 	$(QUAD2)/squarearbq.o $(QUAD2)/quadtreerouts.o $(QUAD2)/dquadintrouts.o
+	
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+# Triangle adaptive integration routines
+LB = src/lap_bel
+LBOBJS = $(LB)/lap_bel_routs.o \
 
-OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(LBOBJS)
+
+OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(LBOBJS)
 OBJS_64 += $(COM)/lapack_wrap_64.o
 
 ifeq ($(BLAS_64),ON)
