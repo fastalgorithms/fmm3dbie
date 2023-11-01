@@ -46,40 +46,41 @@ c       Calling sequence variables
 c       xyzs    in: real *8 (3,ns)
 c               location of the sources
 c
-c       ns      in: integer
+c       ns      in: integer(8)
 c               number of sources
 c
 c       rads    in: real *8(ns)
 c               radii associated with the sources
 c
-c       ndt     in: integer
+c       ndt     in: integer(8)
 c               leading dimension of targets array
 c
 c       targets in: real *8(ndt,nt)
 c               target info.
 c               The first three components must be xyz coordinates
 c
-c       nt      in: integer
+c       nt      in: integer(8)
 c               number of targets
 c
 c
 c       OUTPUT
-c       row_ptr    out: integer(nt+1)
+c       row_ptr    out: integer(8)(nt+1)
 c                rowptr(i) is the starting point in the iflg
 c                array for the list of sources
 c                relevant for target i
 c
-c       col_ind  out: integer(nnz) (nnz is computed using mem routine)
+c       col_ind  out: integer(8)(nnz) (nnz is computed using mem routine)
 c                col_ind(row_ptr(i):row_ptr(i+1)) is the list
 c                of sources which satisfy
 c                d(s_{j},t_{i}) <= rs_{j}
 c               
 c-------------------------------
 
-      implicit real *8 (a-h,o-z)
-      real *8 xyzs(3,ns),targets(ndt,nt),rads(ns)
-      integer row_ptr(*),col_ind(*)
-      integer, allocatable :: nlst(:)
+      implicit none
+      integer(8) ns,ndt,nt,i,j
+      real *8 xyzs(3,ns),targets(ndt,nt),rads(ns),rr
+      integer(8) row_ptr(*),col_ind(*)
+      integer(8), allocatable :: nlst(:)
 
       allocate(nlst(nt))
 
@@ -139,13 +140,13 @@ c       Calling sequence variables
 c       xyzs    in: real *8 (3,ns)
 c               location of the sources
 c
-c       ns      in: integer
+c       ns      in: integer(8)
 c               number of sources
 c
 c       rads    in: real *8(ns)
 c               radii associated with the sources
 c      
-c       ndt     in: integer
+c       ndt     in: integer(8)
 c               leading dimension of target array
 c
 c       targets in: real *8(ndt,nt)
@@ -153,18 +154,19 @@ c               target info
 c               the first three components must be
 c               the xyz coordinates
 c
-c       nt      in: integer
+c       nt      in: integer(8)
 c               number of targets
 c
 c
 c       OUTPUT
-c       nnz     out: integer
+c       nnz     out: integer(8)
 c               number of elements in the flag array
 c-------------------------------
 
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       real *8 xyzs(3,*),targets(ndt,*),rads(*)
-      integer nnz
+      integer(8) nnz
 
       nnz = 0
 
@@ -203,13 +205,13 @@ c
 c       xyzs    in: real *8 (3,ns)
 c               location of the sources
 c
-c       ns      in: integer
+c       ns      in: integer(8)
 c               number of sources
 c
 c       rads    in: real *8(ns)
 c               radii associated with the sources
 c
-c       ndt     in: integer
+c       ndt     in: integer(8)
 c               leading dimension of target array
 c
 c       targets in: real *8(ndt,nt)
@@ -217,7 +219,7 @@ c               target info
 c               the first three components must be
 c               the xyz coordinates
 c
-c       nt      in: integer
+c       nt      in: integer(8)
 c               number of targets
 c
 c       radt    in: real *8(ns)
@@ -226,35 +228,36 @@ c
 c       targets in: real *8(3,nt)
 c               location of the targets
 c
-c       nt      in: integer
+c       nt      in: integer(8)
 c               number of targets
 c
 c       OUTPUT
-c       nnz     out: integer
+c       nnz     out: integer(8)
 c               number of elements in the flag array
 c
 c               
 c-------------------------------
 
        implicit real *8 (a-h,o-z)
+       implicit integer(8) (i-n)
        real *8 xyzs(3,*),rads(*),targets(ndt,*)
        real *8, allocatable :: rstmp(:)
 
-       integer, allocatable :: nlst(:)
+       integer(8), allocatable :: nlst(:)
 c
 cc       tree variables
 c 
        real *8, allocatable :: centers(:,:),boxsize(:),targs(:,:)
-       integer, allocatable :: itree(:)
-       integer *8 ipointer(8), ltree
-       integer, allocatable :: ilevel(:)
-       integer, allocatable :: nlist1(:),list1(:,:)
-       integer, allocatable :: nlist2(:),list2(:,:)
-       integer, allocatable :: nlist3(:),list3(:,:)
-       integer, allocatable :: nlist4(:),list4(:,:)
-       integer mnlist1,mnlist2,mnlist3,mnlist4
-       integer, allocatable :: isrcper(:),isrcse(:,:)
-       integer, allocatable :: itargper(:),itargse(:,:)
+       integer(8), allocatable :: itree(:)
+       integer(8) ipointer(8), ltree
+       integer(8), allocatable :: ilevel(:)
+       integer(8), allocatable :: nlist1(:),list1(:,:)
+       integer(8), allocatable :: nlist2(:),list2(:,:)
+       integer(8), allocatable :: nlist3(:),list3(:,:)
+       integer(8), allocatable :: nlist4(:),list4(:,:)
+       integer(8) mnlist1,mnlist2,mnlist3,mnlist4
+       integer(8), allocatable :: isrcper(:),isrcse(:,:)
+       integer(8), allocatable :: itargper(:),itargse(:,:)
 
        allocate(rstmp(ns))
 
@@ -432,13 +435,13 @@ c
 c       xyzs    in: real *8 (3,ns)
 c               location of the sources
 c
-c       ns      in: integer
+c       ns      in: integer(8)
 c               number of sources
 c
 c       rads    in: real *8(ns)
 c               radii associated with the sources
 c
-c       ndt     in: integer
+c       ndt     in: integer(8)
 c               leading dimension of target array
 c
 c       targets in: real *8(ndt,nt)
@@ -446,15 +449,15 @@ c               target info
 c               the first three components must be
 c               the xyz coordinates
 c
-c       nt      in: integer
+c       nt      in: integer(8)
 c               number of targets
 c
-c       row_ptr    out: integer(nt+1)
+c       row_ptr    out: integer(8)(nt+1)
 c                row_ptr(i) is the starting point in the col_ind
 c                array for the list of sources
 c                relevant for target i
 c
-c       col_ind     out: integer(nnz) (nnz is computed using
+c       col_ind     out: integer(8)(nnz) (nnz is computed using
 c                                      findnearmem)
 c                col_ind(row_ptr(i):row_ptr(i+1)-1) is the list
 c                of sources which satisfy
@@ -463,27 +466,28 @@ c
 c               
 c-------------------------------
        implicit real *8 (a-h,o-z)
+       implicit integer(8) (i-n)
        real *8 xyzs(3,*),rads(*),targets(ndt,*)
        real *8, allocatable :: rstmp(:)
 
-       integer row_ptr(*),col_ind(*)
-       integer, allocatable :: nlst(:)
+       integer(8) row_ptr(*),col_ind(*)
+       integer(8), allocatable :: nlst(:)
 c
 cc       tree variables
 c 
        real *8, allocatable :: centers(:,:),boxsize(:),targs(:,:)
-       integer, allocatable :: itree(:)
-       integer *8 ipointer(8), ltree
-       integer, allocatable :: ilevel(:)
-       integer, allocatable :: nlist1(:),list1(:,:)
-       integer, allocatable :: nlist2(:),list2(:,:)
-       integer, allocatable :: nlist3(:),list3(:,:)
-       integer, allocatable :: nlist4(:),list4(:,:)
-       integer mnlist1,mnlist2,mnlist3,mnlist4
-       integer, allocatable :: isrcper(:),isrcse(:,:)
-       integer, allocatable :: itargper(:),itargse(:,:)
-       integer, allocatable :: nlistsrc(:)
-       integer, allocatable :: col_ind2(:),row_ind2(:),col_ptr(:)
+       integer(8), allocatable :: itree(:)
+       integer(8) ipointer(8), ltree
+       integer(8), allocatable :: ilevel(:)
+       integer(8), allocatable :: nlist1(:),list1(:,:)
+       integer(8), allocatable :: nlist2(:),list2(:,:)
+       integer(8), allocatable :: nlist3(:),list3(:,:)
+       integer(8), allocatable :: nlist4(:),list4(:,:)
+       integer(8) mnlist1,mnlist2,mnlist3,mnlist4
+       integer(8), allocatable :: isrcper(:),isrcse(:,:)
+       integer(8), allocatable :: itargper(:),itargse(:,:)
+       integer(8), allocatable :: nlistsrc(:)
+       integer(8), allocatable :: col_ind2(:),row_ind2(:),col_ptr(:)
 
        allocate(rstmp(ns))
 
@@ -767,34 +771,34 @@ c       determine location in quadrature array where particular
 c       interactions starts
 c
 c       input:
-c         npatches - integer
+c         npatches - integer(8)
 c           number of patches
-c         ixyzs - integer(npatches+1)
+c         ixyzs - integer(8)(npatches+1)
 c           location in source array where data for patch i starts
 c            (array for determining number of points per patch)
-c         npts - integer
+c         npts - integer(8)
 c           number of targets
-c         nnz - integer
+c         nnz - integer(8)
 c           number of near-field interactions
-c         row_ptr - integer(npts+1)
+c         row_ptr - integer(8)(npts+1)
 c           pointer in col_ind array for interactions corresponding
 c           to target i
-c         col_ind - integer(nnz)
+c         col_ind - integer(8)(nnz)
 c            list of source patches corresponding to near field
 c            interactions
 c       
 c
 c       output
-c         iquad - integer(nnz)
+c         iquad - integer(8)(nnz)
 c            location in quadrature array where quadrature
 c            corresponding to interaction of col_ind(i) starts
 c            
 c
       implicit none
-      integer npatches,ixyzs(npatches+1),npts,nnz
-      integer row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
-      integer i,ipatch,npols
-      integer, allocatable :: iqtmp(:)
+      integer(8) npatches,ixyzs(npatches+1),npts,nnz
+      integer(8) row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
+      integer(8) i,ipatch,npols
+      integer(8), allocatable :: iqtmp(:)
       
       allocate(iqtmp(nnz))
 
@@ -850,7 +854,7 @@ c              adaptive integration
 c
 
       implicit none
-      integer norder,iptype
+      integer(8) norder,iptype
       real *8 rfac,rfac0
 
       rfac = 1.25d0
@@ -887,15 +891,15 @@ c
 c        input:
 c          eps - real *8
 c             tolerance
-c          iptype - integer
+c          iptype - integer(8)
 c             patch type
 c        outputs:
-c          nqorder - integer
+c          nqorder - integer(8)
 c             order of XG nodes to use on each triangle in the
 c             adaptive integration strategy
 c          eps_adap - real *8
 c             stopping criterion for adaptive integration
-c          nlev - integer
+c          nlev - integer(8)
 c             number of uniform levels for using oversampled 
 c             quadrature in the near-field
 c          nqorder_f - order of XG nodes to use in each of
@@ -904,8 +908,8 @@ c            the near field
 c
       implicit none
       real *8 eps,eps_adap,eps0
-      integer norder,nqorder,i,iprec
-      integer nlev,nqorder_f,iptype
+      integer(8) norder,nqorder,i,iprec
+      integer(8) nlev,nqorder_f,iptype
       
 
       iprec = 0
@@ -1005,35 +1009,35 @@ c  discretization
 c
 c
 c  Input arguments:
-c  - ntarg: integer
+c  - ntarg: integer(8)
 c      number of targets
-c  - row_ptr: integer(ntarg+1)
+c  - row_ptr: integer(8)(ntarg+1)
 c      rowptr(i) is the starting point in the col_ind
 c      array for the list of sources relevant for target i
-c  - nnz: integer
+c  - nnz: integer(8)
 c      number of entries in the col_ind array
-c  - col_ind: integer(nnz) 
+c  - col_ind: integer(8)(nnz) 
 c      col_ind(row_ptr(i):row_ptr(i+1)) is the list
 c      of sources in the near field of target i
-c  - npatches: integer
+c  - npatches: integer(8)
 c      number of patches in the surface discretization
-c  - ixyzs: integer(npatches+1)
+c  - ixyzs: integer(8)(npatches+1)
 c      ixyzs(i+1)-ixyzs(i) is the number of discretization
 c      nodes on patch i
 c  
 c  Output arguments:
 c  
-c  - nmax: integer
+c  - nmax: integer(8)
 c      max number of sources in the near field of any target
 c               
 c-------------------------------
       implicit none
-      integer, intent(in) :: npatches,nnz,ntarg
-      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
-      integer, intent(in) :: ixyzs(npatches+1)
-      integer, intent(out) :: nmax
+      integer(8), intent(in) :: npatches,nnz,ntarg
+      integer(8), intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer(8), intent(in) :: ixyzs(npatches+1)
+      integer(8), intent(out) :: nmax
 
-      integer i,j,jpatch,ntmp
+      integer(8) i,j,jpatch,ntmp
 
       nmax = 0
 

@@ -40,16 +40,16 @@ c
 c
 c  Input arguments:
 c
-c    - npatches: integer
+c    - npatches: integer(8)
 c        number of patches
-c    - norders: integer(npatches)
+c    - norders: integer(8)(npatches)
 c        order of discretization on each patch
-c    - ixyzso: integer(npatches+1)
+c    - ixyzso: integer(8)(npatches+1)
 c        ixyzso(i) denotes the starting location in srcover,
-c    - iptype: integer(npatches)
+c    - iptype: integer(8)(npatches)
 c        type of patch
 c        *  iptype = 1, triangular patch discretized using RV nodes
-c    - npts_over: integer
+c    - npts_over: integer(8)
 c        total number of oversampled points on the boundary
 c    - srcover: double precision (12,npts_over)
 c        xyz(u,v) and derivative info sampled at the 
@@ -61,51 +61,51 @@ c        * srcoverls(10:12,i) - normals info
 c    - wover: double precision (npts_over)
 c        quadrature weights for smooth functions
 c        discretized at oversampled nodes
-c    - ndtarg: integer
+c    - ndtarg: integer(8)
 c        leading dimension of target array
-c    - ntarg: integer
+c    - ntarg: integer(8)
 c        number of targets
 c    - targvals: double precision (ndtarg,ntarg)
 c        target info. First three components must be x,y,z
 c        coordinates
-c    - ipatch_id: integer(ntarg)
+c    - ipatch_id: integer(8)(ntarg)
 c        patch id of target, patch_id = -1, if target off-surface
 c    - uvs_targ: double precision (2,ntarg)
 c        local uv coordinates on patch if target on surface
 c    - thresh: double precision
 c        threshold for ignoring close interactions
-c    - ipv: integer
+c    - ipv: integer(8)
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
-c    - ndd: integer
+c    - ndd: integer(8)
 c        number of double precision parameters
 c    - dpars: double precision(ndd)
 c        double precision parameters
-c    - ndz: integer
+c    - ndz: integer(8)
 c        number of double complex parameters
 c    - zpars: double complex(ndz)
 c        double complex parameters
-c    - ndi: integer
-c        number of integer parameters
-c    - ipars: integer(ndi)
-c        integer parameters
-c    - nnz: integer
+c    - ndi: integer(8)
+c        number of integer(8) parameters
+c    - ipars: integer(8)(ndi)
+c        integer(8) parameters
+c    - nnz: integer(8)
 c        number of source patch-> target interactions in the near field
-c    - row_ptr: integer(ntarg+1)
+c    - row_ptr: integer(8)(ntarg+1)
 c        row_ptr(i) is the pointer
 c        to col_ind array where list of relevant source patches
 c        for target i start
-c    - col_ind: integer (nnz)
+c    - col_ind: integer(8) (nnz)
 c        list of source patches relevant for all targets, sorted
 c        by the target number
-c    - iquad: integer(nnz+1)
+c    - iquad: integer(8)(nnz+1)
 c        location in wnear array where quadrature for col_ind(i)
 c        starts
-c    - nquad: integer
+c    - nquad: integer(8)
 c        number of entries in wnear
 c
 c  Output parameters:
@@ -115,23 +115,25 @@ c        near field quadrature subtractions
 c----------------------------------------------------               
 c
       implicit real *8 (a-h,o-z)
-      integer, intent(in) :: ndi,ndd,ndz,ipv
-      integer, intent(in) :: ipars(ndi)
-      integer, intent(in) :: ndtarg
-      integer, intent(in) :: npatches,norders(npatches),npts_over
-      integer, intent(in) :: ixyzso(npatches+1),iptype(npatches)
+      implicit integer(8) (i-n)
+      integer(8), intent(in) :: ndi,ndd,ndz,ipv
+      integer(8), intent(in) :: ipars(ndi)
+      integer(8), intent(in) :: ndtarg
+      integer(8), intent(in) :: npatches,norders(npatches),npts_over
+      integer(8), intent(in) :: ixyzso(npatches+1),iptype(npatches)
       real *8, intent(in) :: srcover(12,npts_over),thresh
       real *8, intent(in) :: wover(npts_over)
-      integer, intent(in) :: ntarg,ipatch_id(ntarg)
+      integer(8), intent(in) :: ntarg,ipatch_id(ntarg)
       real *8, intent(in) :: uvs_targ(2,ntarg)
       real *8, intent(in) :: targvals(ndtarg,ntarg)
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
-      integer, intent(in) :: nnz
-      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+      integer(8), intent(in) :: nnz
+      integer(8), intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer(8), intent(in) :: iquad(nnz+1)
       complex *16, intent(out) :: wnear(nquad)
 
-      integer i,j,ipatch,istart,npols,iquadstart,l
+      integer(8) i,j,ipatch,istart,npols,iquadstart,l
       real *8 rr,threshsq
       complex *16 val
 

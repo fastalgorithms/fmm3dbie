@@ -6,7 +6,7 @@
       call test_cumsum(i4)
       call test_sort(i5)
       call test_conv_csc(i6)
-c      call test_findnear(i7)
+      call test_findnear(i7)
       call test_rsc_to_csc(i8)
 
       nsuccess = i1+i2+i3+i4+i5+i6+i7+i8
@@ -427,12 +427,14 @@ c
 c
 c
       subroutine test_findnear(isuccess)
-      implicit real *8 (a-h,o-z)
+      implicit none
       real *8, allocatable :: src(:,:),targ(:,:),rads(:)
+      real *8 hkrand
       integer(8), allocatable :: row_ptr(:),row_ptr2(:)
       integer(8), allocatable :: col_ind(:),col_ind2(:)
       integer(8), allocatable :: isort(:),wsort(:),isort2(:),wsort2(:)
-      integer(8) n1, n2
+      integer(8) n1, n2, isuccess, ns, nt, erra
+      integer(8) i, j, nnz, nnz2, ndt
 
       call prini(6,13)
 
