@@ -66,36 +66,36 @@ c
 c
 c        
       implicit none
-      integer npatches,npols,norder
+      integer(8) npatches,npols,norder
       real *8 srccoefs(9,npols,npatches)
-      integer ntarg
+      integer(8) ntarg
       
       real *8 xyztarg(3,ntarg)
-      integer itargptr(npatches),ntargptr(npatches)
+      integer(8) itargptr(npatches),ntargptr(npatches)
       
-      integer ntrimax,nlmax
+      integer(8) ntrimax,nlmax
       real *8 rfac,rfac2
       real *8 tricm(3,npatches,ntrimax)
       real *8 trirad(npatches,ntrimax)
       real *8 tverts(2,3,ntrimax)
-      integer itrirel(ntarg,ntrimax)
-      integer ichild_start(ntrimax)
+      integer(8) itrirel(ntarg,ntrimax)
+      integer(8) ichild_start(ntrimax)
       real *8 da(ntrimax)
 
-      integer laddr(2,0:nlmax)
+      integer(8) laddr(2,0:nlmax)
 
-      integer ier
+      integer(8) ier
       
-      integer ntri,nlev
-      integer irefineall
-      integer, allocatable :: irefinetri(:)
+      integer(8) ntri,nlev
+      integer(8) irefineall
+      integer(8), allocatable :: irefinetri(:)
 
 
 c
 cc       temporary variables
 c
-      integer i,itarg,j,ii
-      integer itri,ilev
+      integer(8) i,itarg,j,ii
+      integer(8) itri,ilev
       real *8 rr
 
       rfac2 = rfac**2
@@ -246,7 +246,7 @@ c      sphere of the mapped triangle with vertices tverts
 c      through the koornwinder expansion srccoefs
 c
       implicit none
-      integer npatches,npols,norder
+      integer(8) npatches,npols,norder
       real *8 srccoefs(9,npols,npatches)
       real *8 tverts(2,3)
       real *8 tricm(3,npatches)
@@ -255,7 +255,7 @@ c
       real *8, allocatable :: pols(:,:)
       real *8 rr
 
-      integer i,j,k
+      integer(8) i,j,k
 
       allocate(pols(npols,3))
 
@@ -324,6 +324,7 @@ c        v1,v2,v3,v4 - real *8 (2,3)
 c                 vertices of children triangle
       
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       real *8 v0(2,3),v1(2,3),v2(2,3),v3(2,3),v4(2,3),vm(2,3)
 
       vm(1,1) = (v0(1,1)+v0(1,2))/2
@@ -393,6 +394,7 @@ c
       subroutine gen_xg_unif_nodes_tri(nlev,nqorder,nnodes,npts,qnodes,
      1   qwts)
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       real *8, allocatable :: tvs(:,:,:)
       real *8, allocatable :: qnodes0(:,:),qwts0(:)
       real *8 qnodes(2,npts),qwts(npts)
@@ -454,10 +456,10 @@ c
 c
       subroutine writetritree(iw,ntri,tverts,iprint)
       implicit none
-      integer ntri,iw,iprint(ntri)
+      integer(8) ntri,iw,iprint(ntri)
       real *8 tverts(2,3,ntri)
 
-      integer i,j,k,itri
+      integer(8) i,j,k,itri
 
  1100 format(6(2x,e11.5))
       do itri=1,ntri
@@ -481,7 +483,8 @@ c-------------------------------------------------------------------------------
         
       subroutine mapuv_tri(verts,kpols,uvs,uvout)
       implicit real *8 (a-h,o-z)
-      integer kpols
+      implicit integer(8) (i-n)
+      integer(8) kpols
       real *8 verts(2,3),uvs(2,kpols),uvout(2,kpols)
 
       dx = verts(1,2)-verts(1,1)
@@ -498,6 +501,7 @@ c-----------------------------------------
         subroutine get_norms_qwts_tri(kpols,whts,srcvals,da,
      1       qwts)
         implicit real *8 (a-h,o-z)
+        implicit integer(8) (i-n)
         real *8 srcvals(12,kpols),qwts(kpols),whts(kpols)
         real *8 tmp(3),da
 
