@@ -63,9 +63,9 @@ subroutine get_vioreanu_wts(norder,npols,wts)
 !  
 !  Input arguments
 !    
-!    - norder: integer
+!    - norder: integer(8)
 !        input order. Must be between 0 and 20
-!    - npols: integer
+!    - npols: integer(8)
 !        npols = (norder+1)*(norder+2)/2
 !
 !  Output arguments
@@ -74,7 +74,8 @@ subroutine get_vioreanu_wts(norder,npols,wts)
 !        vioreanu quadrature weights of order=norder+1
 !
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: norder,npols
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: norder,npols
   real *8, intent(out) :: wts(npols)
 
   INCLUDE 'koorn-wts-dat.txt'
@@ -96,9 +97,9 @@ subroutine get_vioreanu_nodes(norder,npols,uvs)
 !  
 !  Input arguments
 !    
-!    - norder: integer
+!    - norder: integer(8)
 !        input order. Must be between 0 and 20
-!    - npols: integer
+!    - npols: integer(8)
 !        npols = (norder+1)*(norder+2)/2
 !
 !  Output arguments
@@ -107,7 +108,8 @@ subroutine get_vioreanu_nodes(norder,npols,uvs)
 !        vioreanu quadrature nodes of order=norder+1
 !
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: norder,npols
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: norder,npols
   real *8, intent(out) :: uvs(2,npols)
 
   INCLUDE 'koorn-uvs-dat.txt'
@@ -129,9 +131,9 @@ subroutine get_vioreanu_nodes_wts(norder,npols,uvs,wts)
 !  
 !  Input arguments
 !    
-!    - norder: integer
+!    - norder: integer(8)
 !        input order. Must be between 0 and 20
-!    - npols: integer
+!    - npols: integer(8)
 !        npols = (norder+1)*(norder+2)/2
 !
 !  Output arguments
@@ -142,7 +144,8 @@ subroutine get_vioreanu_nodes_wts(norder,npols,uvs,wts)
 !        vioreanu quadrature weights of order=norder+1
 !
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: norder,npols
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: norder,npols
   real *8, intent(out) :: uvs(2,npols),wts(npols)
 
   call get_vioreanu_nodes(norder,npols,uvs)
@@ -166,9 +169,9 @@ subroutine vioreanu_simplex_quad(norder, npols, uvs, &
 !  
 !  Input arguments
 !    
-!    - norder: integer
+!    - norder: integer(8)
 !        input order. Must be between 0 and 20
-!    - npols: integer
+!    - npols: integer(8)
 !        npols = (norder+1)*(norder+2)/2
 !
 !  Output arguments
@@ -183,7 +186,8 @@ subroutine vioreanu_simplex_quad(norder, npols, uvs, &
 !        vioreanu quadrature weights of order=norder+1
 !
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: norder,npols
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: norder,npols
   real *8, intent(out) :: uvs(2,npols),wts(npols)
   real *8, intent(out) :: umatr(npols,npols),vmatr(npols,npols)
 
@@ -201,6 +205,7 @@ end subroutine vioreanu_simplex_quad
 
 subroutine koorn_pols(uv, nmax, npols, pols)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: uv(2), pols(*)
 
   real *8 :: legpols(0:100), jacpols(0:100,0:100)
@@ -323,11 +328,11 @@ subroutine koorn_ders(uv, nmax, npols, pols, ders)
 !        uv coordinates on $T_{0}$ where polynomials and derivatives
 !        are to be evaluated
 !
-!    - nmax: integer
+!    - nmax: integer(8)
 !        total order upto which polynomials and derivatives are to
 !        be evaluated
 !
-!    - npols: integer
+!    - npols: integer(8)
 !        total number of polynomials = (norder+1)*(norder+2)/2
 !
 !  Output parameters:
@@ -339,7 +344,8 @@ subroutine koorn_ders(uv, nmax, npols, pols, ders)
 !        Derivative of koornwinder polynomails at uv
 !---------------------
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: nmax,npols
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: nmax,npols
   real *8, intent(in) :: uv(2)
   real *8, intent(out) :: pols(npols), ders(2,npols)
 
@@ -473,7 +479,8 @@ subroutine koorn_vals2coefs(nmax, npols, uvs, amat)
 !f2py intent(out) amat
 !
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: nmax,npols
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: nmax,npols
   real *8, intent(in) :: uvs(2,npols)
   real *8, intent(out) :: amat(npols,npols)
 
@@ -519,7 +526,8 @@ subroutine koorn_coefs2vals(nmax, npols, uvs, amat)
 !f2py intent(out) amat
 !
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: nmax,npols
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: nmax,npols
   real *8, intent(in) :: uvs(2,npols)
   real *8, intent(out) :: amat(npols,npols)
 
@@ -565,10 +573,10 @@ subroutine koorn_vals2coefs_coefs2vals(korder,kpols,umatr,vmatr)
   !!   compute vals2coefs and coefs2vals matrix 
   !
   !    input
-  !    korder     in: integer
+  !    korder     in: integer(8)
   !                 order of rokhlin vioreanu (rv) nodes at which function is
   !                 sampled
-  !    kpols      in: integer
+  !    kpols      in: integer(8)
   !                 number of nodes corresponding to korder rv nodes
   !
   !    output
@@ -578,7 +586,8 @@ subroutine koorn_vals2coefs_coefs2vals(korder,kpols,umatr,vmatr)
   !    vmatr      out: real *8 (kpols,kpols)
   !               coefs2vals matrix
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: korder,kpols
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: korder,kpols
   real *8, intent(out) :: umatr(kpols,kpols)
   real *8, intent(out) :: vmatr(kpols,kpols)
   real *8 xys(2,kpols)
@@ -602,7 +611,8 @@ subroutine koorn_coefs2vals_vioreanu(norder, npols, amat)
 !
 !
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: norder, npols
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: norder, npols
   real *8, intent(out) :: amat(npols,npols)
   real *8 :: uvs(2,npols)
 
@@ -623,15 +633,15 @@ subroutine koorn_oversamp_mat(korder,kpols,norder,npols,interpmat)
   !!   compute ovesampling matrix
   !
   !    input
-  !    korder     in: integer
+  !    korder     in: integer(8)
   !                 order of rokhlin vioreanu (rv) nodes at which function is
   !                 sampled
-  !    kpols      in: integer
+  !    kpols      in: integer(8)
   !                 number of nodes corresponding to korder rv nodes
-  !    norder     in: integer
+  !    norder     in: integer(8)
   !                 order of oversampled rv nodes at which function is
   !                 to be oversampled
-  !    npols      in: integer
+  !    npols      in: integer(8)
   !                 number of nodes corresponding to norder rv nodes
   !
   !    output
@@ -641,7 +651,8 @@ subroutine koorn_oversamp_mat(korder,kpols,norder,npols,interpmat)
   !    
 
   implicit real *8 (a-h,o-z)
-  integer korder,kpols,norder,npols
+  implicit integer(8) (i-n)
+  integer(8) korder,kpols,norder,npols
   real *8 interpmat(npols,kpols)
   real *8 umat(kpols,kpols), vmat(kpols,kpols)
   real *8 xys(2,npols),wts(npols),umato(npols,npols),vmato(npols,npols)
@@ -667,6 +678,7 @@ end subroutine koorn_oversamp_mat
 
 subroutine koorn_evalexp(nmax, npols, uv, coefs, val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: uv(2), coefs(npols)
 
   real *8 :: pols(2000)
@@ -702,6 +714,7 @@ end subroutine koorn_evalexp
 
 subroutine koorn_evalexp2(nmax, npols, uv, coefs, val, der)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: uv(2), coefs(npols), der(2)
 
   real *8 :: pols(2000), ders(2,2000)
@@ -747,6 +760,7 @@ end subroutine koorn_evalexp2
 
 subroutine koorn_zevalexp2(nmax, npols, uv, coefs, val, der)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: uv(2)
   complex *16 :: coefs(npols), val, der(2)
 
@@ -825,6 +839,7 @@ end subroutine koorn_zevalexp2
 
 subroutine koornf_init(nmax, rat1, rat2, rsc1)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
 !
 ! Precompute the recurrence coefficients for the fast
 ! evaluation of koornwinder functions on triangles and their derivatives
@@ -893,6 +908,7 @@ end subroutine koornf_init
 
 subroutine koornf_pols(uv, nmax, npols, pols, rat1, rat2, rsc1)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: uv(2), pols(*)
 
   real *8 :: rat1(2,0:nmax)
@@ -1020,11 +1036,11 @@ subroutine koornf_ders(uv, nmax, npols, pols, ders, rat1, rat2, rsc1)
 !        uv coordinates on $T_{0}$ where polynomials and derivatives
 !        are to be evaluated
 !
-!    - nmax: integer
+!    - nmax: integer(8)
 !        total order upto which polynomials and derivatives are to
 !        be evaluated
 !
-!    - npols: integer
+!    - npols: integer(8)
 !        total number of polynomials = (norder+1)*(norder+2)/2
 !
 !    - rat1: double precision (2,0:nmax)
@@ -1046,8 +1062,9 @@ subroutine koornf_ders(uv, nmax, npols, pols, ders, rat1, rat2, rsc1)
 !---------------------
 !
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8, intent(in) :: uv(2)
-  integer, intent(in) :: nmax
+  integer(8), intent(in) :: nmax
   real *8, intent(in) :: rat1(2,0:nmax)
   real *8, intent(in) :: rat2(3,0:nmax,0:nmax)
   real *8, intent(in) :: rsc1(0:nmax,0:nmax)
