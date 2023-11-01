@@ -58,6 +58,13 @@
 !      col_ind_to_patch_node_ind - convert a list of column
 !         indices to a list of patch and node indices
 !
+!      get_second_fundamental from - get the second fundamental form
+!         at the discretization nodes on the surface
+!
+!      get_mean_curvature - compute the mean curvature at all discretization
+!         points on the surface
+!      
+!
 !         
 
 
@@ -1967,3 +1974,181 @@ subroutine get_surf_interp_mat_targ(npatches,norders,ixyzs,iptype,npts,ntarg, &
 !$OMP END PARALLEL DO 
 
 end subroutine get_surf_interp_mat_targ
+!
+!
+!
+!
+!
+subroutine get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,sfform)
+!
+!------------------------
+!  This subroutine computes the second fundamental form at
+!  the discretization nodes on the surface.
+!
+!  The second fundamental form is
+!  
+!  .. math::
+!    
+!    \begin{bmatrix} x_{uu} \cdot n & x_{uv} \cdot n \\
+!    x_{uv} \cdot n & x_{vv} \cdot n \end{bmatrix}
+!
+!  Input arguments:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!
+!  Output arguments:
+!
+!    - sfform: double precision(2,2,npts)
+!        second fundamental form at the discretization nodes
+!--------------------------
+!
+  
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches)
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer, intent(in) :: npts
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+  real *8, intent(out) :: sfform(2,2,npts)
+  integer i
+  real *8 L,M,N
+  real *8, allocatable :: dxuv(:,:)
+  real *8, allocatable :: dxuv2(:,:,:)
+
+
+  allocate(dxuv(6,npts))
+! Calculating x_{uu}, x_{uv}, x_{uv} stored in dxuv2 
+ 
+  do i=1,npts
+    dxuv(1,i) = srcvals(4,i)  
+    dxuv(2,i) = srcvals(5,i)  
+    dxuv(3,i) = srcvals(6,i)  
+    dxuv(4,i) = srcvals(7,i)  
+    dxuv(5,i) = srcvals(8,i)  
+    dxuv(6,i) = srcvals(9,i)   
+  enddo
+
+  allocate(dxuv2(6,2,npts))
+
+  call get_surf_uv_grad(6,npatches,norders,ixyzs,iptype,npts,dxuv,dxuv2)
+
+
+
+  do i=1,npts
+    L = dxuv2(1,1,i)*srcvals(10,i) + dxuv2(2,1,i)*srcvals(11,i) + dxuv2(3,1,i)*srcvals(12,i) ! Calculation of L, M, N. L = x_uu \cdot n 
+    M = dxuv2(1,2,i)*srcvals(10,i) + dxuv2(2,2,i)*srcvals(11,i) + dxuv2(3,2,i)*srcvals(12,i)  ! M = x_uv \cdot n
+    N = dxuv2(4,2,i)*srcvals(10,i) + dxuv2(5,2,i)*srcvals(11,i) + dxuv2(6,2,i)*srcvals(12,i)  ! N = x_vv \cdot n
+    sfform(1,1,i) = L
+    sfform(2,1,i) = M
+    sfform(1,2,i) = M
+    sfform(2,2,i) = N
+  enddo
+
+  return
+end subroutine get_second_fundamental_form
+!
+!
+!
+subroutine get_mean_curvature(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,mean_curv)
+!
+!------------------------
+!  This subroutine computes the mean curvature at
+!  the discretization nodes on the surface.
+!
+!  The mean curvature is
+!  
+!  .. math::
+!    
+!    0.5*Trace(II \cdot I^{-1}) \\
+!    
+!
+!  Input arguments:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization of each patch
+!    - ixyzs: integer(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangle discretized using RV nodes
+!    - npts: integer
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        koornwinder expansion coefs of geometry info
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!
+!  Output arguments:
+!
+!    - mean_curv: double precision(npts)
+!        mean curvature at the discretization nodes
+!--------------------------
+!
+  
+  implicit none
+  integer, intent(in) :: npatches,norders(npatches)
+  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer, intent(in) :: npts
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+  real *8, intent(out) :: mean_curv(npts)
+  integer i
+  real *8, allocatable :: ffform(:,:,:),ffforminv(:,:,:)
+  real *8, allocatable :: sfform(:,:,:)
+
+  allocate(ffform(2,2,npts))
+
+  call get_first_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,ffform)
+
+
+
+  allocate(ffforminv(2,2,npts))
+
+  call get_inv_first_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,ffforminv)
+
+  allocate(sfform(2,2,npts))
+
+  call get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
+  npts,srccoefs,srcvals,sfform)
+  
+!  print *,"Point on surface:", srcvals(1,3),srcvals(2,3), srcvals(3,3) 
+!  print *,"First fundamental form=", ffform(:,:, 3) 
+!  print *,"Inverse first fundamental form=", ffforminv(:,:, 3)
+!  print *,"Second fundamental form=", sfform(:,:, 3)
+ 
+
+
+! Calculating mean curvature 
+ 
+  do i=1,npts
+    mean_curv(i) = -0.5*(sfform(1,1,i)*ffforminv(1,1,i) + &
+                     sfform(1,2,i)*ffforminv(2,1,i) + &
+                     sfform(2,1,i)*ffforminv(1,2,i) + &
+                     sfform(2,2,i)*ffforminv(2,2,i))
+  enddo
+!  print *,"Mean=", mean_curv(3)
+ 
+  return
+end subroutine get_mean_curvature
+
+!
+!
+!
