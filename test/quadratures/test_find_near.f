@@ -1,9 +1,12 @@
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       real *8, allocatable :: src(:,:),targ(:,:),rads(:)
-      integer, allocatable :: row_ptr(:),row_ptr2(:)
-      integer, allocatable :: col_ind(:),col_ind2(:)
-      integer, allocatable :: isort(:),wsort(:),isort2(:),wsort2(:)
+      integer(8), allocatable :: row_ptr(:),row_ptr2(:)
+      integer(8), allocatable :: col_ind(:),col_ind2(:)
+      integer(8), allocatable :: isort(:),wsort(:),isort2(:),wsort2(:)
+      integer(8) ndim
 
+      ndim = 3
       call prini(6,13)
 
 
@@ -12,7 +15,7 @@
       i0 = 1
       i1 = 1
       i2 = 1
-      
+
       allocate(src(3,ns),targ(3,nt),rads(ns))
       allocate(row_ptr(nt+1),row_ptr2(nt+1))
       allocate(isort(nt),wsort(nt),isort2(nt),wsort2(nt))
@@ -32,8 +35,8 @@
 
       nnz = 0
       nnz2 = 0
-      call findnearslowmem(src,ns,rads,3,targ,nt,nnz2)
-      call findnearmem(src,ns,rads,3,targ,nt,nnz)
+      call findnearslowmem(src,ns,rads,ndim,targ,nt,nnz2)
+      call findnearmem(src,ns,rads,ndim,targ,nt,nnz)
 
       if(nnz.ne.nnz2) then
         call prinf('number of non zero elements dont match*',i,0)
@@ -41,8 +44,8 @@
       endif
 
       allocate(col_ind(nnz),col_ind2(nnz))
-      call findnear(src,ns,rads,3,targ,nt,row_ptr,col_ind)
-      call findnearslow(src,ns,rads,3,targ,nt,row_ptr2,col_ind2)
+      call findnear(src,ns,rads,ndim,targ,nt,row_ptr,col_ind)
+      call findnearslow(src,ns,rads,ndim,targ,nt,row_ptr2,col_ind2)
 
       do i=1,nt
         n1 = row_ptr(i+1)-row_ptr(i)

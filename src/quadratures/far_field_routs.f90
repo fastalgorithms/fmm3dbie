@@ -30,35 +30,35 @@ subroutine get_far_order(eps,npatches,norders,ixyzs,iptype,cms,rads,&
 !    eps - real *8
 !       tolerance requested
 !
-!    npatches - integer
+!    npatches - integer(8)
 !       number of patches
 !
-!    norders - integer
+!    norders - integer(8)
 !       order of discretization for each patch
 !
-!    ixyzs - integer(npatches+1)
+!    ixyzs - integer(8)(npatches+1)
 !       ixyzs(i) indicates the location in srccoefs array
 !       where information for patch i begins
 !
-!    npts - integer
+!    npts - integer(8)
 !       total number of discretization points on the surface
 !
 !    srccoefs - real *8 (9,npts)
 !       orthogonal polynomial expansions on each patch
 !       of x,y,z,dxyz/du,dxyz/dv
 !
-!    ndtarg - integer
+!    ndtarg - integer(8)
 !       leading dimension of target array (the first three
 !       dimensions must be target locations)
 !    
-!    ntarg - integer
+!    ntarg - integer(8)
 !       number of targets
 !
 !    targvals - real *8 (ndtarg,ntarg)
 !       target info in the near field, note the first three 
 !       inputs per point must be the xyz coordinates
 !
-!    ikerorder - integer
+!    ikerorder - integer(8)
 !       type of kernel
 !         ikerorder = -1 -> single layer type operator
 !         ikerorder = 0 -> Double layer type operator
@@ -67,15 +67,15 @@ subroutine get_far_order(eps,npatches,norders,ixyzs,iptype,cms,rads,&
 !    zk - complex *16
 !         Wave number for the problem
 !    
-!    nnz - integer
+!    nnz - integer(8)
 !       number of non-zero interactions in the near-field
 !
-!    row_ptr - integer (ntarg+1)
+!    row_ptr - integer(8) (ntarg+1)
 !       row_ptr(i) indicates the location in col_ind array
 !       where list of source patches relevant to target i
 !       start
 !
-!    col_ind - integer(nnz)
+!    col_ind - integer(8)(nnz)
 !       list of source patch indices in the near field
 !       of targets. col_ptr(row_ind(i):row_ind(i+1)-1))
 !       is the collection of source patches relevant 
@@ -86,34 +86,35 @@ subroutine get_far_order(eps,npatches,norders,ixyzs,iptype,cms,rads,&
 !       for each patch
 !    
 !    output
-!      nfars - integer(npatches)
+!      nfars - integer(8)(npatches)
 !        quadrature order for far-field for each patch
 !
-!      ixyzso - integer(npatches+1)
+!      ixyzso - integer(8)(npatches+1)
 !         location in oversampled source array where
 !         information of patch i starts
 !
 !
-  implicit real *8 (a-h,o-z)
-  integer npatches,norders(npatches),ixyzs(npatches),iptype(npatches)
-  integer npts,ikerorder
+  implicit none
+  integer(8) npatches,norders(npatches),ixyzs(npatches),iptype(npatches)
+  integer(8) npts,ikerorder
   real *8 cms(3,npatches),rads(npatches),srccoefs(9,npts)
   real *8 dpars
   complex *16 zk
-  integer ipars
+  integer(8) ipars
 
-  integer ndtarg,ntarg
+  integer(8) ndtarg,ntarg
   real *8 targvals(ndtarg,ntarg)
-  integer nnz
-  integer row_ptr(ntarg+1),col_ind(nnz)
-  real *8 rfac
-  integer nfars(npatches),ixyzso(npatches+1)
+  integer(8) nnz
+  integer(8) row_ptr(ntarg+1),col_ind(nnz)
+  real *8 rfac,rad0,eps
+  integer(8) nfars(npatches),ixyzso(npatches+1)
 
-  integer, allocatable :: col_ptr(:),row_ind(:),iper(:)
+  integer(8), allocatable :: col_ptr(:),row_ind(:),iper(:)
 
   real *8, allocatable :: targtmp(:,:)
   real *8, allocatable :: uvs(:,:),wts(:),umat(:,:),vmat(:,:)
   character *1 transa,transb
+  integer(8) i,ii,j,jpt,norder,l,npols,npolsf,ntarg0,istart
 
   allocate(col_ptr(npatches+1),row_ind(nnz),iper(nnz))
 
@@ -183,17 +184,17 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
 !    eps - real *8
 !       tolerance requested
 !
-!    norder - integer
+!    norder - integer(8)
 !       order of patch
 !
-!    iptype - integer
+!    iptype - integer(8)
 !       type of patch,
 !       * iptype =1, triangular patch with RV nodes
 !       * iptype =11, quad patch with GL nodes, and full degree polynomials
 !       * iptype =12, quad patch with Chebyshev nodes, and full degree
 !                       polynomnials
 !
-!    npols - integer
+!    npols - integer(8)
 !       number of discretization nodes on patch
 !
 !    cm - real *8 (3)
@@ -206,7 +207,7 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
 !    srccoefs - real *8 (9,npols)
 !       basis expansion coeffs
 !
-!    ikerorder - integer
+!    ikerorder - integer(8)
 !       type of kernel
 !         ikerorder = -1 -> single layer type operator
 !         ikerorder = 0 -> Double layer type operator
@@ -215,11 +216,11 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
 !    zk - complex *16
 !         Wave number for the problem
 !
-!    ndtarg - integer
+!    ndtarg - integer(8)
 !       leading dimension of target array (the first three
 !       dimensions must be target locations)
 !    
-!    ntarg - integer
+!    ntarg - integer(8)
 !       number of targets
 !
 !    targvals - real *8 (ndtarg,ntarg)
@@ -227,25 +228,27 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
 !       inputs per point must be the xyz coordinates
 !    
 !    output
-!      nfar - integer
+!      nfar - integer(8)
 !        quadrature order for far-field (currently will only be 1,2,3,4,6,8,10,12,14,16)
 !
 !
-  implicit real *8 (a-h,o-z)
+  implicit none
   real *8 eps,cm(3),rad,srccoefs(3,npols)
   real *8 targvals(ndtarg,ntarg)
-  integer norder,npols,ndtarg,ntarg,nfar
-  integer iptype
+  integer(8) norder,npols,ndtarg,ntarg,nfar
+  integer(8) iptype
   complex *16 zk
   real *8, allocatable :: targtest(:,:),dd(:)
-  integer, allocatable :: indd(:)
+  integer(8), allocatable :: indd(:)
   real *8 phi,thet,pi,done
-  integer i,ii
+  real *8 alpha,beta,err,errl2,errmax,rr,rsc,hkrand
+  integer(8) i,ii,ikerorder,npolsf,i0,iistart,itarg
+  integer(8) j,jpt,l,nnn,nomax,npmax
 
   real *8 dpars
-  integer ipars
+  integer(8) ipars
 
-  integer ndd,ndz,ndi,ndt
+  integer(8) ndd,ndz,ndi,ndt
 
   real *8, allocatable ::  srctmp(:,:)
   complex *16, allocatable :: sigmatmp(:),vcomp(:,:),vref(:,:)
@@ -254,9 +257,9 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   real *8, allocatable :: uvs(:,:),wts(:),qwts(:)
   real *8 epsp
   real *8 tmp(3)
-  integer nfars(10)
-  integer nmax,iseed1,iseed2
-  integer ipoly
+  integer(8) nfars(10)
+  integer(8) nmax,iseed1,iseed2
+  integer(8) ipoly
   character *1 ttype
 
   character *1 transa,transb

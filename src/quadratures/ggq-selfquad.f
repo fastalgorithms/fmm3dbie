@@ -56,6 +56,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         subroutine self_quadrature_new(irad, verts0, nv,x0, y0, dr,
      1    nquad, xs, ys, whts)
         implicit double precision (a-h,o-z)
+        implicit integer(8) (i-n)
         dimension verts(2,nv),dr(3,2),a(2,2),ainv(2,2),verts0(2,nv)
         dimension xs(*),ys(*),whts(*),b(3,2)
 c
@@ -142,7 +143,8 @@ c
         subroutine pv_self_quadrature_new(irad,verts0,nv,x0,y0,dr,
      1       nquad,xs,ys,whts)
         implicit double precision (a-h,o-z)
-        integer irad
+        implicit integer(8) (i-n)
+        integer(8) irad
         dimension verts(2,nv),dr(3,2),a(2,2),ainv(2,2),verts0(2,nv)
         dimension xs(*),ys(*),whts(1),b(3,2)
 c
@@ -230,6 +232,7 @@ c
 c
         subroutine find_conf_map(a,b,binv)
         implicit double precision (a-h,o-z)
+        implicit integer(8) (i-n)
         dimension a(3,2),b(2,2),binv(2,2),q(3,2)
 c
 c       Given a (3,2) matrix A, return a (2,2) matrix B such that
