@@ -1,4 +1,5 @@
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       character *1 ttype
 
       ifp = 0
