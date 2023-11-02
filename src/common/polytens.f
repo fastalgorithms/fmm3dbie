@@ -1336,6 +1336,7 @@ c
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       real *8 dmat(ndeg+1,ndeg+1),polin(*),polout(*)
       real *8 coef1(ndeg+1,ndeg+1,ndeg+1),coef2(ndeg+1,ndeg+1,ndeg+1)
       integer(8) iind2pow(3,(ndeg+1)**3)
@@ -1415,6 +1416,7 @@ c
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       real *8 fvals(nd,norder**ndim)
       real *8 fcoefs(nd,norder**ndim),umat(norder,norder)
 
@@ -1438,6 +1440,7 @@ c     1D tensor product transformation
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       real *8 fvals(nd,norder)
       real *8 fcoefs(nd,norder),umat(norder,norder)
       
@@ -1463,6 +1466,7 @@ c     2D tensor product transformation
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       real *8 fvals(nd,norder,norder)
       real *8 fcoefs(nd,norder,norder),umat(norder,norder)
       real *8, allocatable:: fcv(:,:,:)
@@ -1506,6 +1510,7 @@ c
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       real *8 fvals(nd,norder,norder,norder)
       real *8 fcoefs(nd,norder,norder,norder),umat(norder,norder)
       real *8, allocatable:: fcvv(:,:,:,:),fccv(:,:,:,:)
@@ -1569,6 +1574,7 @@ c
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       integer(8) iind2p(ndim,npols)
       real *8 rmask(npols)
 

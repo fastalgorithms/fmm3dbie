@@ -12,8 +12,9 @@
 !
 subroutine dcopy_guru(n,a,incx,b,incy)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
 
-  integer n,incx,incy
+  integer *8 n,incx,incy
   integer *8 n1,incx1,incy1
 
   real *8 a(*),b(*)
@@ -54,6 +55,7 @@ subroutine zvecvec(n, x, y, cd)
 !
 
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16, intent(in) :: x(n), y(n)
   complex *16, intent(out) :: cd
   complex *16 zdotu
@@ -88,6 +90,7 @@ subroutine zzero(n, z)
 !---------------------
 !
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16 :: z(n)
 
   do i = 1,n
@@ -119,7 +122,8 @@ subroutine ztranspose(m, n, a)
 !-------------------------
 !
   implicit double precision (a-h,o-z)
-  integer, intent(in) :: m,n
+  implicit integer(8) (i-n)
+  integer *8, intent(in) :: m,n
   double complex, intent(inout) :: a(*)
   double complex, allocatable :: at(:)
   integer *8 mn,incx,incy
@@ -148,6 +152,7 @@ end subroutine ztranspose
 
 subroutine zdiff(n, x, y, z)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16 :: x(n), y(n), z(n)
 
   do i = 1,n
@@ -162,6 +167,7 @@ end subroutine zdiff
 
 subroutine zratios(n, x, y, z)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16 :: x(n), y(n), z(n)
 
   do i = 1,n
@@ -177,6 +183,7 @@ end subroutine zratios
 
 subroutine zeigs(n, a, info, vleft, zlams, vright)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16 :: a(n,n), vleft(n,n), zlams(n), vright(n,n)
 
   character :: jobvl, jobvr
@@ -222,6 +229,7 @@ end subroutine zeigs
 
 subroutine zsvd(m, n, a, u, s, vt)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: s(*)
   complex *16 :: a(m,n), u(*), vt(*)
 
@@ -272,6 +280,7 @@ end subroutine zsvd
 
 subroutine dsvd(m, n, a, u, s, vt)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: s(*)
   double precision :: a(m,n), u(*), vt(*)
 
@@ -318,6 +327,7 @@ end subroutine dsvd
 
 subroutine dinverse(n, a, info, ainv)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: a(n,n), ainv(n,n)
   
   double precision, allocatable :: work(:)
@@ -359,6 +369,7 @@ end subroutine dinverse
 
 subroutine zinverse(n, a, info, ainv)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16 :: a(n,n), ainv(n,n)
 
   integer, allocatable :: ipiv(:)
@@ -401,6 +412,7 @@ end subroutine zinverse
 
 subroutine dgausselim(n, a, rhs, info, sol, dcond)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: a(n,n), rhs(n), sol(n)
   
   integer *8, allocatable :: ipiv(:), iwork(:)
@@ -444,6 +456,7 @@ end subroutine dgausselim
 
 subroutine dgausselim_vec(n, a, k, rhs, info, sol, dcond)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: a(n,n), rhs(n,k), sol(n,k)
   
   integer *8, allocatable :: ipiv(:), iwork(:)
@@ -494,7 +507,7 @@ subroutine dleastsq(m,n,a,nrhs,rhs,eps,info,sol,irank)
   ! recommended: 1d-15 .lt. eps .lt. 1d-12
   !
   implicit none
-  integer m,n,info,nrhs,irank
+  integer *8 m,n,info,nrhs,irank
   real *8 a(m,n), rhs(m,nrhs), sol(n,nrhs), eps
   ! local  
   real *8, allocatable :: work(:), atemp(:,:), rhstemp(:,:)
@@ -570,6 +583,7 @@ end subroutine dleastsq
 
 subroutine zgausselim(n, a, rhs, info, sol, dcond)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16 :: a(n,n), rhs(n), sol(n)
   
   integer *8, allocatable :: ipiv(:)
@@ -623,6 +637,7 @@ end subroutine zgausselim
 
 subroutine dgausselim_zrhs(n, a, rhs, info, sol, dcond)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: a(n,n), rhs(2,n), sol(2,n)
   
   integer *8, allocatable :: ipiv(:), iwork(:)
@@ -682,6 +697,7 @@ end subroutine dgausselim_zrhs
 
 subroutine zmatvec(m, n, a, x, y)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16 :: a(m,n), x(n), y(m)
   character *1 :: trans
   complex *16 :: alpha, beta
@@ -705,6 +721,7 @@ end subroutine zmatvec
 
 subroutine dmatvec(m, n, a, x, y)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: a(m,n), x(n), y(m)
   character *1 :: trans
   double precision :: alpha, beta
@@ -727,6 +744,7 @@ end subroutine dmatvec
 
 subroutine dmatzvec(m, n, a, x, y)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: a(m,n)
   complex *16 :: x(n), y(m)
 
@@ -749,6 +767,7 @@ end subroutine dmatzvec
 
 subroutine dmatzvec_saved(m, n, a, x, y)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: a(m,n)
   complex *16 :: x(n), y(m)
   character *1 :: trans
@@ -793,6 +812,7 @@ end subroutine dmatzvec_saved
 
 subroutine zmatmat(m, n, a, k, b, c)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16 :: a(m,n), b(n,k), c(m,k)
   character *1 :: transa, transb
   complex *16 :: alpha, beta
@@ -825,6 +845,7 @@ end subroutine zmatmat
 
 subroutine dmatmat(m, n, a, k, b, c)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: a(m,n), b(n,k), c(m,k)
   character *1 :: transa, transb
   double precision :: alpha, beta
@@ -861,6 +882,7 @@ end subroutine dmatmat
 
 subroutine zrmatmatt(m, n, a, k, b, c)
   implicit double precision (a-h,o-z)
+  implicit integer(8) (i-n)
   complex *16 :: a(n,m),c(k,m)
   real *8 :: b(n,k)
   complex *16, allocatable :: bz(:,:)
@@ -901,8 +923,9 @@ end subroutine zrmatmatt
 !
 !
 subroutine dgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
+  implicit integer(8) (i-n)
   double precision alpha,beta
-  integer k,lda,ldb,ldc,m,n
+  integer *8 k,lda,ldb,ldc,m,n
   integer *8 k1,lda1,ldb1,ldc1,m1,n1
   character transa,transb
 
@@ -925,8 +948,9 @@ end subroutine dgemm_guru
 !
 !
 subroutine zgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
+  implicit integer(8) (i-n)
   double complex alpha,beta
-  integer k,lda,ldb,ldc,m,n
+  integer *8 k,lda,ldb,ldc,m,n
   integer *8 k1,lda1,ldb1,ldc1,m1,n1
   character transa,transb
 
@@ -949,8 +973,9 @@ end subroutine zgemm_guru
 !
 !
 subroutine dgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
+  implicit integer(8) (i-n)
   double precision alpha,beta
-  integer incx,incy,lda,m,n
+  integer *8 incx,incy,lda,m,n
   integer *8 incx1,incy1,lda1,m1,n1
   character trans
   
@@ -972,8 +997,9 @@ end subroutine dgemv_guru
 !
 !
 subroutine zgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
+  implicit integer(8) (i-n)
   double complex alpha,beta
-  integer incx,incy,lda,m,n
+  integer *8 incx,incy,lda,m,n
   integer *8 incx1,incy1,lda1,m1,n1
   character trans
   
