@@ -29,6 +29,7 @@ c    - thresh: real *8
 c        fmm threshold
 c
       implicit real *8 (a-h,o-z)
+      implicit integer(8) (i-n)
       integer(8), intent(in) :: nds,ns,ndt,nt
       real *8, intent(in) :: src(nds,ns),trg(ndt,nt)
       real *8, intent(out) :: thresh
