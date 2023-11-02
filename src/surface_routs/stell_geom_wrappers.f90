@@ -23,31 +23,31 @@ subroutine setup_stell_geom(istelltype,norder,ns,nt,npatches,norders,ixyzs, &
 !
 !  Input arguments:
 !
-!    - istelltype: integer
+!    - istelltype: integer(8)
 !         type of stellrator
 !         istelltype = 1, w7x
 !         istelltype = 2, ncsx
-!    - norder: integer
+!    - norder: integer(8)
 !         order of discretization for the patches
-!    - ns: integer
+!    - ns: integer(8)
 !         number of patches to be used in the s variable above 
-!    - nt: integer
+!    - nt: integer(8)
 !         number of patches to be used in the t variable above
-!    - npatches: integer
+!    - npatches: integer(8)
 !         must be equal to 2*ns*nt
-!    - npts: integer
+!    - npts: integer(8)
 !         must be equal to npatches*(norder+1)*(norder+2)/2
 !
 !
 !  Output arguments:
-!    - norders: integer(npatches)
+!    - norders: integer(8)(npatches)
 !        discretization order of patches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer(8)(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer(8)(npatches)
 !        type of patch
 !        iptype = 1, triangle discretized using RV nodes
-!    - npts: integer
+!    - npts: integer(8)
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -56,13 +56,13 @@ subroutine setup_stell_geom(istelltype,norder,ns,nt,npatches,norders,ixyzs, &
 !        
 !----------------------------
   implicit none
-  integer, intent(in) :: istelltype,norder,ns,nt,npatches,npts
-  integer, intent(out) :: norders(npatches),ixyzs(npatches+1)
-  integer, intent(out) :: iptype(npatches)
+  integer(8), intent(in) :: istelltype,norder,ns,nt,npatches,npts
+  integer(8), intent(out) :: norders(npatches),ixyzs(npatches+1)
+  integer(8), intent(out) :: iptype(npatches)
   real *8, intent(out) :: srccoefs(9,npts),srcvals(12,npts)
 
   real *8, allocatable :: deltas(:,:,:)
-  integer m,nfp
+  integer(8) m,nfp
 
   if(istelltype.eq.1) then
     m = 10
@@ -106,33 +106,33 @@ subroutine setup_stell_geom_guru(norder,ns,nt,npatches,nfp,deltas,m,norders, &
 !  
 !
 !  Input arguments:
-!    - norder: integer
+!    - norder: integer(8)
 !         order of discretization for the patches
-!    - ns: integer
+!    - ns: integer(8)
 !         number of patches to be used in the s variable above 
-!    - nt: integer
+!    - nt: integer(8)
 !         number of patches to be used in the t variable above
-!    - npatches: integer
+!    - npatches: integer(8)
 !         must be equal to 2*ns*nt
-!    - nfp: integer
+!    - nfp: integer(8)
 !         nfp above
 !    - deltas: real *8 (-m:m,-m:m,2)
 !         the coeffs deltas above
-!    - m: integer
+!    - m: integer(8)
 !         number of coeffs in deltas above
-!    - npts: integer
+!    - npts: integer(8)
 !         must be equal to npatches*(norder+1)*(norder+2)/2
 !
 !
 !  Output arguments:
-!    - norders: integer(npatches)
+!    - norders: integer(8)(npatches)
 !        discretization order of patches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer(8)(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer(8)(npatches)
 !        type of patch
 !        iptype = 1, triangle discretized using RV nodes
-!    - npts: integer
+!    - npts: integer(8)
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -142,19 +142,19 @@ subroutine setup_stell_geom_guru(norder,ns,nt,npatches,nfp,deltas,m,norders, &
 !----------------------------
  
   implicit none
-  integer, intent(in) :: istelltype,norder,ns,nt,npatches,npts
+  integer(8), intent(in) :: istelltype,norder,ns,nt,npatches,npts
   real *8, intent(in), target :: deltas(-m:m,-m:m,2)
-  integer, intent(in), target :: m,nfp
-  integer, intent(out) :: norders(npatches),ixyzs(npatches+1)
-  integer, intent(out) :: iptype(npatches)
+  integer(8), intent(in), target :: m,nfp
+  integer(8), intent(out) :: norders(npatches),ixyzs(npatches+1)
+  integer(8), intent(out) :: iptype(npatches)
   real *8, intent(out) :: srccoefs(9,npts),srcvals(12,npts)
 
 
   real *8, allocatable, target :: triaskel(:,:,:)
-  integer, pointer :: iptr1,iptr2,iptr3,iptr4
+  integer(8), pointer :: iptr1,iptr2,iptr3,iptr4
   real *8, pointer :: ptr1,ptr2,ptr3,ptr4
   real *8 smin,smax,tmin,tmax,done,pi
-  integer nover,npols
+  integer(8) nover,npols
   real *8, allocatable :: uvs(:,:),wts(:),umatr(:,:),vmatr(:,:)
 
   external xtri_biest_stell_eval
@@ -205,7 +205,8 @@ end subroutine setup_stell_geom_guru
 subroutine xtri_biest_stell_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     deltas, m, nfp)
   implicit real *8 (a-h,o-z)
-  integer nfp,m
+  implicit integer(8) (i-n)
+  integer(8) nfp,m
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), deltas(-m:m,-m:m,2)
   real *8 :: dxyzds(3),dxyzdt(3)
 

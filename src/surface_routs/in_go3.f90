@@ -18,23 +18,23 @@ implicit none
 
     !List of calling arguments
     character (len=*), intent(in) :: filename
-	integer ( kind = 4 ), intent(in) :: npoints
-	integer ( kind = 4 ), intent(in) :: npatches
-    integer ( kind = 4), intent(out) :: norders(npatches)
-    integer ( kind = 4), intent(out) :: ixyzs(npatches+1)
-    integer ( kind = 4), intent(out) :: iptype(npatches)
+	integer ( kind = 8 ), intent(in) :: npoints
+	integer ( kind = 8 ), intent(in) :: npatches
+    integer ( kind = 8), intent(out) :: norders(npatches)
+    integer ( kind = 8), intent(out) :: ixyzs(npatches+1)
+    integer ( kind = 8), intent(out) :: iptype(npatches)
 	real ( kind = 8 ), intent(out) :: srcvals(12,npoints)
 	real ( kind = 8 ), intent(out) :: srccoefs(9,npoints)
 	real ( kind = 8 ), intent(out) :: wts(npoints)
 	
     !List of local variables
-    integer ( kind = 4 ) umio,count1,count2,flag,aux,npols,icount
-    integer ( kind = 4) norder
-    integer :: ierror
+    integer ( kind = 8 ) umio,count1,count2,flag,aux,npols,icount
+    integer ( kind = 8) norder
+    integer(8) :: ierror
 	real ( kind = 8 ) aux_real,aux_vect(3)
 	real ( kind = 8 ), allocatable :: h_points(:),h_coefs(:)
 	real ( kind = 8 ), allocatable :: uv(:,:),umatr(:,:),vmatr(:,:),w(:)
-    integer i
+    integer(8) i
 
     open(UNIT=18, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
 
@@ -150,11 +150,11 @@ implicit none
 
     !List of calling arguments
     character (len=*), intent(in) :: filename
-    integer ( kind = 4 ), intent(out) :: npoints,ntri
+    integer ( kind = 8 ), intent(out) :: npoints,ntri
 
     !List of local variables
-    integer ( kind = 4 ) umio,count1,count2,flag,aux
-    integer :: ierror,norder
+    integer ( kind = 8 ) umio,count1,count2,flag,aux
+    integer(8) :: ierror,norder
 
         open(UNIT=18, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
 
