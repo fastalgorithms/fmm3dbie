@@ -15,6 +15,7 @@
 subroutine xtri_vtk_surf(fname, ntri, xeval, &
     par1, par2, par3, par4, norder0,title)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: xtriainfo(3,1)
   character (len=*) :: title,fname
   external xeval
@@ -92,6 +93,7 @@ end subroutine xtri_vtk_surf
 subroutine xtri_vtk_plot(fname, ntri, xeval, par1, par2, &
     par3, par4, norder, norder0, sigma, title)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: sigma(*)
   character (len=*) :: title,fname
   external xeval
@@ -163,6 +165,7 @@ end subroutine xtri_vtk_plot
 
 subroutine xtri_vtk_flat_scalars(fname, ntri, xtri1s, m, sigma, title)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: xtri1s(3,3,ntri), sigma(m,3,ntri)
   character(len=*) :: title,fname
   character(len=25) :: fmt2
@@ -240,6 +243,7 @@ subroutine xtri_flatten(ntri, xeval, par1, par2, &
     par3, par4, norder, sigma, npols, umatr, &
     kover, ntriout, xtriout, sigmaout)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: sigma(*), xtriout(3,3,1)
   real *8 :: sigmaout(3,*), umatr(npols,npols)
   external xeval

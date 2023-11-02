@@ -4,6 +4,7 @@
 subroutine xtri_wtorus_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     radii, scales, p4)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), scales(3)
   real *8 :: radii(3)
 
@@ -17,7 +18,7 @@ subroutine xtri_wtorus_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   ! radii - the two radii defining the torus, the third
   !     radius is the radius of osciallation
   ! scales - scaling for x,y,z components from the standard torus
-  ! p4 - number of oscillations (must be an integer currently recast
+  ! p4 - number of oscillations (must be an integer(8) currently recast
   !   as a double precision number)
   !
   !    Output:
@@ -105,6 +106,7 @@ end subroutine xtri_wtorus_eval
 subroutine xtri_stell_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     deltas, m, n)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), deltas(-1:m,-1:n)
   real *8 :: dxyzds(3),dxyzdt(3)
 
@@ -204,6 +206,7 @@ end subroutine xtri_stell_eval
 subroutine xtri_rectmesh_ani(umin, umax, vmin, vmax, nu, nv, &
     nover, maxtri, ntri, triaskel)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: triaskel(3,3,maxtri)
 
   real *8 :: verts(3,100), ifaces(3,100), verts1(3,3)
@@ -294,6 +297,7 @@ end subroutine xtri_rectmesh_ani
 subroutine xtri_rectmesh(umin, umax, vmin, vmax, nover, maxtri, &
     ntri, triaskel)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: triaskel(3,3,maxtri)
 
   real *8 :: verts(3,100), ifaces(3,100), verts1(3,3)
@@ -396,6 +400,7 @@ end subroutine xtri_rectmesh
 
 subroutine xtri_rectmesh0(umin, umax, vmin, vmax, triaskel)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: triaskel(3,3,2)
 
   !
@@ -447,6 +452,7 @@ end subroutine xtri_rectmesh0
 subroutine xtri_sphere_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     p2, p3, p4)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
 
   !
@@ -543,7 +549,8 @@ end subroutine xtri_sphere_eval
 subroutine xtri_platonic(itype, nover, maxtri, &
     npatches, triainfo, isides)
   implicit real *8 (a-h,o-z)
-  integer :: isides(*)
+  implicit integer(8) (i-n)
+  integer(8) :: isides(*)
   real *8 :: triainfo(3,3,maxtri)
 
   real *8 :: verts(3,100), ifaces(3,100), verts1(3,3)
@@ -625,6 +632,7 @@ end subroutine xtri_platonic
 
 subroutine xtri_rsolid(itype, verts, nverts, ifaces, nfaces)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   dimension verts(3,*),ifaces(3,*)
   !
   ! This subroutine returns the vertices and faces of regular (and
@@ -1041,6 +1049,7 @@ end subroutine xtri_rsolid
 
 subroutine xtri_gentriainfo(verts,nverts,ifaces,nfaces,triainfo)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   dimension verts(3,1),ifaces(3,1),triainfo(3,3,1)
 
   do i=1,nfaces
@@ -1068,6 +1077,7 @@ end subroutine xtri_gentriainfo
 
 subroutine xtri_refine4_flat(verts, verts1, verts2, verts3, verts4)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: verts(3,3), verts1(3,3), verts2(3,3), verts3(3,3)
   real *8 :: verts4(3,3)
 
@@ -1158,6 +1168,7 @@ end subroutine xtri_refine4_flat
 subroutine getgeominfo(npatches, patchpnt, par1, par2, par3, par4, &
     npols, uvs, umatr, srcvals, srccoefs)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: uvs(2,npols), srcvals(12,*)
   real *8 :: umatr(npols,npols),srccoefs(9,*)
   external patchpnt
@@ -1171,12 +1182,12 @@ subroutine getgeominfo(npatches, patchpnt, par1, par2, par3, par4, &
   !
   !       Input parameters:
   !
-  !         npatches: integer: the number of patches
+  !         npatches: integer(8): the number of patches
   !         patchpnt: external: subroutine evaluating points along
   !               the surface, given patch by patch, must be of the form
   !                     patchpnt(ipatch,u,v,xyz,dxyzduv,par1,par2,par3,par4)
   !         par1,par2,par3,par4: extra parameters
-  !         npols: integer: the total number of polynomials for each patch
+  !         npols: integer(8): the total number of polynomials for each patch
   !         uvs: real *8(2,npols): local u-discretization points for each patch
   !         umatr: real *8(npols,npols): values to coeffs matrix on standard patch 
   !
@@ -1191,7 +1202,7 @@ subroutine getgeominfo(npatches, patchpnt, par1, par2, par3, par4, &
   !         srccoefs: real *8 (9,npts): geometry info as koornwinder expansion
   !                     coefficients
   !                    
-  !         npts: integer: the total number of points in discretization
+  !         npts: integer(8): the total number of points in discretization
   !
 
 

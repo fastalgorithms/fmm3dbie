@@ -4,9 +4,10 @@ subroutine write_wtorus(fname,radii,scales,nosc,nu,nv,norder,pmax)
 !f2py intent(out) pmax
 !
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   character (len=*), intent(in) :: fname
   real *8, intent(in), target :: radii(3),scales(3)
-  integer, intent(in) :: nu,nv,nosc,norder
+  integer(8), intent(in) :: nu,nv,nosc,norder
   real *8, intent(out) :: pmax
 
   real *8, target :: p4(1)
@@ -14,7 +15,7 @@ subroutine write_wtorus(fname,radii,scales,nosc,nu,nv,norder,pmax)
   real *8, allocatable, target :: triaskel(:,:,:)
   real *8, allocatable :: pdis(:),wts(:)
   real *8, allocatable :: srccoefs(:,:),srcvals(:,:)
-  integer, allocatable :: norders(:),iptype(:),ixyzs(:)
+  integer(8), allocatable :: norders(:),iptype(:),ixyzs(:)
   
 
   procedure (), pointer :: xtri_geometry
@@ -103,12 +104,13 @@ subroutine get_wtorus_geom(radii,scales,nosc,nu,nv,npatches, &
 !
 
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8, intent(in), target :: radii(3),scales(3)
-  integer, intent(in) :: nu,nv,nosc,norder
-  integer, intent(in) :: npatches,npts
+  integer(8), intent(in) :: nu,nv,nosc,norder
+  integer(8), intent(in) :: npatches,npts
 
-  integer, intent(out) :: norders(npatches),ixyzs(npatches+1)
-  integer, intent(out) :: iptype(npatches)
+  integer(8), intent(out) :: norders(npatches),ixyzs(npatches+1)
+  integer(8), intent(out) :: iptype(npatches)
 
   real *8, intent(out) :: srcvals(12,npts),srccoefs(9,npts),wts(npts)
 
@@ -175,11 +177,12 @@ subroutine get_sphere_geom(nref,npatches, &
 !
 
   implicit real *8 (a-h,o-z)
-  integer, intent(in) :: nref,norder
-  integer, intent(in) :: npatches,npts
+  implicit integer(8) (i-n)
+  integer(8), intent(in) :: nref,norder
+  integer(8), intent(in) :: npatches,npts
 
-  integer, intent(out) :: norders(npatches),ixyzs(npatches+1)
-  integer, intent(out) :: iptype(npatches)
+  integer(8), intent(out) :: norders(npatches),ixyzs(npatches+1)
+  integer(8), intent(out) :: iptype(npatches)
 
   real *8, intent(out) :: srcvals(12,npts),srccoefs(9,npts),wts(npts)
 
@@ -192,7 +195,7 @@ subroutine get_sphere_geom(nref,npatches, &
   procedure (), pointer :: xtri_geometry
 
   real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts0(:)
-  integer, allocatable :: isides(:)
+  integer(8), allocatable :: isides(:)
  
   npols = (norder+1)*(norder+2)/2
   allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols), &
