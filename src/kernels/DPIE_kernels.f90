@@ -10,7 +10,7 @@ implicit none
 	real ( kind = 8 ), intent(in) :: srcinfo(12)
 	real ( kind = 8 ), intent(in) :: targinfo(12)
 	complex ( kind = 8 ), intent(in) :: zk
-    integer, intent(in) :: nk
+    integer(8), intent(in) :: nk
 	complex ( kind = 8 ), intent(out) :: E_mat(6,6)
 	
 	!List of local variables
