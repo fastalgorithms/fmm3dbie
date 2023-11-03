@@ -17,9 +17,10 @@
 
 subroutine h3d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   real *8 over4pi
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk, val
   complex *16 :: ima
 
@@ -46,8 +47,9 @@ end subroutine h3d_slp
 
 subroutine h3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk, val
 
   real *8 :: src(3), srcnorm(3)
@@ -87,8 +89,9 @@ end subroutine h3d_dlp
 
 subroutine h3d_sprime(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk, val
 
   complex *16 :: ima
@@ -116,8 +119,9 @@ end subroutine h3d_sprime
 
 subroutine h3d_comb(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk, val, zpars(ndz), alpha,beta
 
   real *8 :: src(3), srcnorm(3)
@@ -161,8 +165,9 @@ end subroutine h3d_comb
 
 subroutine h3d_qlp(srcinfo, ndt,targ,ndd, dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk, val
 
   real *8 :: src(3), srcnorm(3)
@@ -217,8 +222,9 @@ subroutine h3d_dprime_diff(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi, &
 !
 
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk, val, zpars(ndz), alpha,beta
 
   real *8 :: src(3), rns(3),rnt(3),rnsdot,rntdot,rnstdot 
@@ -298,9 +304,10 @@ subroutine h3d_slp_diff(src, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
 !        zpars(4) = a1
 
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   real *8 over4pi
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zpars(ndz), val
   complex *16 :: ima
 
@@ -335,8 +342,9 @@ subroutine h3d_dlp_diff(srcinfo,ndt,targ,ndd,dpars,ndz,zpars,ndi, &
 !        zpars(4) = a1
 
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zpars(ndz), val
 
   real *8 :: src(3), srcnorm(3)
@@ -386,8 +394,9 @@ subroutine h3d_sprime_diff(srcinfo,ndt,targinfo,ndd,dpars,ndz,zpars,&
 !        zpars(4) = a1
 
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zpars(ndz), val,zk0,zk1
 
   complex *16 :: ima
@@ -422,9 +431,10 @@ end subroutine h3d_sprime_diff
 
 subroutine h3d_sgradx(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(*), targinfo(*),dpars(ndd)
   complex *16 val
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk,ima
 
   real *8 over4pi
@@ -454,9 +464,10 @@ end subroutine h3d_sgradx
 
 subroutine h3d_sgrady(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(*), targinfo(*),dpars(ndd)
   complex *16 :: val
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk,ima
 
   real *8 over4pi
@@ -489,9 +500,10 @@ end subroutine h3d_sgrady
 
 subroutine h3d_sgradz(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(*), targinfo(*),dpars(ndd)
   complex *16 :: val
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk,ima
 
   real *8 over4pi

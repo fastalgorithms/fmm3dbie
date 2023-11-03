@@ -17,9 +17,10 @@
 
 subroutine y3d_slp(src, ndt,targ, ndd,dzk,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: src(*), targ(ndt),dzk
   real *8 over4pi,val
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk
   data over4pi/0.07957747154594767d0/
   !
@@ -43,9 +44,10 @@ end subroutine y3d_slp
 
 subroutine y3d_dlp(srcinfo,ndt,targ,ndd,dzk,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(12), targ(ndt)
   real *8 :: dzk,val
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk
 
   real *8 :: src(3), srcnorm(3)
@@ -83,8 +85,9 @@ end subroutine y3d_dlp
 
 subroutine y3d_sprime(srcinfo,ndt,targinfo,ndd,dzk,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(*), targinfo(12),dzk,val
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk
 
   real *8 over4pi
@@ -110,9 +113,10 @@ end subroutine y3d_sprime
 
 subroutine y3d_comb(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd),dzk,val
   real *8 :: alpha,beta
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk, zpars(ndz)
 
   real *8 :: src(3), srcnorm(3)
@@ -153,8 +157,9 @@ end subroutine y3d_comb
 
 subroutine y3d_sgradx(srcinfo,ndt,targinfo,ndd,dzk,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(*), targinfo(*),dzk,val
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk
 
   real *8 over4pi
@@ -183,8 +188,9 @@ end subroutine y3d_sgradx
 
 subroutine y3d_sgrady(srcinfo,ndt,targinfo,ndd,dzk,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(*), targinfo(*),dzk,val
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk
 
   real *8 over4pi
@@ -216,8 +222,9 @@ end subroutine y3d_sgrady
 
 subroutine y3d_sgradz(srcinfo,ndt,targinfo,ndd,dzk,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: srcinfo(*), targinfo(*),dzk,val
-  integer ipars(ndi)
+  integer(8) ipars(ndi)
   complex *16 :: zk
 
   real *8 over4pi
