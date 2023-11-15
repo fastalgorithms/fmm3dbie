@@ -1,0 +1,48 @@
+
+//
+// This file contains the routines for computing a "skeleton mesh"
+// from a "base mesh". The skeleton mesh is basically just the base
+// mesh except it has been discretized with Rokhlin-Vioreanu nodes,
+// and possibly over-sampled.
+//
+// (c) Mike O'Neil 2023
+//     moneil@flatironinstitute.org
+//
+
+
+
+#include "cisurf.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+
+
+void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
+  // constructs a skeleton mesh from the base mesh by popping down
+  // Vioreanu-Rokhlin quadrature nodes
+
+  double *uvs;
+  double *whts;
+  int npols;
+  
+  // get the reference quadrature notes and weights
+  
+  // TODO this should probably be either in C, or have some proper
+  // c-datatype bindings
+  npols = (norder+1)*(norder+2)/2;
+  uvs = (double *) malloc( 2*npols*sizeof(double) );
+  whts = (double *) malloc( npols*sizeof(double) );
+  get_vioreanu_nodes_wts_( &norder, &npols, uvs, whts );
+
+  printf("uvs = %f\n", uvs[0]);
+
+  free( uvs );
+  free( whts );
+
+}
+
+
+
+
+

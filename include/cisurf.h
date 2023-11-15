@@ -62,13 +62,13 @@ typedef struct baseMesh {
 
 typedef struct pointInfo {
   // stores xyz coordinates, surface differentials, and normal
-  // information
+  // information at *some* point. It is assumed that the normal is
+  // actually normalized to have unit length, but obviously du and dv
+  // don't.
   double xyz[3];
   double du[3];
   double dv[3];
   double normal[3];
-  double pseudonormal[3];
-  double hval;
   
 } pointInfo;
 
@@ -144,6 +144,14 @@ void printBaseMeshInfo( baseMesh *mesh1, long iflong);
 void printBaseElementInfo( baseElement *elem );
 
 
+// - - - skeleton construction routines - - -
+void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder );
 
 // - - - plotting routines - - -
 void plotBaseMeshVTK( baseMesh *mesh1, char *filename );
+
+
+
+// external functions, maybe in fortran
+void get_vioreanu_nodes_wts( int *norder, int *npols, double *uvs,
+			     double *whts );

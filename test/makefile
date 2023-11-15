@@ -44,7 +44,7 @@ usage:
 	@echo ""
 	@echo "  make cisurf/"
 	@echo "          load ..................... load and plot various base meshes"
-	@echo "          skeleton ................. construct a skeleton mesh"
+	@echo "          skeltri .................. construct a skeleton tri mesh"
 	@echo ""
 	@echo "  make clean ....................... remove all .o files and executables"
 	@echo ""
@@ -76,9 +76,18 @@ usage:
 
 cisurf/load: cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o ../src/cisurf/cisurf_plots.o
 	mkdir -p build
-	$(CC) -o build/test_loadmesh cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o \
+	$(CC) -o build/test_loadmesh cisurf/test_loadmesh.o \
+            ../src/cisurf/cisurf_load_mesh.o \
             ../src/cisurf/cisurf_plots.o $(FEND)
 	cd ./build && ./test_loadmesh
+
+cisurf/skeltri: cisurf/test_skeltri.o ../src/cisurf/cisurf_load_mesh.o ../src/cisurf/cisurf_plots.o ../src/cisurf/cisurf_skeltri.o
+	mkdir -p build
+	$(CC) -o build/test_skeltri cisurf/test_skeltri.o \
+            ../src/cisurf/cisurf_load_mesh.o \
+            ../src/cisurf/cisurf_plots.o \
+            ../src/cisurf/cisurf_skeltri.o $(FEND)
+	cd ./build && ./test_skeltri
 
 
 clean:
