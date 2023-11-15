@@ -60,30 +60,6 @@ typedef struct baseMesh {
 
 
 
-typedef struct skelElement {
-
-  // the struct storing information for a single element on the
-  // skeleton mesh, this means quadrature nodes, etc.
-  long id;
-  char *gtype;
-
-  // collection of vertices needed to define the element, same as for
-  // a base element
-  long nv, *ivs;
-
-  // discretization info
-  long norder;
-
-  pointInfo *srcvals;
-  coefsInfo *coefs;
-  
-  
-} skelElement;
-
-
-
-
-
 typedef struct pointInfo {
   // stores xyz coordinates, surface differentials, and normal
   // information
@@ -106,9 +82,33 @@ typedef struct coefsInfo {
   // same
   double *x, *y, *z;
   double *dxdu, *dydu, *dzdu;
-  double *dxdu, *dydu, *dzdu;
-  double 
+  double *dxdv, *dydv, *dzdv;
+
 } coefsInfo;
+
+
+
+
+typedef struct skelElement {
+
+  // the struct storing information for a single element on the
+  // skeleton mesh, this means quadrature nodes, etc.
+  long id;
+  char *gtype;
+
+  // collection of vertices needed to define the element, same as for
+  // a base element
+  long nv, *ivs;
+
+  // discretization info
+  long norder;
+
+  pointInfo *srcvals;
+  coefsInfo *coefs;
+  
+  
+} skelElement;
+
 
 
 
