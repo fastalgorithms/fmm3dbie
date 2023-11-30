@@ -68,11 +68,11 @@
 !
 !  NOTES:
 !  This subroutine returns 9 kernels
-!  1) \ru \cdot (-n \times \nabla S_{k}  + \alpha n \times n \times S_{k})[j_{u} \ru]
-!  2) \ru \cdot (-n \times \nabla S_{k}  + \alpha n \times n \times S_{k})[j_{v} \rv]
+!  1) \ru \cdot (-n \times \nabla \times S_{k}  + \alpha n \times n \times S_{k})[j_{u} \ru]
+!  2) \ru \cdot (-n \times \nabla \times S_{k}  + \alpha n \times n \times S_{k})[j_{v} \rv]
 !  3) \ru \cdot (-\alpha n \times n \times \nabla S_{k}[\rho]) 
-!  4) \rv \cdot (-n \times \nabla S_{k}  + \alpha n \times n \times S_{k})[j_{u} \ru]
-!  5) \rv \cdot (-n \times \nabla S_{k}  + \alpha n \times n \times S_{k})[j_{v} \rv]
+!  4) \rv \cdot (-n \times \nabla \times S_{k}  + \alpha n \times n \times S_{k})[j_{u} \ru]
+!  5) \rv \cdot (-n \times \nabla \times S_{k}  + \alpha n \times n \times S_{k})[j_{v} \rv]
 !  6) \rv \cdot (-\alpha n \times n \times \nabla S_{k}[\rho])
 !  7) (-ik n \cdot S_{k} + \alpha \nabla \cdot S_{k})[j_{u} \ru]
 !  8) (-ik n \cdot S_{k} + \alpha \nabla \cdot S_{k})[j_{v} \rv]
@@ -148,11 +148,11 @@
 !        radius parameter for near field
 !    - nquad: integer
 !        number of near field entries corresponding to each source target
-!        pair. The size of wnear is 4*nquad since there are 4 kernels
+!        pair. The size of wnear is 9*nquad since there are 9 kernels
 !        per source target pair
 !
 !    output
-!      wnear - complex *16 (nquad,9) the desired near field quadrature
+!      wnear - complex *16 (9,nquad) the desired near field quadrature
 !
 
       implicit none 
@@ -166,7 +166,7 @@
       integer nnz,ipars(2)
       real *8 dpars(1)
       integer row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
-      complex *16 wnear(nquad,9)
+      complex *16 wnear(9,nquad)
 
       integer ipatch_id(ntarg)
       real *8 uvs_targ(2,ntarg)
@@ -740,7 +740,7 @@ subroutine em_nrccie_pec_solver(npatches, norders, ixyzs, &
       real *8 rfac,rfac0
       integer iptype_avg,norder_avg
       integer ikerorder, iquadtype,npts_over
-	  integer n_var
+      integer n_var
 
 !
 !
@@ -1095,7 +1095,7 @@ implicit none
     
     n_s(1)=srcinfo(10)
     n_s(2)=srcinfo(11)
-    n_s(3)=srcinfo(12)	
+    n_s(3)=srcinfo(12)
 
     targ(1)=targinfo(1)
     targ(2)=targinfo(2)
