@@ -624,7 +624,7 @@ c
 c          TODO:  fix this to call mkl blas with single thread
 c
           call dgemv_guru('n',nppols,npts,alpha,sigmatmp,nppols,
-     1       fkervals,int(1,8),beta,cintvals(1,itarg),1)
+     1       fkervals,int(1,8),beta,cintvals(1,itarg),int(1,8))
         enddo
       enddo
 

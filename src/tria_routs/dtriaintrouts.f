@@ -119,7 +119,7 @@ c
 
         da = 1
 
-        call dgemm_guru(transa,transb,9,nqpts,npols,alpha,
+        call dgemm_guru(transa,transb,int(9,8),nqpts,npols,alpha,
      1     srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
 
    
@@ -471,7 +471,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,9,npmax,npols,alpha,
+        call dgemm_guru(transa,transb,int(9,8),npmax,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -509,7 +509,7 @@ c
           enddo
 
           call dgemv_guru('n',nppols,npts,alpha_c,sigmatmp,nppols,
-     1      fkervals,1,beta_c,cintvals(1,itarg),1)
+     1      fkervals,int(1,8),beta_c,cintvals(1,itarg),int(1,8))
         enddo
       enddo
 
@@ -693,7 +693,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,9,nqpols,npols,alpha,
+        call dgemm_guru(transa,transb,int(9,8),nqpols,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
         call get_norms_qwts_tri(nqpols,wts,srcvals,da,qwts)
 
@@ -1035,7 +1035,7 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm_guru(transa,transb,9,kpols,npols,alpha,
+              call dgemm_guru(transa,transb,int(9,8),kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
               call get_norms_qwts_tri(kpols,wts,srcvals(1,istart),
@@ -1456,7 +1456,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,9,npts0,npols,alpha,
+        call dgemm_guru(transa,transb,int(9,8),npts0,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -1868,7 +1868,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,9,npmax,npols,alpha,
+        call dgemm_guru(transa,transb,int(9,8),npmax,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -2104,7 +2104,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,9,nqpols,npols,alpha,
+        call dgemm_guru(transa,transb,int(9,8),nqpols,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
         call get_norms_qwts_tri(nqpols,wts,srcvals,da,qwts)
 
@@ -2450,7 +2450,7 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm_guru(transa,transb,9,kpols,npols,alpha,
+              call dgemm_guru(transa,transb,int(9,8),kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
               call get_norms_qwts_tri(kpols,wts,srcvals(1,istart),
@@ -2889,7 +2889,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,9,npts0,npols,alpha,
+        call dgemm_guru(transa,transb,int(9,8),npts0,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 

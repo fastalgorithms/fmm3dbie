@@ -382,8 +382,8 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   alpha = 1
   beta = 0
   
-  call dgemm_guru(transa,transb,9,npols,npols,alpha,srccoefs,9,pmat,npols,&
-     beta,srctmp,12)
+  call dgemm_guru(transa,transb,int(9,8),npols,npols,alpha, &
+     srccoefs,int(9,8),pmat,npols,beta,srctmp,int(12,8))
 
   call cross_prod3d(srctmp(4,1),srctmp(7,1),tmp)
   rsc = tmp(1)**2 + tmp(2)**2 + tmp(3)**2
@@ -415,8 +415,8 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   alpha = 1
   beta = 0
   
-  call dgemm_guru(transa,transb,9,npolsf,npols,alpha,srccoefs,9,pmat,npols,&
-     beta,srctmp,12)
+  call dgemm_guru(transa,transb,int(9,8),npolsf,npols,alpha, &
+     srccoefs,int(9,8),pmat,npols,beta,srctmp,int(12,8))
 
   do jpt=1,npolsf
     call cross_prod3d(srctmp(4,jpt),srctmp(7,jpt),tmp)
@@ -461,8 +461,8 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
     alpha = 1
     beta = 0
   
-    call dgemm_guru(transa,transb,9,npolsf,npols,alpha,srccoefs,9,pmat, &
-       npols,beta,srctmp,12)
+    call dgemm_guru(transa,transb,int(9,8),npolsf,npols,alpha, &
+       srccoefs,int(9,8),pmat,npols,beta,srctmp,int(12,8))
 
 
 !
