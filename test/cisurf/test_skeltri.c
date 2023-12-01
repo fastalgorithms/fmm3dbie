@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "cisurf.h"
+#include "cprini.h"
 
 int main(int argc, char **argv) {
 
@@ -21,7 +22,9 @@ int main(int argc, char **argv) {
   //}
 
   // load in a mesh file and construct a skeleton on it
-  
+
+  cprin_init("cfort.13", "stdout");
+
   char *filename;
   
   if (argc == 1) {
@@ -31,8 +34,12 @@ int main(int argc, char **argv) {
     filename = argv[1];
   }
   
-  printf("\n\n");
-  printf("File to be loaded: %s\n", filename);
+  //printf("\n\n");
+  cprin_skipline(2);
+  cprin_message( "File to be loaded: " );
+  cprin_message( filename );
+  cprin_skipline(2);
+  //printf("File to be loaded: %s\n", filename);
 
   
   baseMesh baseMesh1;

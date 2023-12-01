@@ -4,9 +4,6 @@
 // bash mesh, skeleton mesh, surface mesh, etc., and various function
 // prototypes
 //
-// (c) Mike O'Neil 2023
-//     moneil@flatironinstitute.org
-//
 
 
 typedef struct baseElement {
@@ -94,6 +91,12 @@ typedef struct skelElement {
   // the struct storing information for a single element on the
   // skeleton mesh, this means quadrature nodes, etc.
   long id;
+
+  // gytype can have different values:
+  //   "tria1" - flat triangles
+  //   "tria2" - quadrature triangles, specified by vertices and midpoints
+  //   "quad1" - flat quadrilateral
+  //   "quad2" - quadratic quadrilateral, specified by vertices and midpoints
   char *gtype;
 
   // collection of vertices needed to define the element, same as for
@@ -105,7 +108,11 @@ typedef struct skelElement {
 
   pointInfo *srcvals;
   coefsInfo *coefs;
-  
+
+  // some basic measurement info
+  double centroid[3];
+  double radius;
+
   
 } skelElement;
 
@@ -127,6 +134,7 @@ typedef struct skelMesh {
   // total number of elements, and an array of them
   long nelems;
   skelElement *elements;
+
 
 } skelMesh;
 
@@ -153,5 +161,5 @@ void plotBaseMeshVTK( baseMesh *mesh1, char *filename );
 
 
 // external functions, maybe in fortran
-void get_vioreanu_nodes_wts( int *norder, int *npols, double *uvs,
-			     double *whts );
+void get_vioreanu_nodes_wts_( int *norder, int *npols, double *uvs,
+                              double *whts );

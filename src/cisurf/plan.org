@@ -1,4 +1,0 @@
-Plan for surface smoother
-
-* Data structures
-** 

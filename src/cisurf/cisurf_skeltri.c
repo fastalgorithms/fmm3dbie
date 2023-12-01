@@ -5,8 +5,6 @@
 // mesh except it has been discretized with Rokhlin-Vioreanu nodes,
 // and possibly over-sampled.
 //
-// (c) Mike O'Neil 2023
-//     moneil@flatironinstitute.org
 //
 
 
@@ -15,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "cprini.h"
 
 
 
@@ -35,7 +34,12 @@ void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
   whts = (double *) malloc( npols*sizeof(double) );
   get_vioreanu_nodes_wts_( &norder, &npols, uvs, whts );
 
-  printf("uvs = %f\n", uvs[0]);
+  cprind_matrix("Vioreanu-Rokhlin nodes =", uvs, npols, 2);
+
+  // now cycle through all each baseMesh element and put nodes on it
+
+
+
 
   free( uvs );
   free( whts );

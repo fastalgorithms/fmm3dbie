@@ -1,18 +1,13 @@
 
-
-
 !
 ! Orthgonal polynomials on the simplex (Koornwinder pols)
-! (c) 2017 Mike O'Neil
-! Contact: oneil@cims.nyu.edu
 !
-! These codes are similar in nature to those in ortho2eva.f and
-! ortho2exps.f, however they *only* compute polynomials on the
-! simplex, and not the "standard" equilateral triangle or
-! Koornwinders original triangle, 0<u<v<1.
+! These codes are similar in nature to those in ortho2eva.f and ortho2exps.f,
+! however they *only* compute polynomials on the simplex, and not the "standard"
+! equilateral triangle or Koornwinders original triangle, 0<u<v<1.
 !
-! Furthermore, consolidated version of Vioreanu-Rokhlin quadrature
-! nodes and weight calculations are contained.
+! Furthermore, consolidated version of Vioreanu-Rokhlin quadratqure nodes and
+! weight calculations are contained.
 !
 !
 ! Relevant routines for the average user:
@@ -790,38 +785,11 @@ end subroutine koorn_zevalexp2
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! faster version for real argument 
+! faster version of some routines for real argument
 !
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 subroutine koornf_init(nmax, rat1, rat2, rsc1)
   implicit real *8 (a-h,o-z)
@@ -888,6 +856,8 @@ subroutine koornf_init(nmax, rat1, rat2, rsc1)
   
   return
 end subroutine koornf_init
+
+
 
 
 
@@ -1059,7 +1029,6 @@ subroutine koornf_ders(uv, nmax, npols, pols, ders, rat1, rat2, rsc1)
 
   allocate(jacpols(0:100,0:100),jacv(0:100,0:100))
 
-  
   
   !
   ! This subroutine evalutes a bunch of orthogonal polynomials (and

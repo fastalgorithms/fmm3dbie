@@ -43,7 +43,7 @@ void readMSH(baseMesh *meshout, long id, char *name, char *filename) {
   double x,y,z;
   for (i=0; i<nverts; i++) {
     fscanf(fileptr, "%ld %ld %ld %ld %ld %ld %ld %ld", &aux1, &aux2, &aux3,
-	   &aux4, &aux5, &aux6, &aux7, &aux8);
+           &aux4, &aux5, &aux6, &aux7, &aux8);
     fscanf(fileptr, "%lf %lf %lf", &x, &y, &z);
 
     meshout->verts[3*i] = x;
@@ -60,9 +60,9 @@ void readMSH(baseMesh *meshout, long id, char *name, char *filename) {
   nv = 6;
   for (i=0; i<nelems; i++) {
     fscanf(fileptr, "%ld %ld %ld %ld %ld %ld %ld %ld", &aux1, &aux2, &aux3,
-	   &aux4, &aux5, &aux6, &aux7, &aux8);
+           &aux4, &aux5, &aux6, &aux7, &aux8);
     fscanf(fileptr, "%ld %ld %ld %ld %ld %ld", &aux1, &aux2, &aux3,
-	   &aux4, &aux5, &aux6);
+           &aux4, &aux5, &aux6);
 
     meshout->elements[i].id = i;
     
@@ -102,15 +102,15 @@ void readMSH(baseMesh *meshout, long id, char *name, char *filename) {
 
     r = -1;
     d = sqrt( (vert1[0]-x)*(vert1[0]-x) + (vert1[1]-y)*(vert1[1]-y)
-	      + (vert1[2]-z)*(vert1[2]-z) ); 
+              + (vert1[2]-z)*(vert1[2]-z) );
     if (d > r) r = d;
 
     d = sqrt( (vert2[0]-x)*(vert2[0]-x) + (vert2[1]-y)*(vert2[1]-y)
-	      + (vert2[2]-z)*(vert2[2]-z) ); 
+              + (vert2[2]-z)*(vert2[2]-z) );
     if (d > r) r = d;
 
     d = sqrt( (vert3[0]-x)*(vert3[0]-x) + (vert3[1]-y)*(vert3[1]-y)
-	      + (vert3[2]-z)*(vert3[2]-z) ); 
+              + (vert3[2]-z)*(vert3[2]-z) );
     if (d > r) r = d;
 
     meshout->elements[i].radius = r;
@@ -147,7 +147,7 @@ void printBaseMeshInfo( baseMesh *mesh1, long iflong ) {
     long i;
     for (i=0; i<mesh1->nverts; i++) {
       printf("vertex %d   = (%e %e %e)\n", i, mesh1->verts[3*i],
-	     mesh1->verts[3*i+1], mesh1->verts[3*i+2] );
+             mesh1->verts[3*i+1], mesh1->verts[3*i+2] );
     }
   }
   
@@ -176,7 +176,7 @@ void printBaseElementInfo( baseElement *elem ) {
   printf("\n");
   
   printf("element.centroid    = (%e, %e, %e)\n", elem->centroid[0],
-	 elem->centroid[1], elem->centroid[2]);
+         elem->centroid[1], elem->centroid[2]);
   printf("element.radius      = %e\n", elem->radius);
   printf("- - - end element information - - - \n");
   printf("\n");

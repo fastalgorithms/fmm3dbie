@@ -31,7 +31,7 @@ void plotBaseMeshVTK( baseMesh *mesh1, char *filename ) {
   long i;
   for (i=0; i<nverts; i++) {
     fprintf(fptr, "%e %e %e\n", mesh1->verts[3*i], mesh1->verts[3*i+1],
-	    mesh1->verts[3*i+2]);
+            mesh1->verts[3*i+2]);
   }
 
   // compute total number of points needed across all elements,
