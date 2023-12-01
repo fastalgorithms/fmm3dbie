@@ -2,7 +2,7 @@ subroutine 	get_RHS_EMFIE(P0,vf,ns,srcvals,zk,RHS)
 implicit none
 
 	!List of calling arguments
-	integer ( kind = 4 ), intent(in) :: ns
+	integer(8), intent(in) :: ns
 	real ( kind = 8 ), intent(in) :: P0(3)
 	complex ( kind = 8 ), intent(in) :: vf(3)
 	real ( kind = 8 ), intent(in) :: srcvals(12,ns)
@@ -11,7 +11,7 @@ implicit none
 	
 	!List of local variables
 	complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
-	integer count1
+	integer(8) count1
 	real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
 		allocate(E(3,ns), H(3,ns))
 !	call fieldsMD(zk,P0,srcvals(1:3,:),ns,curlE,E,vf,0)
@@ -34,7 +34,7 @@ subroutine 	get_RHS_MFIE(P0,vf,ns,srcvals,zk,RHS)
 implicit none
 
 	!List of calling arguments
-	integer ( kind = 4 ), intent(in) :: ns
+	integer(8), intent(in) :: ns
 	real ( kind = 8 ), intent(in) :: P0(3)
 	complex ( kind = 8 ), intent(in) :: vf(3)
 	real ( kind = 8 ), intent(in) :: srcvals(12,ns)
@@ -43,7 +43,7 @@ implicit none
 	
 	!List of local variables
 	complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
-	integer count1
+	integer(8) count1
 	real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
 		allocate(E(3,ns), H(3,ns))
 !	call fieldsMD(zk,P0,srcvals(1:3,:),ns,curlE,E,vf,0)
@@ -78,7 +78,7 @@ implicit none
 !    zk - complex *16
 !      Helmholzt parameter
 !
-!    ns - integer
+!    ns - integer(8)
 !      number of sources
 !
 !    source - real *8 (3,ns)
@@ -87,25 +87,25 @@ implicit none
 !    wts - real *8 (ns)
 !      weights for numerical integration
 !
-!    ifa_vect - integer
+!    ifa_vect - integer(8)
 !      flag to consider a_vect
 !
 !    a_vect - *16(3,ns)
 !      a vector source
 !
-!    ifb_vect - integer
+!    ifb_vect - integer(8)
 !      flag to consider a_vect
 !
 !    b_vect - *16(3,ns)
 !      b vector source
 !
-!    iflambda - integer
+!    iflambda - integer(8)
 !      flag to consider lambda
 !
 !    lambda - *16(ns)
 !      lambda source
 !
-!    ifrho - integer
+!    ifrho - integer(8)
 !      flag to consider rho
 !
 !    rho - complex *16(ns)
@@ -114,13 +114,13 @@ implicit none
 !    norm_vect - real *8 (3,ns)
 !      normal vector to the surface
 !
-!    ifE - integer
+!    ifE - integer(8)
 !      flag to compute E
 !
-!    ifcurlE - integer
+!    ifcurlE - integer(8)
 !      flag to compute curlE
 !
-!    ifdivE - integer
+!    ifdivE - integer(8)
 !      flag to compute divE
 !
 !    targets - real *8 (3,ns)
@@ -143,33 +143,33 @@ implicit none
     !List of calling arguments
     real ( kind = 8 ), intent(in) :: eps
     complex ( kind = 8 ), intent(in) :: zk
-    integer, intent(in) :: ns
-	integer, intent(in) :: nt
+    integer(8), intent(in) :: ns
+	integer(8), intent(in) :: nt
     real ( kind = 8 ), intent(in) :: source(3,ns)
-    integer, intent(in) :: ifa_vect
+    integer(8), intent(in) :: ifa_vect
     complex ( kind = 8 ), intent(in) :: a_vect(3,ns)
-    integer, intent(in) :: ifb_vect
+    integer(8), intent(in) :: ifb_vect
     complex ( kind = 8 ), intent(in) :: b_vect(3,ns)
-    integer, intent(in) :: iflambda
+    integer(8), intent(in) :: iflambda
     complex ( kind = 8 ), intent(in) :: lambda(ns)
-    integer, intent(in) :: ifrho
+    integer(8), intent(in) :: ifrho
     complex ( kind = 8 ), intent(in) :: rho(ns)
     real ( kind = 8 ), intent(in) :: wts(ns)
     real ( kind = 8 ), intent(in) :: norm_vect(3,ns)
-    integer, intent(in) :: ifE
+    integer(8), intent(in) :: ifE
     complex ( kind = 8 ), intent(out) :: E(3,nt)
-    integer, intent(in) :: ifcurlE
+    integer(8), intent(in) :: ifcurlE
     complex ( kind = 8 ), intent(out) :: curlE(3,nt)
-    integer, intent(in) :: ifdivE
+    integer(8), intent(in) :: ifdivE
     complex ( kind = 8 ), intent(out) :: divE(nt)
     real ( kind = 8 ), intent(in) :: targets(3,nt)
 
     !List of local variables
 	complex ( kind = 8 ), allocatable :: sigma_vect(:,:), dipvect_vect(:,:,:)
     complex ( kind = 8 ), allocatable :: gradE_vect(:,:,:)
-    integer count1,count2,nd
-    integer ier
-    integer ifcharge,ifdipole,ifpot,ifgrad
+    integer(8) count1,count2,nd
+    integer(8) ier
+    integer(8) ifcharge,ifdipole,ifpot,ifgrad
 	real ( kind = 8 ) pi
 	
 	pi=3.141592653589793238462643383d0
@@ -324,13 +324,13 @@ subroutine get_thresh(srcover,ns,targs,ntarg,thresh)
 implicit none
 
     !List of calling arguments
-    integer, intent(in) :: ns,ntarg
+    integer(8), intent(in) :: ns,ntarg
 	real ( kind = 8 ), intent(in) :: srcover(12,ns),targs(12,ntarg)
 	real ( kind = 8 ), intent(out) :: thresh
 
     !List of local variables
 	real ( kind = 8 ) xmin,xmax,ymin,ymax,zmin,zmax,boxsize,sizey,sizez
-    integer i
+    integer(8) i
 
       xmin = srcover(1,1)
       xmax = srcover(1,1) 
@@ -389,7 +389,7 @@ implicit none
 !    zk - complex *16
 !      Helmholzt parameter
 !
-!    ns - integer
+!    ns - integer(8)
 !      number of sources
 !
 !    source - real *8 (3,ns)
@@ -398,25 +398,25 @@ implicit none
 !    wts - real *8 (ns)
 !      weights for numerical integration
 !
-!    ifa_vect - integer
+!    ifa_vect - integer(8)
 !      flag to consider a_vect
 !
 !    a_vect - *16(3,ns)
 !      a vector source
 !
-!    ifb_vect - integer
+!    ifb_vect - integer(8)
 !      flag to consider a_vect
 !
 !    b_vect - *16(3,ns)
 !      b vector source
 !
-!    iflambda - integer
+!    iflambda - integer(8)
 !      flag to consider lambda
 !
 !    lambda - *16(ns)
 !      lambda source
 !
-!    ifrho - integer
+!    ifrho - integer(8)
 !      flag to consider rho
 !
 !    rho - complex *16(ns)
@@ -425,13 +425,13 @@ implicit none
 !    norm_vect - real *8 (3,ns)
 !      normal vector to the surface
 !
-!    ifE - integer
+!    ifE - integer(8)
 !      flag to compute E
 !
-!    ifcurlE - integer
+!    ifcurlE - integer(8)
 !      flag to compute curlE
 !
-!    ifdivE - integer
+!    ifdivE - integer(8)
 !      flag to compute divE
 !
 !    targets - real *8 (3,ns)
@@ -440,7 +440,7 @@ implicit none
 !    thresh - real *8
 !      threshold to remove the selfo interaction term
 !
-!    ifdir - integer
+!    ifdir - integer(8)
 !      flag, ifdir=1 direct calculation N^2 (used to remove teh near terms)
 !            ifdir=0 FMM activated
 !
@@ -459,36 +459,36 @@ implicit none
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: eps
   complex ( kind = 8 ), intent(in) :: zk
-  integer, intent(in) :: ns
-  integer, intent(in) :: nt
+  integer(8), intent(in) :: ns
+  integer(8), intent(in) :: nt
   real ( kind = 8 ), intent(in) :: source(3,ns)
-  integer, intent(in) :: ifa_vect
+  integer(8), intent(in) :: ifa_vect
   complex ( kind = 8 ), intent(in) :: a_vect(3,ns)
-  integer, intent(in) :: ifb_vect
+  integer(8), intent(in) :: ifb_vect
   complex ( kind = 8 ), intent(in) :: b_vect(3,ns)
-  integer, intent(in) :: iflambda
+  integer(8), intent(in) :: iflambda
   complex ( kind = 8 ), intent(in) :: lambda(ns)
-  integer, intent(in) :: ifrho
+  integer(8), intent(in) :: ifrho
   complex ( kind = 8 ), intent(in) :: rho(ns)
   real ( kind = 8 ), intent(in) :: wts(ns)
   real ( kind = 8 ), intent(in) :: norm_vect(3,ns)
-  integer, intent(in) :: ifE
+  integer(8), intent(in) :: ifE
   complex ( kind = 8 ), intent(out) :: E(3,nt)
-  integer, intent(in) :: ifcurlE
+  integer(8), intent(in) :: ifcurlE
   complex ( kind = 8 ), intent(out) :: curlE(3,nt)
-  integer, intent(in) :: ifdivE
+  integer(8), intent(in) :: ifdivE
   complex ( kind = 8 ), intent(out) :: divE(nt)
   real ( kind = 8 ), intent(in) :: targets(3,nt)
   real ( kind = 8 ), intent(in) :: thresh
-  integer, intent(in) :: ifdir 
+  integer(8), intent(in) :: ifdir 
 	
 
   !List of local variables
   complex ( kind = 8 ), allocatable :: sigma_vect(:,:), dipvect_vect(:,:,:)
   complex ( kind = 8 ), allocatable :: gradE_vect(:,:,:)
-  integer count1,count2,nd
-  integer ier
-  integer ifcharge,ifdipole,ifpot,ifgrad
+  integer(8) count1,count2,nd
+  integer(8) ier
+  integer(8) ifcharge,ifdipole,ifpot,ifgrad
   real ( kind = 8 ) pi
 	
   pi=3.141592653589793238462643383d0
@@ -708,10 +708,10 @@ implicit none
 !    zk - complex *16
 !      Helmholzt parameter
 !
-!    ns - integer
+!    ns - integer(8)
 !      number of source points
 !
-!    nd - integer
+!    nd - integer(8)
 !      number of sources (number of vector sources, for Muller mainly)
 !
 !    source - real *8 (3,ns)
@@ -720,25 +720,25 @@ implicit none
 !    wts - real *8 (ns)
 !      weights for numerical integration
 !
-!    ifa_vect - integer
+!    ifa_vect - integer(8)
 !      flag to consider a_vect
 !
 !    a_vect - *16(3,ns)
 !      a vector source
 !
-!    ifb_vect - integer
+!    ifb_vect - integer(8)
 !      flag to consider a_vect
 !
 !    b_vect - *16(3,ns)
 !      b vector source
 !
-!    iflambda - integer
+!    iflambda - integer(8)
 !      flag to consider lambda
 !
 !    lambda - *16(ns)
 !      lambda source
 !
-!    ifrho - integer
+!    ifrho - integer(8)
 !      flag to consider rho
 !
 !    rho - complex *16(ns)
@@ -747,13 +747,13 @@ implicit none
 !    norm_vect - real *8 (3,ns)
 !      normal vector to the surface
 !
-!    ifE - integer
+!    ifE - integer(8)
 !      flag to compute E
 !
-!    ifcurlE - integer
+!    ifcurlE - integer(8)
 !      flag to compute curlE
 !
-!    ifdivE - integer
+!    ifdivE - integer(8)
 !      flag to compute divE
 !
 !    targets - real *8 (3,ns)
@@ -762,7 +762,7 @@ implicit none
 !    thresh - real *8
 !      threshold to remove the selfo interaction term
 !
-!    ifdir - integer
+!    ifdir - integer(8)
 !      flag, ifdir=1 direct calculation N^2 (used to remove teh near terms)
 !            ifdir=0 FMM activated
 !
@@ -781,36 +781,36 @@ implicit none
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: eps
   complex ( kind = 8 ), intent(in) :: zk
-  integer, intent(in) :: ns,nd
-  integer, intent(in) :: nt
+  integer(8), intent(in) :: ns,nd
+  integer(8), intent(in) :: nt
   real ( kind = 8 ), intent(in) :: source(3,ns)
-  integer, intent(in) :: ifa_vect
+  integer(8), intent(in) :: ifa_vect
   complex ( kind = 8 ), intent(in) :: a_vect(nd,3,ns)
-  integer, intent(in) :: ifb_vect
+  integer(8), intent(in) :: ifb_vect
   complex ( kind = 8 ), intent(in) :: b_vect(nd,3,ns)
-  integer, intent(in) :: iflambda
+  integer(8), intent(in) :: iflambda
   complex ( kind = 8 ), intent(in) :: lambda(nd,ns)
-  integer, intent(in) :: ifrho
+  integer(8), intent(in) :: ifrho
   complex ( kind = 8 ), intent(in) :: rho(nd,ns)
   real ( kind = 8 ), intent(in) :: wts(ns)
   real ( kind = 8 ), intent(in) :: norm_vect(3,ns)
-  integer, intent(in) :: ifE
+  integer(8), intent(in) :: ifE
   complex ( kind = 8 ), intent(out) :: E(nd,3,nt)
-  integer, intent(in) :: ifcurlE
+  integer(8), intent(in) :: ifcurlE
   complex ( kind = 8 ), intent(out) :: curlE(nd,3,nt)
-  integer, intent(in) :: ifdivE
+  integer(8), intent(in) :: ifdivE
   complex ( kind = 8 ), intent(out) :: divE(nd,nt)
   real ( kind = 8 ), intent(in) :: targets(3,nt)
   real ( kind = 8 ), intent(in) :: thresh
-  integer, intent(in) :: ifdir 
+  integer(8), intent(in) :: ifdir 
 	
 
   !List of local variables
   complex ( kind = 8 ), allocatable :: sigma_vect(:,:,:), dipvect_vect(:,:,:,:)
   complex ( kind = 8 ), allocatable :: gradE_vect(:,:,:,:)
-  integer count1,count2,nd_hfmm3d
-  integer ier,j
-  integer ifcharge,ifdipole,ifpot,ifgrad
+  integer(8) count1,count2,nd_hfmm3d
+  integer(8) ier,j
+  integer(8) ifcharge,ifdipole,ifpot,ifgrad
   real ( kind = 8 ) pi
 	
   pi=3.141592653589793238462643383d0
