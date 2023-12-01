@@ -1,4 +1,4 @@
-c (c) Zydrunas Gimbutas 
+c (c) Zydrunas Gimbutas
 c 
 c  This file contains the following user callable routines:
 c  
