@@ -105,7 +105,7 @@ function [p,varargout] = eval(S,zpars,sigma,eps,varargin)
       targinfo.n = S.n;
       patch_id  = zeros(npts,1);
       uvs_targ = zeros(2,npts);
-      mex_id_ = 'get_patch_id_uvs(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io double[xx])';
+      mex_id_ = 'get_patch_id_uvs(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], io int64_t[x], io double[xx])';
 [patch_id, uvs_targ] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, patch_id, uvs_targ, 1, npatches, npatp1, npatches, 1, npts, 2, npts);
       targinfo.patch_id = patch_id;
       targinfo.uvs_targ = uvs_targ;
@@ -169,11 +169,11 @@ function [p,varargout] = eval(S,zpars,sigma,eps,varargin)
 
 % Call the layer potential evaluator
     if strcmpi(int_rep, 's')
-      mex_id_ = 'lpcomp_helm_s_neu_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], io dcomplex[x])';
+      mex_id_ = 'lpcomp_helm_s_neu_addsub(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i dcomplex[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[x], io dcomplex[x])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, wnear, sigma, novers, nptso, ixyzso, srcover, wover, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, ntargp1, nnz, nnzp1, 1, nquad, npts, npatches, 1, npatp1, 12, nptso, nptso, ntarg);
     elseif strcmpi(int_rep, 'rpcomb')
       p2 = complex(zeros(ntarg,1));
-      mex_id_ = 'lpcomp_helm_rpcomb_neu_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], io dcomplex[x], io dcomplex[x])';
+      mex_id_ = 'lpcomp_helm_rpcomb_neu_addsub(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i dcomplex[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[x], io dcomplex[x], io dcomplex[x])';
 [p, p2] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, wnear, sigma, novers, nptso, ixyzso, srcover, wover, p, p2, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, ntargp1, nnz, nnzp1, 1, nquad, npts, npatches, 1, npatp1, 12, nptso, nptso, ntarg, ntarg);
       varargout{1} = p2;
     end

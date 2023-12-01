@@ -52,7 +52,7 @@ function [surf_grad] = get_surface_grad(S,p,varargin)
 
 
     dp = zeros(nduse,npts);
-    mex_id_ = 'get_surf_grad(i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[xx], io double[xx])';
+    mex_id_ = 'get_surf_grad(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[xx], io double[xx])';
 [dp] = fmm3dbie_routs(mex_id_, nd0, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, p, dp, 1, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, nd0, npts, nduse, npts);
     
     if(nd0 ~= 1)

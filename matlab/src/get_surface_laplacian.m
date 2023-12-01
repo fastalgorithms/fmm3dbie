@@ -25,11 +25,11 @@ function [surf_lap_p] = get_surface_laplacian(S,p)
 
 
     dp = zeros(2,npts);
-    mex_id_ = 'get_surf_grad(i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], io double[xx])';
+    mex_id_ = 'get_surf_grad(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], io double[xx])';
 [dp] = fmm3dbie_routs(mex_id_, nd0, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, p, dp, 1, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, npts, n2, npts);
 
     surf_lap_p = zeros(size(p));
-    mex_id_ = 'get_surf_div(i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[xx], io double[x])';
+    mex_id_ = 'get_surf_div(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[xx], io double[x])';
 [surf_lap_p] = fmm3dbie_routs(mex_id_, nd0, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, dp, surf_lap_p, 1, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, n2, npts, npts);
 
     surf_lap_p = reshape(surf_lap_p,size(p));

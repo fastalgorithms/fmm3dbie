@@ -74,7 +74,7 @@ function [sigma,varargout] = solver(S,zpars,rhs,eps,varargin)
     targinfo.n = S.n;
     patch_id  = zeros(npts,1);
     uvs_targ = zeros(2,npts);
-    mex_id_ = 'get_patch_id_uvs(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io double[xx])';
+    mex_id_ = 'get_patch_id_uvs(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], io int64_t[x], io double[xx])';
 [patch_id, uvs_targ] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, patch_id, uvs_targ, 1, npatches, npatp1, npatches, 1, npts, 2, npts);
     targinfo.patch_id = patch_id;
     targinfo.uvs_targ = uvs_targ;
@@ -128,7 +128,7 @@ function [sigma,varargout] = solver(S,zpars,rhs,eps,varargin)
     rres = 0;
 
 % Call the layer potential evaluator
-    mex_id_ = 'helm_comb_dir_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x])';
+    mex_id_ = 'helm_comb_dir_solver_guru(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[x], i double[x], io int64_t[x], io double[x], io double[x], io dcomplex[x])';
 [niter, errs, rres, sigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 3, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts);
 
     errs = errs(1:niter);

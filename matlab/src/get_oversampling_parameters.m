@@ -27,7 +27,7 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
 
     cms = zeros(3,npatches);
     rads = zeros(npatches,1);
-    mex_id_ = 'get_centroid_rads(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], io double[xx], io double[x])';
+    mex_id_ = 'get_centroid_rads(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], io double[xx], io double[x])';
 [cms, rads] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, cms, rads, 1, npatches, npatp1, npatches, 1, n9, npts, n3, npatches, npatches);
 
     novers = zeros(npatches,1);
@@ -47,7 +47,7 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
     rfac = Q.rfac;
 
 
-    mex_id_ = 'get_far_order(i double[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[xx], i int[x], i int[x], i double[xx], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[x], io int[x], io int[x])';
+    mex_id_ = 'get_far_order(i double[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[x], i int64_t[x], i double[xx], i int64_t[x], i int64_t[x], i double[xx], i int64_t[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], io int64_t[x], io int64_t[x])';
 [novers, ixyzso] = fmm3dbie_routs(mex_id_, eps, npatches, norders, ixyzs, iptype, cms, rads, npts, srccoefs, ndtarg, ntarg, targs, ikerorder, zk, nnz, row_ptr, col_ind, rfac, novers, ixyzso, 1, 1, npatches, npatp1, npatches, 3, npatches, npatches, 1, n9, npts, 1, 1, ndtarg, ntarg, 1, 1, 1, ntp1, nnz, 1, npatches, npatp1);
     varargout{1} = ixyzso;
 
