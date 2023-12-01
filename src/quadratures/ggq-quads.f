@@ -1035,6 +1035,8 @@ c
       complex *16, allocatable :: fint(:),fvals(:)
       character *1 transa,transb
 
+      integer(8) n9,n1
+
       external fker
 
       nmax = 20000
@@ -1072,8 +1074,10 @@ c
 
       alpha = 1.0d0
       beta = 0.0d0
-      call dgemv_guru('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
-     1      srcvals,1)
+      n9 = 9
+      n1 = 1
+      call dgemv_guru('n',n9,npols,alpha,srccoefs,n9,sigvalstmp,n1,beta,
+     1      srcvals,n1)
       
 
       do j=1,npols
@@ -1107,7 +1111,7 @@ c
       ldb = npols
       ldc = 12
 
-      call dgemm_guru(transa,transb,9,ns,npols,alpha,
+      call dgemm_guru(transa,transb,int(9,8),ns,npols,alpha,
      1      srccoefs,lda,sigvals,ldb,beta,srctmp,ldc)
 
 
@@ -1241,6 +1245,7 @@ c
       real *8, allocatable :: fint(:),fvals(:)
       character *1 transa,transb
       real *8 done,dzero 
+      integer(8) n9,n1
 
       external fker
 
@@ -1282,8 +1287,10 @@ c
 
       alpha = 1.0d0
       beta = 0.0d0
-      call dgemv_guru('n',9,npols,alpha,srccoefs,9,sigvalstmp,1,beta,
-     1      srcvals,1)
+      n9 = 9
+      n1 = 1
+      call dgemv_guru('n',n9,npols,alpha,srccoefs,n9,sigvalstmp,n1,beta,
+     1      srcvals,n1)
       
 
       do j=1,npols
@@ -1317,7 +1324,7 @@ c
       ldb = npols
       ldc = 12
 
-      call dgemm_guru(transa,transb,9,ns,npols,alpha,
+      call dgemm_guru(transa,transb,int(9,8),ns,npols,alpha,
      1      srccoefs,lda,sigvals,ldb,beta,srctmp,ldc)
 
 

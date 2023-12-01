@@ -392,8 +392,9 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
 
       istart = ixyzs(i)
       istartover = ixyzso(i)
-      call dgemm_guru(transa,transb,9,nfar_pols,npols,alpha, &
-          srccoefs(1,istart),9,pmat,npols,beta,srcover(1,istartover),12)
+      call dgemm_guru(transa,transb,int(9,8),nfar_pols,npols,alpha, &
+          srccoefs(1,istart),int(9,8),pmat,npols,beta, &
+          srcover(1,istartover),int(12,8))
       do j=1,nfar_pols
         jpt = istartover+j-1
         call cross_prod3d(srcover(4,jpt),srcover(7,jpt),tmp)

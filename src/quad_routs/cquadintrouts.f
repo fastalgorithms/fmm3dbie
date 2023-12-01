@@ -1474,7 +1474,7 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm_guru(transa,transb,9,kpols,npols,alpha,
+              call dgemm_guru(transa,transb,int(9,8),kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
               call get_norms_qwts_quad(kpols,wts,srcvals(1,istart),
@@ -1924,7 +1924,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,9,npts0,npols,alpha,
+        call dgemm_guru(transa,transb,int(9,8),npts0,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
