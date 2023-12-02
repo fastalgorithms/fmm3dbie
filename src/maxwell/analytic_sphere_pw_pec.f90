@@ -117,7 +117,7 @@ implicit none
   call riccati_jp(nmax,zr0,j_val0,jp_val0)
   call riccati_hpp(nmax,zr0,h_val0,hp_val0,hpp_val0)
 
-  call legasfuno1(1,nmax,cos(th_t),pol_leg,polp_leg)
+  call legasfuno1(int(1,8),nmax,cos(th_t),pol_leg,polp_leg)
 
   !    do count=1,nmax
   !      polp_leg(1,count)=-polp_leg(1,count)/sin(th_t)
@@ -344,11 +344,11 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
         IF (N.GE.2) THEN
            SA=SJ(0)
            SB=SJ(1)
-           M=MSTA1(X,200)
+           M=MSTA1(X,INT(200,8))
            IF (M.LT.N) THEN
               NM=M
            ELSE
-              M=MSTA2(X,N,15)
+              M=MSTA2(X,N,INT(15,8))
            ENDIF
            F0=0.0D0
            F1=1.0D0-100
@@ -387,7 +387,7 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
         IMPLICIT DOUBLE PRECISION (A-H,O-Z)
         IMPLICIT INTEGER(8) (I-N)
         A0=DABS(X)
-        N0=INT(1.1*A0)+1
+        N0=INT(1.1*A0,8)+INT(1,8)
         F0=ENVJ(N0,A0)-MP
         N1=N0+5
         F1=ENVJ(N1,A0)-MP
@@ -428,7 +428,7 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
         EJN=ENVJ(N,A0)
         IF (EJN.LE.HMP) THEN
            OBJ=MP
-           N0=INT(1.1*A0)
+           N0=INT(1.1*A0,8)
         ELSE
            OBJ=HMP+EJN
            N0=N
@@ -449,6 +449,8 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
         END
 
         REAL*8 FUNCTION ENVJ(N,X)
+        IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+        IMPLICIT INTEGER(8) (I-N)
         DOUBLE PRECISION X
         ENVJ=0.5D0*DLOG10(6.28D0*N)-N*DLOG10(1.36D0*X/N)
         RETURN
