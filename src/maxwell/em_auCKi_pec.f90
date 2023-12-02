@@ -1059,9 +1059,9 @@ end subroutine fker_em_auCKi_pec
 		zk=zpars(1)
 		alpha=zpars(2)
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
       ra = 0
@@ -1069,7 +1069,7 @@ end subroutine fker_em_auCKi_pec
       !
       !     FMM call to compute nxSkia and -n·curlSkia
       !
-	  call get_fmm_thresh(12,ns,srcover,ndtarg,ntarg,targs,thresh)
+	  call get_fmm_thresh(int(12,8),ns,srcover,ndtarg,ntarg,targs,thresh)
 	  
        ifdir=0
 	   
@@ -1189,12 +1189,12 @@ end subroutine fker_em_auCKi_pec
       enddo
 
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover_aux(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,&
      &sigmaover_aux(ns+1:2*ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,&
      &sigmaover_aux(2*ns+1:3*ns))
 
@@ -1569,8 +1569,8 @@ implicit none
     real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
 
     allocate(E(3,ns), H(3,ns))
-    call fieldsED(zk,P0,srcvals,ns,E,H,vf,0)
-    call fieldsMD(zk,P0,srcvals,ns,E,H,vf,1)
+    call fieldsED(zk,P0,srcvals,ns,E,H,vf,int(0,8))
+    call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int(1,8))
 
     do count1=1,ns	
       call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),&
@@ -2042,14 +2042,14 @@ implicit none
 !	write (*,*) 'alpha value at accu: ', alpha
     write (*,*) 'AUGMENTED ALGORITHM:'
 
-    call auCKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,&
+    call auCKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,wts,&
     &a_vect(1:ns),a_vect(ns+1:2*ns),a_vect2(1:ns),a_vect2(ns+1:2*ns),&
     &a_vect2(2*ns+1:3*ns),Et1,Ht1)
 !	call CKif_FMM_targ_v2(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),Et1,Ht1,nnz,norder,row_ptr,col_ind,CKif_near)
 !	write (*,*) Et1
 	
-    call fieldsED(zk,P0,Pt,1,Et2,Ht2,vf,0)
-    call fieldsMD(zk,P0,Pt,1,Et2,Ht2,vf,1)
+    call fieldsED(zk,P0,Pt,int(1,8),Et2,Ht2,vf,int(0,8))
+    call fieldsMD(zk,P0,Pt,int(1,8),Et2,Ht2,vf,int(1,8))
 
     write (*,*) 'Errors at the EXTERIOR region:'
     error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+&
@@ -2058,7 +2058,7 @@ implicit none
     write (*,*) 'Relative Error in E: ', error_E/&
     &sqrt(abs(Et2(1))**2+abs(Et2(2))**2+abs(Et2(3))**2)
 				
-    call h_neumann_Hfield_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,1,Pt,&
+    call h_neumann_Hfield_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,&
     &wts,sigma,sigma2,Ht1)
 
     error_H=sqrt(abs(Ht1(1)-Ht2(1))**2+abs(Ht1(2)-Ht2(2))**2+&
@@ -2473,14 +2473,14 @@ implicit none
     ima=(0.0d0,1.0d0)
     pi=3.1415926535897932384626433832795028841971d0
 !		write (*,*) 'alpha value at accu: ', alpha
-    call CKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,&
+    call CKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,wts,&
     &a_vect(1:ns),a_vect(ns+1:2*ns),a_vect2(1:ns),a_vect2(ns+1:2*ns),&
     &a_vect2(2*ns+1:3*ns),Et1,Ht1)
 !	call CKif_FMM_targ_v2(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),Et1,Ht1,nnz,norder,row_ptr,col_ind,CKif_near)
 !	write (*,*) Et1
 	
-    call fieldsED(zk,P0,Pt,1,Et2,Ht2,vf,0)
-    call fieldsMD(zk,P0,Pt,1,Et2,Ht2,vf,1)
+    call fieldsED(zk,P0,Pt,int(1,8),Et2,Ht2,vf,int(0,8))
+    call fieldsMD(zk,P0,Pt,int(1,8),Et2,Ht2,vf,int(1,8))
 
     write (*,*) 'Errors at the EXTERIOR region:'
     error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+&
@@ -2882,9 +2882,9 @@ end subroutine CKif_FMM_targ
 		zk=zpars(1)
 		alpha=zpars(2)
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
       ra = 0
@@ -2892,7 +2892,7 @@ end subroutine CKif_FMM_targ
       !
       !     FMM call to compute nxSkia and -n·curlSkia
       !
-	  call get_fmm_thresh(12,ns,srcover,ndtarg,ntarg,targs,thresh)
+	  call get_fmm_thresh(int(12,8),ns,srcover,ndtarg,ntarg,targs,thresh)
 	  
        ifdir=0
 	   
@@ -3012,12 +3012,12 @@ end subroutine CKif_FMM_targ
       enddo
 
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover_aux(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,&
      &sigmaover_aux(ns+1:2*ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,&
      &sigmaover_aux(2*ns+1:3*ns))
 
@@ -3136,12 +3136,12 @@ end subroutine CKif_FMM_targ
 	  pot_aux(i)=0.0d0
 	enddo
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover_aux(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,&
      &sigmaover_aux(ns+1:2*ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,&
      &sigmaover_aux(2*ns+1:3*ns))
 
