@@ -64,15 +64,16 @@
 	write (*,*) 'ep1: ',ep1
 !	write (*,*) 'Electrical length for the cube (simplest_cube_quadratic): ', 3.0d0*omega*sqrt(ep1*mu1)/(2*3.1415927d0)
 
-	xyz_out(1) = 2.14d0
-	xyz_out(2) = 1.1d0
-	xyz_out(3) = -2.4d0
+	xyz_out(1) = -3.5d0
+	xyz_out(2) = 3.1d0
+	xyz_out(3) = 20.1d0
 	  
-	fname = '../../../../Geometries_go3/' // &
-    & 'simplest_cube_quadratic_v4_o04_r01.go3'
-	xyz_in(1) = 0.00d0
-	xyz_in(2) = 0.0d0
-	xyz_in(3) = 1.5d0
+	!fname = '../../../../Geometries_go3/' // &
+    !& 'simplest_cube_quadratic_v4_o04_r01.go3'
+    fname = '../../geometries/sphere_192_o03.go3'
+	xyz_in(1) = 0.11d0
+	xyz_in(2) = 0.0d-5
+	xyz_in(3) = 0.37d0
 
 !	  fname =  '../../../../Geometries_go3/' // &
 !      & 'Round_2_o08_r02.go3'
