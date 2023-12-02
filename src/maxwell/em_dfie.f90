@@ -2094,11 +2094,11 @@ implicit none
 	vf2_m(2)=-ep1*vf(2)
 	vf2_m(3)=-ep1*vf(3)
 	
-	call fieldsEDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,0)
-	call fieldsMDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,1)
+	call fieldsEDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,int(0,8))
+	call fieldsMDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,int(1,8))
 
-	call fieldsEDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,1)
-	call fieldsMDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,1)
+	call fieldsEDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,int(1,8))
+	call fieldsMDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,int(1,8))
 !	read (*,*)
 	
 	do count1=1,ns	
@@ -2109,11 +2109,11 @@ implicit none
 		RHS(3*ns+count1)=DOT_PRODUCT(ru,H(:,count1))*ima*omega
 		RHS(4*ns+count1)=0.0d0
 	enddo
-	call fieldsEDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf2,0)
-	call fieldsMDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf2,1)
+	call fieldsEDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf2,int(0,8))
+	call fieldsMDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf2,int(1,8))
 
-	call fieldsEDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf2_m,1)
-	call fieldsMDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf2_m,1)
+	call fieldsEDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf2_m,int(1,8))
+	call fieldsMDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf2_m,int(1,8))
 	
 	do count1=1,ns
 		RHS(5*ns+count1)=DOT_PRODUCT(srcvals(10:12,count1),E(:,count1))
@@ -2212,16 +2212,16 @@ implicit none
 
 	write (*,*) 'solution:' ,sol(1:10)
 	
-	call DFIE_FMM_targ(eps_FMM,omega,ep0,mu0,ns,srcvals,1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),&
+	call DFIE_FMM_targ(eps_FMM,omega,ep0,mu0,ns,srcvals,int(1,8),Pt,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),&
 	&sol(3*ns+1:4*ns),sol(4*ns+1:5*ns),sol(5*ns+1:6*ns),Et1)
-	call DFIE_FMM_targ(eps_FMM,omega,ep1,mu1,ns,srcvals,1,P0,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),&
+	call DFIE_FMM_targ(eps_FMM,omega,ep1,mu1,ns,srcvals,int(1,8),P0,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),&
 	&sol(3*ns+1:4*ns),sol(4*ns+1:5*ns),sol(5*ns+1:6*ns),E01)
 		
-	call fieldsEDomega(omega,ep0,mu0,P0,Pt,1,Et2,Ht2,vf,0)
-	call fieldsMDomega(omega,ep0,mu0,P0,Pt,1,Et2,Ht2,vf,1)
+	call fieldsEDomega(omega,ep0,mu0,P0,Pt,int(1,8),Et2,Ht2,vf,int(0,8))
+	call fieldsMDomega(omega,ep0,mu0,P0,Pt,int(1,8),Et2,Ht2,vf,int(1,8))
 		
-	call fieldsEDomega(omega,ep1,mu1,Pt,P0,1,E02,H02,vf,0)
-	call fieldsMDomega(omega,ep1,mu1,Pt,P0,1,E02,H02,vf,1)
+	call fieldsEDomega(omega,ep1,mu1,Pt,P0,int(1,8),E02,H02,vf,int(0,8))
+	call fieldsMDomega(omega,ep1,mu1,Pt,P0,int(1,8),E02,H02,vf,int(1,8))
 	
 	write (*,*) 'Errors at the EXTERIOR region:'
 	error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+abs(Et1(3)-Et2(3))**2)
