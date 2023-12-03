@@ -62,7 +62,7 @@ FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
 
 .PHONY: all clean 
 
-OBJECTS =  example_em_nrccie_pec.o \
+OBJECTS =  pec/em_nrccie_example.o \
 
 #
 # use only the file part of the filename, then manually specify
