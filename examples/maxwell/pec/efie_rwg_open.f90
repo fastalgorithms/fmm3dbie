@@ -1,11 +1,12 @@
 program efie_rwg_open
 
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
   real *8, allocatable :: wts(:),rsigma(:)
-  integer ipars(2)
+  integer(8) ipars(2)
 
-  integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+  integer(8), allocatable :: norders(:),ixyzs(:),iptype(:)
 
   real *8 xyz_out(3),xyz_in(3)
   complex *16, allocatable :: sigma(:),rhs(:)
@@ -18,8 +19,8 @@ program efie_rwg_open
   real *8, allocatable :: errs(:)
   real *8 thet,phi
   complex * 16 zpars(3)
-  integer :: ipatch_id
-  integer :: numit,niter
+  integer(8) :: ipatch_id
+  integer(8) :: numit,niter
 
   character *200 title,fname,fname1,fname2,fname3
 
@@ -30,15 +31,15 @@ program efie_rwg_open
   double complex :: pot,potex,ztmp,ima,zk
   complex *16 alpha_rhs
 
-  integer nnn,mmm
+  integer(8) nnn,mmm
   real ( kind = 8 ) xyz_0(3),r0
 
-  integer count1
+  integer(8) count1
 
-  integer norder, n, npatches_aux,npts_aux,npoints_est
-  integer npatches,npts,nrwg,n_vert_flat,n_tri_flat
+  integer(8) norder, n, npatches_aux,npts_aux,npoints_est
+  integer(8) npatches,npts,nrwg,n_vert_flat,n_tri_flat
   real ( kind = 8 ), allocatable :: vert_flat(:,:)
-  integer, allocatable :: tri_flat(:,:),rwg(:,:)
+  integer(8), allocatable :: tri_flat(:,:),rwg(:,:)
 
   data ima/(0.0d0,1.0d0)/
 
@@ -202,18 +203,18 @@ end program efie_rwg_open
 ! subroutine setup_geom(igeomtype,norder,npatches,ipars,&
 !      srcvals,srccoefs,ifplot,fname)
 !   implicit real *8 (a-h,o-z)
-!   integer igeomtype,norder,npatches,ipars(*),ifplot
+!   integer(8) igeomtype,norder,npatches,ipars(*),ifplot
 !   character (len=*) fname
 !   real *8 srcvals(12,*), srccoefs(9,*)
 !   real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
 
 !   real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-!   integer, pointer :: iptr1,iptr2,iptr3,iptr4
+!   integer(8), pointer :: iptr1,iptr2,iptr3,iptr4
 !   real *8, target :: p1(10),p2(10),p3(10),p4(10)
 !   real *8, allocatable, target :: triaskel(:,:,:)
 !   real *8, allocatable, target :: deltas(:,:)
-!   integer, allocatable :: isides(:)
-!   integer, target :: nmax,mmax
+!   integer(8), allocatable :: isides(:)
+!   integer(8), target :: nmax,mmax
 
 !   procedure (), pointer :: xtri_geometry
 
@@ -317,11 +318,11 @@ end program efie_rwg_open
 ! !
 ! !
 ! !  input:
-! !    npatches - integer
+! !    npatches - integer(8)
 ! !       number of patches
-! !    norder - integer
+! !    norder - integer(8)
 ! !       order of discretization
-! !    npts - integer
+! !    npts - integer(8)
 ! !       total number of discretization points on the surface
 ! !    srccoefs - real *8 (9,npts)
 ! !       koornwinder expansion coefficients of geometry info
@@ -334,16 +335,16 @@ end program efie_rwg_open
 ! !
 
 !       implicit none
-!       integer npatches,norder,npts,npols
+!       integer(8) npatches,norder,npts,npols
 !       real *8 srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
 !       real *8 tmp(3)
 !       real *8 dpars,done,pi
 !       real *8, allocatable :: rsurf(:),err_p(:,:) 
-!       integer ipars,norderhead,nd
+!       integer(8) ipars,norderhead,nd
 !       complex *16, allocatable :: sigma_coefs(:,:), sigma_vals(:,:)
 !       complex *16 zk,val
 
-!       integer ipatch,j,i
+!       integer(8) ipatch,j,i
 !       real *8 ra,ds
 !       logical isout
 
