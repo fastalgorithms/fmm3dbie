@@ -1,15 +1,16 @@
       implicit real *8 (a-h,o-z) 
+      implicit integer(8) (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       real *8, allocatable :: wts(:)
       character *100 fname
-      integer ipars(2)
+      integer(8) ipars(2)
 
       real *8, allocatable :: targs(:,:),uvs_targ(:,:)
-      integer, allocatable :: ipatch_id(:)
+      integer(8), allocatable :: ipatch_id(:)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer(8), allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      integer, allocatable :: ifds(:)
+      integer(8), allocatable :: ifds(:)
       real *8, allocatable :: rfds(:)
       complex *16, allocatable :: zfds(:)
 
@@ -18,13 +19,13 @@
       complex *16 zid
       real *8, allocatable :: errs(:)
       complex * 16 zpars(3)
-      integer, allocatable :: irand(:),isort(:),isum(:)
+      integer(8), allocatable :: irand(:),isort(:),isum(:)
       real *8, allocatable :: rrand(:)
       complex *16, allocatable :: xmat(:,:)
-      integer, allocatable :: itarg(:),jsrc(:)
-      integer, allocatable :: col_ptr(:),row_ind(:)
+      integer(8), allocatable :: itarg(:),jsrc(:)
+      integer(8), allocatable :: col_ptr(:),row_ind(:)
       complex *16, allocatable :: zent(:)
-      integer numit,niter
+      integer(8) numit,niter
 
       complex *16 pot,potex,ztmp,ima
 
@@ -127,8 +128,8 @@ c
 
 
       do i=1,npts
-        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,ipars,
-     1     rhs(i))
+        call h3d_slp(xyz_out,int(3,8),srcvals(1,i),int(0,8),dpars,
+     1     int(1,8),zpars,int(0,8),ipars,rhs(i))
       enddo
 
       
@@ -272,11 +273,12 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
+      call h3d_slp(xyz_out,int(3,8),xyz_in,int(0,8),dpars,int(1,8),
+     1             zpars,int(0,8),ipars,potex)
       pot = 0
       do i=1,npts
-        call h3d_comb(srcvals(1,i),3,xyz_in,0,dpars,3,zpars,0,ipars,
-     1     ztmp)
+        call h3d_comb(srcvals(1,i),int(3,8),xyz_in,int(0,8),dpars,
+     1     int(3,8),zpars,int(0,8),ipars,ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 
@@ -292,18 +294,19 @@ c
       subroutine setup_geom(igeomtype,norder,npatches,ipars, 
      1    srcvals,srccoefs,ifplot,fname)
       implicit real *8 (a-h,o-z)
-      integer igeomtype,norder,npatches,ipars(*),ifplot
+      implicit integer(8) (i-n)
+      integer(8) igeomtype,norder,npatches,ipars(*),ifplot
       character (len=*) fname
       real *8 srcvals(12,*), srccoefs(9,*)
       real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
 
       real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer, pointer :: iptr1,iptr2,iptr3,iptr4
+      integer(8), pointer :: iptr1,iptr2,iptr3,iptr4
       real *8, target :: p1(10),p2(10),p3(10),p4(10)
       real *8, allocatable, target :: triaskel(:,:,:)
       real *8, allocatable, target :: deltas(:,:)
-      integer, allocatable :: isides(:)
-      integer, target :: nmax,mmax
+      integer(8), allocatable :: isides(:)
+      integer(8), target :: nmax,mmax
 
       procedure (), pointer :: xtri_geometry
 

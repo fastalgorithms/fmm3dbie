@@ -1,21 +1,22 @@
 program helm_dir_iter_example3
 
   implicit double precision (a-h,o-z) 
+  implicit integer(8) (i-n)
   double precision, allocatable :: srcvals(:,:),srccoefs(:,:)
   double precision, allocatable :: wts(:)
   character *100 :: fname
-  integer :: ipars(2)
+  integer(8) :: ipars(2)
 
-  integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+  integer(8), allocatable :: norders(:),ixyzs(:),iptype(:)
 
   double precision :: xyz_out(3), xyz_in(3), evec(3)
   double complex, allocatable :: sigma(:),rhs(:)
   double precision, allocatable :: errs(:)
   double precision eps_gmres
   complex * 16 zpars(3)
-  integer numit,niter
+  integer(8) numit,niter
 
-  integer ipatch_id
+  integer(8) ipatch_id
   double precision uvs_targ(2)
 
   logical isout0,isout1
@@ -154,7 +155,7 @@ program helm_dir_iter_example3
   if (ifscat .eq. 0) then
     ! generate rhs based on a source on the interior
     do i=1,npts
-      call h3d_slp(xyz_in, 3, srcvals(1,i), 0, dpars, 1, zpars, 0, &
+      call h3d_slp(xyz_in, int(3,8), srcvals(1,i), int(0,8), dpars, int(1,8), zpars, int(0,8), &
           ipars, rhs(i))
       sigma(i) = 0 
     enddo
@@ -195,11 +196,11 @@ program helm_dir_iter_example3
   if (ifscat .eq. 0) then
 
     ! test solution at an exterior point
-    call h3d_slp(xyz_in, 3, xyz_out, 0, dpars, 1, zpars, 0, &
+    call h3d_slp(xyz_in, int(3,8), xyz_out, int(0,8), dpars, int(1,8), zpars, int(0,8), &
         ipars, potex)
     pot = 0
     do i=1,npts
-      call h3d_comb(srcvals(1,i), 3, xyz_out, 0, dpars, 3, zpars, 0, &
+      call h3d_comb(srcvals(1,i), int(3,8), xyz_out, int(0,8), dpars, int(3,8), zpars, int(0,8), &
           ipars, ztmp)
       pot = pot + sigma(i)*wts(i)*ztmp
     enddo
@@ -228,7 +229,7 @@ program helm_dir_iter_example3
     ! evaluate scattered solution at a point
     pot = 0
     do i=1,npts
-      call h3d_comb(srcvals(1,i), 3, xyz_out, 0, dpars, 3, zpars, 0, &
+      call h3d_comb(srcvals(1,i), int(3,8), xyz_out, int(0,8), dpars, int(3,8), zpars, int(0,8), &
           ipars, ztmp)
       pot = pot + sigma(i)*wts(i)*ztmp
     enddo
@@ -258,7 +259,8 @@ end program helm_dir_iter_example3
 subroutine setup_geom(igeomtype, norder, npatches, ipars, &
     srcvals, srccoefs, ifplot, fname)
   implicit double precision (a-h,o-z)
-  integer :: igeomtype,norder,npatches,ipars(*),ifplot
+  implicit integer(8) (i-n)
+  integer(8) :: igeomtype,norder,npatches,ipars(*),ifplot
   character (len=*) :: fname
   double precision :: srcvals(12,*), srccoefs(9,*)
 
@@ -270,12 +272,12 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
   double precision :: xyz2(10), dxyzduv2(3,10)
   double precision, target :: scales(10)
   double precision, pointer :: ptr1,ptr2,ptr3,ptr4
-  integer, pointer :: iptr1, iptr2, iptr3, iptr4
+  integer(8), pointer :: iptr1, iptr2, iptr3, iptr4
   double precision, target :: p1(10),p2(10),p3(10),p4(10)
   double precision, allocatable, target :: triaskel(:,:,:)
   double precision, allocatable, target :: deltas(:,:)
-  integer, allocatable :: isides(:)
-  integer, target :: nmax,mmax
+  integer(8), allocatable :: isides(:)
+  integer(8), target :: nmax,mmax
 
   procedure (), pointer :: xtri_geometry
 
@@ -510,6 +512,7 @@ end subroutine setup_geom
 subroutine xtri_ellipsoid_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     scales, p3, p4)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   double precision :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
   double precision :: scales(3)
 
@@ -683,6 +686,7 @@ end subroutine xtri_ellipsoid_eval
 subroutine xtri_taco_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     p2, p3, p4)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
 
   !
@@ -830,6 +834,7 @@ end subroutine xtri_taco_eval
 subroutine xtri_potato_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     p2, p3, p4)
   implicit real *8 (a-h,o-z)
+  implicit integer(8) (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
 
   !
@@ -1014,7 +1019,7 @@ end subroutine xtri_potato_eval
 subroutine test_exterior_pt(npatches,norder,npts,srcvals, &
     srccoefs,wts,xyzout,isout)
   implicit none
-  integer npatches,norder,npts
+  integer(8) npatches,norder,npts
   ! c
   ! c  this subroutine tests whether the pt xyzin, is
   ! c  in the exterior of a surface, and also estimates the error
@@ -1025,11 +1030,11 @@ subroutine test_exterior_pt(npatches,norder,npts,srcvals, &
   ! c
   ! c
   ! c  input:
-  ! c    npatches - integer
+  ! c    npatches - integer(8)
   ! c       number of patches
-  ! c    norder - integer
+  ! c    norder - integer(8)
   ! c       order of discretization
-  ! c    npts - integer
+  ! c    npts - integer(8)
   ! c       total number of discretization points on the surface
   ! c    srccoefs - double precision (9,npts)
   ! c       koornwinder expansion coefficients of geometry info
@@ -1040,16 +1045,16 @@ subroutine test_exterior_pt(npatches,norder,npts,srcvals, &
   ! c    isout - boolean
   ! c      whether the target is in the interior or not
   ! c
-  integer :: npols
+  integer(8) :: npols
   double precision srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
   double precision tmp(3)
   double precision dpars,done,pi
   double precision, allocatable :: rsurf(:),err_p(:,:) 
-  integer ipars,norderhead,nd
+  integer(8) ipars,norderhead,nd
   double complex, allocatable :: sigma_coefs(:,:), sigma_vals(:,:)
   double complex zk,val
 
-  integer ipatch,j,i
+  integer(8) ipatch,j,i
   double precision ra,ds
   logical isout
 
@@ -1064,7 +1069,7 @@ subroutine test_exterior_pt(npatches,norder,npts,srcvals, &
   do ipatch=1,npatches
     do j=1,npols
       i = (ipatch-1)*npols + j
-      call h3d_sprime(xyzout,12,srcvals(1,i),0,dpars,1,zk,0,ipars,&
+      call h3d_sprime(xyzout,int(12,8),srcvals(1,i),int(0,8),dpars,int(1,8),zk,int(0,8),ipars,&
           val)
 
       call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
