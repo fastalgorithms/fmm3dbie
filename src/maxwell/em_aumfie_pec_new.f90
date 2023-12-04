@@ -69,17 +69,17 @@
 ! 
 !  Input arguments:
 ! 
-!    - npatches: integer
+!    - npatches: integer(8)
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer(8)(npatches)
 !        order of discretization on each patch 
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer(8)(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer(8)(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
-!    - npts: integer
+!    - npts: integer(8)
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        koornwinder expansion coefficients of xyz, dxyz/du,
@@ -95,15 +95,15 @@
 !          * srcvals(4:6,i) - dxyz/du info
 !          * srcvals(7:9,i) - dxyz/dv info
 !          * srcvals(10:12,i) - normals info
-!    - ndtarg: integer
+!    - ndtarg: integer(8)
 !        leading dimension of target array, 
 !        must be at least 3
-!    - ntarg: integer
+!    - ntarg: integer(8)
 !        number of targets
 !    - targs: real *8 (ndtarg,ntarg)
 !         target info, the first three components targs(1:3,i) must
 !         be the xyz location of the target
-!    - ipatch_id: integer(ntarg)
+!    - ipatch_id: integer(8)(ntarg)
 !        id of patch if target i is on surface, id=-1 if target if off-surface
 !    - uvs_targ: real *8 (2,ntarg)
 !        local uv coordinates of patch of target, if it is on surface, 
@@ -113,27 +113,27 @@
 !    - zpars: complex *16 (1)
 !        kernel parameters 
 !        zpars(1) = k 
-!    - iquadtype: integer
+!    - iquadtype: integer(8)
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
 !            for rest
-!    - nnz: integer
+!    - nnz: integer(8)
 !        number of source patch-> target interactions in the near field
-!    - row_ptr: integer(ntarg+1)
+!    - row_ptr: integer(8)(ntarg+1)
 !        row_ptr(i) is the pointer
 !        to col_ind array where list of relevant source patches
 !        for target i start
-!    - col_ind: integer (nnz)
+!    - col_ind: integer(8) (nnz)
 !        list of source patches relevant for all targets, sorted
 !        by the target number
-!    - iquad: integer(nnz+1)
+!    - iquad: integer(8)(nnz+1)
 !        location in wnear_ij array where quadrature for col_ind(i)
 !        starts for a single kernel. In this case the different kernels
 !        are matrix entries are located at (m-1)*nquad+iquad(i), where
 !        m is the kernel number
-!    - rfac0: integer
+!    - rfac0: integer(8)
 !        radius parameter for near field
-!    - nquad: integer
+!    - nquad: integer(8)
 !        number of near field entries corresponding to each source target
 !        pair. The size of wnear is 4*nquad since there are 4 kernels
 !        per source target pair
@@ -144,21 +144,21 @@
 !               
 !
       implicit none
-      integer, intent(in) :: npatches,norders(npatches)
-      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches),npts
+      integer(8), intent(in) :: npatches,norders(npatches)
+      integer(8), intent(in) :: ixyzs(npatches+1),iptype(npatches),npts
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
-      integer, intent(in) :: ndtarg,ntarg,ipatch_id(ntarg)
+      integer(8), intent(in) :: ndtarg,ntarg,ipatch_id(ntarg)
       real *8, intent(in) :: targs(ndtarg,ntarg),uvs_targ(2,ntarg),eps
       complex *16, intent(in) :: zpars(1)
-      integer, intent(in) :: iquadtype,nnz,row_ptr(ntarg+1),col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1),nquad
+      integer(8), intent(in) :: iquadtype,nnz,row_ptr(ntarg+1),col_ind(nnz)
+      integer(8), intent(in) :: iquad(nnz+1),nquad
       real *8, intent(in) :: rfac0
       complex *16, intent(out) :: wnear(nquad,4)
 
-      integer ndz,ndd,ndi
-      integer ipv
+      integer(8) ndz,ndd,ndi
+      integer(8) ipv
       real *8 dpars
-      integer ipars
+      integer(8) ipars
       procedure (), pointer :: fker
       external h3d_slp,h3d_sgradx,h3d_sgrady,h3d_sgradz
 
@@ -238,17 +238,17 @@
 ! 
 !  Input arguments:
 ! 
-!    - npatches: integer
+!    - npatches: integer(8)
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer(8)(npatches)
 !        order of discretization on each patch 
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer(8)(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer(8)(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
-!    - npts: integer
+!    - npts: integer(8)
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        koornwinder expansion coefficients of xyz, dxyz/du,
@@ -264,10 +264,10 @@
 !          * srcvals(4:6,i) - dxyz/du info
 !          * srcvals(7:9,i) - dxyz/dv info
 !          * srcvals(10:12,i) - normals info
-!    - ndtarg: integer
+!    - ndtarg: integer(8)
 !        leading dimension of target array, 
 !        must be at least 3
-!    - ntarg: integer
+!    - ntarg: integer(8)
 !        number of targets
 !    - targs: real *8 (ndtarg,ntarg)
 !         target info, the first three components targs(1:3,i) must
@@ -277,25 +277,25 @@
 !    - zpars: complex *16 (1)
 !        kernel parameters 
 !        zpars(1) = k 
-!    - iquadtype: integer
+!    - iquadtype: integer(8)
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
 !            for rest
-!    - nnz: integer
+!    - nnz: integer(8)
 !        number of source patch-> target interactions in the near field
-!    - row_ptr: integer(ntarg+1)
+!    - row_ptr: integer(8)(ntarg+1)
 !        row_ptr(i) is the pointer
 !        to col_ind array where list of relevant source patches
 !        for target i start
-!    - col_ind: integer (nnz)
+!    - col_ind: integer(8) (nnz)
 !        list of source patches relevant for all targets, sorted
 !        by the target number
-!    - iquad: integer(nnz+1)
+!    - iquad: integer(8)(nnz+1)
 !        location in wnear_ij array where quadrature for col_ind(i)
 !        starts for a single kernel. In this case the different kernels
 !        are matrix entries are located at (m-1)*nquad+iquad(i), where
 !        m is the kernel number
-!    - nquad: integer
+!    - nquad: integer(8)
 !        number of near field entries corresponding to each source target
 !        pair. The size of wnear is 4*nquad since there are 4 kernels
 !        per source target pair
@@ -310,13 +310,13 @@
 !        frame defined in the notes above
 !    - zrhovec: complex *16 (npts)
 !        the charge density $\rho$
-!    - novers: integer(npatches)
+!    - novers: integer(8)(npatches)
 !        order of discretization for oversampled sources and
 !        density
-!    - ixyzso: integer(npatches+1)
+!    - ixyzso: integer(8)(npatches+1)
 !        ixyzso(i) denotes the starting location in srcover,
 !        corresponding to patch i
-!    - nptso: integer
+!    - nptso: integer(8)
 !        total number of oversampled points
 !    - srcover: real *8 (12,nptso)
 !        oversampled set of source information
@@ -335,16 +335,16 @@
 !
       implicit real *8 (a-h,o-z)
 !  calling sequence variables      
-      integer, intent(in) :: npatches,norders(npatches)
-      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches),npts
+      integer(8), intent(in) :: npatches,norders(npatches)
+      integer(8), intent(in) :: ixyzs(npatches+1),iptype(npatches),npts
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
-      integer, intent(in) :: ndtarg,ntarg
+      integer(8), intent(in) :: ndtarg,ntarg
       real *8, intent(in) :: targs(ndtarg,ntarg)
       complex *16, intent(in) :: zpars
-      integer, intent(in) :: nnz,row_ptr(ntarg+1),col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1),nquad
+      integer(8), intent(in) :: nnz,row_ptr(ntarg+1),col_ind(nnz)
+      integer(8), intent(in) :: iquad(nnz+1),nquad
       complex *16, intent(in) :: wnear(nquad,4),zjvec(2,npts),rho(npts)
-      integer, intent(in) :: novers(npatches),nptso,ixyzso(npatches+1)
+      integer(8), intent(in) :: novers(npatches),nptso,ixyzso(npatches+1)
       real *8, intent(in) :: srcover(12,nptso),whtsover(nptso)
       complex *16, intent(out) :: E(3,npts),H(3,npts)
 
@@ -492,7 +492,7 @@
 !$OMP END PARALLEL DO     
       
 
-      call get_fmm_thresh(12,ns,srcover,12,npts,srcvals,thresh)
+      call get_fmm_thresh(int(12,8),ns,srcover,int(12,8),npts,srcvals,thresh)
 
 !
 ! Subtract near contributions computed via fmm
