@@ -1,19 +1,20 @@
       implicit real *8 (a-h,o-z) 
+      implicit integer(8) (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:),targs(:,:)
       real *8, allocatable :: wts(:)
       
       real *8 ts(2), rres
       real *8, allocatable :: rfacs(:,:), errs(:)
       character *100 fname
-      integer ipars(2)
-      integer, allocatable :: row_ptr(:),col_ind(:)
-      integer, allocatable :: iquad(:)
+      integer(8) ipars(2)
+      integer(8), allocatable :: row_ptr(:),col_ind(:)
+      integer(8), allocatable :: iquad(:)
       real *8, allocatable :: srcover(:,:),wover(:)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
-      integer, allocatable :: ixyzso(:),nfars(:)
+      integer(8), allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer(8), allocatable :: ixyzso(:),nfars(:)
 
-      integer, allocatable :: ipatch_id(:),inode_id(:)
+      integer(8), allocatable :: ipatch_id(:),inode_id(:)
       real *8, allocatable :: uvs_targ(:,:)
       real *8 xyz_out(3),xyz_in(3),stracmat(3,3),smat(3,3), dmat(3,3)
       real *8 xyz_src(3),xyz_targ(3)
@@ -121,8 +122,8 @@ c
       sigout(3) = .31d0
       
       do i=1,npts
-         call st3d_slp_vec(9,xyz_src,3,srcvals(1,i),0,dpars,0,zpars,0,
-     1        ipars,smat)
+         call st3d_slp_vec(int(9,8),xyz_src,int(3,8),srcvals(1,i),
+     1        int(0,8),dpars,int(0,8),zpars,int(0,8),ipars,smat)
          uval(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
          uval(2,i) = smat(2,1)*sigout(1) + smat(2,2)*sigout(2)
@@ -133,8 +134,8 @@ c
 
 
 
-      call st3d_slp_vec(9,xyz_src,3,xyz_targ,0,dpars,0,zpars,0,
-     1     ipars,smat)
+      call st3d_slp_vec(int(9,8),xyz_src,int(3,8),xyz_targ,int(0,8),
+     1     dpars,int(0,8),zpars,int(0,8),ipars,smat)
       
        uintest(1) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
@@ -230,18 +231,19 @@ c
       subroutine setup_geom(igeomtype,norder,npatches,ipars, 
      1    srcvals,srccoefs,ifplot,fname)
       implicit real *8 (a-h,o-z)
-      integer igeomtype,norder,npatches,ipars(*),ifplot
+      implicit integer(8) (i-n)
+      integer(8) igeomtype,norder,npatches,ipars(*),ifplot
       character (len=*) fname
       real *8 srcvals(12,*), srccoefs(9,*)
       real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
 
       real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer, pointer :: iptr1,iptr2,iptr3,iptr4
+      integer(8), pointer :: iptr1,iptr2,iptr3,iptr4
       real *8, target :: p1(10),p2(10),p3(10),p4(10)
       real *8, allocatable, target :: triaskel(:,:,:)
       real *8, allocatable, target :: deltas(:,:)
-      integer, allocatable :: isides(:)
-      integer, target :: nmax,mmax
+      integer(8), allocatable :: isides(:)
+      integer(8), target :: nmax,mmax
 
       procedure (), pointer :: xtri_geometry
 
