@@ -125,7 +125,8 @@ EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 	$(EM)/em_nrccie_pec.o $(EM)/em_auCKi_pec.o \
 	$(EM)/em_dfie_trans.o $(EM)/em_adpie_pec.o \
 	$(EM)/em_sdpie_pec.o $(EM)/em_cfie_rwg_pec.o \
-	$(EM)/fix_tri.o $(EM)/analytic_sphere_pw_pec.o
+	$(EM)/fix_tri.o $(EM)/analytic_sphere_pw_pec.o \
+	$(EM)/em_muller_trans.o
 
 # Stokes wrappers
 STOK = src/stok_wrappers
