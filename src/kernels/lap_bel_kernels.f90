@@ -16,7 +16,7 @@
 
 
 
-subroutine lap_bel_log(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
+subroutine lap_bel_res(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
@@ -46,10 +46,43 @@ subroutine lap_bel_log(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
 
   rnoverr2 = rn/r2
 
-  val = rnoverr2*(rnoverr2 - 2*targ(13))*over4pi
+  val = 4*rnoverr2*(rnoverr2 - targ(13))*over4pi
+
+  return
+end subroutine lap_bel_res
+
+
+
+
+
+
+subroutine lap_bel_log(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: src(*), targ(ndt),dpars(ndd)
+  integer ipars(ndi)
+  real *8 over4pi
+
+  complex *16 :: zk
+  real *8 :: val
+
+  complex *16 :: ima
+
+  data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
+  !
+  ! returns the laplace beltrami operator applied to log, i.e.
+  !
+  ! K(x,y) = (n(x).(x-y)/|x-y|^2)^2 -2H(x)*(n(x).(x-y)/|x-y|^2)
+  !
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  
+
+  r2=dx**2+dy**2+dz**2
+  val = log(r2)*over4pi
 
   return
 end subroutine lap_bel_log
-
-
-

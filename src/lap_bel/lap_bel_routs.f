@@ -616,7 +616,8 @@ c
 c
       subroutine getnearquad_lap_bel_log(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,eps,
-     2   iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
+     2   iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,
+     1   meancrvs,nquad,iktype,wnear)
 c
 c
 c  This subroutine generates the near field quadrature
@@ -707,11 +708,12 @@ c
       integer, intent(in) :: nnz
       integer, intent(in) :: row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
       real *8, intent(out) :: wnear(nquad)
+      real *8, intent(in) :: meancrvs(npts)
 
 
       integer, allocatable :: ipatch_id(:)
-      real *8, allocatable :: uvs_src(:,:), meancrvs(:), targvals(:,:)
-      integer ipars
+      real *8, allocatable :: uvs_src(:,:), targvals(:,:)
+      integer ipars,iktype
       integer ndd,ndz,ndi
       complex *16 zpars
       real *8 dpars
@@ -723,7 +725,7 @@ c
       integer ipv
 
       procedure (), pointer :: fker
-      external lap_bel_log
+      external lap_bel_log,lap_bel_res
 
       done = 1
       pi = atan(done)*4
@@ -735,9 +737,9 @@ c
 c
 c  get mean curvature 
 c
-      allocate(meancrvs(npts))
-      call get_mean_curvature(npatches, norders, ixyzs, iptype, 
-     1  npts, srccoefs, srcvals, meancrvs)
+ccc      allocate(meancrvs(npts))
+ccc      call get_mean_curvature(npatches, norders, ixyzs, iptype, 
+ccc     1  npts, srccoefs, srcvals, meancrvs)
       
       allocate(targvals(13,npts))
       
@@ -761,8 +763,13 @@ c
       ndz = 0
       ndtarg = 13
       if(iquadtype.eq.1) then
-        ipv = 1
-        fker=>lap_bel_log
+        if (iktype .eq. 1) then
+            ipv = 1
+            fker=>lap_bel_res
+        elseif (iktype .eq. 2) then
+            ipv = 1
+            fker=>lap_bel_log
+        endif
         call dgetnearquad_ggq_guru(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndtarg,npts,targvals,
      1     ipatch_id,uvs_src,
