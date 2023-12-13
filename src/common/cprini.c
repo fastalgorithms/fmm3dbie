@@ -199,7 +199,7 @@ void cprinf(char *mes, int *afp, int n)
   int itype, i1, i2, m;
   double *adp;
   char *acp, *str17, *str27;
-  
+
   //
   // print integer data
   //
@@ -207,6 +207,25 @@ void cprinf(char *mes, int *afp, int n)
   cprin_master(mes, ap, afp, adp, acp, m, n, itype, str17, str27, i1, i2);
   return;
 }
+
+
+
+
+
+/* void cprinl(char *mes, int *afp, int n) */
+/* { */
+/*   float *ap; */
+/*   int itype, i1, i2, m; */
+/*   double *adp; */
+/*   char *acp, *str17, *str27; */
+
+/*   // */
+/*   // print integer data */
+/*   // */
+/*   itype = 2; */
+/*   cprin_master(mes, ap, afp, adp, acp, m, n, itype, str17, str27, i1, i2); */
+/*   return; */
+/* } */
 
 
 

@@ -23,7 +23,7 @@ void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
 
   double *uvs;
   double *whts;
-  int npols;
+  long npols;
   
   // get the reference quadrature notes and weights
   
@@ -37,12 +37,41 @@ void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
   cprind_matrix("Vioreanu-Rokhlin nodes =", uvs, npols, 2);
 
   // now cycle through all each baseMesh element and put nodes on it
+  long nelems = baseMesh1->nelems;
+  cprinf("number of elements = ", &nelems, 1);
 
+  long i, j, nv, iv;
+  for (i=0; i<nelems; i++) {
+    // print out the info for this element to check things
+    printBaseElementInfo( &(baseMesh1->elements[i]) );
 
+    nv = baseMesh1->elements[i].nv;
+    cprinf("nv = ", &nv, 1);
+
+    for (j=0; j<nv; j++) {
+      iv = baseMesh1->elements[i].ivs[j];
+      cprind("vert = ", &(baseMesh1->verts[3*iv]), 3);
+    }
+
+    exit(0);
+  }
 
 
   free( uvs );
   free( whts );
+
+  return;'
+}
+
+
+
+
+
+void eval_base_element( double *uv, baseElement *element, pointInfo *xyz_info) {
+  // evaluate the base element at the point uv, proceed by figuring out the type
+  // of base element and then going down and calling the guru routine and
+  // finally packing everything up
+
 
 }
 
@@ -50,3 +79,12 @@ void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
 
 
 
+void eval_tria2( double *uv, double *verts, double *xyz, double *du, double *dv,
+                 double *normal ) {
+  // eval the tria2 element using the vertex values
+
+
+
+
+  return;
+}

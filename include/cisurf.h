@@ -161,5 +161,5 @@ void plotBaseMeshVTK( baseMesh *mesh1, char *filename );
 
 
 // external functions, maybe in fortran
-void get_vioreanu_nodes_wts_( int *norder, int *npols, double *uvs,
+void get_vioreanu_nodes_wts_( long *norder, long *npols, double *uvs,
                               double *whts );
