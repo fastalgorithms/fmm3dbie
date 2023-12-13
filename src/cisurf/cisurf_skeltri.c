@@ -83,7 +83,7 @@ void eval_tria2( double *uv, double *verts, double *xyz, double *du, double *dv,
                  double *normal ) {
   // eval the tria2 element using the vertex values
 
-
+  // use direct formula
 
 
   return;
