@@ -131,7 +131,7 @@ c    - x: double precision(3)
 c        input vector 1
 c    - y: double precision(3)
 c        input vector 2
-c  
+c
 c  Output arguments:
 c
 c    - z: double precision(3)
