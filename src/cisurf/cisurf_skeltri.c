@@ -229,7 +229,10 @@ void eval_tria2( long n, double *uv, double *verts, double *xyz, double *du,
   // and finally compute the normal, and the normalize it
   cross_product_3d(du, dv, normal);
 
-
+  *da = sqrt( normal[0]*normal[0] + normal[1]*normal[1] + normal[2]*normal[2] );
+  normal[0] = normal[0]/(*ds);
+  normal[1] = normal[1]/(*ds);
+  normal[2] = normal[2]/(*ds);
 
   return;
 
