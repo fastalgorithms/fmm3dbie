@@ -152,8 +152,17 @@ void print_base_mesh_info( BaseMesh *mesh1, long iflong);
 void print_base_element_info( BaseElement *elem );
 
 
-// - - - skeleton construction routines - - -
+
+
+// - - - skeleton mesh routines - - -
 void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder );
+
+void eval_tria2( long n, double *uv, double *verts, double *xyz, double *du,
+                 double *dv, double *da, double *normal );
+
+void cross_product_3d(double *x, double *y, double *z);
+
+
 
 
 // - - - plotting routines - - -

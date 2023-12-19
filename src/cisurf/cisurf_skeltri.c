@@ -13,11 +13,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "cprini.h"
+#include "cprini_long.h"
 
 
 
-void create_skeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
+void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder ) {
   // constructs a skeleton mesh from the base mesh by popping down
   // Vioreanu-Rokhlin quadrature nodes
 
@@ -26,7 +26,7 @@ void create_skeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
   long npols;
   
   // get the reference quadrature notes and weights
-  
+  //
   // TODO this should probably be either in C, or have some proper
   // c-datatype bindings
   npols = (norder+1)*(norder+2)/2;
@@ -36,8 +36,8 @@ void create_skeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
 
   cprind_matrix("Vioreanu-Rokhlin nodes =", uvs, npols, 2);
 
-  // now cycle through all each baseMesh element and put nodes on it
-  long nelems = baseMesh1->nelems;
+  // now cycle through all each basemesh element and put nodes on it
+  long nelems = basemesh1->nelems;
   cprinf("number of elements = ", &nelems, 1);
 
   long i, j, nv, iv, nuv, k, l;
@@ -45,14 +45,14 @@ void create_skeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
 
   for (i=0; i<nelems; i++) {
     // print out the info for this element to check things
-    printBaseElementInfo( &(baseMesh1->elements[i]) );
+    print_base_element_info( &(basemesh1->elements[i]) );
 
-    nv = baseMesh1->elements[i].nv;
+    nv = basemesh1->elements[i].nv;
     cprinf("nv = ", &nv, 1);
 
     for (j=0; j<nv; j++) {
-      iv = baseMesh1->elements[i].ivs[j];
-      cprind("vert = ", &(baseMesh1->verts[3*iv]), 3);
+      iv = basemesh1->elements[i].ivs[j];
+      cprind("vert = ", &(basemesh1->verts[3*iv]), 3);
 
 
 
@@ -64,10 +64,10 @@ void create_skeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
 
     // load up the vertices that make up the triangle
     for (k=0; k<6; k++) {
-      iv = baseMesh1->elements[i].ivs[k];
-      verts[3*k] = baseMesh1->verts[3*iv];
-      verts[3*k+1] = baseMesh1->verts[3*iv+1];
-      verts[3*k+2] = baseMesh1->verts[3*iv+2];
+      iv = basemesh1->elements[i].ivs[k];
+      verts[3*k] = basemesh1->verts[3*iv];
+      verts[3*k+1] = basemesh1->verts[3*iv+1];
+      verts[3*k+2] = basemesh1->verts[3*iv+2];
     }
 
     nuv = 1;
@@ -135,7 +135,7 @@ void create_skeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
 
 
 
-void eval_base_element( double *uv, baseElement *element, pointInfo *xyz_info) {
+void eval_base_element( double *uv, BaseElement *element, PointInfo *xyzInfo) {
   // evaluate the base element at the point uv, proceed by figuring out the type
   // of base element and then going down and calling the guru routine and
   // finally packing everything up

@@ -23,4 +23,3 @@ void cprin_message(char *mes);
 void cprin_skipline(int n);
 
 void cprin_start_stop(int i1, int i2);
-

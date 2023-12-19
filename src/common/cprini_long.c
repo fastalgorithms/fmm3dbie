@@ -9,21 +9,27 @@
 // functions proper. The code below contains five user-callable functions. Their
 // functions are as follows.
 //
-//  cprini - communicates to the function cprin8 (NOT a user-callable function)
-//        the names of the two files on which the output will be written. Please
-//        note that the name "stdout" is treated differently from all other
-//        names: specifying it will cause the output to be written on the
-//        standard output - screen, most probably.
-//
-//  cprin - prints a real (of the type "float") array
-//
-//  cprin2 - prints a double precision (of the type "double") array
-//
-//  cprinf - prints an integer array
-//
-//  cprina - prints a character array, string
+//  cprin_init - communicates to the function cprin8 (NOT a user-callable
+//        function) the names of the two files on which the output will be
+//        written. Please note that the name "stdout" is treated differently
+//        from all other names: specifying it will cause the output to be
+//        written on the standard output - screen, most probably.
 //
 //  cprin_start_stop - starts and stops printing to either or both output files
+//
+//  cprin_message - prints a text message
+//
+//  cprin_skipline - skips a certain number of lines in the printout
+//
+//  cprinz - prints out complex numbers
+//
+//  cprinz_matrix - prints out a complex valued matrix
+//
+//  cprinf - prints a long integer array
+//
+//  cprind - print out double array
+//
+//  cprind_matrix - print out a double valued matrix
 //
 //******************************************************************************
 //
@@ -164,6 +170,9 @@ void cprinz(char *mes, double _Complex *adp, long n)
 
 void cprinz_matrix(char *mes, double _Complex *adp, long m, long n)
 {
+  // print out a double complex valued matrix with m rows and n columns, the
+  // assumption is that the data is stored in column major format in adp
+
   float *ap;
   long *afp;
   char *acp;
@@ -173,13 +182,6 @@ void cprinz_matrix(char *mes, double _Complex *adp, long m, long n)
   long status;
   long n2;
 
-  //printf("n  = %ld\n", n);
-  //exit(status);
-  
-  //long *ap,*afp,itype,str17,str27,i1,i2,acp;
-  /*
-   *   Print double precision data
-   */
   itype=33;
   n2 = 2*n;
   cprin_master(mes,ap,afp, (double *)adp,
@@ -199,31 +201,12 @@ void cprinf(char *mes, long *afp, long n)
   char *acp, *str17, *str27;
 
   //
-  // print integer data
+  // print long integer data
   //
   itype = 2;
   cprin_master(mes, ap, afp, adp, acp, m, n, itype, str17, str27, i1, i2);
   return;
 }
-
-
-
-
-
-/* void cprinl(char *mes, long *afp, long n) */
-/* { */
-/*   float *ap; */
-/*   long itype, i1, i2, m; */
-/*   double *adp; */
-/*   char *acp, *str17, *str27; */
-
-/*   // */
-/*   // print integer data */
-/*   // */
-/*   itype = 2; */
-/*   cprin_master(mes, ap, afp, adp, acp, m, n, itype, str17, str27, i1, i2); */
-/*   return; */
-/* } */
 
 
 
@@ -349,9 +332,9 @@ void cprin_all(char *mes, float *ap, long *afp, double *adp, char *acp,
                long m, long n, long itype, FILE *str)
 {
   long i;
-  /*
-   *   Process the message
-   */
+  //
+  // Process the message
+  //
 
   if(mes) fprintf(str,"%s\n",mes);
   if (itype == 99) return;
@@ -453,8 +436,6 @@ void cprin_all(char *mes, float *ap, long *afp, double *adp, char *acp,
         fprintf(str,"\n");
       }
     }
+
     return;
-
-
-
 }

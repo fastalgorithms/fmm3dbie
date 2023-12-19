@@ -8,7 +8,7 @@
 
 
 
-void readMSH(baseMesh *meshout, long id, char *name, char *filename) {
+void read_msh( BaseMesh *meshout, long id, char *name, char *filename) {
   //
   // This routine reads in "filename" which is assumed to be a .msh
   // file and returns a data structure of mesh elements in meshout
@@ -56,7 +56,7 @@ void readMSH(baseMesh *meshout, long id, char *name, char *filename) {
   fscanf(fileptr, "%ld", &aux1);
   long nv;
 
-  meshout->elements = (baseElement *) malloc(nelems*sizeof(baseElement));
+  meshout->elements = (BaseElement *) malloc(nelems*sizeof(BaseElement));
   nv = 6;
   for (i=0; i<nelems; i++) {
     fscanf(fileptr, "%ld %ld %ld %ld %ld %ld %ld %ld", &aux1, &aux2, &aux3,
@@ -130,7 +130,7 @@ void readMSH(baseMesh *meshout, long id, char *name, char *filename) {
 
 
 
-void printBaseMeshInfo( baseMesh *mesh1, long iflong ) {
+void print_base_mesh_info( BaseMesh *mesh1, long iflong ) {
   //
   // print out the information contained in the mesh structure
   //
@@ -160,7 +160,7 @@ void printBaseMeshInfo( baseMesh *mesh1, long iflong ) {
 
 
 
-void printBaseElementInfo( baseElement *elem ) {
+void print_base_element_info( BaseElement *elem ) {
   //
   // print out the information contained in a single element
   //
@@ -182,6 +182,3 @@ void printBaseElementInfo( baseElement *elem ) {
   printf("\n");
   
 }
-
-
-

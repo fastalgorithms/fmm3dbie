@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "cisurf.h"
-#include "cprini.h"
+#include "cprini_long.h"
 
 int main(int argc, char **argv) {
 
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   long norder;
 
   norder = 8;
-  create_skeleton( &baseMesh1, &skel_mesh1, norder );
+  create_skeleton( &basemesh1, &skelmesh1, norder );
   
   return 0;
 }

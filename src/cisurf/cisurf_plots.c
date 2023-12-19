@@ -8,7 +8,7 @@
 
 
 
-void plotBaseMeshVTK( baseMesh *mesh1, char *filename ) {
+void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename ) {
   //
   // This routine creates an ASCII vtk file which can plot mesh1.
   //
@@ -17,7 +17,7 @@ void plotBaseMeshVTK( baseMesh *mesh1, char *filename ) {
   nelems = mesh1->nelems;
   nverts = mesh1->nverts;
   
-  baseElement *elem1;
+  BaseElement *elem1;
   FILE *fptr;
 
   fptr = fopen( filename, "w" );
