@@ -238,47 +238,36 @@ void eval_tria2( long n, double *uv, double *verts, double *xyz, double *du,
 
 }
 
-/*
-    coef_y(1)=P1(2)
-    coef_y(2)=-3*P1(2)-P2(2)+4*P4(2)
-    coef_y(3)=-3*P1(2)-P3(2)+4*P6(2)
-    coef_y(4)=2*P1(2)+2*P2(2)-4*P4(2)
-    coef_y(5)=2*P1(2)+2*P3(2)-4*P6(2)
-    coef_y(6)=4*P1(2)-4*P4(2)+4*P5(2)-4*P6(2)
-
-    coef_z(1)=P1(3)
-    coef_z(2)=-3*P1(3)-P2(3)+4*P4(3)
-    coef_z(3)=-3*P1(3)-P3(3)+4*P6(3)
-    coef_z(4)=2*P1(3)+2*P2(3)-4*P4(3)
-    coef_z(5)=2*P1(3)+2*P3(3)-4*P6(3)
-    coef_z(6)=4*P1(3)-4*P4(3)+4*P5(3)-4*P6(3)
-
-    do count=1,n_order
-      F_x(count)=coef_x(1)+coef_x(2)*U(count)+coef_x(3)*V(count)+coef_x(4)&
-          &*U(count)**2+coef_x(5)*V(count)**2+coef_x(6)*U(count)*V(count)
-      F_y(count)=coef_y(1)+coef_y(2)*U(count)+coef_y(3)*V(count)+coef_y(4)&
-          &*U(count)**2+coef_y(5)*V(count)**2+coef_y(6)*U(count)*V(count)
-      F_z(count)=coef_z(1)+coef_z(2)*U(count)+coef_z(3)*V(count)+coef_z(4)&
-          &*U(count)**2+coef_z(5)*V(count)**2+coef_z(6)*U(count)*V(count)
-      U_x(count)=coef_x(2)+2*coef_x(4)*U(count)+coef_x(6)*V(count)
-      U_y(count)=coef_y(2)+2*coef_y(4)*U(count)+coef_y(6)*V(count)
-      U_z(count)=coef_z(2)+2*coef_z(4)*U(count)+coef_z(6)*V(count)
-      V_x(count)=coef_x(3)+2*coef_x(5)*V(count)+coef_x(6)*U(count)
-      V_y(count)=coef_y(3)+2*coef_y(5)*V(count)+coef_y(6)*U(count)
-      V_z(count)=coef_z(3)+2*coef_z(5)*V(count)+coef_z(6)*U(count)
-      nP_x(count)=U_y(count)*V_z(count)-U_z(count)*V_y(count);
-      nP_y(count)=U_z(count)*V_x(count)-U_x(count)*V_z(count);
-      nP_z(count)=U_x(count)*V_y(count)-U_y(count)*V_x(count);
-      dS(count)=sqrt(nP_x(count)**2+nP_y(count)**2+nP_z(count)**2);
-      nP_x(count)=nP_x(count)/dS(count)
-      nP_y(count)=nP_y(count)/dS(count)
-      nP_z(count)=nP_z(count)/dS(count)
-    enddo
-    return
-  end subroutine eval_quadratic_patch_UV
 
 
-*/
+
+
+void eval_tria1( long n, double *uv, double *verts, double *xyz, double *du,
+                 double *dv, double *da, double *normal ) {
+  // eval the tria1 element using the vertex locations
+  //
+  // Input:
+  //   uv - the point on the simplex at which to evaluate the information
+  //   verts - input vertices, they are assumed to be ordered as:
+  //                 3
+  //                 |  \
+  //                 |    \
+  //                 |       \
+  //                 1---------2
+  //
+  // Output:
+  //   xyz - the point in R^3 on the quadratic triangle
+  //   du - dxdu, dydu, and dzdu
+  //   dv - dxdv, dydv, and dzdv
+  //   normal - the unit normal vector
+  //
+  // use direct formula
+  //
+
+  return;
+}
+
+
 
 
 

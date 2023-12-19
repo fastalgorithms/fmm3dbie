@@ -13,7 +13,7 @@ typedef struct baseElement {
   
   // the element type, given as a string of maximum length 8, supported types are:
   //   "tria1" - flat triangles
-  //   "tria2" - quadrature triangles, specified by vertices and midpoints
+  //   "tria2" - quadratic triangles, specified by vertices and midpoints
   //   "quad1" - flat quadrilateral
   //   "quad2" - quadratic quadrilateral, specified by vertices and midpoints
   char *gtype;
