@@ -6,7 +6,7 @@
 //
 
 
-typedef struct baseElement {
+typedef struct BaseElement {
 
   // an index number of the element
   long id;
@@ -30,14 +30,14 @@ typedef struct baseElement {
   double centroid[3];
   double radius;
 
-} baseElement;
+} BaseElement;
 
 
 
 
 
 
-typedef struct baseMesh {
+typedef struct BaseMesh {
 
   // name the mesh?
   long id;
@@ -49,15 +49,15 @@ typedef struct baseMesh {
   
   // total number of elements, and an array of them
   long nelems;
-  baseElement *elements;
+  BaseElement *elements;
   
-} baseMesh;
+} BaseMesh;
 
 
 
 
 
-typedef struct pointInfo {
+typedef struct PointInfo {
   // stores xyz coordinates, surface differentials, and normal
   // information at *some* point. It is assumed that the normal is
   // actually normalized to have unit length, but obviously du and dv
@@ -67,13 +67,13 @@ typedef struct pointInfo {
   double dv[3];
   double normal[3];
   
-} pointInfo;
+} PointInfo;
 
 
 
 
 
-typedef struct coefsInfo {
+typedef struct CoefsInfo {
   // stores the coefficient expansions for a skeleton element, may
   // correspond to Legendre or Koornwinder, the data structure is the
   // same
@@ -81,12 +81,12 @@ typedef struct coefsInfo {
   double *dxdu, *dydu, *dzdu;
   double *dxdv, *dydv, *dzdv;
 
-} coefsInfo;
+} CoefsInfo;
 
 
 
 
-typedef struct skelElement {
+typedef struct SkelElement {
 
   // the struct storing information for a single element on the
   // skeleton mesh, this means quadrature nodes, etc.
@@ -106,21 +106,21 @@ typedef struct skelElement {
   // discretization info
   long norder;
 
-  pointInfo *srcvals;
-  coefsInfo *coefs;
+  PointInfo *srcvals;
+  CoefsInfo *coefs;
 
   // some basic measurement info
   double centroid[3];
   double radius;
 
   
-} skelElement;
+} SkelElement;
 
 
 
 
 
-typedef struct skelMesh {
+typedef struct SkelMesh {
 
   // a collection of skeleton elements, much in the style of base
   // meshes but with additional info
@@ -133,10 +133,10 @@ typedef struct skelMesh {
 
   // total number of elements, and an array of them
   long nelems;
-  skelElement *elements;
+  SkelElement *elements;
 
 
-} skelMesh;
+} SkelMesh;
 
 
 
@@ -145,18 +145,19 @@ typedef struct skelMesh {
 // function prototypes
 
 // - - - mesh loading routines - - -
-void readMSH(baseMesh *meshout, long id, char *name, char *filename);
+void read_msh(BaseMesh *meshout, long id, char *name, char *filename);
 
-void printBaseMeshInfo( baseMesh *mesh1, long iflong);
+void print_base_mesh_info( BaseMesh *mesh1, long iflong);
 
-void printBaseElementInfo( baseElement *elem );
+void print_base_element_info( BaseElement *elem );
 
 
 // - - - skeleton construction routines - - -
-void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder );
+void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder );
+
 
 // - - - plotting routines - - -
-void plotBaseMeshVTK( baseMesh *mesh1, char *filename );
+void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename );
 
 
 

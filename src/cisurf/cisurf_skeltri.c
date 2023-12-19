@@ -17,7 +17,7 @@
 
 
 
-void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
+void create_skeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
   // constructs a skeleton mesh from the base mesh by popping down
   // Vioreanu-Rokhlin quadrature nodes
 
@@ -62,7 +62,7 @@ void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
 
     cprin_skipline(2);
 
-    // load up the verts
+    // load up the vertices that make up the triangle
     for (k=0; k<6; k++) {
       iv = baseMesh1->elements[i].ivs[k];
       verts[3*k] = baseMesh1->verts[3*iv];
@@ -76,38 +76,50 @@ void makeSkeleton( baseMesh *baseMesh1, skelMesh *skelMesh1, long norder ) {
     uv[0] = 0;
     uv[1] = 0;
     cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, da, normal);
+    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
     cprind("from eval_tria2, xyz = ", xyz, 3);
+    cprind("from eval_tria2, da = ", &da, 1);
+    cprin_skipline(1);
 
     uv[0] = 1;
     uv[1] = 0;
     cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, da, normal);
+    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
     cprind("from eval_tria2, xyz = ", xyz, 3);
+    cprind("from eval_tria2, da = ", &da, 1);
+    cprin_skipline(1);
 
     uv[0] = 0;
     uv[1] = 1;
     cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, da, normal);
+    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
     cprind("from eval_tria2, xyz = ", xyz, 3);
+    cprind("from eval_tria2, da = ", &da, 1);
+    cprin_skipline(1);
 
     uv[0] = 0.5;
     uv[1] = 0;
     cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, da, normal);
+    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
     cprind("from eval_tria2, xyz = ", xyz, 3);
+    cprind("from eval_tria2, da = ", &da, 1);
+    cprin_skipline(1);
 
     uv[0] = 0.5;
     uv[1] = 0.5;
     cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, da, normal);
+    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
     cprind("from eval_tria2, xyz = ", xyz, 3);
+    cprind("from eval_tria2, da = ", &da, 1);
+    cprin_skipline(1);
 
     uv[0] = 0;
     uv[1] = 0.5;
     cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, da, normal);
+    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
     cprind("from eval_tria2, xyz = ", xyz, 3);
+    cprind("from eval_tria2, da = ", &da, 1);
+    cprin_skipline(1);
 
     exit(0);
   }
@@ -230,9 +242,9 @@ void eval_tria2( long n, double *uv, double *verts, double *xyz, double *du,
   cross_product_3d(du, dv, normal);
 
   *da = sqrt( normal[0]*normal[0] + normal[1]*normal[1] + normal[2]*normal[2] );
-  normal[0] = normal[0]/(*ds);
-  normal[1] = normal[1]/(*ds);
-  normal[2] = normal[2]/(*ds);
+  normal[0] = normal[0]/(*da);
+  normal[1] = normal[1]/(*da);
+  normal[2] = normal[2]/(*da);
 
   return;
 

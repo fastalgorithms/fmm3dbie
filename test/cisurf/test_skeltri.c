@@ -42,23 +42,23 @@ int main(int argc, char **argv) {
   //printf("File to be loaded: %s\n", filename);
 
   
-  baseMesh baseMesh1;
+  BaseMesh basemesh1;
   long id;
   id = 1;
-  readMSH( &baseMesh1, id, "base mesh", filename);
+  read_msh( &basemesh1, id, "base mesh", filename);
 
   // print the mesh infor
-  printBaseMeshInfo( &baseMesh1, 0);
+  print_base_mesh_info( &basemesh1, 0);
 
   // dump the mesh as a vtk file
-  plotBaseMeshVTK( &baseMesh1, "basemesh.vtk" );
+  plot_base_mesh_vtk( &basemesh1, "basemesh.vtk" );
 
   // now construct a skeleton mesh
-  skelMesh skelMesh1;
-  int norder;
+  SkelMesh skelmesh1;
+  long norder;
 
   norder = 8;
-  makeSkeleton( &baseMesh1, &skelMesh1, norder );
+  create_skeleton( &baseMesh1, &skel_mesh1, norder );
   
   return 0;
 }
