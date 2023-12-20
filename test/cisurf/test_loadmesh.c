@@ -33,16 +33,16 @@ int main(int argc, char **argv) {
   printf("File to be loaded: %s\n", filename);
 
   
-  baseMesh mesh1;
+  BaseMesh mesh1;
   long id;
   id = 1;
-  readMSH(&mesh1, id, "base mesh", filename);
+  read_msh(&mesh1, id, "base mesh", filename);
 
   // print the mesh infor
-  printBaseMeshInfo(&mesh1, 0);
+  print_base_mesh_info( &mesh1, 0 );
 
   // dump the mesh as a vtk file
-  plotBaseMeshVTK( &mesh1, "basemesh.vtk" );
+  plot_base_mesh_vtk( &mesh1, "basemesh.vtk" );
   
   return 0;
 }

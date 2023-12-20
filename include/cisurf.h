@@ -58,15 +58,15 @@ typedef struct BaseMesh {
 
 
 typedef struct PointInfo {
-  // stores xyz coordinates, surface differentials, and normal
-  // information at *some* point. It is assumed that the normal is
-  // actually normalized to have unit length, but obviously du and dv
-  // don't.
+  // stores xyz coordinates, surface differentials, and normal information at
+  // *some* point on the patch. It is assumed that the normal is actually
+  // normalized to have unit length, but obviously du and dv don't.
   double xyz[3];
   double du[3];
   double dv[3];
   double normal[3];
-  
+  double pseudoNormal[3];
+
 } PointInfo;
 
 
@@ -101,10 +101,15 @@ typedef struct SkelElement {
 
   // collection of vertices needed to define the element, same as for
   // a base element
-  long nv, *ivs;
+  long nv;
+  double *verts;
 
   // discretization info
+  //   norder - the order at which the element is discretized
+  //   npols - the number of discretization nodes
   long norder;
+  long npols;
+  double *whts;
 
   PointInfo *srcvals;
   CoefsInfo *coefs;
@@ -126,10 +131,6 @@ typedef struct SkelMesh {
   // meshes but with additional info
   long id;
   char *name;
-
-  // total number of vertices
-  long nverts;
-  double *verts;
 
   // total number of elements, and an array of them
   long nelems;
@@ -162,13 +163,13 @@ void eval_tria2( long n, double *uv, double *verts, double *xyz, double *du,
 
 void cross_product_3d(double *x, double *y, double *z);
 
-
+void print_skeleton_element_info( SkelElement *element );
 
 
 // - - - plotting routines - - -
 void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename );
 
-
+void plot_skeleton_mesh_vtk( BaseMesh *mesh1, char *filename );
 
 // external functions, maybe in fortran
 void get_vioreanu_nodes_wts_( long *norder, long *npols, double *uvs,

@@ -29,6 +29,7 @@ void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder ) {
   //
   // TODO this should probably be either in C, or have some proper
   // c-datatype bindings
+
   npols = (norder+1)*(norder+2)/2;
   uvs = (double *) malloc( 2*npols*sizeof(double) );
   whts = (double *) malloc( npols*sizeof(double) );
@@ -36,92 +37,98 @@ void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder ) {
 
   cprind_matrix("Vioreanu-Rokhlin nodes =", uvs, npols, 2);
 
-  // now cycle through all each basemesh element and put nodes on it
   long nelems = basemesh1->nelems;
   cprinf("number of elements = ", &nelems, 1);
 
-  long i, j, nv, iv, nuv, k, l;
-  double uv[2], verts[18], xyz[3], du[3], dv[3], da, normal[3];
+  // we'll create a skeleton mesh with THE SAME number of elements on it for
+  // now, refinement is done after the fact
+  skelmesh1->nelems = nelems;
+  skelmesh1->elements = (SkelElement *) malloc( nelems*sizeof(SkelElement) );
 
+  // create a shortcut pointer for these elements
+  SkelElement *elements;
+  elements = skelmesh1->elements;
+
+
+  long i, j, nv, iv, nuv, k, l;
+  double uv[2], verts[100], xyz[3], du[3], dv[3], da, normal[3];
+
+  double xyzs[1000], dus[1000], dvs[1000];
+  double das[1000], normals[1000];
+
+  // now cycle through all each basemesh element and put nodes on it
   for (i=0; i<nelems; i++) {
     // print out the info for this element to check things
-    print_base_element_info( &(basemesh1->elements[i]) );
+    //print_base_element_info( &(basemesh1->elements[i]) );
 
     nv = basemesh1->elements[i].nv;
-    cprinf("nv = ", &nv, 1);
+    //cprinf("nv = ", &nv, 1);
 
     for (j=0; j<nv; j++) {
       iv = basemesh1->elements[i].ivs[j];
-      cprind("vert = ", &(basemesh1->verts[3*iv]), 3);
-
-
-
-
-
+      verts[3*j] = basemesh1->verts[3*iv];
+      verts[3*j+1] = basemesh1->verts[3*iv+1];
+      verts[3*j+2] = basemesh1->verts[3*iv+2];
     }
 
-    cprin_skipline(2);
+    //cprind_matrix("all the vertices = ", verts, nv, 3);
 
-    // load up the vertices that make up the triangle
-    for (k=0; k<6; k++) {
-      iv = basemesh1->elements[i].ivs[k];
-      verts[3*k] = basemesh1->verts[3*iv];
-      verts[3*k+1] = basemesh1->verts[3*iv+1];
-      verts[3*k+2] = basemesh1->verts[3*iv+2];
+    // TODO put in switch statement for various kinds of base elements, tria,
+    // quad, etc.
+
+    eval_tria2( npols, uvs, verts, xyzs, dus, dvs, das, normals);
+
+    //cprind_matrix("after eval_tria2, xyzs = ", xyzs, npols, 3);
+    //cprind_matrix("after eval_tria2, dus = ", xyzs, npols, 3);
+    //cprind_matrix("after eval_tria2, dvs = ", xyzs, npols, 3);
+    //cprind("after eval_tria2, area elements are = ", das, npols);
+    //cprind_matrix("after eval_tria2, normals = ", xyzs, npols, 3);
+
+    //cprin_skipline(2);
+
+    // now copy this stuff over to a skeleton mesh element
+    elements[i].id = basemesh1->elements[i].id;
+    elements[i].gtype = "tria2";
+    elements[i].nv = nv;
+    elements[i].verts = (double *) malloc( 3*nv*sizeof(double) );
+
+    for (j=0; j<(3*nv); j++) {
+      elements[i].verts[j] = verts[j];
     }
 
-    nuv = 1;
+    // copy of some quadrature weight
+    elements[i].norder = norder;
+    elements[i].npols = npols;
+    elements[i].whts = (double *) malloc(npols*sizeof(double));
 
-    // eval the triangle
-    uv[0] = 0;
-    uv[1] = 0;
-    cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
-    cprind("from eval_tria2, xyz = ", xyz, 3);
-    cprind("from eval_tria2, da = ", &da, 1);
-    cprin_skipline(1);
+    for (j=0; j<npols; j++) {
+      elements[i].whts[j] = das[j]*whts[j];
+    }
 
-    uv[0] = 1;
-    uv[1] = 0;
-    cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
-    cprind("from eval_tria2, xyz = ", xyz, 3);
-    cprind("from eval_tria2, da = ", &da, 1);
-    cprin_skipline(1);
+    // copy over some quadrature node and geometry information
+    elements[i].srcvals = (PointInfo *) malloc( npols*sizeof(PointInfo) );
 
-    uv[0] = 0;
-    uv[1] = 1;
-    cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
-    cprind("from eval_tria2, xyz = ", xyz, 3);
-    cprind("from eval_tria2, da = ", &da, 1);
-    cprin_skipline(1);
+    for (j=0; j<npols; j++) {
+      for (k=0; k<3; k++) {
+        elements[i].srcvals[j].xyz[k] = xyzs[3*j+k];
+        elements[i].srcvals[j].du[k] = dus[3*j+k];
+        elements[i].srcvals[j].dv[k] = dvs[3*j+k];
+        elements[i].srcvals[j].normal[k] = normals[3*j+k];
+      }
+    }
 
-    uv[0] = 0.5;
-    uv[1] = 0;
-    cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
-    cprind("from eval_tria2, xyz = ", xyz, 3);
-    cprind("from eval_tria2, da = ", &da, 1);
-    cprin_skipline(1);
+    // don't eval the coefs yet...
+    elements[i].coefs = NULL;
 
-    uv[0] = 0.5;
-    uv[1] = 0.5;
-    cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
-    cprind("from eval_tria2, xyz = ", xyz, 3);
-    cprind("from eval_tria2, da = ", &da, 1);
-    cprin_skipline(1);
+    // some additional geometry info
+    elements[i].centroid[0] = basemesh1->elements[i].centroid[0];
+    elements[i].centroid[1] = basemesh1->elements[i].centroid[1];
+    elements[i].centroid[2] = basemesh1->elements[i].centroid[2];
+    elements[i].radius = basemesh1->elements[i].radius;
 
-    uv[0] = 0;
-    uv[1] = 0.5;
-    cprind("uv point = ", uv, 2);
-    eval_tria2( nuv, uv, verts, xyz, du, dv, &da, normal);
-    cprind("from eval_tria2, xyz = ", xyz, 3);
-    cprind("from eval_tria2, da = ", &da, 1);
-    cprin_skipline(1);
+    // print out this element information to make sure we're loading it properly
+    print_skeleton_element_info( &elements[i] );
 
-    exit(0);
   }
 
 
@@ -129,6 +136,39 @@ void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder ) {
   free( whts );
 
   return;
+}
+
+
+
+
+
+void print_skeleton_element_info( SkelElement *element ) {
+
+  // print out the data for a skeleton element
+
+  printf("\n");
+  printf("- - - - skel element information - - - - \n");
+  printf("element.id          = %ld\n", element->id);
+  printf("element.gtype       = %s\n", element->gtype);
+  printf("element.nv          = %ld\n", element->nv);
+
+  long i;
+  for (i=0; i<element->nv; i++){
+    printf("element.verts[%ld]    = (%e, %e, %e)\n", i, element->verts[3*i],
+           element->verts[3*i+1], element->verts[3*i+2]);
+  }
+
+  printf("element.norder      = %ld\n", element->norder);
+  printf("element.npols       = %ld\n", element->npols);
+
+  // don't print out the nodes and weights just yet...
+
+  printf("element.centroid    = (%e, %e, %e)\n", element->centroid[0],
+         element->centroid[1], element->centroid[2]);
+  printf("element.radius      = %e\n", element->radius);
+  printf("- - - end skel element information - - - \n");
+  printf("\n");
+
 }
 
 
@@ -168,87 +208,94 @@ void eval_tria2( long n, double *uv, double *verts, double *xyz, double *du,
   //
   // use direct formula
   //
+  long i;
   double coefs[6];
   double p1, p2, p3, p4, p5, p6, u, v;
 
-  u = uv[0];
-  v = uv[1];
+  for (i=0; i<n; i++) {
 
-  // evaluate the x values first
-  p1 = verts[0];
-  p2 = verts[3];
-  p3 = verts[6];
-  p4 = verts[9];
-  p5 = verts[12];
-  p6 = verts[15];
+    u = uv[2*i];
+    v = uv[2*i+1];
 
-  coefs[0] = p1;
-  coefs[1] = -3*p1 - p2 + 4*p4;
-  coefs[2] = -3*p1 - p3 + 4*p6;
-  coefs[3] = 2*p1 + 2*p2 - 4*p4;
-  coefs[4] = 2*p1 + 2*p3 - 4*p6;
-  coefs[5] = 4*p1 - 4*p4 + 4*p5 - 4*p6;
+    // evaluate the x values first
+    p1 = verts[0];
+    p2 = verts[3];
+    p3 = verts[6];
+    p4 = verts[9];
+    p5 = verts[12];
+    p6 = verts[15];
 
-  xyz[0] = coefs[0] + coefs[1]*u + coefs[2]*v + coefs[3]*u*u
-    + coefs[4]*v*v + coefs[5]*u*v;
+    coefs[0] = p1;
+    coefs[1] = -3*p1 - p2 + 4*p4;
+    coefs[2] = -3*p1 - p3 + 4*p6;
+    coefs[3] = 2*p1 + 2*p2 - 4*p4;
+    coefs[4] = 2*p1 + 2*p3 - 4*p6;
+    coefs[5] = 4*p1 - 4*p4 + 4*p5 - 4*p6;
 
-  du[0] = coefs[1] + 2*coefs[3]*u + coefs[5]*v;
-  dv[0] = coefs[2] + 2*coefs[4]*v + coefs[5]*u;
+    xyz[3*i] = coefs[0] + coefs[1]*u + coefs[2]*v + coefs[3]*u*u
+      + coefs[4]*v*v + coefs[5]*u*v;
+
+    du[3*i] = coefs[1] + 2*coefs[3]*u + coefs[5]*v;
+    dv[3*i] = coefs[2] + 2*coefs[4]*v + coefs[5]*u;
 
 
-  // and now the y values
-  p1 = verts[1];
-  p2 = verts[4];
-  p3 = verts[7];
-  p4 = verts[10];
-  p5 = verts[13];
-  p6 = verts[16];
+    // and now the y values
+    p1 = verts[1];
+    p2 = verts[4];
+    p3 = verts[7];
+    p4 = verts[10];
+    p5 = verts[13];
+    p6 = verts[16];
 
-  coefs[0] = p1;
-  coefs[1] = -3*p1 - p2 + 4*p4;
-  coefs[2] = -3*p1 - p3 + 4*p6;
-  coefs[3] = 2*p1 + 2*p2 - 4*p4;
-  coefs[4] = 2*p1 + 2*p3 - 4*p6;
-  coefs[5] = 4*p1 - 4*p4 + 4*p5 - 4*p6;
+    coefs[0] = p1;
+    coefs[1] = -3*p1 - p2 + 4*p4;
+    coefs[2] = -3*p1 - p3 + 4*p6;
+    coefs[3] = 2*p1 + 2*p2 - 4*p4;
+    coefs[4] = 2*p1 + 2*p3 - 4*p6;
+    coefs[5] = 4*p1 - 4*p4 + 4*p5 - 4*p6;
 
-  xyz[1] = coefs[0] + coefs[1]*u + coefs[2]*v + coefs[3]*u*u
-    + coefs[4]*v*v + coefs[5]*u*v;
+    xyz[3*i+1] = coefs[0] + coefs[1]*u + coefs[2]*v + coefs[3]*u*u
+      + coefs[4]*v*v + coefs[5]*u*v;
 
-  du[1] = coefs[1] + 2*coefs[3]*u + coefs[5]*v;
-  dv[1] = coefs[2] + 2*coefs[4]*v + coefs[5]*u;
+    du[3*i+1] = coefs[1] + 2*coefs[3]*u + coefs[5]*v;
+    dv[3*i+1] = coefs[2] + 2*coefs[4]*v + coefs[5]*u;
 
-  // and now the z values
-  p1 = verts[2];
-  p2 = verts[5];
-  p3 = verts[8];
-  p4 = verts[11];
-  p5 = verts[14];
-  p6 = verts[17];
+    // and now the z values
+    p1 = verts[2];
+    p2 = verts[5];
+    p3 = verts[8];
+    p4 = verts[11];
+    p5 = verts[14];
+    p6 = verts[17];
 
-  coefs[0] = p1;
-  coefs[1] = -3*p1 - p2 + 4*p4;
-  coefs[2] = -3*p1 - p3 + 4*p6;
-  coefs[3] = 2*p1 + 2*p2 - 4*p4;
-  coefs[4] = 2*p1 + 2*p3 - 4*p6;
-  coefs[5] = 4*p1 - 4*p4 + 4*p5 - 4*p6;
+    coefs[0] = p1;
+    coefs[1] = -3*p1 - p2 + 4*p4;
+    coefs[2] = -3*p1 - p3 + 4*p6;
+    coefs[3] = 2*p1 + 2*p2 - 4*p4;
+    coefs[4] = 2*p1 + 2*p3 - 4*p6;
+    coefs[5] = 4*p1 - 4*p4 + 4*p5 - 4*p6;
 
-  xyz[2] = coefs[0] + coefs[1]*u + coefs[2]*v + coefs[3]*u*u
-    + coefs[4]*v*v + coefs[5]*u*v;
+    xyz[3*i+2] = coefs[0] + coefs[1]*u + coefs[2]*v + coefs[3]*u*u
+      + coefs[4]*v*v + coefs[5]*u*v;
 
-  du[2] = coefs[1] + 2*coefs[3]*u + coefs[5]*v;
-  dv[2] = coefs[2] + 2*coefs[4]*v + coefs[5]*u;
+    du[3*i+2] = coefs[1] + 2*coefs[3]*u + coefs[5]*v;
+    dv[3*i+2] = coefs[2] + 2*coefs[4]*v + coefs[5]*u;
 
-  // and finally compute the normal, and the normalize it
-  cross_product_3d(du, dv, normal);
+    // and finally compute the normal, and the normalize it
+    cross_product_3d(&du[3*i], &dv[3*i], &normal[3*i]);
 
-  *da = sqrt( normal[0]*normal[0] + normal[1]*normal[1] + normal[2]*normal[2] );
-  normal[0] = normal[0]/(*da);
-  normal[1] = normal[1]/(*da);
-  normal[2] = normal[2]/(*da);
+    da[i] = sqrt( normal[3*i]*normal[3*i] + normal[3*i+1]*normal[3*i+1]
+                  + normal[3*i+2]*normal[3*i+2] );
+    normal[3*i] = normal[3*i]/(da[i]);
+    normal[3*i+1] = normal[3*i+1]/(da[i]);
+    normal[3*i+2] = normal[3*i+2]/(da[i]);
+
+  }
 
   return;
 
 }
+
 
 
 

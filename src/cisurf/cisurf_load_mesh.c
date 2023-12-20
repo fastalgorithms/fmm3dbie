@@ -150,7 +150,7 @@ void print_base_mesh_info( BaseMesh *mesh1, long iflong ) {
              mesh1->verts[3*i+1], mesh1->verts[3*i+2] );
     }
   }
-  
+
   printf("- - - end mesh information - - - \n");
   printf("\n");
   
@@ -174,7 +174,7 @@ void print_base_element_info( BaseElement *elem ) {
   long i;
   for (i=0; i<(elem->nv); i++) printf(" %ld", elem->ivs[i]);
   printf("\n");
-  
+
   printf("element.centroid    = (%e, %e, %e)\n", elem->centroid[0],
          elem->centroid[1], elem->centroid[2]);
   printf("element.radius      = %e\n", elem->radius);

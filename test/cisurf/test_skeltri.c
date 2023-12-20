@@ -55,8 +55,10 @@ int main(int argc, char **argv) {
 
   // now construct a skeleton mesh
   SkelMesh skelmesh1;
-  long norder;
+  skelmesh1.id = 0;
+  skelmesh1.name = "skeleton mesh";
 
+  long norder;
   norder = 8;
   create_skeleton( &basemesh1, &skelmesh1, norder );
   
