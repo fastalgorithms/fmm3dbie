@@ -61,7 +61,9 @@ int main(int argc, char **argv) {
   long norder;
   norder = 8;
   create_skeleton( &basemesh1, &skelmesh1, norder );
-  
+
+  plot_skeleton_mesh_vtk( &skelmesh1, "skelmesh.vtk" );
+
   return 0;
 }
 

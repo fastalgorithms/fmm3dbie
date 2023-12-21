@@ -169,7 +169,7 @@ void print_skeleton_element_info( SkelElement *element );
 // - - - plotting routines - - -
 void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename );
 
-void plot_skeleton_mesh_vtk( BaseMesh *mesh1, char *filename );
+void plot_skeleton_mesh_vtk( SkelMesh *mesh1, char *filename );
 
 // external functions, maybe in fortran
 void get_vioreanu_nodes_wts_( long *norder, long *npols, double *uvs,
