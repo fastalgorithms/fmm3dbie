@@ -79,9 +79,7 @@ void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename, char *vertsfile ) {
 
 
 
-  // TODO fix plotting vertices with "-1" mistake...
-
-  // and now plot the vertices
+  // and now plot the vertices along with pseudonormal information
   fptr = fopen( vertsfile, "w" );
   fprintf(fptr, "# vtk DataFile Version 3.0\n");
   fprintf(fptr, "VERTSNAME: %s\n", mesh1->name);
@@ -113,6 +111,7 @@ void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename, char *vertsfile ) {
   fprintf(fptr, "\n");
   fprintf(fptr, "POINT_DATA %ld\n", nverts);
   fprintf(fptr, "SCALARS z-value float 1\n");
+  fprintf(fptr, "LOOKUP_TABLE default\n");
 
   for (i=0; i<nverts; i++) {
     fprintf(fptr, "%e\n", mesh1->verts[3*i+2]);
