@@ -51,7 +51,9 @@ int main(int argc, char **argv) {
   print_base_mesh_info( &basemesh1, 0);
 
   // dump the mesh as a vtk file
-  plot_base_mesh_vtk( &basemesh1, "basemesh.vtk" );
+  plot_base_mesh_vtk( &basemesh1, "basemesh.vtk", "baseverts.vtk" );
+
+  exit(0);
 
   // now construct a skeleton mesh
   SkelMesh skelmesh1;
@@ -62,7 +64,7 @@ int main(int argc, char **argv) {
   norder = 8;
   create_skeleton( &basemesh1, &skelmesh1, norder );
 
-  plot_skeleton_mesh_vtk( &skelmesh1, "skelmesh.vtk" );
+  plot_skeleton_mesh_vtk( &skelmesh1, "skelmesh.vtk", "skelnodes.vtk" );
 
   return 0;
 }

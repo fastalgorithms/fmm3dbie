@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
   print_base_mesh_info( &mesh1, 0 );
 
   // dump the mesh as a vtk file
-  plot_base_mesh_vtk( &mesh1, "basemesh.vtk" );
+  plot_base_mesh_vtk( &mesh1, "basemesh.vtk", "baseverts.vtk" );
   
   return 0;
 }

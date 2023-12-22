@@ -74,14 +74,17 @@ usage:
 
 
 
-cisurf/load: cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o ../src/cisurf/cisurf_plots.o
+cisurf/load: cisurf/test_loadmesh.o ../src/cisurf/cisurf_load_mesh.o \
+        ../src/cisurf/cisurf_plots.o ../src/common/cprini_long.o
 	mkdir -p build
 	$(CC) -o build/test_loadmesh cisurf/test_loadmesh.o \
             ../src/cisurf/cisurf_load_mesh.o \
+            ../src/common/cprini_long.o \
             ../src/cisurf/cisurf_plots.o $(FEND)
 	cd ./build && ./test_loadmesh
 
-cisurf/skeltri: cisurf/test_skeltri.o ../src/cisurf/cisurf_load_mesh.o ../src/cisurf/cisurf_plots.o \
+cisurf/skeltri: cisurf/test_skeltri.o ../src/cisurf/cisurf_load_mesh.o \
+        ../src/cisurf/cisurf_plots.o \
 		../src/cisurf/cisurf_skeltri.o ../src/common/cprini_long.o
 	mkdir -p build
 	$(CC) -o build/test_skeltri cisurf/test_skeltri.o \

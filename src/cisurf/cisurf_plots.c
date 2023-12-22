@@ -1,5 +1,6 @@
 
 #include "cisurf.h"
+#include "cprini_long.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -8,9 +9,10 @@
 
 
 
-void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename ) {
+void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename, char *vertsfile ) {
   //
-  // This routine creates an ASCII vtk file which can plot mesh1.
+  // This routine creates an ASCII vtk file which can plot mesh1, and a separte
+  // one that will plot the vertices used in describing the mesh.
   //
 
   long nelems, nverts;
@@ -49,7 +51,7 @@ void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename ) {
   for (i=0; i<nelems; i++) {
     fprintf(fptr, "%ld", mesh1->elements[i].nv);
     for (j=0; j<mesh1->elements[i].nv; j++) {
-      fprintf(fptr, " %ld", mesh1->elements[i].ivs[j]-1);
+      fprintf(fptr, " %ld", mesh1->elements[i].ivs[j] );
     }
     fprintf(fptr, "\n");
   }
@@ -81,6 +83,63 @@ void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename ) {
   /*   end do */
   /* endif */
 
+  fclose(fptr);
+
+  return;
+
+  // TODO fix plotting verices with "-1" mistake...
+
+  // and now plot the vertices
+  fptr = fopen( vertsfile, "w" );
+  fprintf(fptr, "# vtk DataFile Version 3.0\n");
+  fprintf(fptr, "VERTSNAME: %s\n", mesh1->name);
+  fprintf(fptr, "ASCII\n");
+  fprintf(fptr, "DATASET UNSTRUCTURED_GRID\n");
+
+  fprintf(fptr, "POINTS %ld float\n", nverts);
+
+  for (i=0; i<nverts; i++) {
+    fprintf(fptr, "%e %e %e\n", mesh1->verts[3*i], mesh1->verts[3*i+1],
+            mesh1->verts[3*i+2]);
+  }
+
+  // compute total number of points needed across all elements,
+  // allowing for various kinds of elements which have various numbers
+  // of vertices defining them
+  ntot = 0;
+  for (i=0; i<nelems; i++) {
+    // ntot = ntot + 1 + mesh1->elements[i].nv;
+    ntot = ntot + 1 + 3;
+  }
+
+  fprintf(fptr, "CELLS %ld %ld\n", nelems, ntot);
+
+  for (i=0; i<nelems; i++) {
+    fprintf(fptr, "%ld", 3);
+    //for (j=0; j<mesh1->elements[i].nv; j++) {
+    for (j=0; j<3; j++) {
+      fprintf(fptr, " %ld", mesh1->elements[i].ivs[j]-1);
+    }
+    fprintf(fptr, "\n");
+  }
+
+  // print the cell types
+  fprintf(fptr, "CELL_TYPES %ld\n", nelems);
+  for (i=0; i<nelems; i++) {
+    fprintf(fptr, "5\n");
+  }
+
+  // plot the z value of each node so we can color the thing
+  fprintf(fptr, "\n");
+  fprintf(fptr, "POINT_DATA %ld\n", nverts);
+  fprintf(fptr, "SCALARS z-value float 1\n");
+  fprintf(fptr, "LOOKUP_TABLE default\n");
+
+  for (i=0; i<nverts; i++) {
+    fprintf(fptr, "%e\n", mesh1->verts[3*i+2]);
+  }
+
+
 
   fclose(fptr);
 
@@ -94,11 +153,20 @@ void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename ) {
 
 
 
-void plot_skeleton_mesh_vtk( SkelMesh *mesh1, char *filename ) {
+void plot_skeleton_mesh_vtk( SkelMesh *mesh1, char *meshfile, char *nodefile ) {
   //
   // This routine creates an ASCII vtk file which can plot mesh1, which is of
   // type SkelMesh and contains quadrature nodes, normals, weights, etc. The
   // element as well as the quadrature nodes are plotted.
+  //
+  // Input:
+  //   mesh1 - a skeleton mesh to plot
+  //   meshfile - the file to dump the mesh info, e.g. "skelmesh.vtk"
+  //   nodefile - a separate file to dump the discretization nodes along with
+  //     other info like du, dv, normals, etc., e.g. "skelnodes.vtk"
+  //
+  // The mesh and the node info are exported in two separate files, which must
+  // be loaded separately.
   //
 
   long nelems;
@@ -107,13 +175,45 @@ void plot_skeleton_mesh_vtk( SkelMesh *mesh1, char *filename ) {
   SkelElement *elem1;
   FILE *fptr;
 
-  fptr = fopen( filename, "w" );
+  // dump out the points and various scalars and values
+
+  fptr = fopen( nodefile, "w" );
   fprintf(fptr, "# vtk DataFile Version 3.0\n");
   fprintf(fptr, "MESHNAME: %s\n", mesh1->name);
   fprintf(fptr, "ASCII\n");
   fprintf(fptr, "DATASET UNSTRUCTURED_GRID\n");
+  fprintf(fptr, "\n");
 
-  /* fprintf(fptr, "POINTS %ld float\n", nverts); */
+  long npts = 0;
+  long i,j, npols;
+  //for (i=0; i<nelems; i++) {
+  //  npts = npts + mesh1->elements[i].npols;
+  // }
+
+  npts = 3*nelems;
+
+  cprinf("inside plot skelmesh, nelems = ", &nelems, 1);
+
+  fprintf(fptr, "POINTS %ld float\n", npts);
+  for (i=0; i<nelems; i++) {
+    //npols = mesh1->elements[i].npols;
+    //for (j=0; j<npols; j++) {
+    //fprintf(fptr, "%e %e %e\n", mesh1->elements[i].srcvals[j].xyz[0],
+    //          mesh1->elements[i].srcvals[j].xyz[1],
+    //          mesh1->elements[i].srcvals[j].xyz[2] );
+    fprintf(fptr, "%e %e %e\n", mesh1->elements[i].verts[0],
+            mesh1->elements[i].verts[1],
+            mesh1->elements[i].verts[2] );
+    fprintf(fptr, "%e %e %e\n", mesh1->elements[i].verts[3],
+            mesh1->elements[i].verts[4],
+            mesh1->elements[i].verts[5] );
+    fprintf(fptr, "%e %e %e\n", mesh1->elements[i].verts[6],
+            mesh1->elements[i].verts[7],
+            mesh1->elements[i].verts[8] );
+      //}
+  }
+
+
 
   /* long i; */
   /* for (i=0; i<nverts; i++) { */

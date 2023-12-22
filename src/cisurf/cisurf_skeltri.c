@@ -40,6 +40,7 @@ void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder ) {
   long nelems = basemesh1->nelems;
   cprinf("number of elements = ", &nelems, 1);
 
+
   // we'll create a skeleton mesh with THE SAME number of elements on it for
   // now, refinement is done after the fact
   skelmesh1->nelems = nelems;
@@ -96,6 +97,9 @@ void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder ) {
       elements[i].verts[j] = verts[j];
     }
 
+    cprind("all the verts = ", verts, 3*nv);
+
+
     // copy of some quadrature weight
     elements[i].norder = norder;
     elements[i].npols = npols;
@@ -127,9 +131,10 @@ void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder ) {
     elements[i].radius = basemesh1->elements[i].radius;
 
     // print out this element information to make sure we're loading it properly
-    print_skeleton_element_info( &elements[i] );
+    //print_skeleton_element_info( &elements[i] );
 
   }
+
 
 
   free( uvs );

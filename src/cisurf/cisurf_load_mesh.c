@@ -68,12 +68,12 @@ void read_msh( BaseMesh *meshout, long id, char *name, char *filename) {
     
     meshout->elements[i].nv = nv;
     meshout->elements[i].ivs = (long *) malloc( 6*sizeof(long) );
-    meshout->elements[i].ivs[0] = aux1;
-    meshout->elements[i].ivs[1] = aux2;
-    meshout->elements[i].ivs[2] = aux3;
-    meshout->elements[i].ivs[3] = aux4;
-    meshout->elements[i].ivs[4] = aux5;
-    meshout->elements[i].ivs[5] = aux6;
+    meshout->elements[i].ivs[0] = aux1-1;
+    meshout->elements[i].ivs[1] = aux2-1;
+    meshout->elements[i].ivs[2] = aux3-1;
+    meshout->elements[i].ivs[3] = aux4-1;
+    meshout->elements[i].ivs[4] = aux5-1;
+    meshout->elements[i].ivs[5] = aux6-1;
 
     meshout->elements[i].gtype = "tria2";
     
