@@ -43,9 +43,10 @@ typedef struct BaseMesh {
   long id;
   char *name;
   
-  // total number of vertices
+  // vertex information
   long nverts;
   double *verts;
+  double *pseudoNormals;
   
   // total number of elements, and an array of them
   long nelems;
@@ -159,6 +160,9 @@ void print_base_element_info( BaseElement *elem );
 void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder );
 
 void eval_tria2( long n, double *uv, double *verts, double *xyz, double *du,
+                 double *dv, double *da, double *normal );
+
+void eval_tria2_pn( long n, double *uv, double *verts, double *xyz, double *du,
                  double *dv, double *da, double *normal );
 
 void cross_product_3d(double *x, double *y, double *z);

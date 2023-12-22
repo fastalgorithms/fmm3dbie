@@ -15,9 +15,11 @@ void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename, char *vertsfile ) {
   // one that will plot the vertices used in describing the mesh.
   //
 
+
   long nelems, nverts;
   nelems = mesh1->nelems;
   nverts = mesh1->nverts;
+
 
   BaseElement *elem1;
   FILE *fptr;
@@ -72,22 +74,12 @@ void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename, char *vertsfile ) {
     fprintf(fptr, "%e\n", mesh1->verts[3*i+2]);
   }
 
-  /* elseif(ifflat.eq.1) then */
-  /*   do i=1,ntri */
-  /*     write(iunit1,'(a,i9,i9,i9)') "3 ", Geometry1%Tri(1,i)-1, & */
-  /*      Geometry1%Tri(2,i)-1,Geometry1%Tri(3,i)-1 */
-  /*   enddo */
-  /*   write(iunit1,'(a,i9)') "CELL_TYPES ", ntri */
-  /*   do ipatch = 1,ntri */
-  /*     write(iunit1,'(a)') "5" */
-  /*   end do */
-  /* endif */
-
   fclose(fptr);
 
-  return;
 
-  // TODO fix plotting verices with "-1" mistake...
+
+
+  // TODO fix plotting vertices with "-1" mistake...
 
   // and now plot the vertices
   fptr = fopen( vertsfile, "w" );
@@ -103,43 +95,37 @@ void plot_base_mesh_vtk( BaseMesh *mesh1, char *filename, char *vertsfile ) {
             mesh1->verts[3*i+2]);
   }
 
-  // compute total number of points needed across all elements,
-  // allowing for various kinds of elements which have various numbers
-  // of vertices defining them
-  ntot = 0;
-  for (i=0; i<nelems; i++) {
-    // ntot = ntot + 1 + mesh1->elements[i].nv;
-    ntot = ntot + 1 + 3;
-  }
+  fprintf(fptr, "\n" );
+  fprintf(fptr, "CELLS %ld %ld\n", nverts, 2*nverts);
 
-  fprintf(fptr, "CELLS %ld %ld\n", nelems, ntot);
-
-  for (i=0; i<nelems; i++) {
-    fprintf(fptr, "%ld", 3);
-    //for (j=0; j<mesh1->elements[i].nv; j++) {
-    for (j=0; j<3; j++) {
-      fprintf(fptr, " %ld", mesh1->elements[i].ivs[j]-1);
-    }
-    fprintf(fptr, "\n");
+  for (i=0; i<nverts; i++) {
+    fprintf(fptr, "%ld %ld\n", 1, i);
   }
 
   // print the cell types
-  fprintf(fptr, "CELL_TYPES %ld\n", nelems);
-  for (i=0; i<nelems; i++) {
-    fprintf(fptr, "5\n");
+  fprintf(fptr, "\n" );
+  fprintf(fptr, "CELL_TYPES %ld\n", nverts);
+  for (i=0; i<nverts; i++) {
+    fprintf(fptr, "1\n");
   }
 
   // plot the z value of each node so we can color the thing
   fprintf(fptr, "\n");
   fprintf(fptr, "POINT_DATA %ld\n", nverts);
   fprintf(fptr, "SCALARS z-value float 1\n");
-  fprintf(fptr, "LOOKUP_TABLE default\n");
 
   for (i=0; i<nverts; i++) {
     fprintf(fptr, "%e\n", mesh1->verts[3*i+2]);
   }
 
+  fprintf(fptr, "\n");
+  fprintf(fptr, "VECTORS pseudoNormals float\n");
 
+  for (i=0; i<nverts; i++) {
+    fprintf(fptr, "%e %e %e\n", mesh1->pseudoNormals[3*i],
+            mesh1->pseudoNormals[3*i+1], mesh1->pseudoNormals[3*i+2] );
+    //fprintf(fptr, "0.0 0.0 1.0\n" );
+  }
 
   fclose(fptr);
 

@@ -132,8 +132,10 @@ void create_skeleton( BaseMesh *basemesh1, SkelMesh *skelmesh1, long norder ) {
 
     // print out this element information to make sure we're loading it properly
     //print_skeleton_element_info( &elements[i] );
+    //
 
   }
+
 
 
 

@@ -15,8 +15,6 @@ void read_msh( BaseMesh *meshout, long id, char *name, char *filename) {
   //
   FILE *fileptr;
 
-
-
   printf("\n\nLoading geometry file: %s\n", filename);
   fileptr = fopen( filename, "r+" );
   if (fileptr == NULL) {
@@ -82,6 +80,10 @@ void read_msh( BaseMesh *meshout, long id, char *name, char *filename) {
   //printf("for example, gtype = %s\n", meshout->elements[50].gtype);
   //exit(0);
 
+
+  // the data is loaded in, time to close the file
+  fclose(fileptr);
+
   
   // compute the centroids and bounding spheres
   double *verts, *vert1, *vert2, *vert3, r, d;
@@ -116,15 +118,211 @@ void read_msh( BaseMesh *meshout, long id, char *name, char *filename) {
     meshout->elements[i].radius = r;
 
   }
-    
-  fclose(fileptr);
-
 
   //cisurf_print_element_info( &(meshout->elements[25]) );
   //exit(0);
-  
+
+
+  // compute the pseudo normal vectors used in constructing a smoothed mesh,
+  // these are a function of the basemesh
+  long *counter;
+  counter = (long *) malloc( nverts*sizeof(long) );
+  double *pns;
+
+  meshout->pseudoNormals = (double *) malloc( nverts*3*sizeof(double) );
+  pns = meshout->pseudoNormals;
+
+  // initialize the counter and the pseudonormals vector
+  for (i=0; i<nverts; i++) {
+    counter[i] = 0;
+    pns[3*i] = 0;
+    pns[3*i+1] = 0;
+    pns[3*i+2] = 0;
+  }
+
+  // now scan through each element, and for each vertex compute its normal
+  // vector, add it to the pseduonormal vector and add one to the counter --
+  // then at the end, divide by the counter to compute the averaged pseudonormal
+
+  double uvs[100];
+  uvs[0] = 0.0;
+  uvs[1] = 0.0;
+
+  uvs[2] = 1.0;
+  uvs[3] = 0.0;
+
+  uvs[4] = 0.0;
+  uvs[5] = 1.0;
+
+
+  uvs[0] = 0.5;
+  uvs[1] = 0.0;
+
+  uvs[2] = 0.5;
+  uvs[3] = 0.5;
+
+  uvs[4] = 0.0;
+  uvs[5] = 0.5;
+
+
+  long iv;
+  double xyzs[1000], dus[1000], dvs[1000];
+  double das[1000], normals[1000], verts2[1000];
+
+  for (i=0; i<nelems; i++) {
+
+    for (j=0; j<6; j++) {
+      iv = meshout->elements[i].ivs[j];
+      verts2[3*j] = verts[3*iv];
+      verts2[3*j+1] = verts[3*iv+1];
+      verts2[3*j+2] = verts[3*iv+2];
+    }
+
+    eval_tria2_pn( 6, uvs, verts2, xyzs, dus, dvs, das, normals );
+
+    for (j=0; j<6; j++) {
+      iv = meshout->elements[i].ivs[j];
+      counter[iv] = counter[iv]+1;
+      pns[3*iv] = pns[3*iv] + normals[3*j];
+      pns[3*iv+1] = pns[3*iv+1] + normals[3*j+1];
+      pns[3*iv+2] = pns[3*iv+2] + normals[3*j+2];
+    }
+  }
+
+  // now scale by the counter
+  for (i=0; i<nverts; i++) {
+    pns[3*i] = pns[3*i]/counter[i];
+    pns[3*i+1] = pns[3*i+1]/counter[i];
+    pns[3*i+2] = pns[3*i+2]/counter[i];
+  }
+
+
+  free(counter);
+
+
+
+
+
+
   return;
 }
+
+
+
+
+
+void eval_tria2_pn( long n, double *uv, double *verts, double *xyz, double *du,
+                 double *dv, double *da, double *normal ) {
+  // eval the tria2 element using the vertex locations
+  //
+  // Input:
+  //   uv - the point on the simplex at which to evaluate the information
+  //   verts - input vertices, they are assumed to be ordered as:
+  //                 3
+  //                 |  \
+  //                 6    5
+  //                 |       \
+  //                 1--- 4 ---2
+  //
+  // Output:
+  //   xyz - the point in R^3 on the quadratic triangle
+  //   du - dxdu, dydu, and dzdu
+  //   dv - dxdv, dydv, and dzdv
+  //   normal - the unit normal vector
+  //
+  // use direct formula
+  //
+  long i;
+  double coefs[6];
+  double p1, p2, p3, p4, p5, p6, u, v;
+
+  for (i=0; i<n; i++) {
+
+    u = uv[2*i];
+    v = uv[2*i+1];
+
+    // evaluate the x values first
+    p1 = verts[0];
+    p2 = verts[3];
+    p3 = verts[6];
+    p4 = verts[9];
+    p5 = verts[12];
+    p6 = verts[15];
+
+    coefs[0] = p1;
+    coefs[1] = -3*p1 - p2 + 4*p4;
+    coefs[2] = -3*p1 - p3 + 4*p6;
+    coefs[3] = 2*p1 + 2*p2 - 4*p4;
+    coefs[4] = 2*p1 + 2*p3 - 4*p6;
+    coefs[5] = 4*p1 - 4*p4 + 4*p5 - 4*p6;
+
+    xyz[3*i] = coefs[0] + coefs[1]*u + coefs[2]*v + coefs[3]*u*u
+      + coefs[4]*v*v + coefs[5]*u*v;
+
+    du[3*i] = coefs[1] + 2*coefs[3]*u + coefs[5]*v;
+    dv[3*i] = coefs[2] + 2*coefs[4]*v + coefs[5]*u;
+
+
+    // and now the y values
+    p1 = verts[1];
+    p2 = verts[4];
+    p3 = verts[7];
+    p4 = verts[10];
+    p5 = verts[13];
+    p6 = verts[16];
+
+    coefs[0] = p1;
+    coefs[1] = -3*p1 - p2 + 4*p4;
+    coefs[2] = -3*p1 - p3 + 4*p6;
+    coefs[3] = 2*p1 + 2*p2 - 4*p4;
+    coefs[4] = 2*p1 + 2*p3 - 4*p6;
+    coefs[5] = 4*p1 - 4*p4 + 4*p5 - 4*p6;
+
+    xyz[3*i+1] = coefs[0] + coefs[1]*u + coefs[2]*v + coefs[3]*u*u
+      + coefs[4]*v*v + coefs[5]*u*v;
+
+    du[3*i+1] = coefs[1] + 2*coefs[3]*u + coefs[5]*v;
+    dv[3*i+1] = coefs[2] + 2*coefs[4]*v + coefs[5]*u;
+
+    // and now the z values
+    p1 = verts[2];
+    p2 = verts[5];
+    p3 = verts[8];
+    p4 = verts[11];
+    p5 = verts[14];
+    p6 = verts[17];
+
+    coefs[0] = p1;
+    coefs[1] = -3*p1 - p2 + 4*p4;
+    coefs[2] = -3*p1 - p3 + 4*p6;
+    coefs[3] = 2*p1 + 2*p2 - 4*p4;
+    coefs[4] = 2*p1 + 2*p3 - 4*p6;
+    coefs[5] = 4*p1 - 4*p4 + 4*p5 - 4*p6;
+
+    xyz[3*i+2] = coefs[0] + coefs[1]*u + coefs[2]*v + coefs[3]*u*u
+      + coefs[4]*v*v + coefs[5]*u*v;
+
+    du[3*i+2] = coefs[1] + 2*coefs[3]*u + coefs[5]*v;
+    dv[3*i+2] = coefs[2] + 2*coefs[4]*v + coefs[5]*u;
+
+    // and finally compute the normal, and the normalize it
+    cross_prod3d_(&du[3*i], &dv[3*i], &normal[3*i]);
+
+    da[i] = sqrt( normal[3*i]*normal[3*i] + normal[3*i+1]*normal[3*i+1]
+                  + normal[3*i+2]*normal[3*i+2] );
+    normal[3*i] = normal[3*i]/(da[i]);
+    normal[3*i+1] = normal[3*i+1]/(da[i]);
+    normal[3*i+2] = normal[3*i+2]/(da[i]);
+
+  }
+
+  return;
+
+}
+
+
+
+
 
 
 
