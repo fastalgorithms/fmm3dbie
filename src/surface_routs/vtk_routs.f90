@@ -366,10 +366,14 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
   ncell = 0
   ncsize = 0
   do i=1,npatches
-    if(iptype(i).eq.1) ncell = ncell + 4**kovers(i)
-    if(iptype(i).eq.11) ncell = ncell + 5**kovers(i)
-    if(iptype(i).eq.12) ncell = ncell + 5**kovers(i)
-    ncsize = ncsize + ncell 
+    if(iptype(i).eq.1) then
+       ncell = ncell + 4**kovers(i)
+       ncsize = ncsize + 4**kovers(i)*4
+    endif
+    if(iptype(i).eq.11.or.iptype(i).eq.12) then
+      ncell = ncell + 5**kovers(i)
+      ncsize = ncsize + 5**kovers(i)*5
+    endif
   enddo
 
   write(iunit1,'(a,i9,i9)') "CELLS ", ncell, ncsize
