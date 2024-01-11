@@ -102,7 +102,7 @@ DYLIBS += $(LBLAS) $(LDBLASINC)
 # Common objects
 COM = src/common
 COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
-	$(COM)/dlaran.o $(COM)/lapack_f77.o \
+	$(COM)/dlaran.o \
 	$(COM)/legeexps.o $(COM)/prini_new.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \

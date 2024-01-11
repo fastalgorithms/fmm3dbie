@@ -1,9 +1,16 @@
-Main authors of fmm3dbie:
+fmm3dbie development team
 
 Leslie Greengard 
 Michael O'Neil
 Manas Rachh
 Felipe Vico
+Libin Lu
+Travis Askham
+Jeremy Hoskins
+Vladimir Rokhlin
 
-Travis Askham contributed openmp support for cumulative sums
+Other contributors
+
+James Bremer
+Zydrunas Gimbutas
 
