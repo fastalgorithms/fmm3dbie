@@ -41,7 +41,7 @@ ccccccccccccccccccccccccccccccccccccccccccccc
 
 C===================================================================
 C
-C     SORTRX -- SORT, integer(8) input, indeX output
+C     SORTRX -- SORT, integer *8 input, indeX output
 C
 C
 C     Input:  N     INTEGER(8)
@@ -82,7 +82,7 @@ C===================================================================
  
       INTEGER(8)   LSTK(200),RSTK(200),ISTK
       INTEGER(8)   L,R,I,J,P,INDEXP,INDEXT
-      integer(8)      DATAP
+      integer *8      DATAP
  
 C     QuickSort Cutoff
 C
@@ -272,7 +272,7 @@ ccccccccccccccccccccccccccccccccccccccccccccc
 
 C===================================================================
 C
-C     SORTRX -- SORT, integer(8) input, indeX output
+C     SORTRX -- SORT, integer *8 input, indeX output
 C
 C
 C     Input:  N     INTEGER(8)
@@ -498,7 +498,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine sorti_para(n,data,index)
 C===================================================================
 C
-C     SORTRX -- SORT, integer(8) input, indeX output
+C     SORTRX -- SORT, integer *8 input, indeX output
 C
 C
 C     Input:  N     INTEGER(8)
@@ -519,14 +519,14 @@ C
 C===================================================================
 
       implicit none
-      integer(8) n,data(n),index(n)
-      integer(8) nthreads,nelems,ielems,istart,iend,i,j,swap
-      integer(8) ithread
-      integer(8) istart2,iend2,nelems2
-      integer(8), allocatable :: split(:)
-      integer(8), allocatable :: index2(:)
-      integer(8), external :: OMP_GET_THREAD_NUM, OMP_GET_NUM_THREADS
-      integer(8), external :: OMP_GET_MAX_THREADS
+      integer *8 n,data(n),index(n)
+      integer *8 nthreads,nelems,ielems,istart,iend,i,j,swap
+      integer *8 ithread
+      integer *8 istart2,iend2,nelems2
+      integer *8, allocatable :: split(:)
+      integer *8, allocatable :: index2(:)
+      integer *8, external :: OMP_GET_THREAD_NUM, OMP_GET_NUM_THREADS
+      integer *8, external :: OMP_GET_MAX_THREADS
 
       nthreads=1
 C$    nthreads=OMP_GET_MAX_THREADS()
@@ -645,14 +645,14 @@ C rearranged.
 C
 C===================================================================
       implicit none
-      integer(8) n1,n2,nthreads,i,j,k,ns,indx,first,val,split1,split2
-      integer(8) tmpk
-      integer(8) split_size1,split_size2,n1tmp,n2tmp
-      integer(8) istart1,istart2,istart3
-      integer(8) data(*)
-      integer(8) ind1(n1),ind2(n2),indout(n1+n2)
-      integer(8), allocatable :: split(:), split_size(:)
-      integer(8), allocatable :: split_ind1(:), split_ind2(:),indtmp(:)
+      integer *8 n1,n2,nthreads,i,j,k,ns,indx,first,val,split1,split2
+      integer *8 tmpk
+      integer *8 split_size1,split_size2,n1tmp,n2tmp
+      integer *8 istart1,istart2,istart3
+      integer *8 data(*)
+      integer *8 ind1(n1),ind2(n2),indout(n1+n2)
+      integer *8, allocatable :: split(:), split_size(:)
+      integer *8, allocatable :: split_ind1(:), split_ind2(:),indtmp(:)
       if(n1==0 .and. n2==0) return
       if(n1==0) then
 C$OMP PARALLEL DO DEFAULT(SHARED)
@@ -764,9 +764,9 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine merge_arr(data,ind1,ind2,n1,n2,indout,nthreads)
       implicit none
-      integer(8) n1,n2,nthreads,i,j,k
-      integer(8) data(*)
-      integer(8) ind1(n1),ind2(n2),indout(n1+n2)
+      integer *8 n1,n2,nthreads,i,j,k
+      integer *8 data(*)
+      integer *8 ind1(n1),ind2(n2),indout(n1+n2)
 
       i=1
       j=1
@@ -802,10 +802,10 @@ c
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine lower_bound(data,ind,n,val,first)
-        integer(8) data(*),ind(*),n
-        integer(8) val
-        integer(8) it,first
-        integer(8) cnt,step
+        integer *8 data(*),ind(*),n
+        integer *8 val
+        integer *8 it,first
+        integer *8 cnt,step
 
         first=1
         cnt=n

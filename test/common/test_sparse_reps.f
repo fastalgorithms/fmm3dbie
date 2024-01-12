@@ -20,8 +20,8 @@
       subroutine test_csc_to_rsc()
       
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), allocatable :: row_ptr(:),col_ind(:),col_ptr(:),
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: row_ptr(:),col_ind(:),col_ptr(:),
      1   row_ind(:),iper(:)
 
       call prini(6,13)

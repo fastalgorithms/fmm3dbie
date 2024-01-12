@@ -38,15 +38,15 @@ c       given a prescribed set of nodes and weights
 c
 
       implicit none
-      integer(8) npatches,norder,npols,ndtarg
-      integer(8) nporder,nppols
+      integer *8 npatches,norder,npols,ndtarg
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches),xyztarg(ndtarg,ntarg)
-      integer(8) ntarg
-      integer(8) itargptr(npatches),ntargptr(npatches)
-      integer(8) ndd,ndz,ndi
+      integer *8 ntarg
+      integer *8 itargptr(npatches),ntargptr(npatches)
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi),nqpts
+      integer *8 ipars(ndi),nqpts
       real *8 qnodes(2,nqpts),wts(nqpts)
 
       real *8 cintvals(nppols,ntarg)
@@ -57,7 +57,7 @@ c
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: xkernvals(:,:)
 
-      integer(8) i,ipatch,j,lda,ldb,itarg,ldc,ntarg0,ii
+      integer *8 i,ipatch,j,lda,ldb,itarg,ldc,ntarg0,ii
 
       real *8 fval
       real *8 da,ra
@@ -245,8 +245,8 @@ c         ndd - number of real parameters
 c         dpars(ndd) - real parameters for the fker routine
 c         ndz - number of complex parameters
 c         zpars(ndz) - complex parameters for the fker routine
-c         ndi - number of integer(8) parameters
-c         ipars(ndi) - integer(8) parameters for the fker routine
+c         ndi - number of integer *8 parameters
+c         ipars(ndi) - integer *8 parameters for the fker routine
 c         nqorder - order of quadrature nodes on each subtriangle
 c                   to be used
 c         rfac - distance criterion for deciding whether a triangle
@@ -264,24 +264,24 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer(8) intype,ifp
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
+      integer *8 intype,ifp
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
       real *8 xyzproxy(3,*)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer(8) nqorder
+      integer *8 nqorder
       real *8 rfac
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -297,34 +297,34 @@ cc      temporary variables
 c
       real *8, allocatable :: tricm(:,:,:)
       real *8, allocatable :: trirad(:,:)
-      integer(8), allocatable :: itrireltmp(:,:)
-      integer(8), allocatable :: itrirel(:,:)
-      integer(8), allocatable :: itrirelall(:)
+      integer *8, allocatable :: itrireltmp(:,:)
+      integer *8, allocatable :: itrirel(:,:)
+      integer *8, allocatable :: itrirelall(:)
       real *8, allocatable :: tverts(:,:,:)
-      integer(8), allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
 
-      integer(8) ntri,ntrimax,nlev,itri,istart,i,j
-      integer(8) ier,itarg,jj,jstart,nlmax,npts
-      integer(8) iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqtri,ii
 
-      integer(8) npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer(8) nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: xyztargtmp(:,:)
       real *8, allocatable :: fkervals(:),sigmatmp(:,:)
       real *8, allocatable :: rsigtmp(:,:)
       real *8 xyztmp(3)
-      integer(8) itmp
+      integer *8 itmp
       real *8 alpha_c, beta_c
 
       character *1 transa,transb
       double precision :: alpha,beta
-      integer(8) lda,ldb,ldc
+      integer *8 lda,ldb,ldc
       
 
 
@@ -534,21 +534,21 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer(8) intype
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
+      integer *8 intype
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
       real *8 rat1(2,0:norder)
       real *8 rat2(3,0:norder,0:norder)
@@ -558,39 +558,39 @@ c
       real *8 rat2p(3,0:nporder,0:nporder)
       real *8 rsc1p(0:nporder,0:nporder)
 
-      integer(8) nqorder
+      integer *8 nqorder
 
       real *8 cintvals(nppols,ntarg)
 
 c
 c       tree variables
 c
-      integer(8) nlmax,ltree
+      integer *8 nlmax,ltree
       real *8, allocatable :: tvs(:,:,:),da(:)
-      integer(8), allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
       real *8, allocatable :: tvs2(:,:,:),da2(:)
-      integer(8), allocatable :: ichild_start2(:)
+      integer *8, allocatable :: ichild_start2(:)
 
-      integer(8) ntri,ntrimax,nlev,itri,istart,i,j,k
-      integer(8) ier,itarg,jj,jstart,npts
-      integer(8) iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j,k
+      integer *8 ier,itarg,jj,jstart,npts
+      integer *8 iqtri,ii
 
 
-      integer(8) npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
-      integer(8) nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:),sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
       real *8, allocatable :: srcvals2(:,:),qwts2(:)
-      integer(8) itmp
+      integer *8 itmp
 
       character *1 transa,transb
       real *8 alpha,beta
-      integer(8) lda,ldb,ldc
-      integer(8) nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 lda,ldb,ldc
+      integer *8 nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
       
       
 c
@@ -844,13 +844,13 @@ c
 c         
 
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), allocatable :: istack(:)
-      integer(8) ichild_start(ntmax)
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: istack(:)
+      integer *8 ichild_start(ntmax)
       real *8 da(ntmax)
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
-      integer(8) nproclist0, nproclist
-      integer(8) idone
+      integer *8 nproclist0, nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -861,10 +861,10 @@ c
       real *8, allocatable :: ctmp(:)
       real *8, allocatable :: cvals(:,:)
 
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -938,14 +938,14 @@ c
       
 
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8) istack(*),nproclist0
-      integer(8) ichild_start(ntmax)
-      integer(8) nporder,nppols
+      implicit integer *8 (i-n)
+      integer *8 istack(*),nproclist0
+      integer *8 ichild_start(ntmax)
+      integer *8 nporder,nppols
       real *8 da(ntmax)
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
-      integer(8)  nproclist
-      integer(8) idone
+      integer *8  nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -956,10 +956,10 @@ c
       real *8 cintall(nppols),fval,ctmp(nppols)
       real *8 cvals(nppols,ntmax)
 
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -970,7 +970,7 @@ c
 
       real *8, allocatable :: uvtmp(:,:)
       character *1 transa,transb
-      integer(8) lda,ldb,ldc
+      integer *8 lda,ldb,ldc
       external fker
       
       ier = 0
@@ -1209,7 +1209,7 @@ c               fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c
 c         dpars(*) - real parameters for the fker routine
 c         zpars(*) - complex parameters for the fker routine
-c         ipars(*) - integer(8) parameters for the fker routine
+c         ipars(*) - integer *8 parameters for the fker routine
 c         nqorder - order of quadrature nodes on each subtriangle
 c                   to be used
 c         rfac - distance criterion for deciding whether a triangle
@@ -1227,24 +1227,24 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer(8) intype,ifp
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
+      integer *8 intype,ifp
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
       real *8 xyzproxy(3,*)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer(8) nqorder
+      integer *8 nqorder
       real *8 rfac
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
@@ -1261,23 +1261,23 @@ cc      temporary variables
 c
       real *8, allocatable :: tricm(:,:,:)
       real *8, allocatable :: trirad(:,:)
-      integer(8), allocatable :: itrireltmp(:,:)
-      integer(8), allocatable :: itrirel(:,:)
-      integer(8), allocatable :: itrirelall(:)
+      integer *8, allocatable :: itrireltmp(:,:)
+      integer *8, allocatable :: itrirel(:,:)
+      integer *8, allocatable :: itrirelall(:)
       real *8, allocatable :: tverts(:,:,:)
-      integer(8), allocatable :: ichild_start(:)
-      integer(8), allocatable :: ichild_start0(:)
+      integer *8, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start0(:)
 
-      integer(8) ntri,ntrimax,nlev,itri,istart,i,j
-      integer(8) ier,itarg,jj,jstart,nlmax,npts
-      integer(8) iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqtri,ii
 
-      integer(8) npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer(8) nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:)
@@ -1285,14 +1285,14 @@ c
       real *8, allocatable :: sigmatmp(:,:)
       real *8, allocatable :: xyztargtmp(:,:)
       real *8 xyztmp(3)
-      integer(8) itmp
+      integer *8 itmp
 
       real *8, allocatable :: xkernvals(:)
-      integer(8), allocatable :: istack(:)
+      integer *8, allocatable :: istack(:)
 
       real *8, allocatable :: cvals(:,:)
       
-      integer(8) nproclist0,nproclist,ntri0,npts0
+      integer *8 nproclist0,nproclist,ntri0,npts0
       real *8 zz
 
       
@@ -1300,7 +1300,7 @@ c
       character *1 transa,transb
       
       real *8 alpha,beta
-      integer(8) lda,ldb,ldc
+      integer *8 lda,ldb,ldc
 
       allocate(cvals(nppols,ntrimax))
       allocate(istack(2*ntrimax))
@@ -1646,7 +1646,7 @@ c
 c         nd - number of kernels to be integrated
 c         dpars(*) - real parameters for the fker routine
 c         zpars(*) - complex parameters for the fker routine
-c         ipars(*) - integer(8) parameters for the fker routine
+c         ipars(*) - integer *8 parameters for the fker routine
 c         nqorder - order of quadrature nodes on each subtriangle
 c                   to be used
 c         rfac - distance criterion for deciding whether a triangle
@@ -1664,24 +1664,24 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer(8) intype,ifp,nd
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
+      integer *8 intype,ifp,nd
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
       real *8 xyzproxy(3,*)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndi,ndz
+      integer *8 ndd,ndi,ndz
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer(8) nqorder
+      integer *8 nqorder
       real *8 rfac
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -1697,34 +1697,34 @@ cc      temporary variables
 c
       real *8, allocatable :: tricm(:,:,:)
       real *8, allocatable :: trirad(:,:)
-      integer(8), allocatable :: itrireltmp(:,:)
-      integer(8), allocatable :: itrirel(:,:)
-      integer(8), allocatable :: itrirelall(:)
+      integer *8, allocatable :: itrireltmp(:,:)
+      integer *8, allocatable :: itrirel(:,:)
+      integer *8, allocatable :: itrirelall(:)
       real *8, allocatable :: tverts(:,:,:)
-      integer(8), allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
 
-      integer(8) ntri,ntrimax,nlev,itri,istart,i,j
-      integer(8) ier,itarg,jj,jstart,nlmax,npts
-      integer(8) iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqtri,ii
 
-      integer(8) npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer(8) nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: xyztargtmp(:,:)
       real *8, allocatable :: fkervals(:,:),sigmatmp(:,:)
       real *8, allocatable :: rsigtmp(:,:)
       real *8 xyztmp(3)
-      integer(8) itmp,idim
+      integer *8 itmp,idim
 
       character *1 transa,transb
       double precision :: alpha,beta
       real *8 alpha_c, beta_c
-      integer(8) lda,ldb,ldc
+      integer *8 lda,ldb,ldc
       
 
 
@@ -1944,21 +1944,21 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer(8) intype,nd
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
+      integer *8 intype,nd
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndi,ndz
+      integer *8 ndd,ndi,ndz
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
       real *8 rat1(2,0:norder)
       real *8 rat2(3,0:norder,0:norder)
@@ -1968,39 +1968,39 @@ c
       real *8 rat2p(3,0:norder,0:norder)
       real *8 rsc1p(0:norder,0:norder)
 
-      integer(8) nqorder
+      integer *8 nqorder
 
       real *8 cintvals(nd,nppols,ntarg)
 
 c
 c       tree variables
 c
-      integer(8) nlmax,ltree
+      integer *8 nlmax,ltree
       real *8, allocatable :: tvs(:,:,:),da(:)
-      integer(8), allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
       real *8, allocatable :: tvs2(:,:,:),da2(:)
-      integer(8), allocatable :: ichild_start2(:)
+      integer *8, allocatable :: ichild_start2(:)
 
-      integer(8) ntri,ntrimax,nlev,itri,istart,i,j,k
-      integer(8) ier,itarg,jj,jstart,npts
-      integer(8) iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j,k
+      integer *8 ier,itarg,jj,jstart,npts
+      integer *8 iqtri,ii
 
 
-      integer(8) npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
-      integer(8) nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:),sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
       real *8, allocatable :: srcvals2(:,:),qwts2(:)
-      integer(8) itmp
+      integer *8 itmp
 
       character *1 transa,transb
       real *8 alpha,beta
-      integer(8) lda,ldb,ldc
-      integer(8) nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 lda,ldb,ldc
+      integer *8 nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
       
       
 c
@@ -2250,14 +2250,14 @@ c
 c         
 
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), allocatable :: istack(:)
-      integer(8) ichild_start(ntmax),nd
-      integer(8) nporder,nppols
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: istack(:)
+      integer *8 ichild_start(ntmax),nd
+      integer *8 nporder,nppols
       real *8 da(ntmax)
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
-      integer(8) nproclist0, nproclist
-      integer(8) idone
+      integer *8 nproclist0, nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -2267,10 +2267,10 @@ c
       real *8 cintall(nd,npols),fval(nd)
       real *8, allocatable :: cvals(:,:,:)
 
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi),idim
+      integer *8 ipars(ndi),idim
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -2353,14 +2353,14 @@ c
       
 
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8) istack(*),nproclist0,nd
-      integer(8) ichild_start(ntmax)
-      integer(8) nporder,nppols
+      implicit integer *8 (i-n)
+      integer *8 istack(*),nproclist0,nd
+      integer *8 ichild_start(ntmax)
+      integer *8 nporder,nppols
       real *8 da(ntmax)
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
-      integer(8)  nproclist
-      integer(8) idone
+      integer *8  nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -2371,10 +2371,10 @@ c
       real *8 cintall(nd,nppols),fval(nd),ctmp(nd,nppols)
       real *8 cvals(nd,nppols,ntmax)
 
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -2384,7 +2384,7 @@ c
 
       real *8, allocatable :: uvtmp(:,:)
       character *1 transa,transb
-      integer(8) lda,ldb,ldc
+      integer *8 lda,ldb,ldc
       external fker
       
       allocate(uvtmp(2,kpols))
@@ -2640,7 +2640,7 @@ c
 c         nd - number of kernels to be integrated
 c         dpars(*) - real parameters for the fker routine
 c         zpars(*) - complex parameters for the fker routine
-c         ipars(*) - integer(8) parameters for the fker routine
+c         ipars(*) - integer *8 parameters for the fker routine
 c         nqorder - order of quadrature nodes on each subtriangle
 c                   to be used
 c         rfac - distance criterion for deciding whether a triangle
@@ -2658,24 +2658,24 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer(8) intype,ifp,nd
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
+      integer *8 intype,ifp,nd
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
       real *8 xyzproxy(3,*)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer(8) nqorder
+      integer *8 nqorder
       real *8 rfac
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
@@ -2692,40 +2692,40 @@ cc      temporary variables
 c
       real *8, allocatable :: tricm(:,:,:)
       real *8, allocatable :: trirad(:,:)
-      integer(8), allocatable :: itrireltmp(:,:)
-      integer(8), allocatable :: itrirel(:,:)
-      integer(8), allocatable :: itrirelall(:)
+      integer *8, allocatable :: itrireltmp(:,:)
+      integer *8, allocatable :: itrirel(:,:)
+      integer *8, allocatable :: itrirelall(:)
       real *8, allocatable :: tverts(:,:,:)
-      integer(8), allocatable :: ichild_start(:)
-      integer(8), allocatable :: ichild_start0(:)
+      integer *8, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start0(:)
 
       real *8, allocatable :: xyztargtmp(:,:)
 
-      integer(8) ntri,ntrimax,nlev,itri,istart,i,j
-      integer(8) ier,itarg,jj,jstart,nlmax,npts
-      integer(8) iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqtri,ii
 
-      integer(8) npmax
-      integer(8) idim
+      integer *8 npmax
+      integer *8 idim
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer(8) nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:)
       real *8, allocatable :: qwts(:)
       real *8, allocatable :: sigmatmp(:,:)
       real *8 xyztmp(3)
-      integer(8) itmp
+      integer *8 itmp
 
       real *8, allocatable :: xkernvals(:,:)
-      integer(8), allocatable :: istack(:)
+      integer *8, allocatable :: istack(:)
 
       real *8, allocatable :: cvals(:,:,:)
       
-      integer(8) nproclist0,nproclist,ntri0,npts0
+      integer *8 nproclist0,nproclist,ntri0,npts0
       real *8 zz
 
       
@@ -2733,7 +2733,7 @@ c
       character *1 transa,transb
       
       real *8 alpha,beta
-      integer(8) lda,ldb,ldc
+      integer *8 lda,ldb,ldc
 
       allocate(cvals(nd,nppols,ntrimax))
       allocate(istack(2*ntrimax))

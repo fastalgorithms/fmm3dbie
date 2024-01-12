@@ -1,16 +1,16 @@
       implicit real *8 (a-h,o-z) 
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       real *8, allocatable :: wts(:)
       character *100 fname
-      integer(8) ipars(2)
+      integer *8 ipars(2)
 
       real *8, allocatable :: targs(:,:),uvs_targ(:,:)
-      integer(8), allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
 
-      integer(8), allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      integer(8), allocatable :: ifds(:)
+      integer *8, allocatable :: ifds(:)
       real *8, allocatable :: rfds(:)
       complex *16, allocatable :: zfds(:)
 
@@ -19,15 +19,15 @@
       complex *16 zid
       real *8, allocatable :: errs(:)
       complex * 16 zpars(3)
-      integer(8), allocatable :: irand(:),isort(:),isum(:)
-      integer(8), allocatable :: jrand(:),jsort(:)
+      integer *8, allocatable :: irand(:),isort(:),isum(:)
+      integer *8, allocatable :: jrand(:),jsort(:)
       real *8, allocatable :: rrand(:)
       complex *16, allocatable :: xmat(:,:),xmattmp(:,:)
-      integer(8), allocatable :: itarg(:),jsrc(:)
+      integer *8, allocatable :: itarg(:),jsrc(:)
       complex *16, allocatable :: zent(:)
-      integer(8) numit,niter
-      integer(8) ifwrite
-      integer(8), allocatable :: row_ind(:),col_ind(:)
+      integer *8 numit,niter
+      integer *8 ifwrite
+      integer *8, allocatable :: row_ind(:),col_ind(:)
 
       complex *16 pot,potex,ztmp,ima
 
@@ -266,19 +266,19 @@ c
       subroutine setup_geom(igeomtype,norder,npatches,ipars, 
      1    srcvals,srccoefs,ifplot,fname)
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8) igeomtype,norder,npatches,ipars(*),ifplot
+      implicit integer *8 (i-n)
+      integer *8 igeomtype,norder,npatches,ipars(*),ifplot
       character (len=*) fname
       real *8 srcvals(12,*), srccoefs(9,*)
       real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
 
       real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer(8), pointer :: iptr1,iptr2,iptr3,iptr4
+      integer *8, pointer :: iptr1,iptr2,iptr3,iptr4
       real *8, target :: p1(10),p2(10),p3(10),p4(10)
       real *8, allocatable, target :: triaskel(:,:,:)
       real *8, allocatable, target :: deltas(:,:)
-      integer(8), allocatable :: isides(:)
-      integer(8), target :: nmax,mmax
+      integer *8, allocatable :: isides(:)
+      integer *8, target :: nmax,mmax
 
       procedure (), pointer :: xtri_geometry
 

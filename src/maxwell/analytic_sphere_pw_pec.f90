@@ -4,7 +4,7 @@
 
 
 subroutine  driver_analytic_sphere_pw_pec
-  integer(8) m,n,count1,count2,mn,nmax
+  integer *8 m,n,count1,count2,mn,nmax
   real ( kind = 8 ) xval,x_pt,y_pt,z_pt,r0
   complex ( kind = 8 ) zk,E(3),H(3)
   real ( kind = 8 ), allocatable :: v(:,:),x(:)
@@ -77,13 +77,13 @@ implicit none
 
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: x,y,z,r0
-  integer(8), intent(in) :: nmax
+  integer *8, intent(in) :: nmax
   complex ( kind = 8 ), intent(in) :: zk
   complex ( kind = 8 ), intent(out) :: E(3),H(3)
 
   !List of local variables
   real ( kind = 8 ) th_t,phi_t,r_t
-  integer(8) count
+  integer *8 count
   complex ( kind = 8 ) ima,an,bn,cn
   real ( kind = 8 ) zr,zr0
   complex ( kind = 8 ) h_val0(nmax),hp_val0(nmax),hpp_val0(nmax),j_val0(nmax),jp_val0(nmax)
@@ -164,11 +164,11 @@ implicit none
 
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: x
-  integer(8), intent(in) :: n
+  integer *8, intent(in) :: n
   complex ( kind = 8 ), intent(out) :: val(n),valp(n),valpp(n)
 
   !List of local variables
-  integer(8) mn,count1
+  integer *8 mn,count1
   real ( kind = 8 ) pi
   complex ( kind = 8 ) val_aux(0:n+1),valp_aux(0:n+1),val_aux0(0:n+1),valp_aux0(0:n+1)
 
@@ -223,11 +223,11 @@ implicit none
 
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: x
-  integer(8), intent(in) :: n
+  integer *8, intent(in) :: n
   complex ( kind = 8 ), intent(out) :: val(0:n),valp(0:n)
 
   !List of local variables
-  integer(8) mn,count1
+  integer *8 mn,count1
   real ( kind = 8 ) pi
   complex ( kind = 8 ) h(0:n),hp(0:n)
 
@@ -254,11 +254,11 @@ implicit none
 
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: x
-  integer(8), intent(in) :: n
+  integer *8, intent(in) :: n
   complex ( kind = 8 ), intent(out) :: val(n),valp(n)
 
   !List of local variables
-  integer(8) mn,count1
+  integer *8 mn,count1
   real ( kind = 8 ) pi
   real ( kind = 8 ) h(0:n),hp(0:n)
 
@@ -298,7 +298,7 @@ SUBROUTINE SPHH(N,X,NM,SH,DH)
     DIMENSION SJ(0:N),DJ(0:N)
     DIMENSION SY(0:N),DY(0:N)
     complex ( kind = 8 ) ima
-    integer(8) count1
+    integer *8 count1
     data ima/(0.0d0,1.0d0)/
 
     call SPHJ(N,X,NM,SJ,DJ)
@@ -554,12 +554,12 @@ subroutine legasfuno1(m,n,x,v,vp)
 !this function computes the associate legendre function of order 1 and degree 1 to n
 
   !List of calling arguments
-  integer(8), intent(in) :: n,m
+  integer *8, intent(in) :: n,m
   real ( kind = 8 ), intent(in) :: x(m)
   real ( kind = 8 ), intent(out) :: v(m,n),vp(m,n)
 
   !List of local variables  
-  integer(8) count,count1,count2
+  integer *8 count,count1,count2
 
   if (n.ge.1) then 
     do count=1,m
@@ -820,11 +820,11 @@ end
 !c
       implicit none
 
-      integer(8) m
-      integer(8) n
+      integer *8 m
+      integer *8 n
 
-      integer(8) i
-      integer(8) j
+      integer *8 i
+      integer *8 j
       double precision v(m,0:n)
       double precision vp(m,0:n)
       double precision x(m)

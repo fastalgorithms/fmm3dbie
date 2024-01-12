@@ -10,21 +10,21 @@
 !  for a given order corresponding to patch type
 !
 !  Input arguments
-!    - iptype: integer(8)
+!    - iptype: integer *8
 !        type of patch
 !        * iptype = 1, triangular patch with RV nodes
 !        * iptype = 11, quad patch with GL nodes and full order
 !        * iptype = 12, quad patch with cheb nodes and full order
 !
-!    - norder: integer(8)
+!    - norder: integer *8
 !        order of discretization
 !  Output arguments
-!    - npols: integer(8)
+!    - npols: integer *8
 !        number of nodes/basis functions in the discretization
 !       
       implicit real *8(a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8) iptype,norder,npols
+      implicit integer *8 (i-n)
+      integer *8 iptype,norder,npols
 
       if(iptype.eq.1) then
         npols = (norder+1)*(norder+2)/2
@@ -51,11 +51,11 @@
 !  nodes and weights
 !
 !  Input arguments:
-!    - norder: integer(8)
+!    - norder: integer *8
 !        order of discretization
-!    - npols: integer(8)
+!    - npols: integer *8
 !        number of nodes/basis functions in the discretization
-!    - iptype: integer(8)
+!    - iptype: integer *8
 !        type of patch
 !        * iptype = 1, triangular patch with RV nodes
 !        * iptype = 11, quad patch with GL nodes and full order
@@ -65,16 +65,16 @@
 !        discretization nodes
 !
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: norder,npols,iptype
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: norder,npols,iptype
       real *8, intent(out) :: uvs(2,npols)
 !
 !   temporary variable
 !
-      integer(8) ipoly,itype
+      integer *8 ipoly,itype
       character * 1, ttype
       real *8 umatr,vmatr
-      integer(8) ldu,ldv
+      integer *8 ldu,ldv
       real *8 wts(1)
       
 
@@ -113,11 +113,11 @@
 !  nodes and weights
 !
 !  Input arguments:
-!    - norder: integer(8)
+!    - norder: integer *8
 !        order of discretization
-!    - npols: integer(8)
+!    - npols: integer *8
 !        number of nodes/basis functions in the discretization
-!    - iptype: integer(8)
+!    - iptype: integer *8
 !        type of patch
 !        * iptype = 1, triangular patch with RV nodes
 !        * iptype = 11, quad patch with GL nodes and full order
@@ -127,16 +127,16 @@
 !        discretization weights
 !
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: norder,npols,iptype
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: norder,npols,iptype
       real *8, intent(out) :: wts(2,npols)
 !
 !   temporary variable
 !
-      integer(8) ipoly,itype
+      integer *8 ipoly,itype
       character * 1, ttype
       real *8 umatr,vmatr
-      integer(8) ldu,ldv
+      integer *8 ldu,ldv
       real *8 uvs(2,npols)
 
       
@@ -173,11 +173,11 @@
 !  nodes and weights
 !
 !  Input arguments:
-!    - norder: integer(8)
+!    - norder: integer *8
 !        order of discretization
-!    - npols: integer(8)
+!    - npols: integer *8
 !        number of nodes/basis functions in the discretization
-!    - iptype: integer(8)
+!    - iptype: integer *8
 !        type of patch
 !        * iptype = 1, triangular patch with RV nodes
 !        * iptype = 11, quad patch with GL nodes and full order
@@ -189,16 +189,16 @@
 !        the corresponding quadrature weights
 !
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: norder,npols,iptype
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: norder,npols,iptype
       real *8, intent(out) :: uvs(2,npols),wts(npols)
 !
 !   temporary variable
 !
-      integer(8) ipoly,itype
+      integer *8 ipoly,itype
       character * 1, ttype
       real *8 umatr,vmatr
-      integer(8) ldu,ldv
+      integer *8 ldu,ldv
       
 
       itype = 1
@@ -237,11 +237,11 @@
 !  nodes and weights
 !
 !  Input arguments:
-!    - norder: integer(8)
+!    - norder: integer *8
 !        order of discretization
-!    - npols: integer(8)
+!    - npols: integer *8
 !        number of nodes/basis functions in the discretization
-!    - iptype: integer(8)
+!    - iptype: integer *8
 !        type of patch
 !        * iptype = 1, triangular patch with RV nodes
 !        * iptype = 11, quad patch with GL nodes and full order
@@ -257,16 +257,16 @@
 !        the corresponding quadrature weights
 !
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: norder,npols,iptype
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: norder,npols,iptype
       real *8, intent(out) :: uvs(2,npols),wts(npols)
       real *8, intent(out) :: umatr(npols,npols),vmatr(npols,npols)
 !
 !   temporary variable
 !
-      integer(8) ipoly,itype
+      integer *8 ipoly,itype
       character * 1, ttype
-      integer(8) ldu,ldv
+      integer *8 ldu,ldv
       
 
       itype = 2
@@ -303,11 +303,11 @@
 !  Input arguments:
 !    - uvs: real *8(2)
 !        location on patch where basis functions are desired
-!    - norder: integer(8)
+!    - norder: integer *8
 !        order of discretization
-!    - npols: integer(8)
+!    - npols: integer *8
 !        number of nodes/basis functions in the discretization
-!    - iptype: integer(8)
+!    - iptype: integer *8
 !        type of patch
 !        * iptype = 1, triangular patch with RV nodes
 !        * iptype = 11, quad patch with GL nodes and full order
@@ -317,12 +317,12 @@
 !        the evaluated polynomials
 !
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: norder,npols,iptype
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: norder,npols,iptype
       real *8, intent(in) :: uvs(2)
       real *8, intent(out) :: pols(npols)
 
-      integer(8) ipoly
+      integer *8 ipoly
       character *1 ttype
 
       if(iptype.eq.11) ipoly = 0
@@ -352,11 +352,11 @@
 !  Input arguments:
 !    - uvs: real *8(2)
 !        location on patch where basis functions are desired
-!    - norder: integer(8)
+!    - norder: integer *8
 !        order of discretization
-!    - npols: integer(8)
+!    - npols: integer *8
 !        number of nodes/basis functions in the discretization
-!    - iptype: integer(8)
+!    - iptype: integer *8
 !        type of patch
 !        * iptype = 1, triangular patch with RV nodes
 !        * iptype = 11, quad patch with GL nodes and full order
@@ -368,12 +368,12 @@
 !        the evaluated derivatives
 !
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: norder,npols,iptype
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: norder,npols,iptype
       real *8, intent(in) :: uvs(2)
       real *8, intent(out) :: pols(npols),ders(2,npols)
 
-      integer(8) ipoly
+      integer *8 ipoly
       character *1 ttype
 
       if(iptype.eq.11) ipoly = 0
@@ -400,29 +400,29 @@
 !  the tail of the expansion
 !
 !  Input arguments:
-!    - norder: integer(8)
+!    - norder: integer *8
 !        order of discretization
-!    - npols: integer(8)
+!    - npols: integer *8
 !        number of nodes/basis functions in the discretization
-!    - iptype: integer(8)
+!    - iptype: integer *8
 !        type of patch
 !        * iptype = 1, triangular patch with RV nodes
 !        * iptype = 11, quad patch with GL nodes and full order
 !        * iptype = 12, quad patch with cheb nodes and full order
 !
 !  Output arguments:
-!    - itailcoefs: integer(8)(ntailcoefs)
+!    - itailcoefs: integer *8(ntailcoefs)
 !        set of coefs in 1:npols which correspond to the tail
 !        of the expansion
-!    - ntailcoefs: integer(8)
+!    - ntailcoefs: integer *8
 !        number of tail coefs
 !----------------------        
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: norder,npols
-      integer(8), intent(out) :: itailcoefs(npols),ntailcoefs
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: norder,npols
+      integer *8, intent(out) :: itailcoefs(npols),ntailcoefs
 
-      integer(8) iind2p(2,npols)
+      integer *8 iind2p(2,npols)
 
       if(iptype.eq.1) then
         norderhead = norder-1
@@ -463,7 +463,7 @@
 !  vertices for a given patch type
 !
 !  Input arguments:
-!    - iptype: integer(8)
+!    - iptype: integer *8
 !        type of patch
 !        * iptype = 1, triangular patch with RV nodes
 !        * iptype = 11, quad patch with GL nodes and full order
@@ -472,12 +472,12 @@
 !  Output arguments:
 !    - uv: real *8 (2,nv)
 !        set of boundary vertices
-!    - nv: integer(8)
+!    - nv: integer *8
 !        number of boundary vertices
 !
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8) iptype,nv
+      implicit integer *8 (i-n)
+      integer *8 iptype,nv
       real *8 uv(2,*)
 
       if(iptype.eq.1) then
@@ -527,10 +527,10 @@
 !
 !
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: norder,npols,iptype,nfar
-      integer(8) iclash(npols),iclashfar(npols)
-      integer(8), intent(out) :: nclash
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: norder,npols,iptype,nfar
+      integer *8 iclash(npols),iclashfar(npols)
+      integer *8, intent(out) :: nclash
       real *8 us(2,npols),ufar(2,nfar_pols)
 
       tol = 1.0d-12

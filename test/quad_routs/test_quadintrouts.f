@@ -3,7 +3,7 @@
       subroutine quadintrouts_testing(istrat,ifp,intype,ipoly,ttype,
      1   isuccess)
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8 xyztarg(3,3),xyztarg0(3,3)
       real *8, allocatable :: srcvals(:,:,:)
       real *8, allocatable :: srccoefs(:,:,:)
@@ -12,9 +12,9 @@
       complex *16, allocatable :: dlp(:,:)
       complex *16, allocatable :: slp_ex(:,:)
       complex *16, allocatable :: dlp_ex(:,:)
-      integer(8) ipars(10)
-      integer(8), allocatable :: iprint(:,:)
-      integer(8) itargptr(2),ntargptr(2)
+      integer *8 ipars(10)
+      integer *8, allocatable :: iprint(:,:)
+      integer *8 itargptr(2),ntargptr(2)
       character *1 ttype
 
 
@@ -247,11 +247,11 @@ c
 
       subroutine hslp(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8 x(3),y(ndt),dpars(ndd)
       complex *16 zpars(ndz),ima
       data ima/(0.0d0,1.0d0)/
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
       complex *16 f
 
       rr = sqrt((x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2)

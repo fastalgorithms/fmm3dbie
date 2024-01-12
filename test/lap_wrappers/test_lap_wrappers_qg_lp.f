@@ -1,5 +1,5 @@
       implicit real *8 (a-h,o-z) 
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:),targs(:,:)
       real *8, allocatable :: wts(:)
       real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
@@ -7,19 +7,19 @@
       real *8, allocatable :: rfacs(:,:)
       complex *16 zk
       character *100 fname
-      integer(8) ipars(2)
-      integer(8), allocatable :: row_ptr(:),col_ind(:)
-      integer(8), allocatable :: iquad(:)
+      integer *8 ipars(2)
+      integer *8, allocatable :: row_ptr(:),col_ind(:)
+      integer *8, allocatable :: iquad(:)
       real *8, allocatable :: srcover(:,:),wover(:)
       real *8, allocatable :: uval(:),dudnval(:)
       real *8, allocatable :: sigmaover(:),slp_near(:),dlp_near(:)
       real *8, allocatable :: pot(:),potslp(:),potdlp(:)
       real *8, allocatable :: potslp2(:)
 
-      integer(8), allocatable :: norders(:),ixyzs(:),iptype(:)
-      integer(8), allocatable :: ixyzso(:),nfars(:)
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: ixyzso(:),nfars(:)
 
-      integer(8), allocatable :: ipatch_id(:),inode_id(:)
+      integer *8, allocatable :: ipatch_id(:),inode_id(:)
       real *8, allocatable :: uvs_targ(:,:)
       real *8 xyz_out(3),xyz_in(3)
       real *8, allocatable :: sigma(:)
@@ -317,19 +317,19 @@ c
       subroutine setup_geom(igeomtype,norder,npatches,ipars, 
      1    srcvals,srccoefs,ifplot,fname)
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8) igeomtype,norder,npatches,ipars(*),ifplot
+      implicit integer *8 (i-n)
+      integer *8 igeomtype,norder,npatches,ipars(*),ifplot
       character (len=*) fname
       real *8 srcvals(12,*), srccoefs(9,*)
       real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
 
       real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer(8), pointer :: iptr1,iptr2,iptr3,iptr4
+      integer *8, pointer :: iptr1,iptr2,iptr3,iptr4
       real *8, target :: p1(10),p2(10),p3(10),p4(10)
       real *8, allocatable, target :: triaskel(:,:,:)
       real *8, allocatable, target :: deltas(:,:)
-      integer(8), allocatable :: isides(:)
-      integer(8), target :: nmax,mmax
+      integer *8, allocatable :: isides(:)
+      integer *8, target :: nmax,mmax
 
       procedure (), pointer :: xtri_geometry
 

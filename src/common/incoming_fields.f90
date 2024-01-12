@@ -127,7 +127,7 @@ subroutine fieldsED(zk, P0, points, n, E, H, vf, init)
   ! where  A = vf*exp(ima*zk*r)/r
 	
   ! List of calling arguments
-  integer(8), intent(in) :: n,init
+  integer *8, intent(in) :: n,init
   real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
   complex ( kind = 8 ), intent(in) :: vf(3),zk
   complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
@@ -135,7 +135,7 @@ subroutine fieldsED(zk, P0, points, n, E, H, vf, init)
   ! List of local variables
   real ( kind = 8 ) dx,dy,dz,r
   complex ( kind = 8 ) R1,R2,au1,au2,ima
-  integer(8) i
+  integer *8 i
 	
   ima = (0.0d0,1.0d0)
   do i=1,n
@@ -184,7 +184,7 @@ implicit none
 ! H=1/(ima*zk)*curlcurlF
 
 	!List of calling arguments
-	integer(8), intent(in) :: n,initial
+	integer *8, intent(in) :: n,initial
 	real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),zk
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
@@ -192,7 +192,7 @@ implicit none
 	!List of local variables
 	real ( kind = 8 ) dx,dy,dz,r
 	complex ( kind = 8 ) R1,R2,au1,au2,ima
-	integer(8) i
+	integer *8 i
 
 	ima = (0.0d0,1.0d0)
 
@@ -234,12 +234,12 @@ subroutine fieldsPW(zk,xyz,n,nsource,E,H)
 ! a plane wave; that is: E=exp(ima*zk*z) ux
 ! H=exp(ima*zk*z) uy
 
-	integer(8), intent(in) :: n
+	integer *8, intent(in) :: n
 	real ( kind = 8 ), intent(in) :: xyz(3,n)
 	complex ( kind = 8 ), intent(in) :: zk
 	complex *16 E(3,n),H(3,n)
 	complex *16 ima
-	integer(8) i
+	integer *8 i
 	data ima/(0.0d0,1.0d0)/
 
       do i=1,n
@@ -262,13 +262,13 @@ subroutine ScalarPW(zk,xyz,n,pot)
 ! a plane wave; that is: E=exp(ima*zk*z) ux
 ! H=exp(ima*zk*z) uy
 
-	integer(8), intent(in) :: n
+	integer *8, intent(in) :: n
 	real ( kind = 8 ), intent(in) :: xyz(3,n)
 	complex ( kind = 8 ), intent(in) :: zk
 	complex *16 pot(n)
 	complex *16 ima
 	real ( kind = 8 ) phi,pheta,kx,ky,kz
-	integer(8) i
+	integer *8 i
 	data ima/(0.0d0,1.0d0)/
 	real ( kind = 8 ) pi
 	
@@ -349,7 +349,7 @@ implicit none
 ! E=1/(-ima*omega*ep)*curlcurlA
 	
 	!List of calling arguments
-	integer(8), intent(in) :: n,init
+	integer *8, intent(in) :: n,init
 	real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),omega,ep,mu
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
@@ -357,7 +357,7 @@ implicit none
 	!List of local variables
 	real ( kind = 8 ) dx,dy,dz,r
 	complex ( kind = 8 ) R1,R2,au1,au2,ima,zk
-	integer(8) i
+	integer *8 i
 	
 	ima = (0.0d0,1.0d0)
 	zk=omega*sqrt(ep*mu)
@@ -400,7 +400,7 @@ implicit none
 ! H=1/(ima*omega*mu)*curlcurlF
 
 	!List of calling arguments
-	integer(8), intent(in) :: n,initial
+	integer *8, intent(in) :: n,initial
 	real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),omega,ep,mu
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
@@ -408,7 +408,7 @@ implicit none
 	!List of local variables
 	real ( kind = 8 ) dx,dy,dz,r,zk
 	complex ( kind = 8 ) R1,R2,au1,au2,ima
-	integer(8) i
+	integer *8 i
 	
 	zk=omega*sqrt(ep*mu)
 	ima = (0.0d0,1.0d0)
@@ -455,7 +455,7 @@ implicit none
 ! E=1/(-ima*zk)*curlcurlA
 	
 	!List of calling arguments
-	integer(8), intent(in) :: n,init,ndtarg
+	integer *8, intent(in) :: n,init,ndtarg
 	real ( kind = 8 ), intent(in) :: P0(3),points(ndtarg,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),zk
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n),A(3,n)
@@ -465,7 +465,7 @@ implicit none
 	real ( kind = 8 ) dx,dy,dz,r
 	complex ( kind = 8 ) R1,R2,au1,au2,ima,myexp
 	complex ( kind = 8 ) e_aux1,e_aux2,e_aux3,a_aux1,a_aux2,a_aux3
-	integer(8) i
+	integer *8 i
 	
 	ima = (0.0d0,1.0d0)
 
@@ -545,7 +545,7 @@ implicit none
 ! H=1/(ima*zk)*curlcurlF
 
 	!List of calling arguments
-	integer(8), intent(in) :: n,initial,ndtarg
+	integer *8, intent(in) :: n,initial,ndtarg
 	real ( kind = 8 ), intent(in) :: P0(3),points(ndtarg,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),zk
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n),A(3,n)
@@ -554,7 +554,7 @@ implicit none
 	!List of local variables
 	real ( kind = 8 ) dx,dy,dz,r
 	complex ( kind = 8 ) R1,R2,au1,au2,ima,e_aux1,e_aux2,e_aux3,myexp
-	integer(8) i
+	integer *8 i
 	
 	ima = (0.0d0,1.0d0)
 

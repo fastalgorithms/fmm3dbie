@@ -29,20 +29,20 @@ subroutine open_gmsh2_geometry(filename,npatches,norders,ixyzs, &
 !  Input arguments:
 !    - filename: character(len=*)
 !         file name of gmshv2 file
-!    - npatches: integer(8)
+!    - npatches: integer *8
 !         number of relevant triangles in gmsh file. Should be computed
 !         using a call to open_gmshv2_geometry_mem
-!    - npts: integer(8)
+!    - npts: integer *8
 !         total number of discretization points. Should be computed
 !         using a call to open_gmshv2_geometry_mem
 !
 !  Output arguments:
 !    
-!    - norders: integer(8)(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of the patches
-!    - ixyzs: integer(8)(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(8)(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -70,8 +70,8 @@ subroutine open_gmsh2_geometry(filename,npatches,norders,ixyzs, &
 
   real ( kind = 8 ), allocatable :: xyzs(:,:)
   integer ( kind = 8 ), allocatable :: element(:)
-  integer(8) n,nomax,numnodes,numelem,ntri,ntag,npols,norder,nmax,nel
-  integer(8) lll,m,l,j,iunit,istart,ipt,io,inode,info,i,ielem,ind
+  integer *8 n,nomax,numnodes,numelem,ntri,ntag,npols,norder,nmax,nel
+  integer *8 lll,m,l,j,iunit,istart,ipt,io,inode,info,i,ielem,ind
   real *8 x,y,z,rr
   character ( len = 1000) :: cline
  
@@ -300,7 +300,7 @@ subroutine open_gmsh2_geometry_mem(filename,ntri,npoints)
 
     ! List of local variable
   integer ( kind = 8 ) :: io,iunit,i,nel,ind,ielem,ntag
-  integer(8) numelem,ierror
+  integer *8 numelem,ierror
   character ( len = 1000) :: cline
 
   iunit = 18
@@ -358,10 +358,10 @@ subroutine load_uv_gmsh2_all(nomax,nmax,uv)
 !  = (1,2,3,or nomax <=4)
 !
 !  Input arguments:
-!    - nomax: integer(8)
+!    - nomax: integer *8
 !        max order of discretization nodes to be read (must be less than or 
 !        equal to 4 currently)
-!    - nmax: integer(8)
+!    - nmax: integer *8
 !        max number of points to be read, must be = (nomax+1)*(nomax+2)/2
 !    
 !  Output arugments:
@@ -370,7 +370,7 @@ subroutine load_uv_gmsh2_all(nomax,nmax,uv)
 !
 !
   implicit none
-  integer(8) nomax,nmax
+  integer *8 nomax,nmax
   real *8 uv(2,nmax,*)
 
 
@@ -494,9 +494,9 @@ subroutine load_uvw_vr_all(nomax,nmax,uv,w)
 !  nomax. This routine also loads the quadrature weights
 !
 !  Input arguments:
-!    - nomax: integer(8)
+!    - nomax: integer *8
 !        max order of discretization nodes to be read
-!    - nmax: integer(8)
+!    - nmax: integer *8
 !        max number of points to be read, must be = (nomax+1)*(nomax+2)/2
 !    
 !  Output arugments:
@@ -509,9 +509,9 @@ subroutine load_uvw_vr_all(nomax,nmax,uv,w)
 !
 !
   implicit none
-  integer(8) nomax,nmax
+  integer *8 nomax,nmax
   real *8 uv(2,nmax,nomax),w(nmax,nomax)
-  integer(8) i,norder,npols,j
+  integer *8 i,norder,npols,j
 
   do i=1,nomax
     do j=1,nmax

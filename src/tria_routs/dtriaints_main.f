@@ -127,8 +127,8 @@ c         ndd - number of real parameters
 c         dpars(ndd) - real parameters for the fker routine
 c         ndz - number of complex parameters
 c         zpars(ndz) - complex parameters for the fker routine
-c         ndi - number of integer(8) parameters
-c         ipars(ndi) - integer(8) parameters for the fker routine
+c         ndi - number of integer *8 parameters
+c         ipars(ndi) - integer *8 parameters for the fker routine
 c         nqorder - order of quadrature nodes on each subtriangle
 c                   to be used
 c         ntrimax - max number of triangles to be used for 
@@ -150,30 +150,30 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer(8) istrat
-      integer(8) intype
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
+      integer *8 istrat
+      integer *8 intype
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
-      integer(8) ifp
+      integer *8 ifp
       real *8 xyzproxy(3,*)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndi,ndz
+      integer *8 ndd,ndi,ndz
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
-      integer(8) ntrimax
+      integer *8 ipars(ndi)
+      integer *8 ntrimax
 
-      integer(8) nqorder
+      integer *8 nqorder
       real *8 rfac
 
-      integer(8) ifmetric
+      integer *8 ifmetric
       real *8 rn1
 
       real *8, allocatable :: rat1(:,:), rat2(:,:,:), rsc1(:,:)
@@ -181,7 +181,7 @@ c
 
 
 
-      integer(8) n2
+      integer *8 n2
 
       real *8 cintvals(nppols,ntarg)
       
@@ -360,8 +360,8 @@ c         ndd - number of real parameters
 c         dpars(ndd) - real parameters for the fker routine
 c         ndz - number of complex parameters
 c         zpars(ndz) - complex parameters for the fker routine
-c         ndi - number of integer(8) parameters
-c         ipars(ndi) - integer(8) parameters for the fker routine
+c         ndi - number of integer *8 parameters
+c         ipars(ndi) - integer *8 parameters for the fker routine
 c         nqorder - order of quadrature nodes on each subtriangle
 c                   to be used
 c         ntrimax - max number of triangles to be used for 
@@ -381,31 +381,31 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer(8) istrat
-      integer(8) intype
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
-      integer(8) nd
+      integer *8 istrat
+      integer *8 intype
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
+      integer *8 nd
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
-      integer(8) ifp
+      integer *8 ifp
       real *8 xyzproxy(3,*)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndi,ndz
+      integer *8 ndd,ndi,ndz
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
-      integer(8) ntrimax
+      integer *8 ipars(ndi)
+      integer *8 ntrimax
 
-      integer(8) nqorder
+      integer *8 nqorder
       real *8 rfac
 
-      integer(8) ifmetric
+      integer *8 ifmetric
       real *8 rn1
 
       real *8, allocatable :: rat1(:,:), rat2(:,:,:), rsc1(:,:)
@@ -413,7 +413,7 @@ c
 
 
 
-      integer(8) n2
+      integer *8 n2
 
       real *8 cintvals(nd,nppols,ntarg)
       

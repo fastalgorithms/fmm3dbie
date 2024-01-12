@@ -48,17 +48,17 @@
 ! 
 !  Input arguments:
 ! 
-!    - npatches: integer(8)
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(8)(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch 
-!    - ixyzs: integer(8)(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(8)(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
-!    - npts: integer(8)
+!    - npts: integer *8
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        koornwinder expansion coefficients of xyz, dxyz/du,
@@ -80,27 +80,27 @@
 !        kernel parameters (Referring to formula (1))
 !        zpars(1) = k 
 !        zpars(2) = alpha
-!    - iquadtype: integer(8)
+!    - iquadtype: integer *8
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
 !            for rest
-!    - nnz: integer(8)
+!    - nnz: integer *8
 !        number of source patch-> target interactions in the near field
-!    - row_ptr: integer(8)(npts+1)
+!    - row_ptr: integer *8(npts+1)
 !        row_ptr(i) is the pointer
 !        to col_ind array where list of relevant source patches
 !        for target i start
-!    - col_ind: integer(8) (nnz)
+!    - col_ind: integer *8 (nnz)
 !        list of source patches relevant for all targets, sorted
 !        by the target number
-!    - iquad: integer(8)(nnz+1)
+!    - iquad: integer *8(nnz+1)
 !        location in wnear_ij array where quadrature for col_ind(i)
 !        starts for a single kernel. In this case the different kernels
 !        are matrix entries are located at (m-1)*nquad+iquad(i), where
 !        m is the kernel number
-!    - rfac0: integer(8)
+!    - rfac0: integer *8
 !        radius parameter for near field
-!    - nquad: integer(8)
+!    - nquad: integer *8
 !        number of near field entries corresponding to each source target
 !        pair. The size of wnear is 4*nquad since there are 4 kernels
 !        per source target pair
@@ -112,26 +112,26 @@
 !
 
       implicit none 
-      integer(8) npatches,norders(npatches),npts,nquad
-      integer(8) ixyzs(npatches+1),iptype(npatches)
+      integer *8 npatches,norders(npatches),npts,nquad
+      integer *8 ixyzs(npatches+1),iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,rfac0
-      integer(8) ndtarg,ntarg
-      integer(8) iquadtype
+      integer *8 ndtarg,ntarg
+      integer *8 iquadtype
       complex *16 zpars(2)
       complex *16 zpars_tmp(3)
-      integer(8) nnz,ipars(2)
+      integer *8 nnz,ipars(2)
       real *8 dpars(1)
-      integer(8) row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
+      integer *8 row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
       complex *16 wnear(nquad,6)
 
-      integer(8), allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_targ(:,:)
 
 
       complex *16 alpha,beta,ima,zk
-      integer(8) i,j,ndi,ndd,ndz
+      integer *8 i,j,ndi,ndd,ndz
 
-      integer(8) ipv
+      integer *8 ipv
 
       procedure (), pointer :: fker
       external h3d_sprime,h3d_slp,h3d_dprime_diff,h3d_dlp
@@ -247,17 +247,17 @@
 !
 !  Input arguments:
 ! 
-!    - npatches: integer(8)
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(8)(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch 
-!    - ixyzs: integer(8)(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(8)(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
-!    - npts: integer(8)
+!    - npts: integer *8
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        koornwinder expansion coefficients of xyz, dxyz/du,
@@ -279,21 +279,21 @@
 !        kernel parameters (Referring to formula (1))
 !        zpars(1) = k 
 !        zpars(2) = alpha
-!    - nnz: integer(8)
+!    - nnz: integer *8
 !        number of source patch-> target interactions in the near field
-!    - row_ptr: integer(8)(npts+1)
+!    - row_ptr: integer *8(npts+1)
 !        row_ptr(i) is the pointer
 !        to col_ind array where list of relevant source patches
 !        for target i start
-!    - col_ind: integer(8) (nnz)
+!    - col_ind: integer *8 (nnz)
 !        list of source patches relevant for all targets, sorted
 !        by the target number
-!    - iquad: integer(8)(nnz+1)
+!    - iquad: integer *8(nnz+1)
 !        location in wnear_ij array where quadrature for col_ind(i)
 !        starts for a single kernel. In this case the different kernels
 !        are matrix entries are located at (m-1)*nquad+iquad(i), where
 !        m is the kernel number
-!    - nquad: integer(8)
+!    - nquad: integer *8
 !        number of near field entries corresponding to each source target
 !        pair. The size of wnear is 4*nquad since there are 4 kernels
 !        per source target pair
@@ -309,17 +309,17 @@
 !        density for layer potential
 !    - zlams: complex *16(npts)
 !        the impedance function at the discretization points
-!    - ifinout: integer(8)
+!    - ifinout: integer *8
 !        flag to indicate whether interior or exterior
 !        layer potential is required. Note that this is needed
 !        to handle the compact jump from D_{k} S_{i|k|}
-!    - novers: integer(8)(npatches)
+!    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
-!    - ixyzso: integer(8)(npatches+1)
+!    - ixyzso: integer *8(npatches+1)
 !        ixyzso(i) denotes the starting location in srcover,
 !        corresponding to patch i
-!    - nptso: integer(8)
+!    - nptso: integer *8
 !        total number of oversampled points
 !    - srcover: real *8 (12,nptso)
 !        oversampled set of source information
@@ -334,41 +334,41 @@
 !
 
       implicit none
-      integer(8) npatches,norder,npols,npts
-      integer(8) ndtarg,ntarg
-      integer(8) norders(npatches),ixyzs(npatches+1)
-      integer(8) ixyzso(npatches+1),iptype(npatches)
+      integer *8 npatches,norder,npols,npts
+      integer *8 ndtarg,ntarg
+      integer *8 norders(npatches),ixyzs(npatches+1)
+      integer *8 ixyzso(npatches+1),iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps
       complex *16 zpars(2),zpars2(3)
-      integer(8) nnz,row_ptr(npts+1),col_ind(nnz),nquad
-      integer(8) iquad(nnz+1)
+      integer *8 nnz,row_ptr(npts+1),col_ind(nnz),nquad
+      integer *8 iquad(nnz+1)
       complex *16 sigma(npts),zlams(npts)
-      integer(8) ifinout
+      integer *8 ifinout
       complex *16 wnear(nquad,6)
 
-      integer(8) novers(npatches)
-      integer(8) nover,npolso,nptso
+      integer *8 novers(npatches)
+      integer *8 nover,npolso,nptso
       real *8 srcover(12,nptso),whtsover(nptso)
       complex *16 pot(npts),phi1(npts)
 
       real *8, allocatable :: sources(:,:),srctmp(:,:)
       complex *16, allocatable :: charges(:),dipvec(:,:),sigmaover(:)
       complex *16, allocatable :: sigmaover_aux(:),sigma_aux(:)
-      integer(8) ns,nt
+      integer *8 ns,nt
       complex *16 alpha,beta
-      integer(8) ifcharge,ifdipole
-      integer(8) ifpgh,ifpghtarg
+      integer *8 ifcharge,ifdipole
+      integer *8 ifpgh,ifpghtarg
       complex *16 tmp(10),val,E(1)
 
 
-      integer(8) i,j,jpatch,jquadstart,jstart,count1,count2
+      integer *8 i,j,jpatch,jquadstart,jstart,count1,count2
       complex *16 zdotu,pottmp,gradtmp(3)
       complex *16, allocatable :: pot_aux(:),grad_aux(:,:)
       complex *16, allocatable :: phi2(:)
 
       real *8 radexp,epsfmm
 
-      integer(8) ipars(2)
+      integer *8 ipars(2)
       real *8 dpars(1),timeinfo(10),t1,t2,omp_get_wtime
 
       real *8, allocatable :: radsrc(:)
@@ -377,11 +377,11 @@
       real *8 thresh,ra
       real *8 rr,rmin
       real *8 over4pi
-      integer(8) nss,ii,l,npover,ier
+      integer *8 nss,ii,l,npover,ier
       complex *16 ima,ztmp,zfac
 
-      integer(8) nd,ntarg0,nmax
-      integer(8) ndd,ndz,ndi
+      integer *8 nd,ntarg0,nmax
+      integer *8 ndd,ndz,ndi
 
       real *8 ttot,done,pi
       data ima/(0.0d0,1.0d0)/
@@ -840,17 +840,17 @@
 !
 !  Input:
 !
-!    - npatches: integer(8)
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(8)(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch 
-!    - ixyzs: integer(8)(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(8)(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
-!    - npts: integer(8)
+!    - npts: integer *8
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        koornwinder expansion coefficients of xyz, dxyz/du,
@@ -875,9 +875,9 @@
 !          * zpars(2) = alpha
 !    - zlams: complex *16 (npts)
 !        impedance function at discretization points
-!    - numit: integer(8)
+!    - numit: integer *8
 !        max number of gmres iterations
-!    - ifinout: integer(8)
+!    - ifinout: integer *8
 !        ifinout = 0, interior problem
 !        ifinout = 1, exterior problem
 !    - rhs: complex *16(npts)
@@ -887,7 +887,7 @@
 !      
 !
 !  output
-!    - niter: integer(8)
+!    - niter: integer *8
 !        number of gmres iterations required for relative residual
 !        to converge to eps_gmres
 !    - errs:  real *8 (numit)
@@ -904,48 +904,48 @@
 !
 !
       implicit none
-      integer(8) npatches,norder,npols,npts
-      integer(8) norders(npatches),ixyzs(npatches+1)
-      integer(8) iptype(npatches)
+      integer *8 npatches,norder,npols,npts
+      integer *8 norders(npatches),ixyzs(npatches+1)
+      integer *8 iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
-      integer(8) ifinout
+      integer *8 ifinout
       complex *16 zpars(2),zlams(npts)
       complex *16 rhs(npts)
       complex *16 soln(npts),siksoln(npts)
 
       real *8, allocatable :: targs(:,:)
-      integer(8), allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_targ(:,:)
-      integer(8) ndtarg,ntarg
+      integer *8 ndtarg,ntarg
 
       real *8 errs(numit+1)
       real *8 rres,eps2
-      integer(8) niter
+      integer *8 niter
 
       real *8, allocatable :: wts(:)
 
-      integer(8) nover,npolso,nptso
-      integer(8) nnz,nquad
-      integer(8), allocatable :: row_ptr(:),col_ind(:),iquad(:)
+      integer *8 nover,npolso,nptso
+      integer *8 nnz,nquad
+      integer *8, allocatable :: row_ptr(:),col_ind(:),iquad(:)
 
       complex *16, allocatable :: wnear(:,:)
 
       real *8, allocatable :: srcover(:,:),wover(:)
-      integer(8), allocatable :: ixyzso(:),novers(:)
+      integer *8, allocatable :: ixyzso(:),novers(:)
 
       real *8, allocatable :: cms(:,:),rads(:),rad_near(:) 
 
-      integer(8) i,j,jpatch,jquadstart,jstart
+      integer *8 i,j,jpatch,jquadstart,jstart
 
-      integer(8) ipars(2)
+      integer *8 ipars(2)
       real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
 
 
       real *8 ttot,done,pi
       real *8 rfac,rfac0
-      integer(8) iptype_avg,norder_avg
-      integer(8) ikerorder, iquadtype,npts_over
-      integer(8) n_var
+      integer *8 iptype_avg,norder_avg
+      integer *8 ikerorder, iquadtype,npts_over
+      integer *8 n_var
 
 !
 !
@@ -953,7 +953,7 @@
 !
       complex *16 zid,ztmp
       real *8 rb,wnrm2
-      integer(8) numit,it,iind,it1,k,l,count1
+      integer *8 numit,it,iind,it1,k,l,count1
       real *8 rmyerr
       complex *16 temp
       complex *16, allocatable :: vmat(:,:),hmat(:,:)
@@ -1295,17 +1295,17 @@
 !
 !  Input:
 !
-!    - npatches: integer(8)
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(8)(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch 
-!    - ixyzs: integer(8)(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(8)(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
-!    - npts: integer(8)
+!    - npts: integer *8
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        koornwinder expansion coefficients of xyz, dxyz/du,
@@ -1328,7 +1328,7 @@
 !        kernel parameters (Referring to formula (1))
 !          * zpars(1) = k 
 !          * zpars(2) = alpha
-!    - numit: integer(8)
+!    - numit: integer *8
 !        max number of gmres iterations
 !      
 !
@@ -1343,51 +1343,51 @@
 !
 !
       implicit none
-      integer(8) npatches,norder,npols,npts
-      integer(8) ifinout
-      integer(8) norders(npatches),ixyzs(npatches+1)
-      integer(8) iptype(npatches)
+      integer *8 npatches,norder,npols,npts
+      integer *8 ifinout
+      integer *8 norders(npatches),ixyzs(npatches+1)
+      integer *8 iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps
       complex *16 zpars(3)
       real *8 rmem
 
-      integer(8) lmem8,bigint
+      integer *8 lmem8,bigint
       real *8 rmemfmm
       real *8, allocatable :: targs(:,:)
-      integer(8), allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_targ(:,:)
-      integer(8) ndtarg,ntarg
+      integer *8 ndtarg,ntarg
 
       real *8 rres,eps2
-      integer(8) niter
+      integer *8 niter
 
 
-      integer(8) nover,npolso,nptso
-      integer(8) nnz,nquad
-      integer(8), allocatable :: row_ptr(:),col_ind(:),iquad(:)
+      integer *8 nover,npolso,nptso
+      integer *8 nnz,nquad
+      integer *8, allocatable :: row_ptr(:),col_ind(:),iquad(:)
       complex *16, allocatable :: wnear(:)
 
       real *8, allocatable :: srcover(:,:),wover(:),sources(:,:)
-      integer(8), allocatable :: ixyzso(:),novers(:)
+      integer *8, allocatable :: ixyzso(:),novers(:)
 
       real *8, allocatable :: cms(:,:),rads(:),rad_near(:) 
 
-      integer(8) i,j,jpatch,jquadstart,jstart
+      integer *8 i,j,jpatch,jquadstart,jstart
 
-      integer(8) ipars,ifcharge,ifdipole,ifpgh,ifpghtarg
+      integer *8 ipars,ifcharge,ifdipole,ifpgh,ifpghtarg
       real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
 
 
       real *8 ttot,done,pi
       real *8 rfac,rfac0
-      integer(8) iptype_avg,norder_avg
-      integer(8) ikerorder, iquadtype,npts_over,iper
+      integer *8 iptype_avg,norder_avg
+      integer *8 ikerorder, iquadtype,npts_over,iper
 
 !
 !
 !       gmres variables
 !
-      integer(8) numit,k,l
+      integer *8 numit,k,l
       complex *16 temp
       
       bigint = numit+1

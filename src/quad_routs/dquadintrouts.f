@@ -86,11 +86,11 @@ c
 c
 c
 c  Input arguments:
-c    - npatches: integer(8)
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer(8)
+c    - norder: integer *8
 c        discretization order of patches
-c    - ipoly: integer(8)
+c    - ipoly: integer *8
 c        Type of polynomial to be used
 c        * ipoly = 0, Legendre polynomials
 c        * ipoly = 1, Chebyshev polynomials
@@ -98,29 +98,29 @@ c    - ttype: character
 c        type of number of polynomials used
 c        * ttype = 'F' or 'f', full degree polynomials
 c        * ttype = 'T' or 't', total degree polynomials
-c    - npols: integer(8)
+c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
 c    - srccoefs: real *8 (9,npols,npatches)
 c        coefficients of basis expansion of xyz coordinates,
 c        dxyz/du, and dxyz/dv
-c    - ndtarg: integer(8)
+c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
 c        coordinates
-c    - ntarg: integer(8)
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg,ntarg)
 c        target information
-c    - itargptr: integer(8)(npatches)
+c    - itargptr: integer *8(npatches)
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(8)(npatches)
+c    - ntargptr: integer *8(npatches)
 c        ntargptr(i) is the number of relevant targets for patch i
-c    - nporder: integer(8)
+c    - nporder: integer *8
 c        order of basis functions to be integrated
-c    - nppols: integer(8)
+c    - nppols: integer *8
 c        number of basis functions to be integrated
 c        * nppols = (nporder+1)*(nporder+1), if ttype = 'F'
 c        * nppols = (nporder+1)*(nporder+2)/2, if ttype = 'T'
@@ -129,19 +129,19 @@ c        function handle for evaluating the kernel K
 c        * expected calling sequence,
 c            fker(y,ndtarg,x,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c        The output 'f' is real for this subroutine
-c    - ndd: integer(8)
+c    - ndd: integer *8
 c        number of real parameters
 c    - dpars: real *8 (ndd)
 c        real parameters for the fker routine
-c    - ndz: integer(8)
+c    - ndz: integer *8
 c        number of complex parameters
 c    - zpars: complex *16 (ndz)
 c        complex parameters for the fker routine
-c    - ndi: integer(8)
-c        number of integer(8) parameters
-c    - ipars: integer(8)(ndi)
-c        integer(8) parameters for the fker routine
-c    - nqpts: integer(8)
+c    - ndi: integer *8
+c        number of integer *8 parameters
+c    - ipars: integer *8(ndi)
+c        integer *8 parameters for the fker routine
+c    - nqpts: integer *8
 c        number of quadrature points used in the
 c        integration routine
 c    - qnodes: real *8 (2,nqpts)
@@ -157,13 +157,13 @@ c
 c------------------------------------- 
 c
       implicit none
-      integer(8), intent(in) :: npatches,norder,ipoly,npols,ndtarg,ntarg
+      integer *8, intent(in) :: npatches,norder,ipoly,npols,ndtarg,ntarg
       character *1, intent(in) :: ttype
       real *8, intent(in) :: srccoefs(9,npols,npatches)
       real *8, intent(in) :: xyztarg(ndtarg,ntarg)
-      integer(8), intent(in) :: itargptr(npatches),ntargptr(npatches)
-      integer(8), intent(in) :: nporder,nppols,ndd,ndz,ndi,ipars(ndi)
-      integer(8), intent(in) :: nqpts
+      integer *8, intent(in) :: itargptr(npatches),ntargptr(npatches)
+      integer *8, intent(in) :: nporder,nppols,ndd,ndz,ndi,ipars(ndi)
+      integer *8, intent(in) :: nqpts
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
       real *8, intent(in) :: qnodes(2,nqpts),wts(nqpts)
@@ -182,8 +182,8 @@ c
 
       real *8 da
 
-      integer(8) i,j,ii,ipatch,itarg,lda,ldb,ldc
-      integer(8) ntarg0,ntargmax
+      integer *8 i,j,ii,ipatch,itarg,lda,ldb,ldc
+      integer *8 ntarg0,ntargmax
       real *8 fval
       character *1 transa,transb
 
@@ -289,18 +289,18 @@ c
 c  Input arguments:
 c    - eps: real *8
 c        precision requested (unused in this routine)
-c    - intype: integer(8)
+c    - intype: integer *8
 c        type of nodes to be used as quadrature nodes for each
 c        quadrangle in the heirarchy:
 c          intype = 1, use either tensor product chebyshev/legendre
 c            nodes of total/full degree based on the input parameters
 c            ipoly, and ttype
 c          intype = 2, use xiao gimbutas nodes on the square
-c    - npatches: integer(8)
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer(8)
+c    - norder: integer *8
 c        discretization order of patches
-c    - ipoly: integer(8)
+c    - ipoly: integer *8
 c        Type of polynomial to be used
 c        * ipoly = 0, Legendre polynomials
 c        * ipoly = 1, Chebyshev polynomials
@@ -308,39 +308,39 @@ c    - ttype: character
 c        type of number of polynomials used
 c        * ttype = 'F' or 'f', full degree polynomials
 c        * ttype = 'T' or 't', total degree polynomials
-c    - npols: integer(8)
+c    - npols: integer *8
 c        Number of polynomials 
 c        npols = (norder+1)*(norder+1) if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
 c    - srccoefs: real *8 (9,npols,npatches)
 c        coefficients of basis expansion of xyz coordinates,
 c        dxyz/du, and dxyz/dv
-c    - ndtarg: integer(8)
+c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
 c        coordinates
-c    - ntarg: integer(8)
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg,ntarg)
 c        target information
-c    - ifp: integer(8)
+c    - ifp: integer *8
 c        flag for whether a set of proxy targets are used for
 c        determining the distance criterion
 c    - xyzproxy: real *8 (3,ntarg)
 c        location of proxy targets for each target, unused if
 c        ifp.ne.1
-c    - itargptr: integer(8)(npatches)
+c    - itargptr: integer *8(npatches)
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(8)(npatches)
+c    - ntargptr: integer *8(npatches)
 c        ntargptr(i) is the number of relevant targets for patch i
-c    - nporder: integer(8)
+c    - nporder: integer *8
 c        order of basis functions to be integrated
-c    - nppols: integer(8)
+c    - nppols: integer *8
 c        number of basis functions to be integrated
 c        * nppols = (nporder+1)*(nporder+1), if ttype = 'F'
 c        * nppols = (nporder+1)*(nporder+2)/2, if ttype = 'T'
-c    - nquadmax: integer(8)
+c    - nquadmax: integer *8
 c        max number of quadrangles supported in the heirarchy
 c        if total number of quadrangles required exceeds
 c        nquadmax, subroutine exits with error code
@@ -350,19 +350,19 @@ c        function handle for evaluating the kernel K
 c        * expected calling sequence,
 c            fker(y,ndtarg,x,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c        The output 'f' is real for this subroutine
-c    - ndd: integer(8)
+c    - ndd: integer *8
 c        number of real parameters
 c    - dpars: real *8 (ndd)
 c        real parameters for the fker routine
-c    - ndz: integer(8)
+c    - ndz: integer *8
 c        number of complex parameters
 c    - zpars: complex *16 (ndz)
 c        complex parameters for the fker routine
-c    - ndi: integer(8)
-c        number of integer(8) parameters
-c    - ipars: integer(8)(ndi)
-c        integer(8) parameters for the fker routine
-c    - nqorder: integer(8)
+c    - ndi: integer *8
+c        number of integer *8 parameters
+c    - ipars: integer *8(ndi)
+c        integer *8 parameters for the fker routine
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used
 c    - rfac: real *8
 c        parameter for defining refinement criterion, quadrangles
@@ -373,7 +373,7 @@ c  Output arguments:
 c    - cintvals: real *8 (nppols,ntarg)
 c        Integral against all basis functions from patches
 c        to targets
-c    - ier: integer(8)
+c    - ier: integer *8
 c        error code, ier = 0, implies successful execution
 c        ier = 4, not enough quadrangles, try rerunning the
 c          routine with more quads
@@ -385,25 +385,25 @@ c
 cc     calling sequence variables
 c
       real *8, intent(in) :: eps
-      integer(8), intent(in) :: intype,ifp
-      integer(8), intent(in) :: npatches,norder,npols,ipoly
+      integer *8, intent(in) :: intype,ifp
+      integer *8, intent(in) :: npatches,norder,npols,ipoly
       character *1, intent(in) :: ttype
-      integer(8), intent(in) :: nporder,nppols
+      integer *8, intent(in) :: nporder,nppols
       real *8, intent(in) :: srccoefs(9,npols,npatches)
       
-      integer(8), intent(in) :: ntarg,ndtarg
+      integer *8, intent(in) :: ntarg,ndtarg
       real *8, intent(in) :: xyztarg(ndtarg,ntarg)
       real *8, intent(in) :: xyzproxy(3,*)
-      integer(8), intent(in) :: itargptr(npatches)
-      integer(8), intent(in) :: ntargptr(npatches)
+      integer *8, intent(in) :: itargptr(npatches)
+      integer *8, intent(in) :: ntargptr(npatches)
       
       external fker
-      integer(8), intent(in) :: ndd,ndz,ndi
+      integer *8, intent(in) :: ndd,ndz,ndi
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
-      integer(8), intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: ipars(ndi)
 
-      integer(8), intent(in) :: nqorder
+      integer *8, intent(in) :: nqorder
       real *8, intent(in) :: rfac
 
       real *8, intent(out) :: cintvals(nppols,ntarg)
@@ -412,36 +412,36 @@ cc      temporary variables
 c
       real *8, allocatable :: quadcm(:,:,:)
       real *8, allocatable :: quadrad(:,:)
-      integer(8), allocatable :: iquadreltmp(:,:)
-      integer(8), allocatable :: iquadrel(:,:)
-      integer(8), allocatable :: iquadrelall(:)
+      integer *8, allocatable :: iquadreltmp(:,:)
+      integer *8, allocatable :: iquadrel(:,:)
+      integer *8, allocatable :: iquadrelall(:)
       real *8, allocatable :: qverts(:,:,:)
-      integer(8), allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
 
-      integer(8) nquad,nquadmax,nlev,iquad,istart,i,j
-      integer(8) ier,itarg,jj,jstart,nlmax,npts
-      integer(8) iqquad,ii
+      integer *8 nquad,nquadmax,nlev,iquad,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqquad,ii
 
-      integer(8) npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer(8) nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: xyztargtmp(:,:)
       real *8, allocatable :: fkervals(:),sigmatmp(:,:)
       real *8, allocatable :: rsigtmp(:,:)
       real *8 xyztmp(3)
-      integer(8) itmp
+      integer *8 itmp
       complex *16 ima
       real *8 alpha_c, beta_c
-      integer(8) ier0,itype
+      integer *8 ier0,itype
 
       character *1 transa,transb
       double precision :: alpha,beta
-      integer(8) lda,ldb,ldc
+      integer *8 lda,ldb,ldc
       
 
       data ima/(0.0d0,1.0d0)/
@@ -671,18 +671,18 @@ c
 c  Input arguments:
 c    - eps: real *8
 c        precision requested 
-c    - intype: integer(8)
+c    - intype: integer *8
 c        type of nodes to be used as quadrature nodes for each
 c        quadrangle in the heirarchy:
 c          intype = 1, use either tensor product chebyshev/legendre
 c            nodes of total/full degree based on the input parameters
 c            ipoly, and ttype
 c          intype = 2, use xiao gimbutas nodes on the square
-c    - npatches: integer(8)
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer(8)
+c    - norder: integer *8
 c        discretization order of patches
-c    - ipoly: integer(8)
+c    - ipoly: integer *8
 c        Type of polynomial to be used
 c        * ipoly = 0, Legendre polynomials
 c        * ipoly = 1, Chebyshev polynomials
@@ -690,33 +690,33 @@ c    - ttype: character
 c        type of number of polynomials used
 c        * ttype = 'F' or 'f', full degree polynomials
 c        * ttype = 'T' or 't', total degree polynomials
-c    - npols: integer(8)
+c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
 c    - srccoefs: real *8 (9,npols,npatches)
 c        coefficients of basis expansion of xyz coordinates,
 c        dxyz/du, and dxyz/dv
-c    - ndtarg: integer(8)
+c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
 c        coordinates
-c    - ntarg: integer(8)
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg,ntarg)
 c        target information
-c    - itargptr: integer(8)(npatches)
+c    - itargptr: integer *8(npatches)
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(8)(npatches)
+c    - ntargptr: integer *8(npatches)
 c        ntargptr(i) is the number of relevant targets for patch i
-c    - nporder: integer(8)
+c    - nporder: integer *8
 c        order of basis functions to be integrated
-c    - nppols: integer(8)
+c    - nppols: integer *8
 c        number of basis functions to be integrated
 c        * nppols = (nporder+1)*(nporder+1), if ttype = 'F'
 c        * nppols = (nporder+1)*(nporder+2)/2, if ttype = 'T'
-c    - nquadmax: integer(8)
+c    - nquadmax: integer *8
 c        max number of quadrangles supported in the heirarchy
 c        if total number of quadrangles required exceeds
 c        nquadmax, subroutine exits with error code
@@ -726,19 +726,19 @@ c        function handle for evaluating the kernel K
 c        * expected calling sequence,
 c            fker(y,ndtarg,x,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c        The output 'f' is real for this subroutine
-c    - ndd: integer(8)
+c    - ndd: integer *8
 c        number of real parameters
 c    - dpars: real *8 (ndd)
 c        real parameters for the fker routine
-c    - ndz: integer(8)
+c    - ndz: integer *8
 c        number of complex parameters
 c    - zpars: complex *16 (ndz)
 c        complex parameters for the fker routine
-c    - ndi: integer(8)
-c        number of integer(8) parameters
-c    - ipars: integer(8)(ndi)
-c        integer(8) parameters for the fker routine
-c    - nqorder: integer(8)
+c    - ndi: integer *8
+c        number of integer *8 parameters
+c    - ipars: integer *8(ndi)
+c        integer *8 parameters for the fker routine
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used
 c  Output arguments:
 c    - cintvals: real *8 (nppols,ntarg)
@@ -754,58 +754,58 @@ c
 c     calling sequence variables
 c
       real *8 eps
-      integer(8) intype
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
+      integer *8 intype
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer(8) nqorder
+      integer *8 nqorder
 
       real *8 cintvals(nppols,ntarg)
 
 c
 c       tree variables
 c
-      integer(8) nlmax,ltree
+      integer *8 nlmax,ltree
       real *8, allocatable :: tvs(:,:,:),da(:)
-      integer(8), allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
       real *8, allocatable :: tvs2(:,:,:),da2(:)
-      integer(8), allocatable :: ichild_start2(:)
+      integer *8, allocatable :: ichild_start2(:)
 
-      integer(8) nquad,nquadmax,nlev,iquad,istart,i,j,k
-      integer(8) ier,itarg,jj,jstart,npts
-      integer(8) iqquad,ii
+      integer *8 nquad,nquadmax,nlev,iquad,istart,i,j,k
+      integer *8 ier,itarg,jj,jstart,npts
+      integer *8 iqquad,ii
 
-      integer(8) ipoly,itype
+      integer *8 ipoly,itype
       character *1 ttype
 
 
-      integer(8) npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
-      integer(8) nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:),sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
       real *8, allocatable :: srcvals2(:,:),qwts2(:)
-      integer(8) itmp
+      integer *8 itmp
 
       character *1 transa,transb
       real *8 alpha,beta
-      integer(8) lda,ldb,ldc
-      integer(8) nn1,nn2,nn3,nn4,npmax0,nqmaxuse,nqmaxuse0
+      integer *8 lda,ldb,ldc
+      integer *8 nn1,nn2,nn3,nn4,npmax0,nqmaxuse,nqmaxuse0
       
       
 c
@@ -1037,18 +1037,18 @@ c
 c  Arguments:
 c    - eps: real *8
 c        precision requested 
-c    - m: integer(8)
+c    - m: integer *8
 c        order of quadrature rule used in each quad of quad tree
 c        hierarchy
-c    - kpols: integer(8)
+c    - kpols: integer *8
 c        corresponding number of quadrature nodes
-c    - nlmax: integer(8)
+c    - nlmax: integer *8
 c        max level of refinement
-c    - nqmax: integer(8)
+c    - nqmax: integer *8
 c        max number of quads
-c    - nquad: integer(8)
+c    - nquad: integer *8
 c        current number of active quads (both input and output variable)
-c    - ichild_start: integer(8)(nqmax)
+c    - ichild_start: integer *8(nqmax)
 c        ichild_start(i) points to the starting index of the child quad
 c        of quad i in the quad tree hierarchy
 c    - tvs: real *8 (2,3,nqmax)
@@ -1063,9 +1063,9 @@ c    - uvsq: real *8 (2,kpols)
 c        quadrature nodes on the reference quad
 c    - wts: real *8(kpols)
 c        quadrature weights on the reference quad
-c    - norder: integer(8)
+c    - norder: integer *8
 c        discretization order of patches
-c    - ipoly: integer(8)
+c    - ipoly: integer *8
 c        Type of polynomial to be used
 c        * ipoly = 0, Legendre polynomials
 c        * ipoly = 1, Chebyshev polynomials
@@ -1073,14 +1073,14 @@ c    - ttype: character
 c        type of number of polynomials used
 c        * ttype = 'F' or 'f', full degree polynomials
 c        * ttype = 'T' or 't', total degree polynomials
-c    - npols: integer(8)
+c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
 c    - srccoefs: real *8 (9,npols,npatches)
 c        coefficients of basis expansion of xyz coordinates,
 c        dxyz/du, and dxyz/dv
-c    - npmax: integer(8)
+c    - npmax: integer *8
 c        maximum number of discretization nodes in the
 c        current quadtree hierarchy = nqmax*kpols
 c    - srcvals: real *8(12,npmax) - inout
@@ -1097,16 +1097,16 @@ c                                       with default parameters)
 c         basis function evaluations to recompute srcinfo
 c         at quad tree hierarchy, useful when using multiple
 c         quads of adaptive integration in the same block.
-c    - nporder: integer(8)
+c    - nporder: integer *8
 c        order of basis functions to be integrated
-c    - nppols: integer(8)
+c    - nppols: integer *8
 c        number of basis functions to be integrated
 c        * nppols = nporder*nporder, if ttype = 'F'
 c        * nppols = (nporder+1)*(nporder+2)/2, if ttype = 'T'
 c    - sigvalsdens: real *8 (nppols,npmax) - (inout)
 c        basis function evaluations corresponding to density order,
 c        this array is reused across different targets as well
-c    - ndtarg: integer(8)
+c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
 c        coordinates
@@ -1117,36 +1117,36 @@ c        function handle for evaluating the kernel K
 c        * expected calling sequence,
 c            fker(y,ndtarg,x,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c        The output 'f' is real for this subroutine
-c    - ndd: integer(8)
+c    - ndd: integer *8
 c        number of real parameters
 c    - dpars: real *8 (ndd)
 c        real parameters for the fker routine
-c    - ndz: integer(8)
+c    - ndz: integer *8
 c        number of complex parameters
 c    - zpars: complex *16 (ndz)
 c        complex parameters for the fker routine
-c    - ndi: integer(8)
-c        number of integer(8) parameters
-c    - ipars: integer(8)(ndi)
-c        integer(8) parameters for the fker routine
+c    - ndi: integer *8
+c        number of integer *8 parameters
+c    - ipars: integer *8(ndi)
+c        integer *8 parameters for the fker routine
 c  Output arguments:
 c    - cintall: real *8 (nppols)
 c        Integral against all basis functions from patches
 c        to targets
-c    - ier: integer(8)
+c    - ier: integer *8
 c        error code
 c        * ier = 0, successful execution
 c        * ier = 4, not enough quads
 c-------------------
 
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), allocatable :: istack(:)
-      integer(8) ichild_start(nqmax)
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: istack(:)
+      integer *8 ichild_start(nqmax)
       real *8 da(nqmax)
       real *8 tvs(2,3,nqmax), uvsq(2,kpols),wts(kpols)
-      integer(8) nproclist0, nproclist
-      integer(8) idone
+      integer *8 nproclist0, nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -1158,13 +1158,13 @@ c-------------------
       real *8, allocatable :: cvals(:,:)
 
       character *1 ttype
-      integer(8) ipoly
+      integer *8 ipoly
 
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
-      integer(8) ier
+      integer *8 ipars(ndi)
+      integer *8 ier
 
 
       external fker
@@ -1265,18 +1265,18 @@ c
 c  Arguments:
 c    - eps: real *8
 c        precision requested 
-c    - m: integer(8)
+c    - m: integer *8
 c        order of quadrature rule used in each quad of quad tree
 c        hierarchy
-c    - kpols: integer(8)
+c    - kpols: integer *8
 c        corresponding number of quadrature nodes
-c    - nlmax: integer(8)
+c    - nlmax: integer *8
 c        max level of refinement
-c    - nqmax: integer(8)
+c    - nqmax: integer *8
 c        max number of quads
-c    - nquad: integer(8)
+c    - nquad: integer *8
 c        current number of active quads (both input and output variable)
-c    - ichild_start: integer(8)(nqmax)
+c    - ichild_start: integer *8(nqmax)
 c        ichild_start(i) points to the starting index of the child quad
 c        of quad i in the quad tree hierarchy
 c    - tvs: real *8 (2,3,nqmax)
@@ -1291,9 +1291,9 @@ c    - uvsq: real *8 (2,kpols)
 c        quadrature nodes on the reference quad
 c    - wts: real *8(kpols)
 c        quadrature weights on the reference quad
-c    - norder: integer(8)
+c    - norder: integer *8
 c        discretization order of patches
-c    - ipoly: integer(8)
+c    - ipoly: integer *8
 c        Type of polynomial to be used
 c        * ipoly = 0, Legendre polynomials
 c        * ipoly = 1, Chebyshev polynomials
@@ -1301,14 +1301,14 @@ c    - ttype: character
 c        type of number of polynomials used
 c        * ttype = 'F' or 'f', full degree polynomials
 c        * ttype = 'T' or 't', total degree polynomials
-c    - npols: integer(8)
+c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
 c    - srccoefs: real *8 (9,npols,npatches)
 c        coefficients of basis expansion of xyz coordinates,
 c        dxyz/du, and dxyz/dv
-c    - npmax: integer(8)
+c    - npmax: integer *8
 c        maximum number of discretization nodes in the
 c        current quadtree hierarchy = nqmax*kpols
 c    - srcvals: real *8(12,npmax) - inout
@@ -1325,16 +1325,16 @@ c                                       with default parameters)
 c         basis function evaluations to recompute srcinfo
 c         at quad tree hierarchy, useful when using multiple
 c         quads of adaptive integration in the same block.
-c    - nporder: integer(8)
+c    - nporder: integer *8
 c        order of basis functions to be integrated
-c    - nppols: integer(8)
+c    - nppols: integer *8
 c        number of basis functions to be integrated
 c        * nppols = nporder*nporder, if ttype = 'F'
 c        * nppols = (nporder+1)*(nporder+2)/2, if ttype = 'T'
 c    - sigvalsdens: real *8 (nppols,npmax) - (inout)
 c        basis function evaluations corresponding to density order,
 c        this array is reused across different targets as well
-c    - ndtarg: integer(8)
+c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
 c        coordinates
@@ -1345,24 +1345,24 @@ c        function handle for evaluating the kernel K
 c        * expected calling sequence,
 c            fker(y,ndtarg,x,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c        The output 'f' is real for this subroutine
-c    - ndd: integer(8)
+c    - ndd: integer *8
 c        number of real parameters
 c    - dpars: real *8 (ndd)
 c        real parameters for the fker routine
-c    - ndz: integer(8)
+c    - ndz: integer *8
 c        number of complex parameters
 c    - zpars: complex *16 (ndz)
 c        complex parameters for the fker routine
-c    - ndi: integer(8)
-c        number of integer(8) parameters
-c    - ipars: integer(8)(ndi)
-c        integer(8) parameters for the fker routine
+c    - ndi: integer *8
+c        number of integer *8 parameters
+c    - ipars: integer *8(ndi)
+c        integer *8 parameters for the fker routine
 c    - cvals: real *8(nppols,nqmax) - inout
 c        integrals of the functions on the quad
 c        tree hierarchy
-c    - istack: integer(8)(*)
+c    - istack: integer *8(*)
 c        initial stack of quads to be processed
-c    - nproclist0: integer(8)
+c    - nproclist0: integer *8
 c        number of quads in the initial stack of quads to
 c        be processed
 c    - xkernvals: real *8(npmax)
@@ -1371,7 +1371,7 @@ c  Output arguments:
 c    - cintall: real *8 (nppols)
 c        Integral against all basis functions from patches
 c        to targets
-c    - ier: integer(8)
+c    - ier: integer *8
 c        error code
 c        * ier = 0, successful execution
 c        * ier = 4, not enough quads
@@ -1379,14 +1379,14 @@ c-------------------
       
 
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8) istack(*),nproclist0
-      integer(8) ichild_start(nqmax)
-      integer(8) nporder,nppols
+      implicit integer *8 (i-n)
+      integer *8 istack(*),nproclist0
+      integer *8 ichild_start(nqmax)
+      integer *8 nporder,nppols
       real *8 da(nqmax)
       real *8 tvs(2,3,nqmax), uvsq(2,kpols),wts(kpols)
-      integer(8)  nproclist
-      integer(8) idone
+      integer *8  nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -1397,18 +1397,18 @@ c-------------------
       real *8 cintall(nppols),fval,ctmp(nppols)
       real *8 cvals(nppols,nqmax)
 
-      integer(8) ipoly
+      integer *8 ipoly
       character *1 ttype
 
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
 
       real *8, allocatable :: uvtmp(:,:)
       character *1 transa,transb
-      integer(8) lda,ldb,ldc
+      integer *8 lda,ldb,ldc
       external fker
       
       allocate(uvtmp(2,kpols))
@@ -1608,18 +1608,18 @@ c
 c  Input arguments:
 c    - eps: real *8
 c        precision requested 
-c    - intype: integer(8)
+c    - intype: integer *8
 c        type of nodes to be used as quadrature nodes for each
 c        quadrangle in the heirarchy:
 c          intype = 1, use either tensor product chebyshev/legendre
 c            nodes of total/full degree based on the input parameters
 c            ipoly, and ttype
 c          intype = 2, use xiao gimbutas nodes on the square
-c    - npatches: integer(8)
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer(8)
+c    - norder: integer *8
 c        discretization order of patches
-c    - ipoly: integer(8)
+c    - ipoly: integer *8
 c        Type of polynomial to be used
 c        * ipoly = 0, Legendre polynomials
 c        * ipoly = 1, Chebyshev polynomials
@@ -1627,39 +1627,39 @@ c    - ttype: character
 c        type of number of polynomials used
 c        * ttype = 'F' or 'f', full degree polynomials
 c        * ttype = 'T' or 't', total degree polynomials
-c    - npols: integer(8)
+c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
 c    - srccoefs: real *8 (9,npols,npatches)
 c        coefficients of basis expansion of xyz coordinates,
 c        dxyz/du, and dxyz/dv
-c    - ndtarg: integer(8)
+c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
 c        coordinates
-c    - ntarg: integer(8)
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg,ntarg)
 c        target information
-c    - ifp: integer(8)
+c    - ifp: integer *8
 c        flag for whether a set of proxy targets are used for
 c        determining the distance criterion
 c    - xyzproxy: real *8 (3,ntarg)
 c        location of proxy targets for each target, unused if
 c        ifp.ne.1
-c    - itargptr: integer(8)(npatches)
+c    - itargptr: integer *8(npatches)
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(8)(npatches)
+c    - ntargptr: integer *8(npatches)
 c        ntargptr(i) is the number of relevant targets for patch i
-c    - nporder: integer(8)
+c    - nporder: integer *8
 c        order of basis functions to be integrated
-c    - nppols: integer(8)
+c    - nppols: integer *8
 c        number of basis functions to be integrated
 c        * nppols = nporder*nporder, if ttype = 'F'
 c        * nppols = (nporder+1)*(nporder+2)/2, if ttype = 'T'
-c    - nquadmax: integer(8)
+c    - nquadmax: integer *8
 c        max number of quadrangles supported in the heirarchy
 c        if total number of quadrangles required exceeds
 c        nquadmax, subroutine exits with error code
@@ -1669,19 +1669,19 @@ c        function handle for evaluating the kernel K
 c        * expected calling sequence,
 c            fker(y,ndtarg,x,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c        The output 'f' is real for this subroutine
-c    - ndd: integer(8)
+c    - ndd: integer *8
 c        number of real parameters
 c    - dpars: real *8 (ndd)
 c        real parameters for the fker routine
-c    - ndz: integer(8)
+c    - ndz: integer *8
 c        number of complex parameters
 c    - zpars: complex *16 (ndz)
 c        complex parameters for the fker routine
-c    - ndi: integer(8)
-c        number of integer(8) parameters
-c    - ipars: integer(8)(ndi)
-c        integer(8) parameters for the fker routine
-c    - nqorder: integer(8)
+c    - ndi: integer *8
+c        number of integer *8 parameters
+c    - ipars: integer *8(ndi)
+c        integer *8 parameters for the fker routine
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used
 c    - rfac: real *8
 c        parameter for defining refinement criterion, quadrangles
@@ -1700,27 +1700,27 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer(8) intype,ifp
-      integer(8) npatches,norder,npols
-      integer(8) nporder,nppols
+      integer *8 intype,ifp
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer(8) ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
       real *8 xyzproxy(3,*)
-      integer(8) itargptr(npatches)
-      integer(8) ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer(8) ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer(8) nqorder
+      integer *8 nqorder
       real *8 rfac
 
-      integer(8) ipoly
+      integer *8 ipoly
       character *1 ttype
 
 
@@ -1732,23 +1732,23 @@ cc      temporary variables
 c
       real *8, allocatable :: quadcm(:,:,:)
       real *8, allocatable :: quadrad(:,:)
-      integer(8), allocatable :: iquadreltmp(:,:)
-      integer(8), allocatable :: iquadrel(:,:)
-      integer(8), allocatable :: iquadrelall(:)
+      integer *8, allocatable :: iquadreltmp(:,:)
+      integer *8, allocatable :: iquadrel(:,:)
+      integer *8, allocatable :: iquadrelall(:)
       real *8, allocatable :: tverts(:,:,:)
-      integer(8), allocatable :: ichild_start(:)
-      integer(8), allocatable :: ichild_start0(:)
+      integer *8, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start0(:)
 
-      integer(8) nquad,nquadmax,nlev,iquad,istart,i,j
-      integer(8) ier,itarg,jj,jstart,nlmax,npts
-      integer(8) iqquad,ii
+      integer *8 nquad,nquadmax,nlev,iquad,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqquad,ii
 
-      integer(8) npmax,itype
+      integer *8 npmax,itype
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer(8) nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:)
@@ -1756,14 +1756,14 @@ c
       real *8, allocatable :: sigmatmp(:,:)
       real *8, allocatable :: xyztargtmp(:,:)
       real *8 xyztmp(3)
-      integer(8) itmp
+      integer *8 itmp
 
       real *8, allocatable :: xkernvals(:)
-      integer(8), allocatable :: istack(:)
+      integer *8, allocatable :: istack(:)
 
       real *8, allocatable :: cvals(:,:)
       
-      integer(8) nproclist0,nproclist,nquad0,npts0
+      integer *8 nproclist0,nproclist,nquad0,npts0
       real *8 zz
 
       
@@ -1772,7 +1772,7 @@ c
       character *1 transa,transb
       
       real *8 alpha,beta
-      integer(8) lda,ldb,ldc
+      integer *8 lda,ldb,ldc
 
       data ima/(0.0d0,1.0d0)/
 

@@ -39,7 +39,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
         subroutine raddiag(irad,verts,nv,nquad,xs,ys,whts)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension xs(*),ys(*),whts(*),verts(2,nv)
 c
 c       Return a quadrature for the evaluation of radially singular
@@ -107,7 +107,7 @@ c
 c
         subroutine raddiag0(irad,x1_,y1_,x2_,y2_,nquad,xs,ys,whts)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension xs(*),ys(*),whts(*),verts(2,3)
         dimension amatr(2,2)
         double precision xlege(100),wlege(100)
@@ -239,7 +239,7 @@ c
         subroutine raddiag1(nt,ts,twhts,nlege,xslege,whtslege,amatr,
      1     nquad,xs,ys,whts,a,b)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension ts(nt),twhts(nt),xslege(nlege),whtslege(nlege)
         dimension amatr(2,2),ainv(2,2)
         dimension xs(nquad),ys(nquad),whts(nquad)
@@ -304,9 +304,9 @@ c
 c
       subroutine pv_raddiag(irad,verts,nv,nquad,xs,ys,whts)
       implicit double precision (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       dimension xs(*),ys(*),whts(*),verts(2,nv)
-      integer(8) irad
+      integer *8 irad
 c
 c-------------
 c  Return a quadrature for the evaluation of radially singular
@@ -319,7 +319,7 @@ c  precomputed quadrature table.
 c
 c  Input Parameters:
 c
-c    - irad: integer(8)
+c    - irad: integer *8
 c        type of radial quadrature to be used
 c        for norder<=4, use irad=1,
 c        for 4<norder<=8, use irad=2,
@@ -333,7 +333,7 @@ c        of one vertex of the user-supplied triangle
 c
 c  Output Parameters:
 c
-c    - nquad: integer(8)
+c    - nquad: integer *8
 c        the size of the quadrature rule
 c    - (xs,ys): double precision(nquad)
 c        the coordinates of the quadrature
@@ -413,7 +413,7 @@ c
       subroutine pv_raddiag_disk0(irad,n,nlege,rcut,
      -    nquad,xs,ys,whts)
       implicit double precision (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       dimension xslege(nlege),whtslege(nlege)
       dimension xs(nquad),ys(nquad),whts(nquad)
 c
@@ -460,7 +460,7 @@ c
       subroutine pv_raddiag0(irad,x1,y1,x2,y2,nquad,xs,ys,whts,
      1    rcut,norder)
       implicit double precision (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       dimension xs(*),ys(*),whts(*),verts(2,3)
 c
       dimension amatr(2,2),ainv(2,2)
@@ -546,7 +546,7 @@ c
       subroutine pv_raddiag1(nts,ts,twhts,
      1     nquad,xs,ys,whts,alpha,phi,rcut,norder)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension ts(nts),twhts(nts),amatr(2,2),ainv(2,2)
         dimension xs(*),ys(*),whts(*)
         double precision rs(250),rwhts(250)
@@ -599,7 +599,7 @@ c
 
         subroutine pv_linedist(x1,y1,x2,y2,r)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
 c
 c       Find the point on the line segment connecting (x1,y1)
 c       and (x2,y2) which is closed to the origin.
@@ -634,7 +634,7 @@ c
 
         subroutine rad2x2inv(amatr,ainv,det)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension amatr(2,2),ainv(2,2)
 c
         det = amatr(1,1)*amatr(2,2)-amatr(1,2)*amatr(2,1)
@@ -657,9 +657,9 @@ c  gauss-legendre nodes and weights needed for radfetch
 c 
 c  Input arguments:
 c
-c    - irad: integer(8)
+c    - irad: integer *8
 c        type of radial quadrature
-c    - nlege: integer(8)
+c    - nlege: integer *8
 c        must be 4*irad/2+1
 c
 c  Output arguments:
@@ -673,8 +673,8 @@ c
 c
 
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: irad,nlege
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: irad,nlege
       real *8, intent(out) :: ts(nlege),wts(nlege)
 
       if(irad.eq. 1) then
@@ -738,11 +738,11 @@ c  r,t,and irad
 c
 c  Input arugments:
 c
-c    - ipv: integer(8)
+c    - ipv: integer *8
 c        flag for extracting compact/pv quadratures
 c        ipv = 0, compact quadratures
 c        ipv = 1, pv quadratures
-c    - irad: integer(8)
+c    - irad: integer *8
 c        type of radial quadrature to be used
 c        for norder<=4, use irad=1,
 c        for 4<norder<=8, use irad=2,
@@ -757,21 +757,21 @@ c         angle coordinate in triangle
 c
 c  Output arguments:
 c
-c    - n: integer(8)
+c    - n: integer *8
 c        number of quadrature nodes in the region
-c    - ir: integer(8)
+c    - ir: integer *8
 c        radial region number
-c    - it: integer(8)
+c    - it: integer *8
 c        theta region number
 c
       implicit none
-      integer(8), intent(in) :: irad,ipv
+      integer *8, intent(in) :: irad,ipv
       real *8, intent(in) :: r,t
-      integer(8), intent(out) :: n,ir,it
+      integer *8, intent(out) :: n,ir,it
 
       real *8 rs(2,25),ts(2,25),eps
-      integer(8) nn(25,25),nrs,nts
-      integer(8) i
+      integer *8 nn(25,25),nrs,nts
+      integer *8 i
 
       eps = 1.0d-12
 
@@ -811,22 +811,22 @@ c  corresponding to region number ipv,irad,ir,it
 c
 c  Input arugments:
 c
-c    - ipv: integer(8)
+c    - ipv: integer *8
 c        flag for extracting compact/pv quadratures
 c        ipv = 0, compact quadratures
 c        ipv = 1, pv quadratures
-c    - irad: integer(8)
+c    - irad: integer *8
 c        type of radial quadrature to be used
 c        for norder<=4, use irad=1,
 c        for 4<norder<=8, use irad=2,
 c        else use irad=3, there will be some loss in accuracy
 c        if norder>12. Support for higher orders will be made
 c        available with irad=4, and so on
-c    - ir: integer(8)
+c    - ir: integer *8
 c        radial region number
-c    - it: integer(8)
+c    - it: integer *8
 c        theta region number
-c    - nt: integer(8)
+c    - nt: integer *8
 c        number of quadrature nodes in the region
 c
 c  Output arguments:
@@ -837,7 +837,7 @@ c    - wts: double precision(nt)
 c        quadrature weights
 c
       implicit none
-      integer(8), intent(in) :: irad,ir,it,nt,ipv
+      integer *8, intent(in) :: irad,ir,it,nt,ipv
       real *8, intent(out) :: ts(nt),wts(nt)
 
       INCLUDE 'ggq-self-quads/radfetch-data.txt'
@@ -851,7 +851,7 @@ c
 c
         subroutine pv_radtransform(x1,y1,x2,y2,alpha,phi,amatr,ainv,det)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension amatr(2,2),ainv(2,2)
 c
 c       Construct a transformation taking a user-specified triangle T
@@ -932,7 +932,7 @@ c
 
         subroutine pvquad4(ier,r0,r1,nquad,xs,whts)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension xs(*),whts(*)
         dimension deltas(2,23)
         dimension xs01(19),whts01(19)
@@ -1849,7 +1849,7 @@ c
 
         subroutine pvquad8(ier,r0,r1,nquad,xs,whts)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension xs(*),whts(*)
         dimension deltas(2,23)
         dimension xs01(18),whts01(18)
@@ -2843,7 +2843,7 @@ c
 
         subroutine pvquad12(ier,r0,r1,nquad,xs,whts)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension xs(*),whts(*)
         dimension deltas(2,23)
         dimension xs01(19),whts01(19)
@@ -3902,7 +3902,7 @@ c
 
         subroutine pvquad16(ier,r0,r1,nquad,xs,whts)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension xs(*),whts(*)
         dimension deltas(2,23)
         dimension xs01(23),whts01(23)
@@ -5042,7 +5042,7 @@ c
 
         subroutine pvquad20(ier,r0,r1,nquad,xs,whts)
         implicit double precision (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension xs(*),whts(*)
         dimension deltas(2,23)
         dimension xs01(24),whts01(24)

@@ -11,7 +11,7 @@ c
 c 
         subroutine chebexps(itype,n,x,u,v,whts)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension x(1),whts(1),u(n,n),v(n,n)
 c 
 c         this subroutine constructs the chebychev nodes
@@ -185,7 +185,7 @@ c
 c 
         subroutine chebexps2(itype,n,x,u,v,whts,vp,vpp)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension x(1),whts(1),u(n,n),v(n,n),vp(n,n),vpp(n,n)
         real *8 p(n),pd(n),pdd(n)
 c 
@@ -377,7 +377,7 @@ c
         subroutine chebinmt(n,ainte,adiff,x,whts,endinter,
      1      itype,w)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension ainte(1),w(1),x(1),whts(1),adiff(1),endinter(1)
 c 
 c 
@@ -451,7 +451,7 @@ c
         subroutine chebinm0(n,ainte,adiff,polin,polout,
      1      x,whts,u,v,w,itype,endinter)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension ainte(n,n),u(n,n),v(n,n),w(n,n),
      1      endinter(1),x(n),whts(n),polin(n),polout(n),
      2      adiff(n,n)
@@ -583,7 +583,7 @@ c
 c 
         subroutine chebpol(x,n,pol,der)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
 c 
 
         d=dacos(x)
@@ -598,7 +598,7 @@ c
 c 
         subroutine chebpols(x,n,pols)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension pols(*)
 c 
         pkm1=1
@@ -639,7 +639,7 @@ c
 c 
       SUBROUTINE chebpolders(X,VALs,ders,N)
       IMPLICIT REAL *8 (A-H,O-Z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       REAL *8 vals(*),ders(*)
 C 
 C     This subroutine computes the values and the derivatives
@@ -696,7 +696,7 @@ c
 c 
       SUBROUTINE chebpolders2(X,VALs,ders,ders2,N)
       IMPLICIT REAL *8 (A-H,O-Z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       REAL *8 vals(*),ders(*),ders2(*)
 C 
 C     This subroutine computes the values and the derivatives
@@ -765,7 +765,7 @@ c
 c 
         subroutine chebinte(polin,n,polout)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension polin(*),polout(*)
 c 
 c       this subroutine computes the indefinite integral of the
@@ -822,7 +822,7 @@ c
 c 
         subroutine chebdiff(polin,n,polout)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension polin(*),polout(*)
 c 
 c       this subroutine differentiates the Chebychev
@@ -862,7 +862,7 @@ c
 c 
       SUBROUTINE chebexev(X,VAL,TEXP,N)
       IMPLICIT REAL *8 (A-H,O-Z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       REAL *8 TEXP(*)
 C 
 C     This subroutine computes the value o a Chebychev
@@ -922,7 +922,7 @@ C     VAL = computed value
 C     der = computed value of the derivative
 C 
       IMPLICIT REAL *8 (A-H,O-Z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       REAL *8 TEXP(*)
 C 
         done=1
@@ -975,7 +975,7 @@ C     VAL = computed value
 C     der = computed value of the derivative
 C 
       IMPLICIT REAL *8 (A-H,O-Z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       complex *16 TEXP(*),val
 C 
         done=1
@@ -1020,7 +1020,7 @@ C     VAL = computed value
 C     der = computed value of the derivative
 C 
       IMPLICIT REAL *8 (A-H,O-Z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
 
       real *8 TEXP(*),val
 C 
@@ -1066,7 +1066,7 @@ C     VAL = computed value
 C     der = computed value of the derivative
 C 
       IMPLICIT REAL *8 (A-H,O-Z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       complex *16 TEXP(*),val,der
 C 
         done=1
@@ -1101,7 +1101,7 @@ c
 c 
         subroutine cheb_matmula(a,b,c,n)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension a(n,n),b(n,n),c(n,n)
 c 
         do 2000 i=1,n
@@ -1123,7 +1123,7 @@ c
 c 
         subroutine cheb_matamul(a,b,c,n)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension a(n,n),b(n,n),c(n,n)
 c 
         do 2000 i=1,n
@@ -1146,7 +1146,7 @@ c
 c 
         subroutine cheb_matmul(a,b,c,n)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension a(n,n),b(n,n),c(n,n)
 c 
         do 2000 i=1,n
@@ -1167,7 +1167,7 @@ c
 c 
         subroutine chematrin(n,m,xs,amatrint,ts,w)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension amatrint(m,n),xs(1),w(1),ts(1)
 c 
 c 
@@ -1224,7 +1224,7 @@ c
 c 
         subroutine chevecin(n,x,ts,u,v,coefs,ifinit)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension u(n,n),v(n,n),ts(1),coefs(1)
 c 
 c        This subroutine constructs the coefficients of the
@@ -1282,7 +1282,7 @@ c
 c 
         subroutine chematvec(a,x,y,n)
         implicit real *8 (a-h,o-z)
-        implicit integer(8) (i-n)
+        implicit integer *8 (i-n)
         dimension a(n,n),x(n),y(n)
 c 
         do 1400 i=1,n

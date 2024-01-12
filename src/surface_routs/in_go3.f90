@@ -30,11 +30,11 @@ implicit none
     !List of local variables
     integer ( kind = 8 ) umio,count1,count2,flag,aux,npols,icount
     integer ( kind = 8) norder
-    integer(8) :: ierror
+    integer *8 :: ierror
 	real ( kind = 8 ) aux_real,aux_vect(3)
 	real ( kind = 8 ), allocatable :: h_points(:),h_coefs(:)
 	real ( kind = 8 ), allocatable :: uv(:,:),umatr(:,:),vmatr(:,:),w(:)
-    integer(8) i
+    integer *8 i
 
     open(UNIT=18, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
 
@@ -154,7 +154,7 @@ implicit none
 
     !List of local variables
     integer ( kind = 8 ) umio,count1,count2,flag,aux
-    integer(8) :: ierror,norder
+    integer *8 :: ierror,norder
 
         open(UNIT=18, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
 

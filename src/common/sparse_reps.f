@@ -38,15 +38,15 @@ c-------------------------------------------------
       subroutine rsc_to_csc(ncol,nrow,nnz,row_ptr,col_ind,
      1    col_ptr,row_ind,iper)
       implicit real *8 (a-h,o-z)
-      integer(8), intent(in) :: ncol,nnz,nrow
-      integer(8), intent(in) :: row_ptr(nrow+1),col_ind(nnz)
-      integer(8), intent(out) :: col_ptr(ncol+1),row_ind(nnz)
-      integer(8), intent(out) :: iper(nnz)
+      integer *8, intent(in) :: ncol,nnz,nrow
+      integer *8, intent(in) :: row_ptr(nrow+1),col_ind(nnz)
+      integer *8, intent(out) :: col_ptr(ncol+1),row_ind(nnz)
+      integer *8, intent(out) :: iper(nnz)
 
-      integer(8), allocatable :: row_ind_exp(:)
+      integer *8, allocatable :: row_ind_exp(:)
 
-      integer(8), allocatable :: nslr(:)
-      integer(8) i,itarg,ictr
+      integer *8, allocatable :: nslr(:)
+      integer *8 i,itarg,ictr
 
       allocate(row_ind_exp(nnz))
 
@@ -99,10 +99,10 @@ c
 c
 cf2py  intent(in) nent,m,iind,jind
 cf2py  intent(out) col_ptr,row_ind
-      integer(8), intent(in) :: nent,m,iind(nent),jind(nent)
-      integer(8), intent(out) :: col_ptr(m+1),row_ind(nent)
-      integer(8), allocatable :: jsort(:),jper(:),icnt(:)
-      integer(8) i,icur,icur0,icur1,j
+      integer *8, intent(in) :: nent,m,iind(nent),jind(nent)
+      integer *8, intent(out) :: col_ptr(m+1),row_ind(nent)
+      integer *8, allocatable :: jsort(:),jper(:),icnt(:)
+      integer *8 i,icur,icur0,icur1,j
 
 
       allocate(jper(nent),jsort(nent))
@@ -166,14 +166,14 @@ c
 c
 cf2py  intent(in) nent,m,iind,jind
 cf2py  intent(out) col_ptr,row_ind
-      integer(8), intent(in) :: nent,m,iind(nent),jind(nent)
-      integer(8), intent(out) :: col_ptr(m+1),row_ind(nent)
-      integer(8), allocatable :: jsort(:),jper(:),icnt(:)
-      integer(8) i,icur,icur0,icur1
-      integer(8), external :: OMP_GET_THREAD_NUM, OMP_GET_NUM_THREADS
-      integer(8), external :: OMP_GET_MAX_THREADS
-      integer(8) nthreads,ithread,first,mend,istart,iend
-      integer(8), allocatable :: split(:),ind(:)
+      integer *8, intent(in) :: nent,m,iind(nent),jind(nent)
+      integer *8, intent(out) :: col_ptr(m+1),row_ind(nent)
+      integer *8, allocatable :: jsort(:),jper(:),icnt(:)
+      integer *8 i,icur,icur0,icur1
+      integer *8, external :: OMP_GET_THREAD_NUM, OMP_GET_NUM_THREADS
+      integer *8, external :: OMP_GET_MAX_THREADS
+      integer *8 nthreads,ithread,first,mend,istart,iend
+      integer *8, allocatable :: split(:),ind(:)
 
       allocate(jper(nent),jsort(nent))
       allocate(ind(nent))

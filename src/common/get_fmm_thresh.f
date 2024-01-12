@@ -10,15 +10,15 @@ c
 c
 c  Input arguments:
 c  
-c    - nds: integer(8)
+c    - nds: integer *8
 c        leading dimension for sources array (must be at least 3)
-c    - ns: integer(8)
+c    - ns: integer *8
 c        number of sources
 c    - src: real *8 (nds,ns)
 c        source info array (src(1:3,i) should contain the x,y,z components)
-c    - ndt: integer(8)
+c    - ndt: integer *8
 c        leading dimension for targets array (must be at least 3)
-c    - nt: integer(8)
+c    - nt: integer *8
 c        number of targets
 c    - trg: real *8 (ndt,nt)c
 c        targ info array (targ(1:3,i) should contain the x,y,z components)
@@ -29,12 +29,12 @@ c    - thresh: real *8
 c        fmm threshold
 c
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
-      integer(8), intent(in) :: nds,ns,ndt,nt
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: nds,ns,ndt,nt
       real *8, intent(in) :: src(nds,ns),trg(ndt,nt)
       real *8, intent(out) :: thresh
 
-      integer(8) i
+      integer *8 i
       real *8 xmin,xmax,ymin,ymax,zmin,zmax,bsizex,bsizey,bsizez,bsize
 
       xmin = src(1,1)
@@ -97,15 +97,15 @@ c
 c
 c  Input arguments:
 c  
-c    - nds: integer(8)
+c    - nds: integer *8
 c        leading dimension for sources array (must be at least 3)
-c    - ns: integer(8)
+c    - ns: integer *8
 c        number of sources
 c    - src: real *8 (nds,ns)
 c        source info array (src(1:3,i) should contain the x,y,z components)
-c    - ndt: integer(8)
+c    - ndt: integer *8
 c        leading dimension for targets array (must be at least 3)
-c    - nt: integer(8)
+c    - nt: integer *8
 c        number of targets
 c    - trg: real *8 (ndt,nt)
 c        targ info array (targ(1:3,i) should contain the x,y,z components)
@@ -116,11 +116,11 @@ c    - bsize: real *8
 c        edge length of smallest bounding cube
 c
       implicit real *8 (a-h,o-z)
-      integer(8), intent(in) :: nds,ns,ndt,nt
+      integer *8, intent(in) :: nds,ns,ndt,nt
       real *8, intent(in) :: src(nds,ns),trg(ndt,nt)
       real *8, intent(out) :: bsize
 
-      integer(8) i
+      integer *8 i
       real *8 xmin,xmax,ymin,ymax,zmin,zmax,bsizex,bsizey,bsizez
 
       xmin = src(1,1)
@@ -185,15 +185,15 @@ c
 c
 c  Input arguments:
 c  
-c    - nds: integer(8)
+c    - nds: integer *8
 c        leading dimension for sources array (must be at least 3)
-c    - ns: integer(8)
+c    - ns: integer *8
 c        number of sources
 c    - src: real *8 (nds,ns)
 c        source info array (src(1:3,i) should contain the x,y,z components)
-c    - ndt: integer(8)
+c    - ndt: integer *8
 c        leading dimension for targets array (must be at least 3)
-c    - nt: integer(8)
+c    - nt: integer *8
 c        number of targets
 c    - trg: real *8 (ndt,nt)
 c        targ info array (targ(1:3,i) should contain the x,y,z components)
@@ -204,11 +204,11 @@ c    - bsize: real *8
 c        edge length of smallest bounding cube
 c
       implicit real *8 (a-h,o-z)
-      integer(8), intent(in) :: nds,ns,ndt,nt
+      integer *8, intent(in) :: nds,ns,ndt,nt
       real *8, intent(in) :: src(nds,ns),trg(ndt,nt)
       real *8, intent(out) :: bsizex,bsizey,bsizez
 
-      integer(8) i
+      integer *8 i
       real *8 xmin,xmax,ymin,ymax,zmin,zmax
 
       xmin = src(1,1)

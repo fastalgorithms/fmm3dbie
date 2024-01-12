@@ -1,12 +1,12 @@
 program em_aumfie_example
 
   implicit double precision (a-h,o-z) 
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   double precision, allocatable :: srcvals(:,:),srccoefs(:,:)
   double precision, allocatable :: wts(:),rsigma(:)
-  integer(8) :: ipars(2)
+  integer *8 :: ipars(2)
 
-  integer(8), allocatable :: norders(:),ixyzs(:),iptype(:)
+  integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
 
   double precision xyz_out(3),xyz_in(3)
   complex *16, allocatable :: sigma(:),rhs(:)
@@ -19,10 +19,10 @@ program em_aumfie_example
 
   double precision, allocatable :: errs(:)
   complex * 16 :: zpars(3)
-  integer(8) :: numit,niter
+  integer *8 :: numit,niter
   character *200 :: title,fname,fname1,fname2
 
-  integer(8) :: ipatch_id
+  integer *8 :: ipatch_id
   double precision :: uvs_targ(2), ru(3), rv(3)
 
   logical isout0,isout1
@@ -30,7 +30,7 @@ program em_aumfie_example
   complex *16 pot,potex,ztmp,ima,zk
   complex *16 alpha_rhs
 
-  integer(8) count1
+  integer *8 count1
 
   data ima/(0.0d0,1.0d0)/
 
@@ -241,7 +241,7 @@ subroutine get_rhs_em_mfie_pec777(p0, vf, alpha, ns, srcvals, zk,rhs)
 
   !List of local variables
   complex ( kind = 8 ), allocatable :: efield(:,:), hfield(:,:)
-  integer(8) :: count1, lda
+  integer *8 :: count1, lda
   real ( kind = 8 ) :: ru(3),rv(3),cross_aux(3), dnorm
   
   allocate(efield(3,ns), hfield(3,ns))
@@ -305,7 +305,7 @@ subroutine em_field_electric_dipole(zk, p0, dipvec, n, points, &
   !
 
   ! List of calling arguments
-  integer(8), intent(in) :: n, init
+  integer *8, intent(in) :: n, init
   double precision, intent(in) :: P0(3), points(3,n)
   complex *16, intent(in) :: dipvec(3), zk
   complex *16, intent(out) :: efield(3,n), hfield(3,n)
@@ -313,7 +313,7 @@ subroutine em_field_electric_dipole(zk, p0, dipvec, n, points, &
   ! List of local variables
   double precision :: dx,dy,dz,r
   complex *16 :: R1,R2,au1,au2,ima, cd
-  integer(8) :: i
+  integer *8 :: i
 
   ima = (0,1)
 
@@ -368,7 +368,7 @@ implicit none
 ! H=1/(ima*zk)*curlcurlF
 
 	!List of calling arguments
-	integer(8), intent(in) :: n,initial
+	integer *8, intent(in) :: n,initial
 	real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),zk
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
@@ -376,7 +376,7 @@ implicit none
 	!List of local variables
 	real ( kind = 8 ) dx,dy,dz,r
 	complex ( kind = 8 ) R1,R2,au1,au2,ima
-	integer(8) i
+	integer *8 i
 
 	ima = (0.0d0,1.0d0)
 
@@ -421,7 +421,7 @@ end subroutine em_field_magnetic_dipole
 
 subroutine em_planewave(e0, zk, kvec, npts, srcvals, efield, hfield)
   implicit double precision (a-h,o-z)
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   !
   ! Author: Mike O'Neil
   ! Email:  moneil@flatironinstitute.org

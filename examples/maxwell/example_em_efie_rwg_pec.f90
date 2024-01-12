@@ -1,5 +1,5 @@
       implicit real *8 (a-h,o-z) 
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       real *8, allocatable :: wts(:),rsigma(:)
       integer *8 ipars(2)
@@ -149,7 +149,7 @@
 
       subroutine setup_geom(igeomtype,norder,npatches,ipars,& 
      &srcvals,srccoefs,ifplot,fname)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       implicit real *8 (a-h,o-z)
       integer *8 igeomtype,norder,npatches,ipars(*),ifplot
       character (len=*) fname

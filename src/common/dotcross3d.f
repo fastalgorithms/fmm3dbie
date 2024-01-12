@@ -327,13 +327,13 @@ c!f2py intent(in) du, normal, ns
 c!f2py intent(out) ru,rv
         implicit none
 c       !List of calling arguments
-        integer(8), intent(in) :: ns
+        integer *8, intent(in) :: ns
         double precision, intent(in) :: du(3,ns), normal(3,ns)
         double precision, intent(out) :: ru(3,ns), rv(3,ns)
 
 c       !List of local variables
         double precision :: aux
-        integer(8) :: j
+        integer *8 :: j
 
         do j=1,ns
            call orthonormalize(du(:,j), normal(:,j), ru(:,j), rv(:,j))

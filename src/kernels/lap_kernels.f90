@@ -17,9 +17,9 @@
 
 subroutine l3d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
-  integer(8) ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 over4pi
 
   complex *16 :: zk
@@ -50,9 +50,9 @@ end subroutine l3d_slp
 
 subroutine l3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer(8) ipars(ndi)
+  integer *8 ipars(ndi)
   complex *16 :: zk
   real *8 :: val
   real *8 :: over4pi
@@ -93,9 +93,9 @@ end subroutine l3d_dlp
 
 subroutine l3d_sprime(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
-  integer(8) ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val
   real *8 :: over4pi
   complex *16 :: zk
@@ -124,9 +124,9 @@ end subroutine l3d_sprime
 
 subroutine l3d_comb(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer(8) ipars(ndi)
+  integer *8 ipars(ndi)
   complex *16 :: zk, zpars(ndz)
   real *8 :: alpha,beta
   real *8 :: val
@@ -173,9 +173,9 @@ end subroutine l3d_comb
 
 subroutine l3d_qlp(srcinfo, ndt,targ,ndd, dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer(8) ipars(ndi)
+  integer *8 ipars(ndi)
   complex *16 :: zk
   real *8 val
 
@@ -222,9 +222,9 @@ end subroutine l3d_qlp
 
 subroutine l3d_sgradx(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*), targinfo(ndt),dpars(ndd)
-  integer(8) ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val
   real *8 :: over4pi
   complex *16 :: zk
@@ -256,9 +256,9 @@ end subroutine l3d_sgradx
 
 subroutine l3d_sgrady(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*), targinfo(ndt),dpars(ndd)
-  integer(8) ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val
   real *8 :: over4pi
   complex *16 :: zk
@@ -294,9 +294,9 @@ end subroutine l3d_sgrady
 
 subroutine l3d_sgradz(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
-  implicit integer(8) (i-n)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*), targinfo(ndt),dpars(ndd)
-  integer(8) ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val
   real *8 :: over4pi
   complex *16 :: zk
@@ -334,22 +334,22 @@ subroutine l3d_spp_sum_dp(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
 !  
 !    - srcinfo: real *8 (12)
 !        Source information
-!    - ndt: integer(8)
+!    - ndt: integer *8
 !        must be at least 12, with first twelve components 
 !        being the standard targ info, xyz,dxyz/du,dxyz/dv,normal
 !    - targinfo: real *8 (12)
 !        target information
-!    - ndd: integer(8)
+!    - ndd: integer *8
 !        dpars not used
 !    - dpars: real *8
 !        dpars not used
-!    - ndz: integer(8)
+!    - ndz: integer *8
 !        zpars not used
 !    - zpars: double complex 
 !        zpars not used
-!    - ndi: integer(8)
+!    - ndi: integer *8
 !        ipars not used
-!    - ipars: integer(8)
+!    - ipars: integer *8
 !        ipars not used
 !
 !  Output arugments:
@@ -359,9 +359,9 @@ subroutine l3d_spp_sum_dp(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
 !------------------
 
   implicit none
-  integer(8) ndd,ndi,ndz,ndt
+  integer *8 ndd,ndi,ndz,ndt
   real *8 :: srcinfo(*), targinfo(ndt),dpars(ndd)
-  integer(8) ipars(ndi)
+  integer *8 ipars(ndi)
   real *8, intent(out) :: val
   complex *16 :: zk
 

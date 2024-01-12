@@ -1,7 +1,7 @@
       subroutine test_dtriarouts(nsuccess)
       
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8 uvs(2,10000),wts(10000)
       real *8, allocatable :: umatr(:,:),vmatr(:,:)
       real *8, allocatable :: xyzvals(:,:,:)
@@ -11,10 +11,10 @@
       real *8 xyztarg(3,1000)
       real *8, allocatable :: cintvals(:,:)
       real *8, allocatable :: cintex(:,:)
-      integer(8) itargptr(1000)
-      integer(8) ntargptr(1000)
-      integer(8) ipars(10)
-      integer(8), allocatable :: iprint(:,:)
+      integer *8 itargptr(1000)
+      integer *8 ntargptr(1000)
+      integer *8 ipars(10)
+      integer *8, allocatable :: iprint(:,:)
 
       real *8 dpars(5)
 
@@ -465,7 +465,7 @@ c
 c
       subroutine test_dtriarouts_vec(nsuccess)
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8 uvs(2,10000),wts(10000)
       real *8, allocatable :: umatr(:,:),vmatr(:,:)
       real *8, allocatable :: xyzvals(:,:,:)
@@ -474,10 +474,10 @@ c
       real *8 xyztarg(3,1000)
       real *8, allocatable :: cintvals(:,:,:)
       real *8, allocatable :: cintex(:,:,:)
-      integer(8) itargptr(1000)
-      integer(8) ntargptr(1000)
-      integer(8) ipars(10)
-      integer(8), allocatable :: iprint(:,:)
+      integer *8 itargptr(1000)
+      integer *8 ntargptr(1000)
+      integer *8 ipars(10)
+      integer *8, allocatable :: iprint(:,:)
 
       real *8 dpars(5)
 
@@ -907,11 +907,11 @@ c
 
       subroutine dvslp(nd,x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8 x(*),y(ndt),dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
-      integer(8) ndd,ndi,ndz
+      integer *8 ipars(ndi)
+      integer *8 ndd,ndi,ndz
       real *8 f(2)
       
       rr = (x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2
@@ -931,10 +931,10 @@ c
 
       subroutine dlslp(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8 x(*),y(ndt),dpars(ndd)
       complex *16 zpars(ndz)
-      integer(8) ipars(ndi)
+      integer *8 ipars(ndi)
       real *8 f
       
       rr = (x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2

@@ -1,10 +1,10 @@
       implicit real *8 (a-h,o-z)
-      implicit integer(8) (i-n)
+      implicit integer *8 (i-n)
       real *8, allocatable :: src(:,:),targ(:,:),rads(:)
-      integer(8), allocatable :: row_ptr(:),row_ptr2(:)
-      integer(8), allocatable :: col_ind(:),col_ind2(:)
-      integer(8), allocatable :: isort(:),wsort(:),isort2(:),wsort2(:)
-      integer(8) ndim
+      integer *8, allocatable :: row_ptr(:),row_ptr2(:)
+      integer *8, allocatable :: col_ind(:),col_ind2(:)
+      integer *8, allocatable :: isort(:),wsort(:),isort2(:),wsort2(:)
+      integer *8 ndim
 
       ndim = 3
       call prini(6,13)
