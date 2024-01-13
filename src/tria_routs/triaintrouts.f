@@ -1667,7 +1667,7 @@ c        ntrimax - max number of triangles to be used on base triangle
 c        fker - function handle for evaluating the kernel k
 c 
 c               expected calling sequence
-c               fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c               fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c               the output is assumed to be nd complex numbers
 c
