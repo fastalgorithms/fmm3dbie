@@ -1687,9 +1687,11 @@ subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
    character (len=10), dimension(3) :: scalar_names
 
    integer *8 nsc,nd,ip,j,i
+   integer *8 int8_9
    real *8 errm
    
 
+   int8_9 = 9
    nsc = 10
 
    scalar_names(1) = 'ppw'
@@ -1712,7 +1714,7 @@ subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
    call get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
     srccoefs,srcvals,qwts,pdis)
 
-   call surf_fun_error(9,npatches,norders,ixyzs,iptype, &
+   call surf_fun_error(int8_9,npatches,norders,ixyzs,iptype, &
      npts,srcvals(1:9,1:npts),qwts,errp,errm)
 
    nd = 3
@@ -2034,8 +2036,10 @@ subroutine get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
   real *8 L,M,N
   real *8, allocatable :: dxuv(:,:)
   real *8, allocatable :: dxuv2(:,:,:)
+  integer *8 int8_6
 
 
+  int8_6 = 6
   allocate(dxuv(6,npts))
 ! Calculating x_{uu}, x_{uv}, x_{uv} stored in dxuv2 
  
@@ -2050,7 +2054,7 @@ subroutine get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
 
   allocate(dxuv2(6,2,npts))
 
-  call get_surf_uv_grad(6,npatches,norders,ixyzs,iptype,npts,dxuv,dxuv2)
+  call get_surf_uv_grad(int8_6,npatches,norders,ixyzs,iptype,npts,dxuv,dxuv2)
 
 
 
