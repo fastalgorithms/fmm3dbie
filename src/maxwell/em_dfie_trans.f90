@@ -1535,11 +1535,13 @@ implicit none
 	complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
 	complex ( kind = 8 ), allocatable :: RHS(:)
 
-	integer *8 count1,i
+	integer *8 count1,i,int8_0,int8_1
 	complex ( kind = 8 ) ima,vf_m(3),vf2(3),vf2_m(3)
 	real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
 	allocate(E(3,ns), H(3,ns), RHS(6*ns))
 
+    int8_0 = 0
+    int8_1 = 1
 	ima=(0.0d0,1.0d0)
 	omega = zpars(1)
 	ep0 = zpars(2)
@@ -1559,8 +1561,8 @@ implicit none
 	vf2_m(2)=-ep1*vf(2)
 	vf2_m(3)=-ep1*vf(3)
 	
-	call fieldsEDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,0)
-	call fieldsMDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,1)
+	call fieldsEDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,int8_0)
+	call fieldsMDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,int8_1)
 
 	call fieldsEDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,1)
 	call fieldsMDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,1)
@@ -1575,11 +1577,11 @@ implicit none
 	  RHS(3*ns+count1)=DOT_PRODUCT(ru,H(:,count1))*ima*omega
       RHS(4*ns+count1)=0.0d0
 	enddo
-	call fieldsEDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf2,0)
-	call fieldsMDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf2,1)
+	call fieldsEDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf2,int8_0)
+	call fieldsMDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf2,int8_1)
 
-	call fieldsEDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf2_m,1)
-	call fieldsMDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf2_m,1)
+	call fieldsEDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf2_m,int8_1)
+	call fieldsMDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf2_m,int8_1)
 	
 	do count1=1,ns
       RHS(5*ns+count1)=DOT_PRODUCT(srcvals(10:12,count1),E(:,count1))
