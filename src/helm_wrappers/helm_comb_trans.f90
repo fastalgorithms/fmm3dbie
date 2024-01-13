@@ -397,11 +397,14 @@
       integer *8 ndd,ndz,ndi
 
       real *8 ttot,done,pi
+      integer *8 int8_2,int8_12
       data ima/(0.0d0,1.0d0)/
       data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
+      int8_2 = 2
+      int8_12 = 12
       ns = nptso
       ntarg = npts
       done = 1
@@ -437,9 +440,9 @@
 ! 
 !       oversample densities
 !
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,&
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,&
         npts,sigma,novers,ixyzso,ns,sigmaover)
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,&
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,&
         npts,sigma(npts+1),novers,ixyzso,ns,sigmaover(ns+1))
 
 !
@@ -526,7 +529,7 @@
 !$OMP END PARALLEL DO      
 
 !        compute threshold for ignoring local computation
-      call get_fmm_thresh(int(12,8),ns,srcover,int(12,8),npts,srcvals,thresh)
+      call get_fmm_thresh(int8_12,ns,srcover,int8_12,npts,srcvals,thresh)
 !
 !       Add near field precomputed contribution
 !

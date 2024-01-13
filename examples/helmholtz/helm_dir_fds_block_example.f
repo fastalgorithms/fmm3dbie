@@ -28,6 +28,7 @@
       integer *8 numit,niter
       integer *8 ifwrite
       integer *8, allocatable :: row_ind(:),col_ind(:)
+      integer *8 int8_0,int8_1,int8_3
 
       complex *16 pot,potex,ztmp,ima
 
@@ -36,6 +37,9 @@
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
       done = 1
       pi = atan(done)*4
 
@@ -130,8 +134,8 @@ c
 
 
       do i=1,npts
-        call h3d_slp(xyz_out,int(3,8),srcvals(1,i),int(0,8),dpars,
-     1     int(1,8),zpars,int(0,8),ipars,rhs(i))
+        call h3d_slp(xyz_out,int8_3,srcvals(1,i),int8_0,dpars,
+     1     int8_1,zpars,int8_0,ipars,rhs(i))
       enddo
 
 
@@ -245,12 +249,12 @@ c
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,int(3,8),xyz_in,int(0,8),dpars,int(1,8),
-     1             zpars,int(0,8),ipars,potex)
+      call h3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_1,
+     1             zpars,int8_0,ipars,potex)
       pot = 0
       do i=1,npts
-        call h3d_comb(srcvals(1,i),int(3,8),xyz_in,int(0,8),dpars,
-     1     int(3,8),zpars,int(0,8),ipars,ztmp)
+        call h3d_comb(srcvals(1,i),int8_3,xyz_in,int8_0,dpars,
+     1     int8_3,zpars,int8_0,ipars,ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 

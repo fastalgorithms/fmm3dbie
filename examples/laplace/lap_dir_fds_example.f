@@ -29,12 +29,16 @@
 
       real *8 pot,potex
       complex *16 ztmp,ima
+      integer *8 int8_0,int8_2,int8_3
 
       data ima/(0.0d0,1.0d0)/
 
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_2 = 2
+      int8_3 = 3
       done = 1
       pi = atan(done)*4
 
@@ -126,8 +130,8 @@ c
 
 
       do i=1,npts
-        call l3d_slp(xyz_out,int(3,8),srcvals(1,i),int(0,8),dpars,
-     1     int(0,8),zpars,int(0,8),ipars,rhs(i))
+        call l3d_slp(xyz_out,int8_3,srcvals(1,i),int8_0,dpars,
+     1     int8_0,zpars,int8_0,ipars,rhs(i))
       enddo
 
       
@@ -277,12 +281,12 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
 c
 c       test solution at interior point
 c
-      call l3d_slp(xyz_out,int(3,8),xyz_in,int(0,8),dpars,int(0,8),
-     1             zpars,int(0,8),ipars,potex)
+      call l3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_0,
+     1             zpars,int8_0,ipars,potex)
       pot = 0
       do i=1,npts
-        call l3d_comb(srcvals(1,i),int(3,8),xyz_in,int(2,8),dpars,
-     1     int(0,8),zpars,int(0,8),ipars,ztmp)
+        call l3d_comb(srcvals(1,i),int8_3,xyz_in,int8_2,dpars,
+     1     int8_0,zpars,int8_0,ipars,ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 

@@ -622,10 +622,13 @@ c
       integer *8 ier,iper
 
       real *8 ttot,done,pi
+      integer *8 int8_1,int8_3
 
       parameter (nd=1,ntarg0=1)
       data over4pi/0.07957747154594767d0/
 
+      int8_1 = 1
+      int8_3 = 3
       ns = nptso
       done = 1
       pi = atan(done)*4
@@ -650,7 +653,7 @@ c
 c       oversample density
 c
 
-      call oversample_fun_surf(int(1,8),npatches,norders,ixyzs,iptype, 
+      call oversample_fun_surf(int8_1,npatches,norders,ixyzs,iptype, 
      1    npts,sigma,novers,ixyzso,ns,sigmaover)
 
 
@@ -709,7 +712,7 @@ c
 c        compute threshold for ignoring local computation
 c
       
-      call get_fmm_thresh(int(3,8),ns,sources,int(3,8),ntarg,targvals,
+      call get_fmm_thresh(int8_3,ns,sources,int8_3,ntarg,targvals,
      1     thresh)
       
 c
@@ -983,10 +986,12 @@ c
       integer *8 nd,ntarg0
 
       real *8 ttot,done,pi
+      integer *8 int8_1
 
       parameter (nd=1,ntarg0=1)
       data over4pi/0.07957747154594767d0/
 
+      int8_1 = 1
       ns = nptso
       done = 1
       pi = atan(done)*4
@@ -1002,7 +1007,7 @@ c
 c       oversample density
 c
 
-      call oversample_fun_surf(int(1,8),npatches,norders,ixyzs,iptype, 
+      call oversample_fun_surf(int8_1,npatches,norders,ixyzs,iptype, 
      1    npts,sigma,novers,ixyzso,ns,sigmaover)
 c
 c       set relevatn parameters for the fmm
@@ -1166,7 +1171,7 @@ c
 c    work with sorted potentials and unsort them again later
 c
       allocate(potsort(ntarg))
-      call dreorderf(int(1,8),ntarg,pot,potsort,itargper)
+      call dreorderf(int8_1,ntarg,pot,potsort,itargper)
 
 
 
@@ -1365,7 +1370,7 @@ C$OMP END PARALLEL DO
 C$      t2 = omp_get_wtime()      
       timeinfo(2) = t2-t1
 
-      call dreorderi(int(1,8),ntarg,potsort,pot,itargper)
+      call dreorderi(int8_1,ntarg,potsort,pot,itargper)
 
 cc      call prin2('quadrature time=*',timeinfo,2)
       
@@ -2408,10 +2413,12 @@ c
       integer *8 ifcharge,ifdipole
 
       real *8 dzero,done
+      integer *8 int8_3
 
       procedure (), pointer :: fker
       external l3d_slp, l3d_dlp, l3d_comb
 
+      int8_3 = 3
       done = 1
       dzero = 0
 
@@ -2557,7 +2564,7 @@ cc        call prin2('zfds=*',zfds,6)
         do i=1,naintbc
           itind = aintbc(i)
           do j=1,npolso
-            call fker(srcover(1,j),int(3,8),srcvals(1,itind),ndd,dpars,
+            call fker(srcover(1,j),int8_3,srcvals(1,itind),ndd,dpars,
      1      ndz,zfds,ndi,ipars,wquadf(j,i))
             wquadf(j,i) = wquadf(j,i)*wtsover(j)
           enddo

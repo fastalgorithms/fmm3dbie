@@ -21,12 +21,16 @@
       logical isout0,isout1
 
       real *8 pot,potex
+      integer *8 int8_0,int8_1,int8_3
 
       data ima/(0.0d0,1.0d0)/
 
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
       done = 1
       pi = atan(done)*4
 
@@ -114,8 +118,8 @@ c
       allocate(sigma(npts),rhs(npts))
 
       do i=1,npts
-        call l3d_slp(xyz_out,int(3,8),srcvals(1,i),int(0,8),dpars,
-     1     int(1,8),zpars,int(0,8),ipars,rhs(i))
+        call l3d_slp(xyz_out,int8_3,srcvals(1,i),int8_0,dpars,
+     1     int8_1,zpars,int8_0,ipars,rhs(i))
         sigma(i) = 0 
       enddo
 
@@ -143,12 +147,12 @@ c
 c
 c       test solution at interior point
 c
-      call l3d_slp(xyz_out,int(3,8),xyz_in,int(0,8),dpars,int(1,8),
-     1             zpars,int(0,8),ipars,potex)
+      call l3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_1,
+     1             zpars,int8_0,ipars,potex)
       pot = 0
       do i=1,npts
-        call l3d_comb(srcvals(1,i),int(3,8),xyz_in,int(0,8),dpars,
-     1     int(3,8),zpars,int(0,8),ipars,dtmp)
+        call l3d_comb(srcvals(1,i),int8_3,xyz_in,int8_0,dpars,
+     1     int8_3,zpars,int8_0,ipars,dtmp)
         pot = pot + sigma(i)*wts(i)*dtmp
       enddo
 
@@ -325,8 +329,12 @@ c
 
       integer *8 ipatch,j,i
       real *8 ra,ds
+      integer *8 int8_0,int8_1,int8_12
       logical isout
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_12 = 12
       done = 1
       pi = atan(done)*4
 
@@ -342,8 +350,8 @@ c
       do ipatch=1,npatches
         do j=1,npols
           i = (ipatch-1)*npols + j
-          call l3d_sprime(xyzout,int(12,8),srcvals(1,i),int(0,8),dpars,
-     1       int(1,8),zk,int(0,8),ipars,val)
+          call l3d_sprime(xyzout,int8_12,srcvals(1,i),int8_0,dpars,
+     1       int8_1,zk,int8_0,ipars,val)
 
           call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
           ds = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)

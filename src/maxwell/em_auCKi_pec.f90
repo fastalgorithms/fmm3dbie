@@ -1038,8 +1038,12 @@ end subroutine fker_em_auCKi_pec
       complex *16 pot_x,pot_y,pot_z,pot2_x,pot2_y,pot2_z
       real *8 u_vect(3),v_vect(3),n_vect(3)
 	  complex *16 ima
+      integer *8 int8_2,int8_12
 
       parameter (nd=1,ntarg0=1)
+
+      int8_2 = 2
+      int8_12 = 12
 
       ns = nptso
       done = 1
@@ -1059,9 +1063,9 @@ end subroutine fker_em_auCKi_pec
 		zk=zpars(1)
 		alpha=zpars(2)
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
       ra = 0
@@ -1069,7 +1073,7 @@ end subroutine fker_em_auCKi_pec
       !
       !     FMM call to compute nxSkia and -n·curlSkia
       !
-	  call get_fmm_thresh(int(12,8),ns,srcover,ndtarg,ntarg,targs,thresh)
+	  call get_fmm_thresh(int8_12,ns,srcover,ndtarg,ntarg,targs,thresh)
 	  
        ifdir=0
 	   
@@ -1189,12 +1193,12 @@ end subroutine fker_em_auCKi_pec
       enddo
 
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover_aux(1:ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,&
      &sigmaover_aux(ns+1:2*ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,&
      &sigmaover_aux(2*ns+1:3*ns))
 
@@ -1567,10 +1571,13 @@ implicit none
     complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
     integer *8 count1
     real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
+    integer *8 int8_0,int8_1
 
+    int8_0 = 0
+    int8_1 = 1
     allocate(E(3,ns), H(3,ns))
-    call fieldsED(zk,P0,srcvals,ns,E,H,vf,int(0,8))
-    call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int(1,8))
+    call fieldsED(zk,P0,srcvals,ns,E,H,vf,int8_0)
+    call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int8_1)
 
     do count1=1,ns	
       call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),&
@@ -2035,21 +2042,23 @@ implicit none
     real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3)
     real ( kind = 8 ) error_E,rel_err_E,error_H,rel_err_H
     real ( kind = 8 ) pi
-    integer *8 count1
+    integer *8 count1,int8_0,int8_1
 
+    int8_0 = 0
+    int8_1 = 1
     ima=(0.0d0,1.0d0)
     pi=3.1415926535897932384626433832795028841971d0
 !	write (*,*) 'alpha value at accu: ', alpha
     write (*,*) 'AUGMENTED ALGORITHM:'
 
-    call auCKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,wts,&
+    call auCKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,wts,&
     &a_vect(1:ns),a_vect(ns+1:2*ns),a_vect2(1:ns),a_vect2(ns+1:2*ns),&
     &a_vect2(2*ns+1:3*ns),Et1,Ht1)
 !	call CKif_FMM_targ_v2(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),Et1,Ht1,nnz,norder,row_ptr,col_ind,CKif_near)
 !	write (*,*) Et1
 	
-    call fieldsED(zk,P0,Pt,int(1,8),Et2,Ht2,vf,int(0,8))
-    call fieldsMD(zk,P0,Pt,int(1,8),Et2,Ht2,vf,int(1,8))
+    call fieldsED(zk,P0,Pt,int8_1,Et2,Ht2,vf,int8_0)
+    call fieldsMD(zk,P0,Pt,int8_1,Et2,Ht2,vf,int8_1)
 
     write (*,*) 'Errors at the EXTERIOR region:'
     error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+&
@@ -2058,7 +2067,7 @@ implicit none
     write (*,*) 'Relative Error in E: ', error_E/&
     &sqrt(abs(Et2(1))**2+abs(Et2(2))**2+abs(Et2(3))**2)
 				
-    call h_neumann_Hfield_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,&
+    call h_neumann_Hfield_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,&
     &wts,sigma,sigma2,Ht1)
 
     error_H=sqrt(abs(Ht1(1)-Ht2(1))**2+abs(Ht1(2)-Ht2(2))**2+&
@@ -2468,19 +2477,21 @@ implicit none
     real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3)
     real ( kind = 8 ) error_E,rel_err_E,error_H,rel_err_H
     real ( kind = 8 ) pi
-    integer *8 count1
+    integer *8 count1,int8_0,int8_1
 
+    int8_0 = 0
+    int8_1 = 1
     ima=(0.0d0,1.0d0)
     pi=3.1415926535897932384626433832795028841971d0
 !		write (*,*) 'alpha value at accu: ', alpha
-    call CKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,wts,&
+    call CKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,wts,&
     &a_vect(1:ns),a_vect(ns+1:2*ns),a_vect2(1:ns),a_vect2(ns+1:2*ns),&
     &a_vect2(2*ns+1:3*ns),Et1,Ht1)
 !	call CKif_FMM_targ_v2(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),Et1,Ht1,nnz,norder,row_ptr,col_ind,CKif_near)
 !	write (*,*) Et1
 	
-    call fieldsED(zk,P0,Pt,int(1,8),Et2,Ht2,vf,int(0,8))
-    call fieldsMD(zk,P0,Pt,int(1,8),Et2,Ht2,vf,int(1,8))
+    call fieldsED(zk,P0,Pt,int8_1,Et2,Ht2,vf,int8_0)
+    call fieldsMD(zk,P0,Pt,int8_1,Et2,Ht2,vf,int8_1)
 
     write (*,*) 'Errors at the EXTERIOR region:'
     error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+&
@@ -2861,8 +2872,12 @@ end subroutine CKif_FMM_targ
       complex *16 pot_x,pot_y,pot_z,pot2_x,pot2_y,pot2_z
       real *8 u_vect(3),v_vect(3),n_vect(3)
 	  complex *16 ima
+      integer *8 int8_2,int8_12
 
       parameter (nd=1,ntarg0=1)
+
+      int8_2 = 2
+      int8_12 = 12
 
       ns = nptso
       done = 1
@@ -2882,9 +2897,9 @@ end subroutine CKif_FMM_targ
 		zk=zpars(1)
 		alpha=zpars(2)
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
       ra = 0
@@ -2892,7 +2907,7 @@ end subroutine CKif_FMM_targ
       !
       !     FMM call to compute nxSkia and -n·curlSkia
       !
-	  call get_fmm_thresh(int(12,8),ns,srcover,ndtarg,ntarg,targs,thresh)
+	  call get_fmm_thresh(int8_12,ns,srcover,ndtarg,ntarg,targs,thresh)
 	  
        ifdir=0
 	   
@@ -3012,12 +3027,12 @@ end subroutine CKif_FMM_targ
       enddo
 
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover_aux(1:ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,&
      &sigmaover_aux(ns+1:2*ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,&
      &sigmaover_aux(2*ns+1:3*ns))
 
@@ -3136,12 +3151,12 @@ end subroutine CKif_FMM_targ
 	  pot_aux(i)=0.0d0
 	enddo
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover_aux(1:ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,&
      &sigmaover_aux(ns+1:2*ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,&
      &sigmaover_aux(2*ns+1:3*ns))
 

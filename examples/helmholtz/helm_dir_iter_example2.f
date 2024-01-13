@@ -21,12 +21,16 @@
       logical isout0,isout1
 
       complex *16 pot,potex,ztmp,ima
+      integer *8 int8_0,int8_1,int8_3
 
       data ima/(0.0d0,1.0d0)/
 
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
       done = 1
       pi = atan(done)*4
 
@@ -65,11 +69,11 @@
 
       do i=1,npts
         if(ifinout.eq.0)
-     1     call h3d_slp(xyz_out,int(3,8),srcvals(1,i),int(0,8),dpars,
-     2       int(1,8),zpars,int(0,8),ipars,rhs(i))
+     1     call h3d_slp(xyz_out,int8_3,srcvals(1,i),int8_0,dpars,
+     2       int8_1,zpars,int8_0,ipars,rhs(i))
         if(ifinout.eq.1) 
-     1     call h3d_slp(xyz_in,int(3,8),srcvals(1,i),int(0,8),dpars,
-     2     int(1,8),zpars,int(0,8),ipars,rhs(i))
+     1     call h3d_slp(xyz_in,int8_3,srcvals(1,i),int8_0,dpars,
+     2     int8_1,zpars,int8_0,ipars,rhs(i))
         rhs(i) = rhs(i)
         sigma(i) = 0
       enddo
@@ -107,16 +111,16 @@ C$      t2 = omp_get_wtime()
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,int(3,8),xyz_in,int(0,8),dpars,int(1,8),
-     1             zpars,int(0,8),ipars,potex)
+      call h3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_1,
+     1             zpars,int8_0,ipars,potex)
       pot = 0
       do i=1,npts
         if(ifinout.eq.0) 
-     1     call h3d_comb(srcvals(1,i),int(3,8),xyz_in,int(0,8),dpars,
-     2      int(3,8),zpars,int(1,8),ipars,ztmp)
+     1     call h3d_comb(srcvals(1,i),int8_3,xyz_in,int8_0,dpars,
+     2      int8_3,zpars,int8_1,ipars,ztmp)
         if(ifinout.eq.1) 
-     1     call h3d_comb(srcvals(1,i),int(3,8),xyz_out,int(0,8),dpars,
-     2     int(3,8),zpars,int(1,8),ipars,ztmp)
+     1     call h3d_comb(srcvals(1,i),int8_3,xyz_out,int8_0,dpars,
+     2     int8_3,zpars,int8_1,ipars,ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 
@@ -277,8 +281,12 @@ c
 
       integer *8 ipatch,j,i
       real *8 ra,ds
+      integer *8 int8_0,int8_1,int8_3
       logical isout
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
       done = 1
       pi = atan(done)*4
 
@@ -294,8 +302,8 @@ c
       do ipatch=1,npatches
         do j=1,npols
           i = (ipatch-1)*npols + j
-          call h3d_sprime(xyzout,int(3,8),srcvals(1,i),int(0,8),dpars,
-     1       int(1,8),zk,int(0,8),ipars,val)
+          call h3d_sprime(xyzout,int8_3,srcvals(1,i),int8_0,dpars,
+     1       int8_1,zk,int8_0,ipars,val)
           call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
           ds = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
           ra = ra + real(val)*wts(i)

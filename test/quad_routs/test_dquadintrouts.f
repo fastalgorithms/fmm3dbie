@@ -17,11 +17,16 @@
 
       real *8 dpars(5)
       complex *16 zpars(3),ima
+      integer *8 int8_0,int8_1,int8_2,int8_3
 
       external lslp
 
       character type
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_2 = 2
+      int8_3 = 3
       ima = dcmplx(0.0d0,1.0d0)
       
       done = 1
@@ -54,7 +59,7 @@
       print *, "npts=",npts
       print *, "npols=",npols
       itype = 2
-      call polytens_exps_nd(int(2,8),ipoly,itype,norder+1,ttype,
+      call polytens_exps_nd(int8_2,ipoly,itype,norder+1,ttype,
      1     uvs,umatr,npols,vmatr,npts,wts)
       thet = pi/4
       rr = 1.0d-1
@@ -189,9 +194,9 @@ c
       ntargptr(1) = 2
       ntargptr(2) = 1
       call dquadints(eps,istrat,intype,npatches,norder,ipoly,ttype,
-     1  npols,srccoefs,int(3,8),ntarg,xyztarg,ifp,xyztarg,itargptr,
-     2  ntargptr,norder,npols,lslp,int(0,8),dpars,int(1,8),zpars,
-     3  int(0,8),ipars,nqorder,nquadmax,rfac,slp,ifmetric,rn1,n2)
+     1  npols,srccoefs,int8_3,ntarg,xyztarg,ifp,xyztarg,itargptr,
+     2  ntargptr,norder,npols,lslp,int8_0,dpars,int8_1,zpars,
+     3  int8_0,ipars,nqorder,nquadmax,rfac,slp,ifmetric,rn1,n2)
 
       
       errmax = 0.0d0

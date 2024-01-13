@@ -349,11 +349,14 @@
       integer *8 ndd,ndz,ndi
 
       real *8 ttot,done,pi
+      integer *8 int8_2,int8_12
       data ima/(0.0d0,1.0d0)/
       data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
+      int8_2 = 2
+      int8_12 = 12
       ns = nptso
       ntarg = npts
       done = 1
@@ -379,7 +382,7 @@
 ! 
 !       oversample density
 !
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
         npts,sigma,novers,ixyzso,ns,sigmaover)
 
 
@@ -426,7 +429,7 @@
     
         
 !        compute threshold for ignoring local computation
-      call get_fmm_thresh(int(12,8),ns,srcover,int(12,8),npts,srcvals,thresh)
+      call get_fmm_thresh(int8_12,ns,srcover,int8_12,npts,srcvals,thresh)
 !
 !       Add near field precomputed contribution
 !
@@ -560,7 +563,7 @@
 !  Now compoute S_{i|k|}'[\phi2] and add i\alpha S_{i|k|}'[phi2]
 !  to pot
 !
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
         npts,phi2,novers,ixyzso,ns,sigmaover)
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
@@ -647,7 +650,7 @@
 !  for temporary storage
 !
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
         npts,phi1,novers,ixyzso,ns,sigmaover)
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
@@ -719,7 +722,7 @@
               (srcover(2,l)-srcvals(2,i))**2 + &
               (srcover(3,l)-srcvals(3,i))**2)
             if(rr.lt.thresh) goto 1311
-            call h3d_dprime_diff(srcover(1,l),int(12,8),srcvals(1,i),ndd, &
+            call h3d_dprime_diff(srcover(1,l),int8_12,srcvals(1,i),ndd, &
               dpars,ndz,zpars2,ndi,ipars,pottmp)
             pot_aux(i) = pot_aux(i) - pottmp*sigmaover(l)*whtsover(l)
  1311       continue            
@@ -1304,7 +1307,9 @@
 !
       integer *8 numit,k,l
       complex *16 temp
+      integer *8 int8_1
       
+      int8_1 = 1
       bigint = numit+1
       bigint = bigint*npts*2
       lmem8 = lmem8 + bigint
@@ -1437,7 +1442,7 @@
 
       iper = 0
       rmemfmm = 0
-      call hfmm3d_memest(int(1,8),eps,zpars(1),npts_over,sources,ifcharge, &
+      call hfmm3d_memest(int8_1,eps,zpars(1),npts_over,sources,ifcharge, &
         ifdipole,iper,ifpgh,npts,targs,ifpghtarg,rmemfmm)
       rmem = rmem + rmemfmm
       

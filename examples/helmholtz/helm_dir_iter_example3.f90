@@ -22,12 +22,16 @@ program helm_dir_iter_example3
   logical isout0,isout1
 
   double complex :: pot, potex, ztmp, ima, cd
+  integer *8 int8_0,int8_1,int8_3
 
   data ima/(0.0d0,1.0d0)/
 
 
   call prini(6,13)
 
+  int8_0 = 0
+  int8_1 = 1
+  int8_3 = 3
   done = 1
   pi = atan(done)*4
 
@@ -155,7 +159,7 @@ program helm_dir_iter_example3
   if (ifscat .eq. 0) then
     ! generate rhs based on a source on the interior
     do i=1,npts
-      call h3d_slp(xyz_in, int(3,8), srcvals(1,i), int(0,8), dpars, int(1,8), zpars, int(0,8), &
+      call h3d_slp(xyz_in, int8_3, srcvals(1,i), int8_0, dpars, int8_1, zpars, int8_0, &
           ipars, rhs(i))
       sigma(i) = 0 
     enddo
@@ -196,11 +200,11 @@ program helm_dir_iter_example3
   if (ifscat .eq. 0) then
 
     ! test solution at an exterior point
-    call h3d_slp(xyz_in, int(3,8), xyz_out, int(0,8), dpars, int(1,8), zpars, int(0,8), &
+    call h3d_slp(xyz_in, int8_3, xyz_out, int8_0, dpars, int8_1, zpars, int8_0, &
         ipars, potex)
     pot = 0
     do i=1,npts
-      call h3d_comb(srcvals(1,i), int(3,8), xyz_out, int(0,8), dpars, int(3,8), zpars, int(0,8), &
+      call h3d_comb(srcvals(1,i), int8_3, xyz_out, int8_0, dpars, int8_3, zpars, int8_0, &
           ipars, ztmp)
       pot = pot + sigma(i)*wts(i)*ztmp
     enddo
@@ -229,7 +233,7 @@ program helm_dir_iter_example3
     ! evaluate scattered solution at a point
     pot = 0
     do i=1,npts
-      call h3d_comb(srcvals(1,i), int(3,8), xyz_out, int(0,8), dpars, int(3,8), zpars, int(0,8), &
+      call h3d_comb(srcvals(1,i), int8_3, xyz_out, int8_0, dpars, int8_3, zpars, int8_0, &
           ipars, ztmp)
       pot = pot + sigma(i)*wts(i)*ztmp
     enddo
@@ -1056,8 +1060,12 @@ subroutine test_exterior_pt(npatches,norder,npts,srcvals, &
 
   integer *8 ipatch,j,i
   double precision ra,ds
+  integer *8 int8_0,int8_1,int8_12
   logical isout
 
+  int8_0 = 0
+  int8_1 = 1
+  int8_12 = 12
   done = 1
   pi = atan(done)*4
 
@@ -1069,7 +1077,7 @@ subroutine test_exterior_pt(npatches,norder,npts,srcvals, &
   do ipatch=1,npatches
     do j=1,npols
       i = (ipatch-1)*npols + j
-      call h3d_sprime(xyzout,int(12,8),srcvals(1,i),int(0,8),dpars,int(1,8),zk,int(0,8),ipars,&
+      call h3d_sprime(xyzout,int8_12,srcvals(1,i),int8_0,dpars,int8_1,zk,int8_0,ipars,&
           val)
 
       call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)

@@ -225,7 +225,11 @@ c
       integer *8 ipatch,j,i
       real *8 ra,ds
       logical isout
+      integer *8 int8_0,int8_1,int8_12
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_12 = 12
       done = 1
       pi = atan(done)*4
 
@@ -241,8 +245,8 @@ c
       do ipatch=1,npatches
         do j=1,npols
           i = (ipatch-1)*npols + j
-          call h3d_sprime(xyzout,int(12,8),srcvals(1,i),int(0,8),dpars,
-     1       int(1,8),zk,int(0,8),ipars,val)
+          call h3d_sprime(xyzout,int8_12,srcvals(1,i),int8_0,dpars,
+     1       int8_1,zk,int8_0,ipars,val)
 
           call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
           ds = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)

@@ -288,9 +288,12 @@
       integer *8 nd,ntarg0
 
       real *8 ttot,done,pi
+      integer *8 int8_2,int8_12
 
       parameter (nd=1,ntarg0=1)
 
+      int8_2 = 2
+      int8_12 = 12
       ns = nptso
       done = 1
       pi = atan(done)*4
@@ -306,7 +309,7 @@
 !       oversample density
 !
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
 
 
@@ -315,7 +318,7 @@
 !
 !        compute threshold for ignoring local computation
 !
-      call get_fmm_thresh(int(12,8),ns,srcover,int(12,8),npts,srcvals,thresh)
+      call get_fmm_thresh(int8_12,ns,srcover,int8_12,npts,srcvals,thresh)
 
 !
 !       fmm call
@@ -1117,9 +1120,11 @@ implicit none
 
     integer *8 count1,count2,ier
     integer *8 ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
+    integer *8 int8_1
 	real ( kind = 8 ) pi
 	pi=3.1415926535897932384626433832795028841971d0
 
+    int8_1 = 1
 	ima=(0.0d0,1.0d0)
 	zk=zpars(1)
 	alpha=zpars(2)
@@ -1161,7 +1166,7 @@ implicit none
 
     !Computing the full operator
     if (ifdir.eq.1) then
-       call h3ddirectcg(int(1,8),zk,source,rho,ns,targets,nt,divE,E,thresh)
+       call h3ddirectcg(int8_1,zk,source,rho,ns,targets,nt,divE,E,thresh)
     else
        call hfmm3d_t_c_g(eps,zk,ns,source,rho,nt,targets,divE,E,ier)
     endif
@@ -1257,8 +1262,10 @@ implicit none
 	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),error_E,error_H
 	real ( kind = 8 ) pi
 
-	integer *8 count1
+	integer *8 count1,int8_0,int8_1
 	
+    int8_0 = 0
+    int8_1 = 1
 	ima=(0.0d0,1.0d0)
 	pi=3.1415926535897932384626433832795028841971d0
 	zk=zpars(1)
@@ -1267,8 +1274,8 @@ implicit none
 	write (*,*) 'P0',P0
 	call em_aumfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,1,P0,wts,sol_v(1:ns),sol_v(ns+1:2*ns),sol_s,Et1,Ht1)
 		
-	call fieldsED(zk,Pt,P0,int(1,8),Et2,Ht2,vf,int(0,8))
-	call fieldsMD(zk,Pt,P0,int(1,8),Et2,Ht2,vf,int(1,8))
+	call fieldsED(zk,Pt,P0,int8_1,Et2,Ht2,vf,int8_0)
+	call fieldsMD(zk,Pt,P0,int8_1,Et2,Ht2,vf,int8_1)
 
 !	
 !   Here we are testing the extintion theorem, that's why we ADD incoming and scattered fields.
@@ -1490,13 +1497,15 @@ implicit none
 	
 	!List of local variables
 	complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
-	integer *8 count1
+	integer *8 count1,int8_0,int8_1
 	real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
 		
+    int8_0 = 0
+    int8_1 = 1
 	allocate(E(3,ns), H(3,ns))
 
-	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int(0,8))
-	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int(1,8))
+	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int8_0)
+	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int8_1)
 	do count1=1,ns	
 	  call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),ru,rv)		
 	  RHS(count1)=DOT_PRODUCT(srcvals(10:12,count1),E(:,count1))

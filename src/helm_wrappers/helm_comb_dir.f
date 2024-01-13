@@ -655,10 +655,13 @@ c
       integer *8 nd,ntarg0
 
       real *8 ttot,done,pi
+      integer *8 int8_2,int8_3
       data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
+      int8_2 = 2
+      int8_3 = 3
       ns = nptso
       done = 1
       pi = atan(done)*4
@@ -682,7 +685,7 @@ c
 c       oversample density
 c
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,
      1    npts,sigma,novers,ixyzso,ns,sigmaover)
 
 
@@ -740,8 +743,8 @@ C$      t2 = omp_get_wtime()
 c
 c        compute threshold for ignoring local computation
 c
-      call get_fmm_thresh(int(3,8),ns,sources,
-     1  int(3,8),ntarg,targvals,thresh)
+      call get_fmm_thresh(int8_3,ns,sources,
+     1  int8_3,ntarg,targvals,thresh)
 
 c
 c       add in precomputed quadrature
@@ -1014,10 +1017,12 @@ c
       integer *8 nd,ntarg0
 
       real *8 ttot,done,pi
+      integer *8 int8_2
       data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
+      int8_2 = 2
       ns = nptso
       done = 1
       pi = atan(done)*4
@@ -1033,7 +1038,7 @@ c
 c       oversample density
 c
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,
      1    npts,sigma,novers,ixyzso,ns,sigmaover)
       call prinf('inside lpcomp, done oversampling density*',i,0)
 
@@ -1196,7 +1201,7 @@ c
 c    work with sorted potentials and unsort them again later
 c
       allocate(potsort(ntarg))
-      call dreorderf(int(2,8),ntarg,pot,potsort,itargper)
+      call dreorderf(int8_2,ntarg,pot,potsort,itargper)
 
 
 
@@ -1397,7 +1402,7 @@ C$OMP END PARALLEL DO
 C$      t2 = omp_get_wtime()      
       timeinfo(2) = t2-t1
 
-      call dreorderi(int(2,8),ntarg,potsort,pot,itargper)
+      call dreorderi(int8_2,ntarg,potsort,pot,itargper)
 
 cc      call prin2('quadrature time=*',timeinfo,2)
       
@@ -2165,7 +2170,9 @@ c       gmres variables
 c
       integer *8 numit,k,l
       complex *16 temp
+      integer *8 int8_1
       
+      int8_1 = 1
       bigint = numit+1
       bigint = bigint*npts*2
       lmem8 = lmem8 + bigint
@@ -2300,7 +2307,7 @@ C$OMP END PARALLEL DO
 
       iper = 0
       rmemfmm = 0
-      call hfmm3d_memest(int(1,8),eps,zpars(1),npts_over,sources,
+      call hfmm3d_memest(int8_1,eps,zpars(1),npts_over,sources,
      1 ifcharge,ifdipole,iper,ifpgh,npts,targs,ifpghtarg,rmemfmm)
       rmem = rmem + rmemfmm
       
@@ -2718,6 +2725,7 @@ c
       integer *8, allocatable :: iaintbb(:)
       integer *8 ifcharge,ifdipole
       real *8 over4pi
+      integer *8 int8_3
 
       procedure (), pointer :: fker
       external h3d_slp, h3d_dlp, h3d_comb
@@ -2867,7 +2875,7 @@ cc        call prin2('zfds=*',zfds,6)
         do i=1,naintbc
           itind = aintbc(i)
           do j=1,npolso
-            call fker(srcover(1,j),int(3,8),srcvals(1,itind),ndd,dpars,
+            call fker(srcover(1,j),int8_3,srcvals(1,itind),ndd,dpars,
      1        ndz,zfds,ndi,ipars,wquadf(j,i))
             wquadf(j,i) = wquadf(j,i)*wtsover(j)
           enddo
@@ -3251,6 +3259,7 @@ c
 
       procedure (), pointer :: fker
       complex *16 alpha,beta
+      integer *8 int8_1
       external h3d_slp, h3d_dlp, h3d_comb
       character *100 fname
       data over4pi/0.07957747154594767d0/
@@ -3261,6 +3270,7 @@ c
 c        initialize the appropriate kernel function
 c
  
+      int8_1 = 1
       alpha = zfds(2)
       beta = zfds(3)
       fker => h3d_comb
@@ -3353,16 +3363,16 @@ C$OMP PARALLEL DO PRIVATE(i,j)
         enddo
 
         if(ifcharge.eq.1.and.ifdipole.eq.0) then
-          call h3ddirectcp(nd,zpars(1),src(1,i),zcharge(i),int(1,8),
+          call h3ddirectcp(nd,zpars(1),src(1,i),zcharge(i),int8_1,
      1       targ,nrow,zmat(1,i),thresh)
         endif
         if(ifcharge.eq.0.and.ifdipole.eq.1) then
-          call h3ddirectdp(nd,zpars(1),src(1,i),zdipvec(1,i),int(1,8),
+          call h3ddirectdp(nd,zpars(1),src(1,i),zdipvec(1,i),int8_1,
      1       targ,nrow,zmat(1,i),thresh)
         endif
         if(ifcharge.eq.1.and.ifdipole.eq.1) then
           call h3ddirectcdp(nd,zpars(1),src(1,i),zcharge(i),
-     1      zdipvec(1,i),int(1,8),targ,nrow,zmat(1,i),thresh)
+     1      zdipvec(1,i),int8_1,targ,nrow,zmat(1,i),thresh)
         endif
       enddo
 C$OMP END PARALLEL DO      

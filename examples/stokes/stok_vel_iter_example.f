@@ -25,9 +25,13 @@
       real *8 v(3), omega(3), r0(3), udiff(3,10), udiff2(3,10)      
       real *8, allocatable :: uval(:,:), tracval(:,:), soln(:,:)
       complex * 16 zpars
+      integer *8 int8_0,int8_3,int8_9
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_3 = 3
+      int8_9 = 9
       done = 1
       pi = atan(done)*4
 
@@ -122,8 +126,8 @@ c
       sigout(3) = .31d0
       
       do i=1,npts
-         call st3d_slp_vec(int(9,8),xyz_src,int(3,8),srcvals(1,i),
-     1        int(0,8),dpars,int(0,8),zpars,int(0,8),ipars,smat)
+         call st3d_slp_vec(int8_9,xyz_src,int8_3,srcvals(1,i),
+     1        int8_0,dpars,int8_0,zpars,int8_0,ipars,smat)
          uval(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
          uval(2,i) = smat(2,1)*sigout(1) + smat(2,2)*sigout(2)
@@ -134,8 +138,8 @@ c
 
 
 
-      call st3d_slp_vec(int(9,8),xyz_src,int(3,8),xyz_targ,int(0,8),
-     1     dpars,int(0,8),zpars,int(0,8),ipars,smat)
+      call st3d_slp_vec(int8_9,xyz_src,int8_3,xyz_targ,int8_0,
+     1     dpars,int8_0,zpars,int8_0,ipars,smat)
       
        uintest(1) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)

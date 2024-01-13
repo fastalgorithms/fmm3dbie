@@ -65,9 +65,11 @@ c
       character *1 transa,transb
       real *8 alpha,beta
       complex *16 alpha_c,beta_c
+      integer *8 int8_9
 
       external fker
 
+      int8_9 = 9
 c
 c       initialize koornwinder polynomials
 c
@@ -119,7 +121,7 @@ c
 
         da = 1
 
-        call dgemm_guru(transa,transb,int(9,8),nqpts,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,nqpts,npols,alpha,
      1     srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
 
    
@@ -328,6 +330,7 @@ c
       character *1 transa,transb
       double precision :: alpha,beta
       integer *8 lda,ldb,ldc
+      integer *8 int8_9,int8_1
       
 
       data ima/(0.0d0,1.0d0)/
@@ -336,6 +339,8 @@ c
 
 
 
+      int8_9 = 9
+      int8_1 = 1
 cc      max number of levels
 c
       nlmax = 20
@@ -476,7 +481,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),npmax,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,npmax,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -517,7 +522,7 @@ c
 c          TODO:  fix this to call mkl blas with single thread
 c
           call zgemv_guru('n',nppols,npts,alpha_c,sigmatmp,nppols,
-     1       fkervals,int(1,8),beta_c,cintvals(1,itarg),int(1,8))
+     1       fkervals,int8_1,beta_c,cintvals(1,itarg),int8_1)
         enddo
       enddo
 
@@ -599,8 +604,10 @@ c
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
       integer *8 nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 int8_9
       
       
+      int8_9 = 9
 c
 c      get the tree
 c
@@ -700,7 +707,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),nqpols,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,nqpols,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
         call get_norms_qwts_tri(nqpols,wts,srcvals,da,qwts)
 
@@ -984,7 +991,9 @@ c
       character *1 transa,transb
       integer *8 lda,ldb,ldc
       external fker
+      integer *8 int8_9
       
+      int8_9 = 9
       allocate(uvtmp(2,kpols))
 
 c
@@ -1047,7 +1056,7 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm_guru(transa,transb,int(9,8),kpols,npols,alpha,
+              call dgemm_guru(transa,transb,int8_9,kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
               call get_norms_qwts_tri(kpols,wts,srcvals(1,istart),
@@ -1316,9 +1325,11 @@ c
       
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
+      integer *8 int8_9
 
       data ima/(0.0d0,1.0d0)/
 
+      int8_9 = 9
       allocate(cvals(nppols,ntrimax))
       allocate(istack(2*ntrimax))
 
@@ -1473,7 +1484,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),npts0,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,npts0,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -1743,6 +1754,7 @@ c
       double precision :: alpha,beta
       complex *16 alpha_c, beta_c
       integer *8 lda,ldb,ldc
+      integer *8 int8_9
       
 
       data ima/(0.0d0,1.0d0)/
@@ -1751,6 +1763,7 @@ c
 
 
 
+      int8_9 = 9
 cc      max number of levels
 c
       nlmax = 20
@@ -1888,7 +1901,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),npmax,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,npmax,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -2018,8 +2031,10 @@ c
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
       integer *8 nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 int8_9
       
       
+      int8_9 = 9
 c
 c      get the tree
 c
@@ -2121,7 +2136,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),nqpols,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,nqpols,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
         call get_norms_qwts_tri(nqpols,wts,srcvals,da,qwts)
 
@@ -2404,7 +2419,9 @@ c
       character *1 transa,transb
       integer *8 lda,ldb,ldc
       external fker
+      integer *8 int8_9
       
+      int8_9 = 9
       allocate(uvtmp(2,kpols))
 
 
@@ -2467,7 +2484,7 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm_guru(transa,transb,int(9,8),kpols,npols,alpha,
+              call dgemm_guru(transa,transb,int8_9,kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
               call get_norms_qwts_tri(kpols,wts,srcvals(1,istart),
@@ -2754,9 +2771,11 @@ c
       
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
+      integer *8 int8_9
 
       data ima/(0.0d0,1.0d0)/
 
+      int8_9 = 9
       allocate(cvals(nd,nppols,ntrimax))
       allocate(istack(2*ntrimax))
 
@@ -2911,7 +2930,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),npts0,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,npts0,npols,alpha,
      1     srccoefs(1,1,itri),lda,sigvals,ldb,beta,srcvals,ldc)
 
 

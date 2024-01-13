@@ -951,9 +951,11 @@ end subroutine fker_em_sdpie_pec
       complex *16 pot_x,pot_y,pot_z,pot2_x,pot2_y,pot2_z
       real *8 u_vect(3),v_vect(3),n_vect(3)
 	  complex *16 ima
+      integer *8 int8_2
 
       parameter (nd=1,ntarg0=1)
 
+      int8_2 = 2
       ns = nptso
       done = 1
       pi = atan(done)*4
@@ -972,7 +974,7 @@ end subroutine fker_em_sdpie_pec
 		  zk=zpars(1)
 		  alpha=zpars(2)
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
 
       ra = 0
@@ -1349,7 +1351,9 @@ implicit none
 	complex ( kind = 8 ) ima
 
   integer *8 count1,count2,ier
+  integer *8 int8_1
 	real ( kind = 8 ) pi
+    int8_1 = 1
 	pi=3.1415926535897932384626433832795028841971d0
 
 	ima=(0.0d0,1.0d0)
@@ -1377,7 +1381,7 @@ implicit none
 
   !Computing the full operator
 	
-  call hfmm3d_t_cd_p_vec(int(1,8),eps,zk,ns,source,rho,dipvec&
+  call hfmm3d_t_cd_p_vec(int8_1,eps,zk,ns,source,rho,dipvec&
 	 &,nt,targ,pot,ier)
 	do count1=1,nt
 	  pot(count1)=pot(count1)/(4.0d0*pi)
@@ -1413,7 +1417,9 @@ implicit none
 	complex ( kind = 8 ) ima
 
   integer *8 count1,count2,ier
+  integer *8 int8_1
 	real ( kind = 8 ) pi
+    int8_1 = 1
 	pi=3.1415926535897932384626433832795028841971d0
 
 	ima=(0.0d0,1.0d0)
@@ -1441,7 +1447,7 @@ implicit none
 
   !Computing the full operator
 	
-  call hfmm3d_t_cd_g_vec(int(1,8),eps,zk,ns,source,rho,dipvec&
+  call hfmm3d_t_cd_g_vec(int8_1,eps,zk,ns,source,rho,dipvec&
 	  &,nt,targ,pot,gradpot,ier)
 
 	do count1=1,nt

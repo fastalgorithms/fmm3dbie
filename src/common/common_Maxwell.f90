@@ -13,11 +13,15 @@ implicit none
 	complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
 	integer *8 count1
 	real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
-		allocate(E(3,ns), H(3,ns))
+	integer *8 int8_0, int8_1
+
+	int8_0 = 0
+	int8_1 = 1
+	allocate(E(3,ns), H(3,ns))
 !	call fieldsMD(zk,P0,srcvals(1:3,:),ns,curlE,E,vf,0)
 	write (*,*) 'P0',P0
-	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int(0,8))
-	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int(1,8))
+	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int8_0)
+	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int8_1)
 !	call point_source_vector_helmholtz(ns,P0,vf,srcvals(1:3,:),zk,E,curlE,divE)	
 !	read (*,*)
 	do count1=1,ns
@@ -45,11 +49,15 @@ implicit none
 	complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
 	integer *8 count1
 	real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
-		allocate(E(3,ns), H(3,ns))
+	integer *8 int8_0, int8_1
+
+	int8_0 = 0
+	int8_1 = 1
+	allocate(E(3,ns), H(3,ns))
 !	call fieldsMD(zk,P0,srcvals(1:3,:),ns,curlE,E,vf,0)
 !	write (*,*) 'P0 in RHS function ',P0
-	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int(0,8))
-	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int(1,8))
+	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int8_0)
+	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int8_1)
 !	call point_source_vector_helmholtz(ns,P0,vf,srcvals(1:3,:),zk,E,curlE,divE)	
 !	read (*,*)
 	do count1=1,ns	

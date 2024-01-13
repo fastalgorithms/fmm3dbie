@@ -49,12 +49,15 @@ c
       logical isout0,isout1
 
       complex *16 pot,potex,ztmp,ima
+      integer *8 int8_2,int8_12
 
       data ima/(0.0d0,1.0d0)/
 
 
       call prini(6,13)
 
+      int8_2 = 2
+      int8_12 = 12
       done = 1
       pi = atan(done)*4
 
@@ -113,11 +116,11 @@ c
       mm = 1
       nmax = nn
       allocate(w(0:nmax,0:nmax))
-      call l3getsph(nmax,mm,nn,int(12,8),srcvals,rhs,npts,w)
+      call l3getsph(nmax,mm,nn,int8_12,srcvals,rhs,npts,w)
 
       allocate(drhs(2,npts),drhs_cart(3,npts),drhs_cart_ex(3,npts))
 
-      call get_surf_grad(int(2,8),npatches,norders,ixyzs,iptype,npts,
+      call get_surf_grad(int8_2,npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,rhs,drhs)
        
 c
@@ -152,7 +155,7 @@ c
       print *, "error in surface gradient=",erra
       if(erra.lt.1.0d-8) nsuccess=nsuccess+1
 
-      call get_surf_div(int(2,8),npatches,norders,ixyzs,iptype,npts,
+      call get_surf_div(int8_2,npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,drhs,rhs2)
 
       erra = 0

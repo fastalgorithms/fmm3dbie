@@ -24,10 +24,14 @@
       real *8 xyz_out(3),xyz_in(3)
       real *8, allocatable :: sigma(:)
       real *8 dpars(2)
+      integer *8 int8_0,int8_3,int8_12
 
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_3 = 3
+      int8_12 =12
       done = 1
       pi = atan(done)*4
 
@@ -110,10 +114,10 @@ c
       allocate(sigma(npts),uval(npts),dudnval(npts))
 
       do i=1,npts
-        call l3d_slp(xyz_out,int(3,8),srcvals(1,i),int(0,8),
-     1     dpars,int(0,8),zpars,int(0,8),ipars,uval(i))
-        call l3d_sprime(xyz_out,int(12,8),srcvals(1,i),
-     1     int(0,8),dpars,int(0,8),zpars,int(0,8),ipars,dudnval(i))
+        call l3d_slp(xyz_out,int8_3,srcvals(1,i),int8_0,
+     1     dpars,int8_0,zpars,int8_0,ipars,uval(i))
+        call l3d_sprime(xyz_out,int8_12,srcvals(1,i),
+     1     int8_0,dpars,int8_0,zpars,int8_0,ipars,dudnval(i))
       enddo
 
       ndtarg = 3

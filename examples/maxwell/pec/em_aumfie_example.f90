@@ -30,13 +30,15 @@ program em_aumfie_example
   complex *16 pot,potex,ztmp,ima,zk
   complex *16 alpha_rhs
 
-  integer *8 count1
+  integer *8 count1,int8_0,int8_1
 
   data ima/(0.0d0,1.0d0)/
 
 
   call prini(6,13)
 
+  int8_0 = 0
+  int8_1 = 1
   done = 1
   pi = atan(done)*4
 
@@ -102,8 +104,8 @@ program em_aumfie_example
   allocate( ein(3,npts), hin(3,npts) )
 
   call em_field_electric_dipole(zk, xyz_out, vf, npts, srcvals(1:3,:), &
-       ein, hin, int(0,8))
-  call em_field_magnetic_dipole(zk, xyz_out, vf, npts, srcvals, ein, hin, int(1,8))
+       ein, hin, int8_0)
+  call em_field_magnetic_dipole(zk, xyz_out, vf, npts, srcvals, ein, hin, int8_1)
 
   ! now compute - n \times H
   !do j = 1,npts
@@ -241,14 +243,16 @@ subroutine get_rhs_em_mfie_pec777(p0, vf, alpha, ns, srcvals, zk,rhs)
 
   !List of local variables
   complex ( kind = 8 ), allocatable :: efield(:,:), hfield(:,:)
-  integer *8 :: count1, lda
+  integer *8 :: count1, lda, int8_0,int8_1
   real ( kind = 8 ) :: ru(3),rv(3),cross_aux(3), dnorm
   
+  int8_0 = 0
+  int8_1 = 1
   allocate(efield(3,ns), hfield(3,ns))
   
   call em_field_electric_dipole(zk, P0, vf, ns, srcvals(1:3,:), &
-       efield, hfield, int(0,8))
-  call em_field_magnetic_dipole(zk, P0, vf, ns, srcvals, efield, hfield, int(1,8))
+       efield, hfield, int8_0)
+  call em_field_magnetic_dipole(zk, P0, vf, ns, srcvals, efield, hfield, int8_1)
 
   ! now compute - n \times H
   do count1=1,ns

@@ -1033,9 +1033,11 @@ end subroutine fker_em_adpie_pec
       complex *16 pot_x,pot_y,pot_z,pot2_x,pot2_y,pot2_z
       real *8 u_vect(3),v_vect(3),n_vect(3)
 	  complex *16 ima
+      integer *8 int8_2
 
       parameter (nd=1,ntarg0=1)
 
+      int8_2 = 2
       ns = nptso
       done = 1
       pi = atan(done)*4
@@ -1054,11 +1056,11 @@ end subroutine fker_em_adpie_pec
 		zk=zpars(1)
 		alpha=zpars(2)
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(2*npts+1:3*npts),novers,ixyzso,ns,sigmaover(2*ns+1:3*ns))
 
       ra = 0
@@ -1601,14 +1603,18 @@ implicit none
 	integer *8 count1,count2,icount,naux
 	real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
 	real ( kind = 8 ), allocatable :: wts(:)
+    integer *8 int8_0,int8_1,int8_12
 
 	allocate(E(3,ns), H(3,ns))
   allocate(A(3,ns),gradpot(3,ns),pot(ns))
 	allocate(divE(ns),nE(ns))
 	allocate(wts(ns))
 
-  call fieldsEDdpie(zk,P0,srcvals,ns,int(12,8),vf,int(0,8),E,H,A,pot,gradpot)
-  call fieldsMDdpie(zk,P0,srcvals,ns,int(12,8),vf,int(1,8),E,H,A,pot,gradpot)
+    int8_0 = 0
+    int8_1 = 1
+    int8_12 = 12
+  call fieldsEDdpie(zk,P0,srcvals,ns,int8_12,vf,int8_0,E,H,A,pot,gradpot)
+  call fieldsMDdpie(zk,P0,srcvals,ns,int8_12,vf,int8_1,E,H,A,pot,gradpot)
 	do count1=1,ns	
 		call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),ru,rv)		
 		RHS(count1)=-DOT_PRODUCT(rv,E(:,count1))
@@ -1699,9 +1705,13 @@ implicit none
   complex ( kind = 8 ), allocatable :: dpot_normal(:)
   complex ( kind = 8 ) ima  
 	integer *8 count1,count2,icount,naux
+    integer *8 int8_0,int8_1,int8_12
 	real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
 	real ( kind = 8 ), allocatable :: wts(:)
 
+    int8_0 = 0
+    int8_1 = 1
+    int8_12 = 12
 	ima=(0.0d0,1.0d0)
 
 	allocate(E(3,ns), H(3,ns))
@@ -1709,8 +1719,8 @@ implicit none
 	allocate(divE(ns),nA(ns),dpot_normal(ns))
 	allocate(wts(ns))
 
-  call fieldsEDdpie(zk,P0,srcvals,ns,int(12,8),vf,int(0,8),E,H,A,pot,gradpot)
-  call fieldsMDdpie(zk,P0,srcvals,ns,int(12,8),vf,int(1,8),E,H,A,pot,gradpot)
+  call fieldsEDdpie(zk,P0,srcvals,ns,int8_12,vf,int8_0,E,H,A,pot,gradpot)
+  call fieldsMDdpie(zk,P0,srcvals,ns,int8_12,vf,int8_1,E,H,A,pot,gradpot)
 	do count1=1,ns	
 		call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),ru,rv)		
 		RHS(count1)=-DOT_PRODUCT(rv,A(:,count1))
@@ -1757,17 +1767,18 @@ implicit none
 	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),error,rel_err
 	real ( kind = 8 ) pi
 
-	integer *8 count1
+	integer *8 count1,int8_1
+    int8_1 = 1
 		ima=(0.0d0,1.0d0)
 		pi=3.1415926535897932384626433832795028841971d0
 
 !		write (*,*) 'P0',P0
-call EDPIE1_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),Et1,phi1)
+call EDPIE1_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),Et1,phi1)
 		
 !		call fieldsED(zk,P0,Pt,1,Et2,Ht2,vf,0)
 !		call fieldsMD(zk,P0,Pt,1,Et2,Ht2,vf,1)
 !	    write (*,*) 'Antes: ',P0,vf,Pt,zk
-		call point_source_vector_helmholtz(int(1,8),P0,vf,Pt,zk,Et2,E_aux,phi2)
+		call point_source_vector_helmholtz(int8_1,P0,vf,Pt,zk,Et2,E_aux,phi2)
 !		write (*,*) Et2
 
 		error=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+abs(Et1(3)-Et2(3))**2)
@@ -1802,19 +1813,22 @@ implicit none
 	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),error,rel_err
 	real ( kind = 8 ) pi
 
-	integer *8 count1
+	integer *8 count1,int8_0,int8_1,int8_3
+    int8_0 = 0
+    int8_1 = 1
+    int8_3 = 3
 	ima=(0.0d0,1.0d0)
 	pi=3.1415926535897932384626433832795028841971d0
 
 	write (*,*) 'P0',P0
-  call EDPIE1_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),Et1,phi1)
+  call EDPIE1_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),Et1,phi1)
 		
 !		call fieldsED(zk,P0,Pt,1,Et2,Ht2,vf,0)
 !		call fieldsMD(zk,P0,Pt,1,Et2,Ht2,vf,1)
 !	write (*,*) 'Antes: ',P0,vf,Pt,zk
 
-  call fieldsEDdpie(zk,P0,Pt,int(1,8),int(3,8),vf,int(0,8),Et2,Ht2,At2,pott2,gradpott2)
-  call fieldsMDdpie(zk,P0,Pt,int(1,8),int(3,8),vf,int(1,8),Et2,Ht2,At2,pott2,gradpott2)
+  call fieldsEDdpie(zk,P0,Pt,int8_1,int8_3,vf,int8_0,Et2,Ht2,At2,pott2,gradpott2)
+  call fieldsMDdpie(zk,P0,Pt,int8_1,int8_3,vf,int8_1,Et2,Ht2,At2,pott2,gradpott2)
 !	call point_source_vector_helmholtz(1,P0,vf,Pt,zk,Et2,E_aux,phi2)
 !	write (*,*) 'Et2: ', Et2
 !	write (*,*) 'Et1: ', Et1
@@ -1847,21 +1861,24 @@ implicit none
 	real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),error,rel_err
 	real ( kind = 8 ) pi
 
-	integer *8 count1
+	integer *8 count1,int8_0,int8_1,int8_3
+    int8_0 = 0
+    int8_1 = 1
+    int8_3 = 3
 	ima=(0.0d0,1.0d0)
 	pi=3.1415926535897932384626433832795028841971d0
 
 	write (*,*) 'P0',P0
-  call dpie_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),At1,pott1,Ht1)
+  call dpie_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),At1,pott1,Ht1)
 		
-  call sdpie_grad_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int(1,8),Pt,wts,sol_s,pott1,gradpott1)
+  call sdpie_grad_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,wts,sol_s,pott1,gradpott1)
 
 !		call fieldsED(zk,P0,Pt,1,Et2,Ht2,vf,0)
 !		call fieldsMD(zk,P0,Pt,1,Et2,Ht2,vf,1)
 !	write (*,*) 'Antes: ',P0,vf,Pt,zk
 
-  call fieldsEDdpie(zk,P0,Pt,int(1,8),int(3,8),vf,int(0,8),Et2,Ht2,At2,pott2,gradpott2)
-  call fieldsMDdpie(zk,P0,Pt,int(1,8),int(3,8),vf,int(1,8),Et2,Ht2,At2,pott2,gradpott2)
+  call fieldsEDdpie(zk,P0,Pt,int8_1,int8_3,vf,int8_0,Et2,Ht2,At2,pott2,gradpott2)
+  call fieldsMDdpie(zk,P0,Pt,int8_1,int8_3,vf,int8_1,Et2,Ht2,At2,pott2,gradpott2)
 !	write (*,*) 'Et2: ', Et2
 !	write (*,*) 'Et1: ', Et1
   Et1(1)=ima*zk*At1(1)+gradpott1(1)

@@ -368,9 +368,12 @@
       integer *8 nd,ntarg0
 
       real *8 ttot,done,pi
+      integer *8 int8_2,int8_12
 
       parameter (nd=1,ntarg0=1)
 
+      int8_2 = 2
+      int8_12 = 12
       ns = nptso
       done = 1
       pi = atan(done)*4
@@ -387,22 +390,22 @@
 ! 
 !       oversample density
     
-    call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,&
+    call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,&
 	&npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
 	       
-    call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,&
+    call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,&
 	&npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
-	call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+	call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
 	&npts,sigma(2*npts+1:3*npts),novers,ixyzso,ns,sigmaover(2*ns+1:3*ns))
 
-	call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+	call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
 	&npts,sigma(3*npts+1:4*npts),novers,ixyzso,ns,sigmaover(3*ns+1:4*ns))
 
-    call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+    call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
     &npts,sigma(4*npts+1:5*npts),novers,ixyzso,ns,sigmaover(4*ns+1:5*ns))
 
-    call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+    call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
     &npts,sigma(5*npts+1:6*npts),novers,ixyzso,ns,sigmaover(5*ns+1:6*ns))
 
       ra = 0
@@ -418,7 +421,7 @@
 
 
 
-		call get_fmm_thresh(int(12,8),ns,srcover,ndtarg,ntarg,targs,thresh)
+		call get_fmm_thresh(int8_12,ns,srcover,ndtarg,ntarg,targs,thresh)
        ifdir=0
 	  
 		!Calculate the far_field with FMM		
@@ -1666,8 +1669,10 @@ implicit none
 	real ( kind = 8 ) pi
 	complex ( kind = 8 ) omega,ep0,mu0,ep1,mu1
 
-	integer *8 count1
+	integer *8 count1,int8_0,int8_1
 
+    int8_0 = 0
+    int8_1 = 1
 	ima=(0.0d0,1.0d0)
 	pi=3.1415926535897932384626433832795028841971d0
 	omega = zpars(1)
@@ -1677,18 +1682,18 @@ implicit none
 	mu1 = zpars(5)
 
 	
-	call em_dfie_trans_FMM_targ(eps_FMM,omega,ep0,mu0,ns,srcvals,int(1,8),Pt,&
+	call em_dfie_trans_FMM_targ(eps_FMM,omega,ep0,mu0,ns,srcvals,int8_1,Pt,&
 	 &wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),sol(3*ns+1:4*ns),&
 	 &sol(4*ns+1:5*ns),sol(5*ns+1:6*ns),Et1)
-	call em_dfie_trans_FMM_targ(eps_FMM,omega,ep1,mu1,ns,srcvals,int(1,8),P0,&
+	call em_dfie_trans_FMM_targ(eps_FMM,omega,ep1,mu1,ns,srcvals,int8_1,P0,&
 	 &wts,sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),sol(3*ns+1:4*ns),&
 	 &sol(4*ns+1:5*ns),sol(5*ns+1:6*ns),E01)
 		
-	call fieldsEDomega(omega,ep0,mu0,P0,Pt,int(1,8),Et2,Ht2,vf,int(0,8))
-	call fieldsMDomega(omega,ep0,mu0,P0,Pt,int(1,8),Et2,Ht2,vf,int(1,8))
+	call fieldsEDomega(omega,ep0,mu0,P0,Pt,int8_1,Et2,Ht2,vf,int8_0)
+	call fieldsMDomega(omega,ep0,mu0,P0,Pt,int8_1,Et2,Ht2,vf,int8_1)
 		
-	call fieldsEDomega(omega,ep1,mu1,Pt,P0,int(1,8),E02,H02,vf,int(0,8))
-	call fieldsMDomega(omega,ep1,mu1,Pt,P0,int(1,8),E02,H02,vf,int(1,8))
+	call fieldsEDomega(omega,ep1,mu1,Pt,P0,int8_1,E02,H02,vf,int8_0)
+	call fieldsMDomega(omega,ep1,mu1,Pt,P0,int8_1,E02,H02,vf,int8_1)
 	
 	write (*,*) 'Errors at the EXTERIOR region:'
 	error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+&

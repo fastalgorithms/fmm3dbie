@@ -447,9 +447,12 @@ subroutine lpcomp_em_cfie_rwg_pec_addsub(npatches,norders,ixyzs,&
 
       complex ( kind = 8 ), allocatable :: pot_aux(:),sigma_aux(:),sigma_aux2(:),pot_rwg_aux(:)
       complex ( kind = 8 ) ima
+      integer *8 int8_2,int8_12
 
       parameter (nd=1,ntarg0=1)
 
+      int8_2 = 2
+      int8_12 = 12
       ns = nptso
       done = 1
       pi = atan(done)*4
@@ -480,11 +483,11 @@ subroutine lpcomp_em_cfie_rwg_pec_addsub(npatches,norders,ixyzs,&
    &vert_flat,tri_flat,rwg,nrwg,sigma,sigma_aux)
 
 
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
-      call oversample_fun_surf(int(2,8),npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,sigmaover(2*ns+1:3*ns))
 
 
@@ -493,7 +496,7 @@ subroutine lpcomp_em_cfie_rwg_pec_addsub(npatches,norders,ixyzs,&
 !
 !        compute threshold for ignoring local computation
 !
-      call get_fmm_thresh(int(12,8),ns,srcover,int(12,8),npts,srcvals,thresh)
+      call get_fmm_thresh(int8_12,ns,srcover,int8_12,npts,srcvals,thresh)
 
 !
 !       fmm call
@@ -1553,7 +1556,11 @@ subroutine get_rhs_em_cfie_rwg_pec(P0, vf, ns, srcvals,zpars,RHS, &
   real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
   complex ( kind = 8 ), allocatable :: rhs_aux(:)
   complex ( kind = 8 ) zk, alpha, beta
+  integer *8 int8_0,int8_1
   
+  int8_0 = 0
+  int8_1 = 1
+
   allocate(E(3,ns), H(3,ns))
   allocate(rhs_aux(2*ns))
   
@@ -1561,8 +1568,8 @@ subroutine get_rhs_em_cfie_rwg_pec(P0, vf, ns, srcvals,zpars,RHS, &
   alpha=zpars(2)
   beta=zpars(3)
   
-  call fieldsED(zk,P0,srcvals,ns,E,H,vf,int(0,8))
-  call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int(1,8))
+  call fieldsED(zk,P0,srcvals,ns,E,H,vf,int8_0)
+  call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int8_1)
 
   do count1=1,ns	
      call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),ru,rv)		
@@ -1655,8 +1662,10 @@ subroutine test_accuracy_em_cfie_rwg_pec(eps_FMM, sol, zpars, ns, wts, &
   
   complex ( kind = 8 ), allocatable :: sol_aux(:), sol_aux2(:)
 
-  integer *8 count1
+  integer *8 count1,int8_0,int8_1
 	
+  int8_0 = 0
+  int8_1 = 1
   ima=(0.0d0,1.0d0)
   pi=3.1415926535897932384626433832795028841971d0
   zk=zpars(1)
@@ -1678,11 +1687,11 @@ subroutine test_accuracy_em_cfie_rwg_pec(eps_FMM, sol, zpars, ns, wts, &
   !	call em_mfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,1,P0,wts,sol_aux(1:ns),&
   !	 &sol_aux(ns+1:2*ns),Ht1)
 
-  call em_cfie_pec_FMM_targ(eps_FMM, zk, ns, srcvals, int(1,8), P0, wts, sol_aux(1:ns), &
+  call em_cfie_pec_FMM_targ(eps_FMM, zk, ns, srcvals, int8_1, P0, wts, sol_aux(1:ns), &
        sol_aux(ns+1:2*ns), sol_aux(2*ns+1:3*ns), Et1, Ht1)
 
-  call fieldsED(zk, Pt, P0, int(1,8), Et2, Ht2, vf, int(0,8))
-  call fieldsMD(zk, Pt, P0, int(1,8), Et2, Ht2, vf, int(1,8))
+  call fieldsED(zk, Pt, P0, int8_1, Et2, Ht2, vf, int8_0)
+  call fieldsMD(zk, Pt, P0, int8_1, Et2, Ht2, vf, int8_1)
 
 
   !    Et2(1)=exp(ima*zk*P0(3))
@@ -1956,8 +1965,8 @@ end subroutine em_cfie_sphere_proxi2
 !   alpha=zpars(2)
 !   beta=zpars(3)
 
-! !	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int(0,8))
-! !	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int(1,8))
+! !	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int8_0)
+! !	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int8_1)
 
 
 !   do count1=1,ns
@@ -2069,8 +2078,8 @@ end subroutine em_cfie_sphere_proxi2
 !   alpha=zpars(2)
 !   beta=zpars(3)
 
-! !	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int(0,8))
-! !	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int(1,8))
+! !	call fieldsED(zk,P0,srcvals,ns,E,H,vf,int8_0)
+! !	call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int8_1)
 
 
 !   do count1=1,ns
@@ -2198,8 +2207,8 @@ subroutine get_rhs_em_cfie_rwg_pec_sphere(P0, vf, ns, srcvals, zpars, &
   print *, 'generating the RWG right hand side ...'
   !!stop
   
-  ! call fieldsED(zk,P0,srcvals,ns,E,H,vf,int(0,8))
-  ! call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int(1,8))
+  ! call fieldsED(zk,P0,srcvals,ns,E,H,vf,int8_0)
+  ! call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int8_1)
 
 
   
@@ -2306,8 +2315,10 @@ subroutine test_accuracy_em_cfie_rwg_pec_sphere(eps_FMM,sol,zpars,ns,wts, &
   
   complex ( kind = 8 ), allocatable :: sol_aux(:), sol_aux2(:)
   
-  integer *8 count1
+  integer *8 count1,int8_1,int8_40
 	
+  int8_1 = 1
+  int8_40 = 40
   ima=(0.0d0,1.0d0)
   pi=3.1415926535897932384626433832795028841971d0
   zk=zpars(1)
@@ -2326,7 +2337,7 @@ subroutine test_accuracy_em_cfie_rwg_pec_sphere(eps_FMM,sol,zpars,ns,wts, &
   !	call em_mfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,1,P0,wts,sol_aux(1:ns),&
   !	 &sol_aux(ns+1:2*ns),Ht1)
 
-  call em_cfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,int(1,8),Pt,wts,sol_aux(1:ns),&
+  call em_cfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,int8_1,Pt,wts,sol_aux(1:ns),&
        &sol_aux(ns+1:2*ns),sol_aux(2*ns+1:3*ns),Et1,Ht1)
 
   !	call fieldsED(zk,Pt,P0,1,Et2,Ht2,vf,0)
@@ -2335,7 +2346,7 @@ subroutine test_accuracy_em_cfie_rwg_pec_sphere(eps_FMM,sol,zpars,ns,wts, &
   write (*,*) 'Pt: ' ,Pt(1),Pt(2),Pt(3)
   write (*,*) 'P0: ' ,P0(1),P0(2),P0(3)
 
-  call em_sphere_pec(Pt(1),Pt(2),Pt(3),1.0d0,int(40,8),zk,Et2,Ht2)
+  call em_sphere_pec(Pt(1),Pt(2),Pt(3),1.0d0,int8_40,zk,Et2,Ht2)
 
   !	
   !   Here we are testing the extintion theorem, 

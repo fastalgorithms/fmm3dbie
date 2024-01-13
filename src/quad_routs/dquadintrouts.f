@@ -186,7 +186,9 @@ c
       integer *8 ntarg0,ntargmax
       real *8 fval
       character *1 transa,transb
+      integer *8 int8_9
 
+      int8_9 = 9
       allocate(pols_tmp(npols))
       allocate(sigvals(nppols,nqpts))
       allocate(rsigvals(npols,nqpts))
@@ -222,7 +224,7 @@ c
 
 
       do ipatch=1,npatches
-        call dgemm_guru(transa,transb,int(9,8),nqpts,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,nqpts,npols,alpha,
      1    srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
         
         call get_norms_qwts_quad(nqpts,wts,srcvals,da,qwts)
@@ -442,6 +444,7 @@ c
       character *1 transa,transb
       double precision :: alpha,beta
       integer *8 lda,ldb,ldc
+      integer *8 int8_1,int8_2,int8_9
       
 
       data ima/(0.0d0,1.0d0)/
@@ -450,6 +453,9 @@ c
 
 
 
+      int8_1 = 1
+      int8_2 = 2
+      int8_9 = 9
 cc      max number of levels
 c
       nlmax = 20
@@ -532,7 +538,7 @@ c
          allocate(umattmp(nqpols,nqpols),vmattmp(nqpols,nqpols))
          itype = 1
          
-         call polytens_exps_nd(int(2,8),ipoly,itype,nqorder+1,ttype,
+         call polytens_exps_nd(int8_2,ipoly,itype,nqorder+1,ttype,
      1     uvsq,umattmp,1,vmattmp,1,wts)
       
          deallocate(umattmp,vmattmp)
@@ -583,7 +589,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),npmax,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,npmax,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -624,7 +630,7 @@ c
 c          TODO:  fix this to call mkl blas with single thread
 c
           call dgemv_guru('n',nppols,npts,alpha,sigmatmp,nppols,
-     1       fkervals,int(1,8),beta,cintvals(1,itarg),int(1,8))
+     1       fkervals,int8_1,beta,cintvals(1,itarg),int8_1)
         enddo
       enddo
 
@@ -806,8 +812,12 @@ c
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
       integer *8 nn1,nn2,nn3,nn4,npmax0,nqmaxuse,nqmaxuse0
+      integer *8 int8_1,int8_2,int8_9
       
       
+      int8_1 = 1
+      int8_2 = 2
+      int8_9 = 9
 c
 c      get the tree
 c
@@ -858,8 +868,8 @@ c
          allocate(umattmp(nqpols,nqpols),vmattmp(nqpols,nqpols))
          itype = 1
          
-         call polytens_exps_nd(int(2,8),ipoly,itype,nqorder+1,ttype,
-     1     uvsq,umattmp,int(1,8),vmattmp,int(1,8),wts)
+         call polytens_exps_nd(int8_2,ipoly,itype,nqorder+1,ttype,
+     1     uvsq,umattmp,int8_1,vmattmp,int8_2,wts)
       
          deallocate(umattmp,vmattmp)
       endif
@@ -909,7 +919,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),nqpols,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,nqpols,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
         call get_norms_qwts_quad(nqpols,wts,srcvals,da,qwts)
 
@@ -938,15 +948,15 @@ c
              nn2 = nppols*npmax
              nn3 = 12*npmax
              nn4 = nquad*6
-             call dcopy(nn1,sigvals,int(1,8),sigvals2,int(1,8))
-             call dcopy(nn2,sigvalsdens,int(1,8),sigvalsdens2,int(1,8))
-             call dcopy(nn3,srcvals,int(1,8),srcvals2,int(1,8))
-             call dcopy(npmax,qwts,int(1,8),qwts2,int(1,8))
+             call dcopy(nn1,sigvals,int8_1,sigvals2,int8_1)
+             call dcopy(nn2,sigvalsdens,int8_1,sigvalsdens2,int8_1)
+             call dcopy(nn3,srcvals,int8_1,srcvals2,int8_1)
+             call dcopy(npmax,qwts,int8_1,qwts2,int8_1)
              do ii=1,nquad
                ichild_start2(ii) = ichild_start(ii)
              enddo
-             call dcopy(nn4,tvs,int(1,8),tvs2,int(1,8))
-             call dcopy(nquad,da,int(1,8),da2,int(1,8))
+             call dcopy(nn4,tvs,int8_1,tvs2,int8_1)
+             call dcopy(nquad,da,int8_1,da2,int8_1)
 
 
              deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
@@ -963,15 +973,15 @@ c
                ichild_start(ii) = -1
              enddo
 
-             call dcopy(nn1,sigvals2,int(1,8),sigvals,int(1,8))
-             call dcopy(nn2,sigvalsdens2,int(1,8),sigvalsdens,int(1,8))
-             call dcopy(nn3,srcvals2,int(1,8),srcvals,int(1,8))
-             call dcopy(npmax,qwts2,int(1,8),qwts,int(1,8))
+             call dcopy(nn1,sigvals2,int8_1,sigvals,int8_1)
+             call dcopy(nn2,sigvalsdens2,int8_1,sigvalsdens,int8_1)
+             call dcopy(nn3,srcvals2,int8_1,srcvals,int8_1)
+             call dcopy(npmax,qwts2,int8_1,qwts,int8_1)
              do ii=1,nquad
                ichild_start(ii) = ichild_start2(ii)
              enddo
-             call dcopy(nn4,tvs2,int(1,8),tvs,int(1,8))
-             call dcopy(nquad,da2,int(1,8),da,int(1,8))
+             call dcopy(nn4,tvs2,int8_1,tvs,int8_1)
+             call dcopy(nquad,da2,int8_1,da,int8_1)
 
              npmax = npmax0
              nqmaxuse = nqmaxuse0
@@ -1410,7 +1420,9 @@ c-------------------
       character *1 transa,transb
       integer *8 lda,ldb,ldc
       external fker
+      integer *8 int8_9
       
+      int8_9 = 9
       allocate(uvtmp(2,kpols))
 
 c
@@ -1473,7 +1485,7 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm_guru(transa,transb,int(9,8),kpols,npols,alpha,
+              call dgemm_guru(transa,transb,int8_9,kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
               call get_norms_qwts_quad(kpols,wts,srcvals(1,istart),
@@ -1773,9 +1785,13 @@ c
       
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
+      integer *8 int8_1,int8_2,int8_9
 
       data ima/(0.0d0,1.0d0)/
 
+      int8_1 = 1
+      int8_2 = 2
+      int8_9 = 9
       allocate(cvals(nppols,nquadmax))
       allocate(istack(2*nquadmax))
 
@@ -1872,8 +1888,8 @@ c
          allocate(umattmp(nqpols,nqpols),vmattmp(nqpols,nqpols))
          itype = 1
          
-         call polytens_exps_nd(int(2,8),ipoly,itype,nqorder+1,ttype,
-     1     uvsq,umattmp,int(1,8),vmattmp,int(1,8),wts)
+         call polytens_exps_nd(int8_2,ipoly,itype,nqorder+1,ttype,
+     1     uvsq,umattmp,int8_1,vmattmp,int8_1,wts)
       
          deallocate(umattmp,vmattmp)
       endif
@@ -1923,7 +1939,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),npts0,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,npts0,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
 
 

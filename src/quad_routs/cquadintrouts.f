@@ -185,8 +185,10 @@ c
       integer *8 i,j,ii,ipatch,itarg,lda,ldb,ldc
       integer *8 ntarg0,ntargmax
       complex *16 fval
+      integer *8 int8_9
       character *1 transa,transb
 
+      int8_9 = 9
       allocate(pols_tmp(npols))
       allocate(sigvals(nppols,nqpts))
       allocate(rsigvals(npols,nqpts))
@@ -222,7 +224,7 @@ c
 
 
       do ipatch=1,npatches
-        call dgemm_guru(transa,transb,int(9,8),nqpts,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,nqpts,npols,alpha,
      1    srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
         
         call get_norms_qwts_quad(nqpts,wts,srcvals,da,qwts)
@@ -444,6 +446,7 @@ c
       character *1 transa,transb
       double precision :: alpha,beta
       integer *8 lda,ldb,ldc
+      integer *8 int8_1,int8_2,int8_9
       
 
       data ima/(0.0d0,1.0d0)/
@@ -452,6 +455,9 @@ c
 
 
 
+      int8_1 = 1
+      int8_2 = 2
+      int8_9 = 9
 cc      max number of levels
 c
       nlmax = 20
@@ -534,8 +540,8 @@ c
          allocate(umattmp(nqpols,nqpols),vmattmp(nqpols,nqpols))
          itype = 1
          
-         call polytens_exps_nd(int(2,8),ipoly,itype,nqorder+1,ttype,
-     1     uvsq,umattmp,int(1,8),vmattmp,int(1,8),wts)
+         call polytens_exps_nd(int8_2,ipoly,itype,nqorder+1,ttype,
+     1     uvsq,umattmp,int8_1,vmattmp,int8_1,wts)
       
          deallocate(umattmp,vmattmp)
       endif
@@ -585,7 +591,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),npmax,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,npmax,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
@@ -626,7 +632,7 @@ c
 c          TODO:  fix this to call mkl blas with single thread
 c
           call zgemv_guru('n',nppols,npts,alpha_c,sigmatmp,nppols,
-     1       fkervals,int(1,8),beta_c,cintvals(1,itarg),int(1,8))
+     1       fkervals,int8_1,beta_c,cintvals(1,itarg),int8_1)
         enddo
       enddo
 
@@ -808,8 +814,12 @@ c
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
       integer *8 nn1,nn2,nn3,nn4,npmax0,nqmaxuse,nqmaxuse0
+      integer *8 int8_1,int8_2,int8_9
       
       
+      int8_1 = 1
+      int8_2 = 2
+      int8_9 = 9
 c
 c      get the tree
 c
@@ -860,8 +870,8 @@ c
          allocate(umattmp(nqpols,nqpols),vmattmp(nqpols,nqpols))
          itype = 1
          
-         call polytens_exps_nd(int(2,8),ipoly,itype,nqorder+1,ttype,
-     1     uvsq,umattmp,int(1,8),vmattmp,int(1,8),wts)
+         call polytens_exps_nd(int8_2,ipoly,itype,nqorder+1,ttype,
+     1     uvsq,umattmp,int8_1,vmattmp,int8_1,wts)
       
          deallocate(umattmp,vmattmp)
       endif
@@ -911,7 +921,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),nqpols,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,nqpols,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
         call get_norms_qwts_quad(nqpols,wts,srcvals,da,qwts)
 
@@ -1410,8 +1420,10 @@ c-------------------
       real *8, allocatable :: uvtmp(:,:)
       character *1 transa,transb
       integer *8 lda,ldb,ldc
+      integer *8 int8_9
       external fker
       
+      int8_9 = 9
       allocate(uvtmp(2,kpols))
 
 c
@@ -1474,7 +1486,7 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm_guru(transa,transb,int(9,8),kpols,npols,alpha,
+              call dgemm_guru(transa,transb,int8_9,kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
               call get_norms_qwts_quad(kpols,wts,srcvals(1,istart),
@@ -1774,9 +1786,11 @@ c
       
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
+      integer *8 int8_9
 
       data ima/(0.0d0,1.0d0)/
 
+      int8_9 = 9
       allocate(cvals(nppols,nquadmax))
       allocate(istack(2*nquadmax))
 
@@ -1924,7 +1938,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa,transb,int(9,8),npts0,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,npts0,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
 
 

@@ -260,6 +260,7 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   integer *8 nfars(10)
   integer *8 nmax,iseed1,iseed2
   integer *8 ipoly
+  integer *8 int8_9,int8_12
   character *1 ttype
 
   character *1 transa,transb
@@ -273,6 +274,8 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   if(ikerorder.eq.1) fker => h3d_qlp
 
 
+  int8_9 = 9
+  int8_12 = 12
   ndd = 0
   ndz = 1
   ndi = 0
@@ -382,8 +385,8 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   alpha = 1
   beta = 0
   
-  call dgemm_guru(transa,transb,int(9,8),npols,npols,alpha, &
-     srccoefs,int(9,8),pmat,npols,beta,srctmp,int(12,8))
+  call dgemm_guru(transa,transb,int8_9,npols,npols,alpha, &
+     srccoefs,int8_9,pmat,npols,beta,srctmp,int8_12)
 
   call cross_prod3d(srctmp(4,1),srctmp(7,1),tmp)
   rsc = tmp(1)**2 + tmp(2)**2 + tmp(3)**2
@@ -415,8 +418,8 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   alpha = 1
   beta = 0
   
-  call dgemm_guru(transa,transb,int(9,8),npolsf,npols,alpha, &
-     srccoefs,int(9,8),pmat,npols,beta,srctmp,int(12,8))
+  call dgemm_guru(transa,transb,int8_9,npolsf,npols,alpha, &
+     srccoefs,int8_9,pmat,npols,beta,srctmp,int8_12)
 
   do jpt=1,npolsf
     call cross_prod3d(srctmp(4,jpt),srctmp(7,jpt),tmp)
@@ -461,8 +464,8 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
     alpha = 1
     beta = 0
   
-    call dgemm_guru(transa,transb,int(9,8),npolsf,npols,alpha, &
-       srccoefs,int(9,8),pmat,npols,beta,srctmp,int(12,8))
+    call dgemm_guru(transa,transb,int8_9,npolsf,npols,alpha, &
+       srccoefs,int8_9,pmat,npols,beta,srctmp,int8_12)
 
 
 !

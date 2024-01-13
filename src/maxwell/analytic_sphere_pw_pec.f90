@@ -90,9 +90,11 @@ implicit none
   complex ( kind = 8 ) h_val(nmax),hp_val(nmax),hpp_val(nmax)
   real ( kind = 8 ) pol_leg(1,nmax), polp_leg(1,nmax)
   complex ( kind = 8 ) er,etheta,ephi,hr,htheta,hphi
+  integer *8 int8_1
 
   data ima/(0.0d0,1.0d0)/
 
+  int8_1 = 1
   r_t=sqrt(x**2+y**2+z**2)
   th_t=atan2(sqrt(x**2+y**2),z)
   phi_t=atan2(y,x)
@@ -117,7 +119,7 @@ implicit none
   call riccati_jp(nmax,zr0,j_val0,jp_val0)
   call riccati_hpp(nmax,zr0,h_val0,hp_val0,hpp_val0)
 
-  call legasfuno1(int(1,8),nmax,cos(th_t),pol_leg,polp_leg)
+  call legasfuno1(int8_1,nmax,cos(th_t),pol_leg,polp_leg)
 
   !    do count=1,nmax
   !      polp_leg(1,count)=-polp_leg(1,count)/sin(th_t)

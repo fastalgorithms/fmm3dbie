@@ -342,12 +342,14 @@
       real *8 done,pi,over4pi
       complex *16 ima
       complex *16 w1,w2,w3,ztmp(3)
+      integer *8 int8_12
       
 
 
       data over4pi/0.07957747154594767d0/
       data ima/(0.0d0,1.0d0)/
 
+      int8_12 = 12
       ns = nptso
       ntarg = npts
 
@@ -462,7 +464,7 @@
 !$OMP END PARALLEL DO     
       
 
-      call get_fmm_thresh(int(12,8),ns,srcover,int(12,8),npts,srcvals,thresh)
+      call get_fmm_thresh(int8_12,ns,srcover,int8_12,npts,srcvals,thresh)
 
 !
 ! Subtract near contributions computed via fmm
