@@ -710,6 +710,14 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
   endif
 
   ier = 0
+  print *, ier
+  call prinf('ipts_start=*',ipt_starts,nlist)
+  call prinf('ntest=*',ntest,1)
+  call prinf('ipat_starts=*',ipat_starts,nlist)
+
+  npatches_out = npatches + 3*nlist
+  npts_out = ntest
+
 
 !  Start refining the geometry now  
 !   
@@ -721,20 +729,62 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
   allocate(vmatr(npolmax, npolmax), wts(npolmax))
   allocate(pols(npolmax))
 
+  
+
 !
 !  TODO: find unique order + patch type combo to precompute
 !  required umatr's and then reuse them across
 !  refinement work being done
 !
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(uvs_refine, umatr, ipt_starts) &
-!$OMP PRIVATE(uvs_base, ipat_starts, v0, v1, v2, v3, v4, ipat, npols, j) &
-!$OMP PRIVATE(vmatr, wts, pols, istart, jj, ll, tmp, ipats, iptype0) &
-!$OMP PRIVATE(norder0, jpat)
+!
+!  fill out ixyzs,norders, iptype array indepedently 
+!  to make sure all entries are in
+!
+!
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,ipat,ipats,iptype0) &
+!$OMP PRIVATE(norder0,npols)
+   do i=1,nlist
+     ipat = ilist(i)
+     call get_npols(iptype(ipat), norders(ipat), npols)
+     ipats(1) = ipat
+     ipats(2) = ipat_starts(i)
+     ipats(3) = ipat_starts(i)+1
+     ipats(4) = ipat_starts(i)+2
+     
+
+     iptype0 = iptype(ipat)
+
+     iptype(ipats(2)) = iptype0 
+     iptype(ipats(3)) = iptype0 
+     iptype(ipats(4)) = iptype0 
+
+     norder0 = norders(ipat)
+     norders(ipats(2)) = norder0 
+     norders(ipats(3)) = norder0 
+     norders(ipats(4)) = norder0 
+
+
+! 
+!  Note the extra shift by 1, since ixyzs(npatches+1)
+!  was already filled out to be the correct start point
+!
+     ixyzs(ipats(2)+1) = ipt_starts(i) + npols
+     ixyzs(ipats(3)+1) = ipt_starts(i) + 2*npols
+     ixyzs(ipats(4)+1) = ipt_starts(i) + 3*npols
+   enddo
+!$OMP END PARALLEL DO   
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(uvs_refine, umatr) &
+!$OMP PRIVATE(uvs_base, v0, v1, v2, v3, v4, ipat, npols, j) &
+!$OMP PRIVATE(vmatr, wts, pols, istart, jj, ll, tmp, ipats) &
+!$OMP PRIVATE(jpat, k, kk, l, m, rr)
   do i=1,nlist
 
 !  Determine discretization nodes on refined patch  
-     ipat = ilist(i) 
+     ipat = ilist(i)
+
      if(iptype(ipat).eq.1) then
        v0(1,1) = 0
        v0(2,1) = 0
@@ -773,6 +823,7 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
         call mapuv_quad(v3, npols, uvs_base, uvs_refine(1,1+2*npols))
         call mapuv_quad(v4, npols, uvs_base, uvs_refine(1,1+3*npols))
      endif
+
 !
 !   Fix iptype, ixyzs, norders
 !
@@ -781,24 +832,8 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
      ipats(3) = ipat_starts(i)+1
      ipats(4) = ipat_starts(i)+2
 
-     iptype0 = iptype(ipat)
 
-     iptype(ipats(2)) = iptype0 
-     iptype(ipats(3)) = iptype0 
-     iptype(ipats(4)) = iptype0 
 
-     norder0 = norders(ipat)
-     norders(ipats(2)) = norder0 
-     norders(ipats(3)) = norder0 
-     norders(ipats(4)) = norder0 
-
-! 
-!  Note the extra shift by 1, since ixyzs(npatches+1)
-!  was already filled out to be the correct start point
-!
-     ixyzs(ipats(2)+1) = ipt_starts(i) + npols
-     ixyzs(ipats(3)+1) = ipt_starts(i) + 2*npols
-     ixyzs(ipats(4)+1) = ipt_starts(i) + 3*npols
 
 !
 !   Fix srcvals
@@ -840,7 +875,7 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
       do l=1,npols
         ll = ixyzs(jpat) + l-1
         do m=1,9
-          srccoefs(m, ll) = 0 
+          srccoefs(m,ll) = 0.0d0 
         enddo
 
         do k=1,npols
