@@ -5,19 +5,23 @@
 !      get_centroid_rads - compute the centroid and bounding sphere
 !          radii for a collection of patches
 !         
-!      get_centroid_rads_tri - compute the centroid and bounding
+!      get_centroid_rads_guru - compute the centroid and bounding
 !          sphere radius for a given triangular patch
 !
 !      oversample_geom - oversample xyz,dxyz/du,dxyz/dv on the surface
 !
 !      oversample_fun_surf - oversample functions defined on a surface
 !
-!      oversample_fun_tri - oversample function on a triangle
+!      oversample_fun_guru - oversample function on a triangle
+!
+!      refine_patches_list - refine a given list of patches, assumes
+!         that the input source arrays are long enough to accomodate
+!         the additional patches to be added
 !
 !      surf_vals_to_coefs - given function values defined on a patch
 !         convert to its basis expansion coeffs 
 !
-!      vals_to_coefs_tri - given function values defined on a patch
+!      vals_to_coefs_guru - given function values defined on a patch
 !         convert to its basis expansion coeffs 
 !
 !      get_qwts - compute smooth quadrature weights on the surface
@@ -67,14 +71,6 @@
 !
 !         
 
-
-
-!
-!
-!
-!
-!
-
 subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
    npts,dvals,wts,errp,errm)
 
@@ -88,7 +84,9 @@ subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
 !  norders(npatches) - order of discretization
 !  ixyzs(npatches+1) - location where expansion coeffs for patch i start
 !  iptype(npatches) - type of patch
-!      iptype = 1, triangular patch with RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !  dvals(nd,npts) - values of the function at discretization
 !                   nodes
 !  wts(npts) - quadrature weights for integrating smooth functions on
@@ -205,7 +203,9 @@ subroutine get_centroid_rads(npatches,norders,ixyzs,iptype,npts, &
 !   
 !      iptype - integer(npatches)
 !         type of patch
-!          iptype = 1, triangular patch discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !
 !     npts - integer
 !         total number of discretization points
@@ -318,7 +318,9 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
@@ -450,7 +452,9 @@ subroutine oversample_fun_surf(nd,npatches,norders,ixyzs,iptype,npts, &
 !      starting location of points on patch i
 !    iptype - integer(npatches)
 !      type of patch
-!      iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    npts - integer
 !      total number of points on the surface
 !    u - real *8 (nd,npts)
@@ -488,9 +492,6 @@ subroutine oversample_fun_surf(nd,npatches,norders,ixyzs,iptype,npts, &
   enddo
 
 end subroutine oversample_fun_surf
-
-
-
 !
 !
 !
@@ -579,6 +580,284 @@ end subroutine oversample_fun_guru
 !
 !
 !
+subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
+   iptype, npts, nptmax, srccoefs, srcvals, nlist, ilist, &
+   npatches_out, npts_out, ier)
+!
+!
+!  This subroutine refines a given set of patches on a discretized 
+!  surface. The routine assumes that all the arrays are long 
+!  enough to accomodate the refined surface, i.e. npatmax must
+!  be at least npatches + 3*nlist, and nptmax must be atleast
+!
+!  nptmax >= npts + \sum_{i} (ixyzs(ilist(i)+1) - ixyzs(ilist(i)))*3
+!
+!  If not, the routine will return without refining any patch, and
+!  an error code of 4.
+!
+!  Developer notes: 
+!  When refining, the first child patch in the tree convention used
+!  in adaptive integration routines will be left in place of the 
+!  original patch, and the other 3 patches will be appended to
+!  the end of the list
+!
+!  Input arguments:
+!    - npatches: integer
+!        number of patches describing the discretized surface
+!    - npatmax: integer
+!        maximum number of patches and size of norders, ixyzs (-1),
+!        iptype on input
+!    - norders: integer(npatmax)
+!        norders(1:npatches) is the discretization order of patches
+!    - ixyzs: integer(npatmax+1)
+!        ixyzs(1:npatches+1) is starting location of points on patch i
+!    - iptype: integer(npatmax)
+!        iptype(1:npatches) type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts: integer
+!        total number of points describing the discretized surface
+!    - nptmax: integer
+!        maximum number of points, and size of second dimension of
+!        srccoefs, and srcvals arrays
+!    - srccoefs: double precision (9,nptmax)
+!        srccoefs(1:9,1:npts) are the koornwinder expansion coefs of 
+!        geometry info
+!    - srcvals: double precision (12,nptmax)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes
+!    - nlist: integer
+!        number of patches of to be refined
+!    - ilist: integer(nlist)
+!        list of patches to be refined
+!
+!  Output arguments
+!    - npatches_out: integer
+!        number of patches on the refined surface 
+!    - norders: integer(npatmax)
+!        norders(1:npatches_out) is the discretization order of patches
+!    - ixyzs: integer(npatmax+1)
+!        ixyzs(1:npatches_out+1) is starting location of points on patch i
+!    - iptype: integer(npatmax)
+!        iptype(1:npatches_out) type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts_out: integer
+!        total number of points describing the refined surface
+!    - srccoefs: double precision (9,nptmax)
+!        srccoefs(1:9,1:npts_out) are the koornwinder expansion coefs 
+!        of geometry info
+!    - srcvals: double precision (12,nptmax)
+!        srcvals(1:12,1:npts_out) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes
+!    - ier: integer
+!        error code, 
+!        * ier = 0, implies successful refinement,
+!        * ier = 4, implies that either nptmax or npatmax is too small
+!     
+  implicit none
+  integer, intent(in) :: npatches, npatmax, npts, nptmax
+  integer, intent(inout) :: norders(npatmax), ixyzys(npatmax+1)
+  integer, intent(inout) :: iptype(npatmax)
+  real *8, intent(inout) :: srccoefs(9,nptmax), srcvals(12,nptmax)
+  integer, intent(in) :: nlist, ilist(nlist)
+  integer, intent(out) :: npatches_out, npts_out, ier
+
+!   temporary variables
+  integer, allocatable :: ipat_starts(:), ipt_starts(:), npol_ilist(:)
+  integer ntest, i, i1, ipat_start, ipt_start, j
+  real *8, allocatable :: uvs_refine(:,:), umatr(:,:), uvs_base(:,:)
+  real *8, allocatable :: vmatr(:,:), wts(:), pols(:)
+  integer nordermax, npolmax, ipat, npols, jj, ll, ipats(4), jpat
+  integer iptype0, norder0
+  real *8 v0(2,3), v1(2,3), v2(2,3), v3(2,3), v4(2,3), tmp(3), rr
+
+
+!   Test if arrays are large enough to handle the refined geometry
+  if(npatmax.le.(npatches + 3*nlist)) then
+    ier = 4
+    npatches_out = npatches
+    npts_out = npts
+    return
+  endif
+
+   allocate(npol_ilist(nlist), ipat_starts(nlist), ipt_starts(ilist))
+!$OMP PARALLEL DO DEFAULT(SHARED)
+   do i=1,nlist
+     npol_ilist(i) = 3*(ixyzs(ilist(i)+1) - ixyzs(ilist(i)))
+     ipat_starts(i) = npatches + 3*(i-1) + 1
+   enddo
+!$OMP END PARALLEL DO
+
+   call cumsum(nlist, npol_ilist, ipt_starts)
+   ntest = npts + ipt_start(nlist)
+   
+   i1 = ipt_start(1)
+!$OMP PARALLEL DO DEFAULT(SHARED)
+   do i=1,nlist
+     ipt_starts(i) = ipt_starts(i) - i1 + npts + 1
+   enddo
+!$OMP END PARALLEL DO
+
+  
+  if(nptmax.le.ntest) then
+    ier = 4
+    npatches_out = npatches
+    npts_out = npts
+    return
+  endif
+
+  ier = 0
+
+!  Start refining the geometry now  
+!   
+
+  nordermax = maxval(norders(1:npatches))
+  npolmax = (nordermax+1)*(nordermax)
+  allocate(uvs_base(2,npolmax)
+  allocate(uvs_refine(2,4*npolmax), umatr(npolmax, npolmax))
+  allocate(vmatr(npolmax, npolmax), wts(npolmax))
+  allocate(pols(npolmax))
+
+!
+!  TODO: find unique order + patch type combo to precompute
+!  required umatr's and then reuse them across
+!  refinement work being done
+!
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(uvs_refine, umatr, ipt_start) &
+!$OMP PRIVATE(uvs_base, ipat_start, v0, v1, v2, v3, v4, ipat, npols, j) &
+!$OMP PRIVATE(vmatr, wts, pols, istart, jj, ll, tmp, ipats, iptype0) &
+!$OMP PRIVATE(norder0, jpat)
+  do i=1,nlist
+
+!  Determine discretization nodes on refined patch  
+     ipat = ilist(i) 
+     if(iptype(ipat).eq.1) then
+       v0(1,1) = 0
+       v0(2,1) = 0
+
+       v0(1,2) = 1
+       v0(2,2) = 0
+
+       v0(1,3) = 0
+       v0(2,3) = 1
+
+       call gettrichildren(v0, v1, v2, v3, v4)
+     elseif(iptype(ipat).eq.11.or.iptype(ipat).eq.12) then
+       v0(1,1) = -1
+       v0(2,1) = -1
+
+       v0(1,2) = 1
+       v0(2,2) = -1
+
+       v0(1,3) = -1
+       v0(2,3) = 1
+
+       call getquadchildren(v0, v1, v2, v3, v4)
+     endif
+     call get_npols(iptype(ipat), norder(ipat), npols)
+     call get_disc_exps(norder(ipat), npols, iptype(ipat), uvs_base, &
+        umatr(1:npols,1:npols), vmatr, wts)
+
+     if(iptype(ipat).eq.1) then
+        call mapuv_tri(v1, npols, uvs_base, uvs_refine(1,1))
+        call mapuv_tri(v2, npols, uvs_base, uvs_refine(1,1+npols))
+        call mapuv_tri(v3, npols, uvs_base, uvs_refine(1,1+2*npols))
+        call mapuv_tri(v4, npols, uvs_base, uvs_refine(1,1+3*npols))
+     else if(iptype(ipat).eq.11.or.iptype(ipat).eq.12) then
+        call mapuv_quad(v1, npols, uvs_base, uvs_refine(1,1))
+        call mapuv_quad(v2, npols, uvs_base, uvs_refine(1,1+npols))
+        call mapuv_quad(v3, npols, uvs_base, uvs_refine(1,1+2*npols))
+        call mapuv_quad(v4, npols, uvs_base, uvs_refine(1,1+3*npols))
+     endif
+!
+!   Fix iptype, ixyzs, norders
+!
+     ipats(1) = ipat
+     ipats(2) = ipat_start(i)
+     ipats(3) = ipat_start(i)+1
+     ipats(4) = ipat_start(i)+2
+
+     iptype0 = iptype(ipat)
+
+     iptype(ipats(2)) = iptype0 
+     iptype(ipats(3)) = iptype0 
+     iptype(ipat4) = iptype0 
+
+     norder0 = norders(ipat)
+     norders(ipats(2)) = norder0 
+     norders(ipats(3)) = norder0 
+     norders(ipat4) = norder0 
+
+! 
+!  Note the extra shift by 1, since ixyzs(npatches+1)
+!  was already filled out to be the correct start point
+!
+     ixyzs(ipats(2)+1) = ipt_start(i) + npols
+     ixyzs(ipats(3)+1) = ipt_start(i) + 2*npols
+     ixyzs(ipats(4)+1) = ipt_start(i) + 3*npols
+
+!
+!   Fix srcvals
+!
+!
+     do j=1,4*npols
+       call get_basis_pols(uvs_refine(1,j), norder(ipat), npols, &
+          iptype(ipat), pols)
+       istart = ixyzs(ipat) 
+
+       if(j.le.npols) then
+         jj = istart+j-1
+       else
+         jj = ipt_start(i) + j-npols-1
+       endif
+
+       do m=1,9
+         srcvals(m, jj) = 0
+       enddo
+
+       do l=1,npols
+          ll = istart+l-1
+          do m=1,9
+            srcvals(m,jj) = srcvals(m,jj) + srccoefs(m,ll)*pols(l)
+          enddo
+       enddo
+       call cross_prod3d(srcover(4,jj),srcover(7,jj),tmp)
+       rr = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+       srcvals(10,jj) = tmp(1)/rr
+       srcvals(11,jj) = tmp(2)/rr
+       srcvals(12,jj) = tmp(3)/rr
+     enddo
+!
+!
+!  Fix srccoefs
+!
+    do j=1,4
+      jpat = ipats(j)
+      do l=1,npols
+        ll = ixyzs(jpat) + l-1
+        do m=1,9
+          srccoefs(m, ll) = 0 
+        enddo
+
+        do k=1,npols
+          kk = ixyzs(jpat) + k-1
+          do m=1,9
+             srccoefs(m,ll) = srccoefs(m,ll) + umatr(l,k)*srcvals(m,kk) 
+          enddo
+        enddo
+      enddo
+    enddo
+
+  enddo
+!$OMP END PARALLEL DO
+
+  return
+end subroutine refine_patches_list
+
 
 subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
    u,ucoefs)
@@ -601,7 +880,9 @@ subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
 !      starting location of points on patch i
 !    iptype - integer(npatches)
 !      type of patch
-!      iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    npts - integer
 !      total number of points on the surface
 !    u - real *8 (nd,npts)
@@ -886,7 +1167,9 @@ subroutine get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
 !     norders(npatches) - order of discretization
 !     ixyzs(npatches+1) - starting location of nodes on patch i
 !     iptype(npatches) - type of patch
-!           iptype = 1, triangular patch discretized with RV ndoes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !     npts - total number of discretization points
 !     srcvals(12,npts) - xyz, dxyz/du,dxyz/dv, normals at all nodes
 !     srccoefs(9,npts) - koornwinder expansion coeffs
@@ -1055,7 +1338,9 @@ subroutine get_first_fundamental_form(npatches,norders,ixyzs,iptype, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
@@ -1121,7 +1406,9 @@ subroutine get_inv_first_fundamental_form(npatches,norders,ixyzs,iptype, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
@@ -1180,7 +1467,9 @@ subroutine get_surf_grad(nd,npatches,norders,ixyzs,iptype,npts, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
@@ -1242,7 +1531,9 @@ subroutine get_surf_grad_fast(nd,npatches,norders,ixyzs,iptype,npts, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - ffforminv: double precision(2,2,npts)
@@ -1305,7 +1596,9 @@ subroutine get_surf_uv_grad(nd,npatches,norders,ixyzs,iptype,npts,f, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - f: double precision (nd,npts)
@@ -1417,7 +1710,9 @@ subroutine get_surf_div(nd,npatches,norders,ixyzs,iptype,npts, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
@@ -1479,7 +1774,9 @@ subroutine get_surf_div_fast(nd,npatches,norders,ixyzs,iptype,npts, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - f: double precision (nd,2,npts)
@@ -1660,7 +1957,9 @@ subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
@@ -1877,7 +2176,9 @@ subroutine get_surf_interp_mat_targ(npatches,norders,ixyzs,iptype,npts,ntarg, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        number of points on surface
 !    - ntarg: integer
@@ -2003,7 +2304,9 @@ subroutine get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
@@ -2087,7 +2390,9 @@ subroutine get_mean_curvature(npatches,norders,ixyzs,iptype, &
 !        starting location of points on patch i
 !    - iptype: integer(npatches)
 !        type of patch
-!        iptype = 1, triangle discretized using RV nodes
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
 !    - npts: integer
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
