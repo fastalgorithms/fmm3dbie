@@ -659,7 +659,7 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 !     
   implicit none
   integer, intent(in) :: npatches, npatmax, npts, nptmax
-  integer, intent(inout) :: norders(npatmax), ixyzys(npatmax+1)
+  integer, intent(inout) :: norders(npatmax), ixyzs(npatmax+1)
   integer, intent(inout) :: iptype(npatmax)
   real *8, intent(inout) :: srccoefs(9,nptmax), srcvals(12,nptmax)
   integer, intent(in) :: nlist, ilist(nlist)
@@ -667,11 +667,11 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 
 !   temporary variables
   integer, allocatable :: ipat_starts(:), ipt_starts(:), npol_ilist(:)
-  integer ntest, i, i1, ipat_start, ipt_start, j
+  integer ntest, i, i1, ipat_start, ipt_start, j, k, l, m
   real *8, allocatable :: uvs_refine(:,:), umatr(:,:), uvs_base(:,:)
   real *8, allocatable :: vmatr(:,:), wts(:), pols(:)
-  integer nordermax, npolmax, ipat, npols, jj, ll, ipats(4), jpat
-  integer iptype0, norder0
+  integer nordermax, npolmax, ipat, npols, jj, ll, ipats(4), jpat, kk
+  integer iptype0, norder0, istart
   real *8 v0(2,3), v1(2,3), v2(2,3), v3(2,3), v4(2,3), tmp(3), rr
 
 
@@ -683,7 +683,7 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
     return
   endif
 
-   allocate(npol_ilist(nlist), ipat_starts(nlist), ipt_starts(ilist))
+   allocate(npol_ilist(nlist), ipat_starts(nlist), ipt_starts(nlist))
 !$OMP PARALLEL DO DEFAULT(SHARED)
    do i=1,nlist
      npol_ilist(i) = 3*(ixyzs(ilist(i)+1) - ixyzs(ilist(i)))
@@ -692,9 +692,9 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 !$OMP END PARALLEL DO
 
    call cumsum(nlist, npol_ilist, ipt_starts)
-   ntest = npts + ipt_start(nlist)
+   ntest = npts + ipt_starts(nlist)
    
-   i1 = ipt_start(1)
+   i1 = ipt_starts(1)
 !$OMP PARALLEL DO DEFAULT(SHARED)
    do i=1,nlist
      ipt_starts(i) = ipt_starts(i) - i1 + npts + 1
@@ -716,7 +716,7 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 
   nordermax = maxval(norders(1:npatches))
   npolmax = (nordermax+1)*(nordermax)
-  allocate(uvs_base(2,npolmax)
+  allocate(uvs_base(2,npolmax))
   allocate(uvs_refine(2,4*npolmax), umatr(npolmax, npolmax))
   allocate(vmatr(npolmax, npolmax), wts(npolmax))
   allocate(pols(npolmax))
@@ -727,8 +727,8 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 !  refinement work being done
 !
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(uvs_refine, umatr, ipt_start) &
-!$OMP PRIVATE(uvs_base, ipat_start, v0, v1, v2, v3, v4, ipat, npols, j) &
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(uvs_refine, umatr, ipt_starts) &
+!$OMP PRIVATE(uvs_base, ipat_starts, v0, v1, v2, v3, v4, ipat, npols, j) &
 !$OMP PRIVATE(vmatr, wts, pols, istart, jj, ll, tmp, ipats, iptype0) &
 !$OMP PRIVATE(norder0, jpat)
   do i=1,nlist
@@ -758,8 +758,8 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 
        call getquadchildren(v0, v1, v2, v3, v4)
      endif
-     call get_npols(iptype(ipat), norder(ipat), npols)
-     call get_disc_exps(norder(ipat), npols, iptype(ipat), uvs_base, &
+     call get_npols(iptype(ipat), norders(ipat), npols)
+     call get_disc_exps(norders(ipat), npols, iptype(ipat), uvs_base, &
         umatr(1:npols,1:npols), vmatr, wts)
 
      if(iptype(ipat).eq.1) then
@@ -777,42 +777,42 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 !   Fix iptype, ixyzs, norders
 !
      ipats(1) = ipat
-     ipats(2) = ipat_start(i)
-     ipats(3) = ipat_start(i)+1
-     ipats(4) = ipat_start(i)+2
+     ipats(2) = ipat_starts(i)
+     ipats(3) = ipat_starts(i)+1
+     ipats(4) = ipat_starts(i)+2
 
      iptype0 = iptype(ipat)
 
      iptype(ipats(2)) = iptype0 
      iptype(ipats(3)) = iptype0 
-     iptype(ipat4) = iptype0 
+     iptype(ipats(4)) = iptype0 
 
      norder0 = norders(ipat)
      norders(ipats(2)) = norder0 
      norders(ipats(3)) = norder0 
-     norders(ipat4) = norder0 
+     norders(ipats(4)) = norder0 
 
 ! 
 !  Note the extra shift by 1, since ixyzs(npatches+1)
 !  was already filled out to be the correct start point
 !
-     ixyzs(ipats(2)+1) = ipt_start(i) + npols
-     ixyzs(ipats(3)+1) = ipt_start(i) + 2*npols
-     ixyzs(ipats(4)+1) = ipt_start(i) + 3*npols
+     ixyzs(ipats(2)+1) = ipt_starts(i) + npols
+     ixyzs(ipats(3)+1) = ipt_starts(i) + 2*npols
+     ixyzs(ipats(4)+1) = ipt_starts(i) + 3*npols
 
 !
 !   Fix srcvals
 !
 !
      do j=1,4*npols
-       call get_basis_pols(uvs_refine(1,j), norder(ipat), npols, &
+       call get_basis_pols(uvs_refine(1,j), norders(ipat), npols, &
           iptype(ipat), pols)
        istart = ixyzs(ipat) 
 
        if(j.le.npols) then
          jj = istart+j-1
        else
-         jj = ipt_start(i) + j-npols-1
+         jj = ipt_starts(i) + j-npols-1
        endif
 
        do m=1,9
@@ -825,7 +825,7 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
             srcvals(m,jj) = srcvals(m,jj) + srccoefs(m,ll)*pols(l)
           enddo
        enddo
-       call cross_prod3d(srcover(4,jj),srcover(7,jj),tmp)
+       call cross_prod3d(srcvals(4,jj),srcvals(7,jj),tmp)
        rr = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
        srcvals(10,jj) = tmp(1)/rr
        srcvals(11,jj) = tmp(2)/rr
