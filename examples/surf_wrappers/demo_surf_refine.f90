@@ -83,8 +83,10 @@ program surf_refine_test
   enddo
 
   ixyzs(npatches+1) = 1+npols*npatches
-  allocate(wts(npts))
+  allocate(wts(nptmax))
   call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
+  print *, sum(wts(1:npts))-4*pi
+
 
   call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs, iptype, &
     npts, srccoefs, srcvals, 'sphere_msh.vtk', 'a')
@@ -98,9 +100,11 @@ program surf_refine_test
     iptype, npts, nptmax, srccoefs, srcvals, nlist, ilist, &
     npatches_out, npts_out, ier)
 
+  print *, npatches_out, npts_out
   
   call surf_quadratic_msh_vtk_plot(npatches_out, norders, ixyzs, iptype, &
     npts_out, srccoefs, srcvals, 'sphere_msh_refine.vtk', 'a')
+
 
   nlist = 1
   ilist(1) = 13
@@ -116,6 +120,9 @@ program surf_refine_test
   call surf_quadratic_msh_vtk_plot(npatches_out, norders, ixyzs, iptype, &
     npts_out, srccoefs, srcvals, 'sphere_msh_refine2.vtk', 'a')
 
+  call get_qwts(npatches_out,norders,ixyzs,iptype,npts_out,srcvals,wts)
+
+  print *, sum(wts(1:npts_out))-4*pi
 
 
     
@@ -272,7 +279,6 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
           ptr3,ptr4, norder,'Triangulated surface of the potato')
     endif
 
-    stop
     
     call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,ptr3,ptr4, &
         npols,uvs,umatr,srcvals,srccoefs)
@@ -367,7 +373,6 @@ subroutine setup_geom(igeomtype, norder, npatches, ipars, &
           'Triangulated surface of the Toms taco')
     endif
 
-    stop
     
     call getgeominfo(npatches, xtri_geometry, ptr1, ptr2, &
         iptr3, iptr4, npols, uvs, umatr, srcvals, srccoefs)

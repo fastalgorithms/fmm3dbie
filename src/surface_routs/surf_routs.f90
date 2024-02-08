@@ -671,8 +671,9 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
   real *8, allocatable :: uvs_refine(:,:), umatr(:,:), uvs_base(:,:)
   real *8, allocatable :: vmatr(:,:), wts(:), pols(:)
   integer nordermax, npolmax, ipat, npols, jj, ll, ipats(4), jpat, kk
-  integer iptype0, norder0, istart
-  real *8 v0(2,3), v1(2,3), v2(2,3), v3(2,3), v4(2,3), tmp(3), rr
+  integer iptype0, norder0, istart, jstart, j1, j2
+  real *8 v0(2,3), vcs(2,3,4), tmp(3), rr
+  real *8 rjac(2,2), srctmp(9)
 
 
 !   Test if arrays are large enough to handle the refined geometry
@@ -777,9 +778,9 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 !$OMP END PARALLEL DO   
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(uvs_refine, umatr) &
-!$OMP PRIVATE(uvs_base, v0, v1, v2, v3, v4, ipat, npols, j) &
+!$OMP PRIVATE(uvs_base, v0, vcs, ipat, npols, j) &
 !$OMP PRIVATE(vmatr, wts, pols, istart, jj, ll, tmp, ipats) &
-!$OMP PRIVATE(jpat, k, kk, l, m, rr)
+!$OMP PRIVATE(jpat, k, kk, l, m, rr, jstart, j1, j2, rjac, srctmp)
   do i=1,nlist
 
 !  Determine discretization nodes on refined patch  
@@ -795,7 +796,8 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
        v0(1,3) = 0
        v0(2,3) = 1
 
-       call gettrichildren(v0, v1, v2, v3, v4)
+       call gettrichildren(v0, vcs(1,1,1), vcs(1,1,2), vcs(1,1,3), &
+          vcs(1,1,4))
      elseif(iptype(ipat).eq.11.or.iptype(ipat).eq.12) then
        v0(1,1) = -1
        v0(2,1) = -1
@@ -806,22 +808,23 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
        v0(1,3) = -1
        v0(2,3) = 1
 
-       call getquadchildren(v0, v1, v2, v3, v4)
+       call getquadchildren(v0, vcs(1,1,1), vcs(1,1,2), vcs(1,1,3), &
+          vcs(1,1,4))
      endif
      call get_npols(iptype(ipat), norders(ipat), npols)
      call get_disc_exps(norders(ipat), npols, iptype(ipat), uvs_base, &
         umatr(1:npols,1:npols), vmatr, wts)
 
      if(iptype(ipat).eq.1) then
-        call mapuv_tri(v1, npols, uvs_base, uvs_refine(1,1))
-        call mapuv_tri(v2, npols, uvs_base, uvs_refine(1,1+npols))
-        call mapuv_tri(v3, npols, uvs_base, uvs_refine(1,1+2*npols))
-        call mapuv_tri(v4, npols, uvs_base, uvs_refine(1,1+3*npols))
+        call mapuv_tri(vcs(1,1,1), npols, uvs_base, uvs_refine(1,1))
+        call mapuv_tri(vcs(1,1,2), npols, uvs_base, uvs_refine(1,1+npols))
+        call mapuv_tri(vcs(1,1,3), npols, uvs_base, uvs_refine(1,1+2*npols))
+        call mapuv_tri(vcs(1,1,4), npols, uvs_base, uvs_refine(1,1+3*npols))
      else if(iptype(ipat).eq.11.or.iptype(ipat).eq.12) then
-        call mapuv_quad(v1, npols, uvs_base, uvs_refine(1,1))
-        call mapuv_quad(v2, npols, uvs_base, uvs_refine(1,1+npols))
-        call mapuv_quad(v3, npols, uvs_base, uvs_refine(1,1+2*npols))
-        call mapuv_quad(v4, npols, uvs_base, uvs_refine(1,1+3*npols))
+        call mapuv_quad(vcs(1,1,1), npols, uvs_base, uvs_refine(1,1))
+        call mapuv_quad(vcs(1,1,2), npols, uvs_base, uvs_refine(1,1+npols))
+        call mapuv_quad(vcs(1,1,3), npols, uvs_base, uvs_refine(1,1+2*npols))
+        call mapuv_quad(vcs(1,1,4), npols, uvs_base, uvs_refine(1,1+3*npols))
      endif
 
 !
@@ -835,37 +838,57 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 
 
 
+
 !
 !   Fix srcvals
 !
 !
-     do j=1,4*npols
-       call get_basis_pols(uvs_refine(1,j), norders(ipat), npols, &
-          iptype(ipat), pols)
-       istart = ixyzs(ipat) 
+     do j1=1,4
+       rjac(1,1) = vcs(1,2,j1) - vcs(1,1,j1)
+       rjac(1,2) = vcs(1,3,j1) - vcs(1,1,j1)
+       rjac(2,1) = vcs(2,2,j1) - vcs(2,1,j1)
+       rjac(2,2) = vcs(2,3,j1) - vcs(2,1,j1)
+       do j2=1,npols
+         j = (j1-1)*npols + j2
+         call get_basis_pols(uvs_refine(1,j), norders(ipat), npols, &
+            iptype(ipat), pols)
+         jpat = ipats(j1)
+         istart = ixyzs(ipat)
+         jstart = ixyzs(jpat)
 
-       if(j.le.npols) then
-         jj = istart+j-1
-       else
-         jj = ipt_starts(i) + j-npols-1
-       endif
 
-       do m=1,9
-         srcvals(m, jj) = 0
+         jj = jstart+j2-1
+
+         do m=1,9
+           srctmp(m) = 0
+         enddo
+
+         do l=1,npols
+            ll = istart+l-1
+            do m=1,9
+              srctmp(m) = srctmp(m) + srccoefs(m,ll)*pols(l)
+            enddo
+         enddo
+      
+         do m=1,3
+           srcvals(m, jj) = srctmp(m)
+         enddo
+
+         do m=4,6
+           srcvals(m,jj) = srctmp(m)*rjac(1,1) + srctmp(m+3)*rjac(1,2)
+         enddo
+
+         do m=7,9
+           srcvals(m,jj) = srctmp(m-3)*rjac(2,1) + srctmp(m)*rjac(2,2)
+         enddo
+         call cross_prod3d(srcvals(4,jj),srcvals(7,jj),tmp)
+         rr = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+         srcvals(10,jj) = tmp(1)/rr
+         srcvals(11,jj) = tmp(2)/rr
+         srcvals(12,jj) = tmp(3)/rr
        enddo
-
-       do l=1,npols
-          ll = istart+l-1
-          do m=1,9
-            srcvals(m,jj) = srcvals(m,jj) + srccoefs(m,ll)*pols(l)
-          enddo
-       enddo
-       call cross_prod3d(srcvals(4,jj),srcvals(7,jj),tmp)
-       rr = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
-       srcvals(10,jj) = tmp(1)/rr
-       srcvals(11,jj) = tmp(2)/rr
-       srcvals(12,jj) = tmp(3)/rr
      enddo
+
 !
 !
 !  Fix srccoefs
