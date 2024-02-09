@@ -1,4 +1,4 @@
-function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
+function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
 %
 %  helm3d.dirichlet.get_quadrature_correction
 %    This subroutine returns the near quadrature correction
@@ -54,15 +54,20 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
     n3 = 3;
 
 
-    if(nargin < 4)
+    if nargin < 4
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
       targinfo.dv = S.dv;
       targinfo.n = S.n;
-      patch_id = S.patch_id;
-      uvs_targ = S.uvs_targ;
+      targinfo.patch_id = S.patch_id;
+      targinfo.uvs_targ = S.uvs_targ;
       opts = [];
+    end
+
+    if nargin < 5
+      opts = [];
+
     end
 
     ff = 'rsc';

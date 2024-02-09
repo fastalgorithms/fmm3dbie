@@ -1,6 +1,5 @@
 function plot(obj, varargin)
 %PLOT   Plot the surface.
-% todo fix plot for quad patches
 
 parser = inputParser;
 parser.KeepUnmatched = true;

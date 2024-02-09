@@ -1,4 +1,4 @@
-function [sigma,varargout] = solver(S,zpars,rhs,eps,varargin)
+function [sigma,varargout] = solver(S, zpars, rhs, eps, opts)
 %
 %  helm3d.dirichlet.solver
 %    Solve the helmholtz dirichlet boundary value problem
@@ -29,6 +29,7 @@ function [sigma,varargout] = solver(S,zpars,rhs,eps,varargin)
 %           solved (eps_gmres = eps)
 %        opts.maxit - maximum number of gmres iterations (200)
 %        opts.ifout - whether to solve interior problem or not (1)
+%        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
 %  Output arguemnts:
@@ -84,9 +85,13 @@ function [sigma,varargout] = solver(S,zpars,rhs,eps,varargin)
     nptsp1 = npts+1;
 
 % Compute quadrature corrections    
-    if(~nonsmoothonly) 
-      opts_quad = [];
-      opts_quad.format = 'rsc';
+    if(~nonsmoothonly)
+
+      if isfield(opts, 'quadrature_correction')
+         Q = opts.quadrature_correction;
+      else
+        opts_quad = [];
+        opts_quad.format = 'rsc';
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -95,14 +100,15 @@ function [sigma,varargout] = solver(S,zpars,rhs,eps,varargin)
 %  if nkernel is >1
 %
 
-      [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
-      nnz = length(Q.col_ind);
-      nquad = Q.iquad(end)-1;
+        [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+      end
     else
       opts_qcorr = [];
       opts_qcorr.type = 'complex';
       Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
     end
+    nnz = length(Q.col_ind);
+    nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
     [novers] = get_oversampling_parameters(S,Q,eps);
