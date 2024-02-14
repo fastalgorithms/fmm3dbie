@@ -99,10 +99,120 @@ subroutine xquad_wtorus_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
 
   return
 end subroutine xquad_wtorus_eval
+!
+!
+!
+!
+!
+!
+!
 
 
+subroutine xquad_startorus_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
+    radii, scales, p4)
+  implicit real *8 (a-h,o-z)
+  real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), scales(3)
+  real *8 :: radii(3)
+
+  !
+  ! project the quad iquad in quadinfo onto a torus
+  !
+  !    Input:
+  ! iquad - quad number to map
+  ! u,v - local uv coordinates on quad iquad
+  ! quadinfo - flat skeleton quad info
+  ! radii - the two radii defining the torus, the third
+  !     radius is the radius of osciallation
+  ! scales - scaling for x,y,z components from the standard torus
+  ! p4 - number of oscillations (must be an integer currently recast
+  !   as a double precision number)
+  !
+  !    Output:
+  ! xyz - point on the sphere
+  ! dxyzduv - first and second derivative information
+  !
+  !
+
+  x0=quadinfo(1,1,iquad)
+  y0=quadinfo(2,1,iquad)
+  z0=quadinfo(3,1,iquad)
+
+  x1=quadinfo(1,2,iquad)
+  y1=quadinfo(2,2,iquad)
+  z1=quadinfo(3,2,iquad)
+
+  x2=quadinfo(1,3,iquad)
+  y2=quadinfo(2,3,iquad)
+  z2=quadinfo(3,3,iquad)
+
+  rminor = radii(1)
+  rmajor = radii(2)
+  rwave = radii(3)
+
+  a = scales(1)
+  b = scales(2)
+  c = scales(3)
+
+  nosc = p4
 
 
+  !
+  ! ... process the geometry, return the point location on the almond
+  ! and the derivatives with respect to u and v
+  !
+  s = x0+(1.0d0+u)/2*(x1-x0)+(1.0d0+v)/2*(x2-x0)
+  t = y0+(1.0d0+u)/2*(y1-y0)+(1.0d0+v)/2*(y2-y0)
+
+  rrs = rminor + rwave*cos(nosc*s)
+  drrsds = -nosc*rwave*sin(nosc*s)
+
+  rho = rmajor + rrs*cos(s)
+  zz = rrs*sin(s)
+
+  drhods = drrsds*cos(s) - rrs*sin(s)
+  dzzds = drrsds*sin(s) + rrs*cos(s)
+
+  xyz(1) = a*rho*cos(t)
+  xyz(2) = b*rho*sin(t)
+  xyz(3) = c*zz
+
+  dsdu = (x1-x0)/2
+  dsdv = (x2-x0)/2
+  dtdu = (y1-y0)/2
+  dtdv = (y2-y0)/2
+
+  dxds = a*drhods*cos(t)
+  dyds = b*drhods*sin(t)
+  dzds = c*dzzds
+
+  dxdt = -a*rho*sin(t)
+  dydt = b*rho*cos(t)
+  dzdt = 0 
+  
+  dxdu = dxds*dsdu + dxdt*dtdu
+  dydu = dyds*dsdu + dydt*dtdu
+  dzdu = dzds*dsdu + dzdt*dtdu
+
+  dxdv = dxds*dsdv + dxdt*dtdv
+  dydv = dyds*dsdv + dydt*dtdv
+  dzdv = dzds*dsdv + dzdt*dtdv
+
+  dxyzduv(1,1) = dxdu
+  dxyzduv(2,1) = dydu
+  dxyzduv(3,1) = dzdu
+
+  dxyzduv(1,2) = dxdv
+  dxyzduv(2,2) = dydv
+  dxyzduv(3,2) = dzdv
+
+  return
+end subroutine xquad_startorus_eval
+!
+!
+!
+!
+!
+!
 
 subroutine xquad_stell_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
     deltas, m, n)

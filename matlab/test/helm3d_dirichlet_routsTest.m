@@ -11,14 +11,12 @@ addpath(genpath('~/git/chebfun'))
 S = surfer.ellipsoid([1,1,1],0.5,6,0);
 
 % For quads
-S = surfer.sphere_quad(6,1,2);
+S = surfer.sphere(6,1,2, 11);
 
 % For dan meshes
 
 % dom = surfacemesh.sphere(7,2);
 % S = surfer.surfacemesh_to_surfer(dom);
-
-
 
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
 rr2 = sum(wts);
@@ -29,9 +27,6 @@ rr3 = norm(S.r-S.n);
 zk = 1.1;
 
 zpars = complex([zk, 1.0, 0.0]);
-
-
-
 ndeg = 2;
 
 jn = sqrt(pi/2/zk)*besselj(ndeg+0.5,zk);

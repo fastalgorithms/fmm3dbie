@@ -3,8 +3,8 @@ addpath(genpath('~/git/fmm3dbie/matlab'))
 run ~/git/surface-hps/setup.m
 
 rng(0)
-n = 10;                     % Number of nodes per dimension for each mesh element
-nref = 4;                  % Number of levels of uniform mesh refinement
+n = 6;                     % Number of nodes per dimension for each mesh element
+nref = 5;                  % Number of levels of uniform mesh refinement
 
 m = 18.0;                     % mass term
 E = 15.0;                   % energy term
