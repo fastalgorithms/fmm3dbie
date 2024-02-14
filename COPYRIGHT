@@ -1,14 +1,15 @@
 License and Copyright
 =====================
 
-fmm3dbie is Copyright 2020-2023 The Simons Foundation, Inc.,  
+fmm3dbie (with the exception of the files listed under `Exceptions`) 
+is Copyright 2020-2023 The Simons Foundation, Inc.,  
 fmm3dbie Development Team (see AUTHORS) - All Rights Reserved.
 
 
 fmm3dbie is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
 Free Software Foundation; either version 2 of the License, or (at your
-option) any later version; or approach 'Exceptions'.
+option) any later version.
 
 You should have received a copy of the GNU General Public License
 along with this program; if not you can find copies here:
@@ -29,9 +30,9 @@ under 'GPLv2 or later'.
 The file "src/common/sort.f" is copyright Leonard J Moss.
 The files "src/quad_routs/squarearbq.f", and "src/tria_routs/triasymq.f"
 are copyright Zydrunas Gimbutas and Hong Xiao and released under 'GPLv2 or later'.
-The files "src/quadratures/ggq-selfquadrouts.f", "src/quadratures/ggq-selfquad.f",
+The files "src/quadratures/ggq-selfquad-routs.f", "src/quadratures/ggq-selfquad.f",
 and all files in "src/quadratures/ggq-self-quads/" are copyright James Bremer
-and released under 'GPLv2 or later'.
+and released under 'GPLv2'.
 
 
 References
