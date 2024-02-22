@@ -43,6 +43,7 @@ Zydrunas Gimbutas provided the high order quadrature rules
 for integrating smooth functions `src/tria_routs/triasymq.f`, 
 `src/tria_routs/koorn-uvs-dat.txt`, `src/tria_routs/koorn-wts-dat.txt`,
 and, `src/quad_routs/squarearbq.f`; and also provided `src/common/dotcross3d.f`
+
 References
 ============
 If you find fmm3dbie useful in your work, please cite this repository,
