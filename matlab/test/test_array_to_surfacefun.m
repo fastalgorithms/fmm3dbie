@@ -1,5 +1,7 @@
 % choose domain type
+run ../startup.m
 
+if ~exist('surfacemesh'); return; end;
 geomtype = 'sphere';
 funtype = 'spharm';
 
@@ -30,6 +32,6 @@ rhs = rhs(:);
 
 frhs2 = array_to_surfacefun(rhs,dom,S);
 err1 = norm(frhs-frhs2)/norm(frhs);
-fprintf('Error in interpolant =%d\n',err1);
+fprintf('Error in interpolant = %d\n',err1);
 
 

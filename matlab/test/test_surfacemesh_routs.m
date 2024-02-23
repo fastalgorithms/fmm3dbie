@@ -1,9 +1,9 @@
 %
 %  Additional dependency: surface-hps
 %
-run ~/git/surface-hps/setup.m
-addpath(genpath('~/git/fmm3dbie/matlab'))
+run ../startup.m
 
+if ~exist('surfacemesh'); return; end;
 
 % Test surface_mesh conversion script
 

@@ -193,7 +193,9 @@ usage:
 	@echo "  make test         compile and run validation tests (will take around 30 secs)"
 	@echo "  make test-dyn     test successful installation by validation tests linked "
 	@echo "                    to dynamic library (will take a couple of mins)"
+	@echo "  make matlab       compile matlab interfaces with static library linking"
 	@echo "  make matlab-dyn   compile matlab interfaces with dynamic library linking"
+	@echo "                    (static linking is preferred over dynamic linking)"
 	@echo "  make python       compile and test python interfaces using python"
 	@echo "  make objclean     removal all object files, preserving lib & MEX"
 	@echo "  make clean        also remove lib, MEX, py, and demo executables"
@@ -289,7 +291,7 @@ install: $(STATICLIB) $(DYNAMICLIB)
 	@echo "    PATH on windows"
 	@echo "    DYLD_LIBRARY_PATH on Mac OSX (not needed if default installation directory is used"
 	@echo " "
-	@echo "In order to link against the dynamic library, use -L"$(FMMBIE_INSTALL_DIR)  " "$(LLINKLIB) " -L"$(FMM_INSTALL_DIR)  " "$(LFMMLINKLIB)
+	@echo "In order to link against the dynamic library, use -L"$(FMMBIE_INSTALL_DIR)  " "$(LLINKLIB) 
 
 
 

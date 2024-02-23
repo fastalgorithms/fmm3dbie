@@ -6,13 +6,16 @@
 <img width="50%" src="docs/plane.png"/>
 </p>
 
-Currently supports high-order triangulation of smooth surfaces
-
-Upcoming support for: 
--  High order quadrilaterization versions of the above routines 
-
+Currently supports high-order triangulations and quadrilaterizations 
+of smooth surfaces
 
 This repository has an external dependency - [FMM3D](https://fmm3d.readthedocs.io/en/latest)
+
+The package along with the dependency can be obtained by
+
+
+    git clone --recurse-submodules https://github.com/fastalgorithms/fmm3dbie.git
+
 
 Make sure you have the shared object for the FMM library installed and
 located in an appropriate location (`/usr/local/lib` on MacOSX, and

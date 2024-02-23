@@ -34,9 +34,9 @@ We have the following user callable routines:
 - `Dirichlet post-processor <helm_dir_wrappers.html#lpcomp-helm-comb-dir>`__
 
 To see a demo of the use of these interfaces see
-``examples/helm_wrappers/helm_dir_iter_example.f``. 
+``examples/helmholtz/helm_dir_iter_example.f``. 
 This script can be run using ``make -f helm_dir_iter_example.make`` in the
-``examples/helm_wrappers`` folder.
+``examples/helmholtz`` folder.
 
 For advanced Dirichlet wrappers see:
 
@@ -68,9 +68,9 @@ We have the following user callable routines:
 - `Neumann post-processor <helm_neu_wrappers.html#lpcomp-helm-rpcomb-dir>`__
 
 To see a demo of the use of these interfaces see
-``examples/helm_wrappers/helm_neu_iter_example.f``. 
+``examples/helmholtz/helm_neu_iter_example.f``. 
 This script can be run using ``make -f helm_neu_iter_example.make`` in the
-``examples/helm_wrappers`` folder.
+``examples/helmholtz`` folder.
 
 .. _helm-imp:
 
@@ -98,9 +98,9 @@ We have the following user callable routines:
 - `Impedance post-processor <helm_imp_wrappers.html#lpcomp-helm-rpcomb-dir-imp>`__
 
 To see a demo of the use of these interfaces see
-``examples/helm_wrappers/helm_imp_iter_example.f``. 
+``examples/helmholtz/helm_imp_iter_example.f``. 
 This script can be run using ``make -f helm_imp_iter_example.make`` in the
-``examples/helm_wrappers`` folder.
+``examples/helmholtz`` folder.
 
 
 .. _helm-trans:
@@ -133,6 +133,6 @@ We have the following user callable routines:
 - `Transmission post-processor <helm_trans_wrappers.html#lpcomp-helm-comb-split-dir>`__
 
 To see a demo of the use of these interfaces see
-``examples/helm_wrappers/helm_trans_iter_example.f``. 
+``examples/helmholtz/helm_trans_iter_example.f``. 
 This script can be run using ``make -f helm_trans_iter_example.make`` in the
-``examples/helm_wrappers`` folder.
+``examples/helmholtz`` folder.
