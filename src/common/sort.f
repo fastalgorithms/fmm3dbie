@@ -99,16 +99,6 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine insertion_sortr(m,n,data,index)
 C===================================================================
 C
-C This routine performs an sort of the first N elements
-C of array DATA, returning into array INDEX the indices of elements of
-C DATA arranged in ascending order.  Thus,
-C
-C    DATA(INDEX(1)) will be the smallest number in array DATA;
-C    DATA(INDEX(N)) will be the largest number in DATA.
-C
-C The original data is not physically rearranged.  The original order
-C of equal input values is not necessarily preserved.
-C This subroutine uses insertion sort.
 C
 C===================================================================
       implicit none
@@ -228,16 +218,6 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine insertion_sorti(m,n,data,index)
 C===================================================================
 C
-C This routine performs an sort of the first N elements
-C of array DATA, returning into array INDEX the indices of elements of
-C DATA arranged in ascending order.  Thus,
-C
-C    DATA(INDEX(1)) will be the smallest number in array DATA;
-C    DATA(INDEX(N)) will be the largest number in DATA.
-C
-C The original data is not physically rearranged.  The original order
-C of equal input values is not necessarily preserved.
-C This subroutine uses insertion sort.
 C
 C===================================================================
       implicit none
