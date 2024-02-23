@@ -6,7 +6,7 @@ Obtaining fmm3dbie
 
 The source code can be downloaded from https://github.com/fastalgorithms/fmm3dbie
 
-To get all dependencies along with the code run
+To get all dependencies along with the code run::
 
     git clone --recurse-submodules https://github.com/fastalgorithms/fmm3dbie.git
 
