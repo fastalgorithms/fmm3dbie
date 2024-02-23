@@ -677,7 +677,7 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 
 
 !   Test if arrays are large enough to handle the refined geometry
-  if(npatmax.le.(npatches + 3*nlist)) then
+  if(npatmax.lt.(npatches + 3*nlist)) then
     ier = 4
     npatches_out = npatches
     npts_out = npts
@@ -703,8 +703,8 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 !$OMP END PARALLEL DO
 
   
-  if(nptmax.le.ntest) then
-    ier = 4
+  if(nptmax.lt.ntest) then
+    ier = 8
     npatches_out = npatches
     npts_out = npts
     return

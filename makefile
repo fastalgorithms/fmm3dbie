@@ -24,7 +24,6 @@ OMPLIBS =-lgomp
 
 # flags for MATLAB MEX compilation..
 MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 
-#MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 
 MWFLAGS=-c99complex
 MOMPFLAGS = -D_OPENMP
 
@@ -47,6 +46,7 @@ ifeq ($(PREFIX_FMM),)
 endif
 
 LBLAS = -lblas -llapack
+MLBLAS = -lmwblas -lmwlapack
 
 LIBS = -lm
 DYLIBS = -lm
@@ -63,10 +63,12 @@ LIMPLIB = $(DYNAMICLIB)
 
 # dynamic libraries for matlab compilation
 MLIBNAME = $(LIBNAME)_matlab
+MSTATICLIB = $(MLIBNAME).a
 MDYNAMICLIB = $(MLIBNAME).so
 MLIMPLIB = $(MDYNAMICLIB)
 
 LFMMLINKLIB = -lfmm3d
+LFMMSTATICLIB = $(FMM_INSTALL_DIR)/libfmm3d.a
 LLINKLIB = $(subst lib, -l, $(LIBNAME))
 MLLINKLIB = $(subst lib, -l, $(MLIBNAME))
 
@@ -79,8 +81,8 @@ MLLINKLIB = $(subst lib, -l, $(MLIBNAME))
 # Note: the static library is used for DYLIBS, so that fmm3d 
 # does not get bundled in with the fmm3dbie dynamic library
 #
-LIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB) 
-DYLIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB)
+#LIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB) 
+#DYLIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB)
 F2PYDYLIBS += -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB)
 
 # multi-threaded libs & flags needed
@@ -94,7 +96,7 @@ endif
 
 LIBS += $(LBLAS) $(LDBLASINC)
 DYLIBS += $(LBLAS) $(LDBLASINC)
-
+MEXLIBS += $(MLBLAS) 
 
 
 # objects to compile
@@ -103,7 +105,6 @@ DYLIBS += $(LBLAS) $(LDBLASINC)
 COM = src/common
 COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/dlaran.o \
-	$(COM)/legeexps.o $(COM)/prini_new.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o \
@@ -177,9 +178,7 @@ ifneq ($(BLAS_64),ON)
 OBJS += $(COM)/lapack_wrap.o
 endif
 
-
-
-.PHONY: usage lib install test test-dyn python mex matlab-dyn 
+.PHONY: usage lib install test test-dyn python mex mex-dyn matlab-dyn matlab 
 
 default: usage
 
@@ -219,34 +218,67 @@ usage:
 	$(CC) -c $(CFLAGS) $< -o $@
 
 
-
 #
 # build the library...
 #
 lib: $(STATICLIB) $(DYNAMICLIB)
+
+lib-fmm3dbie-only: STATICLIBFMM3DBIE DYNAMICLIBFMM3DBIE	
+
 ifneq ($(OMP),OFF)
 	@echo "$(STATICLIB) and $(DYNAMICLIB) built, multithread versions"
 else
 	@echo "$(STATICLIB) and $(DYNAMICLIB) built, single-threaded versions"
 endif
 
-$(STATICLIB): $(OBJS) 
-	ar rcs $(STATICLIB) $(OBJS)
-	mv $(STATICLIB) lib-static/
+STATICLIBFMM:
+	if [ -d "./FMM3D" ]; then \
+	  [ ! -f make.inc ] || cp make.inc ./FMM3D; \
+	  cd FMM3D && make lib -j; \
+	  echo "$(LFMMSTATICLIB)"; \
+	  $(eval LFMMSTATICLIB := $(shell pwd)/FMM3D/lib-static/libfmm3d.a) \
+	  echo "$(LFMMSTATICLIB)"; \
+	fi
 
-$(DYNAMICLIB): $(OBJS) 
-	$(FC) -shared -fPIC $(FFLAGS) $(OBJS) -o $(DYNAMICLIB) $(DYLIBS) 
+STATICLIBFMM3DBIE: $(OBJS)
+	ar rcs $(STATICLIB) $(OBJS) 
+	mv $(STATICLIB) lib-static/
+	cd lib-static && ar -x $(STATICLIB)
+	cd lib-static && ar -x $(LFMMSTATICLIB)
+	cd lib-static && ar rcs $(STATICLIB) *.o
+	cd lib-static && rm -rf *.o *__*
+
+MSTATICLIBFMM3DBIE: $(OBJS_64)
+	echo "$(OBJS_64)"
+	ar rcs $(MSTATICLIB) $(OBJS_64) 
+	mv $(MSTATICLIB) lib-static/
+	cd lib-static && ar -x $(MSTATICLIB)
+	cd lib-static && ar -x $(LFMMSTATICLIB)
+	cd lib-static && ar rcs $(MSTATICLIB) *.o
+	cd lib-static && rm -rf *.o *__*
+
+
+
+DYNAMICLIBFMM3DBIE: STATICLIBFMM3DBIE 
+	$(FC) -shared -fPIC $(FFLAGS) -o $(DYNAMICLIB) -Wl,-force_load lib-static/$(STATICLIB) $(DYLIBS) 
 	mv $(DYNAMICLIB) lib/
 	[ ! -f $(LIMPLIB) ] || mv $(LIMPLIB) lib/
 
-$(MDYNAMICLIB): $(OBJS_64) 
-	$(FC) -shared -fPIC $(FFLAGS) $(OBJS_64) -o $(MDYNAMICLIB) $(DYLIBS) 
+$(STATICLIB): STATICLIBFMM STATICLIBFMM3DBIE
+
+$(DYNAMICLIB): STATICLIBFMM DYNAMICLIBFMM3DBIE
+
+$(MSTATICLIB): STATICLIBFMM MSTATICLIBFMM3DBIE
+
+$(MDYNAMICLIB): $(MSTATICLIB) 
+	$(FC) -shared -fPIC $(FFLAGS) -Wl,-force_load lib-static/$(MSTATICLIB) -o $(MDYNAMICLIB) $(DYLIBS) 
 	mv $(MDYNAMICLIB) lib/
 	[ ! -f $(MLIMPLIB) ] || mv $(MLIMPLIB) lib/
 	mkdir -p $(FMMBIE_INSTALL_DIR)
 	cp -f lib/$(MDYNAMICLIB) $(FMMBIE_INSTALL_DIR)/
 
 install: $(STATICLIB) $(DYNAMICLIB)
+	rm -rf tmp
 	echo $(FMMBIE_INSTALL_DIR)
 	mkdir -p $(FMMBIE_INSTALL_DIR)
 	cp -f lib/$(DYNAMICLIB) $(FMMBIE_INSTALL_DIR)/
@@ -267,15 +299,28 @@ MWDIR = matlab
 MWF = fmm3dbie_routs
 GW = $(MWF)
 
+
+
+matlab:	$(MSTATICLIB) $(MWDIR)/$(GW).c
+	$(MEX) $(MWDIR)/$(GW).c lib-static/$(MSTATICLIB) $(MFLAGS) \
+	-output $(MWDIR)/$(GW) $(MEXLIBS) 
+
+
 matlab-dyn:	$(MDYNAMICLIB) $(MWDIR)/$(GW).c
 	$(MEX) $(MWDIR)/$(GW).c $(MFLAGS) \
-	-output $(MWDIR)/$(GW) $(MEXLIBS) -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB) -L$(FMMBIE_INSTALL_DIR) $(MLLINKLIB) 
+	-output $(MWDIR)/$(GW) $(MEXLIBS) -L$(FMMBIE_INSTALL_DIR) $(MLLINKLIB) 
 
-mex: $(MDYNAMICLIB)
+mex: $(MSTATICLIB)
+	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GW) -mb $(MWF).mw;\
+	$(MWRAP) $(MWFLAGS) -mex $(GW) -c $(GW).c $(MWF).mw;\
+	$(MEX) $(GW).c ../lib-static/$(MSTATICLIB) $(MFLAGS) \
+	-output $(GW) $(MEXLIBS) 
+
+mex-dyn: $(MDYNAMICLIB)
 	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GW) -mb $(MWF).mw;\
 	$(MWRAP) $(MWFLAGS) -mex $(GW) -c $(GW).c $(MWF).mw;\
 	$(MEX) $(GW).c $(MFLAGS) \
-	-output $(GW) $(MEXLIBS) -L$(FMM_INSTALL_DIR) $(LFMMLINKLIB) -L$(FMMBIE_INSTALL_DIR) $(MLLINKLIB); 
+	-output $(GW) $(MEXLIBS) -L$(FMMBIE_INSTALL_DIR) $(MLLINKLIB); 
 
 #
 # testing routines
@@ -292,6 +337,27 @@ test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadr
 	rm print_testres.txt
 
 test-dyn: $(DYNAMICLIB) test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn test/quadrature-dyn test/quad-dyn
+	cd test/common; ./int2-com
+	cd test/helm_wrappers; ./int2-helm
+	cd test/lap_wrappers; ./int2-lap
+	cd test/surface_routs; ./int2-surf
+	cd test/tria_routs; ./int2-tria
+	cd test/quadratures; ./int2-quad
+	cat print_testres.txt
+	rm print_testres.txt
+
+test-fmm3dbie-only: STATICLIBFMM3DBIE test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad 
+	cd test/common; ./int2-com
+	cd test/helm_wrappers; ./int2-helm
+	cd test/lap_wrappers; ./int2-lap
+	cd test/surface_routs; ./int2-surf
+	cd test/tria_routs; ./int2-tria
+	cd test/quad_routs; ./int2-quad
+	cd test/quadratures; ./int2-quad
+	cat print_testres.txt
+	rm print_testres.txt
+
+test-dyn-fmm3dbie-only: DYNAMICLIBFMM3DBIE test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn test/quadrature-dyn test/quad-dyn
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
@@ -333,26 +399,26 @@ test/quadrature:
 
 
 test/com-dyn:
-	$(FC) $(FFLAGS) test/common/test_common.f -o test/common/int2-com -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
+	$(FC) $(FFLAGS) test/common/test_common.f -o test/common/int2-com -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) $(LFMMLINKLIB) 
 
 test/hwrap-dyn:
-	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
+	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 test/lwrap-dyn:
-	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f -o test/lap_wrappers/int2-lap -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
+	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f -o test/lap_wrappers/int2-lap -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 test/surf-dyn:
-	$(FC) $(FFLAGS) test/surface_routs/test_surf_routs.f -o test/surface_routs/int2-surf -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
+	$(FC) $(FFLAGS) test/surface_routs/test_surf_routs.f -o test/surface_routs/int2-surf -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) 
 
 test/tria-dyn: $(TTOBJS)
-	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
+	$(FC) $(FFLAGS) test/tria_routs/test_triarouts.f -o test/tria_routs/int2-tria $(TTOBJS) -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) 
 
 test/quad-dyn: $(QTOBJS)
-	$(FC) $(FFLAGS) test/quad_routs/test_quadrouts.f -o test/quad_routs/int2-quad $(QTOBJS) -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
+	$(FC) $(FFLAGS) test/quad_routs/test_quadrouts.f -o test/quad_routs/int2-quad $(QTOBJS) -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 
 test/quadrature-dyn:
-	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad -L$(FMM_INSTALL_DIR) -L$(FMMBIE_INSTALL_DIR) $(LFMMLINKLIB) $(LLINKLIB)
+	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) 
 
 
 #
