@@ -160,7 +160,7 @@ C===================================================================
 C$    nthreads=OMP_GET_MAX_THREADS()
 c      write(*,*) "max num threads: ", nthreads
 
-      if(N<2*nthreads .or. nthreads==1) then
+      if(N<1000*nthreads .or. nthreads==1) then
 c        write(*,*) "call sorti"
         call sortr(n,data,index)
         return
@@ -612,7 +612,7 @@ C===================================================================
 C$    nthreads=OMP_GET_MAX_THREADS()
 c      write(*,*) "max num threads: ", nthreads
 
-      if(N<2*nthreads .or. nthreads==1) then
+      if(N<1000*nthreads .or. nthreads==1) then
 c        write(*,*) "call sorti"
         call sorti(n,data,index)
         return
