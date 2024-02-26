@@ -72,6 +72,9 @@ LFMMSTATICLIB = $(FMM_INSTALL_DIR)/libfmm3d.a
 LLINKLIB = $(subst lib, -l, $(LIBNAME))
 MLLINKLIB = $(subst lib, -l, $(MLIBNAME))
 
+WLDL = -Wl,--whole-archive
+WLDLEND = -Wl,--no-whole-archive
+
 # For your OS, override the above by placing make variables in make.inc
 -include make.inc
 
@@ -234,17 +237,18 @@ else
 endif
 
 STATICLIBFMM:
-	if [ -d "./FMM3D" ]; then \
-	  [ ! -f make.inc ] || cp make.inc ./FMM3D; \
-	  cd FMM3D && make lib -j; \
-	  echo "$(LFMMSTATICLIB)"; \
-	  $(eval LFMMSTATICLIB := $(shell pwd)/FMM3D/lib-static/libfmm3d.a) \
-	  echo "$(LFMMSTATICLIB)"; \
-	fi
+ifneq ($(wildcard ./FMM3D/.*),)
+	[ ! -f make.inc ] || cp make.inc ./FMM3D; 
+	cd FMM3D && make lib -j; 
+	echo "$(LFMMSTATICLIB)"; 
+	$(eval LFMMSTATICLIB := $(shell pwd)/FMM3D/lib-static/libfmm3d.a) 
+	echo "$(LFMMSTATICLIB)"; 
+endif
 
 STATICLIBFMM3DBIE: $(OBJS)
 	ar rcs $(STATICLIB) $(OBJS) 
 	mv $(STATICLIB) lib-static/
+	echo $(LFMMSTATICLIB)
 	cd lib-static && ar -x $(STATICLIB)
 	cd lib-static && ar -x $(LFMMSTATICLIB)
 	cd lib-static && ar rcs $(STATICLIB) *.o
@@ -262,7 +266,7 @@ MSTATICLIBFMM3DBIE: $(OBJS_64)
 
 
 DYNAMICLIBFMM3DBIE: STATICLIBFMM3DBIE 
-	$(FC) -shared -fPIC $(FFLAGS) -o $(DYNAMICLIB) -Wl,-force_load lib-static/$(STATICLIB) $(DYLIBS) 
+	$(FC) -shared -fPIC $(FFLAGS) $(WLDL) lib-static/$(STATICLIB) $(WLDLEND) -o $(DYNAMICLIB) $(DYLIBS) 
 	mv $(DYNAMICLIB) lib/
 	[ ! -f $(LIMPLIB) ] || mv $(LIMPLIB) lib/
 
@@ -273,7 +277,7 @@ $(DYNAMICLIB): STATICLIBFMM DYNAMICLIBFMM3DBIE
 $(MSTATICLIB): STATICLIBFMM MSTATICLIBFMM3DBIE
 
 $(MDYNAMICLIB): $(MSTATICLIB) 
-	$(FC) -shared -fPIC $(FFLAGS) -Wl,-force_load lib-static/$(MSTATICLIB) -o $(MDYNAMICLIB) $(DYLIBS) 
+	$(FC) -shared -fPIC $(FFLAGS) $(WLDL) lib-static/$(MSTATICLIB) $(WLDLEND) -o $(MDYNAMICLIB) $(DYLIBS) 
 	mv $(MDYNAMICLIB) lib/
 	[ ! -f $(MLIMPLIB) ] || mv $(MLIMPLIB) lib/
 	mkdir -p $(FMMBIE_INSTALL_DIR)

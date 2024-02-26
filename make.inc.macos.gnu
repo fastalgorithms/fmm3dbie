@@ -27,6 +27,10 @@ OMPLIBS = -lgomp
 
 LBLAS=-framework accelerate
 
+# Wl flags for loading objects from static library into dynamic library
+WLDL = -Wl,-force_load
+WLDLEND = 
+
 
 #MATLAB interface:
 FDIR=$$(dirname `gfortran --print-file-name libgfortran.dylib`)

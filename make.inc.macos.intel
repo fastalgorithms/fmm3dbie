@@ -24,5 +24,17 @@ OMPLIBS =
 
 LBLAS = -mkl
 
+# Wl flags for loading objects from static library into dynamic library
+WLDL = -Wl,-force_load
+WLDLEND = 
+
+
+#MATLAB interface:
+FDIR=$$(dirname `gfortran --print-file-name libgfortran.dylib`)
+MFLAGS +=-L${FDIR}
+MEX = $(shell ls -d /Applications/MATLAB_R* | sort | tail -1)/bin/mex
+
+#MWRAP location
+MWRAP=~/git/mwrap/mwrap
 
 
