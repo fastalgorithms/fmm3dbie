@@ -1,7 +1,7 @@
 % choose domain type
 run ../startup.m
 
-if ~exist('surfacemesh'); return; end;
+if ~exist('surfacemesh', 'class'); return; end;
 geomtype = 'sphere';
 funtype = 'spharm';
 
