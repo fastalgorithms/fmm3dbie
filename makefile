@@ -168,6 +168,18 @@ QOBJS2 = $(QUAD2)/cquadints_main.o \
 	$(QUAD2)/cquadintrouts.o $(QUAD2)/dquadints_main.o \
 	$(QUAD2)/squarearbq.o $(QUAD2)/quadtreerouts.o $(QUAD2)/dquadintrouts.o
 
+SURFSM = src/multiscale_mesher
+SURFSMOBJS = $(SURFSM)/cisurf_loadmsh.o \
+	$(SURFSM)/cisurf_skeleton.o $(SURFSM)/cisurf_plottools.o \
+	$(SURFSM)/cisurf_tritools.o $(SURFSM)/tfmm_setsub.o $(SURFSM)/surface_smoother.o 
+
+SURFSM_MOD_OBJS = $(SURFSM)/Mod_TreeLRD.o \
+	$(SURFSM)/ModType_Smooth_Surface.o $(SURFSM)/Mod_Fast_Sigma.o \
+	$(SURFSM)/Mod_Plot_Tools_sigma.o $(SURFSM)/Mod_Feval.o $(SURFSM)/Mod_Smooth_Surface.o
+
+# Add to FFLAGS so that modules get compiled in the .mod folder
+FFLAGS += -J .mod/
+
 OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
 
 OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
@@ -181,7 +193,8 @@ ifneq ($(BLAS_64),ON)
 OBJS += $(COM)/lapack_wrap.o
 endif
 
-.PHONY: usage lib install test test-dyn python mex mex-dyn matlab-dyn matlab 
+
+.PHONY: usage lib install test test-dyn python mex mex-dyn matlab-dyn matlab surf-smooth-objs surf-smooth-test 
 
 default: usage
 
@@ -297,6 +310,9 @@ install: $(STATICLIB) $(DYNAMICLIB)
 	@echo " "
 	@echo "In order to link against the dynamic library, use -L"$(FMMBIE_INSTALL_DIR)  " "$(LLINKLIB) 
 
+surf-smooth-mod-objs: $(SURFSM_MOD_OBJS) 
+
+surf-smooth-objs: surf-smooth-mod-objs  $(SURFSMOBJS)
 
 
 # matlab..
@@ -427,6 +443,15 @@ test/quadrature-dyn:
 	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) 
 
 
+# 
+#  Surface smoother test
+#
+surf-smooth-test: surf-smooth-objs test/surf-smooth
+	cd test/multiscale_mesher; ./int2-surfsmooth 
+
+test/surf-smooth:
+	$(FC) $(FFLAGS) test/multiscale_mesher/test_surfsmooth.f90 -o test/multiscale_mesher/int2-surfsmooth $(SURFSMOBJS) $(SURFSM_MOD_OBJS) lib-static/$(STATICLIB) $(LIBS) 
+
 #
 # build the python bindings/interface
 #
@@ -449,6 +474,7 @@ python-gmsh: $(DYNAMICLIB)
 #
 clean: objclean
 	rm -f lib-static/*.a lib/*.so
+	rm -f .mod/*
 	rm -f test/common/int2-com
 	rm -f test/helm_wrappers/int2-helm
 	rm -f test/tria_routs/int2-tria
@@ -459,7 +485,7 @@ clean: objclean
 	rm -rf python/srout*.so
 
 objclean: 
-	rm -f $(OBJS) $(TTOBJS) $(QTOBJS) $(OBJS_64) 
+	rm -f $(OBJS) $(TTOBJS) $(QTOBJS) $(OBJS_64) $(SURFSMOBJS) $(SURFSM_MOD_OBJS) 
 	rm -f test/helm_wrappers/*.o test/common/*.o 
 	rm -f test/tria_routs/*.o 
 	rm -f test/lap_wrappers/*.o

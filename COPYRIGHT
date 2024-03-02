@@ -27,7 +27,6 @@ The file "src/common/dlaran.f" is licensed under the modified BSD license.
 The files "src/common/dotcross3d.f", "src/tria_routs/koorn-uvs-dat.txt", 
 and "src/tria_routs/koorn-wts-dat.txt" are copyright Zydrunas Gimbutas and released
 under 'GPLv2 or later'.
-The file "src/common/sort.f" is copyright Leonard J Moss.
 The files "src/quad_routs/squarearbq.f", and "src/tria_routs/triasymq.f"
 are copyright Zydrunas Gimbutas and Hong Xiao and released under 'GPLv2 or later'.
 The files "src/quadratures/ggq-selfquad-routs.f", "src/quadratures/ggq-selfquad.f",
