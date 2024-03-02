@@ -217,8 +217,9 @@ usage:
 	@echo "  make clean        also remove lib, MEX, py, and demo executables"
 	@echo "  make mex          generate matlab interfaces"
 	@echo "                    (for expert users only, requires mwrap)"
+	@echo "  make mesh-test    build and run the surface smoother test"
 	@echo ""
-	@echo "For faster (multicore) making, append the flag -j"
+	@echo "For faster (multicore) making, append the flag -j (doesn't work for mesh-test)"
 	@echo "  'make [task] OMP=OFF' for single-threaded"
 	@echo "-------------------------------------------------------------------------"
 
@@ -446,7 +447,7 @@ test/quadrature-dyn:
 # 
 #  Surface smoother test
 #
-surf-smooth-test: surf-smooth-objs test/surf-smooth
+mesh-test: surf-smooth-objs test/surf-smooth
 	cd test/multiscale_mesher; ./int2-surfsmooth 
 
 test/surf-smooth:
