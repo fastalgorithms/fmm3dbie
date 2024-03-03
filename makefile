@@ -251,7 +251,7 @@ else
 endif
 
 STATICLIBFMM:
-ifneq ($(wildcard ./FMM3D/.*),)
+ifneq ($(wildcard ./FMM3D/src/.*),)
 	[ ! -f make.inc ] || cp make.inc ./FMM3D; 
 	cd FMM3D && make lib -j; 
 	echo "$(LFMMSTATICLIB)"; 
@@ -310,6 +310,7 @@ install: $(STATICLIB) $(DYNAMICLIB)
 	@echo "    DYLD_LIBRARY_PATH on Mac OSX (not needed if default installation directory is used"
 	@echo " "
 	@echo "In order to link against the dynamic library, use -L"$(FMMBIE_INSTALL_DIR)  " "$(LLINKLIB) 
+
 
 surf-smooth-mod-objs: $(SURFSM_MOD_OBJS) 
 
