@@ -72,6 +72,14 @@ program smoother
     fnamein = '../../geometries/meshes/cow_new.msh'
     fnameout_root = '../../geometries/cow_new'
 
+    fnamein = '../../geometries/meshes/cow_new_gmshv4.msh'
+    fnameout_root = '../../geometries/cow_new'
+
+    fnamein = '../../geometries/meshes/lens_r00.msh'
+    fnameout_root = '../../geometries/lens_r00'
+
+    fnamein = '../../geometries/meshes/lens_r00_gmshv4.msh'
+    fnameout_root = '../../geometries/lens_r00'
     call surface_smoother_unif_refine(fnamein, norder_skel, &
        norder_smooth, nrefine, adapt_flag, rlam, fnameout_root)
 

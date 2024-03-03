@@ -59,9 +59,7 @@ subroutine readgeometry(Geometry1, filename, norder_skel, &
   elseif (ifiletype.eq.4) then
     call read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
   elseif (ifiletype.eq.5) then
-     print *, "mesh type not supported"
-     stop
-!    call read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
+    call read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth)
   else
     write (*,*) 'Mesh type not supported' 
     stop
@@ -395,10 +393,9 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
   implicit none
 
   ! This subroutine opens a v2 gmsh file and load the information in a
-  ! variable of type Geometry. Currently only reads second order 
-  ! quads and triangles. 
+  ! variable of type Geometry. Reads in all elements which are first
+  ! or second order triangles, and first or second order quads
   !
-  ! Todo: Support for first order stuff 
 
   !
   ! Input
@@ -426,7 +423,11 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
   double precision, allocatable :: xs(:), ys(:), zs(:)
   integer :: ierror,iunit,korder,kpols,itype
   integer :: io,numnodes,ind,numelem,nel,ntri,ntag,lll
-  integer :: itype_tri, itype_quad, kpols_quad, kpols_tri
+  integer :: itype_tri3, itype_quad4
+  integer :: itype_tri6, itype_quad8, itype_quad9
+  integer :: inode1, inode2, inode3, inode4, npts, npts_use
+  integer :: inode8(8) 
+  integer :: nel_quad4, nel_quad9, nel_quad8, nel_tri3, nel_tri6
 
 
   Geometry1%ifflat = 0
@@ -436,13 +437,10 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
   open(UNIT=iunit, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
 
 
-  korder = 2
-  kpols_tri = 6
-  kpols_quad = 9
-  kpols = (korder+1)*(korder+2)/2
-
-  itype_tri = 9
-  itype_quad = 10
+  itype_tri3 = 2
+  itype_tri6 = 9
+  itype_quad4 = 4
+  itype_quad9 = 10
 
 !
 !   Read the number of points
@@ -472,8 +470,8 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
     end if
   enddo
 
-  nel = 6 
   ntri = 0
+  npts = numnodes
 
   do
     read(iunit, *, iostat=io) cline
@@ -492,8 +490,20 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
         read(iunit, '(a)', iostat=io) cline
         read (cline,*) ind, ielem, ntag
 
-        if (ielem .eq. itype_tri) ntri = ntri + 1
-        if (ielem .eq. itype_quad) ntri = ntri + 2
+        if (ielem .eq. itype_tri3) then
+          ntri = ntri + 1
+          npts = npts + 3
+        endif
+        if (ielem .eq. itype_tri6) ntri = ntri + 1
+        if (ielem .eq. itype_quad4) then
+          ntri = ntri + 2
+          npts = npts + 5
+        endif
+        if (ielem .eq. itype_quad8) then
+          ntri = ntri + 2
+          npts = npts + 1
+        endif
+        if (ielem .eq. itype_quad9) ntri = ntri + 2
       enddo
       exit
     endif
@@ -514,7 +524,7 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
 
   Geometry1%n_order_sf = nsf
 
-  m = numnodes
+  m = npts
   Geometry1%npoints=m
   Geometry1%ntri=N
   Geometry1%ntri_sk=N
@@ -531,14 +541,20 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
   allocate(Geometry1%Points(3,m))
   allocate(Geometry1%Tri(6,N))
 
-  do j=1,m
+  do j=1,numnodes
     Geometry1%Points(1,j) = xs(j)
     Geometry1%Points(2,j) = ys(j)
     Geometry1%Points(3,j) = zs(j)
   enddo
 
-   ntri = 0
-   do
+  npts_use = numnodes
+  nel_tri3 = 3
+  nel_tri6 = 6
+  nel_quad4 = 4
+  nel_quad9 = 9
+  ntri = 0
+  allocate(element(100))
+  do
     read(iunit, *, iostat=io) cline
     if (io .ne. 0) exit
 
@@ -548,49 +564,534 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
 
         read(iunit, '(a)', iostat=io) cline
         read (cline,*) ind, ielem, ntag
-        if(ielem.eq.itype_tri) lll= 1+1+1+ntag+nel
-        if(ielem.eq.itype_quad) lll= 14 
-        allocate(element(lll))
-        read(cline,*) element
-        if (ielem.eq.itype_tri) then
+        if (ielem.eq.itype_tri3) then
+          nel = 3 + ntag + nel_tri3
+          read(cline,*) element(1:nel)
+          inode1 = element(3+ntag+1)
+          inode2 = element(3+ntag+2)
+          inode3 = element(3+ntag+3)
+
+          ntri = ntri + 1
+          Geometry1%Tri(1,ntri) = inode1
+          Geometry1%Tri(2,ntri) = inode2
+          Geometry1%Tri(3,ntri) = inode3
+          Geometry1%Tri(4,ntri) = npts_use + 1
+          Geometry1%Tri(5,ntri) = npts_use + 2
+          Geometry1%Tri(6,ntri) = npts_use + 3
+
+          npts_use = npts_use+1
+          Geometry1%Points(1,npts_use) = (xs(inode1) + xs(inode2))/2
+          Geometry1%Points(2,npts_use) = (ys(inode1) + ys(inode2))/2
+          Geometry1%Points(3,npts_use) = (zs(inode1) + zs(inode2))/2
+          
+          npts_use = npts_use+1
+          Geometry1%Points(1,npts_use) = (xs(inode2) + xs(inode3))/2
+          Geometry1%Points(2,npts_use) = (ys(inode2) + ys(inode3))/2
+          Geometry1%Points(3,npts_use) = (zs(inode2) + zs(inode3))/2
+          
+          npts_use = npts_use+1
+          Geometry1%Points(1,npts_use) = (xs(inode3) + xs(inode1))/2
+          Geometry1%Points(2,npts_use) = (ys(inode3) + ys(inode1))/2
+          Geometry1%Points(3,npts_use) = (zs(inode3) + zs(inode1))/2
+        endif
+
+        if (ielem.eq.itype_quad4) then
+          nel = 3 + ntag + nel_quad4
+          read(cline,*) element(1:nel)
+          inode1 = element(3+ntag+1)
+          inode2 = element(3+ntag+2)
+          inode3 = element(3+ntag+3)
+          inode4 = element(3+ntag+4)
+
+
+          ntri = ntri + 1
+          Geometry1%Tri(1,ntri) = inode1
+          Geometry1%Tri(2,ntri) = inode2
+          Geometry1%Tri(3,ntri) = inode4
+          Geometry1%Tri(4,ntri) = npts_use + 1
+          Geometry1%Tri(5,ntri) = npts_use + 5
+          Geometry1%Tri(6,ntri) = npts_use + 4
+
+          ntri = ntri + 1
+          Geometry1%Tri(1,ntri) = inode2
+          Geometry1%Tri(2,ntri) = inode4
+          Geometry1%Tri(3,ntri) = inode3
+          Geometry1%Tri(4,ntri) = npts_use + 5
+          Geometry1%Tri(5,ntri) = npts_use + 3
+          Geometry1%Tri(6,ntri) = npts_use + 2
+
+
+          npts_use = npts_use+1
+          Geometry1%Points(1,npts_use) = (xs(inode1) + xs(inode2))/2
+          Geometry1%Points(2,npts_use) = (ys(inode1) + ys(inode2))/2
+          Geometry1%Points(3,npts_use) = (zs(inode1) + zs(inode2))/2
+          
+          npts_use = npts_use+1
+          Geometry1%Points(1,npts_use) = (xs(inode2) + xs(inode3))/2
+          Geometry1%Points(2,npts_use) = (ys(inode2) + ys(inode3))/2
+          Geometry1%Points(3,npts_use) = (zs(inode2) + zs(inode3))/2
+          
+          npts_use = npts_use+1
+          Geometry1%Points(1,npts_use) = (xs(inode3) + xs(inode4))/2
+          Geometry1%Points(2,npts_use) = (ys(inode3) + ys(inode4))/2
+          Geometry1%Points(3,npts_use) = (zs(inode3) + zs(inode4))/2
+
+          npts_use = npts_use+1
+          Geometry1%Points(1,npts_use) = (xs(inode4) + xs(inode1))/2
+          Geometry1%Points(2,npts_use) = (ys(inode4) + ys(inode1))/2
+          Geometry1%Points(3,npts_use) = (zs(inode4) + zs(inode1))/2
+
+          npts_use = npts_use+1
+          Geometry1%Points(1,npts_use) = (xs(inode1) + xs(inode2) + &
+                                          xs(inode3) + xs(inode4))/4
+          Geometry1%Points(2,npts_use) = (ys(inode1) + ys(inode2) + &
+                                          ys(inode3) + ys(inode4))/4
+          Geometry1%Points(3,npts_use) = (zs(inode1) + zs(inode2) + &
+                                          zs(inode3) + zs(inode4))/4
+          
+        endif
+
+        if (ielem.eq.itype_tri6) then
+          nel = 3 + ntag + nel_tri6
+          read(cline,*) element(1:nel)
           ntri = ntri + 1
           do j = 1,6
             Geometry1%Tri(j,ntri) = element(j+3+ntag)
           end do
-
         end if
 
-        if (ielem.eq.itype_quad) then
+        if (ielem.eq.itype_quad8) then
+          nel = 3 + ntag + nel_quad8
+          read(cline,*) element(1:nel)
+          inode8(1:8) = element((3+ntag+1):(3+ntag+8))
+          
           ntri = ntri + 1
-          Geometry1%Tri(1,ntri) = element(6)
-          Geometry1%Tri(2,ntri) = element(7)
-          Geometry1%Tri(3,ntri) = element(9)
-          Geometry1%Tri(4,ntri) = element(10)
-          Geometry1%Tri(5,ntri) = element(14)
-          Geometry1%Tri(6,ntri) = element(13)
+          Geometry1%Tri(1,ntri) = element(3+ntag+1)
+          Geometry1%Tri(2,ntri) = element(3+ntag+2)
+          Geometry1%Tri(3,ntri) = element(3+ntag+4)
+          Geometry1%Tri(4,ntri) = element(3+ntag+5)
+          Geometry1%Tri(5,ntri) = npts_use + 1 
+          Geometry1%Tri(6,ntri) = element(3+ntag+8)
 
 
           ntri = ntri + 1
-          Geometry1%Tri(1,ntri) = element(8)
-          Geometry1%Tri(2,ntri) = element(9)
-          Geometry1%Tri(3,ntri) = element(7)
-          Geometry1%Tri(4,ntri) = element(12)
-          Geometry1%Tri(5,ntri) = element(14)
-          Geometry1%Tri(6,ntri) = element(11)
+          Geometry1%Tri(1,ntri) = element(3+ntag+3)
+          Geometry1%Tri(2,ntri) = element(3+ntag+4)
+          Geometry1%Tri(3,ntri) = element(3+ntag+2)
+          Geometry1%Tri(4,ntri) = element(3+ntag+7)
+          Geometry1%Tri(5,ntri) = npts_use + 1 
+          Geometry1%Tri(6,ntri) = element(3+ntag+6)
+
+          npts_use = npts_use + 1
+          Geometry1%Points(1:3,npts_use) = 0
+          do j=1,8
+            Geometry1%Points(1,npts_use) = Geometry1%Points(1,npts_use) + &
+              xs(inode8(j))
+            Geometry1%Points(2,npts_use) = Geometry1%Points(1,npts_use) + &
+              ys(inode8(j))
+            Geometry1%Points(3,npts_use) = Geometry1%Points(1,npts_use) + &
+              zs(inode8(j))
+          enddo
+          Geometry1%Points(1:3,npts_use) = Geometry1%Points(1:3,npts_use)/8
 
         endif
-        deallocate(element)
+        
+
+        if (ielem.eq.itype_quad9) then
+          nel = 3 + ntag + nel_quad9
+          read(cline,*) element(1:nel)
+          ntri = ntri + 1
+          Geometry1%Tri(1,ntri) = element(3+ntag+1)
+          Geometry1%Tri(2,ntri) = element(3+ntag+2)
+          Geometry1%Tri(3,ntri) = element(3+ntag+4)
+          Geometry1%Tri(4,ntri) = element(3+ntag+5)
+          Geometry1%Tri(5,ntri) = element(3+ntag+9)
+          Geometry1%Tri(6,ntri) = element(3+ntag+8)
+
+
+          ntri = ntri + 1
+          Geometry1%Tri(1,ntri) = element(3+ntag+3)
+          Geometry1%Tri(2,ntri) = element(3+ntag+4)
+          Geometry1%Tri(3,ntri) = element(3+ntag+2)
+          Geometry1%Tri(4,ntri) = element(3+ntag+7)
+          Geometry1%Tri(5,ntri) = element(3+ntag+9)
+          Geometry1%Tri(6,ntri) = element(3+ntag+6)
+
+        endif
         
       end do
 
     end if
     
   end do
+  deallocate(element)
 
   close(iunit)
 
   return
 end subroutine read_gmsh_v2
+!
+!
+!
+!
+!
+
+subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth)
+  use ModType_Smooth_Surface
+  implicit none
+
+  ! This subroutine opens a v4 gmsh file and load the information in a
+  ! variable of type Geometry. Reads in all elements which are first
+  ! or second order triangles, and first or second order quads
+  !
+
+  !
+  ! Input
+  !   filename - the file to read
+  !   norder_skel - order to discretize the skeleton patches
+  !   norder_smooth - order to discretize the smoothed patches
+  !
+  ! Output
+  !   Geometry1 - data structure for geometry
+  !
+
+  !List of calling arguments
+  type (Geometry), intent(inout) :: Geometry1     !! where the geometry will be loaded
+  character(len=*), intent(in) :: filename         !! name of the msh file
+  character(len=1000) :: tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7
+  character(len=1000) :: cline
+  integer :: n_order_sf, nsk, nsf
+  integer  :: norder_skel, norder_smooth
+  
+  integer :: umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+  integer :: node, nnodes, maxnodes
+  integer, allocatable :: elements(:,:), element(:)
+  integer :: ielem, nelems, maxelems
+  double precision :: x, y, z, d, dmin
+  double precision, allocatable :: xs(:), ys(:), zs(:)
+  integer :: ierror,iunit,korder,kpols,itype
+  integer :: io,numnodes,ind,numelem,nel,ntri,ntag,lll
+  integer :: itype_tri3, itype_quad4
+  integer :: itype_tri6, itype_quad8, itype_quad9
+  integer :: inode1, inode2, inode3, inode4, npts, npts_use
+  integer :: inode8(8) 
+  integer :: nel_quad4, nel_quad9, nel_quad8, nel_tri3, nel_tri6
+  integer :: num_entity_blocks, mintag, maxtag
+  integer :: ient, ienttag, iparam, iind, l, nelem, ielemtype
+  integer, allocatable :: iindvec(:)
+
+
+  Geometry1%ifflat = 0
+
+  iunit = 899
+
+  open(UNIT=iunit, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
+
+
+  itype_tri3 = 2
+  itype_tri6 = 9
+  itype_quad4 = 4
+  itype_quad9 = 10
+
+!
+!   Read the number of points
+!
+!
+
+  do
+    read(iunit, *, iostat=io) cline
+
+    if (io .ne. 0) exit
+
+    if (trim(cline) .eq. '$Nodes') then
+      print *, 'Reading nodes . . . '
+      read(iunit,*) num_entity_blocks, numnodes, mintag, maxtag 
+      print *, 'Number of nodes = ', numnodes
+      print *
+
+      allocate(xs(numnodes),ys(numnodes),zs(numnodes))
+      allocate(iindvec(numnodes))
+      do i=1, num_entity_blocks
+         read(iunit, *, iostat = io) ient, ienttag, iparam, nnodes
+         do j=1,nnodes
+           read(iunit,*) iindvec(j)
+         enddo
+         do j=1,nnodes
+           iind = iindvec(j)
+           read(iunit,*) xs(iind), ys(iind), zs(iind)
+         enddo
+      enddo
+      exit
+
+    end if
+  enddo
+
+  ntri = 0
+  npts = numnodes
+
+  do
+    read(iunit, *, iostat=io) cline
+    if (io .ne. 0) exit
+
+    if (trim(cline) .eq. '$Elements') then
+      print *, 'Reading elements . . . '
+      read(iunit,*) num_entity_blocks, numelem, mintag, maxtag 
+      print *, 'Number of elements = ', numelem
+      print *
+      do i=1, num_entity_blocks
+         read(iunit,*,iostat=io) ient, ienttag, ielemtype, nelem
+         if(ielemtype.eq.itype_tri3) then
+            ntri = ntri + nelem
+            npts = npts + 3*nelem
+         endif
+
+         if(ielemtype.eq.itype_tri6) then
+            ntri = ntri + nelem
+         endif
+
+         if(ielemtype.eq.itype_quad4) then
+            ntri = ntri + 2*nelem
+            npts = npts + 5*nelem
+         endif
+
+         if(ielemtype.eq.itype_quad8) then
+            ntri = ntri + 2*nelem
+            npts = npts + nelem
+         endif
+
+         if(ielemtype.eq.itype_quad9) then
+            ntri = ntri + 2*nelem
+         endif
+         do j=1,nelem
+           read(iunit,'(a)',iostat=io) cline
+         enddo
+      enddo
+      exit
+    endif
+   enddo
+
+  rewind(899)
+  n = ntri
+
+  Geometry1%norder_skel = norder_skel
+  nsk = (norder_skel+1)*(norder_skel+2)/2
+  Geometry1%nskel = nsk
+
+
+  Geometry1%norder_smooth = norder_smooth
+  nsf = (norder_smooth+1)*(norder_smooth+2)/2
+  Geometry1%nsmooth = nsf
+
+  Geometry1%n_order_sf = nsf
+
+  m = npts
+  Geometry1%npoints=m
+  Geometry1%ntri=N
+  Geometry1%ntri_sk=N
+  Geometry1%n_Sf_points=N*nsf
+  Geometry1%n_Sk_points=N*nsk
+
+  if (allocated(Geometry1%Points)) then
+    deallocate(Geometry1%Points)
+  endif
+  if (allocated(Geometry1%Tri)) then
+    deallocate(Geometry1%Tri)
+  endif
+
+  allocate(Geometry1%Points(3,m))
+  allocate(Geometry1%Tri(6,N))
+
+  do j=1,numnodes
+    Geometry1%Points(1,j) = xs(j)
+    Geometry1%Points(2,j) = ys(j)
+    Geometry1%Points(3,j) = zs(j)
+  enddo
+
+  npts_use = numnodes
+  nel_tri3 = 3
+  nel_tri6 = 6
+  nel_quad4 = 4
+  nel_quad9 = 9
+  ntri = 0
+  allocate(element(12))
+  do
+    read(iunit, *, iostat=io) cline
+    if (io .ne. 0) exit
+
+    if (trim(cline) .eq. '$Elements') then
+      read(iunit,*) num_entity_blocks, numelem, mintag, maxtag 
+      print *
+      do i=1, num_entity_blocks
+         read(iunit,*,iostat=io) ient, ienttag, ielemtype, nelem
+         if(ielemtype.eq.itype_tri3) then
+            nel = 1 + nel_tri3
+            do j=1,nelem
+              read(iunit,*) element(1:nel)
+              inode1 = element(2)
+              inode2 = element(3)
+              inode3 = element(4)
+
+              ntri = ntri + 1
+              Geometry1%Tri(1,ntri) = inode1
+              Geometry1%Tri(2,ntri) = inode2
+              Geometry1%Tri(3,ntri) = inode3
+              Geometry1%Tri(4,ntri) = npts_use + 1
+              Geometry1%Tri(5,ntri) = npts_use + 2
+              Geometry1%Tri(6,ntri) = npts_use + 3
+
+              npts_use = npts_use+1
+              Geometry1%Points(1,npts_use) = (xs(inode1) + xs(inode2))/2
+              Geometry1%Points(2,npts_use) = (ys(inode1) + ys(inode2))/2
+              Geometry1%Points(3,npts_use) = (zs(inode1) + zs(inode2))/2
+          
+              npts_use = npts_use+1
+              Geometry1%Points(1,npts_use) = (xs(inode2) + xs(inode3))/2
+              Geometry1%Points(2,npts_use) = (ys(inode2) + ys(inode3))/2
+              Geometry1%Points(3,npts_use) = (zs(inode2) + zs(inode3))/2
+          
+              npts_use = npts_use+1
+              Geometry1%Points(1,npts_use) = (xs(inode3) + xs(inode1))/2
+              Geometry1%Points(2,npts_use) = (ys(inode3) + ys(inode1))/2
+              Geometry1%Points(3,npts_use) = (zs(inode3) + zs(inode1))/2
+            enddo
+         endif
+
+         if(ielemtype.eq.itype_tri6) then
+           nel = 1 + nel_tri6
+           do j=1,nelem
+             read(iunit,*) element(1:nel)
+             ntri = ntri + 1
+             do l = 1,6
+               Geometry1%Tri(l,ntri) = element(l+1)
+             enddo
+           enddo
+         endif
+
+         if(ielemtype.eq.itype_quad4) then
+            nel = 1 + nel_quad4
+            do j=1,nelem
+              read(iunit,*) element(1:nel)
+              inode1 = element(2)
+              inode2 = element(3)
+              inode3 = element(4)
+              inode4 = element(5)
+
+              ntri = ntri + 1
+              Geometry1%Tri(1,ntri) = inode1
+              Geometry1%Tri(2,ntri) = inode2
+              Geometry1%Tri(3,ntri) = inode4
+              Geometry1%Tri(4,ntri) = npts_use + 1
+              Geometry1%Tri(5,ntri) = npts_use + 5
+              Geometry1%Tri(6,ntri) = npts_use + 4
+
+              ntri = ntri + 1
+              Geometry1%Tri(1,ntri) = inode2
+              Geometry1%Tri(2,ntri) = inode4
+              Geometry1%Tri(3,ntri) = inode3
+              Geometry1%Tri(4,ntri) = npts_use + 5
+              Geometry1%Tri(5,ntri) = npts_use + 3
+              Geometry1%Tri(6,ntri) = npts_use + 2
+
+
+              npts_use = npts_use+1
+              Geometry1%Points(1,npts_use) = (xs(inode1) + xs(inode2))/2
+              Geometry1%Points(2,npts_use) = (ys(inode1) + ys(inode2))/2
+              Geometry1%Points(3,npts_use) = (zs(inode1) + zs(inode2))/2
+          
+              npts_use = npts_use+1
+              Geometry1%Points(1,npts_use) = (xs(inode2) + xs(inode3))/2
+              Geometry1%Points(2,npts_use) = (ys(inode2) + ys(inode3))/2
+              Geometry1%Points(3,npts_use) = (zs(inode2) + zs(inode3))/2
+          
+              npts_use = npts_use+1
+              Geometry1%Points(1,npts_use) = (xs(inode3) + xs(inode4))/2
+              Geometry1%Points(2,npts_use) = (ys(inode3) + ys(inode4))/2
+              Geometry1%Points(3,npts_use) = (zs(inode3) + zs(inode4))/2
+
+              npts_use = npts_use+1
+              Geometry1%Points(1,npts_use) = (xs(inode4) + xs(inode1))/2
+              Geometry1%Points(2,npts_use) = (ys(inode4) + ys(inode1))/2
+              Geometry1%Points(3,npts_use) = (zs(inode4) + zs(inode1))/2
+
+              npts_use = npts_use+1
+              Geometry1%Points(1,npts_use) = (xs(inode1) + xs(inode2) + &
+                                          xs(inode3) + xs(inode4))/4
+              Geometry1%Points(2,npts_use) = (ys(inode1) + ys(inode2) + &
+                                              ys(inode3) + ys(inode4))/4
+              Geometry1%Points(3,npts_use) = (zs(inode1) + zs(inode2) + &
+                                              zs(inode3) + zs(inode4))/4
+            enddo
+         endif
+
+         if(ielemtype.eq.itype_quad8) then
+            nel = 1 + nel_quad8
+            do j=1,nelem
+              read(iunit,*) element(1:nel)
+              inode8(1:8) = element(2:9)
+              
+              ntri = ntri + 1
+              Geometry1%Tri(1,ntri) = element(2)
+              Geometry1%Tri(2,ntri) = element(3)
+              Geometry1%Tri(3,ntri) = element(5)
+              Geometry1%Tri(4,ntri) = element(6)
+              Geometry1%Tri(5,ntri) = npts_use + 1 
+              Geometry1%Tri(6,ntri) = element(9)
+
+
+              ntri = ntri + 1
+              Geometry1%Tri(1,ntri) = element(4)
+              Geometry1%Tri(2,ntri) = element(5)
+              Geometry1%Tri(3,ntri) = element(3)
+              Geometry1%Tri(4,ntri) = element(8)
+              Geometry1%Tri(5,ntri) = npts_use + 1 
+              Geometry1%Tri(6,ntri) = element(7)
+
+              npts_use = npts_use + 1
+              Geometry1%Points(1:3,npts_use) = 0
+              do l=1,8
+                Geometry1%Points(1,npts_use) = Geometry1%Points(1,npts_use) + &
+                  xs(inode8(l))
+                Geometry1%Points(2,npts_use) = Geometry1%Points(1,npts_use) + &
+                  ys(inode8(l))
+                Geometry1%Points(3,npts_use) = Geometry1%Points(1,npts_use) + &
+                  zs(inode8(l))
+              enddo
+              Geometry1%Points(1:3,npts_use) = Geometry1%Points(1:3,npts_use)/8
+            enddo
+         endif
+
+         if(ielemtype.eq.itype_quad9) then
+            nel = 1 + nel_quad9
+            do j=1,nelem
+              read(iunit,*) element(1:nel)
+              ntri = ntri + 1
+              Geometry1%Tri(1,ntri) = element(2)
+              Geometry1%Tri(2,ntri) = element(3)
+              Geometry1%Tri(3,ntri) = element(5)
+              Geometry1%Tri(4,ntri) = element(6)
+              Geometry1%Tri(5,ntri) = element(10)
+              Geometry1%Tri(6,ntri) = element(9)
+
+
+              ntri = ntri + 1
+              Geometry1%Tri(1,ntri) = element(4)
+              Geometry1%Tri(2,ntri) = element(5)
+              Geometry1%Tri(3,ntri) = element(3)
+              Geometry1%Tri(4,ntri) = element(8)
+              Geometry1%Tri(5,ntri) = element(10)
+              Geometry1%Tri(6,ntri) = element(7)
+            enddo
+         endif
+      enddo
+
+    end if
+  end do
+  deallocate(element)
+
+  close(iunit)
+
+  return
+end subroutine read_gmsh_v4
 !
 !
 !
