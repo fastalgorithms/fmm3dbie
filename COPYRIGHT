@@ -31,7 +31,7 @@ The files "src/quad_routs/squarearbq.f", and "src/tria_routs/triasymq.f"
 are copyright Zydrunas Gimbutas and Hong Xiao and released under 'GPLv2 or later'.
 The files "src/quadratures/ggq-selfquad-routs.f", "src/quadratures/ggq-selfquad.f",
 and all files in "src/quadratures/ggq-self-quads/" are copyright James Bremer
-and released under 'GPLv2'.
+and released under 'GPLv2 or later'.
 
 
 References
