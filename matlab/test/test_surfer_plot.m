@@ -17,3 +17,7 @@ B2 = surfer.ellipsoid([1;2;5]);
 figure
 clf
 plot(B2)
+
+figure
+clf
+plot(B2, B2.r(1,:));
