@@ -1,4 +1,4 @@
-addpath(genpath('~/git/fmm3dbie/matlab'))
+run ../startup.m
 close('all')
 B = surfer.load_from_file('~/git/fmm3dbie/geometries/sphere_768_o03.go3');
 figure
@@ -13,11 +13,12 @@ figure
 clf
 plot(Bover);
 
-B2 = surfer.ellipsoid([1;2;5]);
+B2 = surfer.sphere(4, 1, 1, 11);
 figure
 clf
 plot(B2)
 
+B2 = surfer.sphere(4, 1, 1, 12);
 figure
 clf
 plot(B2, B2.r(1,:));
