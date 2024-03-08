@@ -42,13 +42,16 @@ nstot = cell(nuni,1);
 
 nplotpts = 10;
 x1 = 0:1/nplotpts:1;
-[x,y] = meshgrid(x1);
+[x, y] = meshgrid(x1);
 tri_quad = delaunay(x,y);
 
 
 xx = x(x+y<=1);
 yy = y(x+y<=1);
 tri_tri = delaunay(xx,yy);
+
+x = 2*x - 1;
+y = 2*y - 1;
 
 for i=1:nuni
     ip0 = no_ip_uni(i,2);
@@ -113,8 +116,7 @@ for k = 1:obj.npatches
     
 end
 
-figure
-clf
+
 trisurf(Ttot,xall,yall,zall,fall,...
         'EdgeColor', 'None', ...
         'AmbientStrength', 0.6, 'DiffuseStrength', 0.4, ...
