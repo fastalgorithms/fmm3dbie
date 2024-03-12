@@ -9,7 +9,7 @@
 !
 
 subroutine readgeometry(Geometry1, filename, norder_skel, &
-    norder_smooth)
+    norder_smooth, ier)
   use ModType_Smooth_Surface
   implicit none
   integer ifiletype, ier
@@ -26,15 +26,26 @@ subroutine readgeometry(Geometry1, filename, norder_skel, &
   !   n_order_skel - discretization order for representing surface
   !   norder_smooth - discretization order for computing integrals
   !
+  ! Output
+  !   ier: error code
+  !     ier = 0, successful execution
+  !     ier = 1, file type not supported
+  !     ier = 2, trouble in reading file
+  !     ier = 4, norder = norder_skel too large
+  !     ier = 5, nquad = norder_smooth too large
+  !
 
+  ier = 0
   if (norder_skel .gt. 20) then
     call prinf('norder_skel too large = *', norder_skel, 1)
-    stop
+    ier = 4
+    return
   end if
 
   if (norder_smooth .gt. 20) then
     call prinf('norder_smooth too large = *', norder_smooth, 1)
-    stop
+    ier = 5
+    return
   end if
 
 !    Determine file type
@@ -51,18 +62,19 @@ subroutine readgeometry(Geometry1, filename, norder_skel, &
 
 
   if (ifiletype.eq.1) then
-    call readmsh(Geometry1, filename, norder_skel, norder_smooth)
+    call readmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   elseif (ifiletype.eq.2) then
-    call readtri(Geometry1, filename, norder_skel, norder_smooth)
+    call readtri(Geometry1, filename, norder_skel, norder_smooth, ier)
   elseif (ifiletype.eq.3) then
-    call readgidmsh(Geometry1, filename, norder_skel, norder_smooth)
+    call readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   elseif (ifiletype.eq.4) then
-    call read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
+    call read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth, ier)
   elseif (ifiletype.eq.5) then
-    call read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth)
+    call read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth, ier)
   else
-    write (*,*) 'Mesh type not supported' 
-    stop
+    write (*,*) 'Mesh type not supported'
+    ier = 1
+    return
   endif
 
   return
@@ -75,7 +87,7 @@ end subroutine readgeometry
 
 
 
-subroutine readmsh(Geometry1, filename, norder_skel, norder_smooth)
+subroutine readmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   use ModType_Smooth_Surface
   implicit none
 
@@ -89,7 +101,8 @@ subroutine readmsh(Geometry1, filename, norder_skel, norder_smooth)
   !   norder_smooth - order to discretize the smoothed patches
   !
   ! Output
-  !   Geometry1 - data structure for geometry
+  !   Geometry1 - data structure for geometry (if successful execution)
+  !   ier - error code, ier = 0, implies successful execution
   !
 
   !List of calling arguments
@@ -99,14 +112,24 @@ subroutine readmsh(Geometry1, filename, norder_skel, norder_smooth)
   integer  :: norder_skel, norder_smooth
   
   integer umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-  integer :: ierror
+  integer :: ierror, ierror1, ierror2
+  integer :: ier
 
 
   Geometry1%ifflat = 0
-
+ 
+  ier = 0
   open(UNIT=8, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
-  read(8,*) aux1,aux2,aux3,m, N
-
+  if(ierror.ne.0) then
+    ier = 2
+    return
+  endif
+  read(8,*, iostat=ierror) aux1,aux2,aux3,m, N
+  if(ierror.ne.0) then
+    ier = 2
+    return
+  endif
+  
   
   nsk = (norder_skel+1)*(norder_skel+2)/2
   
@@ -139,23 +162,33 @@ subroutine readmsh(Geometry1, filename, norder_skel, norder_smooth)
   allocate(Geometry1%Points(3,m))
   allocate(Geometry1%Tri(6,N))
 
+  ierror = 0
   do j=1,m
-    read(8,*) aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-    read(8,*) Geometry1%Points(1,j),Geometry1%Points(2,j),Geometry1%Points(3,j)
+    read(8,*, iostat=ierror1) aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    read(8,*, iostat=ierror2) Geometry1%Points(1,j), &
+       Geometry1%Points(2,j),Geometry1%Points(3,j)
+    ierror = ierror1 + ierror2
   enddo
 
-  read(8,*) aux1
+  read(8,*, iostat=ierror1) aux1
+  ierror = ierror1 + ierror2
 
   do j=1,N
-    read(8,*) aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-    read(8,*) aux1,aux2,aux3,aux4,aux5,aux6
+    read(8,*, iostat=ierror1) aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    read(8,*, iostat=ierror2) aux1,aux2,aux3,aux4,aux5,aux6
     Geometry1%Tri(1,j)=aux1
     Geometry1%Tri(2,j)=aux2
     Geometry1%Tri(3,j)=aux3
     Geometry1%Tri(4,j)=aux4
     Geometry1%Tri(5,j)=aux5
     Geometry1%Tri(6,j)=aux6
+
+    ierror = ierror1 + ierror2
   enddo
+  if(ierror.ne.0) then
+    ier = 2
+    return
+  endif
   
   close (8)
 
@@ -166,7 +199,7 @@ end subroutine readmsh
 
 
 
-subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth)
+subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   use ModType_Smooth_Surface
   implicit none
 
@@ -197,23 +230,39 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth)
   double precision :: x, y, z, d, dmin
   double precision, allocatable :: xs(:), ys(:), zs(:)
   integer :: ierror, iflag
+  integer :: ierror1, ierror2
+  integer :: ier
 
 
   Geometry1%ifflat = 0
 
+  ierror = 0
+  ier = 0
   open(UNIT=8, FILE=trim(filename), STATUS='OLD', ACTION='READ', &
      IOSTAT=ierror)
+  if(ierror.ne.0) then
+    ier = 2
+    return
+  endif
 
 
-  read(8,'(a)') tmp1
-  read(8,'(a)') tmp1
+  read(8,'(a)', iostat=ierror1) tmp1
+  read(8,'(a)', iostat=ierror2) tmp1
+
+  if(ierror1+ierror2.gt.0) then
+    ier = 2
+    return
+
+  endif
 
   ! count the number of nodes and elements
   !
   nnodes = 0
   iflag = 0
+  ierror = 0
   do while (iflag.eq.0) 
-    read (8,'(a)') tmp1
+    read (8,'(a)', iostat=ierror1) tmp1
+    ierror = ierror + ierror1
     if (index(tmp1, 'End Coordinates') > 0) then
       iflag = 1
     else
@@ -222,7 +271,8 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth)
   enddo
 
   do i = 1,100
-    read(8,*) tmp1
+    read(8,*, iostat=ierror1) tmp1
+    ierror = ierror + ierror1
     if (index(tmp1, 'Elements') > 0) exit
   end do
 
@@ -230,7 +280,8 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth)
   nelems = 0
 
   do while (iflag.eq.0)
-    read (8,'(a)') tmp1
+    read (8,'(a)', iostat=ierror1) tmp1
+    ierror = ierror + ierror1
     if (index(tmp1, 'End Elements') > 0) then
       iflag = 1
     else
@@ -238,6 +289,10 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth)
     endif
   enddo
   rewind(8)
+  if(ierror.gt.0) then
+    ier = 2
+    return
+  endif
 
   n = nelems
 
@@ -267,26 +322,42 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth)
 
   allocate(Geometry1%Points(3,m))
   allocate(Geometry1%Tri(6,n))
+  
 
-  read(8,'(a)') tmp1
-  read(8,'(a)') tmp1
+  read(8,'(a)', iostat=ierror1) tmp1
+  read(8,'(a)', iostat=ierror2) tmp1
 
+  if(ierror1+ierror2.gt.0) then
+    ier = 2
+    return
+  endif
+  
+  ierror = 0
   do i=1,nnodes
-    read(8,*) node, Geometry1%Points(1,i), Geometry1%Points(2,i), &
-      Geometry1%Points(3,i)
+    read(8,*, iostat=ierror1) node, Geometry1%Points(1,i), &
+      Geometry1%Points(2,i), Geometry1%Points(3,i)
+    ierror = ierror + ierror1
   enddo
 
   
   do i = 1,100
-    read(8,*) tmp1
+    read(8,*, iostat=ierror1) tmp1
+    ierror = ierror + ierror1
     if (index(tmp1, 'Elements') > 0) exit
   end do
 
   do i=1,nelems
-    read (8, *) ielem, Geometry1%Tri(1,i), Geometry1%Tri(2,i), &
-    Geometry1%Tri(3,i), Geometry1%Tri(4,i), &
+    read (8, *, iostat=ierror1) ielem, Geometry1%Tri(1,i), &
+    Geometry1%Tri(2,i), Geometry1%Tri(3,i), Geometry1%Tri(4,i), &
     Geometry1%Tri(5,i), Geometry1%Tri(6,i)
+    ierror = ierror + ierror1
   enddo
+
+  if(ierror.gt.0) then
+    ier = 2
+    return
+  endif
+
 
   close(8)
   
@@ -299,7 +370,7 @@ end subroutine readgidmsh
 !
 !
 
-subroutine readtri(Geometry1,filename, norder_skel, norder_smooth)
+subroutine readtri(Geometry1,filename, norder_skel, norder_smooth, ier)
   use ModType_Smooth_Surface
   implicit none
 
@@ -311,24 +382,23 @@ subroutine readtri(Geometry1,filename, norder_skel, norder_smooth)
   integer :: norder_smooth, norder_skel
 
   integer umio,i,m,N,j,aux1,aux2,aux3,ipointer
-  integer :: ierror, nsk,nsf
+  integer :: ierror, nsk,nsf, ierror1, ierror2 
+  integer :: ier
 
   ! set the flag for flat vs quadratic
   Geometry1%ifflat = 1
 
   
+  ier = 0
   open(UNIT=8, FILE=trim(filename), STATUS='OLD', ACTION='READ', &
     IOSTAT=ierror)
-  read(8,*) m, N
-
-
-  call prinf('npoints = *', m, 1)
-  call prinf('ntri = *', n, 1)
-
+  read(8,*, iostat=ierror1) m, N
+  if(ierror+ierror1.gt.0) then
+    ier = 2
+    return
+  endif
 
   nsk = (norder_skel+1)*(norder_skel+2)/2
-  call prinf('nsk = *', nsk, 1)
-  !stop
 
   Geometry1%norder_skel = norder_skel
   Geometry1%nskel = nsk
@@ -353,16 +423,22 @@ subroutine readtri(Geometry1,filename, norder_skel, norder_smooth)
   allocate(Geometry1%Points(3,Geometry1%npoints))
   allocate(Geometry1%Tri(6,N))
 
+  ierror = 0
   do j=1,m
-    read(8,*) Geometry1%Points(1,j),Geometry1%Points(2,j), &
-       Geometry1%Points(3,j)
+    read(8,*, iostat=ierror1) Geometry1%Points(1,j), &
+       Geometry1%Points(2,j), Geometry1%Points(3,j)
+    ierror = ierror + ierror1
   enddo
+  if(ierror.gt.0) then
+    ier = 2
+    return
+  endif
 
 
   ipointer=m+1
 
   do j=1,N
-    read(8,*) aux1,aux2,aux3
+    read(8,*, iostat=ierror1) aux1,aux2,aux3
     Geometry1%Tri(1,j)=aux1
     Geometry1%Tri(2,j)=aux2
     Geometry1%Tri(3,j)=aux3
@@ -379,7 +455,12 @@ subroutine readtri(Geometry1,filename, norder_skel, norder_smooth)
       (Geometry1%Points(:,Geometry1%Tri(1,j)) + &
        Geometry1%Points(:,Geometry1%Tri(3,j)))/2.0d0
     ipointer=ipointer+3
+    ierror = ierror + ierror1
   enddo
+  if(ierror.gt.0) then
+     ier = 2
+     return
+  endif
   close (8)
 
   return
@@ -388,7 +469,7 @@ end subroutine readtri
 
 
 
-subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
+subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth, ier)
   use ModType_Smooth_Surface
   implicit none
 
@@ -428,13 +509,19 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
   integer :: inode1, inode2, inode3, inode4, npts, npts_use
   integer :: inode8(8) 
   integer :: nel_quad4, nel_quad9, nel_quad8, nel_tri3, nel_tri6
+  integer :: ier
 
-
+  ier = 0
   Geometry1%ifflat = 0
 
   iunit = 899
 
   open(UNIT=iunit, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
+
+  if(ierror.ne.0) then
+    ier = 0
+    return
+  endif
 
 
   itype_tri3 = 2
@@ -454,13 +541,14 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
 
     if (trim(cline) .eq. '$Nodes') then
       print *, 'Reading nodes . . . '
-      read(iunit,*) numnodes
+      read(iunit,*,iostat=io) numnodes
+      if(io.ne.0) exit 
       print *, 'Number of nodes = ', numnodes
       print *
       
       allocate(xs(numnodes),ys(numnodes),zs(numnodes))
       do i = 1,numnodes
-        read (iunit,*) ind, x, y, z
+        read (iunit,*,iostat=io) ind, x, y, z
         xs(i) = x
         ys(i) = y
         zs(i) = z
@@ -488,6 +576,7 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth)
       do i = 1,numelem
         
         read(iunit, '(a)', iostat=io) cline
+        if(io.ne.0) exit 
         read (cline,*) ind, ielem, ntag
 
         if (ielem .eq. itype_tri3) then
@@ -736,7 +825,7 @@ end subroutine read_gmsh_v2
 !
 !
 
-subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth)
+subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth, ier)
   use ModType_Smooth_Surface
   implicit none
 
@@ -780,12 +869,18 @@ subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth)
   integer :: ient, ienttag, iparam, iind, l, nelem, ielemtype
   integer, allocatable :: iindvec(:)
 
+  integer ier
+
 
   Geometry1%ifflat = 0
 
   iunit = 899
 
   open(UNIT=iunit, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
+  if(ierror.ne.0) then
+    ier = 2
+    return
+  endif
 
 
   itype_tri3 = 2
@@ -1115,7 +1210,6 @@ subroutine record_Geometry(Geometry1,filename)
   
   write(8,*) norder_smooth
   write(8,*) Geometry1%ntri
-!  write(8,*) Geometry1%n_Sf_points
   do count1=1,Geometry1%n_Sf_points
     write(8,*) Geometry1%S_smooth(1,count1)
   enddo
@@ -1127,23 +1221,23 @@ subroutine record_Geometry(Geometry1,filename)
   enddo
 
   do count1=1,Geometry1%n_Sf_points
-	write(8,*) Geometry1%du_smooth(1,count1)
+    write(8,*) Geometry1%du_smooth(1,count1)
   enddo
   do count1=1,Geometry1%n_Sf_points
-	write(8,*) Geometry1%du_smooth(2,count1)
+    write(8,*) Geometry1%du_smooth(2,count1)
   enddo
   do count1=1,Geometry1%n_Sf_points
-	write(8,*) Geometry1%du_smooth(3,count1)
+    write(8,*) Geometry1%du_smooth(3,count1)
   enddo
   
   do count1=1,Geometry1%n_Sf_points
-	write(8,*) Geometry1%dv_smooth(1,count1)
+    write(8,*) Geometry1%dv_smooth(1,count1)
   enddo
   do count1=1,Geometry1%n_Sf_points
-	write(8,*) Geometry1%dv_smooth(2,count1)
+    write(8,*) Geometry1%dv_smooth(2,count1)
   enddo
   do count1=1,Geometry1%n_Sf_points
-	write(8,*) Geometry1%dv_smooth(3,count1)
+    write(8,*) Geometry1%dv_smooth(3,count1)
   enddo
 
   do count1=1,Geometry1%n_Sf_points
@@ -1199,7 +1293,12 @@ subroutine get_filetype(filename, ifiletype, ier)
   fstr_gmshtest = '$MeshFormat'
 
 ! 
-  open(unit=33, file=trim(filename), status='old')
+  open(unit=33, file=trim(filename), status='old', iostat=io)
+  if(io.ne.0) then
+    ier = 1
+    return
+
+  endif
 
 !  Check if it is a .msh file
   io = 0   

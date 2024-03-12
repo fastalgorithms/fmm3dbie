@@ -14,7 +14,7 @@ program smoother
   character (len=2) :: arg_comm
 
   real *8 rlam
-  integer i
+  integer i, ier
   
 
 
@@ -60,28 +60,29 @@ program smoother
   ! specify the msh file to read in
   !
 
-    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
-    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
+!    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
+!    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
 
-    fnamein='../../geometries/meshes/prism_50.gidmsh'
-    fnameout_root='../../geometries/prism_50'
+!    fnamein='../../geometries/meshes/prism_50.gidmsh'
+!    fnameout_root='../../geometries/prism_50'
 
-    fnamein='../../geometries/meshes/sphere.msh'
-    fnameout_root='../../geometries/sphere'
+!    fnamein='../../geometries/meshes/sphere.msh'
+!    fnameout_root='../../geometries/sphere'
     
-    fnamein = '../../geometries/meshes/cow_new.msh'
-    fnameout_root = '../../geometries/cow_new'
+!    fnamein = '../../geometries/meshes/cow_new.msh'
+!    fnameout_root = '../../geometries/cow_new'
 
-    fnamein = '../../geometries/meshes/cow_new_gmshv4.msh'
-    fnameout_root = '../../geometries/cow_new'
+!    fnamein = '../../geometries/meshes/cow_new_gmshv4.msh'
+!    fnameout_root = '../../geometries/cow_new'
 
-    fnamein = '../../geometries/meshes/lens_r00.msh'
-    fnameout_root = '../../geometries/lens_r00'
+!    fnamein = '../../geometries/meshes/lens_r00.msh'
+!    fnameout_root = '../../geometries/lens_r00'
 
-    fnamein = '../../geometries/meshes/lens_r00_gmshv4.msh'
-    fnameout_root = '../../geometries/lens_r00'
-    call surface_smoother_unif_refine(fnamein, norder_skel, &
-       norder_smooth, nrefine, adapt_flag, rlam, fnameout_root)
+!    fnamein = '../../geometries/meshes/lens_r00_gmshv4.msh'
+!    fnameout_root = '../../geometries/lens_r00'
+    ier = 0
+    call multiscale_mesher_unif_refine(fnamein, norder_skel, &
+       norder_smooth, nrefine, adapt_flag, rlam, fnameout_root, ier)
 
 end program smoother
 

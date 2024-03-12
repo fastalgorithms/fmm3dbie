@@ -1,5 +1,5 @@
-subroutine surface_smoother_unif_refine(fnamein, norder_skel, norder_smooth, &
-   nrefine, adapt_flag, rlam, fnameout_root)
+subroutine multiscale_mesher_unif_refine(fnamein, norder_skel, norder_smooth, &
+   nrefine, adapt_sigma, rlam, fnameout_root, ier)
 !
 !  Given an input flat/second order triangulated mesh 
 !  specified in .gidmsh, .msh, gmsh v2, or .tri formats,
@@ -17,10 +17,10 @@ subroutine surface_smoother_unif_refine(fnamein, norder_skel, norder_smooth, &
 !        on output
 !    * nrefine: integer
 !        number of refinements of the skeleton mesh
-!    * adapt_flag: integer
+!    * adapt_sigma: integer
 !        flag for choosing uniform or adaptive mollifier
-!        adapt_flag = 0, use uniform mollifier
-!        adapt_flag = 1, use multiscale mollifier
+!        adapt_sigma = 0, use uniform mollifier
+!        adapt_sigma = 1, use multiscale mollifier
 !    * rlam: real *8
 !        rlam decides the proportionality value for \sigma_{j}
 !        in relation to triangle diameter 
@@ -34,6 +34,14 @@ subroutine surface_smoother_unif_refine(fnamein, norder_skel, norder_smooth, &
 !        range of parameters: 2.5 - 10
 !    * fnameout_root: string
 !        root name for storing output files
+!
+!  Output arguments:
+!    * ier: error code
+!         ier = 0, implies successful execution
+!         ier = 1, implies file format not supported
+!         ier = 2, implies error reading input mesh file
+!         ier = 3, implies newton failed to converge for one of
+!                  the refinements
 !
 !
    
@@ -51,7 +59,7 @@ subroutine surface_smoother_unif_refine(fnamein, norder_skel, norder_smooth, &
   type ( Feval_stuff ), pointer :: Feval_stuff_1 => null ()
 
   integer :: N, count,nrefine, ifplot
-  integer :: adapt_flag, ifflatten
+  integer :: adapt_sigma, ifflatten
   integer :: interp_flag
   integer :: norder_skel, norder_smooth
 
@@ -67,6 +75,8 @@ subroutine surface_smoother_unif_refine(fnamein, norder_skel, norder_smooth, &
 
   integer i, ll, len1
 
+  integer ier
+
   
 
   allocate(Geometry1)
@@ -77,10 +87,14 @@ subroutine surface_smoother_unif_refine(fnamein, norder_skel, norder_smooth, &
   ! specify the msh file to read in
   !
 
-
+  ier = 0
   ! load in the msh file
   call readgeometry(Geometry1, trim(fnamein), norder_skel, &
-      norder_smooth)
+      norder_smooth, ier)
+  if(ier.ne.0) then
+    print *, "Error reading input mesh file"
+    return
+  endif
 
   print *, "successfully read input mesh"
   print *, "-----------------------------"
@@ -118,7 +132,12 @@ subroutine surface_smoother_unif_refine(fnamein, norder_skel, norder_smooth, &
 
   call start_Feval_tree(Feval_stuff_1, Geometry1, rlam)
   call funcion_Base_Points(Geometry1)
-  call find_smooth_surface(Geometry1, Feval_stuff_1, adapt_flag)
+  call find_smooth_surface(Geometry1, Feval_stuff_1, adapt_sigma, ier)
+
+  if(ier.ne.0) then
+    print *, "Newton failed to converge at refinement:",  count
+    return
+  endif
 
   len1 = len(trim(fnameout_root))
 
@@ -148,7 +167,11 @@ subroutine surface_smoother_unif_refine(fnamein, norder_skel, norder_smooth, &
 
     call funcion_Base_Points(Geometry1)
 
-    call find_smooth_surface(Geometry1,Feval_stuff_1,adapt_flag)
+    call find_smooth_surface(Geometry1,Feval_stuff_1,adapt_sigma, ier)
+    if(ier.ne.0) then
+      print *, "Newton failed to converge at refinement:",  count
+      return
+    endif
 
     write(istr1,"(I2.2)") count
     write(istr2,"(I2.2)") norder_smooth
@@ -171,15 +194,5 @@ subroutine surface_smoother_unif_refine(fnamein, norder_skel, norder_smooth, &
         real(error_report(count+1),4)
   enddo
 
-end subroutine surface_smoother_unif_refine
-
-
-
-
-
-
-
-
-
-
+end subroutine multiscale_mesher_unif_refine 
 

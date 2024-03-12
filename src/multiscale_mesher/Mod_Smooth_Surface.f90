@@ -284,7 +284,7 @@ contains
 
 
   
-subroutine find_smooth_surface(Geometry1, Feval_stuff_1, adapt_flag)
+subroutine find_smooth_surface(Geometry1, Feval_stuff_1, adapt_flag, ier)
   implicit none
 
   !
@@ -306,8 +306,9 @@ subroutine find_smooth_surface(Geometry1, Feval_stuff_1, adapt_flag)
   double precision :: F(Geometry1%n_Sf_points)
   double precision :: grad_F(3,Geometry1%n_Sf_points)
   double precision :: dVdu(3),dVdv(3),dhdu,dhdv,h_var
+  integer ier
 
-
+  ier = 0
 
   !
   ! check the memory allocation
@@ -376,8 +377,8 @@ subroutine find_smooth_surface(Geometry1, Feval_stuff_1, adapt_flag)
       adapt_flag, grad_F, r_t)
 
   if (flag .ne. 0) then
-    write (*,*) 'ERROR DE CONVERGENCIA NEWTON'
-    stop
+    ier = 3
+    return
   end if
 
   !
@@ -560,8 +561,7 @@ subroutine My_Newton(x,tol,maxiter,Geometry1,flag, &
   
   if ( maxval(err)>tol ) then
     flag=1
-    print *, 'in My_Newton, failed to converge'
-    stop
+    return
   endif
 
   return
