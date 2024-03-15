@@ -6,7 +6,6 @@
 # copied over /usr/local/lib
 
 
-LFMMLINKLIB = -lfmm3d
 LLINKLIB = -lfmm3dbie
 
 
@@ -16,8 +15,7 @@ CC = gcc
 
 
 FMMBIE_INSTALL_DIR = $(HOME)/lib
-FMM_INSTALL_DIR = $(HOME)/lib
-FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
+FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) 
 
 
 # For your OS, override the above by placing make variables in make.inc
