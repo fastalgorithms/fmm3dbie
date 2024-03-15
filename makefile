@@ -48,8 +48,8 @@ endif
 LBLAS = -lblas -llapack
 MLBLAS = -lmwblas -lmwlapack
 
-LIBS = -lm
-DYLIBS = -lm
+LIBS = -lm -lstdc++
+DYLIBS = -lm -lstdc++
 F2PYDYLIBS = -lm -lblas -llapack
 
 LIBNAME=$(PREFIX_LIBNAME)
