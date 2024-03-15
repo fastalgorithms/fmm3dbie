@@ -14,7 +14,7 @@ program smoother
   character (len=2) :: arg_comm
 
   real *8 rlam
-  integer i, ier
+  integer i, ier, ifiletype
   
 
 
@@ -56,9 +56,9 @@ program smoother
   !rlam = 2.5d0
 
 
-  !
-  ! specify the msh file to read in
-  !
+!
+! specify the msh file to read in
+!
 
 !    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
 !    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
@@ -66,8 +66,8 @@ program smoother
 !    fnamein='../../geometries/meshes/prism_50.gidmsh'
 !    fnameout_root='../../geometries/prism_50'
 
-!    fnamein='../../geometries/meshes/sphere.msh'
-!    fnameout_root='../../geometries/sphere'
+    fnamein='../../geometries/meshes/sphere.msh'
+    fnameout_root='../../geometries/sphere'
     
 !    fnamein = '../../geometries/meshes/cow_new.msh'
 !    fnameout_root = '../../geometries/cow_new'
@@ -80,8 +80,25 @@ program smoother
 
 !    fnamein = '../../geometries/meshes/lens_r00_gmshv4.msh'
 !    fnameout_root = '../../geometries/lens_r00'
+!
+
+
+!    Determine file type
+!        * ifiletype = 1, for .msh
+!        * ifiletype = 2, for .tri
+!        * ifiletype = 3, for .gidmsh
+!        * ifiletype = 4, for .msh gmsh v2
+!        * ifiletype = 5, for .msh gmsh v4
     ier = 0
-    call multiscale_mesher_unif_refine(fnamein, norder_skel, &
+    call get_filetype(fnamein, ifiletype, ier)
+
+    if(ier.ne.0) then
+      print *, "File type not recognized"
+      stop
+    endif
+
+    ier = 0
+    call multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
        norder_smooth, nrefine, adapt_flag, rlam, fnameout_root, ier)
 
 end program smoother

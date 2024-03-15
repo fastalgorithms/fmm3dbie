@@ -8,7 +8,7 @@
 ! *.gov file
 !
 
-subroutine readgeometry(Geometry1, filename, norder_skel, &
+subroutine readgeometry(Geometry1, filename, ifiletype, norder_skel, &
     norder_smooth, ier)
   use ModType_Smooth_Surface
   implicit none
@@ -17,23 +17,29 @@ subroutine readgeometry(Geometry1, filename, norder_skel, &
   character(len=*) :: filename
   integer :: n_order_sf, norder_skel, norder_smooth
 
-  !
-  ! This subroutine open a msh file and load the information in a
-  ! variable of type Geometry
-  !
-  ! Input
-  !   filename - name of file
-  !   n_order_skel - discretization order for representing surface
-  !   norder_smooth - discretization order for computing integrals
-  !
-  ! Output
-  !   ier: error code
-  !     ier = 0, successful execution
-  !     ier = 1, file type not supported
-  !     ier = 2, trouble in reading file
-  !     ier = 4, norder = norder_skel too large
-  !     ier = 5, nquad = norder_smooth too large
-  !
+!
+! This subroutine open a msh file and load the information in a
+! variable of type Geometry
+!
+!  Input arguments:
+!    - filename: string
+!         file name
+!    - ifiletype: integer
+!        * ifiletype = 1, for .msh
+!        * ifiletype = 2, for .tri
+!        * ifiletype = 3, for .gidmsh
+!        * ifiletype = 4, for .msh gmsh v2
+!        * ifiletype = 5, for .msh gmsh v4
+!   n_order_skel - discretization order for representing surface
+!   norder_smooth - discretization order for computing integrals
+!
+! Output
+!   ier: error code
+!     ier = 0, successful execution
+!     ier = 2, trouble in reading file
+!     ier = 4, norder = norder_skel too large
+!     ier = 5, nquad = norder_smooth too large
+!
 
   ier = 0
   if (norder_skel .gt. 20) then
@@ -48,17 +54,6 @@ subroutine readgeometry(Geometry1, filename, norder_skel, &
     return
   end if
 
-!    Determine file type
-!        * ifiletype = 1, for .msh
-!        * ifiletype = 2, for .tri
-!        * ifiletype = 3, for .gidmsh
-!        * ifiletype = 4, for .gmsh
-  call get_filetype(filename, ifiletype, ier)
-
-  if(ier.ne.0) then
-    print *, "File type not recognized"
-    stop
-  endif
 
 
   if (ifiletype.eq.1) then
@@ -1275,7 +1270,8 @@ subroutine get_filetype(filename, ifiletype, ier)
 !        * ifiletype = 1, for .msh
 !        * ifiletype = 2, for .tri
 !        * ifiletype = 3, for .gidmsh
-!        * ifiletype = 4, for .gmsh
+!        * ifiletype = 4, for .msh gmsh v2
+!        * ifiletype = 5, for .msh gmsh v4
 !    - ier: integer
 !        Error code
 !        * ier = 0, successful execution

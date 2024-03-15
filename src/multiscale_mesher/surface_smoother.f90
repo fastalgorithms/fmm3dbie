@@ -1,14 +1,24 @@
-subroutine multiscale_mesher_unif_refine(fnamein, norder_skel, norder_smooth, &
-   nrefine, adapt_sigma, rlam, fnameout_root, ier)
+subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
+   norder_smooth, nrefine, adapt_sigma, rlam, fnameout_root, ier)
 !
 !  Given an input flat/second order triangulated mesh 
 !  specified in .gidmsh, .msh, gmsh v2, or .tri formats,
 !  run the mutiscale surface smoother to obtain a high
 !  order discretization of the surface
+!
+!  NOTE: in order to determine the file type of your 
+!  input file, you can use the utility
+!  get_filetype, see cisurf_loadmsh.f90 for documentation
 !  
 !  Input arguments:
 !    * fnamein: string
 !        Input File name
+!    * ifiletype: integer
+!        * ifiletype = 1, for .msh
+!        * ifiletype = 2, for .tri
+!        * ifiletype = 3, for .gidmsh
+!        * ifiletype = 4, for .msh gmsh v2
+!        * ifiletype = 5, for .msh gmsh v4
 !    * norder_skel: integer
 !        Order of discretization on skeleton mesh for 
 !        computing integrals for the level-set
@@ -38,7 +48,6 @@ subroutine multiscale_mesher_unif_refine(fnamein, norder_skel, norder_smooth, &
 !  Output arguments:
 !    * ier: error code
 !         ier = 0, implies successful execution
-!         ier = 1, implies file format not supported
 !         ier = 2, implies error reading input mesh file
 !         ier = 3, implies newton failed to converge for one of
 !                  the refinements
@@ -62,6 +71,7 @@ subroutine multiscale_mesher_unif_refine(fnamein, norder_skel, norder_smooth, &
   integer :: adapt_sigma, ifflatten
   integer :: interp_flag
   integer :: norder_skel, norder_smooth
+  integer :: ifiletype
 
   character (len=*) :: fnamein, fnameout_root
 
@@ -89,7 +99,7 @@ subroutine multiscale_mesher_unif_refine(fnamein, norder_skel, norder_smooth, &
 
   ier = 0
   ! load in the msh file
-  call readgeometry(Geometry1, trim(fnamein), norder_skel, &
+  call readgeometry(Geometry1, trim(fnamein), ifiletype, norder_skel, &
       norder_smooth, ier)
   if(ier.ne.0) then
     print *, "Error reading input mesh file"
