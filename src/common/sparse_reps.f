@@ -62,8 +62,8 @@ C$OMP END PARALLEL DO
         call sorti(nnz,col_ind,iper)
         call conv_to_csc(nnz,ncol,row_ind_exp,col_ind,col_ptr,row_ind)
       else
-        call sorti(nnz,col_ind,iper)
-        call conv_to_csc(nnz,ncol,row_ind_exp,col_ind,col_ptr,
+        call sorti_para(nnz,col_ind,iper)
+        call conv_to_csc_para(nnz,ncol,row_ind_exp,col_ind,col_ptr,
      1     row_ind)
       endif
 

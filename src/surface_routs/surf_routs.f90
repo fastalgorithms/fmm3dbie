@@ -2435,7 +2435,7 @@ subroutine get_mean_curvature(npatches,norders,ixyzs,iptype, &
 !  
 !  .. math::
 !    
-!    0.5*Trace(II \cdot I^{-1}) \\
+!    -0.5*Trace(II \cdot I^{-1}) \\
 !    
 !
 !  Input arguments:

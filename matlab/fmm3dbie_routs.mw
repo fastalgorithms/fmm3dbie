@@ -1,3 +1,127 @@
+$  
+$ #if defined(MWF77_CAPS)
+$ #define MWF77_multiscale_mesher MULTISCALE_MESHER_UNIF_REFINE_CFNAME
+$ #define MWF77_get_filetype GET_FILETYPE_CFNAME
+$ #elif defined(MWF77_UNDERSCORE1)
+$ #define MWF77_multiscale_mesher multiscale_mesher_unif_refine_cfname_ 
+$ #define MWF77_get_filetype get_filetype_cfname_ 
+$ #elif defined(MWF77_UNDERSCORE0)
+$ #define MWF77_multiscale_mesher multiscale_mesher_unif_refine_cfname 
+$ #define MWF77_get_filetype get_filetype_cfname 
+$ #else
+$ #define MWF77_multiscale_mesher multiscale_mesher_unif_refine_cfname__
+$ #define MWF77_get_filetype get_filetype_cfname__
+$ #endif
+$
+$ void MWF77_multiscale_mesher(char *, int*, int*, int *, int *, int *, double *, char *, int *);
+$ void MWF77_get_filetype(char *, int *, int *);
+$
+%
+%%  Surface smoother routines
+%%
+%
+%
+@ src/multiscale_mesher.m
+function S = multiscale_mesher(fnamein, norder, opts)
+% 
+%  MULTISCALE_MESHER creates a smooth high order triangulated surface 
+%    based on an input mesh file containing first/second order
+%    triangles/quads. If the mesh comprises of quads, then each quad
+%    is split into two triangles. 
+%
+%  Supported mesh formats include, .gidmsh, .tri, .msh, gmshv2, 
+%  and gmshv4
+%  
+%  Syntax
+%    S = multiscale_mesher(fnamein, fnameout_root, norder)
+%    S = multiscale_mesher(fnamein, fnameout_root, norder, opts)
+%
+%  Input arguments:
+%    * fnamein: input mesh file name
+%    * norder: order of discretization for smooth surface
+%    * opts: options struct (optional)
+%        opts.nquad (12), quadrature order for computing level set
+%        opts.rlam (10), smoothing parameter (should be between 2.5 and 10)
+%        opts.adapt_sigma (1), adapt_sigma = 0, uses uniform sigma for mollifier
+%                              adapt_sigma = 1, uses adaptive sigma
+%        opts.filetype, type of file
+%          filetype = 1, for .msh from gidmsh
+%          filetype = 2, for .tri
+%          filetype = 3, for .gidmsh
+%          filetype = 4, for .msh gmsh v2
+%          filetype = 5, for .msh gmsh v2
+%                               
+%      
+%  
+    d = dir(fnamein);
+    if isempty(d)
+        error('MULTISCALE_MESHER: invalid file\n');
+    end
+    fnameuse = fullfile(d.folder, d.name);
+
+    if nargin < 3
+        opts = [];
+    end
+
+
+    fnameoutuse = fullfile(d.folder, '/tmp');
+    
+    norder_skel = 12;
+    if isfield(opts, 'nquad')
+        norder_skel = opts.nquad;
+    end
+
+    norder_smooth = norder;
+    nrefine = 2;
+    if isfield(opts, 'nrefine')
+        nrefine = opts.nrefine;
+    end
+
+
+    adapt_sigma = 1;
+    if isfield(opts, 'adapt_sigma')
+        adapt_sigma = opts.adapt_sigma;
+    end
+    rlam = 2.5;
+    if isfield(opts, 'rlam')
+        rlam = opts.rlam;
+    end
+
+    if isfield(opts, 'filetype')
+        ifiletype = opts.filetype;
+    else
+        ier = 0;
+        ifiletype = 0;
+        # MWF77_get_filetype(cstring[1000] fnameuse, inout int[1] ifiletype, inout int[1] ier);
+        if ier > 0
+            error('MULTISCALE_MESHER: error determining file type\n');
+        end
+    end
+
+    if norder > 20
+        error('MULTISCALE_MESHER: norder too high, must be less than 20');
+    end
+    
+    if norder_skel > 20
+        error('MULTISCALE_MESHER: opts.nquad too high, must be less than 20');
+    end
+    ier = 0;
+    # MWF77_multiscale_mesher(cstring[1000] fnameuse, int[1] ifiletype, int[1] norder_skel, int[1] norder_smooth, int[1] nrefine, int[1] adapt_sigma, double[1] rlam, cstring[1000] fnameoutuse, inout int[1] ier);
+
+    if ier > 0
+        error_message = ['MULTISCALE_MESHER: error in main smoothing routine', ...
+                'try a different value of rlam, nrefine\n' ...
+                'if that does not work, then mesh cannot be smooth with the surface smoother\n'];
+        error(error_message);
+    end
+
+    S = cell(1,nrefine+1); 
+    for i=0:nrefine
+        fname = fullfile(d.folder, ['/tmp_o' num2str(norder,'%02.f') '_r' num2str(i,'%02.f') '.go3']);
+        S{i+1} = surfer.load_from_file(fname);
+        delete(fname);
+    end
+end
 %
 %%   Common routines
 %%

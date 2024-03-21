@@ -23,8 +23,8 @@ OMPFLAGS =-fopenmp
 OMPLIBS =-lgomp 
 
 # flags for MATLAB MEX compilation..
-MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 
-MWFLAGS=-c99complex
+MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 "CFLAGS=-std=gnu17 -Wno-implicit-function-declaration" 
+MWFLAGS=-c99complex 
 MOMPFLAGS = -D_OPENMP
 
 # location of MATLAB's mex compiler
@@ -170,7 +170,7 @@ QOBJS2 = $(QUAD2)/cquadints_main.o \
 
 SURFSM = src/multiscale_mesher
 SURFSMOBJS = $(SURFSM)/cisurf_loadmsh.o \
-	$(SURFSM)/cisurf_skeleton.o $(SURFSM)/cisurf_plottools.o \
+	$(SURFSM)/cisurf_skeleton.o $(SURFSM)/cisurf_plottools.o $(SURFSM)/f2cstr.o \
 	$(SURFSM)/cisurf_tritools.o $(SURFSM)/tfmm_setsub.o $(SURFSM)/surface_smoother.o 
 
 SURFSM_MOD_OBJS = $(SURFSM)/Mod_TreeLRD.o \
@@ -194,7 +194,7 @@ OBJS += $(COM)/lapack_wrap.o
 endif
 
 
-.PHONY: usage lib install test test-dyn python mex mex-dyn matlab-dyn matlab surf-smooth-objs surf-smooth-test 
+.PHONY: usage lib install test test-dyn python mex mex-dyn matlab-dyn matlab surf-smooth-objs mesh-test mesh-test-c
 
 default: usage
 
@@ -218,6 +218,7 @@ usage:
 	@echo "  make mex          generate matlab interfaces"
 	@echo "                    (for expert users only, requires mwrap)"
 	@echo "  make mesh-test    build and run the surface smoother test"
+	@echo "  make mesh-test-c  build and run the surface smoother test in C"
 	@echo ""
 	@echo "For faster (multicore) making, append the flag -j (doesn't work for mesh-test)"
 	@echo "  'make [task] OMP=OFF' for single-threaded"
@@ -268,9 +269,9 @@ STATICLIBFMM3DBIE: $(OBJS)
 	cd lib-static && ar rcs $(STATICLIB) *.o
 	cd lib-static && rm -rf *.o *__*
 
-MSTATICLIBFMM3DBIE: $(OBJS_64)
+MSTATICLIBFMM3DBIE: $(OBJS_64) surf-smooth-objs 
 	echo "$(OBJS_64)"
-	ar rcs $(MSTATICLIB) $(OBJS_64) 
+	ar rcs $(MSTATICLIB) $(OBJS_64) $(SURFSM_MOD_OBJS) $(SURFSMOBJS) 
 	mv $(MSTATICLIB) lib-static/
 	cd lib-static && ar -x $(MSTATICLIB)
 	cd lib-static && ar -x $(LFMMSTATICLIB)
@@ -451,8 +452,15 @@ test/quadrature-dyn:
 mesh-test: surf-smooth-objs test/surf-smooth
 	cd test/multiscale_mesher; ./int2-surfsmooth 
 
+mesh-test-c: surf-smooth-objs test/surf-smooth-c
+	cd test/multiscale_mesher; ./int2-surfsmooth-c 
+
 test/surf-smooth:
 	$(FC) $(FFLAGS) test/multiscale_mesher/test_surfsmooth.f90 -o test/multiscale_mesher/int2-surfsmooth $(SURFSMOBJS) $(SURFSM_MOD_OBJS) lib-static/$(STATICLIB) $(LIBS) 
+
+test/surf-smooth-c:
+	$(CC) $(CFLAGS) -DMWF77_UNDERSCORE1 test/multiscale_mesher/test_surfsmooth.c -o test/multiscale_mesher/int2-surfsmooth-c $(SURFSMOBJS) $(SURFSM_MOD_OBJS) -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) -lgfortran 
+
 
 #
 # build the python bindings/interface

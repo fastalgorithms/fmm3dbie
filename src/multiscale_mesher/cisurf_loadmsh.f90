@@ -116,12 +116,16 @@ subroutine readmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   ier = 0
   open(UNIT=8, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
   if(ierror.ne.0) then
-    ier = 2
+    ier = ierror
+    close(8)
     return
   endif
+  rewind(8)
+
   read(8,*, iostat=ierror) aux1,aux2,aux3,m, N
   if(ierror.ne.0) then
-    ier = 2
+    ier = 12
+    close(8)
     return
   endif
   
@@ -181,7 +185,8 @@ subroutine readmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
     ierror = ierror1 + ierror2
   enddo
   if(ierror.ne.0) then
-    ier = 2
+    ier = 19
+    close(8)
     return
   endif
   
@@ -237,8 +242,10 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
      IOSTAT=ierror)
   if(ierror.ne.0) then
     ier = 2
+    close(8)
     return
   endif
+  rewind(8)
 
 
   read(8,'(a)', iostat=ierror1) tmp1
@@ -246,6 +253,7 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
 
   if(ierror1+ierror2.gt.0) then
     ier = 2
+    close(8)
     return
 
   endif
@@ -286,6 +294,7 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   rewind(8)
   if(ierror.gt.0) then
     ier = 2
+    close(8)
     return
   endif
 
@@ -324,6 +333,7 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
 
   if(ierror1+ierror2.gt.0) then
     ier = 2
+    close(8)
     return
   endif
   
@@ -350,6 +360,7 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
 
   if(ierror.gt.0) then
     ier = 2
+    close(8)
     return
   endif
 
@@ -387,9 +398,11 @@ subroutine readtri(Geometry1,filename, norder_skel, norder_smooth, ier)
   ier = 0
   open(UNIT=8, FILE=trim(filename), STATUS='OLD', ACTION='READ', &
     IOSTAT=ierror)
+  rewind(8)
   read(8,*, iostat=ierror1) m, N
   if(ierror+ierror1.gt.0) then
     ier = 2
+    close(8)
     return
   endif
 
@@ -426,6 +439,7 @@ subroutine readtri(Geometry1,filename, norder_skel, norder_smooth, ier)
   enddo
   if(ierror.gt.0) then
     ier = 2
+    close(8)
     return
   endif
 
@@ -454,6 +468,7 @@ subroutine readtri(Geometry1,filename, norder_skel, norder_smooth, ier)
   enddo
   if(ierror.gt.0) then
      ier = 2
+     close(8)
      return
   endif
   close (8)
@@ -512,11 +527,14 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth, ier)
   iunit = 899
 
   open(UNIT=iunit, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
+  
 
   if(ierror.ne.0) then
     ier = 0
+    close(iunit)
     return
   endif
+  rewind(iunit)
 
 
   itype_tri3 = 2
@@ -872,8 +890,10 @@ subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth, ier)
   iunit = 899
 
   open(UNIT=iunit, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
+  rewind(iunit)
   if(ierror.ne.0) then
     ier = 2
+    close(iunit)
     return
   endif
 
@@ -1292,15 +1312,17 @@ subroutine get_filetype(filename, ifiletype, ier)
   open(unit=33, file=trim(filename), status='old', iostat=io)
   if(io.ne.0) then
     ier = 1
+    close(33)
     return
-
   endif
+  rewind(33)
 
 !  Check if it is a .msh file
   io = 0   
   read(33,*, iostat = io) i1,i2, i3, i4, i5
   if(io.eq.0) then
     ifiletype = 1
+    close(33)
     return
   endif
       
@@ -1309,6 +1331,7 @@ subroutine get_filetype(filename, ifiletype, ier)
   read(33,*, iostat = io) i1,i2
   if(io.eq.0) then
     ifiletype = 2
+    close(33)
     return
   endif
 
@@ -1323,6 +1346,7 @@ subroutine get_filetype(filename, ifiletype, ier)
   if(trim(fstr(1:len1)) .eq. trim(fstr_gid_tritest)) then
      read(fstr((len1+1):len2),*,iostat=io) iind
      ifiletype = 3
+     close(33)
      return
   endif
 
