@@ -170,7 +170,7 @@ QOBJS2 = $(QUAD2)/cquadints_main.o \
 
 SURFSM = src/multiscale_mesher
 SURFSMOBJS = $(SURFSM)/cisurf_loadmsh.o \
-	$(SURFSM)/cisurf_skeleton.o $(SURFSM)/cisurf_plottools.o $(SURFSM)/f2cstr.o \
+	$(SURFSM)/cisurf_skeleton.o $(SURFSM)/cisurf_plottools.o \
 	$(SURFSM)/cisurf_tritools.o $(SURFSM)/tfmm_setsub.o $(SURFSM)/surface_smoother.o 
 
 SURFSM_MOD_OBJS = $(SURFSM)/Mod_TreeLRD.o \
