@@ -530,7 +530,7 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth, ier)
   
 
   if(ierror.ne.0) then
-    ier = 0
+    ier = ierror
     close(iunit)
     return
   endif
@@ -612,7 +612,7 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth, ier)
    enddo
 
 
-  rewind(899)
+  rewind(iunit)
   n = ntri
 
   Geometry1%norder_skel = norder_skel
@@ -892,7 +892,7 @@ subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth, ier)
   open(UNIT=iunit, FILE=trim(filename), STATUS='OLD', ACTION='READ', IOSTAT=ierror)
   rewind(iunit)
   if(ierror.ne.0) then
-    ier = 2
+    ier = ierror
     close(iunit)
     return
   endif
@@ -980,7 +980,7 @@ subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth, ier)
     endif
    enddo
 
-  rewind(899)
+  rewind(iunit)
   n = ntri
 
   Geometry1%norder_skel = norder_skel
@@ -1361,6 +1361,7 @@ subroutine get_filetype(filename, ifiletype, ier)
        print *, "Invalid gmsh file type"
        ier = 8
      endif
+     close(33)
      return
   endif
 

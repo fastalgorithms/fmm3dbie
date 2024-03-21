@@ -9,8 +9,8 @@ function S = multiscale_mesher(fnamein, norder, opts)
 %  and gmshv4
 %  
 %  Syntax
-%    S = multiscale_mesher(fnamein, fnameout_root, norder)
-%    S = multiscale_mesher(fnamein, fnameout_root, norder, opts)
+%    S = multiscale_mesher(fnamein, norder)
+%    S = multiscale_mesher(fnamein, norder, opts)
 %
 %  Input arguments:
 %    * fnamein: input mesh file name
@@ -20,6 +20,7 @@ function S = multiscale_mesher(fnamein, norder, opts)
 %        opts.rlam (10), smoothing parameter (should be between 2.5 and 10)
 %        opts.adapt_sigma (1), adapt_sigma = 0, uses uniform sigma for mollifier
 %                              adapt_sigma = 1, uses adaptive sigma
+%        opts.nrefine (0), number of refinements
 %        opts.filetype, type of file
 %          filetype = 1, for .msh from gidmsh
 %          filetype = 2, for .tri
@@ -48,7 +49,7 @@ function S = multiscale_mesher(fnamein, norder, opts)
     end
 
     norder_smooth = norder;
-    nrefine = 2;
+    nrefine = 0;
     if isfield(opts, 'nrefine')
         nrefine = opts.nrefine;
     end
@@ -75,11 +76,11 @@ function S = multiscale_mesher(fnamein, norder, opts)
         end
     end
 
-    if norder > 20
+    if norder > 20 || norder < 1
         error('MULTISCALE_MESHER: norder too high, must be less than 20');
     end
     
-    if norder_skel > 20
+    if norder_skel > 20 || norder < 1
         error('MULTISCALE_MESHER: opts.nquad too high, must be less than 20');
     end
     ier = 0;
@@ -87,7 +88,7 @@ function S = multiscale_mesher(fnamein, norder, opts)
 [ier] = fmm3dbie_routs(mex_id_, fnameuse, ifiletype, norder_skel, norder_smooth, nrefine, adapt_sigma, rlam, fnameoutuse, ier, 1000, 1, 1, 1, 1, 1, 1, 1000, 1);
 
     if ier > 0
-        error_message = ['MULTISCALE_MESHER: error in main smoothing routine', ...
+        error_message = ['MULTISCALE_MESHER: error in main smoothing routine\n', ...
                 'try a different value of rlam, nrefine\n' ...
                 'if that does not work, then mesh cannot be smooth with the surface smoother\n'];
         error(error_message);
