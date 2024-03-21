@@ -69,8 +69,7 @@ right triangle is stored at order $p$ Vioreanu-Rokhlin nodes.
 The input format currently assumes that each patch is discretized using
 the same order nodes. Upcoming support will be provided for
 triangulations stored in .gmsh
-format, and .step format, and quadrilaterizations in all of the above
-formats.
+format, and .step format.
 
 .. toctree::
    :maxdepth: 2

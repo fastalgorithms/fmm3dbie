@@ -43,8 +43,30 @@ Supported base elements and discretization nodes
     T_{0} = \{ (u,v): u>0,v>0, u+v<1 \},
 
   discretized using Vioreanu Rokhlin nodes (up to order 20), 
-  and Koornwinder polynomial expansions. For $norder=p$, there are
-  $p \cdot (p+1)/2$ discretization nodes.
+  and the basis functions are Koornwinder polynomial expansions. 
+  For $norder=p$, there are $(p+1) \cdot (p+2)/2$ discretization nodes.
+
+
+- iptype = 11: 
+
+  .. math::
+
+    Q_{0} = \{ (u,v) \in (-1,1)^2  \},
+
+  discretized with tensor product Gauss-Legendre nodes, and 
+  the basis functions are tensor product Legendre polynomials. 
+  For $norder=p$, there are $(p+1)^2$ discretization nodes.
+
+
+- iptype = 12: 
+
+  .. math::
+
+    Q_{0} = \{ (u,v) \in (-1,1)^2  \},
+
+  discretized with tensor product Chebyshev nodes, and 
+  the basis functions are tensor product Chebyshev polynomials. 
+  For $norder=p$, there are $(p+1)^2$ discretization nodes.
 
 
 Supported input formats 
