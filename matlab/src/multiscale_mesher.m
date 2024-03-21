@@ -59,7 +59,7 @@ function S = multiscale_mesher(fnamein, norder, opts)
     if isfield(opts, 'adapt_sigma')
         adapt_sigma = opts.adapt_sigma;
     end
-    rlam = 2.5;
+    rlam = 10;
     if isfield(opts, 'rlam')
         rlam = opts.rlam;
     end
@@ -88,7 +88,7 @@ function S = multiscale_mesher(fnamein, norder, opts)
 [ier] = fmm3dbie_routs(mex_id_, fnameuse, ifiletype, norder_skel, norder_smooth, nrefine, adapt_sigma, rlam, fnameoutuse, ier, 1000, 1, 1, 1, 1, 1, 1, 1000, 1);
 
     if ier > 0
-        error_message = ['MULTISCALE_MESHER: error in main smoothing routine\n', ...
+        error_message = ['MULTISCALE_MESHER: error in main smoothing routine', ...
                 'try a different value of rlam, nrefine\n' ...
                 'if that does not work, then mesh cannot be smooth with the surface smoother\n'];
         error(error_message);

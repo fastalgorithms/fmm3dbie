@@ -83,7 +83,7 @@ function S = multiscale_mesher(fnamein, norder, opts)
     if isfield(opts, 'adapt_sigma')
         adapt_sigma = opts.adapt_sigma;
     end
-    rlam = 2.5;
+    rlam = 10;
     if isfield(opts, 'rlam')
         rlam = opts.rlam;
     end
