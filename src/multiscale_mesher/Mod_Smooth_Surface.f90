@@ -375,11 +375,16 @@ subroutine find_smooth_surface(Geometry1, Feval_stuff_1, adapt_flag, ier)
 
   call My_Newton(h, tol, maxiter, Geometry1, flag, Feval_stuff_1, &
       adapt_flag, grad_F, r_t)
-
-  if (flag .ne. 0) then
+  
+  if (flag .eq. 1) then
     ier = 3
     return
   end if
+
+  if (flag.eq. 3) then
+     ier = 4
+     return
+  endif
 
   !
   ! copy over the points on the surface
@@ -512,6 +517,8 @@ subroutine My_Newton(x,tol,maxiter,Geometry1,flag, &
   count=1
   flag=0
 
+ 4999 format(i10,i9,5x,e10.2)
+
   ! print out convergence information
   write (*,*) 'iteration,  #targets,   err'  
   write (*,4999) count, &
@@ -552,7 +559,10 @@ subroutine My_Newton(x,tol,maxiter,Geometry1,flag, &
 
     write (*,4999) count, &
         Geometry1%n_Sf_points-sum(flag_con), maxval(err)
- 4999 format(i10,i9,5x,e10.2)
+    if (maxval(err) > 1.1d0) then
+       flag = 3
+       return
+    endif
         
   end do
 

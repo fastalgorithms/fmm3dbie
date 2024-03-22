@@ -144,8 +144,14 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
   call funcion_Base_Points(Geometry1)
   call find_smooth_surface(Geometry1, Feval_stuff_1, adapt_sigma, ier)
 
-  if(ier.ne.0) then
+  if(ier.eq.3) then
     print *, "Newton failed to converge at refinement:",  count
+    return
+  endif
+
+  if(ier.eq.4) then
+    print *, "Newton residue increased at an intermediate iteration"
+    print *, "Refinement level:", count
     return
   endif
 
@@ -178,8 +184,14 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
     call funcion_Base_Points(Geometry1)
 
     call find_smooth_surface(Geometry1,Feval_stuff_1,adapt_sigma, ier)
-    if(ier.ne.0) then
+    if(ier.eq.3) then
       print *, "Newton failed to converge at refinement:",  count
+      return
+    endif
+
+    if(ier.eq.4) then
+      print *, "Newton residue increased at an intermediate iteration"
+      print *, "Refinement level:", count
       return
     endif
 
