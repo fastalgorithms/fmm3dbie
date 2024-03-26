@@ -46,7 +46,7 @@
 !    - npts: integer
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
-!        koornwinder expansion coefficients of xyz, dxyz/du,
+!        basis expansion coefficients of xyz, dxyz/du,
 !        and dxyz/dv on each patch. 
 !        For each point 
 !          * srccoefs(1:3,i) is xyz info
@@ -418,7 +418,7 @@
 !    - npts: integer
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
-!        koornwinder expansion coefficients of xyz, dxyz/du,
+!        basis expansion coefficients of xyz, dxyz/du,
 !        and dxyz/dv on each patch. 
 !        For each point 
 !          * srccoefs(1:3,i) is xyz info

@@ -637,6 +637,7 @@ subroutine zmatvec(m, n, a, x, y)
   incx = 1
   beta = 0
   incy = 1
+  if (m.eq.0.or.n.eq.0) return
   call zgemv(trans, m, n, alpha, a, m, x, incx, beta, y, incy)
 
   return
@@ -657,6 +658,7 @@ subroutine dmatvec(m, n, a, x, y)
   incx = 1
   beta = 0
   incy = 1
+  if (m.eq.0.or.n.eq.0) return
   call dgemv(trans, m, n, alpha, a, m, x, incx, beta, y, incy)
 
   return
@@ -711,7 +713,8 @@ subroutine dmatzvec_saved(m, n, a, x, y)
     xr(i) = dble(x(i))
     xi(i) = imag(x(i))
   end do
-
+  
+  if(m.eq.0.or.n.eq.0) return
   call dgemv(trans, m, n, alpha, a, m, xr, incx, beta, yr, incy)
   call dgemv(trans, m, n, alpha, a, m, xi, incx, beta, yi, incy)
 
@@ -744,7 +747,7 @@ subroutine zmatmat(m, n, a, k, b, c)
   lda = m
   ldb = n
   ldc = m
-
+  if(m.eq.0.or.n.eq.0.or.k.eq.0) return
   call zgemm(transa, transb, m, k, n, alpha, a, lda, b, ldb, &
       beta, c, ldc)
 
@@ -772,6 +775,7 @@ subroutine dmatmat(m, n, a, k, b, c)
   ldb = n
   ldc = m
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0) return
   call dgemm(transa, transb, m, k, n, alpha, a, lda, b, ldb, &
       beta, c, ldc)
 
@@ -808,6 +812,7 @@ subroutine zrmatmatt(m, n, a, k, b, c)
   alpha = 1
   beta = 0
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0) return
   call zgemm(transa, transb, k, m, n, alpha, bz, n, a, n, &
       beta, c, k)
 
@@ -826,6 +831,9 @@ subroutine dgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
 
   double precision a(lda,*),b(ldb,*),c(ldc,*)
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0.or.lda.eq.0.or.ldb.eq.0.or.ldc.eq.0) &
+    return
+
   call dgemm(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
 
   return
@@ -842,6 +850,8 @@ subroutine zgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
 
   double complex a(lda,*),b(ldb,*),c(ldc,*)
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0.or.lda.eq.0.or.ldb.eq.0.or.ldc.eq.0) &
+    return
   call zgemm(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
 
   return
@@ -857,7 +867,8 @@ subroutine dgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
   character trans
   
   double precision a(lda,*),x(*),y(*)
-
+  
+  if(m.eq.0.or.n.eq.0.or.lda.eq.0) return
   call dgemv(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
 
   return
@@ -874,6 +885,7 @@ subroutine zgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
   
   double complex a(lda,*),x(*),y(*)
 
+  if(m.eq.0.or.n.eq.0.or.lda.eq.0) return
   call zgemv(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
 
   return
