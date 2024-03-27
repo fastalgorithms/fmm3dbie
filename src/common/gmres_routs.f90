@@ -11,7 +11,7 @@
       
 
         subroutine zgmres_guru(npatches, norders, ixyzs, &
-            iptype, npts, srccoefs, srcvals, wts, ndtarg, targs, &
+            iptype, npts, srccoefs, srcvals, wts, &
             eps, ndd, dpars, ndz, zpars, ndi, ipars, &
             nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
             nptso, ixyzso, srcover, whtsover, lwork, work, &
@@ -24,7 +24,7 @@
 !  subroutine fker with calling sequence
 !            
 !   subroutine fker(npatches, norders, ixyzs, &
-!       iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+!       iptype, npts, srccoefs, srcvals, &
 !       eps, ndd, dpars, ndz, zpars, ndi, ipars, &
 !       nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
 !       nptso, ixyzso, srcover, whtsover, lwork, work, &
@@ -61,14 +61,6 @@
 !          * srcvals(10:12,i) - normals info
 !    - wts: real *8 (npts)
 !        quadrature weights for integrating smooth functions     
-!    - ndtarg: integer
-!        leading dimension of target array
-!    - ntarg: integer
-!        number of targets
-!    - targs: real *8 (ndtarg,npts)
-!        target information. Note that here the number of target
-!        must be the same as the number of sources as we are
-!        solving a linear system            
 !    - eps: real *8
 !        precision requested
 !    - ndd: integer
@@ -76,21 +68,19 @@
 !        integral representation
 !    - dpars: real *8(ndd)
 !        real parameters defining the kernel/
-!        integral represnetation
+!        integral representation
 !    - ndz: integer
 !        number of complex parameters defining the kernel/
 !        integral representation
 !    - zpars: real *8(ndz)
 !        complex parameters defining the kernel/
-!        integral represnetation.
-!        * zpars(1) = k 
-!        * zpars(2) = alpha
+!        integral representation.
 !    - ndi: integer
 !        number of integer parameters defining the kernel/
 !        integral representation
 !    - ipars: real *8(ndi)
 !        integer parameters defining the kernel/
-!        integral represnetation
+!        integral representation
 !    - nnz: integer
 !        number of source patch-> target interactions in the near field
 !    - row_ptr: integer(npts+1)
@@ -161,8 +151,7 @@
       integer, intent(in) :: iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
       real *8, intent(in) :: wts(npts)
-      integer, intent(in) :: ndtarg
-      real *8, intent(in) :: targs(ndtarg,npts), eps
+      real *8, intent(in) :: eps
       integer, intent(in) :: ndd, ndi, ndz
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
@@ -250,7 +239,7 @@
         it1 = it + 1
 
         call fker(npatches, norders, ixyzs, &
-          iptype, npts, srccoefs, srcvals, ndtarg, npts, targs, &
+          iptype, npts, srccoefs, srcvals, &
           eps, ndd, dpars, ndz, zpars, ndi, ipars, &
           nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
           nptso, ixyzso, srcover, whtsover, lwork, work, &
@@ -356,7 +345,7 @@
 !$OMP END PARALLEL DO          
 
           call fker(npatches, norders, ixyzs, &
-          iptype, npts, srccoefs, srcvals, ndtarg, npts, targs, &
+          iptype, npts, srccoefs, srcvals, &
           eps, ndd, dpars, ndz, zpars, ndi, ipars, &
           nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
           nptso, ixyzso, srcover, whtsover, lwork, work, &
@@ -383,7 +372,7 @@
 
 
       subroutine dgmres_guru(npatches, norders, ixyzs, &
-        iptype, npts, srccoefs, srcvals, wts, ndtarg, targs, &
+        iptype, npts, srccoefs, srcvals, wts, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
         nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
         nptso, ixyzso, srcover, whtsover, lwork, work, &
@@ -396,7 +385,7 @@
 !  subroutine fker with calling sequence
 !            
 !   subroutine fker(npatches, norders, ixyzs, &
-!       iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+!       iptype, npts, srccoefs, srcvals, &
 !       eps, ndd, dpars, ndz, zpars, ndi, ipars, &
 !       nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
 !       nptso, ixyzso, srcover, whtsover, lwork, work, &
@@ -432,15 +421,7 @@
 !          * srcvals(7:9,i) - dxyz/dv info
 !          * srcvals(10:12,i) - normals info
 !    - wts: real *8 (npts)
-!        quadrature weights for integrating smooth functions     
-!    - ndtarg: integer
-!        leading dimension of target array
-!    - ntarg: integer
-!        number of targets
-!    - targs: real *8 (ndtarg,npts)
-!        target information. Note that here the number of target
-!        must be the same as the number of sources as we are
-!        solving a linear system            
+!        quadrature weights for integrating smooth functions                
 !    - eps: real *8
 !        precision requested
 !    - ndd: integer
@@ -448,21 +429,19 @@
 !        integral representation
 !    - dpars: real *8(ndd)
 !        real parameters defining the kernel/
-!        integral represnetation
+!        integral representation
 !    - ndz: integer
 !        number of complex parameters defining the kernel/
 !        integral representation
 !    - zpars: real *8(ndz)
 !        complex parameters defining the kernel/
-!        integral represnetation.
-!        * zpars(1) = k 
-!        * zpars(2) = alpha
+!        integral representation.
 !    - ndi: integer
 !        number of integer parameters defining the kernel/
 !        integral representation
 !    - ipars: real *8(ndi)
 !        integer parameters defining the kernel/
-!        integral represnetation
+!        integral representation
 !    - nnz: integer
 !        number of source patch-> target interactions in the near field
 !    - row_ptr: integer(npts+1)
@@ -533,8 +512,7 @@
   integer, intent(in) :: iptype(npatches)
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
   real *8, intent(in) :: wts(npts)
-  integer, intent(in) :: ndtarg
-  real *8, intent(in) :: targs(ndtarg,npts), eps
+  real *8, intent(in) :: eps
   integer, intent(in) :: ndd, ndi, ndz
   real *8, intent(in) :: dpars(ndd)
   complex *16, intent(in) :: zpars(ndz)
@@ -622,7 +600,7 @@
     it1 = it + 1
 
     call fker(npatches, norders, ixyzs, &
-      iptype, npts, srccoefs, srcvals, ndtarg, npts, targs, &
+      iptype, npts, srccoefs, srcvals, &
       eps, ndd, dpars, ndz, zpars, ndi, ipars, &
       nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
       nptso, ixyzso, srcover, whtsover, lwork, work, &
@@ -728,7 +706,7 @@
 !$OMP END PARALLEL DO          
 
       call fker(npatches, norders, ixyzs, &
-      iptype, npts, srccoefs, srcvals, ndtarg, npts, targs, &
+      iptype, npts, srccoefs, srcvals, &
       eps, ndd, dpars, ndz, zpars, ndi, ipars, &
       nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
       nptso, ixyzso, srcover, whtsover, lwork, work, &
