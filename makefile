@@ -112,7 +112,7 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o \
 	$(COM)/rigidbodies.o $(COM)/polytens.o \
-	$(COM)/chebexps.o
+	$(COM)/chebexps.o $(COM)/gmres_routs.o
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers

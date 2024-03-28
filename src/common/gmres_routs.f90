@@ -115,9 +115,9 @@
 !    - whtsover: real *8 (nptso)
 !        smooth quadrature weights at oversampled nodes
 !    - lwork: integer
-!        size of work array (unused in this routine)
+!        size of work array 
 !    - work: real *8(lwork)
-!        work array (unused in this routine)
+!        work array 
 !    - ndim: integer
 !        number of densities
 !    - fker: procedure pointer
@@ -174,8 +174,7 @@
       integer, intent(in) :: lwork
       real *8, intent(in) :: work(lwork)
 
-      
-      procedure (), pointer :: fker
+      external fker
 
       complex *16, intent(in) :: zid
       complex *16, intent(in) :: rhs(ndim,npts)
@@ -233,17 +232,19 @@
       enddo
 !$OMP END PARALLEL DO      
 
+      
       svec(1) = rb
 
       do it=1,numit
         it1 = it + 1
-
+       
         call fker(npatches, norders, ixyzs, &
           iptype, npts, srccoefs, srcvals, &
           eps, ndd, dpars, ndz, zpars, ndi, ipars, &
           nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
           nptso, ixyzso, srcover, whtsover, lwork, work, &
           ndim, vmat(1,1,it), wtmp)
+        
 
         do k=1,it
           ztmp = 0
@@ -476,9 +477,9 @@
 !    - whtsover: real *8 (nptso)
 !        smooth quadrature weights at oversampled nodes
 !    - lwork: integer
-!        size of work array (unused in this routine)
+!        size of work array 
 !    - work: real *8(lwork)
-!        work array (unused in this routine)
+!        work array
 !    - ndim: integer
 !        number of densities
 !    - fker: procedure pointer
@@ -536,7 +537,7 @@
   real *8, intent(in) :: work(lwork)
 
   
-  procedure (), pointer :: fker
+  external fker
 
   real *8, intent(in) :: did
   real *8, intent(in) :: rhs(ndim,npts)
