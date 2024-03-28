@@ -1,3 +1,69 @@
+!
+!  Right preconditioned combined field representation
+!  for acoustic scattering from sound hard obstacles
+!
+!  PDE:
+!    (\Delta + k^2) u  = 0
+!
+!  Boundary conditions
+!     n \cdot \nabla u = f
+!
+!  Representation:
+!    u = S_{k}[\sigma] + i \alpha D_{k} [S_{i|k|} [\sigma]]
+!
+!  Integral equation obtained by imposing 
+!     n \cdot \nabla u = f 
+!
+!  and is given by
+!    z \sigma + S_{k}'[\sigma] + i\alpha S_{i|k|}'^2 [\sigma] + i \alpha 
+!       (D_{k}' - D_{i|k|}') S_{i|k|}[\sigma] = f
+!
+!  where
+!    z = (-1/2 - i \alpha/4) for exterior problems
+!      = (1/2 - i \alpha/4) for interior problems
+!
+!
+!  User callable routines:
+!    - helm_rpcomb_neu_solver: Given data f, helmholtz wave number k,
+!        and parameter \alpha, this routine returns the solution
+!        \sigma, and S_{i|k|}[\sigma]
+!
+!    - helm_rpcomb_neu_postproc: Given \sigma, and S_{i|k|}[\sigma],
+!        evaluate the solution at a collection of targets
+!
+!  Advanced interfaces:
+!    - getnearquad_helm_rpcomb_neu: Computes the quadrature
+!        correction for constructing the on-surface integral equation
+!        with user-provided near-information prescribed in 
+!        row-sparse compressed format
+!
+!    - lpcomp_rpcomb_neu_addsub: Apply the principal value part
+!        of the integral equation on surface. On input, user
+!        provides precomputed near quadrature in row-sparse
+!        compressed format, and oversampling information for 
+!        handling the far part of the computation
+!
+!    - helm_rpcomb_neu_solver_guru: Guru solver routine, 
+!        where user is responsible for providing precomputed
+!        near quadrature information in row-sparse compressed format
+!        and oversampling surface information for the far-part
+!
+!    - getnearquad_helm_rpcomb_neu_postproc: Generate quadrature
+!        for the post-processor, where targets can be in the volume
+!        or on surface
+!
+!
+!    - lpcomp_rpcomb_neu_postproc_addsub: Compute the solution
+!        u at a collection of targets, given \sigma and
+!        S_{i|k|} \sigma. On input, user provides precomputed
+!        near quadrature in row-sparse compressed format, 
+!        and oversampling surface information for handling the
+!        far part
+!   
+!    - helm_rpcomb_neu_solver_memest: estimate the memory required
+!        for the solver with minimal computation
+!
+
 
 
       subroutine getnearquad_helm_rpcomb_neu(npatches, norders, &
@@ -8,7 +74,7 @@
 !  This subroutine generates the near field quadrature
 !  for the representation:
 !
-!  u = S_{k}[\rho] + i*alpha*D_{k}[S_{i|k|}[\rho]]    -   (1)
+!  u = S_{k}[\sigma] + i*alpha*D_{k}[S_{i|k|}[\sigma]]    -   (1)
 !
 !  and returns quantities related to evaluating du/dn on surface
 !  at the surface discretization nodes
@@ -259,10 +325,6 @@
         enddo
 !$OMP END PARALLEL DO
         
-        call prin2('wnear1=*',wnear(1,1:6),12)
-        call prin2('wnear2=*',wnear(2,1:6),12)
-        call prin2('wnear3=*',wnear(3,1:6),12)
-        call prin2('wnear4=*',wnear(4,1:6),12)
       endif
 
       return
