@@ -207,9 +207,9 @@
         ipv = 1
         call zgetnearquad_ggq_guru(npatches, norders, ixyzs, &
           iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals, &
-          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, zpars, &
-          ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
-          wneartmp)
+          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
+          zpars_tmp, ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, &
+          nquad, wneartmp)
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
         do i=1,nquad
@@ -227,9 +227,9 @@
         ipv = 1
         call zgetnearquad_ggq_guru(npatches, norders, ixyzs, &
           iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals, &
-          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, zpars, &
-          ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
-          wneartmp)
+          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
+          zpars_tmp, ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, &
+          nquad, wneartmp)
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
         do i=1,nquad
@@ -249,16 +249,20 @@
         fker => h3d_dprime_diff
         call zgetnearquad_ggq_guru(npatches, norders, ixyzs, &
           iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals, &
-          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, zpars, &
-          ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
-          wneartmp)
+          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
+          zpars_tmp, ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, & 
+          nquad, wneartmp)
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
         do i=1,nquad
           wnear(4,i) = wneartmp(i)
         enddo
 !$OMP END PARALLEL DO
-      
+        
+        call prin2('wnear1=*',wnear(1,1:6),12)
+        call prin2('wnear2=*',wnear(2,1:6),12)
+        call prin2('wnear3=*',wnear(3,1:6),12)
+        call prin2('wnear4=*',wnear(4,1:6),12)
       endif
 
       return
