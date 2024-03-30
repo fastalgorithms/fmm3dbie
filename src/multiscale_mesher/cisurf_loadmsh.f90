@@ -540,6 +540,7 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth, ier)
   itype_tri3 = 2
   itype_tri6 = 9
   itype_quad4 = 4
+  itype_quad8 = 16
   itype_quad9 = 10
 
 !
@@ -653,6 +654,7 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth, ier)
   nel_tri3 = 3
   nel_tri6 = 6
   nel_quad4 = 4
+  nel_quad8 = 8
   nel_quad9 = 9
   ntri = 0
   allocate(element(100))
@@ -901,6 +903,7 @@ subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth, ier)
   itype_tri3 = 2
   itype_tri6 = 9
   itype_quad4 = 4
+  itype_quad8 = 16
   itype_quad9 = 10
 
 !
@@ -1021,6 +1024,7 @@ subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth, ier)
   nel_tri3 = 3
   nel_tri6 = 6
   nel_quad4 = 4
+  nel_quad8 = 8
   nel_quad9 = 9
   ntri = 0
   allocate(element(12))
