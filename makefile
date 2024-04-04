@@ -118,7 +118,7 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 HELM = src/helm_wrappers
 HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o \
 	$(HELM)/helm_comb_trans.o $(HELM)/helm_rpcomb_imp.o \
-	$(HELM)/helm_s_neu.o 
+	$(HELM)/helm_s_neu.o $(HELM)/helm_common_evaluators.o 
 
 # Laplace wrappers
 LAP = src/lap_wrappers
