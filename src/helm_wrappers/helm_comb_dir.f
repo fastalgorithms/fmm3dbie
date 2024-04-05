@@ -31,8 +31,11 @@ c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c  Advanced interfaces:
-c    - getnearquad_helm_comb_dir: self
-c    - getnearquad_helm_comb_dir_eval: targ
+c    - getnearquad_helm_comb_dir: compute the near quadrature correction
+c        for on surface points
+c    - getnearquad_helm_comb_dir_eval: compute the near quadrature
+c        correction for target points which can be either on surface or
+c        off surface
 c    - lpcomp_helm_comb_dir_addsub: self -> eval_addsub
 c    - lpcomp_helm_comb_dir_eval_addsub: targ + self
 c    - helm_comb_dir_solver_guru:
@@ -125,10 +128,10 @@ c
 
 
 
-       subroutine getnearquad_helm_comb_dir(npatches,norders,
-     1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
-     2   ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
-     3   iquad,rfac0,nquad,wnear)
+       subroutine getnearquad_helm_comb_dir(npatches, norders,
+     1   ixyzs, iptype, npts, srccoefs, srcvals,
+     2   eps, zpars, iquadtype, nnz, row_ptr, col_ind,
+     3   iquad, rfac0, nquad, wnear)
 c
 c       this subroutine generates the near field quadrature
 c       for the representation u = (\alpha S_{k}  + \beta D_{k}) ---(1)
@@ -178,22 +181,6 @@ c             srcvals(4:6,i) - dxyz/du info
 c             srcvals(7:9,i) - dxyz/dv info
 c             srcvals(10:12,i) - normals info
 c
-c         ndtarg - integer
-c            leading dimension of target array
-c
-c         ntarg - integer
-c            number of targets
-c
-c         targs - real *8 (ndtarg,ntarg)
-c            target information
-c
-c         ipatch_id - integer(ntarg)
-c            id of patch of target i, id = -1, if target is off-surface
-c
-c         uvs_targ - real *8 (2,ntarg)
-c            local uv coordinates on patch if on surface, otherwise
-c            set to 0 by default
-c
 c          eps - real *8
 c             precision requested
 c
@@ -242,70 +229,39 @@ c
       integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: ndtarg,ntarg
       integer, intent(in) :: iquadtype
-      real *8, intent(in) :: targs(ndtarg,ntarg)
-      integer, intent(in) :: ipatch_id(ntarg)
-      real *8, intent(in) :: uvs_targ(2,ntarg)
+      integer, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_targ(:,:)
       complex *16, intent(in) :: zpars(3)
       integer, intent(in) :: nnz
       integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
       complex *16, intent(out) :: wnear(nquad)
+      integer i
+      integer ndtarg,ntarg
 
 
-      integer ipars
-      integer ndd,ndz,ndi
-      real *8 dpars
+      ndtarg = 12
+      ntarg = npts
+      allocate(ipatch_id(npts), uvs_targ(2,npts))
 
-      complex *16 alpha,beta
-      integer i,j
-      integer ipv
-
-      procedure (), pointer :: fker
-      external h3d_slp, h3d_dlp, h3d_comb
-
-c
-c
-c        initialize the appropriate kernel function
-c
-
-      alpha = zpars(2)
-      beta = zpars(3)
-
-      ndz = 3
-      ndi = 0
-      ndd = 0
-      if(iquadtype.eq.1) then
-        fker => h3d_comb
-        ipv = 1
-        if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
-          fker=>h3d_slp
-          ipv = 0
-        else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
-          fker=>h3d_dlp
-        endif
-
-
-        call zgetnearquad_ggq_guru(npatches,norders,ixyzs,
-     1     iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
-     1     ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,
-     1     ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
-      endif
-
-
-      if(abs(alpha).ge.1.0d-16.and.abs(beta).lt.1.0d-16) then
 C$OMP PARALLEL DO DEFAULT(SHARED)
-        do i=1,nquad
-          wnear(i) = wnear(i)*alpha
-        enddo
+      do i=1,npts
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
+      enddo
 C$OMP END PARALLEL DO
-      else if(abs(alpha).lt.1.0d-16.and.abs(beta).ge.1.0d-16) then
-C$OMP PARALLEL DO DEFAULT(SHARED)
-        do i=1,nquad
-          wnear(i) = wnear(i)*beta
-        enddo
-C$OMP END PARALLEL DO
-      endif
+
+c
+c    initialize patch_id and uv_targ for on surface targets
+c
+      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts,
+     1  ipatch_id,uvs_targ) 
+
+      call getnearquad_helm_comb_dir_eval(npatches, norders, ixyzs,
+     1  iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals,
+     2  ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr,
+     3  col_ind, iquad, rfac0, nquad, wnear)
 
       return
       end
@@ -1935,8 +1891,6 @@ c
       complex *16 soln(npts)
 
       real *8, allocatable :: targs(:,:)
-      integer, allocatable :: ipatch_id(:)
-      real *8, allocatable :: uvs_targ(:,:)
       integer ndtarg,ntarg
 
       real *8 errs(numit+1)
@@ -1994,25 +1948,17 @@ c        setup targets as on surface discretization points
 c
       ndtarg = 3
       ntarg = npts
-      allocate(targs(ndtarg,npts),uvs_targ(2,ntarg),ipatch_id(ntarg))
+      allocate(targs(ndtarg,npts))
 
 C$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
         targs(1,i) = srcvals(1,i)
         targs(2,i) = srcvals(2,i)
         targs(3,i) = srcvals(3,i)
-        ipatch_id(i) = -1
-        uvs_targ(1,i) = 0
-        uvs_targ(2,i) = 0
       enddo
 C$OMP END PARALLEL DO
 
 
-c
-c    initialize patch_id and uv_targ for on surface targets
-c
-      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts,
-     1  ipatch_id,uvs_targ)
 
 c
 c
@@ -2098,8 +2044,8 @@ C$OMP END PARALLEL DO
 C$      t1 = omp_get_wtime()
 
       call getnearquad_helm_comb_dir(npatches,norders,
-     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     1      ixyzs,iptype,npts,srccoefs,srcvals,
+     1      eps,zpars,iquadtype,nnz,row_ptr,col_ind,
      1      iquad,rfac0,nquad,wnear)
       call cpu_time(t2)
 C$      t2 = omp_get_wtime()
@@ -2886,7 +2832,7 @@ c
 
       iquadtype = 1
 
-      call getnearquad_helm_comb_dir(npatches,norders,
+      call getnearquad_helm_comb_dir_eval(npatches,norders,
      1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,ifds(irow_ptr),
      1      ifds(icol_ind),ifds(iiquad),rfac0,nquad,zfds(4))
@@ -3434,7 +3380,7 @@ c
 
       iquadtype = 1
 
-      call getnearquad_helm_comb_dir(npatches,norders,
+      call getnearquad_helm_comb_dir_eval(npatches,norders,
      1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
      1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,
      1      col_ind,ifds(iiquad),rfac0,nquad,zfds(4))
