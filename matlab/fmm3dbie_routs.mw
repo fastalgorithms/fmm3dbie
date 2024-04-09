@@ -464,8 +464,17 @@ function p = eval(S,zpars,sigma,eps,varargin)
 
     p = complex(zeros(ntarg,1));
 
+ndd = 0;
+dpars = [];
+ndz = 3;
+ndi = 0;
+ipars = [];
+nker = 1;
+lwork = 0;
+work = [];
+ndim = 1;
 % Call the layer potential evaluator
-    # FORTRAN lpcomp_helm_comb_dir_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, dcomplex[3] zpars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, dcomplex[nquad] wnear, dcomplex[npts] sigma, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, inout dcomplex[ntarg] p);   
+    # FORTRAN helm_comb_dir_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work,int[1] ndim,dcomplex[npts] sigma,inout dcomplex[ntarg] p);   
 end    
 %
 %
@@ -618,7 +627,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
         iquadtype = 1;
       end
     end
-    # FORTRAN getnearquad_helm_comb_dir(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[npts] patch_id, double[2,npts] uvs_targ,double[1] eps,dcomplex[3] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] wnear);
+    # FORTRAN getnearquad_helm_comb_dir_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[npts] patch_id, double[2,npts] uvs_targ,double[1] eps,dcomplex[3] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] wnear);
     
     Q = [];
     Q.targinfo = targinfo;
