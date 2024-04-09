@@ -53,7 +53,7 @@ c        precomputed near quadrature in row-sparse compressed format,
 c        and oversampling information for handling the far part of the
 c        computation
 c
-c    - lpcomp_helm_comb_dir_eval_addsub: compute the solution u at a
+c    - helm_comb_dir_eval_addsub: compute the solution u at a
 c        collection of targets(on-surface or off-surface), given \sigma.
 c        On input, user provides precomputed near quadrature in
 c        row-sparse compressed format and oversampling surface
@@ -646,7 +646,7 @@ c
 c
 c   compute layer potential
 c
-      call lpcomp_helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
+      call helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
      1  iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs,
      2  eps, 0, dpars, 3, zpars, 0, ipars,
      2  nnz, row_ptr, col_ind, iquad, nquad, 1, wnear, novers,
@@ -838,7 +838,7 @@ c
       real *8 ttot,done,pi
 
 
-      call lpcomp_helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
+      call helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
      1  iptype, npts, srccoefs, srcvals, 12, npts, srcvals,
      2  eps, ndd, dpars, ndz, zpars, ndi, ipars,
      2  nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers,
@@ -851,7 +851,7 @@ c
 c
 c
 c
-      subroutine lpcomp_helm_comb_dir_eval_addsub(npatches, norders,
+      subroutine helm_comb_dir_eval_addsub(npatches, norders,
      1  ixyzs,
      1  iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs,
      2  eps, ndd, dpars, ndz, zpars, ndi, ipars,
