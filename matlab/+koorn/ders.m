@@ -1,4 +1,4 @@
-function [pols,dersu,dersv] = koorn_ders(uv, norder, npols)
+function [pols,dersu,dersv] = ders(uv, norder, npols)
   %
   % This subroutine evalutes a bunch of orthogonal polynomials (and
   % their first partial derivatives) on the simplex with
