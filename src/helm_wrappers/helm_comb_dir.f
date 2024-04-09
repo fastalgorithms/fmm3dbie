@@ -25,51 +25,48 @@ c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c  User callable routines:
-c    - helm_comb_dir_solver:
-c    - helm_comb_dir_eval:
+c    - helm_comb_dir_solver: Given data f, helmholtz wave number k,
+c        and parameters \alpha, \beta, this routine returns the solution
+c        \sigma
+c
+c    - helm_comb_dir_eval: Given \sigma, helmholtz wave number k,
+c        and parameters \alpha, \beta, evaluates the solution at a
+c        collection of targets
 c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c  Advanced interfaces:
 c    - getnearquad_helm_comb_dir: compute the near quadrature correction
-c        for on surface points
+c        for constructing the on-surface integral equation for the
+c        Dirichlet data corresponding to the combined field
+c        representation with user-provided near-information prescribed
+c        in row-sparse compressed format
+c
 c    - getnearquad_helm_comb_dir_eval: compute the near quadrature
-c        correction for target points which can be either on surface or
-c        off surface
-c    - lpcomp_helm_comb_dir_addsub: self -> eval_addsub
-c    - lpcomp_helm_comb_dir_eval_addsub: targ + self
-c    - helm_comb_dir_solver_guru:
-c    - helm_comb_dir_solver_memest:
+c        correction for target points which can be either on-surface or
+c        off-surface with user-provided near-information prescribed in
+c        row-sparse compressed format
 c
+c    - lpcomp_helm_comb_dir_addsub: apply the principal value part
+c        of the integeral equation on surface. On input, user provides
+c        precomputed near quadrature in row-sparse compressed format,
+c        and oversampling information for handling the far part of the
+c        computation
 c
+c    - lpcomp_helm_comb_dir_eval_addsub: compute the solution u at a
+c        collection of targets(on-surface or off-surface), given \sigma.
+c        On input, user provides precomputed near quadrature in
+c        row-sparse compressed format and oversampling surface
+c        information for the far-part
 c
+c    - helm_comb_dir_solver_guru: Guru solver routine, where user is
+c        responsible for providing precomputed near quadrature
+c        information in row-sparse compressed format and oversampling
+c        surface information for the far-part
 c
+c    - helm_comb_dir_solver_memest: estimate the memory required for
+c        the solver with minimal computation
 c
-c
-c     This file contains the following user callable
-c     routines:
-c
-c       getnearquad_helm_comb_dir - generates the near
-c        field quadrature for the Dirichlet data
-c        corresponding to the combined field
-c        representation
-c
-c       helm_comb_dir_eval
-c          simpler version of helmholtz layer potential evaluator
-c          only geometry, targets, representation parameters (alpha,beta,k)
-c          and density sampled at discretization required on input,
-c          output is the layer potential evaluated at the target points
-c          (note that the identity term is not included for targets on
-c           surface)
-c
-c       helm_comb_dir_solver - solves the interior/exterior Dirichlet
-c         problem for Helmholtz equation using the combined field
-c         representation
-c
-c       helm_comb_dir_solver_memest - memory estimation code
-c         for determining how much memory will be used by
-c         the solver (including the memory used by the fmm
-c         code per iterate)
 c
 c
 c       There are two sets of fast direct solver routines
@@ -102,19 +99,17 @@ c         The fast direct solver routines need to be optimized
 c         for performance. Improvements coming shortly
 c
 c
-c    Advanced user interfaces:
-c*****************************
+c***********************************************************************
 c       Note for developers: One of the two advanced user interfaces
 c         is necessary for the easy user interface and
-c         efficient iterative solvers. It seems that the add and subtract
-c         version tends to have better CPU-time performance, but we expect
-c         the setsub version to be more numerically stable
-c**************************************
+c         efficient iterative solvers. It seems that the add and
+c         subtract version tends to have better CPU-time performance,
+c         but we expect the setsub version to be more numerically stable
+c***********************************************************************
 c       lpcomp_helm_comb_dir_addsub
 c         compute layer potential for the Dirichlet
 c         data corresponding to the combined field representation
 c         using add and subtract
-c
 c
 c       lpcomp_helm_comb_dir_setsub
 c          compute layer potential for Dirichlet data corresponding
@@ -122,9 +117,6 @@ c          to the combined field representation using
 c          set subtraction and turning off list 1
 c
 c
-c
-c
-
 
 
 
@@ -199,7 +191,7 @@ c
 c           nnz - integer
 c             number of source patch-> target interactions in the near field
 c
-c           row_ptr - integer(ntarg+1)
+c           row_ptr - integer(npts+1)
 c              row_ptr(i) is the pointer
 c              to col_ind array where list of relevant source patches
 c              for target i start
@@ -234,7 +226,7 @@ c
       real *8, allocatable :: uvs_targ(:,:)
       complex *16, intent(in) :: zpars(3)
       integer, intent(in) :: nnz
-      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+      integer, intent(in) :: row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
       complex *16, intent(out) :: wnear(nquad)
       integer i
       integer ndtarg,ntarg
