@@ -559,6 +559,8 @@ c
       real *8 over4pi
       integer iptype_avg,norder_avg
       integer ikerorder, iquadtype,npts_over
+      integer ndd,ndz,ndi,nker,lwork,ndim
+      integer idensflag,ipotflag,ndim_p
       data over4pi/0.07957747154594767d0/
 
 
@@ -646,12 +648,21 @@ c
 c
 c   compute layer potential
 c
+      ndd = 0
+      ndz = 3
+      ndi = 0
+      nker = 1
+      lwork = 0
+      ndim = 1
+      idensflag = 0
+      ipotflag = 0
+      ndim_p = 1
       call helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
      1  iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs,
-     2  eps, 0, dpars, 3, zpars, 0, ipars,
-     2  nnz, row_ptr, col_ind, iquad, nquad, 1, wnear, novers,
-     3  npts_over, ixyzso, srcover, wover, 0, work, 1,
-     3  sigma, pot)
+     2  eps, ndd, dpars, ndz, zpars, ndi, ipars,
+     2  nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers,
+     3  npts_over, ixyzso, srcover, wover, lwork, work, idensflag,
+     4  ndim, sigma, ipotflag, ndim_p, pot)
 
       return
       end
@@ -833,16 +844,23 @@ c
       real *8 rr,rmin
       integer nss,ii,l,npover
       integer nmax,ier,iper
+      integer ndtarg
+      integer idensflag,ipotflag,ndim_p
 
 
       real *8 ttot,done,pi
 
 
+      ndtarg = 12
+      idensflag = 0
+      ipotflag = 0
+      ndim_p = 1
       call helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
-     1  iptype, npts, srccoefs, srcvals, 12, npts, srcvals,
+     1  iptype, npts, srccoefs, srcvals, ndtarg, npts, srcvals,
      2  eps, ndd, dpars, ndz, zpars, ndi, ipars,
      2  nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers,
-     3  nptso, ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
+     3  nptso, ixyzso, srcover, whtsover, lwork, work, idensflag,
+     4  ndim, sigma, ipotflag, ndim_p, pot)
 
       return
       end
@@ -855,8 +873,9 @@ c
      1  ixyzs,
      1  iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs,
      2  eps, ndd, dpars, ndz, zpars, ndi, ipars,
-     2  nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers,
-     3  nptso, ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
+     3  nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers,
+     4  nptso, ixyzso, srcover, whtsover, lwork, work, idensflag,
+     5  ndim, sigma, ipotflag, ndim_p, pot)
 c
 c
 c  this subroutine evaluates the layer potential for
@@ -1035,6 +1054,7 @@ c
       integer nmax,ier,iper
 
       integer nd,ntarg0
+      integer idensflag, ipotflag, ndim_p
 
       real *8 ttot,done,pi
       data over4pi/0.07957747154594767d0/
