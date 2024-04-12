@@ -1338,7 +1338,7 @@
 
       integer ndd, ndi, ndz, lwork, ndim
       real *8 dpars, work
-      integer ipars
+      integer ipars, nkertmp
 
       integer ndtarg
       complex *16 ima
@@ -1376,13 +1376,15 @@
       zpars_use(1) = ima*zpars(1)
       zpars_use(2) = 1
       zpars_use(3) = 0
-      
+      ndz = 3
       ndtarg = 12
+      nkertmp = 1
+   
       call lpcomp_helm_comb_dir_addsub(npatches, norders, ixyzs, &
-        iptype, npts, srccoefs, srcvals, ndtarg, npts, srcvals, &
-        eps, zpars_use, nnz, row_ptr, col_ind, iquad, nquad, &
-        wnear(2,1:nquad), soln, novers, nptso, ixyzso, srcover, &
-        whtsover, siksoln)
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, &
+        zpars_use, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, &
+        nkertmp, wnear(2,1:nquad), novers, nptso, ixyzso, srcover, &
+        whtsover, lwork, work, ndim, soln, siksoln)
 
 
       return
@@ -1547,8 +1549,8 @@
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         ipatch_id, uvs_targ, eps, ndd, dpars, ndz, zpars, ndi, ipars, &
         nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
-        nptso, ixyzso, srcover, whtsover, lwork, work, ndim_s, sigma, &
-        ndim_p, pot)
+        nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
+        ndim_s, sigma, ipotflag, ndim_p, pot)
 
 !
 !
@@ -1676,16 +1678,24 @@
 !        size of work array (unused in this routine)
 !    - work: real *8(lwork)
 !        work array (unused in this routine)
+!    - idensflag: integer
+!        Flag for types of denisties (unused in this case)
 !    - ndim_s: integer
 !        number of densities per point on the surface,
 !        must be 2 for this routine
 !    - sigma: complex *16(ndim_s, npts)
 !        The density sigma
+!    - ipotflag: integer
+!        Flag for determining output type 
+!        ipotflag = 1, only potential is returned
+!        ipotflag = 2, potential + gradients are
+!        returned (currently unsupported)       
 !    - ndim_p: integer
-!        number of potentials per point, must be 1 for this routine                
-!        
+!        number of potentials per point
+!        ndim_p = 1, if ipotflag = 1
+!        ndim_p = 4, if ipotflag = 2        
 !  Output arguments:
-!    - pot: complex *16 (ntarg)
+!    - pot: complex *16 (ndim_p, ntarg)
 !        u above
 !
   
@@ -1723,10 +1733,11 @@
       real *8, intent(in) :: work(lwork)
   
       integer, intent(in) :: ndim_s, ndim_p
+      integer, intent(in) :: idensflag, ipotflag
       
       complex *16, intent(in) :: sigma(ndim_s, npts)
       
-      complex *16, intent(out) :: pot(ntarg)
+      complex *16, intent(out) :: pot(ndim_p, ntarg)
 
       complex *16 zpars_use(3), ima
       data ima/(0.0d0, 1.0d0)/
@@ -1739,8 +1750,8 @@
       ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
       ipatch_id, uvs_targ, eps, ndd, dpars, ndz, zpars_use, ndi, ipars, &
       nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
-      nptso, ixyzso, srcover, whtsover, lwork, work, ndim_s, sigma, &
-      ndim_p, pot)
+      nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
+      ndim_s, sigma, ipotflag, ndim_p, pot)
   !
 
 
@@ -1861,6 +1872,7 @@
       integer ikerorder, iquadtype, npts_over
       complex *16 ima
       integer ndtarg0
+      integer idensflag, ipotflag
   
 
       ima=(0.0d0,1.0d0)
@@ -1953,13 +1965,15 @@
 
       ndim_s = 2
       ndim_p = 1
+      idensflag = 1
+      ipotflag = 1
 
       call helm_rpcomb_neu_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         ipatch_id, uvs_targ, eps, ndd, dpars, ndz, zpars, ndi, ipars, &
         nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
-        npts_over, ixyzso, srcover, wover, lwork, work, ndim_s, &
-        sigmause, ndim_p, pot)
+        npts_over, ixyzso, srcover, wover, lwork, work, idensflag, &
+        ndim_s, sigmause, ipotflag, ndim_p, pot)
       
       
       return
