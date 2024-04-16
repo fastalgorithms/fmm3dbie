@@ -335,21 +335,20 @@ c
 c
 c
 
-        subroutine orthonormalize_all(du,normal,ru,rv,ns)
+        subroutine orthonormalize_all(du, rnormal, ru, rv, ns)
 c!f2py intent(in) du, normal, ns
 c!f2py intent(out) ru,rv
         implicit none
 c       !List of calling arguments
         integer, intent(in) :: ns
-        double precision, intent(in) :: du(3,ns), normal(3,ns)
+        double precision, intent(in) :: du(3,ns), rnormal(3,ns)
         double precision, intent(out) :: ru(3,ns), rv(3,ns)
 
 c       !List of local variables
-        double precision :: aux
         integer :: j
 
         do j=1,ns
-           call orthonormalize(du(:,j), normal(:,j), ru(:,j), rv(:,j))
+           call orthonormalize(du(:,j), rnormal(:,j), ru(:,j), rv(:,j))
          enddo
 
         return
@@ -360,7 +359,7 @@ c       !List of local variables
 
 
 
-        subroutine orthonormalize(du, normal, ru, rv)
+        subroutine orthonormalize(du, rnormal, ru, rv)
         implicit none
 c
 c       This routine computes:
@@ -368,7 +367,7 @@ C           ru = du / ||du||
 C           rv = normal X ru
 c
 c       !List of calling arguments
-        double precision, intent(in) :: du(3), normal(3)
+        double precision, intent(in) :: du(3), rnormal(3)
         double precision, intent(out) :: ru(3), rv(3)
 c
 c       !List of local variables
@@ -379,7 +378,7 @@ c
         ru(2)=du(2)/aux
         ru(3)=du(3)/aux
 c
-        call cross_prod3d(normal, ru, rv)
+        call cross_prod3d(rnormal, ru, rv)
 c        call my_cross_v2(normal, ru, rv)
         return
         end
