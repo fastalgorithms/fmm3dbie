@@ -1,31 +1,33 @@
       implicit real *8 (a-h,o-z) 
-      real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
-      real *8, allocatable :: wts(:),rsigma(:)
+      real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
+      real *8, allocatable :: wts(:), rsigma(:)
       integer ipars(2)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer, allocatable :: norders(:), ixyzs(:), iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3)
-      complex *16, allocatable :: sigma(:),rhs(:)
-      complex *16, allocatable :: sigma2(:),rhs2(:)
+      real *8 xyz_out(3), xyz_in(3)
 
-      complex ( kind = 8 ), allocatable :: a_vect(:),RHS_vect(:)
+      complex *16, allocatable :: einc(:,:), hinc(:,:)
+      complex *16, allocatable :: zjvec(:,:), rho(:)
       complex *16 vf(3)
+      complex *16 e_ex(3), h_ex(3)
+      complex *16 e_comp(3), h_comp(3)
 
 
       real *8, allocatable :: errs(:)
       real *8 thet,phi
       complex * 16 zpars(3)
       integer numit,niter
-      character *200 title,fname,fname1,fname2
+      character *200 title, fname, fname1, fname2
 
       integer ipatch_id
       real *8 uvs_targ(2)
 
-      logical isout0,isout1
+      logical isout0, isout1
 
-      complex *16 pot,potex,ztmp,ima,zk
+      complex *16 pot, potex, ztmp, ima, zk
       complex *16 alpha_rhs
+      real *8 ptinfo_out(12)
 
       integer count1
 
@@ -50,8 +52,8 @@
       xyz_out(2) = 3.1d0
       xyz_out(3) = 20.1d0
       
-      fname = '../../geometries/sphere_192_o03.go3'
-      fname = '../../geometries/sphere_768_o03.go3'
+!      fname = '../../geometries/sphere/sphere_192_o05.go3'
+      fname = '../../geometries/sphere/sphere_768_o03.go3'
       
             
       call open_gov3_geometry_mem(fname,npatches,npts)
@@ -59,18 +61,17 @@
       call prinf('npatches=*',npatches,1)
       call prinf('npts=*',npts,1)
 
-      allocate(srcvals(12,npts),srccoefs(9,npts))
-      allocate(ixyzs(npatches+1),iptype(npatches),norders(npatches))
+      allocate(srcvals(12,npts), srccoefs(9,npts))
+      allocate(ixyzs(npatches+1), iptype(npatches), norders(npatches))
       allocate(wts(npts))
 
-      call open_gov3_geometry(fname,npatches,norders,ixyzs,&
-     &iptype,npts,srcvals,srccoefs,wts)
+      call open_gov3_geometry(fname, npatches, norders, ixyzs, &
+        iptype, npts, srcvals, srccoefs, wts)
 
 
-      allocate(sigma(npts),rhs(npts))
-      allocate(sigma2(npts),rhs2(npts))
-      allocate(a_vect(3*npts),RHS_vect(3*npts))
-      ifinout = 1
+      allocate(einc(3,npts), hinc(3,npts))
+      allocate(zjvec(3,npts), rho(npts))
+      
   
       thet = hkrand(0)*pi
       phi = hkrand(0)*2*pi
@@ -79,8 +80,15 @@
       vf(2)=2.0d0
       vf(3)=3.0d0
 
-      call get_rhs_em_nrccie_pec(xyz_out,vf,zpars(2),npts,srcvals,&
-        zpars(1),RHS_vect)
+!
+!   Get fields due to magnetic and electric dipoles
+!     
+      call fieldsMD(zpars(1), xyz_in, srcvals, npts, einc, hinc, vf, 0) 
+
+      call fieldsED(zpars(1), xyz_in, srcvals, npts, einc, hinc, vf, 1)
+      call prin2('einc=*', einc, 24)
+      call prin2('hinc=*', hinc, 24)
+            
 
       numit = 400
       niter = 0
@@ -90,10 +98,11 @@
       eps_gmres=1d-10
 
       call cpu_time(t1)
-!C$      t1 = omp_get_wtime()      
-      call em_nrccie_pec_solver(npatches,norders,ixyzs,iptype,npts,&
-     &srccoefs,srcvals,eps,zpars,numit,ifinout,RHS_vect,eps_gmres,niter,errs,&
-     &rres,a_vect)
+!C$      t1 = omp_get_wtime()          
+
+      call em_nrccie_pec_solver(npatches, norders, ixyzs, iptype, &
+        npts, srccoefs, srcvals, eps, zpars, numit, einc, hinc, &
+        eps_gmres, niter, errs, rres, zjvec, rho)
 
       call prinf('niter=*',niter,1)
       call prin2('rres=*',rres,1)
@@ -103,12 +112,28 @@
 !C$       t2 = omp_get_wtime()
       call prin2('analytic solve time=*',t2-t1,1)
 
+      
 !
 !       test solution at interior point
 !
-      call test_accuracy_em_nrccie_pec(eps,a_vect,zpars,npts,wts,&
-        srcvals,xyz_in,vf,xyz_out)
-      
+      ptinfo_out(1:3) = xyz_out
+      ptinfo_out(4:12) = 0
+      ntarg = 1
+      ndtarg = 3
+      call fieldsMD(zpars(1), xyz_in, ptinfo_out, ntarg, e_ex, h_ex, vf, 0) 
+      call fieldsMD(zpars(1), xyz_in, ptinfo_out, ntarg, e_ex, h_ex, vf, 1)
+
+      ife = 1
+      ifh = 1
+      ipatch_id = -1
+      uvs_targ(1) = 0
+      uvs_targ(2) = 0
+
+      call em_nrccie_pec_eval(npatches, norders, ixyzs, &
+            iptype, npts, srccoefs, srcvals, ndtarg, ntarg, xyz_out, &
+            ipatch_id, uvs_targ, eps, zpars, zjvec, rho, ife, e_comp, &
+            ifh, h_comp)
+    
 
       stop
       end

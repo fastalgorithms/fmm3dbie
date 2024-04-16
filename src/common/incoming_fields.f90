@@ -240,7 +240,7 @@ subroutine fieldsPW(zk,xyz,n,nsource,E,H)
 	complex *16 E(3,n),H(3,n)
 	complex *16 ima
 	integer i
-	data ima/(0.0d0,1.0d0)/
+    data ima/(0.0d0,1.0d0)/
 
       do i=1,n
         H(1,i)=0

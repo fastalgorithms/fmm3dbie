@@ -335,7 +335,7 @@ c
 c
 c
 
-        subroutine orthonormalize_all(du,normal,ru,rv,ns)
+        subroutine orthonormalize_all(du, normal, ru, rv, ns)
 c!f2py intent(in) du, normal, ns
 c!f2py intent(out) ru,rv
         implicit none

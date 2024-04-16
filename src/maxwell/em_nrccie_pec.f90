@@ -637,12 +637,11 @@
 !
 !     Remove near contribution of the FMM
 !
-      
       allocate(srctmp2(3,nmax), ctmp(nduse,nmax))
       call cpu_time(t1)
 !$      t1 = omp_get_wtime()
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, nss, j, jpatch, l)  &
-!$OMP PRIVATE(srctmp, ctmp, zpottmp, zgradtmp, pottmp)
+!$OMP PRIVATE(srctmp2, ctmp, zpottmp, zgradtmp, pottmp)
       do i=1,npts
         nss = 0
         do j=row_ptr(i),row_ptr(i+1)-1
@@ -765,8 +764,8 @@
 !
 !
       subroutine em_nrccie_pec_solver(npatches, norders, ixyzs, &
-        iptype, npts, srccoefs, srcvals, eps, zpars, numit, hinc, &
-        einc, eps_gmres, niter, errs, rres, zjvec, rho)
+        iptype, npts, srccoefs, srcvals, eps, zpars, numit, einc, &
+        hinc, eps_gmres, niter, errs, rres, zjvec, rho)
 !
 !
 !  This subroutine solves the Scattering Maxwell p.e.c. problem.
@@ -848,10 +847,10 @@
 !      zpars(2) = alpha
 !    numit - integer
 !      max number of gmres iterations        
-!    hinc - complex *16(3, npts)
-!      incident H field
 !    einc - complex *16(3, npts)
-!      incident E field
+!      incident electric field
+!    hinc - complex *16(3, npts)
+!      incident magnetic field
 !    eps_gmres - real *8
 !      gmres tolerance requested
 !
@@ -1013,10 +1012,10 @@
 
       iquadtype = 1
 !
-      call getnearquad_em_nrccie_pec(npatches, norders, &
-        ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, &
-        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
-        wnear)
+!      call getnearquad_em_nrccie_pec(npatches, norders, &
+!        ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, &
+!        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
+!        wnear)
  
       
       print *, "done generating near quadrature, now starting gmres"
@@ -1024,7 +1023,7 @@
 
       call em_nrccie_pec_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, zpars, numit, &
-        hinc, einc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        einc, hinc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
         novers, npts_over, ixyzso, srcover, wover, eps_gmres, niter, &
         errs, rres, zjvec, rho)
 
@@ -1038,7 +1037,7 @@
 !                        
       subroutine em_nrccie_pec_solver_guru(npatches, norders, ixyzs, &
       iptype, npts, srccoefs, srcvals, eps, zpars, numit, &
-      hinc, einc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+      einc, hinc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
       novers, nptso, ixyzso, srcover, whtsover, eps_gmres, niter, &
       errs, rres, zjvec, rho)
 !
@@ -1125,11 +1124,11 @@
 !      zpars(1) = k 
 !      zpars(2) = alpha
 !    numit - integer
-!      max number of gmres iterations        
-!    hinc - complex *16(3, npts)
-!      incident H field
+!      max number of gmres iterations
 !    einc - complex *16(3, npts)
-!      incident E field
+!      incident electric field              
+!    hinc - complex *16(3, npts)
+!      incident magnetic field
 !    - nnz: integer
 !        number of source patch-> target interactions in the near field
 !    - row_ptr: integer(npts+1)
@@ -1239,6 +1238,7 @@
 
       call orthonormalize_all(srcvals(4:6,:), srcvals(10:12,:), ru, &
          rv, npts)
+
 !
 !  Initialize rhs from e and h fields
 !                 
@@ -1260,7 +1260,6 @@
         rhs(3,i) = einc(1,i)*srcvals(10,i) + einc(2,i)*srcvals(11,i) + &
           einc(3,i)*srcvals(12,i)
       
-
         soln(1:3,i) = 0
       enddo
 !$OMP END PARALLEL DO    
@@ -1273,7 +1272,6 @@
       fker => lpcomp_em_nrccie_pec_addsub
 
       ndim = 3
-      allocate(wts(npts))
 
       call get_qwts(npatches, norders, ixyzs, iptype, npts, &
       srcvals, wts)
