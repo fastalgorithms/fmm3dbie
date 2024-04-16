@@ -473,8 +473,11 @@ nker = 1;
 lwork = 0;
 work = [];
 ndim = 1;
+idensflag = 0;
+ipotflag = 0;
+ndim_p = 1;
 % Call the layer potential evaluator
-    # FORTRAN helm_comb_dir_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work,int[1] ndim,dcomplex[npts] sigma,inout dcomplex[ntarg] p);   
+    # FORTRAN helm_comb_dir_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, dcomplex[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);   
 end    
 %
 %
