@@ -24,6 +24,10 @@
       real *8 xyz_out(3),xyz_in(3)
       complex *16, allocatable :: sigma(:)
       complex * 16 zpars(3)
+      integer ndd, ndi, ndz, nker, lwork, idensflag
+      integer ndim, ndim_p, ipotflag
+      real *8 dpars, work
+
 
 
       external h3d_ggq_comb,h3d_ggq_slp
@@ -234,20 +238,18 @@ c
       iquadtype = 1
 
 
-      call getnearquad_helm_comb_dir(npatches,norders,
-     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
-     1      iquad,
-     1      rfac0,nquad,slp_near)
+      call getnearquad_helm_comb_dir_eval(npatches, norders,
+     1  ixyzs, iptype, npts, srccoefs, srcvals,ndtarg, npts, targs,
+     1  ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr,
+     1  col_ind, iquad, rfac0, nquad, slp_near)
 
       
       zpars(2) = 0.0d0
       zpars(3) = 1.0d0
-      call getnearquad_helm_comb_dir(npatches,norders,
-     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,zpars,iquadtype,
-     1      nnz,row_ptr,col_ind,iquad,
-     1      rfac0,nquad,dlp_near)
+      call getnearquad_helm_comb_dir_eval(npatches, norders,
+     1  ixyzs, iptype, npts, srccoefs, srcvals,ndtarg, npts, targs,
+     1  ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr,
+     1  col_ind, iquad, rfac0, nquad, dlp_near)
  1111 continue      
       call cpu_time(t2)
       tquadgen = t2-t1
@@ -257,23 +259,36 @@ c
       zpars(2) = 1.0d0
       zpars(3) = 0.0d0
 
+      ndz = 3
+      ndi = 0
+      ndd = 0
+      nker = 1
+      lwork = 0
+      idensflag = 0
+      ipotflag = 0
+      ndim = 1
+      ndim_p = 1
+
 
       call cpu_time(t1)
 
-      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,slp_near,
-     3  dudnval,nfars,npts_over,ixyzso,srcover,wover,potslp)
+      call helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
+     1  iptype, npts, srccoefs, srcvals, ndtarg, npts, targs,
+     2  eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, 
+     3  col_ind, iquad, nquad, nker, slp_near, nfars, npts_over,
+     4  ixyzso, srcover, wover, lwork, work, idensflag,  
+     5  ndim, dudnval, ipotflag, ndim_p, potslp)
 
 
       zpars(2) = 0.0d0
       zpars(3) = 1.0d0
 
-
-      call lpcomp_helm_comb_dir_addsub(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2  eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
-     3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)
+      call helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
+     1  iptype, npts, srccoefs, srcvals, ndtarg, npts, targs,
+     2  eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, 
+     3  col_ind, iquad, nquad, nker, dlp_near, nfars, npts_over,
+     4  ixyzso, srcover, wover, lwork, work, idensflag,  
+     5  ndim, uval, ipotflag, ndim_p, potdlp)
 
 
       call cpu_time(t2)
@@ -306,9 +321,9 @@ c
       zpars(2) = 1.0d0
       zpars(3) = 0.0d0
       
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
-     2  uvs_targ,eps,zpars,dudnval,potslp2)
+      call helm_comb_dir_eval(npatches, norders, ixyzs,
+     1  iptype, npts, srccoefs, srcvals, ndtarg, npts, targs, 
+     2  ipatch_id, uvs_targ, eps, zpars, dudnval, potslp2)
 
 
       errl2 = 0
