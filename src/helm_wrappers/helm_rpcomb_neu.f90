@@ -1547,7 +1547,7 @@
 !
       subroutine helm_rpcomb_neu_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-        ipatch_id, uvs_targ, eps, ndd, dpars, ndz, zpars, ndi, ipars, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, &
         nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
         nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
         ndim_s, sigma, ipotflag, ndim_p, pot)
@@ -1611,14 +1611,6 @@
 !        number of targets
 !    - targs: real *8(ndtarg,ntarg)
 !        target information 
-!    - ipatch_id: integer(ntarg)
-!        ipatch_id(i) indicates the patch on which target i
-!        is, if it is on surface. ipatch_id(i) should be 0 
-!        otherwise
-!    - uvs_targ: real *8(2,ntarg)
-!        if ipatch_id(i) > 0, then uvs_targ(1:2,i) are the
-!        local uv coordinates of the target on the patch,
-!        uvs_targ(1:2,i) is unused otherwise
 !    - eps: real *8
 !        precision requested
 !    - ndd: integer
@@ -1707,9 +1699,6 @@
         
       integer, intent(in) :: ndtarg, ntarg
       real *8, intent(in) :: targs(ndtarg,ntarg)
-        
-      integer, intent(in) :: ipatch_id(ntarg)
-      real *8, intent(in) :: uvs_targ(2,ntarg)
 
       real *8, intent(in) :: eps
         
@@ -1748,7 +1737,7 @@
 
       call helm_comb_wdd_eval_addsub(npatches, norders, &
       ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-      ipatch_id, uvs_targ, eps, ndd, dpars, ndz, zpars_use, ndi, ipars, &
+      eps, ndd, dpars, ndz, zpars_use, ndi, ipars, &
       nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
       nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
       ndim_s, sigma, ipotflag, ndim_p, pot)
@@ -1970,7 +1959,7 @@
 
       call helm_rpcomb_neu_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-        ipatch_id, uvs_targ, eps, ndd, dpars, ndz, zpars, ndi, ipars, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, &
         nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
         npts_over, ixyzso, srcover, wover, lwork, work, idensflag, &
         ndim_s, sigmause, ipotflag, ndim_p, pot)
