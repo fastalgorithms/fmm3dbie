@@ -118,7 +118,7 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 HELM = src/helm_wrappers
 HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o \
 	$(HELM)/helm_comb_trans.o $(HELM)/helm_rpcomb_imp.o \
-	$(HELM)/helm_s_neu.o 
+	$(HELM)/helm_s_neu.o $(HELM)/helm_common_evaluators.o 
 
 # Laplace wrappers
 LAP = src/lap_wrappers
@@ -130,6 +130,7 @@ EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 	$(EM)/em_nrccie_pec.o $(EM)/em_auCKi_pec.o \
 	$(EM)/em_dfie_trans.o $(EM)/em_adpie_pec.o \
 	$(EM)/em_sdpie_pec.o $(EM)/em_cfie_rwg_pec.o \
+	$(EM)/maxwell_common_evaluators.o \
 	$(EM)/fix_tri.o $(EM)/analytic_sphere_pw_pec.o
 
 # Stokes wrappers
@@ -139,7 +140,7 @@ STOKOBJS = $(STOK)/stok_comb_vel.o
 # Kernels
 KER = src/kernels
 KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
-	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o
+	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o
 
 # Quadrature wrappers
 QUAD = src/quadratures

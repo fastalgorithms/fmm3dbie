@@ -159,7 +159,7 @@ c
       ipatch_id = -1
       uvs_targ(1) = 0
       uvs_targ(2) = 0
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,
+      call helm_comb_dir_eval(npatches,norders,ixyzs,iptype,
      1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
      2  uvs_targ,eps,zpars,sigma,pot)
 

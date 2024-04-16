@@ -1204,7 +1204,7 @@
       zpars_tmp(3) = 0
 
       
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
+      call helm_comb_dir_eval(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
         uvs_targ,eps,zpars_tmp,sigma(npts+1),pot)
       
@@ -1217,7 +1217,7 @@
       zpars_tmp(3) = zpars(3)
 
       
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,&
+      call helm_comb_dir_eval(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
         uvs_targ,eps,zpars_tmp,sigma,pottmp2)
 
