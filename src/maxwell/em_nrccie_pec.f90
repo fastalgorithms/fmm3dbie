@@ -548,7 +548,6 @@
         ixyzso, nmax)
       call cpu_time(t2)
 !$      t2=omp_get_wtime()     
-      print *, "get near corr max time=",t2-t1
 
       call cpu_time(t1)
 !$      t1=omp_get_wtime()      
@@ -633,7 +632,6 @@
 !$      t2 = omp_get_wtime()
       timeinfo(2) = t2-t1
 
-      print *, "near comp add time=",timeinfo(2)
 !
 !     Remove near contribution of the FMM
 !
@@ -655,7 +653,7 @@
         zpottmp(1:4) = 0
         zgradtmp(1:4,1:3) = 0
         pottmp(1:3) = 0
-        call h3ddirectcg(nduse, eps, zk, nss, srctmp2, ctmp, &
+        call h3ddirectcg(nduse, zk, srctmp2, ctmp, nss, &
           srctmp(1,i), ntarg0, zpottmp, zgradtmp, thresh)
 
          call get_nrccie_inteq_comps_from_potgrad(zk, alpha, &
@@ -1011,11 +1009,11 @@
 
 
       iquadtype = 1
-!
-!      call getnearquad_em_nrccie_pec(npatches, norders, &
-!        ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, &
-!        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
-!        wnear)
+
+      call getnearquad_em_nrccie_pec(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, &
+        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
+        wnear)
  
       
       print *, "done generating near quadrature, now starting gmres"
@@ -1476,7 +1474,7 @@
         if (j.ge.2) ipv = 1
                
         call zgetnearquad_ggq_guru(npatches, norders, ixyzs, &
-          iptype, npts, srccoefs, srcvals, ndtarg, npts, srcvals, &
+          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
           ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
           zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, &
           nquad, wneartmp)
@@ -1831,7 +1829,7 @@
       real *8, intent(in) :: targs(ndtarg,ntarg)
       integer, intent(in) :: ipatch_id(ntarg)
       real *8, intent(in) :: uvs_targ(2,ntarg), eps
-      complex *16, intent(in) :: zpars(1), zjvec(3,npts), rho(3,npts)
+      complex *16, intent(in) :: zpars(1), zjvec(3,npts), rho(npts)
       integer, intent(in) :: ife, ifh
       complex *16, intent(out) :: e(3,ntarg), h(3,ntarg)
       complex *16, allocatable :: sigmause(:,:), potuse(:,:)
@@ -1893,6 +1891,7 @@
          nnz)
 
       allocate(row_ptr(ntarg+1),col_ind(nnz))
+
       
       call findnear(cms, npatches, rad_near, ndtarg, targs, ntarg, &
         row_ptr, col_ind)
@@ -1946,10 +1945,9 @@
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
       do i = 1,npts
         sigmause(1:3,i) = zjvec(1:3,i)
-        sigmause(4,i) = rho(4,i)
+        sigmause(4,i) = rho(i)
       enddo
 !$OMP END PARALLEL DO         
-
       call em_nrccie_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         ipatch_id, uvs_targ, eps, ndd, dpars, ndz, zpars, ndi, ipars, &

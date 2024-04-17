@@ -296,8 +296,8 @@
 ! 
 !       oversample density
 !
-      call oversample_fun_surf(2*ndim_s, npatches, norders, ixyzs, iptype, & 
-        npts, sigma, novers, ixyzso, ns, sigmaover)
+      call oversample_fun_surf(2*ndim_s, npatches, norders, ixyzs, &
+        iptype, npts, sigma, novers, ixyzso, ns, sigmaover)
 
       itmp = idensflag
       do i=1,4
@@ -374,7 +374,8 @@
       if(ifj.eq.1.and.i2.eq.1) ifh_current = 1
       if(ifm.eq.1.and.i2.eq.1) ife_current = 1
       if(iftau.eq.1.and.i2.eq.1) ife_charge = 1      
-      allocate(potloc(nd,3,ntarg), divpotloc(nd,ntarg), curlpotloc(nd,3,ntarg))
+      allocate(potloc(nd,3,ntarg), divpotloc(nd,ntarg))
+      allocate(curlpotloc(nd,3,ntarg))
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
@@ -505,10 +506,10 @@
 
         pottmp = 0
 
-        call em3ddirect(nd, zpars(1), nss, srctmp2, ifh_current, h_current2, & 
-          ife_current, e_current2, ife_charge, e_charge2, ntarg0, &
-          targtmp(1,i), ife, pottmp, ifcurle, curlpottmp, ifdive, &
-          divpottmp, thresh)
+        call em3ddirect(nd, zpars(1), nss, srctmp2, ifh_current, &
+          h_current2, ife_current, e_current2, ife_charge, e_charge2, &
+          ntarg0, targtmp(1,i), ife, pottmp, ifcurle, curlpottmp, &
+          ifdive, divpottmp, thresh)
         idim = 1
         if(i1.eq.1) then
           pot(1:3,i) = pot(1:3,i) - pottmp(1,1:3)

@@ -52,8 +52,7 @@
       xyz_out(2) = 3.1d0
       xyz_out(3) = 20.1d0
       
-!      fname = '../../geometries/sphere/sphere_192_o05.go3'
-      fname = '../../geometries/sphere/sphere_768_o03.go3'
+      fname = '../../geometries/sphere/sphere_192_o05.go3'
       
             
       call open_gov3_geometry_mem(fname,npatches,npts)
@@ -94,11 +93,11 @@
       niter = 0
       allocate(errs(numit+1))
 
-      eps = 1d-3
+      eps = 1d-6
       eps_gmres=1d-10
 
       call cpu_time(t1)
-!C$      t1 = omp_get_wtime()          
+!$      t1 = omp_get_wtime()          
 
       call em_nrccie_pec_solver(npatches, norders, ixyzs, iptype, &
         npts, srccoefs, srcvals, eps, zpars, numit, einc, hinc, &
@@ -109,19 +108,22 @@
       call prin2('errs=*',errs,niter)
 
       call cpu_time(t2)
-!C$       t2 = omp_get_wtime()
+!$       t2 = omp_get_wtime()
       call prin2('analytic solve time=*',t2-t1,1)
 
       
 !
 !       test solution at interior point
 !
+
       ptinfo_out(1:3) = xyz_out
       ptinfo_out(4:12) = 0
       ntarg = 1
       ndtarg = 3
-      call fieldsMD(zpars(1), xyz_in, ptinfo_out, ntarg, e_ex, h_ex, vf, 0) 
-      call fieldsMD(zpars(1), xyz_in, ptinfo_out, ntarg, e_ex, h_ex, vf, 1)
+      call fieldsMD(zpars(1), xyz_in, ptinfo_out, ntarg, e_ex, h_ex,  &
+        vf, 0) 
+      call fieldsED(zpars(1), xyz_in, ptinfo_out, ntarg, e_ex, h_ex, &
+        vf, 1)
 
       ife = 1
       ifh = 1
@@ -133,8 +135,27 @@
             iptype, npts, srccoefs, srcvals, ndtarg, ntarg, xyz_out, &
             ipatch_id, uvs_targ, eps, zpars, zjvec, rho, ife, e_comp, &
             ifh, h_comp)
-    
+      erra = 0
+      ra = 0
+      erra = erra + abs(e_comp(1) - e_ex(1))**2
+      erra = erra + abs(e_comp(2) - e_ex(2))**2
+      erra = erra + abs(e_comp(3) - e_ex(3))**2
 
+      erra = erra + abs(h_comp(1) - h_ex(1))**2
+      erra = erra + abs(h_comp(2) - h_ex(2))**2
+      erra = erra + abs(h_comp(3) - h_ex(3))**2
+
+      ra = ra + abs(e_ex(1))*2 + abs(e_ex(2))**2 + abs(e_ex(3))**2
+      ra = ra + abs(h_ex(1))*2 + abs(h_ex(2))**2 + abs(h_ex(3))**2
+
+      erra = sqrt(erra/ra)
+      print *, "error in computed fields=",erra
+
+      call prin2('e_comp=*',e_comp,6)
+      call prin2('e_ex=*',e_ex,6)
+
+      call prin2('h_ecomp=*',h_comp,6)
+      call prin2('h_ex=*',h_ex,6)
       stop
       end
 
