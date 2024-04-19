@@ -430,7 +430,7 @@
         ntailcoefs = 0
         call polytens_ind2pow_2d(norder,"F",iind2p)
         do i=1,npols
-          if(iind2p(1,i).eq.norder+1.or.iind2p(2,i).eq.norder+1) then
+          if(iind2p(1,i).eq.norder-1.or.iind2p(2,i).eq.norder-1) then
             ntailcoefs = ntailcoefs+1
             itailcoefs(ntailcoefs) = i
           endif
