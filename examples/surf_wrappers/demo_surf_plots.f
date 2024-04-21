@@ -145,6 +145,10 @@
         radii(1) = 2
         radii(2) = 0.75d0
         radii(3) = 0.25d0
+
+        abc(1) = 1
+        abc(2) = 1
+        abc(3) = 1
         
         nosc = 5
 

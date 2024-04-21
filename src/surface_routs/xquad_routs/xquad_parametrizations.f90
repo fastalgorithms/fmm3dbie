@@ -324,8 +324,8 @@ subroutine xquad_xyz_tensor_fourier_eval(iquad, u, v, xyz, dxyzduv, &
   real *8 :: dxyzds(3), dxyzdt(3)
   real *8 :: hatxyz(3), dhatxyzds(3), dhatxyzdt(3)
   real *8 :: bis(2*m+1), bjs(2*m+1), bdis(2*m+1), bdjs(2*m+1)
+  real *8 :: scales(3)
   complex *16 zmuls, zmult, ima, zfacs, zfact
-  data ima/(0.0d0,1.0d0)/
 
   !
   ! project the quadrangle iquad in quadinfo onto a stellarator

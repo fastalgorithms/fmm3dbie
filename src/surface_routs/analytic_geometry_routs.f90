@@ -615,7 +615,6 @@
       ptr2 => pcoefs(1,1,1)
       iptr3 => muse 
       ptr4 => p4(1)
-      print *, "npatches=",npatches
       
       call getgeominfo(npatches, patchpnt, ptr1, ptr2, iptr3, ptr4, &
         npols, uvs, umatr, srcvals, srccoefs)
@@ -810,8 +809,8 @@
 
       coefs(1,1,1) = radii(1)
       coefs(2,1,1) = radii(2)
-      coefs(m+1,1,1) = radii(3)/2
-      coefs(1+abs(nosc-1),1,1) = -radii(3)/2
+      coefs(1+nosc+1,1,1) = radii(3)/2
+      coefs(1+abs(nosc-1),1,1) = radii(3)/2
       
       coefs(m+2,1,3) = radii(2)
       coefs(2*m+1,1,3) = radii(3)/2
