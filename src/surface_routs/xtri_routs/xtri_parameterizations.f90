@@ -305,7 +305,171 @@ subroutine xtri_stell_eval(itri, u, v, xyz, dxyzduv, triainfo, &
 
   return
 end subroutine xtri_stell_eval
+!
+!
+!
+!
+!
 
+subroutine xtri_xyz_tensor_fourier_eval(itri, u, v, xyz, dxyzduv, &
+    triainfo, coefs, m, scales)
+  implicit real *8 (a-h,o-z)
+  real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), coefs(2*m+1,2*m+1,3)
+  real *8 :: dxyzds(3), dxyzdt(3)
+  real *8 :: hatxyz(3), dhatxyzds(3), dhatxyzdt(3)
+  real *8 :: bis(2*m+1), bjs(2*m+1), bdis(2*m+1), bdjs(2*m+1)
+  real *8 :: scales(3)
+  complex *16 zmuls, zmult, ima, zfacs, zfact
+  data ima/(0.0d0,1.0d0)/
+
+  !
+  ! project the triangle itri in triainfo onto a stellarator
+  !
+  !    Input:
+  ! itri - triangle number to map
+  ! u,v - local uv coordinates on triangle itri
+  ! triainfo - flat skeleton triangle info
+  !
+  ! surface is given by
+  !
+  ! \hat(x) = \sum_{i=1}^{2m+1} \sum_{j=1} x_{ij} b_{i}(s) b_{j}(t)
+  ! \hat(y) = \sum_{i=1}^{2m+1} \sum_{j=1} y_{ij} b_{i}(s) b_{j}(t)
+  ! \hat(z) = \sum_{i=1}^{2m+1} \sum_{j=1} z_{ij} b_{i}(s) b_{j}(t)
+  !
+  ! x(s,t) = (\hat(x) \cos(t) - \hat(y) \sin(t))*scales(1)
+  ! y(s,t) = (\hat(x) \sin(t) + \hat(y) \cos(t))*scales(2)
+  ! z(s,t) = \hat(z)*scales(3)
+  !
+  !    Output:
+  ! xyz - point on the 
+  ! dxyzduv - first derivative information
+  !
+  !
+
+  x0=triainfo(1,1,itri)
+  y0=triainfo(2,1,itri)
+  z0=triainfo(3,1,itri)
+
+  x1=triainfo(1,2,itri)
+  y1=triainfo(2,2,itri)
+  z1=triainfo(3,2,itri)
+
+  x2=triainfo(1,3,itri)
+  y2=triainfo(2,3,itri)
+  z2=triainfo(3,3,itri)
+
+
+  !
+  ! ... process the geometry, return the point location on the almond
+  ! and the derivatives with respect to u and v
+  !
+  s = x0+u*(x1-x0)+v*(x2-x0)
+  t = y0+u*(y1-y0)+v*(y2-y0)
+
+  xyz(1) = 0
+  xyz(2) = 0
+  xyz(3) = 0
+
+  hatxyz(1:3) = 0
+
+  dxyzds(1) = 0
+  dxyzds(2) = 0
+  dxyzds(3) = 0
+
+  dhatxyzds(1:3) = 0
+
+  dxyzdt(1) = 0
+  dxyzdt(2) = 0
+  dxyzdt(3) = 0
+
+  dhatxyzdt(1:3) = 0
+  
+  ct = cos(t)
+  st = sin(t)
+  zmuls = cos(s) + ima*sin(s)
+  zmult = ct + ima*st
+
+
+  zfacs = zmuls
+  zfact = zmult
+  
+  bis(1) = 1
+  bdis(1) = 0
+  
+  bjs(1) = 1
+  bdjs(1) = 0
+
+  do i=1,m
+     bis(i+1) = real(zmuls)
+     bis(i+1+m) = imag(zmuls)
+
+     bdis(i+1) = -i*imag(zmuls)
+     bdis(i+m+1) = i*real(zmuls)
+     
+     bjs(i+1) = real(zmult)
+     bjs(i+1+m) = imag(zmult)
+
+     bdjs(i+1) = -i*imag(zmult)
+     bdjs(i+1+m) = i*real(zmult)
+
+
+     zmuls = zmuls*zfacs
+     zmult = zmult*zfact
+  enddo
+!
+!
+  do j = 1,2*m+1
+    do i = 1,2*m+1
+      hatxyz(1) = hatxyz(1) + coefs(i,j,1)*bis(i)*bjs(j)
+      hatxyz(2) = hatxyz(2) + coefs(i,j,2)*bis(i)*bjs(j)
+      hatxyz(3) = hatxyz(3) + coefs(i,j,3)*bis(i)*bjs(j)
+
+      dhatxyzds(1) = dhatxyzds(1) + coefs(i,j,1)*bdis(i)*bjs(j)
+      dhatxyzds(2) = dhatxyzds(2) + coefs(i,j,2)*bdis(i)*bjs(j)
+      dhatxyzds(3) = dhatxyzds(3) + coefs(i,j,3)*bdis(i)*bjs(j)
+
+      dhatxyzdt(1) = dhatxyzdt(1) + coefs(i,j,1)*bis(i)*bdjs(j)
+      dhatxyzdt(2) = dhatxyzdt(2) + coefs(i,j,2)*bis(i)*bdjs(j)
+      dhatxyzdt(3) = dhatxyzdt(3) + coefs(i,j,3)*bis(i)*bdjs(j)
+    enddo
+  enddo
+
+  xyz(1) = (hatxyz(1)*ct - hatxyz(2)*st)*scales(1)
+  xyz(2) = (hatxyz(1)*st + hatxyz(2)*ct)*scales(2)
+  xyz(3) = hatxyz(3)*scales(3)
+  
+  dxyzds(1) = (dhatxyzds(1)*ct - dhatxyzds(2)*st)*scales(1) 
+  dxyzds(2) = (dhatxyzds(1)*st + dhatxyzds(2)*ct)*scales(2) 
+  dxyzds(3) = dhatxyzds(3)*scales(3)
+
+  dxyzdt(1) = -(hatxyz(1)*st + hatxyz(2)*ct)
+  dxyzdt(1) = dxyzdt(1) + (dhatxyzdt(1)*ct - dhatxyzdt(2)*st)
+  dxyzdt(1) = dxyzdt(1)*scales(1)
+
+  dxyzdt(2) = (hatxyz(1)*ct - hatxyz(2)*st)
+  dxyzdt(2) = dxyzdt(2) + (dhatxyzdt(1)*st + dhatxyzdt(2)*ct)
+  dxyzdt(2) = dxyzdt(2)*scales(2)
+
+  dxyzdt(3) = dhatxyzdt(3)*scales(3)
+
+  
+
+  dsdu = (x1-x0)
+  dsdv = (x2-x0)
+  dtdu = (y1-y0)
+  dtdv = (y2-y0)
+
+  dxyzduv(1,1) = dxyzds(1)*dsdu + dxyzdt(1)*dtdu
+  dxyzduv(2,1) = dxyzds(2)*dsdu + dxyzdt(2)*dtdu
+  dxyzduv(3,1) = dxyzds(3)*dsdu + dxyzdt(3)*dtdu
+
+
+  dxyzduv(1,2) = dxyzds(1)*dsdv + dxyzdt(1)*dtdv
+  dxyzduv(2,2) = dxyzds(2)*dsdv + dxyzdt(2)*dtdv
+  dxyzduv(3,2) = dxyzds(3)*dsdv + dxyzdt(3)*dtdv
+
+  return
+end subroutine xtri_xyz_tensor_fourier_eval
 
 
 

@@ -16,6 +16,8 @@
 !  get_sphere_<>
 !  get_stellarator_<>
 !  get_star_torus_<>
+!  get_xyz_tensor_fourier_<>
+!  get_xyz_tensor_fourier_sparse_<>
 !
 !  Currently, only the _npat routines are available.
 !  All of the routines have an extra _mem routines to get
@@ -25,17 +27,17 @@
         iptype0, npatches, npts)
 !
 !  Estimate the number of patches in the discretization of an ellipsoid
-!  given  by
+!  given by
 !
 !  ((x - x0)/a)**2 + ((y-y0)/b)**2 + ((z-z0)/c)**2 = 1
 !
 !  where c0 = (x0, y0, z0), abc = (a,b,c)
 !
 !  The surface is discretized by projecting to the surface from
-!  a rectangular piped with half-widths a/sqrt(3), b/sqrt(3), c/sqrt(3).
+!  a cube -> sphere and then rescaling the xyz components.
 !
-!  nabc determines the number of quadrilateral patches on the faces of the
-!  rectangles of the rectangular parallelopipeds, with na patches
+!  nabc determines the number of quadrilateral patches on the faces 
+!  of the cube, with na patches
 !  in the x direction, nb patches in the y direction, and nz patches
 !  in the z direction, with nabc = (na, nb, nc)
 !
@@ -44,7 +46,7 @@
 !        semi major axes (a,b,c) along the x,y, and z directions
 !    - nabc: integer(3)
 !        number of patches along the coordinate directions of the
-!        rectangular parellopiped (na, nb, nc)
+!        cube (na, nb, nc)
 !    - c0: real *8(3)
 !        center of ellipsoid (x0, y0, z0)
 !    - norder: integer
@@ -92,18 +94,17 @@
       subroutine get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, &
         npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
 !
-!  Estimate the number of patches in the discretization of an ellipsoid
-!  given  by
+!  Discretize the surface of an ellipsoid given by
 !
 !  ((x - x0)/a)**2 + ((y-y0)/b)**2 + ((z-z0)/c)**2 = 1
 !
 !  where c0 = (x0, y0, z0), abc = (a,b,c)
 !
 !  The surface is discretized by projecting to the surface from
-!  a rectangular piped with half-widths a/sqrt(3), b/sqrt(3), c/sqrt(3).
+!  a cube -> sphere and then rescaling the xyz components.
 !
-!  nabc determines the number of quadrilateral patches on the faces of the
-!  rectangles of the rectangular parallelopipeds, with na patches
+!  nabc determines the number of quadrilateral patches on the faces 
+!  of the cube, with na patches
 !  in the x direction, nb patches in the y direction, and nz patches
 !  in the z direction, with nabc = (na, nb, nc)
 !
@@ -112,7 +113,7 @@
 !        semi major axes (a,b,c) along the x,y, and z directions
 !    - nabc: integer(3)
 !        number of patches along the coordinate directions of the
-!        rectangular parellopiped (na, nb, nc)
+!        cube (na, nb, nc)
 !    - c0: real *8(3)
 !        center of ellipsoid (x0, y0, z0)
 !    - norder: integer
@@ -157,7 +158,7 @@
 !          * srcvals(10:12,i) - normals info
 !
       implicit none
-      real *8, intent(in), target :: abc(3), c0(3)
+      real *8, intent(in) :: abc(3), c0(3)
       integer, intent(in) :: iptype0, nabc(3), norder, npatches, npts
 
       integer, intent(out) :: norders(npatches), iptype(npatches)
@@ -169,7 +170,7 @@
       real *8, allocatable :: uvs(:,:), umatr(:,:), wts(:), vmatr(:,:)
       real *8 abcuse(3)
       real *8 ause, buse, cuse
-      real *8, target :: p4(1)
+      real *8, target :: p2(3), p3(3), p4(1)
       integer na, nb, nc
 
       procedure (), pointer :: patchpnt
@@ -204,9 +205,12 @@
           npatches, skel)
         patchpnt => xquad_ellipsoid_eval
       endif
+
+      p2(1:3) = abc(1:3)
+      p3(1:3) = c0(1:3)
       ptr1 => skel(1,1,1)
-      ptr2 => abc(1)
-      ptr3 => c0(1)
+      ptr2 => p2(1)
+      ptr3 => p3(1)
       ptr4 => p4(1)
 
       call getgeominfo(npatches, patchpnt, ptr1, ptr2, ptr3, ptr4, &
@@ -224,4 +228,599 @@
 
       return
       end
+!
+!
+!
+!
+!
+!
+      subroutine get_sphere_npat_mem(a, na, c0, norder, &
+        iptype0, npatches, npts)
+!
+!  Estimate the number of patches in the discretization of a
+!  sphere of radius 'a', centered at c0
+!
+!  The surface is discretized by projecting to the surface from
+!  a cube -> sphere 
+!
+!  na determines the number of quadrilateral patches on the faces 
+!  of the cube
+!
+!  Input arugments:
+!    - a: real *8
+!        radius of the sphere  
+!    - na: integer
+!        number of patches along the coordinate directions of the cube
+!    - c0: real *8(3)
+!        center of ellipsoid (x0, y0, z0)
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!                       nodes
+!
+!  Output arguments:
+!    - npatches: integer
+!        number of patches
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+      implicit none
+      real *8, intent(in) :: a, c0(3)
+      integer, intent(in) :: iptype0, na
+      integer, intent(in) :: norder
+      
+      integer, intent(out) :: npatches, npts
 
+      integer nabc(3)
+      real *8 abc(3)
+
+      abc(1) = a
+      abc(2) = a
+      abc(3) = a
+      
+      nabc(1) = na
+      nabc(2) = na
+      nabc(3) = na
+
+      call get_ellipsoid_npat_mem(abc, nabc, c0, norder, &
+        iptype0, npatches, npts)
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine get_sphere_npat(a, na, c0, norder, iptype0, &
+        npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+!
+!  Discretize the surface of a sphere of radius 'a', centered at c0
+!
+!  The surface is discretized by projecting to the surface from
+!  a cube -> sphere 
+!
+!  na determines the number of quadrilateral patches on the faces 
+!  of the cube
+!
+!  Input arugments:
+!    - a: real *8
+!        radius of the sphere  
+!    - na: integer
+!        number of patches along the coordinate directions of the cube
+!    - c0: real *8(3)
+!        center of ellipsoid (x0, y0, z0)
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!                       nodes
+!    - npatches: integer
+!        number of patches
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+!  Output arguments:
+!    - norders: integer(npatches)
+!        order of discretization on each patch
+!        norders(i) = norder, for all i=1,2,...,npatches
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!        iptype = 11, quadrangular patch discretized with GL nodes
+!        iptype = 12, quadrangular patch discretized with Chebyshev nodes
+!        iptype(i) = iptype0, for all i=1,2,...,npatches
+!    - srccoefs: real *8 (9,npts)
+!        basis expansion coefficients of xyz, dxyz/du,
+!        and dxyz/dv on each patch. 
+!        For each point 
+!          * srccoefs(1:3,i) is xyz info
+!          * srccoefs(4:6,i) is dxyz/du info
+!          * srccoefs(7:9,i) is dxyz/dv info
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the 
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!
+      implicit none
+      real *8, intent(in) :: a, c0(3)
+      integer, intent(in) :: iptype0, na, norder, npatches, npts
+
+      integer, intent(out) :: norders(npatches), iptype(npatches)
+      integer, intent(out) :: ixyzs(npatches+1)
+      real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
+      
+      integer nabc(3)
+      real *8 abc(3)
+
+      nabc(1) = na
+      nabc(2) = na
+      nabc(3) = na
+
+      abc(1) = a
+      abc(2) = a
+      abc(3) = a
+
+      call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, &
+        npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+      return
+      end
+!
+!
+!
+!
+!
+!
+      subroutine get_xyz_tensor_fourier_npat_mem(coefs, m, scales, &
+        nuv, norder, iptype0, npatches, npts)
+!
+!  Estimate the number of patches in the discretization of toroidal
+!  double fourier surface given by
+!
+!  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(u) b_{j}(v))
+!  hat(y) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i}(u) b_{j}(v))
+!  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(u) b_{j}(v))
+!
+!  x(u,v) = (\hat(x) \cos(v) - \hat(y) \sin(v))*scales(1)
+!  y(u,v) = (\hat(x) \sin(v) + \hat(y) \cos(v))*scales(2)
+!  z(u,v) = \hat(z)*scales(3)
+!  
+!  u,v \in [0, 2\pi]^2, and 
+!
+!  b_{i}(u) = \{1, \cos{u}, \ldots \cos{m \cdot u}\, ...
+!    \sin{u}, \ldots \sin{m \cdot u} \}.
+!
+!  
+!  Input arugments:
+!    - coefs: real *8(2*m+1, 2*m+1, 3)
+!        \hat(x) = coefs(2*m+1,2*m+1, 1)
+!        \hat(y) = coefs(2*m+1,2*m+1, 2)
+!        \hat(z) = coefs(2*m+1,2*m+1, 3)
+!    - m: integer
+!        max fourier content of \hat(x), \hat(y), and \hat(z)
+!    - scales: real *8(3)
+!        scaling parameter for the coordinates of the surface
+!    - nuv: integer(2)
+!        number of quadrilateral patches in the u, and v direction
+!        respectively, if iptype is 1, then each quadrilateral
+!        patch is subdivided into two triangular patches
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!                       nodes
+!
+!  Output arguments:
+!    - npatches: integer
+!        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
+!                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+!
+!
+      implicit none
+      integer, intent(in) :: m, nuv(2), iptype0, norder
+      real *8, intent(in) :: coefs(2*m+1,2*m+1,3), scales(3)
+      integer, intent(out) :: npatches, npts
+      
+      npatches = 0
+      if (iptype0.eq.1) then
+        npatches = 2*nuv(1)*nuv(2)
+        npts = npatches*(norder+1)*(norder+2)/2
+      endif
+
+      if (iptype0.eq.11.or.iptype0.eq.12) then
+        npatches = nuv(1)*nuv(2) 
+        npts = npatches*(norder+1)*(norder+1)
+      endif
+
+      return
+      end
+!      
+!
+!
+!
+!
+      subroutine get_xyz_tensor_fourier_npat(coefs, m, scales, &
+        nuv, norder, iptype0, npatches, npts, norders, ixyzs, iptype, &
+        srccoefs, srcvals)
+!
+!  Discretize the toroidal double fourier surface given by
+!
+!  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(u) b_{j}(v))
+!  hat(y) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i}(u) b_{j}(v))
+!  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(u) b_{j}(v))
+!
+!  x(u,v) = (\hat(x) \cos(v) - \hat(y) \sin(v))*scales(1)
+!  y(u,v) = (\hat(x) \sin(v) + \hat(y) \cos(v))*scales(2)
+!  z(u,v) = \hat(z)*scales(3)
+!  
+!  u,v \in [0, 2\pi]^2, and 
+!
+!  b_{i}(u) = \{1, \cos{u}, \ldots \cos{m \cdot u}\, ...
+!    \sin{u}, \ldots \sin{m \cdot u} \}.
+!
+!  
+!  Input arugments:
+!    - coefs: real *8(2*m+1, 2*m+1, 3)
+!        \hat(x) = coefs(2*m+1,2*m+1, 1)
+!        \hat(y) = coefs(2*m+1,2*m+1, 2)
+!        \hat(z) = coefs(2*m+1,2*m+1, 3)
+!    - m: integer
+!        max fourier content of \hat(x), \hat(y), and \hat(z)
+!    - scales: real *8(3)
+!        scaling parameter for the coordinates of the surface
+!    - nuv: integer(2)
+!        number of quadrilateral patches in the u, and v direction
+!        respectively, if iptype is 1, then each quadrilateral
+!        patch is subdivided into two triangular patches
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!                       nodes
+!    - npatches: integer
+!        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
+!                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+!  Output arguments:
+!    - norders: integer(npatches)
+!        order of discretization on each patch
+!        norders(i) = norder, for all i=1,2,...,npatches
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!        iptype = 11, quadrangular patch discretized with GL nodes
+!        iptype = 12, quadrangular patch discretized with Chebyshev nodes
+!        iptype(i) = iptype0, for all i=1,2,...,npatches
+!    - srccoefs: real *8 (9,npts)
+!        basis expansion coefficients of xyz, dxyz/du,
+!        and dxyz/dv on each patch. 
+!        For each point 
+!          * srccoefs(1:3,i) is xyz info
+!          * srccoefs(4:6,i) is dxyz/du info
+!          * srccoefs(7:9,i) is dxyz/dv info
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the 
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!
+!
+      implicit none
+      integer, intent(in) :: m, nuv(2), iptype0, norder
+      real *8, intent(in) :: coefs(2*m+1,2*m+1,3), scales(3)
+      integer, intent(in) :: npatches, npts
+      
+      integer, intent(out) :: norders(npatches), iptype(npatches)
+      integer, intent(out) :: ixyzs(npatches+1)
+      real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
+      
+      integer npols
+      real *8, allocatable :: uvs(:,:), wts(:), umatr(:,:), vmatr(:,:)
+      real *8, allocatable, target :: skel(:,:,:)
+      real *8, allocatable, target :: pcoefs(:,:,:)
+      real *8, target :: p3(1), p4(3)
+      real *8, pointer :: ptr1, ptr2, ptr3, ptr4
+      integer, pointer :: iptr3
+      integer, target :: muse
+
+
+      real *8 done, pi
+      procedure (), pointer :: patchpnt
+      integer i, j, k
+      real *8 umin, umax, vmin, vmax
+      integer nover, npatches0
+
+      external xtri_xyz_tensor_fourier_eval
+      external xquad_xyz_tensor_fourier_eval
+
+
+      done = 1.0d0
+      pi = atan(done)*4
+      
+      
+      call get_npols(iptype0, norder, npols)
+      allocate(uvs(2,npols), wts(npols), umatr(npols,npols))
+      allocate(vmatr(npols,npols))
+      call get_disc_exps(norder, npols, iptype0, uvs, umatr, vmatr, wts)
+      allocate(skel(3,3,npatches))
+
+      umin = 0
+      umax = 2*pi
+
+      vmin = 0
+      vmax = 2*pi
+      
+      nover = 0
+      npatches0 = 0
+      
+
+
+      if (iptype0.eq.1) then
+        call xtri_rectmesh_ani(umin, umax, vmin, vmax, nuv(1), nuv(2), &
+            nover, npatches, npatches0, skel)
+        patchpnt => xtri_xyz_tensor_fourier_eval
+      elseif (iptype0.eq.11.or.iptype0.eq.12) then
+        call xquad_rectmesh_ani(umin, umax, vmin, vmax, nuv(1), nuv(2), &
+            nover, npatches, npatches0, skel)
+        patchpnt => xquad_xyz_tensor_fourier_eval
+      endif
+
+
+
+
+      allocate(pcoefs(2*m+1,2*m+1,3))
+
+      do i=1,3
+        do j=1,2*m+1
+          do k=1,2*m+1
+            pcoefs(k,j,i) = coefs(k,j,i)
+          enddo
+        enddo
+      enddo
+
+      muse = m
+      p4(1:3) = scales(1:3)
+
+      ptr1 => skel(1,1,1)
+      ptr2 => pcoefs(1,1,1)
+      iptr3 => muse 
+      ptr4 => p4(1)
+      print *, "npatches=",npatches
+      
+      call getgeominfo(npatches, patchpnt, ptr1, ptr2, iptr3, ptr4, &
+        npols, uvs, umatr, srcvals, srccoefs)
+
+!$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,npatches
+        norders(i) = norder
+        iptype(i) = iptype0
+        ixyzs(i) = (i-1)*npols + 1
+      enddo
+!$OMP END PARALLEL DO
+      
+      ixyzs(npatches+1) = npts + 1
+      
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine get_startorus_npat_mem(radii, nosc, scales, &
+        nuv, norder, iptype0, npatches, npts)
+!
+!  Estimate the number of patches in the discretization of toroidal
+!  double fourier surface given by
+!
+!  x(u,v) = \rho(u) \cos(v)*scales(1)
+!  y(u,v) = \rho(u) \sin(v)*scales(2)
+!  z(u,v) = z(u)*scales(3)
+!  
+!  u,v \in [0, 2\pi]^2, and
+!
+!  \rho(u) = Rmajor + r(u)*cos(u)
+!  z(u) = r(u)*sin(u)
+!
+!  r(u) = rminor + rwave*cos(nosc*u)
+!
+!  Input arugments:
+!    - radii: real *8(3)
+!         radii of the star shaped torus
+!         * radii(1) = rminor
+!         * radii(2) = rmajor
+!         * radii(3) = rwave
+!    - nosc: integer
+!         number of oscillations in the star-shaped torus
+!    - scales: real *8(3)
+!        scaling parameter for the coordinates of the surface
+!    - nuv: integer(2)
+!        number of quadrilateral patches in the u, and v direction
+!        respectively, if iptype is 1, then each quadrilateral
+!        patch is subdivided into two triangular patches
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!                       nodes
+!
+!  Output arguments:
+!    - npatches: integer
+!        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
+!                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+!
+!
+      implicit none
+      integer, intent(in) :: nosc, nuv(2), iptype0, norder
+      real *8, intent(in) :: radii(3), scales(3)
+      integer, intent(out) :: npatches, npts
+      
+      npatches = 0
+      if (iptype0.eq.1) then
+        npatches = 2*nuv(1)*nuv(2)
+        npts = npatches*(norder+1)*(norder+2)/2
+      endif
+
+      if (iptype0.eq.11.or.iptype0.eq.12) then
+        npatches = nuv(1)*nuv(2) 
+        npts = npatches*(norder+1)*(norder+1)
+      endif
+
+      return
+      end
+!      
+!
+!
+!
+!
+      subroutine get_startorus_npat(radii, nosc, scales, &
+        nuv, norder, iptype0, npatches, npts, norders, ixyzs, iptype, &
+        srccoefs, srcvals)
+!
+!  Discretize the star-shaped torus 
+!
+!  x(u,v) = \rho(u) \cos(v)*scales(1)
+!  y(u,v) = \rho(u) \sin(v)*scales(2)
+!  z(u,v) = z(u)*scales(3)
+!
+!  u,v \in [0, 2\pi]^2, and 
+!
+!  \rho(u) = Rmajor + r(u)*cos(u)
+!  z(u) = r(u)*sin(u)
+!
+!  r(u) = rminor + rwave*cos(nosc*u)
+!  
+!  Input arugments:
+!    - radii: real *8(3)
+!         radii of the star shaped torus
+!         * radii(1) = rmajor
+!         * radii(2) = rminor
+!         * radii(3) = rwave
+!    - nosc: integer
+!         number of oscillations in the star-shaped torus
+!    - scales: real *8(3)
+!        scaling parameter for the coordinates of the surface
+!    - nuv: integer(2)
+!        number of quadrilateral patches in the u, and v direction
+!        respectively, if iptype is 1, then each quadrilateral
+!        patch is subdivided into two triangular patches
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!                       nodes
+!    - npatches: integer
+!        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
+!                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+!  Output arguments:
+!    - norders: integer(npatches)
+!        order of discretization on each patch
+!        norders(i) = norder, for all i=1,2,...,npatches
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!        iptype = 11, quadrangular patch discretized with GL nodes
+!        iptype = 12, quadrangular patch discretized with Chebyshev nodes
+!        iptype(i) = iptype0, for all i=1,2,...,npatches
+!    - srccoefs: real *8 (9,npts)
+!        basis expansion coefficients of xyz, dxyz/du,
+!        and dxyz/dv on each patch. 
+!        For each point 
+!          * srccoefs(1:3,i) is xyz info
+!          * srccoefs(4:6,i) is dxyz/du info
+!          * srccoefs(7:9,i) is dxyz/dv info
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the 
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!
+!
+      implicit none
+      integer, intent(in) :: nosc, nuv(2), iptype0, norder
+      real *8, intent(in) :: radii(3), scales(3)
+      integer, intent(in) :: npatches, npts
+      
+      integer, intent(out) :: norders(npatches), iptype(npatches)
+      integer, intent(out) :: ixyzs(npatches+1)
+      real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
+
+      real *8, allocatable :: coefs(:,:,:)
+      integer i, j, k, m
+
+      m = nosc + 1
+
+      allocate(coefs(2*m+1,2*m+1,3))
+
+      do i=1,3
+        do j=1,2*m+1
+          do k=1,2*m+1
+            coefs(k,j,i) = 0
+          enddo
+        enddo
+      enddo
+
+      coefs(1,1,1) = radii(1)
+      coefs(2,1,1) = radii(2)
+      coefs(m+1,1,1) = radii(3)/2
+      coefs(1+abs(nosc-1),1,1) = -radii(3)/2
+      
+      coefs(m+2,1,3) = radii(2)
+      coefs(2*m+1,1,3) = radii(3)/2
+      if (nosc-1.gt.0) coefs(m+1+nosc-1,1,3) = -radii(3)/2
+      if (nosc-1.lt.0) coefs(m+1+abs(nosc-1),1,3) = radii(3)/2
+
+      call get_xyz_tensor_fourier_npat(coefs, m, scales, &
+        nuv, norder, iptype0, npatches, npts, norders, ixyzs, iptype, &
+        srccoefs, srcvals)
+
+      return
+      end
