@@ -386,7 +386,7 @@
 !
 !
       subroutine get_xyz_tensor_fourier_npat_mem(coefs, m, scales, &
-        nuv, norder, iptype0, npatches, npts)
+        iort, nuv, norder, iptype0, npatches, npts)
 !
 !  Estimate the number of patches in the discretization of toroidal
 !  double fourier surface given by
@@ -414,6 +414,10 @@
 !        max fourier content of \hat(x), \hat(y), and \hat(z)
 !    - scales: real *8(3)
 !        scaling parameter for the coordinates of the surface
+!    - iort: integer
+!        orientiation flag
+!        if iort = 1, then parameter space is [0,2\pi)^2
+!        if iort = -1, then parameter space is [2\pi,0) \times [0,2\pi)
 !    - nuv: integer(2)
 !        number of quadrilateral patches in the u, and v direction
 !        respectively, if iptype is 1, then each quadrilateral
@@ -437,7 +441,7 @@
 !
 !
       implicit none
-      integer, intent(in) :: m, nuv(2), iptype0, norder
+      integer, intent(in) :: m, nuv(2), iptype0, norder, iort
       real *8, intent(in) :: coefs(2*m+1,2*m+1,3), scales(3)
       integer, intent(out) :: npatches, npts
       
@@ -460,8 +464,8 @@
 !
 !
       subroutine get_xyz_tensor_fourier_npat(coefs, m, scales, &
-        nuv, norder, iptype0, npatches, npts, norders, ixyzs, iptype, &
-        srccoefs, srcvals)
+        iort, nuv, norder, iptype0, npatches, npts, norders, ixyzs, &
+        iptype, srccoefs, srcvals)
 !
 !  Discretize the toroidal double fourier surface given by
 !
@@ -488,6 +492,10 @@
 !        max fourier content of \hat(x), \hat(y), and \hat(z)
 !    - scales: real *8(3)
 !        scaling parameter for the coordinates of the surface
+!    - iort: integer
+!        orientiation flag
+!        if iort = 1, then parameter space is [0,2\pi)^2
+!        if iort = -1, then parameter space is [2\pi,0) \times [0,2\pi)
 !    - nuv: integer(2)
 !        number of quadrilateral patches in the u, and v direction
 !        respectively, if iptype is 1, then each quadrilateral
@@ -538,7 +546,7 @@
       implicit none
       integer, intent(in) :: m, nuv(2), iptype0, norder
       real *8, intent(in) :: coefs(2*m+1,2*m+1,3), scales(3)
-      integer, intent(in) :: npatches, npts
+      integer, intent(in) :: npatches, npts, iort
       
       integer, intent(out) :: norders(npatches), iptype(npatches)
       integer, intent(out) :: ixyzs(npatches+1)
@@ -574,11 +582,19 @@
       call get_disc_exps(norder, npols, iptype0, uvs, umatr, vmatr, wts)
       allocate(skel(3,3,npatches))
 
-      umin = 0
-      umax = 2*pi
+
+      umin = 0 
+      umax = 2*pi 
 
       vmin = 0
       vmax = 2*pi
+
+      if (iort.lt.0) then
+        umin = 2*pi
+        umax = 0 
+
+      endif
+
       
       nover = 0
       npatches0 = 0
@@ -619,7 +635,7 @@
       call getgeominfo(npatches, patchpnt, ptr1, ptr2, iptr3, ptr4, &
         npols, uvs, umatr, srcvals, srccoefs)
 
-!$OMP PARALLEL DO DEFAULT(SHARED)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
       do i=1,npatches
         norders(i) = norder
         iptype(i) = iptype0
@@ -793,7 +809,7 @@
       real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
 
       real *8, allocatable :: coefs(:,:,:)
-      integer i, j, k, m
+      integer i, j, k, m, iort
 
       m = nosc + 1
 
@@ -817,9 +833,226 @@
       if (nosc-1.gt.0) coefs(m+1+nosc-1,1,3) = -radii(3)/2
       if (nosc-1.lt.0) coefs(m+1+abs(nosc-1),1,3) = radii(3)/2
 
+      iort = 1
+
       call get_xyz_tensor_fourier_npat(coefs, m, scales, &
-        nuv, norder, iptype0, npatches, npts, norders, ixyzs, iptype, &
-        srccoefs, srcvals)
+        iort, nuv, norder, iptype0, npatches, npts, norders, ixyzs, &
+        iptype, srccoefs, srcvals)
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine get_stellarator_npat_mem(nuv, norder, iptype0, &
+        npatches, npts)
+!
+!  Estimate the number of patches in the discretization of 
+!  the stellarator example in the fmm3dbie paper
+!  given by
+!
+!  x(u,v) = \hat(x)(u,v) \cos(v)
+!  y(u,v) = \hat(x)(u,v) \sin(v)
+!  z(u,v) = \hat(z)(u,v)
+!  
+!  u,v \in [0, 2\pi]^2, and
+!
+!  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(u) b_{j}(v))
+!  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(u) b_{j}(v))
+!
+!  with m = 2
+!  and the only non-zero coefs given by
+!  x_{3,2} = 0.17 
+!  x_{5,4} = 0.17 
+!  x_{1,1} = 4.5 
+!  x_{2,1} = 0.75 
+!  x_{3,1} = 0.11 
+!  x_{2,2} = 0.07 + (-0.45) 
+!  x_{4,4} = -0.07 + (-0.45) 
+!
+!  z_{5,2} = 0.17 
+!  z_{3,4} = -0.17 
+!  z_{4,1} = 1.25 
+!  z_{5,1} = 0.11 
+!  z_{4,2} = 0.07 - (-0.45) 
+!  z_{2,4} = 0.07 + (-0.45) 
+!
+!  Input arugments:
+!    - nuv: integer(2)
+!        number of quadrilateral patches in the u, and v direction
+!        respectively, if iptype is 1, then each quadrilateral
+!        patch is subdivided into two triangular patches
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!                       nodes
+!
+!  Output arguments:
+!    - npatches: integer
+!        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
+!                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+!
+!
+      implicit none
+      integer, intent(in) :: nuv(2), iptype0, norder
+      integer, intent(out) :: npatches, npts
+      
+      npatches = 0
+      if (iptype0.eq.1) then
+        npatches = 2*nuv(1)*nuv(2)
+        npts = npatches*(norder+1)*(norder+2)/2
+      endif
+
+      if (iptype0.eq.11.or.iptype0.eq.12) then
+        npatches = nuv(1)*nuv(2) 
+        npts = npatches*(norder+1)*(norder+1)
+      endif
+
+      return
+      end
+!      
+!
+!
+!
+!
+      subroutine get_stellarator_npat(nuv, norder, iptype0, npatches, &
+        npts, norders, ixyzs, iptype, srccoefs, srcvals)
+!
+!  Discretize the stellarator example in the fmm3dbie paper
+!  given by
+!
+!  x(u,v) = \hat(x)(u,v) \cos(v)
+!  y(u,v) = \hat(x)(u,v) \sin(v)
+!  z(u,v) = \hat(z)(u,v)
+!  
+!  u,v \in [0, 2\pi]^2, and
+!
+!  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(u) b_{j}(v))
+!  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(u) b_{j}(v))
+!
+!  with m = 2
+!  and the only non-zero coefs given by
+!  x_{3,2} = 0.17 
+!  x_{5,4} = 0.17 
+!  x_{1,1} = 4.5 
+!  x_{2,1} = 0.75 
+!  x_{3,1} = 0.11 
+!  x_{2,2} = 0.07 + (-0.45) 
+!  x_{4,4} = -0.07 + (-0.45) 
+!
+!  z_{5,2} = 0.17 
+!  z_{3,4} = -0.17 
+!  z_{4,1} = 1.25 
+!  z_{5,1} = 0.11 
+!  z_{4,2} = 0.07 - (-0.45) 
+!  z_{2,4} = 0.07 + (-0.45) 
+!
+!  Input arugments:
+!    - nuv: integer(2)
+!        number of quadrilateral patches in the u, and v direction
+!        respectively, if iptype is 1, then each quadrilateral
+!        patch is subdivided into two triangular patches
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!                       nodes
+!    - npatches: integer
+!        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
+!                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+!  Output arguments:
+!    - norders: integer(npatches)
+!        order of discretization on each patch
+!        norders(i) = norder, for all i=1,2,...,npatches
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!        iptype = 11, quadrangular patch discretized with GL nodes
+!        iptype = 12, quadrangular patch discretized with Chebyshev nodes
+!        iptype(i) = iptype0, for all i=1,2,...,npatches
+!    - srccoefs: real *8 (9,npts)
+!        basis expansion coefficients of xyz, dxyz/du,
+!        and dxyz/dv on each patch. 
+!        For each point 
+!          * srccoefs(1:3,i) is xyz info
+!          * srccoefs(4:6,i) is dxyz/du info
+!          * srccoefs(7:9,i) is dxyz/dv info
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the 
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!
+!
+      implicit none
+      integer, intent(in) :: nuv(2), iptype0, norder
+      integer, intent(in) :: npatches, npts
+      
+      integer, intent(out) :: norders(npatches), iptype(npatches)
+      integer, intent(out) :: ixyzs(npatches+1)
+      real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
+
+      real *8, allocatable :: coefs(:,:,:)
+      real *8 scales(3)
+      integer i, j, k, m, iort
+
+      m = 2
+
+      allocate(coefs(2*m+1,2*m+1,3))
+
+      do i=1,3
+        do j=1,2*m+1
+          do k=1,2*m+1
+            coefs(k,j,i) = 0
+          enddo
+        enddo
+      enddo
+
+      coefs(3,2,1) = 0.17d0
+      coefs(5,4,1) = 0.17d0
+      coefs(1,1,1) = 4.5d0
+      coefs(2,1,1) = 0.75d0
+      coefs(3,1,1) = 0.11d0
+      coefs(2,2,1) = -0.38d0
+      coefs(4,4,1) = -0.52d0
+
+      coefs(5,2,3) = 0.17d0
+      coefs(3,4,3) = -0.17d0
+      coefs(4,1,3) = 1.25d0
+      coefs(5,1,3) = 0.11d0
+      coefs(4,2,3) = 0.52d0 
+      coefs(2,4,3) = -0.38d0
+
+      scales(1) = 1
+      scales(2) = 1
+      scales(3) = 1
+
+      iort = -1
+
+
+      call get_xyz_tensor_fourier_npat(coefs, m, scales, &
+        iort, nuv, norder, iptype0, npatches, npts, norders, ixyzs, &
+        iptype, srccoefs, srcvals)
 
       return
       end

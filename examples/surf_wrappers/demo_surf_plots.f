@@ -43,6 +43,7 @@
       ifellip = 0
       ifsphere = 0
       ifstartorus = 1
+      ifstell = 1
 
       if (ifellip.eq.1) then
 
@@ -133,6 +134,8 @@
 
         call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
      1    iptype, npts, srccoefs, srcvals, 'sphere_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
       endif
 
       if (ifstartorus.eq.1) then
@@ -191,6 +194,58 @@
 
         call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
      1    iptype, npts, srccoefs, srcvals, 'star_torus_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+      endif
+
+      if (ifstell.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing stellarator"    
+        print *, ""
+        print *, ""
+
+
+        nuv(1) = 10
+        nuv(2) = 30
+
+        call get_stellarator_npat_mem(nuv, norder, iptype0, 
+     1     npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_stellarator_npat(nuv, norder, iptype0, npatches, npts, 
+     1     norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'stellarator_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'stellarator_tri_msh.vtk',
+     2     'a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 11
+
+        call get_stellarator_npat_mem(nuv, norder, iptype0, 
+     1     npatches, npts)
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_stellarator_npat(nuv, norder, iptype0, npatches, npts, 
+     1     norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'stellarator_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
       endif
 
       stop
