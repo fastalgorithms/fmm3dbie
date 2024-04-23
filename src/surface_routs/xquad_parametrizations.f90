@@ -7,7 +7,7 @@ subroutine xquad_wtorus_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
     radii, scales, p4)
   implicit real *8 (a-h,o-z)
   real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), scales(3)
-  real *8 :: radii(3)
+  real *8 :: radii(3), dxyzdst(3,2)
 
   !
   ! project the quad iquad in quadinfo onto a torus
@@ -40,62 +40,27 @@ subroutine xquad_wtorus_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
   y2=quadinfo(2,3,iquad)
   z2=quadinfo(3,3,iquad)
 
-  rminor = radii(1)
-  rmajor = radii(2)
-  rwave = radii(3)
-
-  a = scales(1)
-  b = scales(2)
-  c = scales(3)
 
   nosc = p4
 
 
-  !
-  ! ... process the geometry, return the point location on the almond
-  ! and the derivatives with respect to u and v
-  !
   s = x0+(1.0d0+u)/2*(x1-x0)+(1.0d0+v)/2*(x2-x0)
   t = y0+(1.0d0+u)/2*(y1-y0)+(1.0d0+v)/2*(y2-y0)
 
-  rr = rmajor+rminor*cos(t)+rwave*cos(nosc*s)
-
-
-  xyz(1) = a*rr*cos(s)
-  xyz(2) = b*rr*sin(s)
-  xyz(3) = c*rminor*sin(t)
+  call wtorus_eval(s, t, radii, scales, nosc, xyz, dxyzdst)
 
   dsdu = (x1-x0)/2
   dsdv = (x2-x0)/2
   dtdu = (y1-y0)/2
   dtdv = (y2-y0)/2
 
-  drrds = -nosc*rwave*sin(nosc*s)
-  drrdt = -rminor*sin(t)
+  dxyzduv(1,1) = dxyzdst(1,1)*dsdu + dxyzdst(1,2)*dtdu
+  dxyzduv(2,1) = dxyzdst(2,1)*dsdu + dxyzdst(2,2)*dtdu
+  dxyzduv(3,1) = dxyzdst(3,1)*dsdu + dxyzdst(3,2)*dtdu
 
-  dxds = a*drrds*cos(s) - a*rr*sin(s)
-  dyds = b*drrds*sin(s) + b*rr*cos(s)
-  dzds = 0
-
-  dxdt = a*drrdt*cos(s)
-  dydt = b*drrdt*sin(s)
-  dzdt = c*rminor*cos(t)
-  
-  dxdu = dxds*dsdu + dxdt*dtdu
-  dydu = dyds*dsdu + dydt*dtdu
-  dzdu = dzds*dsdu + dzdt*dtdu
-
-  dxdv = dxds*dsdv + dxdt*dtdv
-  dydv = dyds*dsdv + dydt*dtdv
-  dzdv = dzds*dsdv + dzdt*dtdv
-
-  dxyzduv(1,1) = dxdu
-  dxyzduv(2,1) = dydu
-  dxyzduv(3,1) = dzdu
-
-  dxyzduv(1,2) = dxdv
-  dxyzduv(2,2) = dydv
-  dxyzduv(3,2) = dzdv
+  dxyzduv(1,2) = dxyzdst(1,1)*dsdv + dxyzdst(1,2)*dtdv
+  dxyzduv(2,2) = dxyzdst(2,1)*dsdv + dxyzdst(2,2)*dtdv
+  dxyzduv(3,2) = dxyzdst(3,1)*dsdv + dxyzdst(3,2)*dtdv
 
   return
 end subroutine xquad_wtorus_eval
@@ -107,112 +72,6 @@ end subroutine xquad_wtorus_eval
 !
 !
 
-
-subroutine xquad_startorus_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
-    radii, scales, p4)
-  implicit real *8 (a-h,o-z)
-  real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), scales(3)
-  real *8 :: radii(3)
-
-  !
-  ! project the quad iquad in quadinfo onto a torus
-  !
-  !    Input:
-  ! iquad - quad number to map
-  ! u,v - local uv coordinates on quad iquad
-  ! quadinfo - flat skeleton quad info
-  ! radii - the two radii defining the torus, the third
-  !     radius is the radius of osciallation
-  ! scales - scaling for x,y,z components from the standard torus
-  ! p4 - number of oscillations (must be an integer currently recast
-  !   as a double precision number)
-  !
-  !    Output:
-  ! xyz - point on the sphere
-  ! dxyzduv - first and second derivative information
-  !
-  !
-
-  x0=quadinfo(1,1,iquad)
-  y0=quadinfo(2,1,iquad)
-  z0=quadinfo(3,1,iquad)
-
-  x1=quadinfo(1,2,iquad)
-  y1=quadinfo(2,2,iquad)
-  z1=quadinfo(3,2,iquad)
-
-  x2=quadinfo(1,3,iquad)
-  y2=quadinfo(2,3,iquad)
-  z2=quadinfo(3,3,iquad)
-
-  rminor = radii(1)
-  rmajor = radii(2)
-  rwave = radii(3)
-
-  a = scales(1)
-  b = scales(2)
-  c = scales(3)
-
-  nosc = p4
-
-
-  !
-  ! ... process the geometry, return the point location on the almond
-  ! and the derivatives with respect to u and v
-  !
-  s = x0+(1.0d0+u)/2*(x1-x0)+(1.0d0+v)/2*(x2-x0)
-  t = y0+(1.0d0+u)/2*(y1-y0)+(1.0d0+v)/2*(y2-y0)
-
-  rrs = rminor + rwave*cos(nosc*s)
-  drrsds = -nosc*rwave*sin(nosc*s)
-
-  rho = rmajor + rrs*cos(s)
-  zz = rrs*sin(s)
-
-  drhods = drrsds*cos(s) - rrs*sin(s)
-  dzzds = drrsds*sin(s) + rrs*cos(s)
-
-  xyz(1) = a*rho*cos(t)
-  xyz(2) = b*rho*sin(t)
-  xyz(3) = c*zz
-
-  dsdu = (x1-x0)/2
-  dsdv = (x2-x0)/2
-  dtdu = (y1-y0)/2
-  dtdv = (y2-y0)/2
-
-  dxds = a*drhods*cos(t)
-  dyds = b*drhods*sin(t)
-  dzds = c*dzzds
-
-  dxdt = -a*rho*sin(t)
-  dydt = b*rho*cos(t)
-  dzdt = 0 
-  
-  dxdu = dxds*dsdu + dxdt*dtdu
-  dydu = dyds*dsdu + dydt*dtdu
-  dzdu = dzds*dsdu + dzdt*dtdu
-
-  dxdv = dxds*dsdv + dxdt*dtdv
-  dydv = dyds*dsdv + dydt*dtdv
-  dzdv = dzds*dsdv + dzdt*dtdv
-
-  dxyzduv(1,1) = dxdu
-  dxyzduv(2,1) = dydu
-  dxyzduv(3,1) = dzdu
-
-  dxyzduv(1,2) = dxdv
-  dxyzduv(2,2) = dydv
-  dxyzduv(3,2) = dzdv
-
-  return
-end subroutine xquad_startorus_eval
-!
-!
-!
-!
-!
-!
 
 subroutine xquad_stell_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
     deltas, m, n)
@@ -309,6 +168,175 @@ subroutine xquad_stell_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
 
   return
 end subroutine xquad_stell_eval
+!
+!
+!
+!
+!
+!
+!
+
+subroutine xquad_xyz_tensor_fourier_eval(iquad, u, v, xyz, dxyzduv, &
+    quadinfo, coefs, m, scales)
+  implicit real *8 (a-h,o-z)
+  real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), coefs(2*m+1,2*m+1,3)
+  real *8 :: dxyzdst(3,2), scales(3)
+
+  !
+  ! project the triangle itri in triainfo onto a double fourier toriodal
+  ! surface
+  !
+  !    Input:
+  ! iquad - quadrangle number to map
+  ! u,v - local uv coordinates on quadrangle iquad
+  ! quadinfo - flat skeleton quadrangle info
+  !
+  ! surface is given by
+  !
+  ! \hat(x) = \sum_{i=1}^{2m+1} \sum_{j=1} x_{ij} b_{i}(s) b_{j}(t)
+  ! \hat(y) = \sum_{i=1}^{2m+1} \sum_{j=1} y_{ij} b_{i}(s) b_{j}(t)
+  ! \hat(z) = \sum_{i=1}^{2m+1} \sum_{j=1} z_{ij} b_{i}(s) b_{j}(t)
+  !
+  ! x(s,t) = (\hat(x) \cos(s) - \hat(y) \sin(s))*scales(1)
+  ! y(s,t) = (\hat(x) \sin(s) + \hat(y) \cos(s))*scales(2)
+  ! z(s,t) = \hat(z)*scales(3)
+  !
+  !    Output:
+  ! xyz - point on the 
+  ! dxyzduv - first derivative information
+  !
+  !
+
+  x0=quadinfo(1,1,iquad)
+  y0=quadinfo(2,1,iquad)
+  z0=quadinfo(3,1,iquad)
+
+  x1=quadinfo(1,2,iquad)
+  y1=quadinfo(2,2,iquad)
+  z1=quadinfo(3,2,iquad)
+
+  x2=quadinfo(1,3,iquad)
+  y2=quadinfo(2,3,iquad)
+  z2=quadinfo(3,3,iquad)
+
+
+  !
+  ! ... process the geometry, return the point location on the almond
+  ! and the derivatives with respect to u and v
+  !
+  s = x0+(1.0d0+u)*(x1-x0)/2+(1.0d0+v)*(x2-x0)/2
+  t = y0+(1.0d0+u)*(y1-y0)/2+(1.0d0+v)*(y2-y0)/2
+
+  call xyz_tensor_fourier_eval(s, t, coefs, m, scales, xyz, dxyzdst)
+
+  dsdu = (x1-x0)/2
+  dsdv = (x2-x0)/2
+  dtdu = (y1-y0)/2
+  dtdv = (y2-y0)/2
+
+
+  dxyzduv(1,1) = dxyzdst(1,1)*dsdu + dxyzdst(1,2)*dtdu
+  dxyzduv(2,1) = dxyzdst(2,1)*dsdu + dxyzdst(2,2)*dtdu
+  dxyzduv(3,1) = dxyzdst(3,1)*dsdu + dxyzdst(3,2)*dtdu
+
+  dxyzduv(1,2) = dxyzdst(1,1)*dsdv + dxyzdst(1,2)*dtdv
+  dxyzduv(2,2) = dxyzdst(2,1)*dsdv + dxyzdst(2,2)*dtdv
+  dxyzduv(3,2) = dxyzdst(3,1)*dsdv + dxyzdst(3,2)*dtdv
+
+  return
+end subroutine xquad_xyz_tensor_fourier_eval
+
+
+
+
+
+subroutine xquad_ellipsoid_eval(iquad, u, v, xyz, dxyzduv, & 
+  quadinfo,p2, p3, p4)
+
+!
+! project the quadrangle iquad in quadinfo onto the sphere
+!
+!    Input:
+! iquad - quadrangle number to map
+! u,v - local uv coordinates on quadrangle iquad
+! quadinfo - flat skeleton quadrangle info
+! p2(3) - semi major axes
+! p3(3) - center of ellipsoid
+! p4 - dummy parameters
+!
+!    Output:
+! xyz - point on the sphere
+! dxyzduv - first derivative information
+!
+!
+
+  implicit real *8 (a-h,o-z)
+  real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), p2(3), p3(3)
+
+  x0=quadinfo(1,1,iquad)
+  y0=quadinfo(2,1,iquad)
+  z0=quadinfo(3,1,iquad)
+
+  x1=quadinfo(1,2,iquad)
+  y1=quadinfo(2,2,iquad)
+  z1=quadinfo(3,2,iquad)
+
+  x2=quadinfo(1,3,iquad)
+  y2=quadinfo(2,3,iquad)
+  z2=quadinfo(3,3,iquad)
+
+!
+! ... process the geometry, return the point location on the sphere
+! and the derivatives with respect to u and v
+!
+  x=x0+(1.0d0+u)*(x1-x0)/2+(1.0d0+v)*(x2-x0)/2
+  y=y0+(1.0d0+u)*(y1-y0)/2+(1.0d0+v)*(y2-y0)/2
+  z=z0+(1.0d0+u)*(z1-z0)/2+(1.0d0+v)*(z2-z0)/2
+
+  dxdu = (x1-x0)/2
+  dydu = (y1-y0)/2
+  dzdu = (z1-z0)/2
+    
+  dxdv = (x2-x0)/2
+  dydv = (y2-y0)/2
+  dzdv = (z2-z0)/2
+
+!
+! project onto the ellipsoid
+!
+  r=sqrt(x**2 + y**2 + z**2)
+  xyz(1)=p2(1)*x/r + p3(1)
+  xyz(2)=p2(2)*y/r + p3(2)
+  xyz(3)=p2(3)*z/r + p3(3)
+
+  a = x0*(x1-x0) + y0*(y1-y0) + z0*(z1-z0)
+  b = (x1-x0)*(x2-x0) + (y1-y0)*(y2-y0) + (z1-z0)*(z2-z0)
+  c = (x1-x0)*(x1-x0) + (y1-y0)*(y1-y0) + (z1-z0)*(z1-z0)
+
+  drdu = (a + v*b + u*c)/r
+  drdu2 = (r*c - r*drdu*drdu)/r/r
+
+  e = x0*(x2-x0) + y0*(y2-y0) + z0*(z2-z0)
+  f = b
+  g = (x2-x0)*(x2-x0) + (y2-y0)*(y2-y0) + (z2-z0)*(z2-z0)
+
+  drdv = (e + u*f + v*g)/r
+  drdv2 = (r*g - r*drdv*drdv)/r/r
+
+  drduv = (r*b - r*drdu*drdv)/r/r
+
+! du
+  dxyzduv(1,1) = p2(1)*(r*dxdu-x*drdu)/r/r
+  dxyzduv(2,1) = p2(2)*(r*dydu-y*drdu)/r/r
+  dxyzduv(3,1) = p2(3)*(r*dzdu-z*drdu)/r/r
+
+! dv
+  dxyzduv(1,2) = p2(1)*(r*dxdv-x*drdv)/r/r
+  dxyzduv(2,2) = p2(2)*(r*dydv-y*drdv)/r/r
+  dxyzduv(3,2) = p2(3)*(r*dzdv-z*drdv)/r/r
+
+  return
+end subroutine xquad_ellipsoid_eval
 !
 !
 !
@@ -592,8 +620,11 @@ subroutine xquad_rectmesh(umin, umax, vmin, vmax, nover, maxquad, &
 
   return
 end subroutine xquad_rectmesh
-
-
+!
+!
+!
+!
+!
 subroutine xquad_rectmesh0(umin, umax, vmin, vmax, quadskel)
   implicit real *8 (a-h,o-z)
   real *8 :: quadskel(3,3)
@@ -630,8 +661,223 @@ subroutine xquad_rectmesh0(umin, umax, vmin, vmax, quadskel)
 
   return
 end subroutine xquad_rectmesh0
+!
+!
+!
+!
+!
+subroutine xquad_rectmesh_3d(v1, v2, v3, v4, nu, nv, npatches, quadskel)
+  implicit real *8 (a-h,o-z)
+  real *8 quadskel(3,3,npatches), v1(3), v2(3), v3(3), v4(3)
+  real *8 vl(3), vr(3), vb(3), vt(3)
+  real *8 uvw1(3), uvw2(3), uvw3(3), uvw4(3)
+
+  vl(1:3) = v4(1:3) - v1(1:3)
+  vr(1:3) = v3(1:3) - v2(1:3)
+
+  nquad = 0
+
+  do i = 1, nv
+    uvw1(1:3) = v1(1:3) + (i-1)*vl(1:3)/(nv+ 0.0d0)
+    uvw4(1:3) = uvw1(1:3) + vl(1:3)/(nv+0.0d0)
+
+    vb(1:3) =  v2(1:3) + (i-1)*vr(1:3)/(nv+0.0d0) - uvw1(1:3)
+    vt(1:3) = uvw1(1:3) + vb(1:3) + vr(1:3)/(nv+0.0d0) - uvw4(1:3)
+        
+    uvw2(1:3) = uvw1(1:3) + vb(1:3)/(nu+0.0d0)
+    uvw3(1:3) = uvw4(1:3) + vt(1:3)/(nu+0.0d0)
+
+    do j = 1, nu
+      call xquad_rectmesh0_3d(uvw1, uvw2, uvw3, uvw4, &
+        quadskel(1,1,nquad+1))
+      nquad = nquad + 1
+      uvw1(1:3) = uvw2(1:3)
+      uvw2(1:3) = uvw2(1:3) + vb(1:3)/(nu+0.0d0)
+      uvw4(1:3) = uvw3(1:3)
+      uvw3(1:3) = uvw3(1:3) + vt(1:3)/(nu+0.0d0)
+    enddo
+  enddo
+
+end subroutine xquad_rectmesh_3d
+!
+!
+!
+!
+!
+subroutine xquad_rectmesh0_3d(v1, v2, v3, v4, quadskel)
+  implicit real *8 (a-h,o-z)
+  real *8 v1(3), v2(3), v3(3), v4(3), quadskel(3,3)
+
+  do i=1,3
+    quadskel(i,1) = v1(i)
+    quadskel(i,2) = v2(i)
+    quadskel(i,3) = v4(i)
+  enddo
+
+  return
+end subroutine xquad_rectmesh0_3d
+!
+!
+!
+!
+!
+subroutine xquad_get_rectparapiped(a, b, c, na, nb, nc, &
+  npatches, quadskel)
+
+  implicit real *8 (a-h,o-z)
+  real *8 quadskel(3,3,npatches),vs(3,4)
+  real *8 vcube(3,8),xnorm(3)
+
+      
+      
+  vcube(1,1) = -a
+  vcube(2,1) = -b
+  vcube(3,1) = -c
+
+  vcube(1,2) = a
+  vcube(2,2) = -b
+  vcube(3,2) = -c
+
+  vcube(1,3) = a
+  vcube(2,3) = b
+  vcube(3,3) = -c
+
+  vcube(1,4) = -a
+  vcube(2,4) = b
+  vcube(3,4) = -c
+
+  vcube(1,5) = -a
+  vcube(2,5) = -b
+  vcube(3,5) = c
+
+  vcube(1,6) = a
+  vcube(2,6) = -b
+  vcube(3,6) = c
+
+  vcube(1,7) = a
+  vcube(2,7) = b
+  vcube(3,7) = c
+
+  vcube(1,8) = -a
+  vcube(2,8) = b
+  vcube(3,8) = c
 
 
+
+
+!       z = -c face      
+  vs(1:3,1) = vcube(1:3,1)
+  vs(1:3,2) = vcube(1:3,4)
+  vs(1:3,3) = vcube(1:3,3)
+  vs(1:3,4) = vcube(1:3,2)
+  nquad = 0
+  call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),nb,na, &
+    npatches,quadskel(1,1,nquad+1))
+
+  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
+  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
+
+  nquad = nquad + na*nb
+      
+
+!       z = c face      
+  vs(1:3,1:4) = vcube(1:3,5:8)
+  call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4), na, nb, &
+    npatches,quadskel(1,1,nquad+1))
+
+  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
+  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
+
+  nquad = nquad + na*nb
+
+!      y = -b face
+!
+  vs(1:3,1) = vcube(1:3,1)
+  vs(1:3,2) = vcube(1:3,2)
+  vs(1:3,3) = vcube(1:3,6)
+  vs(1:3,4) = vcube(1:3,5)
+
+  call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),na,nc, &
+    npatches,quadskel(1,1,nquad+1))
+  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
+  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
+
+
+  nquad = nquad + na*nc
+
+!      y = b face
+!
+  vs(1:3,1) = vcube(1:3,4)
+  vs(1:3,2) = vcube(1:3,8)
+  vs(1:3,3) = vcube(1:3,7)
+  vs(1:3,4) = vcube(1:3,3)
+
+  call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),nc,na, &
+    npatches,quadskel(1,1,nquad+1))
+  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
+  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
+
+  nquad = nquad + na*nc
+
+
+
+!      x = -a face
+!
+  vs(1:3,1) = vcube(1:3,1)
+  vs(1:3,2) = vcube(1:3,5)
+  vs(1:3,3) = vcube(1:3,8)
+  vs(1:3,4) = vcube(1:3,4)
+
+  call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),nc,nb, &
+    npatches,quadskel(1,1,nquad+1))
+  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
+  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
+
+
+  nquad = nquad + nb*nc
+
+!      x = a face
+!
+  vs(1:3,1) = vcube(1:3,2)
+  vs(1:3,2) = vcube(1:3,3)
+  vs(1:3,3) = vcube(1:3,7)
+  vs(1:3,4) = vcube(1:3,6)
+
+  call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),nb,nc, &
+    npatches,quadskel(1,1,nquad+1))
+  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
+  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
+
+  nquad = nquad + nb*nc
+
+
+  return
+end
+!
+!
+!
+!
+!
+!
+
+subroutine get_norm_quadskel(quad, xnorm)
+  implicit real *8 (a-h,o-z)
+  real *8 quad(3,3), xnorm(3), xu(3), xv(3)
+      
+
+  xu(1:3) = quad(1:3,2) - quad(1:3,1)
+  xv(1:3) = quad(1:3,3) - quad(1:3,1)
+
+  xnorm(1:3) = 0
+  call cross_prod3d(xu, xv, xnorm)
+
+
+  return
+end
+!
+!
+!
+!
 
 
 

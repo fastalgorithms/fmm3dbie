@@ -67,6 +67,9 @@
 !
 !      get_mean_curvature - compute the mean curvature at all discretization
 !         points on the surface
+!         
+!      getgeominfo - given a function handle for the surface, and a skeleton
+!         mesh, discretize the surface
 !      
 !
 !         
@@ -138,20 +141,18 @@ subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
 
 
 
-    if(iptype(ip).eq.1) then
-      do i=1,npols
-        ipt = ixyzs(ip)+i-1
-        call get_basis_pols(uvs(1,i),norder,npols,iptype(ip),pols)
-        do idim=1,nd
-          dtail(idim,ipt) = 0
-          do jj=1,ntailcoefs
-            j = itailcoefs(jj)
-            ic = ixyzs(ip)+j-1
-            dtail(idim,ipt) = dtail(idim,ipt) + pols(j)*dcoefs(idim,ic)
-          enddo
+    do i=1,npols
+      ipt = ixyzs(ip)+i-1
+      call get_basis_pols(uvs(1,i),norder,npols,iptype(ip),pols)
+      do idim=1,nd
+        dtail(idim,ipt) = 0
+        do jj=1,ntailcoefs
+          j = itailcoefs(jj)
+          ic = ixyzs(ip)+j-1
+          dtail(idim,ipt) = dtail(idim,ipt) + pols(j)*dcoefs(idim,ic)
         enddo
       enddo
-    endif
+    enddo
 
     errp(ip) = 0
     do idim=1,nd
@@ -2515,3 +2516,84 @@ end subroutine get_mean_curvature
 !
 !
 !
+
+subroutine getgeominfo(npatches, patchpnt, par1, par2, par3, par4, &
+    npols, uvs, umatr, srcvals, srccoefs)
+  implicit real *8 (a-h,o-z)
+  real *8 :: uvs(2,npols), srcvals(12,*)
+  real *8 :: umatr(npols,npols),srccoefs(9,*)
+  external patchpnt
+
+  real *8 :: xyz(3), dxyzduv(3,10), xyznorm(3)
+  real *8 :: xyztang1(3), xyztang2(3)
+
+  !
+  !       This subroutine return all points, normals and tangents from
+  !       geometry descriptor
+  !
+  !       Input parameters:
+  !
+  !         npatches: integer: the number of patches
+  !         patchpnt: external: subroutine evaluating points along
+  !               the surface, given patch by patch, must be of the form
+  !                     patchpnt(ipatch,u,v,xyz,dxyzduv,par1,par2,par3,par4)
+  !         par1,par2,par3,par4: extra parameters
+  !         npols: integer: the total number of polynomials for each patch
+  !         uvs: real *8(2,npols): local u-discretization points for each patch
+  !         umatr: real *8(npols,npols): values to coeffs matrix on standard patch 
+  !
+  !       Output parameters:
+  !
+  !         srcvals: real *8(12,npts): geometry info with first derivatives
+  !               srcvals(1:3,:) - xyz
+  !               srcvals(4:6,:) - dxyz/du
+  !               srcvals(7:9,:) - dxyz/dv
+  !               srcvals(10:12,:) - xyznorms
+  !
+  !         srccoefs: real *8 (9,npts): geometry info as koornwinder expansion
+  !                     coefficients
+  !                    
+  !         npts: integer: the total number of points in discretization
+  !
+
+
+  do ipatch=1,npatches
+    do i=1,npols
+
+      u=uvs(1,i)
+      v=uvs(2,i)
+
+      ipt = (ipatch-1)*npols + i 
+
+      call patchpnt(ipatch,u,v,srcvals(1,ipt),srcvals(4,ipt),par1, &
+             par2,par3,par4)
+
+      call cross_prod3d(srcvals(4,ipt),srcvals(7,ipt),srcvals(10,ipt))
+
+      ds = sqrt(srcvals(10,ipt)**2 + srcvals(11,ipt)**2 + &
+              srcvals(12,ipt)**2)
+      srcvals(10,ipt) = srcvals(10,ipt)/ds
+      srcvals(11,ipt) = srcvals(11,ipt)/ds
+      srcvals(12,ipt) = srcvals(12,ipt)/ds
+
+    end do
+
+    do i=1,npols
+      ipt = (ipatch-1)*npols + i
+      do j=1,9
+        srccoefs(j,ipt) = 0
+        do l=1,npols
+          lpt = (ipatch-1)*npols + l
+          srccoefs(j,ipt) = srccoefs(j,ipt) + umatr(i,l)*srcvals(j,lpt)
+        end do
+      end do
+    end do
+  end do
+
+  npts = npatches*npols
+
+  return
+end subroutine getgeominfo
+
+
+
