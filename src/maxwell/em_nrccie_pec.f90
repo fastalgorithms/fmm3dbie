@@ -22,11 +22,11 @@
 !
 !  Integral equations solve for [J,\rho] and obtained by imposing
 !
-!  -n \times (H + H_in) + J + \alpha (n \times n \times (E + E_in)) = 0
-!  -n \cdot  (E + E_in) + \rho + \alpha/ik \nabla \cdot E           = 0
+!  n \times (H + H_in) - \alpha (n \times n \times (E + E_in)) = J
+!  n \cdot  (E + E_in) + \alpha/ik \nabla \cdot E              = \rho
 !
 !  and are given by
-!  J/2 - n \times \nabla S_{k} [J] + 
+!  J/2 - n \times \nabla S_{k} [J] +
 !     \alpha (n \times n \times (ik S_{k} [J] - \nabla S_{k} [\rho])) = 
 !     n \times H_in - \alpha n \times n \times E_in      ----  (1)
 !
@@ -232,7 +232,7 @@
       integer ipv
 
       procedure (), pointer :: fker
-      external  fker_em_nrccie_pec_s
+      external  fker_em_nrccie_pec_s, h3d_sprime
 
       ndz=2
       ndd=1
@@ -273,7 +273,7 @@
           do l=1,nquad
             wneartmp(l) = 0
           enddo
-!$OMP END PARALLEL DO                    
+!$OMP END PARALLEL DO                   
           call zgetnearquad_ggq_guru(npatches, norders, ixyzs, &
             iptype, npts, srccoefs, srcvals, ndtarg, npts, srcvals, &
             ipatch_id, uvs_src, eps, ipv, fker, ndd, dpars, ndz, &
@@ -608,7 +608,7 @@
 !$      t1 = omp_get_wtime()
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, j, jpatch, jquadstart) &
-!$OMP PRIVATE(jstart, npols, l, m, n)
+!$OMP PRIVATE(jstart, npols, l, m, n, iind)
       do i=1,npts
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
@@ -646,8 +646,8 @@
           jpatch = col_ind(j)
           do l=ixyzso(jpatch), ixyzso(jpatch+1)-1
             nss = nss + 1
-            srctmp2(:,nss) = sources(:,l)            
-            ctmp(:,nss) = charges(:,l)
+            srctmp2(1:3,nss) = sources(1:3,l)            
+            ctmp(1:nduse,nss) = charges(1:nduse,l)
           enddo
         enddo
         zpottmp(1:4) = 0
@@ -656,13 +656,13 @@
         call h3ddirectcg(nduse, zk, srctmp2, ctmp, nss, &
           srctmp(1,i), ntarg0, zpottmp, zgradtmp, thresh)
 
-         call get_nrccie_inteq_comps_from_potgrad(zk, alpha, &
+        call get_nrccie_inteq_comps_from_potgrad(zk, alpha, &
             srcvals(1,i), ru(1,i), rv(1,i), zpottmp, zgradtmp, &
             pottmp)
 
         pot(1:3,i) = pot(1:3,i) - pottmp(1:3)
       enddo
-      
+!$OMP END PARALLEL DO      
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()     
 
@@ -689,7 +689,7 @@
 !
 !    -M_{k}[J]+alpha·nxnx(ikS_{k}[J]-gradS_{k}[rho])  -  ru component 
 !    -M_{k}[J]+alpha·nxnx(ikS_{k}[J]-gradS_{k}[rho])  -  rv component 
-!     S'_{k}[rho]-ikS_{k}[J]+alpha(divS_{k}[J]-ikS_{k}[rho]) 
+!     S'_{k}[rho]-ikn \cdot S_{k}[J]+alpha(divS_{k}[J]-ikS_{k}[rho]) 
 !  
 !  where M_{k} = n \times \nabla \times S_{k} is the magnetic field 
 !  integral equation operator
@@ -743,13 +743,15 @@
       zvec2(1:3) = ima*zk*zpot(1:3) - zgrad(4,1:3)
       ztmp = zvec2(1)*srcvals(10) + zvec2(2)*srcvals(11) + &
                zvec2(3)*srcvals(12)
-      zvec3(1:3) = ztmp*srcvals(10:12) - zvec2 
-      zvec3 = alpha*zvec3 - zvec
+      zvec3(1:3) = ztmp*srcvals(10:12) - zvec2(1:3) 
+      zvec3(1:3) = alpha*zvec3(1:3) - zvec(1:3)
+
       pot(1) = zvec3(1)*ru(1) + zvec3(2)*ru(2) + zvec3(3)*ru(3)
       pot(2) = zvec3(1)*rv(1) + zvec3(2)*rv(2) + zvec3(3)*rv(3)
          
-      ztmp = zgrad(4,1)*srcvals(10) + zgrad(4,2)*srcvals(11) + &
-               zgrad(4,3)*srcvals(12)
+      ztmp = (zgrad(4,1) - ima*zk*zpot(1))*srcvals(10) + &
+             (zgrad(4,2) - ima*zk*zpot(2))*srcvals(11) + &
+             (zgrad(4,3) - ima*zk*zpot(3))*srcvals(12)
       ztmp2 = zgrad(1,1) + zgrad(2,2) + zgrad(3,3) - ima*zk*zpot(4)
 
       pot(3) = ztmp + alpha*ztmp2
@@ -799,7 +801,7 @@
 !  Boundary integral equation:
 !
 !    J/2 - M_{k}[J] + alpha n x n x (ikS_{k}[J]-gradS_{k}[rho]) = 
-!      = nxH_inc + alpha nxnxE_inc
+!      = nxH_inc - alpha nxnxE_inc
 !    rho/2 + S_{k}'[rho] - ik n . S_{k}[J] + alpha (div S_{k}[J]-ikS_{k}[rho]) = 
 !      = n·E_inc
 !
@@ -1053,7 +1055,7 @@
 !
 !  Boundary conditions:
 !
-!    (1) + alpha nx(2)         b.c.1
+!    (1) - alpha nx(2)         b.c.1
 !
 !    (3) + alpha (4)           b.c.2
 !
@@ -1073,7 +1075,7 @@
 !  Boundary integral equation:
 !
 !    J/2 - M_{k}[J] + alpha n x n x (ikS_{k}[J]-gradS_{k}[rho]) = 
-!      = nxH_inc + alpha nxnxE_inc
+!      = nxH_inc - alpha nxnxE_inc
 !    rho/2 + S_{k}'[rho] - ik n . S_{k}[J] + alpha (div S_{k}[J]-ikS_{k}[rho]) = 
 !      = n·E_inc
 !
@@ -1252,7 +1254,7 @@
                einc(3,i)*srcvals(12,i)
         zvec2(1:3) = ztmp*srcvals(10:12,i) - einc(1:3,i)
         
-        zvec(1:3) = zvec(1:3) + zpars(2)*zvec2(1:3)
+        zvec(1:3) = zvec(1:3) - zpars(2)*zvec2(1:3)
         rhs(1,i) = ru(1,i)*zvec(1) + ru(2,i)*zvec(2) + ru(3,i)*zvec(3)
         rhs(2,i) = rv(1,i)*zvec(1) + rv(2,i)*zvec(2) + rv(3,i)*zvec(3)
         rhs(3,i) = einc(1,i)*srcvals(10,i) + einc(2,i)*srcvals(11,i) + &
@@ -1274,7 +1276,7 @@
       call get_qwts(npatches, norders, ixyzs, iptype, npts, &
       srcvals, wts)
 !
-      zid = 0.5
+      zid = 0.5d0
       call zgmres_guru(npatches, norders, ixyzs, &
             iptype, npts, srccoefs, srcvals, wts, &
             eps, ndd, dpars, ndz, zpars, ndi, ipars, &
@@ -1490,6 +1492,7 @@
       end
 !
 !
+
 !
 !                  
       subroutine em_nrccie_eval_addsub(npatches, norders, &
@@ -1649,7 +1652,7 @@
 !  Output arguments:
 !    - pot: complex *16 (ndim_p, ntarg)
 !        pot(1:3, :) is E if ipotflag = 1 or 3
-!        pot(4:6, :) is E if ipotflag = 2 or 3  
+!        pot(4:6, :) is H if ipotflag = 2 or 3  
 !
 
       implicit none
@@ -1707,11 +1710,11 @@
       idensflaguse = ifj + 2**(ifm)*ifm + 4**(ifrho)*ifrho + 8**(iftau)*iftau
       zparsuse(1) = zpars(1)
       zparsuse(2) = ima*zpars(1)
-      zparsuse(3) = -1
+      zparsuse(3) = -1.0d0
       zparsuse(4) = 0
       zparsuse(5) = 0
       zparsuse(6) = 0
-      zparsuse(7) = 1
+      zparsuse(7) = 1.0d0
 
       allocate(sigmause(8,npts))
       ndim_s_use = 8
@@ -1720,10 +1723,10 @@
         sigmause(1,i) = sigma(1,i)
         sigmause(2,i) = sigma(2,i)
         sigmause(3,i) = sigma(3,i)
-        sigmause(7,i) = sigma(4,i)
         sigmause(4,i) = 0
         sigmause(5,i) = 0
         sigmause(6,i) = 0
+        sigmause(7,i) = sigma(4,i)
         sigmause(8,i) = 0
       enddo
 !$OMP END PARALLEL DO            

@@ -373,13 +373,13 @@ c
 c       !List of local variables
         double precision :: aux
 c
-        aux=sqrt(du(1)**2+du(2)**2+du(3)**2)
+        aux=sqrt(du(1)**2 + du(2)**2 + du(3)**2)
         ru(1)=du(1)/aux
         ru(2)=du(2)/aux
         ru(3)=du(3)/aux
 c
         call cross_prod3d(rnormal, ru, rv)
-c        call my_cross_v2(normal, ru, rv)
+
         return
         end
 

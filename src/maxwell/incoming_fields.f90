@@ -1,3 +1,137 @@
+!
+!
+!  This subroutine contains routines for evaluating incoming 
+!  Maxwellian fields
+!  
+!  em_eval_dipoles()
+
+
+
+      subroutine em_eval_dipoles(zk, ns, src, zedips, zhdips, &
+         ndtarg, ntarg, targs, einc, hinc)
+! 
+!  This subroutine evaluates the electric and magnetic fields
+!  due to a collection of electric, and, magnetic dipoles.
+!
+!  for a point source, at the origin, the fields due
+!  to a magnetic dipole are,
+!
+!  E_{md} = i k \nabla \times G_{k}(r)
+!  H_{md} = \nabla \times \nabla \times G_{k}(r) 
+!
+!  and the fields due to an electric dipole are,
+!
+!  E_{ed} = - \nabla \times \nabla \times G_{k}(r)
+!  H_{ed} = i k \nabla \times G_{k}(r) 
+!
+!  where G_{k}(r) is the Helmholtz Green's function given
+!  by
+!
+!  G_{k}(r) = exp(i k r)/(4 \pi r) \, ,
+!  
+!  and k is the wave number
+!
+!
+!  Input arguments:
+!    - zk: complex *16
+!        Wavenumber
+!    - ns: integer
+!        number of source locations
+!    - src: real *8 (3,ns)
+!        xyz coordinates of source locations
+!    - zedips: complex *16 (3,ns)
+!        orientation/strength of electric dipoles
+!    - zhdips: complex *16 (3,ns)
+!        orientation/strength of magnetic dipoles
+!    - ndtarg: integer
+!        leading dimension of target information array
+!    - ntarg: integer
+!        number of targets
+!    - targs: real *8(ndtarg,ntarg)
+!        target information 
+!
+!  Output arguments: 
+!    einc - complex *16(3, ntarg)
+!      incident electric field
+!    hinc - complex *16(3, ntarg)
+!      incident magnetic field
+!
+      implicit none
+      complex *16, intent(in) :: zk
+      integer, intent(in) :: ns
+      real *8, intent(in) :: src(3,ns)
+      complex *16, intent(in) :: zedips(3,ns), zhdips(3,ns)
+      integer, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg, ntarg)
+
+      complex *16, intent(out) :: einc(3,ntarg), hinc(3,ntarg)
+      
+
+! List of local variables
+      real *8 dx, dy, dz ,r
+      complex *16 ztmp1, ztmp2, ztmp3, ztmp4, zexp, ima, zki
+      integer i, j
+      data ima/(0.0d0, 1.0d0)/
+
+      zki = ima*zk
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(dx, dy, dz, r, zexp, ztmp1) &
+!$OMP PRIVATE(ztmp2, ztmp3, ztmp4, j)
+      do i = 1,ntarg
+        einc(1,i) = 0
+        einc(2,i) = 0
+        einc(3,i) = 0
+
+        hinc(1,i) = 0
+        hinc(2,i) = 0
+        hinc(3,i) = 0
+        do j = 1, ns
+
+          dx = targs(1,i) - src(1,j) 
+          dy = targs(2,i) - src(2,j) 
+          dz = targs(3,i) - src(3,j) 
+          r = sqrt(dx**2 + dy**2 + dz**2)
+          zexp = exp(ima*zk*r)
+          ztmp1 = (ima*zk/r**2 - 1.0d0/r**3)
+          ztmp2 = ((ima*zk)**2/r**3 - 3*ima*zk/r**4 + 3/r**5)
+          ztmp3 = (zk**2/r + ztmp1)*zexp
+
+          ztmp4 = dx*zhdips(1,j) + dy*zhdips(2,j) + dz*zhdips(3,j)
+          ztmp4 = ztmp4*ztmp2*zexp
+
+          hinc(1,i) = hinc(1,i) + (zhdips(1,j)*ztmp3 + dx*ztmp4)
+          hinc(2,i) = hinc(2,i) + (zhdips(2,j)*ztmp3 + dy*ztmp4)
+          hinc(3,i) = hinc(3,i) + (zhdips(3,j)*ztmp3 + dz*ztmp4)
+
+          einc(1,i)= einc(1,i) + (dy*zhdips(3,j) - &
+                                  dz*zhdips(2,j))*ztmp1*zexp*zki
+          einc(2,i)= einc(2,i) + (dz*zhdips(1,j) - &
+                                  dx*zhdips(3,j))*ztmp1*zexp*zki
+          einc(3,i)= einc(3,i) + (dx*zhdips(2,j) - &
+                                  dy*zhdips(1,j))*ztmp1*zexp*zki
+
+          ztmp4 = dx*zedips(1,j) + dy*zedips(2,j) + dz*zedips(3,j)
+          ztmp4 = ztmp4*ztmp2*zexp
+
+          einc(1,i) = einc(1,i) - (zedips(1,j)*ztmp3 + dx*ztmp4)
+          einc(2,i) = einc(2,i) - (zedips(2,j)*ztmp3 + dy*ztmp4)
+          einc(3,i) = einc(3,i) - (zedips(3,j)*ztmp3 + dz*ztmp4)
+
+          hinc(1,i)= hinc(1,i) + (dy*zedips(3,j) - &
+                                  dz*zedips(2,j))*ztmp1*zexp*zki
+          hinc(2,i)= hinc(2,i) + (dz*zedips(1,j) - &
+                                  dx*zedips(3,j))*ztmp1*zexp*zki
+          hinc(3,i)= hinc(3,i) + (dx*zedips(2,j) - &
+                                  dy*zedips(1,j))*ztmp1*zexp*zki
+        enddo
+      enddo
+!$OMP END PARALLEL DO      
+
+      return
+      end subroutine 
+
+
+
+
 
 
 
@@ -178,53 +312,55 @@ end subroutine fieldsED
 
 
 subroutine fieldsMD(zk,P0,points,n,E,H,vf,initial)
-implicit none
-! a small magnetic dipole; that is: F=vf*exp(ima*zk*r)/r
-! E=curlF
-! H=1/(ima*zk)*curlcurlF
+      implicit none
+! a magnetic dipole; 
+! that is: 
+! F = vf*exp(ima*zk*r)/r
+! E = curl F
+! H = 1/(ima*zk)*curlcurlF
 
-	!List of calling arguments
-	integer, intent(in) :: n,initial
-	real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
-	complex ( kind = 8 ), intent(in) :: vf(3),zk
-	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
+! List of calling arguments
+      integer, intent(in) :: n,initial
+      real *8, intent(in) :: P0(3),points(12,n)
+      complex *16, intent(in) :: vf(3),zk
+      complex *16, intent(out) :: E(3,n),H(3,n)
 
-	!List of local variables
-	real ( kind = 8 ) dx,dy,dz,r
-	complex ( kind = 8 ) R1,R2,au1,au2,ima
-	integer i
+! List of local variables
+      real *8 dx,dy,dz,r
+      complex *16 R1,R2,au1,au2,ima
+      integer i
+      data ima/(0.0d0, 1.0d0)/
 
-	ima = (0.0d0,1.0d0)
+      ima = (0.0d0,1.0d0)
 
-	do i=1,n
-		if (initial .eq. 0) then
-			E(1,i)=0
-			E(2,i)=0
-			E(3,i)=0
-			H(1,i)=0
-			H(2,i)=0
-			H(3,i)=0
-       endif
-		dx=points(1,i)-P0(1)
-		dy=points(2,i)-P0(2)
-		dz=points(3,i)-P0(3)
-		r=sqrt(dx**2+dy**2+dz**2)
-		R1=(ima*zk/r**2-1/r**3)
-		R2=((ima*zk)**2/r**3-3*ima*zk/r**4+3/r**5)
-		au1=(zk**2/r+R1)*exp(ima*zk*r)/(ima*zk)
-		au2=dx*vf(1)+dy*vf(2)
-		au2=au2+dz*vf(3)
-		au2=au2*R2*exp(ima*zk*r)/(ima*zk)
-		H(1,i)=H(1,i)+(vf(1)*au1+dx*au2)
-		H(2,i)=H(2,i)+(vf(2)*au1+dy*au2)
-		H(3,i)=H(3,i)+(vf(3)*au1+dz*au2)
-		E(1,i)=E(1,i)+(dy*vf(3)-dz*vf(2))*R1*exp(ima*zk*r)
-		E(2,i)=E(2,i)+(dz*vf(1)-dx*vf(3))*R1*exp(ima*zk*r)
-		E(3,i)=E(3,i)+(dx*vf(2)-dy*vf(1))*R1*exp(ima*zk*r)
-	enddo
+      do i=1,n
+        if (initial .eq. 0) then
+          E(1,i)=0
+          E(2,i)=0
+          E(3,i)=0
+          H(1,i)=0
+          H(2,i)=0
+          H(3,i)=0
+        endif
+        dx = points(1,i) - P0(1)
+        dy = points(2,i) - P0(2)
+        dz = points(3,i) - P0(3)
+        r = sqrt(dx**2 + dy**2 + dz**2)
+        R1 = (ima*zk/r**2 - 1/r**3)
+        R2 = ((ima*zk)**2/r**3 - 3*ima*zk/r**4 + 3/r**5)
+        au1 = (zk**2/r+R1)*exp(ima*zk*r)/(ima*zk)
+        au2 = dx*vf(1) + dy*vf(2) + dz*vf(3)
+        au2 = au2*R2*exp(ima*zk*r)/(ima*zk)
+        H(1,i) = H(1,i) + (vf(1)*au1 + dx*au2)
+        H(2,i)=H(2,i) + (vf(2)*au1 + dy*au2)
+        H(3,i)=H(3,i) + (vf(3)*au1 + dz*au2)
+        E(1,i)=E(1,i) + (dy*vf(3) - dz*vf(2))*R1*exp(ima*zk*r)
+        E(2,i)=E(2,i) + (dz*vf(1) - dx*vf(3))*R1*exp(ima*zk*r)
+        E(3,i)=E(3,i) + (dx*vf(2) - dy*vf(1))*R1*exp(ima*zk*r)
+      enddo
 
-return
-end subroutine fieldsMD
+      return
+      end subroutine fieldsMD
 
 
 

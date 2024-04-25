@@ -110,7 +110,7 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/dlaran.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
-	$(COM)/common_Maxwell.o $(COM)/incoming_fields.o \
+	$(COM)/common_Maxwell.o \
 	$(COM)/rigidbodies.o $(COM)/polytens.o \
 	$(COM)/chebexps.o $(COM)/gmres_routs.o
 
@@ -131,6 +131,7 @@ EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 	$(EM)/em_dfie_trans.o $(EM)/em_adpie_pec.o \
 	$(EM)/em_sdpie_pec.o $(EM)/em_cfie_rwg_pec.o \
 	$(EM)/maxwell_common_evaluators.o \
+	$(EM)/incoming_fields.o \
 	$(EM)/fix_tri.o $(EM)/analytic_sphere_pw_pec.o
 
 # Stokes wrappers
