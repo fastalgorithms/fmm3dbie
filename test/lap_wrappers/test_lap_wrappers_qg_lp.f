@@ -156,7 +156,7 @@ c
         dlp_near(i) = 0
       enddo
 
-      goto 1111
+!      goto 1111
 
       call cpu_time(t1)
 
@@ -238,26 +238,11 @@ c
 
       dpars(1) = 1.0d0
       dpars(2) = 0.0d0
-      call prin2('targs=*',targs,24)
-      print *, "ndtarg=", ndtarg
-      print *, "npatches=", npatches
-!      call prinf('norders=*', norders, npatches)
-!      call prinf('ixyzs=*',ixyzs, npatches+1)
-!      call prinf('iptype=*',iptype, npatches)
-!      call prinf('npts=*',npts,1)
-!      call prin2('srccoefs=*', srccoefs, 9*npts)
-!      call prin2('srcvals=*', srcvals, 12*npts)
-!      call prinf('ipatch_id=*', ipatch_id, npts)
-!      call prin2('uvs_targ=*', uvs_targ, 2*npts)
-!      call prin2('eps=*', eps,1)
-!      call prin2('dpars=*', dpars, 2)
-!      call prin2('dudnval=*', dudnval, npts)
 
       
       call lap_comb_dir_eval(npatches, norders, ixyzs,
      1  iptype, npts, srccoefs, srcvals, ndtarg, npts, targs, ipatch_id,
      2  uvs_targ, eps, dpars, dudnval, potslp2)
-      stop
 
 
       errl2 = 0

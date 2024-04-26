@@ -551,9 +551,6 @@
 !
 !    find near quadrature correction interactions
 !
-      print *, "ndtarg=",ndtarg
-      print *, "ntarg=",ntarg
-      print *, "npatches=",npatches
 
       call findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg, &
         nnz)
@@ -569,8 +566,6 @@
 
       ikerorder = -1
       if (abs(dpars(2)).gt.1.0d-16) ikerorder = 0
-
-
 
 !
 !    estimate oversampling for far-field, and oversample geometry
@@ -596,7 +591,6 @@
 !   compute near quadrature correction
 !
       nquad = iquad(nnz+1) - 1
-      print *, "done getting nquad=",nquad
       allocate(wnear(nquad))
       
 !$OMP PARALLEL DO DEFAULT(SHARED)      
@@ -608,10 +602,10 @@
 
       iquadtype = 1
 
-!      call getnearquad_lap_comb_dir_eval(npatches, norders, &
-!        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-!        ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, &
-!        col_ind, iquad, rfac0, nquad, wnear)
+      call getnearquad_lap_comb_dir_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
 !
 !
 !   compute layer potential
@@ -625,26 +619,13 @@
       idensflag = 0
       ipotflag = 0
       ndim_p = 1
-!      print *, "npatches=", npatches
-!      print *, "npts=", npts
-!      print *, "ndtarg=", ndtarg
-!      print *, "ntarg=", ntarg
-!      print *, "npts_over=",npts_over
-!      print *, "eps=", eps
-      call prin2('srcover=*', srcover, 24)
-      call prin2('wover=*', wover, 24)
-      print *, "size(pot)=",size(pot)
-      call prinf('novers=*', novers, npatches)
-      call prinf('npts_over=*', npts_over, 1)
-      call prinf('ixyzso=*', ixyzso, npatches+1)
-
 !
       call lap_comb_dir_eval_addsub(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, &
         col_ind, iquad, nquad, nker, wnear, novers, npts_over, &
         ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, &
-        ipotflag, ndim_p, pot)
+        sigma, ipotflag, ndim_p, pot)
 
       return
       end
@@ -1047,28 +1028,7 @@
 !    estimate max number of sources in neear field of 
 !    any target
 !
-!      subroutine lap_comb_dir_eval_addsub(npatches, norders, ixyzs, &
-!        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-!        eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-!        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
-!        nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
-!        ndim_s, sigma, ipotflag, ndim_p, pot)
-      print *, "ndd=", ndd
-      print *, "ndz=", ndz
-      print *, "ndi=", ndi
-      print *, "npatches=", npatches
-!      call prinf('norders=*',norders,npatches
-      call prinf('ndtarg=*', ndtarg,1)
-      call prinf('ntarg=*', ntarg,1)
-      call prin2('eps=*',eps,1)
-      call prinf('nnz=*',nnz,1)
-!      call prinf('row_ptr=*', row_ptr, ntarg+1)
-      call prinf('nquad=*', nquad, 1)
-      read *, i
-      call prinf('nptso=*', nptso)
-      read *, i
-      call prinf('ixyzso=*', ixyzso, npatches+1)
-      stop
+      
       
       nmax = 0
       call get_near_corr_max(ntarg, row_ptr, nnz, col_ind, npatches, &
@@ -1097,8 +1057,7 @@
       alpha = dpars(1)*over4pi
       beta = dpars(2)*over4pi
 
-      print *, "alpha=", alpha
-      print *, "beta=", beta
+
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
       do i=1,ns
         sources(1,i) = srcover(1,i)
@@ -1112,11 +1071,6 @@
       enddo
 !$OMP END PARALLEL DO      
       
-      print *, "before loop"
-      print *, size(pot)
-      print *, size(targs)
-      print *, size(targvals)
-      print *, "ntarg=", ntarg
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
       do i = 1,ntarg
         targvals(1,i) = targs(1,i)
@@ -1127,8 +1081,7 @@
       enddo
 !$OMP END PARALLEL DO      
       
-      print *, "end of loop"
-      stop
+
       ifcharge = 1
       ifdipole = 1
 
@@ -1137,20 +1090,6 @@
 
       iper = 0
       ier = 0
-
-      print *, "ndtarg=",ndtarg
-      print *, "ntarg=",ntarg
-      call prin2('targvals=*',targvals,24)
-      call prinf('ns=*',ns,1)
-      call prinf('nd=*',nd,1)
-      call prin2('eps=*',eps,1)
-      call prinf('ifcharge=*',ifcharge,1)
-      call prinf('ifdipole=*',ifdipole,1)
-      call prin2('charges=*',charges,24)
-      call prinf('ntarg=*',ntarg,1)
-      print *, "before fmm size(pot)=",size(pot)
-      stop
-
 
 !
 !
