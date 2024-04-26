@@ -77,8 +77,8 @@
      1    0, ipars, dudnval(i))
       enddo
 
-      ndtarg = 3
      
+      ndtarg = 3
       do i=1,npts
         targs(1,i) = srcvals(1,i)
         targs(2,i) = srcvals(2,i)
@@ -121,7 +121,6 @@ c
       allocate(slp_near(nquad), dlp_near(nquad))
 
 
-      ndtarg = 3
 
       eps = 0.50001d-6
 
@@ -156,6 +155,8 @@ c
         slp_near(i) = 0
         dlp_near(i) = 0
       enddo
+
+      goto 1111
 
       call cpu_time(t1)
 
@@ -232,14 +233,31 @@ c
       i1 = 0
       if(err.lt.1.0d-2) i1 = 1
 
+ 1111 continue
       allocate(potslp2(npts))
 
       dpars(1) = 1.0d0
       dpars(2) = 0.0d0
+      call prin2('targs=*',targs,24)
+      print *, "ndtarg=", ndtarg
+      print *, "npatches=", npatches
+!      call prinf('norders=*', norders, npatches)
+!      call prinf('ixyzs=*',ixyzs, npatches+1)
+!      call prinf('iptype=*',iptype, npatches)
+!      call prinf('npts=*',npts,1)
+!      call prin2('srccoefs=*', srccoefs, 9*npts)
+!      call prin2('srcvals=*', srcvals, 12*npts)
+!      call prinf('ipatch_id=*', ipatch_id, npts)
+!      call prin2('uvs_targ=*', uvs_targ, 2*npts)
+!      call prin2('eps=*', eps,1)
+!      call prin2('dpars=*', dpars, 2)
+!      call prin2('dudnval=*', dudnval, npts)
+
       
       call lap_comb_dir_eval(npatches, norders, ixyzs,
      1  iptype, npts, srccoefs, srcvals, ndtarg, npts, targs, ipatch_id,
      2  uvs_targ, eps, dpars, dudnval, potslp2)
+      stop
 
 
       errl2 = 0
