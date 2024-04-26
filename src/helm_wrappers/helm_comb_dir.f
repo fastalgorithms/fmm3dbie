@@ -1,7 +1,7 @@
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c   Combined field representation for acoustic scattering
-c   from sound hard obstacles
+c   from sound soft obstacles
 c
 c  PDE:
 c    (\Delta + k^2) u = 0
@@ -68,53 +68,37 @@ c    - helm_comb_dir_solver_memest: estimate the memory required for
 c        the solver with minimal computation
 c
 c
+c  Other routines in the file, these are currently in beta mode
+c  and should be used at your own risk:
 c
-c       There are two sets of fast direct solver routines
-c       and neither of them currently used oversampling.
-c       The fast direct solver routines are currently in beta
-c       mode
+c  There are two sets of fast direct solver routines
+c  and neither of them currently used oversampling.
+c  The fast direct solver routines are currently in beta
+c  mode
 c
-c       helm_comb_dir_fds_csc_mem - get memory requirements for initialization
-c          routine for subsequent calls to fast direct solver
+c   - helm_comb_dir_fds_csc_mem: get memory requirements for initialization
+c       routine for subsequent calls to fast direct solver
 c
-c       helm_comb_dir_fds_csc_init - initialize various arrays to be later
-c          used for fast direct solver
+c   - helm_comb_dir_fds_csc_init: initialize various arrays to be later
+c       used for fast direct solver
 c
-c       helm_comb_dir_fds_csc_matgen - query entries of the combined field
-c          representation matrix (input indices must be in column
-c          sparse compressed format, and must be preceeded by a call
-c          to helm_comb_dir_fds_init)
+c   - helm_comb_dir_fds_csc_matgen: query entries of the combined field
+c       representation matrix (input indices must be in column
+c       sparse compressed format, and must be preceeded by a call
+c       to helm_comb_dir_fds_init)
 c
-c       helm_comb_dir_fds_block_mem,
-c       helm_comb_dir_fds_block_init,
-c       helm_comb_dir_fds_block_matgen
-c           (routines analogous to the three routines above but which
-c             do not include any oversampling, also on input
-c             are a collection of row indices and column indices and on
-c             output the routine returns a complex matrix
-c             of nrows \times ncols)
+c   - helm_comb_dir_fds_block_mem,
+c   - helm_comb_dir_fds_block_init,
+c   - helm_comb_dir_fds_block_matgen
+c     (routines analogous to the three routines above but which
+c      do not include any oversampling, also on input
+c      are a collection of row indices and column indices and on
+c      output the routine returns a complex matrix
+c      of nrows \times ncols)
 c
-c       REMARK:
-c         The fast direct solver routines need to be optimized
-c         for performance. Improvements coming shortly
-c
-c
-c***********************************************************************
-c       Note for developers: One of the two advanced user interfaces
-c         is necessary for the easy user interface and
-c         efficient iterative solvers. It seems that the add and
-c         subtract version tends to have better CPU-time performance,
-c         but we expect the setsub version to be more numerically stable
-c***********************************************************************
-c       lpcomp_helm_comb_dir_addsub
-c         compute layer potential for the Dirichlet
-c         data corresponding to the combined field representation
-c         using add and subtract
-c
-c       lpcomp_helm_comb_dir_setsub
-c          compute layer potential for Dirichlet data corresponding
-c          to the combined field representation using
-c          set subtraction and turning off list 1
+c  REMARK:
+c    The fast direct solver routines need to be optimized
+c    for performance. Improvements coming shortly
 c
 c
 
@@ -660,9 +644,9 @@ c
       call helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
      1  iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs,
      2  eps, ndd, dpars, ndz, zpars, ndi, ipars,
-     2  nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers,
-     3  npts_over, ixyzso, srcover, wover, lwork, work, idensflag,
-     4  ndim, sigma, ipotflag, ndim_p, pot)
+     3  nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers,
+     4  npts_over, ixyzso, srcover, wover, lwork, work, idensflag,
+     5  ndim, sigma, ipotflag, ndim_p, pot)
 
       return
       end

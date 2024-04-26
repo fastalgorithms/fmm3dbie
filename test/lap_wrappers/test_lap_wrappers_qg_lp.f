@@ -23,6 +23,9 @@
       real *8 xyz_out(3),xyz_in(3)
       real *8, allocatable :: sigma(:)
       real *8 dpars(2)
+      integer nuv(2), iptype0
+      integer ndd, ndz, ndi, nker, lwork, ndim
+      real *8 work(1)
 
 
       call prini(6,13)
@@ -31,88 +34,47 @@
       pi = atan(done)*4
 
 
-c
-c       select geometry type
-c       igeomtype = 1 => sphere
-c       igeomtype = 2 => stellarator
-c 
-      igeomtype = 2
-      if(igeomtype.eq.1) ipars(1) = 2
-      if(igeomtype.eq.2) ipars(1) = 4
+      norder = 3
+      nuv(1) = 4
+      nuv(2) = 12
 
-      if(igeomtype.eq.1) then
-        npatches = 12*(4**ipars(1))
-      endif
-      if(igeomtype.eq.2) then
-        ipars(2) = ipars(1)*3
-        npatches = 2*ipars(1)*ipars(2)
-      endif
+      iptype0 = 1
+      call get_stellarator_npat_mem(nuv, norder, iptype0, npatches,
+     1  npts)
 
-
-      dpars(1) = 1.0d0
-      dpars(2) = 0.0d0
-
-      if(igeomtype.eq.1) then
-        xyz_out(1) = 3.17d0
-        xyz_out(2) = -0.03d0
-        xyz_out(3) = 3.15d0
-
-        xyz_in(1) = 0.17d0
-        xyz_in(2) = 0.23d0
-        xyz_in(3) = -0.11d0
-      endif
-
-      if(igeomtype.eq.2) then
-        xyz_in(1) = -4.501d0
-        xyz_in(2) = 1.7d-3
-        xyz_in(3) = 0.00001d0
-
-        xyz_out(1) = -3.5d0
-        xyz_out(2) = 3.1d0
-        xyz_out(3) = 20.1d0
-      endif
-
-      norder = 3 
-      npols = (norder+1)*(norder+2)/2
-
-      npts = npatches*npols
       allocate(srcvals(12,npts),srccoefs(9,npts))
       allocate(targs(3,npts))
-      ifplot = 0
-
-
-
-      call setup_geom(igeomtype,norder,npatches,ipars, 
-     1       srcvals,srccoefs,ifplot,fname)
-
       allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
       allocate(ixyzso(npatches+1),nfars(npatches))
 
-      do i=1,npatches
-        norders(i) = norder
-        ixyzs(i) = 1 +(i-1)*npols
-        iptype(i) = 1
-      enddo
+      call get_stellarator_npat(nuv, norder, iptype0, npatches, npts,
+     1  norders, ixyzs, iptype, srccoefs, srcvals)
 
-      ixyzs(npatches+1) = 1+npols*npatches
+      xyz_in(1) = -4.501d0
+      xyz_in(2) = 1.7d-3
+      xyz_in(3) = 0.00001d0
+
+      xyz_out(1) = -3.5d0
+      xyz_out(2) = 3.1d0
+      xyz_out(3) = 20.1d0
+
       allocate(wts(npts))
-      call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
+      call get_qwts(npatches, norders, ixyzs, iptype, npts, srcvals,
+     1  wts)
 
+      allocate(cms(3,npatches), rads(npatches), rad_near(npatches))
+      allocate(pot(npts), potslp(npts), potdlp(npts))
 
+      call get_centroid_rads(npatches, norders, ixyzs, iptype, npts, 
+     1     srccoefs, cms, rads)
 
-      allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
-      allocate(pot(npts),potslp(npts),potdlp(npts))
-
-      call get_centroid_rads(npatches,norders,ixyzs,iptype,npts, 
-     1     srccoefs,cms,rads)
-
-      allocate(sigma(npts),uval(npts),dudnval(npts))
+      allocate(sigma(npts), uval(npts), dudnval(npts))
 
       do i=1,npts
-        call l3d_slp(xyz_out,3,srcvals(1,i),0,dpars,0,zpars,0,
-     1     ipars,uval(i))
-        call l3d_sprime(xyz_out,12,srcvals(1,i),0,dpars,0,zpars,0,
-     1     ipars,dudnval(i))
+        call l3d_slp(xyz_out, 3, srcvals(1,i), 0, dpars, 0, zpars, 0,
+     1    ipars, uval(i))
+        call l3d_sprime(xyz_out, 12, srcvals(1,i), 0, dpars, 0, zpars,
+     1    0, ipars, dudnval(i))
       enddo
 
       ndtarg = 3
@@ -123,40 +85,40 @@ c
         targs(3,i) = srcvals(3,i)
       enddo
 
-      allocate(ipatch_id(npts),uvs_targ(2,npts))
+      allocate(ipatch_id(npts), uvs_targ(2,npts))
       do i=1,npts
         ipatch_id(i) = -1
         uvs_targ(1,i) = 0
         uvs_targ(2,i) = 0
       enddo
 
-      call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, 
-     1         ipatch_id,uvs_targ)
-
+      call get_patch_id_uvs(npatches, norders, ixyzs, iptype, npts, 
+     1         ipatch_id, uvs_targ)
  
 c
 c    find near field
 c
       iptype = 1
-      call get_rfacs(norder,iptype,rfac,rfac0)
+      call get_rfacs(norder, iptype, rfac, rfac0)
       do i=1,npatches 
         rad_near(i) = rads(i)*rfac
       enddo
       
 
-      call findnearmem(cms,npatches,rad_near,ndtarg,targs,npts,nnz)
+      call findnearmem(cms, npatches, rad_near, ndtarg, targs, npts,  
+     1  nnz)
 
-      allocate(row_ptr(npts+1),col_ind(nnz))
+      allocate(row_ptr(npts+1), col_ind(nnz))
       
-      call findnear(cms,npatches,rad_near,ndtarg,targs,npts,row_ptr, 
-     1        col_ind)
+      call findnear(cms, npatches, rad_near, ndtarg, targs, npts,
+     1  row_ptr, col_ind)
 
       allocate(iquad(nnz+1)) 
-      call get_iquad_rsc(npatches,ixyzs,npts,nnz,row_ptr,col_ind,
-     1         iquad)
+      call get_iquad_rsc(npatches, ixyzs, npts, nnz, row_ptr, col_ind,
+     1  iquad)
 
       nquad = iquad(nnz+1)-1
-      allocate(slp_near(nquad),dlp_near(nquad))
+      allocate(slp_near(nquad), dlp_near(nquad))
 
 
       ndtarg = 3
@@ -166,11 +128,10 @@ c
       ikerorder = -1
       zk = 0
 
-
       call cpu_time(t1)
-      call get_far_order(eps,npatches,norders,ixyzs,iptype,cms,
-     1    rads,npts,srccoefs,ndtarg,npts,targs,ikerorder,zk,
-     2    nnz,row_ptr,col_ind,rfac,nfars,ixyzso)
+      call get_far_order(eps, npatches, norders, ixyzs, iptype, cms,
+     1  rads, npts, srccoefs, ndtarg, npts, targs, ikerorder, zk,
+     2  nnz, row_ptr, col_ind, rfac, nfars, ixyzso)
       call cpu_time(t2)
       tfar = t2-t1
 
@@ -180,23 +141,21 @@ c
       print *, "npts_over=",npts_over
 
 
-      allocate(srcover(12,npts_over),sigmaover(npts_over),
+      allocate(srcover(12,npts_over), sigmaover(npts_over),
      1         wover(npts_over))
 
           
-      call oversample_geom(npatches,norders,ixyzs,iptype,npts, 
-     1   srccoefs,srcvals,nfars,ixyzso,npts_over,srcover)
+      call oversample_geom(npatches, norders, ixyzs, iptype, npts, 
+     1  srccoefs, srcvals, nfars, ixyzso, npts_over, srcover)
 
-      call get_qwts(npatches,nfars,ixyzso,iptype,npts_over,
-     1        srcover,wover)
+      call get_qwts(npatches, nfars, ixyzso, iptype, npts_over, 
+     1  srcover, wover)
 
 
-      do i=1,nquad
+      do i = 1,nquad
         slp_near(i) = 0
         dlp_near(i) = 0
       enddo
-
-
 
       call cpu_time(t1)
 
@@ -205,50 +164,50 @@ c
 
       iquadtype = 1
 
-cc      goto 1111
-
-      call getnearquad_lap_comb_dir(npatches,norders,
-     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,dpars,iquadtype,nnz,row_ptr,col_ind,
-     1      iquad,rfac0,nquad,slp_near)
+      call getnearquad_lap_comb_dir(npatches, norders,
+     1  ixyzs, iptype, npts, srccoefs, srcvals, eps, dpars, iquadtype, 
+     1  nnz, row_ptr, col_ind, iquad, rfac0, nquad, slp_near)
 
       
       dpars(1) = 0.0d0
       dpars(2) = 1.0d0
-      call getnearquad_lap_comb_dir(npatches,norders,
-     1      ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     1      ipatch_id,uvs_targ,eps,dpars,iquadtype,
-     1      nnz,row_ptr,col_ind,iquad,
-     1      rfac0,nquad,dlp_near)
-      
+
+      call getnearquad_lap_comb_dir(npatches, norders,
+     1  ixyzs, iptype, npts, srccoefs, srcvals, eps, dpars, iquadtype, 
+     1  nnz, row_ptr, col_ind, iquad, rfac0, nquad, dlp_near)
+
       call cpu_time(t2)
       tquadgen = t2-t1
-
-
 
       ifinout = 1     
 
       dpars(1) = 1.0d0
       dpars(2) = 0.0d0
 
+      ndd = 2
+      ndz = 0
+      ndi = 0
+      nker = 1
+      ndim = 1
+      lwork = 0
 
       call cpu_time(t1)
 
-      call lpcomp_lap_comb_dir_addsub(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2  eps,dpars,nnz,row_ptr,col_ind,iquad,nquad,slp_near,
-     3  dudnval,nfars,npts_over,ixyzso,srcover,wover,potslp)
+      call lpcomp_lap_comb_dir_addsub(npatches, norders, ixyzs,
+     1  iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars,
+     2  ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, slp_near,
+     3  nfars, npts_over, ixyzso, srcover, wover, lwork, work, ndim, 
+     4  dudnval, potslp)
 
 
       dpars(1) = 0.0d0
       dpars(2) = 1.0d0
 
-
-      call lpcomp_lap_comb_dir_addsub(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,
-     2  eps,dpars,nnz,row_ptr,col_ind,iquad,nquad,dlp_near,
-     3  uval,nfars,npts_over,ixyzso,srcover,wover,potdlp)
-
+      call lpcomp_lap_comb_dir_addsub(npatches, norders, ixyzs,
+     1  iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars,
+     2  ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, dlp_near,
+     3  nfars, npts_over, ixyzso, srcover, wover, lwork, work, ndim, 
+     4  uval, potdlp)
 
       call cpu_time(t2)
       tlpcomp = t2-t1
@@ -262,10 +221,9 @@ c
       rl2 = 0
       do i=1,npts
         pot(i) = (potslp(i) - potdlp(i))*2
-        errl2 = errl2 + abs(uval(i)-pot(i))**2*wts(i)
+        errl2 = errl2 + abs(uval(i) - pot(i))**2*wts(i)
         rl2 = rl2 + abs(uval(i))**2*wts(i)
       enddo
-
 
       err = sqrt(errl2/rl2)
 
@@ -279,15 +237,14 @@ c
       dpars(1) = 1.0d0
       dpars(2) = 0.0d0
       
-      call lpcomp_lap_comb_dir(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
-     2  uvs_targ,eps,dpars,dudnval,potslp2)
+      call lap_comb_dir_eval(npatches, norders, ixyzs,
+     1  iptype, npts, srccoefs, srcvals, ndtarg, npts, targs, ipatch_id,
+     2  uvs_targ, eps, dpars, dudnval, potslp2)
 
 
       errl2 = 0
       rl2 = 0
       do i=1,npts
-
         errl2 = errl2 + abs(potslp(i)-potslp2(i))**2*wts(i)
         rl2 = rl2 + abs(potslp(i))**2*wts(i) 
       enddo

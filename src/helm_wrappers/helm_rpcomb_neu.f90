@@ -79,8 +79,9 @@
 !  and returns quantities related to evaluating du/dn on surface
 !  at the surface discretization nodes
 !
-!  If values at other nodes is desired then the solution
-!  should be reinterpolated to those nodes
+!  If values at other points on the surface is desired then the 
+!  data should be reinterpolated to those points from the
+!  discretization nodes
 !
 !  On imposing the boundary condition, we get the following operator
 !
@@ -1182,7 +1183,7 @@
         rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
         nptso, ixyzso, srcover, whtsover, eps_gmres, niter, &
         errs, rres, soln, siksoln)
-      !
+!
 !
 !  This subroutine solves the Helmholtz Neumann problem
 !  on the exterior of an object where the potential
@@ -1554,7 +1555,7 @@
 
 !
 !
-!  This subroutine generates the potential u
+!  This subroutine computes the potential u
 !  for the representation:
 !
 !  u = S_{k}[\sigma_{1}] + i*alpha*D_{k}[\sigma_{2}] 
