@@ -54,7 +54,7 @@ FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB)
 
 .PHONY: all clean 
 
-OBJECTS =  lap_dir_fds_example.o \
+OBJECTS =  lap_dir_fds_csc_example.o \
 
 
 #

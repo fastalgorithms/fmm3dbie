@@ -61,10 +61,6 @@
 !        information in row-sparse compressed format and oversampling
 !        surface information for the far-part
 !
-!    - lap_comb_dir_solver_memest: estimate the memory required for
-!        the solver with minimal computation
-!
-!
 !  Other routines in the file, these are currently in beta mode
 !  and should be used at your own risk:
 !
@@ -424,7 +420,7 @@
 !  Laplace combined field representation 
 !
 !  Representation:
-!    u = (\alpha \mathcal{S}_{k} + \beta \mathcal{D}_{k})
+!    u = (\alpha \mathcal{S}_{0} + \beta \mathcal{D}_{0})[\sigma]
 !
 !  Note: For targets on the boundary, this routine only computes
 !  the principal value part, the identity term corresponding to the jump
@@ -723,7 +719,7 @@
 !        number of near field entries corresponding to each source target
 !        pair
 !    - nker: integer
-!        number of kernels in quadrature correction, must be 4
+!        number of kernels in quadrature correction, must be 1
 !    - wnear: real *8(nker, nquad)
 !        precomputed quadrature corrections            
 !    - novers: integer(npatches)
@@ -908,7 +904,7 @@
 !        number of near field entries corresponding to each source target
 !        pair
 !    - nker: integer
-!        number of kernels in quadrature correction, must be 2
+!        number of kernels in quadrature correction, must be 1
 !    - wnear: real *8(nker, nquad)
 !        precomputed quadrature corrections            
 !    - novers: integer(npatches)
@@ -1201,10 +1197,10 @@
 !
 !  This subroutine solves the Laplace Dirichlet problem
 !  on the exterior/interior of an object where the potential
-!  is represented as a combined field integral representation.
+!  is represented using a combined field integral representation.
 !
 !  This subroutine is the simple interface as opposed to the
-!  _solver_guru( routine which is called after initialization
+!  _solver_guru routine which is called after initialization
 !  in this routine.
 !
 !
@@ -1212,7 +1208,7 @@
 !    u = \alpha S_{0}[\sigma]+\beta*D_{0}[\sigma]
 !
 !  Boundary condition:
-!    u=f
+!    u = f
 !
 !  The linear system is solved iteratively using GMRES
 !  until a relative residual of eps_gmres is reached
@@ -1265,7 +1261,7 @@
 !        gmres tolerance requested
 !      
 !
-!  output
+!  Output arguments:
 !    - niter: integer
 !        number of gmres iterations required for relative residual
 !        to converge to eps_gmres
@@ -1473,15 +1469,14 @@
 !
 !  This subroutine solves the Laplace Dirichlet problem
 !  on the exterior of an object where the potential
-!  is represented as a right preconditioned 
-!  combined field integral representation.
+!  is represented using the combined field integral representation.
 !
 !
 !  Representation:
 !    u = \alpha S_{0}[\sigma] + \beta*D_{0}[\sigma]
 !
 !  Boundary condition:
-!    u=f
+!    u = f
 !
 !  The linear system is solved iteratively using GMRES
 !  until a relative residual of eps_gmres is reached
