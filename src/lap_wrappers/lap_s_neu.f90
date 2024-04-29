@@ -229,7 +229,9 @@
 !  
 !  u = S_{0}[\sigma] 
 !
-!  dudn = S_{0}'[\sigma]
+!  dudn = S_{0}'[\sigma] + c \int_{\Gamma} \sigma
+!
+!  where the one's matrix is added for the interior Neumann problem
 !
 !  where the near field is precomputed and stored
 !  in the row sparse compressed format.
@@ -273,10 +275,11 @@
 !        precision requested
 !    - ndd: integer
 !        number of real parameters defining the kernel/
-!        integral representation (unused in this routine)
+!        integral representation (must be 1)
 !    - dpars: real *8(ndd)
 !        real parameters defining the kernel/
-!        integral representation  (unused in this routine)
+!        integral representation 
+!        * dpars(1) = c, the multiple of integral of \sigma
 !    - ndz: integer
 !        number of complex parameters defining the kernel/
 !        integral representation (unused in this routine)
@@ -338,7 +341,7 @@
 !
       implicit none
       integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
       integer, intent(in) :: iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
 
@@ -385,7 +388,7 @@
       real *8, allocatable :: ctmp2(:)
       real *8 thresh, ra
       real *8 rr, rmin
-      real *8 over4pi
+      real *8 over4pi, rint
       integer nss, ii, l, npover, ier
 
       integer nd, ntarg0, nmax
@@ -393,7 +396,7 @@
       real *8 ttot, done, pi
       data over4pi/0.07957747154594767d0/
 
-      parameter (nd=1,ntarg0=1)
+      parameter (nd=1, ntarg0=1)
 
       ns = nptso
       ntarg = npts
@@ -446,7 +449,7 @@
 !$OMP END PARALLEL DO
 
 ! 
-!  Compute S_{k}'
+!  Compute S_{0}'
 !
       call lfmm3d_t_c_g(eps, ns, sources, charges, npts, &
         srctmp, pot_aux, grad_aux, ier)
@@ -454,8 +457,8 @@
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
         pot(i) = grad_aux(1,i)*srcvals(10,i) + &
-          grad_aux(2,i)*srcvals(11,i) + &
-          grad_aux(3,i)*srcvals(12,i)
+                 grad_aux(2,i)*srcvals(11,i) + &
+                 grad_aux(3,i)*srcvals(12,i)
       enddo
 !$OMP END PARALLEL DO      
     
@@ -472,7 +475,7 @@
       do i = 1,npts
         do j = row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
-          npols = ixyzs(jpatch+1)-ixyzs(jpatch)
+          npols = ixyzs(jpatch+1) - ixyzs(jpatch)
           jquadstart = iquad(j)
           jstart = ixyzs(jpatch) 
           do l = 1,npols
@@ -512,6 +515,19 @@
           gradtmp(2)*srcvals(11,i) - gradtmp(3)*srcvals(12,i)
       enddo
 !$OMP END PARALLEL DO      
+
+      rint = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rint)
+      do i = 1,nptso
+        rint = rint + sigmaover(i)*whtsover(i)
+      enddo
+!$OMP END PARALLEL DO      
+      rint = rint*dpars(1)
+!$OMP PARALLEL DO DEFAULT(SHARED)      
+      do i = 1,npts
+        pot(i) = pot(i) + rint
+      enddo
+!$OMP END PARALLEL DO
 
       return
       end subroutine lpcomp_lap_s_neu_addsub
@@ -921,12 +937,12 @@
       
       real *8, intent(out) :: soln(npts)
 
-      real *8 did
+      real *8 did, rint
 
       procedure (), pointer :: fker
       external lpcomp_lap_s_neu_addsub
 
-      integer ndd, ndi, ndz, lwork, ndim
+      integer ndd, ndi, ndz, lwork, ndim, i
       real *8 work
       integer ipars, nkertmp
       complex *16 zpars
@@ -935,12 +951,11 @@
       integer ndtarg
       real *8, allocatable :: wts(:)
 
-      complex *16 zpars_use(3)
 
-      did = (-1)**(ifinout)/2
+      did = 0.5d0*(-1)**(ifinout)
       fker => lpcomp_lap_s_neu_addsub
 
-      ndd = 0
+      ndd = 1
       ndi = 0
       ndz = 0
 
@@ -950,7 +965,17 @@
 
       call get_qwts(npatches, norders, ixyzs, iptype, npts, &
         srcvals, wts)
-!
+      
+      dpars = 0
+      if (ifinout.eq.0) then
+        rint = 0.0d0
+!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rint)      
+        do i = 1,nptso
+          rint = rint + whtsover(i) 
+        enddo
+!$OMP END PARALLEL DO
+        dpars = 1.0d0/rint
+      endif  
 
       call dgmres_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, wts, &

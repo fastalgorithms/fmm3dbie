@@ -88,6 +88,7 @@ c
         xyz_out(3) = 20.1d0
       endif
 
+      ifinout = 1
 
       if(ifinout.eq.0) then
         xyz_src(1) = xyz_out(1)
@@ -124,7 +125,6 @@ c
       enddo
 
       numit = 200
-      ifinout = 1
       niter = 0
       allocate(errs(numit+1))
 
@@ -143,7 +143,7 @@ c
 c
 c       test solution at interior point
 c
-      call l3d_slp(xyz_out, 3, xyz_targ, 0, dpars, 1, zpars, 0,
+      call l3d_slp(xyz_src, 3, xyz_targ, 0, dpars, 1, zpars, 0,
      1   ipars,potex)
       pot = 0
       do i=1,npts
