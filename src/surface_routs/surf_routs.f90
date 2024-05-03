@@ -246,12 +246,12 @@ subroutine get_centroid_rads_guru(norder,npols,iptype,srccoefs,cms,rads)
 
   integer i,j,l,m,lpt,np,nv
 
-  call get_boundary_vertices(iptype,uv,nv)
+  call get_boundary_vertices(iptype, uv, nv)
   
 
   allocate(pols(npols,nv))
   do i=1,nv
-    call get_basis_pols(uv(1,i),norder,npols,iptype,pols(1,i))
+    call get_basis_pols(uv(1,i), norder, npols, iptype, pols(1,i))
   enddo
 
   do l=1,3

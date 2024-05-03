@@ -122,8 +122,8 @@ c
       sigout(3) = .31d0
       
       do i=1,npts
-         call st3d_slp_vec(9,xyz_src,3,srcvals(1,i),0,dpars,0,zpars,0,
-     1        ipars,smat)
+         call st3d_slp_vec(9, xyz_src, 3, srcvals(1,i), 0, dpars, 0,
+     1     zpars, 0, ipars, smat)
          uval(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
          uval(2,i) = smat(2,1)*sigout(1) + smat(2,2)*sigout(2)
@@ -134,8 +134,8 @@ c
 
 
 
-      call st3d_slp_vec(9,xyz_src,3,xyz_targ,0,dpars,0,zpars,0,
-     1     ipars,smat)
+      call st3d_slp_vec(9, xyz_src, 3, xyz_targ, 0, dpars, 0, zpars, 0,
+     1     ipars, smat)
       
        uintest(1) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
@@ -171,26 +171,21 @@ c
           xmat(j,i) = 0
         enddo
       enddo
-      call stok_comb_vel_matgen(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,eps,dpars,ifinout,xmat)
+      call stok_comb_vel_matgen(npatches, norders, ixyzs, iptype,
+     1  npts, srccoefs, srcvals, eps, dpars, ifinout, xmat)
       
 
       allocate(soln(3,npts))
       dcond = 0
-      call dgausselim(nmat,xmat,uval,info,soln,dcond)
-      call prin2('dcond=*',dcond,1)
-
+      call dgausselim(nmat, xmat, uval, info, soln, dcond)
 
 
       ndt_in = 3
       nt_in = 1
-      call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
-     1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_targ,
-     2     ipatch_id,uvs_targ,eps,dpars,soln,udir)
-
-      udir(1) = udir(1) 
-      udir(2) = udir(2) 
-      udir(3) = udir(3) 
+      call stok_comb_vel_eval(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, ndt_in, nt_in, xyz_targ,
+     2     ipatch_id, uvs_targ, eps, dpars, soln, udir)
+      call prin2('udir=*', udir, 3)
 
       sum = 0
       sumrel = 0
@@ -199,6 +194,7 @@ c
          sum = sum + (udir(i)-uintest(i))**2
          sumrel = sumrel + (uintest(i))**2
       enddo
+      call prin2('uintest=*', uintest, 3)
       
       call prin2('rel err in velocity *',sqrt(sum/sumrel),1)
 
