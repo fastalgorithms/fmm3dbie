@@ -10,9 +10,10 @@
       complex *16, allocatable :: sigma(:),rhs(:),sigma1(:)
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
-      complex * 16 zpars(5),zpars2(3)
+      complex * 16 zpars(6),zpars2(3)
       complex *16 omega,ep0,ep1,mu0,mu1,zk0,zk1,ztmp,ztmp2
       complex *16 u0,dudn0,u1,dudn1
+      complex alpha0,alpha1,beta0,beta1
       integer numit,niter
 
       integer ipatch_id
@@ -46,11 +47,18 @@ c
       mu1 = 1.2d0
       zk0 = omega*sqrt(ep0*mu0)
       zk1 = omega*sqrt(ep1*mu1)
-      zpars(1) = omega
-      zpars(2) = ep0
-      zpars(3) = mu0
-      zpars(4) = ep1
-      zpars(5) = mu1
+
+      alpha0 = 1.0d0
+      alpha1 = 1.0d0
+      beta0 = 1.0d0
+      beta1 = 1.0d0
+
+      zpars(1) = zk0
+      zpars(2) = alpha0
+      zpars(3) = beta0
+      zpars(4) = zk1
+      zpars(5) = alpha1
+      zpars(6) = beta1
 
       xyz_out(1) = 3.17d0
       xyz_out(2) = -0.03d0
@@ -60,7 +68,7 @@ c
       xyz_in(2) = 0.23d0
       xyz_in(3) = -0.11d0
 
-      norder = 4 
+      norder = 4
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
@@ -97,8 +105,8 @@ c
      1     ipars,u1)
         call h3d_sprime(xyz_out,12,srcvals(1,i),0,dpars,1,zk1,0,
      1     ipars,dudn1)
-        rhs(i) = u0-u1
-        rhs(npts+i) = dudn0/ep0 - dudn1/ep1
+        rhs(i) = alpha0*u0 - alpha1*u1
+        rhs(npts+i) = beta0*dudn0 - beta1*dudn1
       enddo
 
 
@@ -130,8 +138,8 @@ c
       uvs_targ(1) = 0
       uvs_targ(2) = 0
       zpars2(1) = zk1
-      zpars2(2) = ep1**2
-      zpars2(3) = ep1
+      zpars2(2) = ima*zk1/beta1
+      zpars2(3) = 1/beta1
       call lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,iptype,
      1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
      2  uvs_targ,eps,zpars2,sigma,pot)
@@ -144,7 +152,7 @@ c
 c
 c       test solution at exterior point
 c
-      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zk0,0,ipars,potex)
+      call h3d_slp(xyz_in,3,xyz_out,0,dpars,1,zk0,0,ipars,potex)
 
       ndtarg = 3
       ntarg = 1
@@ -152,8 +160,8 @@ c
       uvs_targ(1) = 0
       uvs_targ(2) = 0
       zpars2(1) = zk0
-      zpars2(2) = ep0**2
-      zpars2(3) = ep0
+      zpars2(2) = ima*zk0/beta0
+      zpars2(3) = 1/beta0
       call lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,iptype,
      1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_out,ipatch_id,
      2  uvs_targ,eps,zpars2,sigma,pot)
@@ -191,7 +199,7 @@ c
 
 
       external xtri_stell_eval,xtri_sphere_eval
-      
+
       npols = (norder+1)*(norder+2)/2
       allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
       allocate(wts(npols))
