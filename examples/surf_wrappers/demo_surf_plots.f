@@ -2,257 +2,255 @@
       implicit real *8 (a-h,o-z) 
 
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
-      real *8, allocatable :: wts(:)
       character *100 fname
       integer ipars(2)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer, allocatable :: norders(:), ixyzs(:), iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3)
-      complex *16 zk
+      real *8 abc(3), c0(3)
+      integer nabc(3), nuv(2)
+      real *8 radii(3)
 
       integer ipatch_id
       real *8 uvs_targ(2)
 
-      logical isout0,isout1
-
-
-      data ima/(0.0d0,1.0d0)/
-
-
       call prini(6,13)
+
 
       done = 1
       pi = atan(done)*4
 
+      iptype0 = 1
+      dlam = 0.5d0
 
-c
-c       select geometry type
-c       igeomtype = 1 => sphere
-c       igeomtype = 2 => stellarator
-c 
-      igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 0
-      if(igeomtype.eq.2) ipars(1) = 10
+      abc(1) = 2.1d0
+      abc(2) = 1.0d0
+      abc(3) = 4.0d0
 
-      if(igeomtype.eq.1) then
-        npatches = 12*(4**ipars(1))
+      nabc(1) = 5
+      nabc(2) = 3
+      nabc(3) = 10
+
+      c0(1) = 0
+      c0(2) = 5
+      c0(3) = -3
+
+      npatches = 0
+      npts = 0
+
+      norder = 4
+
+      ifellip = 0
+      ifsphere = 0
+      ifstartorus = 1
+      ifstell = 1
+
+      if (ifellip.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing ellipsoids"    
+        print *, ""
+        print *, "" 
+
+        call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, 
+     1    npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype,npts, srccoefs, srcvals, 'ellip_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs, 
+     1     iptype, npts, srccoefs, srcvals, 'ellip_tri_msh.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 11
+
+        call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, 
+     1    npatches, npts) 
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'ellip_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
       endif
-      if(igeomtype.eq.2) then
-        ipars(2) = ipars(1)*3
-        npatches = 2*ipars(1)*ipars(2)
+
+      if (ifsphere.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing sphere"    
+        print *, ""
+        print *, "" 
+
+        a = abc(1)
+        na = nabc(1)
+        call get_sphere_npat_mem(a, na, c0, norder, iptype0, 
+     1    npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_sphere_npat(a, na, c0, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'sphere_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'sphere_tri_msh.vtk','a')
+
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 12
+
+        call get_sphere_npat_mem(a, na, c0, norder, iptype0, 
+     1    npatches, npts) 
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_sphere_npat(a, na, c0, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'sphere_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
       endif
 
+      if (ifstartorus.eq.1) then
 
-      zk = 1.11d0+ima*0.0d0
+        print *, "========================================="
+        print *, "Testing star tourus"    
+        print *, ""
+        print *, ""
+
+        radii(1) = 2
+        radii(2) = 0.75d0
+        radii(3) = 0.25d0
+
+        abc(1) = 1
+        abc(2) = 1
+        abc(3) = 1
+        
+        nosc = 5
+
+        nuv(1) = 10
+        nuv(2) = 15
+
+        call get_startorus_npat_mem(radii, nosc, abc, nuv, norder, 
+     1    iptype0, npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_startorus_npat(radii, nosc, abc, nuv, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'star_torus_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'star_torus_tri_msh.vtk',
+     2     'a')
 
 
-      norder = 2 
-      npols = (norder+1)*(norder+2)/2
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
 
-      npts = npatches*npols
-      allocate(srcvals(12,npts),srccoefs(9,npts))
-      ifplot = 0
+        npatches = 0
+        npts = 0
+        iptype0 = 12
+
+        call get_startorus_npat_mem(radii, nosc, abc, nuv, norder, 
+     1    iptype0, npatches, npts)
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_startorus_npat(radii, nosc, abc, nuv, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'star_torus_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+      endif
+
+      if (ifstell.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing stellarator"    
+        print *, ""
+        print *, ""
 
 
-      call setup_geom(igeomtype,norder,npatches,ipars, 
-     1       srcvals,srccoefs,ifplot,fname)
+        nuv(1) = 10
+        nuv(2) = 30
 
-      allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
+        call get_stellarator_npat_mem(nuv, norder, iptype0, 
+     1     npatches, npts)
+        print *, "npatches tri=", npatches
 
-      do i=1,npatches
-        norders(i) = norder
-        ixyzs(i) = 1 +(i-1)*npols
-        iptype(i) = 1
-      enddo
-      ixyzs(npatches+1) = 1+npols*npatches
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
 
-      dlam = 2*pi/real(zk)
-      call plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,'stell.vtk','a')
+        call get_stellarator_npat(nuv, norder, iptype0, npatches, npts, 
+     1     norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'stellarator_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'stellarator_tri_msh.vtk',
+     2     'a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 11
+
+        call get_stellarator_npat_mem(nuv, norder, iptype0, 
+     1     npatches, npts)
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_stellarator_npat(nuv, norder, iptype0, npatches, npts, 
+     1     norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'stellarator_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+      endif
 
       stop
       end
 
-
-
-
-      subroutine setup_geom(igeomtype,norder,npatches,ipars, 
-     1    srcvals,srccoefs,ifplot,fname)
-      implicit real *8 (a-h,o-z)
-      integer igeomtype,norder,npatches,ipars(*),ifplot
-      character (len=*) fname
-      real *8 srcvals(12,*), srccoefs(9,*)
-      real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
-
-      real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer, pointer :: iptr1,iptr2,iptr3,iptr4
-      real *8, target :: p1(10),p2(10),p3(10),p4(10)
-      real *8, allocatable, target :: triaskel(:,:,:)
-      real *8, allocatable, target :: deltas(:,:)
-      integer, allocatable :: isides(:)
-      integer, target :: nmax,mmax
-
-      procedure (), pointer :: xtri_geometry
-
-
-      external xtri_stell_eval,xtri_sphere_eval
-      
-      npols = (norder+1)*(norder+2)/2
-      allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-      allocate(wts(npols))
-
-      call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
-
-      if(igeomtype.eq.1) then
-        itype = 2
-        allocate(triaskel(3,3,npatches))
-        allocate(isides(npatches))
-        npmax = npatches
-        ntri = 0
-        call xtri_platonic(itype, ipars(1), npmax, ntri, 
-     1      triaskel, isides)
-
-        xtri_geometry => xtri_sphere_eval
-        ptr1 => triaskel(1,1,1)
-        ptr2 => p2(1)
-        ptr3 => p3(1)
-        ptr4 => p4(1)
-
-
-        if(ifplot.eq.1) then
-           call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2, 
-     1         ptr3,ptr4, norder,'Triangulated surface of the sphere')
-        endif
-
-
-        call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,ptr3,ptr4,
-     1     npols,uvs,umatr,srcvals,srccoefs)
-      endif
-
-      if(igeomtype.eq.2) then
-        done = 1
-        pi = atan(done)*4
-        umin = 0
-        umax = 2*pi
-        vmin = 2*pi
-        vmax = 0
-        allocate(triaskel(3,3,npatches))
-        nover = 0
-        call xtri_rectmesh_ani(umin,umax,vmin,vmax,ipars(1),ipars(2),
-     1     nover,npatches,npatches,triaskel)
-
-        mmax = 2
-        nmax = 1
-        xtri_geometry => xtri_stell_eval
-
-        allocate(deltas(-1:mmax,-1:nmax))
-        deltas(-1,-1) = 0.17d0
-        deltas(0,-1) = 0
-        deltas(1,-1) = 0
-        deltas(2,-1) = 0
-
-        deltas(-1,0) = 0.11d0
-        deltas(0,0) = 1
-        deltas(1,0) = 4.5d0
-        deltas(2,0) = -0.25d0
-
-        deltas(-1,1) = 0
-        deltas(0,1) = 0.07d0
-        deltas(1,1) = 0
-        deltas(2,1) = -0.45d0
-
-        ptr1 => triaskel(1,1,1)
-        ptr2 => deltas(-1,-1)
-        iptr3 => mmax
-        iptr4 => nmax
-
-        if(ifplot.eq.1) then
-           call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2, 
-     1         iptr3,iptr4, norder,
-     2         'Triangulated surface of the stellarator')
-        endif
-
-        call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,iptr3,iptr4,
-     1     npols,uvs,umatr,srcvals,srccoefs)
-      endif
-      
-      return  
-      end
-
-
-      subroutine test_exterior_pt(npatches,norder,npts,srcvals,
-     1   srccoefs,wts,xyzout,isout)
-c
-c
-c  this subroutine tests whether the pt xyzin, is
-c  in the exterior of a surface, and also estimates the error
-c  in representing e^{ir/2}/r and \grad e^{ir/2}/r \cdot n
-c  centered at the interior point. Whether a point 
-c  is in the interior or not is tested using Gauss' 
-c  identity for the flux due to a point charge
-c
-c
-c  input:
-c    npatches - integer
-c       number of patches
-c    norder - integer
-c       order of discretization
-c    npts - integer
-c       total number of discretization points on the surface
-c    srccoefs - real *8 (9,npts)
-c       koornwinder expansion coefficients of geometry info
-c    xyzout -  real *8 (3)
-c       point to be tested
-c
-c  output: 
-c    isout - boolean
-c      whether the target is in the interior or not
-c
-
-      implicit none
-      integer npatches,norder,npts,npols
-      real *8 srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
-      real *8 tmp(3)
-      real *8 dpars,done,pi
-      real *8, allocatable :: rsurf(:),err_p(:,:) 
-      integer ipars,norderhead,nd
-      complex *16, allocatable :: sigma_coefs(:,:), sigma_vals(:,:)
-      complex *16 zk,val
-
-      integer ipatch,j,i
-      real *8 ra,ds
-      logical isout
-
-      done = 1
-      pi = atan(done)*4
-
-      npols = (norder+1)*(norder+2)/2
-
-
-      zk = 0
-
-      ra = 0
-
-
-
-      do ipatch=1,npatches
-        do j=1,npols
-          i = (ipatch-1)*npols + j
-          call h3d_sprime(xyzout,12,srcvals(1,i),0,dpars,1,zk,0,ipars,
-     1       val)
-
-          call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
-          ds = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
-          ra = ra + real(val)*wts(i)
-        enddo
-      enddo
-
-      if(abs(ra+4*pi).le.1.0d-1) isout = .false.
-      if(abs(ra).le.1.0d-1) isout = .true.
-
-      return
-      end
 
    
 

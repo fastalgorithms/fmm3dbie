@@ -30,7 +30,7 @@ c
 c
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      subroutine sortr_help(m,n,data,index)
+      RECURSIVE subroutine sortr_help(m,n,data,index)
 C===================================================================
 C
 C
@@ -483,7 +483,7 @@ c
 c
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      subroutine sorti_help(m,n,data,index)
+      RECURSIVE subroutine sorti_help(m,n,data,index)
 C===================================================================
 C
 C
