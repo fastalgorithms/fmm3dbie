@@ -939,15 +939,15 @@ c
              nn2 = nppols*npmax
              nn3 = 12*npmax
              nn4 = nquad*6
-             call dcopy(nn1,sigvals,1,sigvals2,1)
-             call dcopy(nn2,sigvalsdens,1,sigvalsdens2,1)
-             call dcopy(nn3,srcvals,1,srcvals2,1)
-             call dcopy(npmax,qwts,1,qwts2,1)
+             call dcopy_guru(nn1,sigvals,1,sigvals2,1)
+             call dcopy_guru(nn2,sigvalsdens,1,sigvalsdens2,1)
+             call dcopy_guru(nn3,srcvals,1,srcvals2,1)
+             call dcopy_guru(npmax,qwts,1,qwts2,1)
              do ii=1,nquad
                ichild_start2(ii) = ichild_start(ii)
              enddo
-             call dcopy(nn4,tvs,1,tvs2,1)
-             call dcopy(nquad,da,1,da2,1)
+             call dcopy_guru(nn4,tvs,1,tvs2,1)
+             call dcopy_guru(nquad,da,1,da2,1)
 
 
              deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
@@ -964,15 +964,15 @@ c
                ichild_start(ii) = -1
              enddo
 
-             call dcopy(nn1,sigvals2,1,sigvals,1)
-             call dcopy(nn2,sigvalsdens2,1,sigvalsdens,1)
-             call dcopy(nn3,srcvals2,1,srcvals,1)
-             call dcopy(npmax,qwts2,1,qwts,1)
+             call dcopy_guru(nn1,sigvals2,1,sigvals,1)
+             call dcopy_guru(nn2,sigvalsdens2,1,sigvalsdens,1)
+             call dcopy_guru(nn3,srcvals2,1,srcvals,1)
+             call dcopy_guru(npmax,qwts2,1,qwts,1)
              do ii=1,nquad
                ichild_start(ii) = ichild_start2(ii)
              enddo
-             call dcopy(nn4,tvs2,1,tvs,1)
-             call dcopy(nquad,da2,1,da,1)
+             call dcopy_guru(nn4,tvs2,1,tvs,1)
+             call dcopy_guru(nquad,da2,1,da,1)
 
              npmax = npmax0
              nqmaxuse = nqmaxuse0
