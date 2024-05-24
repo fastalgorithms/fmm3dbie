@@ -309,21 +309,9 @@ subroutine xquad_ellipsoid_eval(iquad, u, v, xyz, dxyzduv, &
   xyz(2)=p2(2)*y/r + p3(2)
   xyz(3)=p2(3)*z/r + p3(3)
 
-  a = x0*(x1-x0) + y0*(y1-y0) + z0*(z1-z0)
-  b = (x1-x0)*(x2-x0) + (y1-y0)*(y2-y0) + (z1-z0)*(z2-z0)
-  c = (x1-x0)*(x1-x0) + (y1-y0)*(y1-y0) + (z1-z0)*(z1-z0)
+  drdu = (x*dxdu + y*dydu + z*dzdu)/r
+  drdv = (x*dxdv + y*dydv + z*dzdv)/r
 
-  drdu = (a + v*b + u*c)/r
-  drdu2 = (r*c - r*drdu*drdu)/r/r
-
-  e = x0*(x2-x0) + y0*(y2-y0) + z0*(z2-z0)
-  f = b
-  g = (x2-x0)*(x2-x0) + (y2-y0)*(y2-y0) + (z2-z0)*(z2-z0)
-
-  drdv = (e + u*f + v*g)/r
-  drdv2 = (r*g - r*drdv*drdv)/r/r
-
-  drduv = (r*b - r*drdu*drdv)/r/r
 
 ! du
   dxyzduv(1,1) = p2(1)*(r*dxdu-x*drdu)/r/r
@@ -774,9 +762,6 @@ subroutine xquad_get_rectparapiped(a, b, c, na, nb, nc, &
   call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),nb,na, &
     npatches,quadskel(1,1,nquad+1))
 
-  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
-  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
-
   nquad = nquad + na*nb
       
 
@@ -784,9 +769,6 @@ subroutine xquad_get_rectparapiped(a, b, c, na, nb, nc, &
   vs(1:3,1:4) = vcube(1:3,5:8)
   call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4), na, nb, &
     npatches,quadskel(1,1,nquad+1))
-
-  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
-  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
 
   nquad = nquad + na*nb
 
@@ -799,8 +781,6 @@ subroutine xquad_get_rectparapiped(a, b, c, na, nb, nc, &
 
   call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),na,nc, &
     npatches,quadskel(1,1,nquad+1))
-  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
-  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
 
 
   nquad = nquad + na*nc
@@ -814,8 +794,6 @@ subroutine xquad_get_rectparapiped(a, b, c, na, nb, nc, &
 
   call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),nc,na, &
     npatches,quadskel(1,1,nquad+1))
-  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
-  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
 
   nquad = nquad + na*nc
 
@@ -830,8 +808,6 @@ subroutine xquad_get_rectparapiped(a, b, c, na, nb, nc, &
 
   call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),nc,nb, &
     npatches,quadskel(1,1,nquad+1))
-  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
-  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
 
 
   nquad = nquad + nb*nc
@@ -845,8 +821,6 @@ subroutine xquad_get_rectparapiped(a, b, c, na, nb, nc, &
 
   call xquad_rectmesh_3d(vs(1,1),vs(1,2),vs(1,3),vs(1,4),nb,nc, &
     npatches,quadskel(1,1,nquad+1))
-  call get_norm_quadskel(quadskel(1,1,nquad+1),xnorm)
-  call get_norm_quadskel(quadskel(1,1,nquad+2),xnorm)
 
   nquad = nquad + nb*nc
 
