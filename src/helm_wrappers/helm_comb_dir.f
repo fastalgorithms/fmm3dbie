@@ -1913,7 +1913,8 @@ c
       real *8 ttot,done,pi
       real *8 rfac,rfac0
       integer iptype_avg,norder_avg
-      integer ikerorder, iquadtype,npts_over
+      integer ikerorder, iquadtype, npts_over
+      integer nker
 
 c
 c
@@ -2053,9 +2054,10 @@ c
 c
 c  call the guru gmres solver
 c
+      nker = 1
       call helm_comb_dir_solver_guru(npatches,norders,ixyzs,
      1    iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,
-     2    rhs,nnz,row_ptr,col_ind,iquad,nquad,wnear,novers,
+     2    rhs,nnz,row_ptr,col_ind,iquad,nquad,nker,wnear,novers,
      3    npts_over,ixyzso,srcover,wover,eps_gmres,niter,
      4    errs,rres,soln)
 c
@@ -2068,7 +2070,7 @@ c
 c
       subroutine helm_comb_dir_solver_guru(npatches,norders,ixyzs,
      1    iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,
-     2    rhs,nnz,row_ptr,col_ind,iquad,nquad,wnear,novers,
+     2    rhs,nnz,row_ptr,col_ind,iquad,nquad,nker,wnear,novers,
      3    npts_over,ixyzso,srcover,wover,eps_gmres,niter,
      4    errs,rres,soln)
 c
@@ -2143,6 +2145,8 @@ c        starts
 c    - nquad: integer
 c        number of near field entries corresponding to each source target
 c        pair.
+c    - nker: integer
+c        number of kernels in quadrature correction        
 c    - wnear: complex *16(nquad)
 c        The desired near field quadrature
 c    - novers: integer(npatches)
@@ -2187,14 +2191,15 @@ c--------------------------
       real *8 work(1)
       integer ndd,ndz,ndi
       integer row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
-      complex *16 wnear(nquad)
+      integer nker
+      complex *16 wnear(nker,nquad)
       integer npts_over
       real *8 :: srcover(12,npts_over),wover(npts_over)
       integer :: ixyzso(npatches+1),novers(npatches)
       integer numit,ndim
       real *8 errs(numit+1)
       real *8 rres
-      integer niter,nker
+      integer niter
       complex *16 zid
 
       procedure (), pointer :: fker
@@ -2207,7 +2212,6 @@ c--------------------------
       ndi = 0
       lwork = 0
       ndim = 1
-      nker = 1
       zid = -(-1)**(ifinout)*zpars(3)/2
       fker => lpcomp_helm_comb_dir_addsub
       allocate(wts(npts))
