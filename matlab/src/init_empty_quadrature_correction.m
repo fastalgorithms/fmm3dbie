@@ -6,10 +6,16 @@ function Q = init_empty_quadrature_correction(targinfo,opts)
     Q.nnz = 0;
     Q.col_ind = 0;
     ifcomplex = 0
-    Q.wnear = 0;
+
+    nker = 1;
+    if (isfield(opts,'nker'))
+      nker = opts.nker;
+    end
+
+    Q.wnear = zeros(nker,1);
     if(isfield(opts,'type'))
        if(strcmpi(opts.type,'complex'))
-          Q.wnear = 0+0j;
+          Q.wnear = complex(zeros(nker,1));
        end
     end
     Q.iquad = 1;
