@@ -1,24 +1,19 @@
-function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
+function [sigma, varargout] = solver(S, rhs, eps, opts)
 %
-%  lap3d.dirichlet.solver
-%    Solve the Laplace dirichlet boundary value problem
+%  lap3d.neumann.solver
+%    Solve the Laplace neumann boundary value problem
 %
 %  Syntax
-%   sigma = lap3d.dirichlet.solver(S,dpars,sigma,eps)
-%   sigma = lap3d.dirichlet.solver(S,dpars,sigma,eps,opts)
+%   [sigma, siksigma] = lap3d.neumann.solver(S,rhs,eps)
+%   [sigma, siksigma] = lap3d.neumann.solver(S,rhs,eps,opts)
 %
 %  Integral representation
-%     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]
+%     pot = S_{0} [\sigma] 
 %
-%  S_{0}, D_{0}: Laplace single and double layer potential
+%  S_{0}: Laplace single layer potential
 %  
-%  \alpha, beta = dpars(1:2)
-%
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * dpars: kernel parameters
-%        dpars(1) - single layer strength
-%        dpars(2) - double layer strength
 %    * rhs: boundary data 
 %    * eps: precision requested
 %    * opts: options struct
@@ -36,7 +31,7 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
 %    
 %
     
-    if(nargin < 5) 
+    if(nargin < 4) 
       opts = [];
     end
 
@@ -91,6 +86,7 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
       else
         opts_quad = [];
         opts_quad.format = 'rsc';
+        opts_quad.rep = 'bc';
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -99,11 +95,12 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
 %  if nkernel is >1
 %
 
-        [Q] = lap3d.dirichlet.get_quadrature_correction(S,dpars,eps,targinfo,opts_quad);
+        [Q] = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];
       opts_qcorr.type = 'double';
+      opts_qcorr.nker = 1;
       Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
     end
     nnz = length(Q.col_ind);
@@ -133,9 +130,10 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
     rres = 0;
     nker = 1;
 
+
 % Call the layer potential evaluator
-    mex_id_ = 'lap_comb_dir_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i double[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[x])';
-[niter, errs, rres, sigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, dpars, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts);
+    mex_id_ = 'lap_s_neu_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[x])';
+[niter, errs, rres, sigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts);
 
     errs = errs(1:niter);
     varargout{1} = errs;
@@ -144,10 +142,11 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
 end    
 %
 %
+
 %-------------------------------------------------
 %
 %%
-%%   Laplace neumann routines
+%%   Helmholtz dirichlet routines
 %
 %
 %-------------------------------------------------

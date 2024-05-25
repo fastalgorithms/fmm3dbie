@@ -28,7 +28,7 @@
 !        and parameter \alpha, this routine returns the solution
 !        \sigma, and S_{i|k|}[\sigma]
 !
-!    - helm_rpcomb_neu_eval: Given \sigma, and S_{i|k|}[\sigma],
+!    - helm_rpcomb_eval: Given \sigma, and S_{i|k|}[\sigma],
 !        evaluate the solution at a collection of targets
 !
 !  Advanced interfaces:
@@ -48,12 +48,12 @@
 !        near quadrature information in row-sparse compressed format
 !        and oversampling surface information for the far-part
 !
-!    - getnearquad_helm_rpcomb_neu_eval: Generate quadrature
+!    - getnearquad_helm_rpcomb_eval: Generate quadrature
 !        for the post-processor, where targets can be in the volume
 !        or on surface
 !
 !
-!    - helm_rpcomb_neu_eval_addsub: Compute the solution
+!    - helm_rpcomb_eval_addsub: Compute the solution
 !        u at a collection of targets, given \sigma and
 !        S_{i|k|} \sigma. On input, user provides precomputed
 !        near quadrature in row-sparse compressed format, 
@@ -1397,7 +1397,7 @@
 !
 !      
 
-      subroutine getnearquad_helm_rpcomb_neu_eval(npatches, norders, &
+      subroutine getnearquad_helm_rpcomb_eval(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
         col_ind, iquad, rfac0, nquad, wnear)
@@ -1546,7 +1546,7 @@
 !
 !      
 !
-      subroutine helm_rpcomb_neu_eval_addsub(npatches, norders, &
+      subroutine helm_rpcomb_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
         nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
@@ -1907,7 +1907,7 @@
       allocate(wnear(nker,nquad))
       
 
-      call getnearquad_helm_rpcomb_neu_eval(npatches, norders, &
+      call getnearquad_helm_rpcomb_eval(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
         col_ind, iquad, rfac0, nquad, wnear)
@@ -1958,7 +1958,7 @@
       idensflag = 1
       ipotflag = 1
 
-      call helm_rpcomb_neu_eval_addsub(npatches, norders, &
+      call helm_rpcomb_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
         nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
