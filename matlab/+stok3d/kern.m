@@ -53,7 +53,7 @@ if strcmpi(type,'d')
   ny = reshape(repmat(srcnorm(2,:),nt,1),[1,1,nt,1,ns]);
   nz = reshape(repmat(srcnorm(3,:),nt,1),[1,1,nt,1,ns]);
   submat = -(grad(1,:,:,:,:).*nx + grad(2,:,:,:,:).*ny+grad(3,:,:,:,:).*nz);
-  submat = reshape(submat,[3,nt,3,ns]);
+  submat = -reshape(submat,[3,nt,3,ns]);
 end
 
 if strcmpi(type,'sprime')

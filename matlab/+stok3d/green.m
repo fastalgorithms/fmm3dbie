@@ -28,7 +28,6 @@ r2 = rx2+ry2+rz2;
 
 r = sqrt(r2);
 
-
 gmat = zeros(3,m,3,n);
 gmat(1,:,1,:) = rx2;
 gmat(2,:,2,:) = ry2;
@@ -49,7 +48,7 @@ if nargout > 0
     val = gmat;
     val(1,:,1,:) = val(1,:,1,:) + r2;
     val(2,:,2,:) = val(2,:,2,:) + r2;
-    val(2,:,2,:) = val(2,:,2,:) + r2;
+    val(3,:,3,:) = val(3,:,3,:) + r2;
     val = fact*val./(r.^3);
 end
 
