@@ -1,24 +1,17 @@
-function [p,varargout] = eval(S,zpars,sigma,eps,varargin)
+function p = eval(S,zpars,sigma,siksigma,eps,varargin)
 %
 %  helm3d.neumann.eval
-%    Evaluates the helmholtz dirichlet layer potential at a collection 
+%    Evaluates the helmholtz neumann layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = helm3d.neumann.eval(S,zpars,sigma,eps)
-%   pot = helm3d.neumann.eval(S,zpars,sigma,eps,targinfo)
-%   pot = helm3d.neumann.eval(S,zpars,sigma,eps,targinfo,Q)
-%   pot = helm3d.neumann.eval(S,zpars,sigma,eps,targinfo,Q,opts)
+%   pot = helm3d.neumann.eval(S,zpars,sigma,siksigma,eps)
+%   pot = helm3d.neumann.eval(S,zpars,sigma,siksigma,eps,targinfo)
+%   pot = helm3d.neumann.eval(S,zpars,sigma,siksigma,eps,targinfo,Q)
+%   pot = helm3d.neumann.eval(S,zpars,sigma,siksigma,eps,targinfo,Q,opts)
 %
-%  Integral representation             
-%   's':       pot = S_{k} [\sigma] 
-%   'rpcomb':  pot = S_{k} [\sigma] + 1i*\alpha D_{k} S_{i|k|}[\sigma]
-%
-%   opts.int_rep       kernels returned
-%     's'               S'_{k} 
-%     's-eval'          S_{k} 
-%     'rpcomb'          S_{k}', S_{i|k|}, S_{i|k|}', D_{k}' - D_{i|k|}'
-%     'rpcomb-eval'     S_{k}, D_{k}
+%  Integral representation
+%     pot = S_{k} [\sigma] + i \alpha D_{k} S_{i|k|}[\sigma]
 %
 %  S_{k}, D_{k}: helmholtz single and double layer potential
 %  
@@ -31,10 +24,9 @@ function [p,varargout] = eval(S,zpars,sigma,eps,varargin)
 %    * S: surfer object, see README.md in matlab for details
 %    * zpars: kernel parameters
 %        zpars(1) - wave number
-%        zpars(2) - single layer strength
-%        zpars(3) - double layer strength
-%    * eps: precision requested
+%        zpars(2) - alpha above
 %    * sigma: layer potential density
+%    * eps: precision requested
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info
@@ -48,27 +40,22 @@ function [p,varargout] = eval(S,zpars,sigma,eps,varargin)
 %           currently only supports quadrature corrections
 %           computed in rsc format 
 %    * opts: options struct
-%        opts.int_rep - integral representation being used
-%                         Supported representations
-%                         's', 'rpcomb'
-%        opts.format  - Storage format for sparse matrices
-%                         'rsc' - row sparse compressed format
-%                         'csc' - column sparse compressed format
-%                         'sparse' - sparse matrix format
-%        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.nonsmoothonly - use smooth quadrature rule for evaluating
+%           layer potential (false)
+%    
+
 %
 %
+% Todo: Fix varargin
 %
-% Todo: Fix behavior for eval
-%
-    if(nargin < 7) 
+    if(nargin < 8) 
       opts = [];
     else
       opts = varargin{3};
     end
 
     isprecompq = true;
-    if(nargin < 6)
+    if(nargin < 7)
        Q = [];
        isprecompq = false;
     else
@@ -97,7 +84,7 @@ function [p,varargout] = eval(S,zpars,sigma,eps,varargin)
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
 
-    if(nargin < 5)
+    if(nargin < 6)
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
@@ -125,6 +112,7 @@ function [p,varargout] = eval(S,zpars,sigma,eps,varargin)
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
+        opts_quad.rep = 'eval';
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -133,7 +121,7 @@ function [p,varargout] = eval(S,zpars,sigma,eps,varargin)
 %  if nkernel is >1
 %
 
-        [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+        [Q] = helm3d.neumann.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'complex';
@@ -161,29 +149,28 @@ function [p,varargout] = eval(S,zpars,sigma,eps,varargin)
 
     p = complex(zeros(ntarg,1));
 
-    int_rep = 'rpcomb';
-    if isfield(opts, 'int_rep')
-      int_rep = opts.int_rep;
-    end
+    sigmause = complex(zeros(2,npts));
+    sigmause(1,:) = sigma;
+    sigmause(2,:) = siksigma;
 
-
+ndd = 0;
+dpars = [];
+ndz = 2;
+ndi = 0;
+ipars = [];
+nker = 2;
+lwork = 0;
+work = [];
+ndim_s = 2;
+ndim_p = 1;
+idensflag = 1;
+ipotflag = 1;
 % Call the layer potential evaluator
-    if strcmpi(int_rep, 's')
-      mex_id_ = 'lpcomp_helm_s_neu_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], io dcomplex[x])';
-[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, wnear, sigma, novers, nptso, ixyzso, srcover, wover, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, ntargp1, nnz, nnzp1, 1, nquad, npts, npatches, 1, npatp1, 12, nptso, nptso, ntarg);
-    elseif strcmpi(int_rep, 'rpcomb')
-      p2 = complex(zeros(ntarg,1));
-      mex_id_ = 'lpcomp_helm_rpcomb_neu_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], io dcomplex[x], io dcomplex[x])';
-[p, p2] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, wnear, sigma, novers, nptso, ixyzso, srcover, wover, p, p2, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, ntargp1, nnz, nnzp1, 1, nquad, npts, npatches, 1, npatp1, 12, nptso, nptso, ntarg, ntarg);
-      varargout{1} = p2;
-    end
+    mex_id_ = 'helm_rpcomb_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], io dcomplex[x])';
+[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, sigmause, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, 2, npts, 1, 1, ntarg);
 end    
 %
-%-------------------------------------------------
 %
-%%
-%%   Maxwell pec routines
-%%
 %
-%-------------------------------------------------
+%----------------------------------
 %

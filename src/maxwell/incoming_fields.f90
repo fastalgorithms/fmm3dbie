@@ -68,10 +68,13 @@
       
 
 ! List of local variables
-      real *8 dx, dy, dz ,r
+      real *8 dx, dy, dz ,r, done, pi
       complex *16 ztmp1, ztmp2, ztmp3, ztmp4, zexp, ima, zki
       integer i, j
       data ima/(0.0d0, 1.0d0)/
+
+      done = 1.0d0
+      pi = atan(done)*4.0d0
 
       zki = ima*zk
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(dx, dy, dz, r, zexp, ztmp1) &
@@ -90,7 +93,7 @@
           dy = targs(2,i) - src(2,j) 
           dz = targs(3,i) - src(3,j) 
           r = sqrt(dx**2 + dy**2 + dz**2)
-          zexp = exp(ima*zk*r)
+          zexp = exp(ima*zk*r)/4/pi
           ztmp1 = (ima*zk/r**2 - 1.0d0/r**3)
           ztmp2 = ((ima*zk)**2/r**3 - 3*ima*zk/r**4 + 3/r**5)
           ztmp3 = (zk**2/r + ztmp1)*zexp

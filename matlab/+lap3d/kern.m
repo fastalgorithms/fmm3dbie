@@ -15,7 +15,7 @@ function submat= kern(srcinfo,targinfo,type,varargin)
 %
 % Input:
 %   srcinfo - description of sources in ptinfo struct format, i.e.
-%                ptinfo.r - positions (2,:) array
+%                ptinfo.r - positions (3,:) array
 %                ptinfo.du - first derivative with respect to u in 
 %                     underlying parameterization (3,:)
 %                ptinfo.dv - first derivative with respect to u in 

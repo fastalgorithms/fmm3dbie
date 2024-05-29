@@ -1,11 +1,11 @@
-function [sigma,varargout] = solver(S, zpars, rhs, eps, opts)
+function [sigma, siksigma, varargout] = solver(S, zpars, rhs, eps, opts)
 %
-%  helm3d.dirichlet.solver
-%    Solve the helmholtz dirichlet boundary value problem
+%  helm3d.neumann.solver
+%    Solve the helmholtz neumann boundary value problem
 %
 %  Syntax
-%   sigma = helm3d.dirichlet.solver(S,zpars,sigma,eps)
-%   sigma = helm3d.dirichlet.solver(S,zpars,sigma,eps,opts)
+%   [sigma, siksigma] = helm3d.neumann.solver(S,zpars,rhs,eps)
+%   [sigma, siksigma] = helm3d.neumann.solver(S,zpars,rhs,eps,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
@@ -18,8 +18,7 @@ function [sigma,varargout] = solver(S, zpars, rhs, eps, opts)
 %    * S: surfer object, see README.md in matlab for details
 %    * zpars: kernel parameters
 %        zpars(1) - wave number
-%        zpars(2) - single layer strength
-%        zpars(3) - double layer strength
+%        zpars(2) - alpha above 
 %    * rhs: boundary data 
 %    * eps: precision requested
 %    * opts: options struct
@@ -92,6 +91,7 @@ function [sigma,varargout] = solver(S, zpars, rhs, eps, opts)
       else
         opts_quad = [];
         opts_quad.format = 'rsc';
+        opts_quad.rep = 'bc';
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -100,11 +100,12 @@ function [sigma,varargout] = solver(S, zpars, rhs, eps, opts)
 %  if nkernel is >1
 %
 
-        [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+        [Q] = helm3d.neumann.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];
       opts_qcorr.type = 'complex';
+      opts_qcorr.nker = 4;
       Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
     end
     nnz = length(Q.col_ind);
@@ -128,15 +129,17 @@ function [sigma,varargout] = solver(S, zpars, rhs, eps, opts)
 
 
     sigma = complex(zeros(npts,1));
+    siksigma = complex(zeros(npts,1));
     niter = 0;
     errs = zeros(maxit+1,1);
     maxitp1 = maxit + 1;
     rres = 0;
-    nker = 1;
+    nker = 4;
+
 
 % Call the layer potential evaluator
-    mex_id_ = 'helm_comb_dir_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x])';
-[niter, errs, rres, sigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 3, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts);
+    mex_id_ = 'helm_rpcomb_neu_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x], io dcomplex[x])';
+[niter, errs, rres, sigma, siksigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, siksigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts, npts);
 
     errs = errs(1:niter);
     varargout{1} = errs;
@@ -145,14 +148,12 @@ function [sigma,varargout] = solver(S, zpars, rhs, eps, opts)
 end    
 %
 %
-%
-%
-%
+
 %-------------------------------------------------
 %
 %%
-%%   Maxwell pec routines
-%%
+%%   Helmholtz impedance routines
+%
 %
 %-------------------------------------------------
-%
+
