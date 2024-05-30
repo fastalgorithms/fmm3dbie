@@ -2,20 +2,11 @@
 % This file tests the Laplace single layer
 % potenial on the sphere
 %
-% Additional dependencies: chebfun, surface-hps
 %
 run ../startup.m
 
 % For triangles
-S = surfer.ellipsoid([1,1,1],0.5,6,0);
-
-% For quads
-S = surfer.sphere(6, 1, 2, 11);
-
-% For dan meshes
-
-% dom = surfacemesh.sphere(7,2);
-% S = surfer.surfacemesh_to_surfer(dom);
+S = geometries.sphere(1, 2, [0;0;0], 4, 1);
 
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
 rr2 = sum(wts);

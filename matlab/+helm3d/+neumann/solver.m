@@ -1,11 +1,11 @@
-function [sigma, siksigma, varargout] = solver(S, zpars, rhs, eps, opts)
+function [densities, varargout] = solver(S, zpars, rhs, eps, opts)
 %
 %  helm3d.neumann.solver
 %    Solve the helmholtz neumann boundary value problem
 %
 %  Syntax
-%   [sigma, siksigma] = helm3d.neumann.solver(S,zpars,rhs,eps)
-%   [sigma, siksigma] = helm3d.neumann.solver(S,zpars,rhs,eps,opts)
+%   [densities] = helm3d.neumann.solver(S,zpars,rhs,eps)
+%   [densities] = helm3d.neumann.solver(S,zpars,rhs,eps,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
@@ -32,7 +32,9 @@ function [sigma, siksigma, varargout] = solver(S, zpars, rhs, eps, opts)
 %        
 %
 %  Output arguemnts:
-%    * sigma: layer potential density
+%    * densities: solution to integral equation
+%         densities(1,:) = sigma
+%         densities(2,:) = S_{i|k|} \sigma
 %    
 %
     
@@ -91,7 +93,7 @@ function [sigma, siksigma, varargout] = solver(S, zpars, rhs, eps, opts)
       else
         opts_quad = [];
         opts_quad.format = 'rsc';
-        opts_quad.rep = 'bc';
+        opts_quad.rep = 'rpcomb-bc';
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -128,8 +130,8 @@ function [sigma, siksigma, varargout] = solver(S, zpars, rhs, eps, opts)
     wnear = Q.wnear;
 
 
-    sigma = complex(zeros(npts,1));
-    siksigma = complex(zeros(npts,1));
+    sigma = complex(zeros(1,npts));
+    siksigma = complex(zeros(1,npts));
     niter = 0;
     errs = zeros(maxit+1,1);
     maxitp1 = maxit + 1;
@@ -141,6 +143,10 @@ function [sigma, siksigma, varargout] = solver(S, zpars, rhs, eps, opts)
     mex_id_ = 'helm_rpcomb_neu_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x], io dcomplex[x])';
 [niter, errs, rres, sigma, siksigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, siksigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts, npts);
 
+    densities = complex(zeros(2,npts));
+    densities(1,:) = sigma;
+    densities(2,:) = siksigma;
+    
     errs = errs(1:niter);
     varargout{1} = errs;
     varargout{2} = rres;

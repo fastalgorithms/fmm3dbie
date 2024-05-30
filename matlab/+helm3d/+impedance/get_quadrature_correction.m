@@ -45,9 +45,9 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
 %        opts.rep - whether to compute correction for on surface
 %                   integral equation or post-processing
-%                   'bc' - on surface integral equation. If option
-%                   is 'bc' then targinfo is ignored
-%                   'eval' - post-processing
+%                   'rpcomb-bc' - on surface integral equation. If option
+%                   is 'rpcomb-bc' then targinfo is ignored
+%                   'rpcomb-eval' - post-processing
 %
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -70,7 +70,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
       opts = [];
     end
 
-    qtype = 'bc';
+    qtype = 'rpcomb-bc';
 
     if nargin < 5
       opts = [];
@@ -91,7 +91,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
     end
 
     tinfouse = [];
-    if strcmpi(qtype, 'bc')
+    if strcmpi(qtype, 'rpcomb-bc')
       tinfouse.r = S.r;
       tinfouse.du = S.du;
       tinfouse.dv = S.dv;
@@ -172,12 +172,12 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
       end
     end
 
-    if strcmpi(qtype, 'bc')
+    if strcmpi(qtype, 'rpcomb-bc')
       nker = 6;
       wnear = complex(zeros(nker,nquad));
       mex_id_ = 'getnearquad_helm_rpcomb_imp(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
 [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
-    elseif strcmpi(qtype, 'eval')
+    elseif strcmpi(qtype, 'rpcomb-eval')
       nker = 2;
       wnear = complex(zeros(nker,nquad));
       mex_id_ = 'getnearquad_helm_rpcomb_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';

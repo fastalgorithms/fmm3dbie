@@ -1,20 +1,25 @@
-function [sigma, varargout] = solver(S, rhs, eps, opts)
+function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
 %
-%  lap3d.neumann.solver
-%    Solve the Laplace neumann boundary value problem
+%  stok3d.solver
+%    Solve the Stokes boundary value problem
 %
 %  Syntax
-%   [sigma] = lap3d.neumann.solver(S,rhs,eps)
-%   [sigma] = lap3d.neumann.solver(S,rhs,eps,opts)
+%   sigma = stok3d.solver(S,dpars,sigma,eps)
+%   sigma = stok3d.solver(S,dpars,sigma,eps,opts)
 %
 %  Integral representation
-%     pot = S_{0} [\sigma] 
+%     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
 %
-%  S_{0}: Laplace single layer potential
+%  S_{stok}, D_{stok}: Stokes single and double layer potential
 %  
+%  \alpha, beta = dpars(1:2)
+%
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * rhs: boundary data 
+%    * dpars: kernel parameters
+%        dpars(1) - single layer strength
+%        dpars(2) - double layer strength
+%    * rhs: (3, npts) boundary data 
 %    * eps: precision requested
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
@@ -27,11 +32,11 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
 %        
 %
 %  Output arguemnts:
-%    * sigma: layer potential density
+%    * sigma: (3, npts) layer potential density
 %    
 %
     
-    if(nargin < 4) 
+    if(nargin < 5) 
       opts = [];
     end
 
@@ -86,7 +91,6 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
       else
         opts_quad = [];
         opts_quad.format = 'rsc';
-        opts_quad.rep = 'bc';
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -95,12 +99,11 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
 %  if nkernel is >1
 %
 
-        [Q] = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts_quad);
+        [Q] = stok3d.get_quadrature_correction(S,dpars,eps,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];
       opts_qcorr.type = 'double';
-      opts_qcorr.nker = 1;
       Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
     end
     nnz = length(Q.col_ind);
@@ -123,30 +126,28 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
     wnear = Q.wnear;
 
 
-    sigma = zeros(npts,1);
+    sigma = zeros(3,npts);
     niter = 0;
     errs = zeros(maxit+1,1);
     maxitp1 = maxit + 1;
     rres = 0;
-    nker = 1;
-
-
+    nker = 6;
 % Call the layer potential evaluator
-    mex_id_ = 'lap_s_neu_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[x])';
-[niter, errs, rres, sigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts);
+    mex_id_ = 'stok_comb_vel_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i double[x], i int[x], i int[x], i double[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[xx])';
+[niter, errs, rres, sigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, dpars, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, 3, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, 3, npts);
 
     errs = errs(1:niter);
     varargout{1} = errs;
     varargout{2} = rres;
     varargout{3} = Q;
-end    
+end  
 %
 %
-
-%-------------------------------------------------
 %
+%
+%----------------------------------------
 %%
-%%   Helmholtz dirichlet routines
+%%   Maxwell pec routines
 %
 %
 %-------------------------------------------------

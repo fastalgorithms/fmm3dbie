@@ -1,14 +1,14 @@
-function p = eval(S,zpars,sigma,siksigma,eps,varargin)
+function p = eval(S,zpars,densities,eps,varargin)
 %
 %  helm3d.neumann.eval
 %    Evaluates the helmholtz neumann layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = helm3d.neumann.eval(S,zpars,sigma,siksigma,eps)
-%   pot = helm3d.neumann.eval(S,zpars,sigma,siksigma,eps,targinfo)
-%   pot = helm3d.neumann.eval(S,zpars,sigma,siksigma,eps,targinfo,Q)
-%   pot = helm3d.neumann.eval(S,zpars,sigma,siksigma,eps,targinfo,Q,opts)
+%   pot = helm3d.neumann.eval(S,zpars,densities,eps)
+%   pot = helm3d.neumann.eval(S,zpars,densities,eps,targinfo)
+%   pot = helm3d.neumann.eval(S,zpars,densities,eps,targinfo,Q)
+%   pot = helm3d.neumann.eval(S,zpars,densities,eps,targinfo,Q,opts)
 %
 %  Integral representation
 %     pot = S_{k} [\sigma] + i \alpha D_{k} S_{i|k|}[\sigma]
@@ -16,6 +16,9 @@ function p = eval(S,zpars,sigma,siksigma,eps,varargin)
 %  S_{k}, D_{k}: helmholtz single and double layer potential
 %  
 %  k, \alpha = zpars(1:2)
+%
+%  densities(2,1:npts) for rpcomb, with densities(1,:) = sigma, 
+%  and densities(2,:) = S_{i|k|} sigma
 %
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
@@ -25,7 +28,7 @@ function p = eval(S,zpars,sigma,siksigma,eps,varargin)
 %    * zpars: kernel parameters
 %        zpars(1) - wave number
 %        zpars(2) - alpha above
-%    * sigma: layer potential density
+%    * densities: layer potential densities
 %    * eps: precision requested
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
@@ -48,14 +51,14 @@ function p = eval(S,zpars,sigma,siksigma,eps,varargin)
 %
 % Todo: Fix varargin
 %
-    if(nargin < 8) 
+    if(nargin < 7) 
       opts = [];
     else
       opts = varargin{3};
     end
 
     isprecompq = true;
-    if(nargin < 7)
+    if(nargin < 6)
        Q = [];
        isprecompq = false;
     else
@@ -84,7 +87,7 @@ function p = eval(S,zpars,sigma,siksigma,eps,varargin)
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
 
-    if(nargin < 6)
+    if(nargin < 5)
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
@@ -112,7 +115,7 @@ function p = eval(S,zpars,sigma,siksigma,eps,varargin)
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
-        opts_quad.rep = 'eval';
+        opts_quad.rep = 'rpcomb-eval';
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -149,10 +152,6 @@ function p = eval(S,zpars,sigma,siksigma,eps,varargin)
 
     p = complex(zeros(ntarg,1));
 
-    sigmause = complex(zeros(2,npts));
-    sigmause(1,:) = sigma;
-    sigmause(2,:) = siksigma;
-
 ndd = 0;
 dpars = [];
 ndz = 2;
@@ -167,7 +166,7 @@ idensflag = 1;
 ipotflag = 1;
 % Call the layer potential evaluator
     mex_id_ = 'helm_rpcomb_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], io dcomplex[x])';
-[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, sigmause, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, 2, npts, 1, 1, ntarg);
+[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, densities, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, 2, npts, 1, 1, ntarg);
 end    
 %
 %

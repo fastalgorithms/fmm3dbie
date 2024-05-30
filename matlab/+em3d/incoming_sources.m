@@ -70,6 +70,21 @@ ztmp2 = (-zk^2*rinv.^3 - 3*1j*zk*rinv.^4 + 3*rinv.^5);
 ztmp3 = (zk^2.*rinv + ztmp1).*zexp;
 
 ztmp1_use = 1j*zk*zexp.*ztmp1;
+zx = ztmp1_use.*rx;
+zy = ztmp1_use.*ry;
+zz = ztmp1_use.*rz;
+
+
+ztmp = ztmp2.*zexp;
+zxx = ztmp.*rx.*rx;
+zxy = ztmp.*rx.*ry;
+zxz = ztmp.*rx.*rz;
+
+zyy = ztmp.*ry.*ry;
+zyz = ztmp.*ry.*rz;
+
+zzz = ztmp.*rz.*rz;
+    
 
 if strcmpi(type, 'ed') || strcmpi(type, 'electric dipole') || ...
         strcmpi(type, 'ehd') || strcmpi(type, 'hed') || ...
@@ -79,16 +94,6 @@ if strcmpi(type, 'ed') || strcmpi(type, 'electric dipole') || ...
     edipsx = edips(1,:);
     edipsy = edips(2,:);
     edipsz = edips(3,:);
-
-    ztmp = ztmp2.*zexp;
-    zxx = ztmp.*rx.*rx;
-    zxy = ztmp.*rx.*ry;
-    zxz = ztmp.*rx.*rz;
-
-    zyy = ztmp.*ry.*ry;
-    zyz = ztmp.*ry.*rz;
-
-    zzz = ztmp.*rz.*rz;
     
     Ex = -(ztmp3*edipsx(:) + zxx*edipsx(:) + zxy*edipsy(:) + ...
                        zxz*edipsz(:));
@@ -100,9 +105,6 @@ if strcmpi(type, 'ed') || strcmpi(type, 'electric dipole') || ...
     E(2,:) = E(2,:) + Ey.';
     E(3,:) = E(3,:) + Ez.';
 
-    zx = ztmp1_use.*rx;
-    zy = ztmp1_use.*ry;
-    zz = ztmp1_use.*rz;
 
     H(1,:) = H(1,:) + (zy*edipsz(:) - zz*edipsy(:)).';
     H(2,:) = H(2,:) + (zz*edipsx(:) - zx*edipsz(:)).';
@@ -120,16 +122,6 @@ if strcmpi(type, 'hd') || strcmpi(type, 'magnetic dipole') || ...
     hdipsy = hdips(2,:);
     hdipsz = hdips(3,:);
 
-    ztmp = ztmp2.*zexp;
-    zxx = ztmp.*rx.*rx;
-    zxy = ztmp.*rx.*ry;
-    zxz = ztmp.*rx.*rz;
-
-    zyy = ztmp.*ry.*ry;
-    zyz = ztmp.*ry.*rz;
-
-    zzz = ztmp.*rz.*rz;
-    
     Hx = (ztmp3*hdipsx(:) + zxx*hdipsx(:) + zxy*hdipsy(:) + ...
                        zxz*hdipsz(:));
     Hy = (ztmp3*hdipsy(:) + zxy*hdipsx(:) + zyy*hdipsy(:) + ...
@@ -139,11 +131,6 @@ if strcmpi(type, 'hd') || strcmpi(type, 'magnetic dipole') || ...
     H(1,:) = H(1,:) + Hx.';
     H(2,:) = H(2,:) + Hy.';
     H(3,:) = H(3,:) + Hz.';
-
-    zx = ztmp1_use.*rx;
-    zy = ztmp1_use.*ry;
-    zz = ztmp1_use.*rz;
-
 
     E(1,:) = E(1,:) + (zy*hdipsz(:) - zz*hdipsy(:)).';
     E(2,:) = E(2,:) + (zz*hdipsx(:) - zx*hdipsz(:)).';

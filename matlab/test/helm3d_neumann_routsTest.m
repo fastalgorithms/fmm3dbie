@@ -3,26 +3,30 @@
 %
 %
 run ../startup.m
-S = geometries.sphere(1, 2, [0;0;0], 4);
+S = geometries.sphere(1, 2, [0;0;0], 4, 12);
 
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
 [~, npts] = size(srcvals);
+
+zk = 1.1;
+alpha = 1.0;
+
+eps = 1e-7;
 
 xyz_in = [0.3;0.5;0.1];
 xyz_out = [1.3;-5.2;0.1];
 src_info = [];
 src_info.r = xyz_in;
 
-eps = 1e-7;
+rhs = helm3d.kern(zk, src_info, S, 'sprime');
 
-rhs = lap3d.kern(src_info, S, 'sprime');
-
-[sig] = lap3d.neumann.solver(S, rhs, eps);
+zpars = complex([zk, alpha]);
+[densities] = helm3d.neumann.solver(S, zpars, rhs, eps);
 
 targ_info = [];
 targ_info.r = xyz_out;
 
-pot = lap3d.neumann.eval(S, sig, eps, targ_info);
-pot_ex = lap3d.kern(src_info,targ_info,'s');
+pot = helm3d.neumann.eval(S, zpars, densities, eps, targ_info);
+pot_ex = helm3d.kern(zk, src_info,targ_info,'s');
 fprintf('Error in iterative solver=%d\n',abs(pot-pot_ex)/abs(pot_ex));
 

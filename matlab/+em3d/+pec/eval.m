@@ -1,0 +1,226 @@
+function [E, H] = eval(S, zpars, densities, eps, varargin)
+%
+%  em3d.pec.eval
+%
+%    This subroutine evaluates the electric and magnetic
+%    field at a colelction of targets given the solution
+%    to the corresponding integral equation
+%
+%
+%  Notes for this routine:
+%  The PDE takes the form
+%  1v) \nabla \times E =  ik H
+%  2v) \nabla \cdot  E =     0
+%  3v) \nabla \times H = -ik E
+%  4v) \nabla \cdot  H =     0
+%  
+%  where E is the electric field, H is the magnetic field, 
+%  and k is the wavenumber
+%
+%  The PEC boundary conditions are given by
+%  1b) n \times (E + E_in) = 0
+%  2b) n \cdot  (E + E_in) = \rho
+%  3b) n \times (H + H_in) = J
+%  4b) n \cdot  (H + H_in) = 0
+%
+%  where (E_in, H_in) are the incoming electric and magnetic 
+%  fields, \rho is the surface current, and J is the 
+%  surface current.
+% 
+%  This routine will support the following representations:
+%  * nrccie   (Non-resonant charge current integral equation)
+%  * dpie     (Decoupled potential integral equation)
+%  * mfie     (Magnetic field integral equation)
+%  * aumfie   (Augmented magnetic field integral equation)
+%  * aurcsie  (Augmented regularized combined source integral equation)
+%  * gendeb   (Generalized Debye)
+%
+%  In the input array zpars, the first parameter must always be 
+%  the wavenumber k
+%
+%  For notes on the specific representations, boundary integral equations,
+%  and order of kernels returned by this routine, checkout
+%  em3d.pec.Contents.m
+%
+%  Syntax
+%   [E, H] = em3d.pec.eval(S, zpars, densities, eps)
+%   [E, H] = em3d.pec.eval(S, zpars, densities, eps, targinfo)
+%   [E, H] = em3d.pec.eval(S, zpars, densities, eps, targinfo, Q)
+%   [E, H] = em3d.pec.eval(S, zpars, densities, eps, targinfo, Q, opts)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * zpars: kernel parameters
+%        zpars(1)     - wave number
+%        zpars(2:end) - additional representation dependent parameters
+%    * densities: layer potential densities, of size (ndim, npts)
+%        where ndim depends on the integral representation used
+%    * eps: precision requested
+%    * targinfo: target info (optional)
+%       targinfo.r = (3,nt) target locations
+%       targinfo.du = u tangential derivative info
+%       targinfo.dv = v tangential derivative info
+%       targinfo.n = normal info
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * opts: options struct
+%        opts.rep - integral representation being used
+%                         Supported representations
+%                         'nrccie'
+%        opts.nonsmoothonly - use smooth quadrature rule for
+%                             evaluating layer potential (false)
+%
+%
+%
+
+    if(nargin < 7) 
+      opts = [];
+    else
+      opts = varargin{3};
+    end
+
+    isprecompq = true;
+    if(nargin < 6)
+       Q = [];
+       isprecompq = false;
+    else
+       Q = varargin{2}; 
+    end
+    
+    rep = 'nrccie';
+
+    if isfield(opts, 'rep')
+      rep = opts.rep;
+    end
+
+    if strcmpi(rep, 'nrccie')
+      nker = 4;
+      ndim_s = 4;
+      [nn, ~] = size(densities);
+      
+      if nn ~= ndim_s
+        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n'); 
+      end
+    end
+
+    if(isprecompq)
+      if ~(strcmpi(Q.format,'rsc'))
+        fprintf('Invalid precomputed quadrature format\n');
+        fprintf('Ignoring quadrature corrections\n');
+        opts_qcorr = [];
+        opts_qcorr.type = 'complex';
+
+        opts_qcorr.nker = nker;
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
+    end
+
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
+    end
+
+% Extract arrays
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+
+    if(nargin < 5)
+      targinfo = [];
+      targinfo.r = S.r;
+      targinfo.du = S.du;
+      targinfo.dv = S.dv;
+      targinfo.n = S.n;
+      patch_id  = zeros(npts,1);
+      uvs_targ = zeros(2,npts);
+      mex_id_ = 'get_patch_id_uvs(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io double[xx])';
+[patch_id, uvs_targ] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, patch_id, uvs_targ, 1, npatches, npatp1, npatches, 1, npts, 2, npts);
+      targinfo.patch_id = patch_id;
+      targinfo.uvs_targ = uvs_targ;
+      opts = [];
+    else
+      targinfo = varargin{1};
+    end
+
+    ff = 'rsc';
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+% Compute quadrature corrections   
+    if ~isprecompq
+      if ~nonsmoothonly
+        opts_quad = [];
+        opts_quad.format = 'rsc';
+        opts_quad.rep = [rep '-eval'];
+%
+%  For now Q is going to be a struct with 'quad_format', 
+%  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
+%  and either, 'wnear', 'row_ind', 'col_ptr', or
+%  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
+%  if nkernel is >1
+%
+
+        [Q] = em3d.pec.get_quadrature_correction(S, zpars, eps, targinfo, opts_quad);
+      else
+        opts_qcorr = [];
+        opts_qcorr.type = 'complex';
+        opts_qcorr.nker = nker;
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
+    end
+    nquad = Q.iquad(end)-1;
+    nnz = length(Q.col_ind);
+    nnzp1 = nnz+1; 
+
+    [novers] = get_oversampling_parameters(S, Q, eps);
+    Sover = oversample(S,novers);
+
+
+% Extract oversampled arrays
+
+    [srcover,~,~,ixyzso,~,wover] = extract_arrays(Sover);
+    nptso = Sover.npts; 
+
+% Extract quadrature arrays
+    row_ptr = Q.row_ptr;
+    col_ind = Q.col_ind;
+    iquad = Q.iquad;
+    wnear = Q.wnear;
+
+    p = complex(zeros(6,ntarg));
+
+    ipotflag = 3;
+
+
+    ndd = 0;
+    dpars = [];
+    ndz = length(zpars);
+    ndi = 0;
+    ipars = [];
+    lwork = 0;
+    work = [];
+    ndim_p = 6;
+    idensflag = 1;
+% Call the layer potential evaluator
+    
+    if strcmpi(rep, 'nrccie')
+      mex_id_ = 'em_nrccie_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], io dcomplex[xx])';
+[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, densities, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, ndim_s, npts, 1, 1, ndim_p, ntarg);
+    end
+    E = p(1:3,:);
+    H = p(4:6,:);
+end    
+%
+%
+%
+%----------------------------------
+%

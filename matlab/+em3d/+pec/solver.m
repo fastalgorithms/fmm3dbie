@@ -1,20 +1,33 @@
-function [sigma, varargout] = solver(S, rhs, eps, opts)
+function [densities, varargout] = solver(S, zpars, einc, hinc, eps, opts)
 %
-%  lap3d.neumann.solver
-%    Solve the Laplace neumann boundary value problem
+%  em3d.pec.solver
+%    Solve the Maxwell pec boundary value problem
 %
 %  Syntax
-%   [sigma] = lap3d.neumann.solver(S,rhs,eps)
-%   [sigma] = lap3d.neumann.solver(S,rhs,eps,opts)
+%   [densities] = em3d.pec.solver(S, zpars, rhs, eps)
+%   [densities] = em3d.pec.solver(S, zpars, rhs, eps, opts)
 %
-%  Integral representation
-%     pot = S_{0} [\sigma] 
+%  This routine will support the following representations:
+%  * nrccie   (Non-resonant charge current integral equation)
+%  * dpie     (Decoupled potential integral equation)
+%  * mfie     (Magnetic field integral equation)
+%  * aumfie   (Augmented magnetic field integral equation)
+%  * aurcsie  (Augmented regularized combined source integral equation)
+%  * gendeb   (Generalized Debye)
 %
-%  S_{0}: Laplace single layer potential
-%  
+%  In the input array zpars, the first parameter must always be 
+%  the wavenumber k
+%
+%  For notes on the specific representations, boundary integral equations,
+%  and order of kernels returned by this routine, checkout
+%  em3d.pec.Contents.m
+%
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * rhs: boundary data 
+%    * zpars: kernel parameters
+%        zpars(1) - wave number
+%        zpars(2:end) - additional representation dependent parameters
+%    * einc, hinc: incident electric and magnetic fields 
 %    * eps: precision requested
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
@@ -22,22 +35,31 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
 %        opts.eps_gmres - tolerance to which linear system is to be
 %           solved (eps_gmres = eps)
 %        opts.maxit - maximum number of gmres iterations (200)
-%        opts.ifout - whether to solve interior problem or not (1)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
-%        
+%        opts.rep - integral representation being used
+%                         Supported representations
 %
 %  Output arguemnts:
-%    * sigma: layer potential density
+%    * densities: layer potential density
 %    
 %
     
-    if(nargin < 4) 
+    if(nargin < 6) 
       opts = [];
     end
 
     nonsmoothonly = false;
     if(isfield(opts,'nonsmoothonly'))
       nonsmoothonly = opts.nonsmoothonly;
+    end
+
+    rep = 'nrccie';
+    if isfield(opts, 'rep')
+      rep = opts.rep;
+    end
+
+    if strcmpi(rep, 'nrccie')
+      nker = 9;
     end
 
     eps_gmres = eps;
@@ -50,10 +72,6 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
       maxit = opts.maxit;
     end
 
-    ifout = 1;
-    if(isfield(opts,'ifout'))
-      ifout = opts.ifout;
-    end
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -86,7 +104,7 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
       else
         opts_quad = [];
         opts_quad.format = 'rsc';
-        opts_quad.rep = 'bc';
+        opts_quad.rep = [rep '-bc'];
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -95,12 +113,12 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
 %  if nkernel is >1
 %
 
-        [Q] = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts_quad);
+        [Q] = em3d.pec.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];
-      opts_qcorr.type = 'double';
-      opts_qcorr.nker = 1;
+      opts_qcorr.type = 'complex';
+      opts_qcorr.nker = nker;
       Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
     end
     nnz = length(Q.col_ind);
@@ -123,17 +141,22 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
     wnear = Q.wnear;
 
 
-    sigma = zeros(npts,1);
     niter = 0;
     errs = zeros(maxit+1,1);
     maxitp1 = maxit + 1;
     rres = 0;
-    nker = 1;
 
-
+    if strcmpi(rep, 'nrccie')
+      zjvec = complex(zeros(3,npts));
+      rho = complex(zeros(1,npts));
 % Call the layer potential evaluator
-    mex_id_ = 'lap_s_neu_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[x])';
-[niter, errs, rres, sigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts);
+      mex_id_ = 'em_nrccie_pec_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i dcomplex[xx], i dcomplex[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[xx], io dcomplex[x])';
+[niter, errs, rres, zjvec, rho] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, einc, hinc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, zjvec, rho, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 3, npts, 3, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, 3, npts, npts);
+      
+      densities = complex(zeros(4,npts));
+      densities(1:3,:) = zjvec;
+      densities(4,:) = rho;
+    end
 
     errs = errs(1:niter);
     varargout{1} = errs;
@@ -142,12 +165,4 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
 end    
 %
 %
-
-%-------------------------------------------------
-%
-%%
-%%   Helmholtz dirichlet routines
-%
-%
-%-------------------------------------------------
 

@@ -179,11 +179,6 @@ classdef surfer
 
     methods(Static)
         obj = load_from_file(fname,varargin);
-        obj = sphere(varargin);
-        obj = sphere_tri(varargin);
-        obj = sphere_quad(varargin);
-        obj = ellipsoid(varargin);
-        obj = axissym(fcurve,cparams,varargin);
         [obj,varargout] = surfacemesh_to_surfer(dom);
     end
 end
