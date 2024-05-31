@@ -1,4 +1,4 @@
-function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
+function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
 %
 %  em3d.pec.get_quadrature_correction
 %    This subroutine returns the near quadrature correction
@@ -10,9 +10,9 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
 %    of the kernels
 %
 %  Syntax
-%   Q = em3d.pec.get_quadrature_correction(S,zpars,eps)
-%   Q = em3d.pec.get_quadrature_correction(S,zpars,eps,targinfo)
-%   Q = em3d.pec.get_quadrature_correction(S,zpars,eps,targinfo,opts)
+%   Q = em3d.pec.get_quadrature_correction(S,eps,zk)
+%   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params,targinfo)
+%   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params,targinfo,opts)
 %
 %  This routine will support the following representations:
 %  * nrccie   (Non-resonant charge current integral equation)
@@ -22,9 +22,6 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
 %  * aurcsie  (Augmented regularized combined source integral equation)
 %  * gendeb   (Generalized Debye)
 %
-%  In the input array zpars, the first parameter must always be 
-%  the wavenumber k
-%
 %  For notes on the specific representations, boundary integral equations,
 %  and order of kernels returned by this routine, checkout
 %  em3d.pec.Contents.m
@@ -32,10 +29,10 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * zpars: kernel parameters
-%        zpars(1) - wave number
-%        zpars(2:end) - additional representation dependent parameters
 %    * eps: precision requested
+%    * zk: wave number
+%    * rep_params: parameters for integral representation 
+%                  for nrccie, it should be a scalar
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info
@@ -66,7 +63,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
     nsp1 = npts + 1;
     n3 = 3;
 
-    if nargin < 4
+    if nargin < 5
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
@@ -79,7 +76,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
 
     qtype = 'nrccie-bc';
 
-    if nargin < 5
+    if nargin < 6
       opts = [];
     end
 
@@ -183,12 +180,16 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
       nker = 9;
       wnear = complex(zeros(nker,nquad));
       ndz = 2;
+      zpars = complex(zeros(2,1));
+      zpars(1) = zk;
+      zpars(2) = rep_params;
+
       mex_id_ = 'getnearquad_em_nrccie_pec(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
 [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
     elseif strcmpi(qtype, 'nrccie-eval')
       nker = 4;
       wnear = complex(zeros(nker,nquad));
-      zpuse = zpars(1);
+      zpuse = complex(zk);
       mex_id_ = 'getnearquad_em_nrccie_pec_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
 [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpuse, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
     else
@@ -198,7 +199,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
     Q = [];
     Q.targinfo = targinfo;
     Q.ifcomplex = 1;
-    Q.wavenumber = zpars(1);
+    Q.wavenumber = zk;
     Q.kernel_order = -1;
     Q.rfac = rfac;
     Q.nquad = nquad;

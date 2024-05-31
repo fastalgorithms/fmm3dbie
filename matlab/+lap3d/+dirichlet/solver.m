@@ -1,11 +1,11 @@
-function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
+function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %
 %  lap3d.dirichlet.solver
 %    Solve the Laplace dirichlet boundary value problem
 %
 %  Syntax
-%   sigma = lap3d.dirichlet.solver(S,dpars,sigma,eps)
-%   sigma = lap3d.dirichlet.solver(S,dpars,sigma,eps,opts)
+%   sigma = lap3d.dirichlet.solver(S,sigma,eps,dpars)
+%   sigma = lap3d.dirichlet.solver(S,sigma,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]
@@ -16,11 +16,11 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
+%    * rhs: boundary data 
+%    * eps: precision requested
 %    * dpars: kernel parameters
 %        dpars(1) - single layer strength
 %        dpars(2) - double layer strength
-%    * rhs: boundary data 
-%    * eps: precision requested
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -99,7 +99,7 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
 %  if nkernel is >1
 %
 
-        [Q] = lap3d.dirichlet.get_quadrature_correction(S,dpars,eps,targinfo,opts_quad);
+        [Q] = lap3d.dirichlet.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];

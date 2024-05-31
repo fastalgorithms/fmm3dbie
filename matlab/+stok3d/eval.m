@@ -1,14 +1,14 @@
-function p = eval(S,dpars,sigma,eps,varargin)
+function p = eval(S,sigma,eps,dpars,varargin)
 %
 %  stok3d.eval
 %    Evaluates the stokes layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = stok3d.eval(S,dpars,sigma,eps)
-%   pot = stok3d.eval(S,dpars,sigma,eps,targinfo)
-%   pot = stok3d.eval(S,dpars,sigma,eps,targinfo,Q)
-%   pot = stok3d.eval(S,dpars,sigma,eps,targinfo,Q,opts)
+%   pot = stok3d.eval(S,sigma,eps,dpars)
+%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo)
+%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo,Q)
+%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo,Q,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -22,11 +22,11 @@ function p = eval(S,dpars,sigma,eps,varargin)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
+%    * sigma: (3, ns) layer potential density
+%    * eps: precision requested
 %    * dpars: kernel parameters
 %        dpars(1) - single layer strength
 %        dpars(2) - double layer strength
-%    * sigma: (3, ns) layer potential density
-%    * eps: precision requested
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info
@@ -44,10 +44,6 @@ function p = eval(S,dpars,sigma,eps,varargin)
 %           layer potential (false)
 %    
 
-%
-%
-% Todo: Fix varargin
-%
     if(nargin < 7) 
       opts = [];
     else
@@ -120,7 +116,7 @@ function p = eval(S,dpars,sigma,eps,varargin)
 %  if nkernel is >1
 %
 
-        [Q] = stok3d.get_quadrature_correction(S,dpars,eps,targinfo,opts_quad);
+        [Q] = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'double';
@@ -148,19 +144,18 @@ function p = eval(S,dpars,sigma,eps,varargin)
 
     p = zeros(3,ntarg);
 
-ndd = 2;
-% dpars = [];
-ndz = 0;
-zpars = [];
-ndi = 0;
-ipars = [];
-nker = 6;
-lwork = 0;
-work = [];
-ndim_s = 3;
-idensflag = 0;
-ipotflag = 0;
-ndim_p = 3;
+    ndd = 2;
+    ndz = 0;
+    zpars = [];
+    ndi = 0;
+    ipars = [];
+    nker = 6;
+    lwork = 0;
+    work = [];
+    ndim_s = 3;
+    idensflag = 0;
+    ipotflag = 0;
+    ndim_p = 3;
 % Call the layer potential evaluator
     mex_id_ = 'stok_comb_vel_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i double[xx], i int[x], i int[x], io double[xx])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, sigma, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, ndim_s, npts, 1, 1, ndim_p, ntarg);

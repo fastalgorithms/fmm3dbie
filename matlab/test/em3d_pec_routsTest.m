@@ -28,13 +28,13 @@ src_info.hdips = rand(3,1) + 1j*rand(3,1);
 zpars = complex([zk, alpha]);
 opts = [];
 opts.eps_gmres = 1e-10;
-[densities] = em3d.pec.solver(S, zpars, Einc, Hinc, eps, opts);
+[densities] = em3d.pec.solver(S, Einc, Hinc, eps, zk, alpha, opts);
 
 %%
 targ_info = [];
 targ_info.r = xyz_in;
 
-[E, H] = em3d.pec.eval(S, zpars, densities, eps, targ_info);
+[E, H] = em3d.pec.eval(S, densities, eps, zk, alpha, targ_info);
 
 
 [E_ex, H_ex] = em3d.incoming_sources(zk, src_info, targ_info, 'ehd');

@@ -1,4 +1,4 @@
-function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
+function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 %
 %  helm3d.impedance.get_quadrature_correction
 %    This subroutine returns the near quadrature correction
@@ -7,27 +7,23 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
 %    as a sparse matrix/rsc format 
 %
 %  Syntax
-%   Q = helm3d.impedance.get_quadrature_correction(S,zpars,eps)
-%   Q = helm3d.impedance.get_quadrature_correction(S,zpars,eps,targinfo)
-%   Q = helm3d.impedance.get_quadrature_correction(S,zpars,eps,targinfo,opts)
+%   Q = helm3d.impedance.get_quadrature_correction(S,eps,zk,alpha)
+%   Q = helm3d.impedance.get_quadrature_correction(S,eps,zk,alpha,targinfo)
+%   Q = helm3d.impedance.get_quadrature_correction(S,eps,zk,alpha,targinfo,opts)
 %
 %  Integral representation
 %     pot = S_{k} [\sigma] + 1i \alpha D_{k} S_{i|k|} [\sigma]
 %
 %  S_{k}, D_{k}: helmholtz single and double layer potential
 %  
-%  k, \alpha = zpars(1:2)
-%
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * zpars: kernel parameters
-%        zpars(1) - wave number
-%        zpars(2) - single layer strength
-%        zpars(3) - double layer strength
 %    * eps: precision requested
+%    * zk: wave number
+%    * alpha: alpha above
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info
@@ -59,7 +55,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
     nsp1 = npts + 1;
     n3 = 3;
 
-    if nargin < 4
+    if nargin < 5
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
@@ -72,7 +68,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
 
     qtype = 'rpcomb-bc';
 
-    if nargin < 5
+    if nargin < 6
       opts = [];
     end
 
@@ -172,6 +168,12 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
       end
     end
 
+    zpars = complex(zeros(2,1));
+    zpars(1) = zk;
+    zpars(2) = alpha;
+
+    zkuse = complex(zk);
+
     if strcmpi(qtype, 'rpcomb-bc')
       nker = 6;
       wnear = complex(zeros(nker,nquad));
@@ -181,7 +183,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
       nker = 2;
       wnear = complex(zeros(nker,nquad));
       mex_id_ = 'getnearquad_helm_rpcomb_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zkuse, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
     else
       error('HELM3D.IMPEDANCE.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
     end
@@ -189,7 +191,7 @@ function Q = get_quadrature_correction(S, zpars, eps, targinfo, opts)
     Q = [];
     Q.targinfo = targinfo;
     Q.ifcomplex = 1;
-    Q.wavenumber = zpars(1);
+    Q.wavenumber = zk;
     Q.kernel_order = -1;
     Q.rfac = rfac;
     Q.nquad = nquad;

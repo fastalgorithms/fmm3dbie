@@ -1,4 +1,4 @@
-function [E, H] = eval(S, zpars, densities, eps, varargin)
+function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
 %
 %  em3d.pec.eval
 %
@@ -35,30 +35,27 @@ function [E, H] = eval(S, zpars, densities, eps, varargin)
 %  * aurcsie  (Augmented regularized combined source integral equation)
 %  * gendeb   (Generalized Debye)
 %
-%  In the input array zpars, the first parameter must always be 
-%  the wavenumber k
-%
 %  For notes on the specific representations, boundary integral equations,
 %  and order of kernels returned by this routine, checkout
 %  em3d.pec.Contents.m
 %
 %  Syntax
-%   [E, H] = em3d.pec.eval(S, zpars, densities, eps)
-%   [E, H] = em3d.pec.eval(S, zpars, densities, eps, targinfo)
-%   [E, H] = em3d.pec.eval(S, zpars, densities, eps, targinfo, Q)
-%   [E, H] = em3d.pec.eval(S, zpars, densities, eps, targinfo, Q, opts)
+%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params)
+%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo)
+%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, Q)
+%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, Q, opts)
 %
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * zpars: kernel parameters
-%        zpars(1)     - wave number
-%        zpars(2:end) - additional representation dependent parameters
 %    * densities: layer potential densities, of size (ndim, npts)
 %        where ndim depends on the integral representation used
 %    * eps: precision requested
+%    * zk : wave number
+%    * rep_params: parameters for integral representation 
+%                  for nrccie, it should be a scalar
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info
@@ -78,14 +75,14 @@ function [E, H] = eval(S, zpars, densities, eps, varargin)
 %
 %
 
-    if(nargin < 7) 
+    if(nargin < 8) 
       opts = [];
     else
       opts = varargin{3};
     end
 
     isprecompq = true;
-    if(nargin < 6)
+    if(nargin < 7)
        Q = [];
        isprecompq = false;
     else
@@ -102,6 +99,9 @@ function [E, H] = eval(S, zpars, densities, eps, varargin)
       nker = 4;
       ndim_s = 4;
       [nn, ~] = size(densities);
+      zpars = complex(zeros(2,1));
+      zpars(1) = zk;
+      zpars(2) = rep_params;
       
       if nn ~= ndim_s
         error('EM3D.PEC.EVAL: number of densities not consistent with representation\n'); 
@@ -132,7 +132,7 @@ function [E, H] = eval(S, zpars, densities, eps, varargin)
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
 
-    if(nargin < 5)
+    if(nargin < 6)
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
@@ -169,7 +169,7 @@ function [E, H] = eval(S, zpars, densities, eps, varargin)
 %  if nkernel is >1
 %
 
-        [Q] = em3d.pec.get_quadrature_correction(S, zpars, eps, targinfo, opts_quad);
+        [Q] = em3d.pec.get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'complex';

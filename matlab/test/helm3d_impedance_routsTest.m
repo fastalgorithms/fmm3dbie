@@ -3,7 +3,7 @@
 %
 %
 run ../startup.m
-S = geometries.sphere(1, 2, [0;0;0], 4, 11);
+S = geometries.sphere(1, 2, [0;0;0], 4, 1);
 
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
 [~, npts] = size(srcvals);
@@ -22,13 +22,12 @@ zlams = complex(randn(npts,1));
 rhs = helm3d.kern(zk, src_info, S, 'sprime') + ...
    1j*zk.*zlams.*helm3d.kern(zk, src_info, S, 's');
 
-zpars = complex([zk, alpha]);
-[densities] = helm3d.impedance.solver(S, zpars, zlams, rhs, eps);
+[densities] = helm3d.impedance.solver(S, zlams, rhs, eps, zk, alpha);
 
 targ_info = [];
 targ_info.r = xyz_out;
 
-pot = helm3d.impedance.eval(S, zpars, densities, eps, targ_info);
+pot = helm3d.impedance.eval(S, densities, eps, zk, alpha, targ_info);
 pot_ex = helm3d.kern(zk, src_info,targ_info,'s');
 fprintf('Error in iterative solver=%d\n',abs(pot-pot_ex)/abs(pot_ex));
 

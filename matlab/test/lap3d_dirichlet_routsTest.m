@@ -25,7 +25,7 @@ rhs = rhs(:);
 eps = 1e-7;
 
 
-p = lap3d.dirichlet.eval(S,dpars,rhs,eps);
+p = lap3d.dirichlet.eval(S,rhs,eps,dpars);
 
 p_ex = rhs/(2*ndeg+1);
 
@@ -36,9 +36,9 @@ fprintf('Error in single layer potential=%d\n',err1);
 %% Now test eval routine with precomputed quadrature corrections
 opts_quad = [];
 opts_quad.format='rsc';
-Q = lap3d.dirichlet.get_quadrature_correction(S,dpars, ...
-   eps,S,opts_quad);
-p = lap3d.dirichlet.eval(S,dpars,rhs,eps,S,Q);
+Q = lap3d.dirichlet.get_quadrature_correction(S, ...
+   eps,dpars,S,opts_quad);
+p = lap3d.dirichlet.eval(S,rhs,eps,dpars,S,Q);
 err1 = norm((p-p_ex).*sqrt(wts))/norm(rhs.*sqrt(wts));
 
 fprintf('Error in single layer potential with precomp corr=%d\n',err1);
@@ -54,7 +54,7 @@ rhs = lap3d.kern(src_info,S,'s');
 
 
 dpars = [1,1];
-sig = lap3d.dirichlet.solver(S,dpars,rhs,eps);
+sig = lap3d.dirichlet.solver(S,rhs,eps,dpars);
 
 targ_info = [];
 targ_info.r = xyz_out;

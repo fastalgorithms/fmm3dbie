@@ -1,11 +1,11 @@
-function [densities, varargout] = solver(S, zpars, einc, hinc, eps, opts)
+function [densities, varargout] = solver(S, einc, hinc, eps, zk, rep_params, opts)
 %
 %  em3d.pec.solver
 %    Solve the Maxwell pec boundary value problem
 %
 %  Syntax
-%   [densities] = em3d.pec.solver(S, zpars, rhs, eps)
-%   [densities] = em3d.pec.solver(S, zpars, rhs, eps, opts)
+%   [densities] = em3d.pec.solver(S, einc, hinc, eps, zk, rep_params)
+%   [densities] = em3d.pec.solver(S, einc, hinc, eps, zk, rep_params, opts)
 %
 %  This routine will support the following representations:
 %  * nrccie   (Non-resonant charge current integral equation)
@@ -15,20 +15,17 @@ function [densities, varargout] = solver(S, zpars, einc, hinc, eps, opts)
 %  * aurcsie  (Augmented regularized combined source integral equation)
 %  * gendeb   (Generalized Debye)
 %
-%  In the input array zpars, the first parameter must always be 
-%  the wavenumber k
-%
 %  For notes on the specific representations, boundary integral equations,
 %  and order of kernels returned by this routine, checkout
 %  em3d.pec.Contents.m
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * zpars: kernel parameters
-%        zpars(1) - wave number
-%        zpars(2:end) - additional representation dependent parameters
 %    * einc, hinc: incident electric and magnetic fields 
 %    * eps: precision requested
+%    * zk: wave number
+%    * rep_params: parameters for integral representation 
+%                  for nrccie, it should be a scalar
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -44,7 +41,7 @@ function [densities, varargout] = solver(S, zpars, einc, hinc, eps, opts)
 %    
 %
     
-    if(nargin < 6) 
+    if(nargin < 7) 
       opts = [];
     end
 
@@ -113,7 +110,7 @@ function [densities, varargout] = solver(S, zpars, einc, hinc, eps, opts)
 %  if nkernel is >1
 %
 
-        [Q] = em3d.pec.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+        [Q] = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];
@@ -149,6 +146,9 @@ function [densities, varargout] = solver(S, zpars, einc, hinc, eps, opts)
     if strcmpi(rep, 'nrccie')
       zjvec = complex(zeros(3,npts));
       rho = complex(zeros(1,npts));
+      zpars = complex(zeros(2,1));
+      zpars(1) = zk;
+      zpars(2) = rep_params;
 % Call the layer potential evaluator
       mex_id_ = 'em_nrccie_pec_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i dcomplex[xx], i dcomplex[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[xx], io dcomplex[x])';
 [niter, errs, rres, zjvec, rho] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, einc, hinc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, zjvec, rho, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 3, npts, 3, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, 3, npts, npts);

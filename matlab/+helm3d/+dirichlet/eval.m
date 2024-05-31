@@ -1,33 +1,34 @@
-function p = eval(S,zpars,sigma,eps,varargin)
+function p = eval(S,sigma,eps,zk,rep_pars,varargin)
 %
 %  helm3d.dirichlet.eval
 %    Evaluates the helmholtz dirichlet layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps)
-%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo)
-%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo,Q)
-%   pot = helm3d.dirichlet.eval(S,zpars,sigma,eps,targinfo,Q,opts)
+%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars)
+%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo)
+%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo,Q)
+%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo,Q,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
 %
 %  S_{k}, D_{k}: helmholtz single and double layer potential
 %  
-%  k, \alpha, beta = zpars(1:3)
+%  \alpha, beta = rep_pars(1:2)
+%  k = zk
 %
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * zpars: kernel parameters
-%        zpars(1) - wave number
-%        zpars(2) - single layer strength
-%        zpars(3) - double layer strength
 %    * sigma: layer potential density
 %    * eps: precision requested
+%    * zk: wave number
+%    * rep_pars: kernel parameters
+%        zpars(1) - single layer strength
+%        zpars(2) - double layer strength
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info
@@ -45,18 +46,14 @@ function p = eval(S,zpars,sigma,eps,varargin)
 %           layer potential (false)
 %    
 
-%
-%
-% Todo: Fix varargin
-%
-    if(nargin < 7) 
+    if(nargin < 8) 
       opts = [];
     else
       opts = varargin{3};
     end
 
     isprecompq = true;
-    if(nargin < 6)
+    if(nargin < 7)
        Q = [];
        isprecompq = false;
     else
@@ -85,7 +82,7 @@ function p = eval(S,zpars,sigma,eps,varargin)
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
 
-    if(nargin < 5)
+    if(nargin < 6)
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
@@ -121,7 +118,7 @@ function p = eval(S,zpars,sigma,eps,varargin)
 %  if nkernel is >1
 %
 
-        [Q] = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+        [Q] = helm3d.dirichlet.get_quadrature_correction(S,eps,zk,rep_pars,targinfo,opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'complex';
@@ -149,18 +146,23 @@ function p = eval(S,zpars,sigma,eps,varargin)
 
     p = complex(zeros(ntarg,1));
 
-ndd = 0;
-dpars = [];
-ndz = 3;
-ndi = 0;
-ipars = [];
-nker = 1;
-lwork = 0;
-work = [];
-ndim = 1;
-idensflag = 0;
-ipotflag = 0;
-ndim_p = 1;
+    zpars = complex(zeros(3,1));
+    zpars(1) = zk;
+    zpars(2) = rep_pars(1);
+    zpars(3) = rep_pars(2);
+
+    ndd = 0;
+    dpars = [];
+    ndz = 3;
+    ndi = 0;
+    ipars = [];
+    nker = 1;
+    lwork = 0;
+    work = [];
+    ndim = 1;
+    idensflag = 0;
+    ipotflag = 0;
+    ndim_p = 1;
 % Call the layer potential evaluator
     mex_id_ = 'helm_comb_dir_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], io dcomplex[x])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim, sigma, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, npts, 1, 1, ntarg);

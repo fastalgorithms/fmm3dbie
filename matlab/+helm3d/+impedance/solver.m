@@ -1,26 +1,23 @@
-function [densities, varargout] = solver(S, zpars, zlams, rhs, eps, opts)
+function [densities, varargout] = solver(S, zlams, rhs, eps, zk, alpha, opts)
 %
 %  helm3d.impedance.solver
 %    Solve the helmholtz impedance boundary value problem
 %
 %  Syntax
-%   [densities] = helm3d.impedance.solver(S,zpars,zlams,rhs,eps)
-%   [densities] = helm3d.impedance.solver(S,zpars,zlams,rhs,eps,opts)
+%   [densities] = helm3d.impedance.solver(S,zlams,rhs,eps,zk,alpha)
+%   [densities] = helm3d.impedance.solver(S,zlams,rhs,eps,zk,alpha,opts)
 %
 %  Integral representation
-%     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
+%     pot = S_{k} [\sigma] + i\alpha D_{k}S_{i|k|} [\sigma]
 %
 %  S_{k}, D_{k}: helmholtz single and double layer potential
 %  
-%  k, \alpha, beta = zpars(1:3)
-%
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * zpars: kernel parameters
-%        zpars(1) - wave number
-%        zpars(2) - alpha above 
 %    * rhs: boundary data 
 %    * eps: precision requested
+%    * zk: wave number
+%    * alpha: alpha above
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -36,7 +33,7 @@ function [densities, varargout] = solver(S, zpars, zlams, rhs, eps, opts)
 %    
 %
     
-    if(nargin < 6) 
+    if(nargin < 7) 
       opts = [];
     end
 
@@ -100,7 +97,7 @@ function [densities, varargout] = solver(S, zpars, zlams, rhs, eps, opts)
 %  if nkernel is >1
 %
 
-        [Q] = helm3d.impedance.get_quadrature_correction(S,zpars,eps,targinfo,opts_quad);
+        [Q] = helm3d.impedance.get_quadrature_correction(S,eps,zk,alpha,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];
@@ -135,6 +132,10 @@ function [densities, varargout] = solver(S, zpars, zlams, rhs, eps, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 6;
+
+    zpars = complex(zeros(2,1));
+    zpars(1) = zk;
+    zpars(2) = alpha;
 
     nlen = length(zlams);
     if nlen == 1

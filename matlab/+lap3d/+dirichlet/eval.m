@@ -1,14 +1,14 @@
-function p = eval(S,dpars,sigma,eps,varargin)
+function p = eval(S,sigma,eps,dpars,varargin)
 %
 %  lap3d.dirichlet.eval
 %    Evaluates the Laplace dirichlet layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = lap3d.dirichlet.eval(S,dpars,sigma,eps)
-%   pot = lap3d.dirichlet.eval(S,dpars,sigma,eps,targinfo)
-%   pot = lap3d.dirichlet.eval(S,dpars,sigma,eps,targinfo,Q)
-%   pot = lap3d.dirichlet.eval(S,dpars,sigma,eps,targinfo,Q,opts)
+%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars)
+%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo)
+%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo,Q)
+%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo,Q,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]
@@ -22,11 +22,11 @@ function p = eval(S,dpars,sigma,eps,varargin)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
+%    * sigma: layer potential density
+%    * eps: precision requested
 %    * dpars: kernel parameters
 %        dpars(1) - single layer strength
 %        dpars(2) - double layer strength
-%    * sigma: layer potential density
-%    * eps: precision requested
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info
@@ -120,7 +120,7 @@ function p = eval(S,dpars,sigma,eps,varargin)
 %  if nkernel is >1
 %
 
-        [Q] = lap3d.dirichlet.get_quadrature_correction(S,dpars,eps,targinfo,opts_quad);
+        [Q] = lap3d.dirichlet.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'double';

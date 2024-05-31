@@ -1,4 +1,4 @@
-function Q = get_quadrature_correction(S, dpars, eps, targinfo, opts)
+function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %
 %  stok3d.get_quadrature_correction
 %    This subroutine returns the near quadrature correction
@@ -7,9 +7,9 @@ function Q = get_quadrature_correction(S, dpars, eps, targinfo, opts)
 %    as a sparse matrix/rsc format 
 %
 %  Syntax
-%   Q = stok3d.get_quadrature_correction(S,dpars,eps)
-%   Q = stok3d.get_quadrature_correction(S,dpars,eps,targinfo)
-%   Q = stok3d.get_quadrature_correction(S,dpars,eps,targinfo,opts)
+%   Q = stok3d.get_quadrature_correction(S,eps,dpars)
+%   Q = stok3d.get_quadrature_correction(S,eps,dpars,targinfo)
+%   Q = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -23,10 +23,10 @@ function Q = get_quadrature_correction(S, dpars, eps, targinfo, opts)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
 %    * dpars: kernel parameters
 %        dpars(1) - single layer strength
 %        dpars(2) - double layer strength
-%    * eps: precision requested
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info

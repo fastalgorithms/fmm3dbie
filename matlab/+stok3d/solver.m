@@ -1,11 +1,11 @@
-function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
+function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %
 %  stok3d.solver
 %    Solve the Stokes boundary value problem
 %
 %  Syntax
-%   sigma = stok3d.solver(S,dpars,sigma,eps)
-%   sigma = stok3d.solver(S,dpars,sigma,eps,opts)
+%   sigma = stok3d.solver(S,sigma,eps,dpars)
+%   sigma = stok3d.solver(S,sigma,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -16,11 +16,11 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
+%    * rhs: (3, npts) boundary data 
+%    * eps: precision requested
 %    * dpars: kernel parameters
 %        dpars(1) - single layer strength
 %        dpars(2) - double layer strength
-%    * rhs: (3, npts) boundary data 
-%    * eps: precision requested
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -32,7 +32,7 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
 %        
 %
 %  Output arguemnts:
-%    * sigma: (3, npts) layer potential density
+%    * sigma: (3,npts) layer potential density
 %    
 %
     
@@ -99,7 +99,7 @@ function [sigma,varargout] = solver(S, dpars, rhs, eps, opts)
 %  if nkernel is >1
 %
 
-        [Q] = stok3d.get_quadrature_correction(S,dpars,eps,targinfo,opts_quad);
+        [Q] = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];
