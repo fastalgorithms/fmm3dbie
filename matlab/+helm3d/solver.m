@@ -1,5 +1,5 @@
 function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
-%LAP3D.SOLVER: solve Helmholtz boundary value problems using integral 
+%HELM3D.SOLVER: solve Helmholtz boundary value problems using integral 
 % equations
 %
 % Syntax for Dirichlet problems

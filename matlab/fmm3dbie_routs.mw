@@ -778,8 +778,8 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %  Syntax
 %   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars)
 %   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo)
-%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo,Q)
-%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo,Q,opts)
+%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo)
+%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]
@@ -807,32 +807,31 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
-%    * Q: precomputed quadrature corrections struct (optional)
-%           currently only supports quadrature corrections
-%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    
 
-%
-%
-% Todo: Fix varargin
-%
-    if(nargin < 7) 
+    if(nargin < 6) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 6)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
     end
     
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      isprecompq = true;
+      Q = opts.precomp_quadrature;
+    end
+
     if(isprecompq)
       if ~(strcmpi(Q.format,'rsc'))
         fprintf('Invalid precomputed quadrature format\n');
@@ -841,11 +840,6 @@ function p = eval(S,sigma,eps,dpars,varargin)
         opts_qcorr.type = 'double';
         Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
       end
-    end
-
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
     end
 
 % Extract arrays
@@ -918,18 +912,19 @@ function p = eval(S,sigma,eps,dpars,varargin)
 
     p = zeros(ntarg,1);
 
-ndd = 2;
-ndz = 0;
-zpars = [];
-ndi = 0;
-ipars = [];
-nker = 1;
-lwork = 0;
-work = [];
-ndim = 1;
-idensflag = 0;
-ipotflag = 0;
-ndim_p = 1;
+    ndd = 2;
+    ndz = 0;
+    zpars = [];
+    ndi = 0;
+    ipars = [];
+    nker = 1;
+    lwork = 0;
+    work = [];
+    ndim = 1;
+    idensflag = 0;
+    ipotflag = 0;
+    ndim_p = 1;
+
 % Call the layer potential evaluator
     # FORTRAN lap_comb_dir_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker, double[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, double[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout double[ntarg] p);   
 end    
@@ -1290,8 +1285,8 @@ function p = eval(S,sigma,eps,varargin)
 %  Syntax
 %   pot = lap3d.neumann.eval(S,sigma,eps)
 %   pot = lap3d.neumann.eval(S,sigma,eps,targinfo)
-%   pot = lap3d.neumann.eval(S,sigma,eps,targinfo,Q)
-%   pot = lap3d.neumann.eval(S,sigma,eps,targinfo,Q,opts)
+%   pot = lap3d.neumann.eval(S,sigma,eps,targinfo)
+%   pot = lap3d.neumann.eval(S,sigma,eps,targinfo,opts)
 %
 %  Integral representation
 %     pot = S_{0} [\sigma] 
@@ -1314,30 +1309,29 @@ function p = eval(S,sigma,eps,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
-%    * Q: precomputed quadrature corrections struct (optional)
-%           currently only supports quadrature corrections
-%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections 
+%           struct currently only supports quadrature corrections
+%           computed in rsc format 
 %    
 
-%
-%
-% Todo: Fix varargin
-%
-    if(nargin < 6) 
+    if(nargin < 5) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 5)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
+    end
+
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      isprecompq = true;
+      Q = opts.precomp_quadrature;
     end
     
     if(isprecompq)
@@ -1348,11 +1342,6 @@ function p = eval(S,sigma,eps,varargin)
         opts_qcorr.type = 'double';
         Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
       end
-    end
-
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
     end
 
 % Extract arrays
@@ -1823,8 +1812,8 @@ function p = eval(S,sigma,eps,zk,rep_pars,varargin)
 %  Syntax
 %   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars)
 %   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo)
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo,Q)
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo,Q,opts)
+%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo)
+%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
@@ -1854,26 +1843,29 @@ function p = eval(S,sigma,eps,zk,rep_pars,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
-%    * Q: precomputed quadrature corrections struct (optional)
-%           currently only supports quadrature corrections
-%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    
 
-    if(nargin < 8) 
+    if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 7)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
+    end
+
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      isprecompq = true;
+      Q = opts.precomp_quadrature;
     end
     
     if(isprecompq)
@@ -1886,10 +1878,6 @@ function p = eval(S,sigma,eps,zk,rep_pars,varargin)
       end
     end
 
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
-    end
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -2356,8 +2344,8 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
 %  Syntax
 %   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha)
 %   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo)
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo,Q)
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo,Q,opts)
+%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo)
+%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo,opts)
 %
 %  Integral representation
 %     pot = S_{k} [\sigma] + i \alpha D_{k} S_{i|k|}[\sigma]
@@ -2385,26 +2373,29 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
-%    * Q: precomputed quadrature corrections struct (optional)
-%           currently only supports quadrature corrections
-%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    
 
-    if(nargin < 8) 
+    if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 7)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
+    end
+
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      isprecompq = true;
+      Q = opts.precomp_quadrature;
     end
     
     if(isprecompq)
@@ -2417,10 +2408,6 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
       end
     end
 
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
-    end
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -2913,8 +2900,8 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
 %  Syntax
 %   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha)
 %   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo)
-%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo,Q)
-%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo,Q,opts)
+%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo)
+%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo,opts)
 %
 %  Integral representation
 %     pot = S_{k} [\sigma] + i \alpha D_{k} S_{i|k|}[\sigma]
@@ -2942,26 +2929,29 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
-%    * Q: precomputed quadrature corrections struct (optional)
-%           currently only supports quadrature corrections
-%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    
 
-    if(nargin < 8) 
+    if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 7)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      Q = opts.precomp_quadrature;
+      isprecompq = true;
+    end
+
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
     end
     
     if(isprecompq)
@@ -2974,10 +2964,6 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
       end
     end
 
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
-    end
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -3475,8 +3461,8 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %  Syntax
 %   pot = stok3d.velocity.eval(S,sigma,eps,dpars)
 %   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo)
-%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo,Q)
-%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo,Q,opts)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -3504,26 +3490,29 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
-%    * Q: precomputed quadrature corrections struct (optional)
-%           currently only supports quadrature corrections
-%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    
 
-    if(nargin < 7) 
+    if(nargin < 6) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 6)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      Q = opts.precomp_quadrature;
+      isprecompq = true;
+    end
+
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
     end
     
     if(isprecompq)
@@ -3536,10 +3525,6 @@ function p = eval(S,sigma,eps,dpars,varargin)
       end
     end
 
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
-    end
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -4019,8 +4004,8 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
 %  Syntax
 %   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params)
 %   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, Q)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, Q, opts)
+%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo)
+%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, opts)
 %
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
@@ -4048,23 +4033,43 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
 %                         'nrccie'
 %        opts.nonsmoothonly - use smooth quadrature rule for
 %                             evaluating layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
+%
 %
 %
 %
 
-    if(nargin < 8) 
+    if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 7)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
     end
+
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      Q = opts.precomp_quadrature;
+      isprecompq = true;
+    end
+
+    if(isprecompq)
+      if ~(strcmpi(Q.format,'rsc'))
+        fprintf('Invalid precomputed quadrature format\n');
+        fprintf('Ignoring quadrature corrections\n');
+        opts_qcorr = [];
+        opts_qcorr.type = 'complex';
+
+        opts_qcorr.nker = nker;
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
+    end
+
     
     rep = 'nrccie';
 
@@ -4085,22 +4090,6 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
       end
     end
 
-    if(isprecompq)
-      if ~(strcmpi(Q.format,'rsc'))
-        fprintf('Invalid precomputed quadrature format\n');
-        fprintf('Ignoring quadrature corrections\n');
-        opts_qcorr = [];
-        opts_qcorr.type = 'complex';
-
-        opts_qcorr.nker = nker;
-        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
-      end
-    end
-
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
-    end
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
