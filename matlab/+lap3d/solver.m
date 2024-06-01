@@ -15,18 +15,15 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
       case {'dir', 'd', 'dirichlet'}
         if nargin < 5
           rep_params = [1; 1];
-        end
-
-        if nargin < 6
+          opts = [];
+        elseif nargin < 6
           if isa(varargin{1}, 'double')
             rep_params = varargin{1};
           else
             error('LAP3D.SOLVER: rep_params, should be a double array');
           end
           opts = [];
-        end
-
-        if nargin >= 7
+        else 
           if isa(varargin{1}, 'double')
             rep_params = varargin{1};
           else
@@ -40,9 +37,7 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
       case {'neu', 'n', 'neumann'}
         if nargin < 5
           opts = [];
-        end
-
-        if nargin >= 5
+        else
           opts = varargin{1};
         end
         [densities, varargout{2:nargout}] = lap3d.neumann.solver(S, rhs, eps, opts);
