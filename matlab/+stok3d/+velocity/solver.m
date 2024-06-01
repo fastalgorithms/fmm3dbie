@@ -4,8 +4,8 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %    Solve the Stokes boundary value problem
 %
 %  Syntax
-%   sigma = stok3d.solver(S,sigma,eps,dpars)
-%   sigma = stok3d.solver(S,sigma,eps,dpars,opts)
+%   sigma = stok3d.velocity.solver(S,sigma,eps,dpars)
+%   sigma = stok3d.velocity.solver(S,sigma,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -99,7 +99,7 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %  if nkernel is >1
 %
 
-        [Q] = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
+        [Q] = stok3d.velocity.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];

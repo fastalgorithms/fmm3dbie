@@ -3465,7 +3465,7 @@ end
 %
 %-------------------------------------------------
 
-@ +stok3d/eval.m 
+@ +stok3d/+velocity/eval.m 
 function p = eval(S,sigma,eps,dpars,varargin)
 %
 %  stok3d.eval
@@ -3473,10 +3473,10 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %    of targets
 %
 %  Syntax
-%   pot = stok3d.eval(S,sigma,eps,dpars)
-%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo)
-%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo,Q)
-%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo,Q,opts)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo,Q)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo,Q,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -3583,7 +3583,7 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %  if nkernel is >1
 %
 
-        [Q] = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
+        [Q] = stok3d.velocity.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'double';
@@ -3631,7 +3631,7 @@ end
 %
 %----------------------------------
 %
-@ +stok3d/get_quadrature_correction.m 
+@ +stok3d/+velocity/get_quadrature_correction.m 
 function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %
 %  stok3d.get_quadrature_correction
@@ -3641,9 +3641,9 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %    as a sparse matrix/rsc format 
 %
 %  Syntax
-%   Q = stok3d.get_quadrature_correction(S,eps,dpars)
-%   Q = stok3d.get_quadrature_correction(S,eps,dpars,targinfo)
-%   Q = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts)
+%   Q = stok3d.velocity.get_quadrature_correction(S,eps,dpars)
+%   Q = stok3d.velocity.get_quadrature_correction(S,eps,dpars,targinfo)
+%   Q = stok3d.velocity.get_quadrature_correction(S,eps,dpars,targinfo,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -3821,15 +3821,15 @@ end
 %
 %-------------------------------------------------
 
-@ +stok3d/solver.m 
+@ +stok3d/+velocity/solver.m 
 function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %
 %  stok3d.solver
 %    Solve the Stokes boundary value problem
 %
 %  Syntax
-%   sigma = stok3d.solver(S,sigma,eps,dpars)
-%   sigma = stok3d.solver(S,sigma,eps,dpars,opts)
+%   sigma = stok3d.velocity.solver(S,sigma,eps,dpars)
+%   sigma = stok3d.velocity.solver(S,sigma,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -3922,7 +3922,7 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %  if nkernel is >1
 %
 
-        [Q] = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
+        [Q] = stok3d.velocity.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       end
     else
       opts_qcorr = [];

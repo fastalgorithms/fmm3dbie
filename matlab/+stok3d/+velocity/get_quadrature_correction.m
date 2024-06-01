@@ -7,9 +7,9 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %    as a sparse matrix/rsc format 
 %
 %  Syntax
-%   Q = stok3d.get_quadrature_correction(S,eps,dpars)
-%   Q = stok3d.get_quadrature_correction(S,eps,dpars,targinfo)
-%   Q = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts)
+%   Q = stok3d.velocity.get_quadrature_correction(S,eps,dpars)
+%   Q = stok3d.velocity.get_quadrature_correction(S,eps,dpars,targinfo)
+%   Q = stok3d.velocity.get_quadrature_correction(S,eps,dpars,targinfo,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]

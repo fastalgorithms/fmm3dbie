@@ -5,10 +5,10 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %    of targets
 %
 %  Syntax
-%   pot = stok3d.eval(S,sigma,eps,dpars)
-%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo)
-%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo,Q)
-%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo,Q,opts)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo,Q)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo,Q,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -116,7 +116,7 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %  if nkernel is >1
 %
 
-        [Q] = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
+        [Q] = stok3d.velocity.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'double';
