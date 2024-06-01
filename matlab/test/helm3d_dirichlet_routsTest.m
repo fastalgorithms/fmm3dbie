@@ -39,7 +39,9 @@ opts_quad = [];
 opts_quad.format='rsc';
 Q = helm3d.dirichlet.get_quadrature_correction(S, ...
    eps,zk,rep_pars,S,opts_quad);
-p = helm3d.dirichlet.eval(S,rhs,eps,zk,rep_pars,S,Q);
+opts = [];
+opts.precomp_quadrature = Q;
+p = helm3d.dirichlet.eval(S,rhs,eps,zk,rep_pars,S,opts);
 err1 = norm((p-p_ex).*sqrt(wts))/norm(rhs.*sqrt(wts));
 
 fprintf('Error in single layer potential with precomp corr=%d\n',err1);

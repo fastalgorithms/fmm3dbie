@@ -7,8 +7,8 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %  Syntax
 %   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars)
 %   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo)
-%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo,Q)
-%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo,Q,opts)
+%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo)
+%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]
@@ -36,32 +36,31 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
-%    * Q: precomputed quadrature corrections struct (optional)
-%           currently only supports quadrature corrections
-%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    
 
-%
-%
-% Todo: Fix varargin
-%
-    if(nargin < 7) 
+    if(nargin < 6) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 6)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
     end
     
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      isprecompq = true;
+      Q = opts.precomp_quadrature;
+    end
+
     if(isprecompq)
       if ~(strcmpi(Q.format,'rsc'))
         fprintf('Invalid precomputed quadrature format\n');
@@ -70,11 +69,6 @@ function p = eval(S,sigma,eps,dpars,varargin)
         opts_qcorr.type = 'double';
         Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
       end
-    end
-
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
     end
 
 % Extract arrays
@@ -148,18 +142,19 @@ function p = eval(S,sigma,eps,dpars,varargin)
 
     p = zeros(ntarg,1);
 
-ndd = 2;
-ndz = 0;
-zpars = [];
-ndi = 0;
-ipars = [];
-nker = 1;
-lwork = 0;
-work = [];
-ndim = 1;
-idensflag = 0;
-ipotflag = 0;
-ndim_p = 1;
+    ndd = 2;
+    ndz = 0;
+    zpars = [];
+    ndi = 0;
+    ipars = [];
+    nker = 1;
+    lwork = 0;
+    work = [];
+    ndim = 1;
+    idensflag = 0;
+    ipotflag = 0;
+    ndim_p = 1;
+
 % Call the layer potential evaluator
     mex_id_ = 'lap_comb_dir_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i double[x], i int[x], i int[x], io double[x])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim, sigma, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, npts, 1, 1, ntarg);

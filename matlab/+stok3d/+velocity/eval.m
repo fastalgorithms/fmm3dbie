@@ -5,10 +5,10 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %    of targets
 %
 %  Syntax
-%   pot = stok3d.eval(S,sigma,eps,dpars)
-%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo)
-%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo,Q)
-%   pot = stok3d.eval(S,sigma,eps,dpars,targinfo,Q,opts)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo)
+%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -36,26 +36,29 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
-%    * Q: precomputed quadrature corrections struct (optional)
-%           currently only supports quadrature corrections
-%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    
 
-    if(nargin < 7) 
+    if(nargin < 6) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 6)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      Q = opts.precomp_quadrature;
+      isprecompq = true;
+    end
+
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
     end
     
     if(isprecompq)
@@ -68,10 +71,6 @@ function p = eval(S,sigma,eps,dpars,varargin)
       end
     end
 
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
-    end
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -116,7 +115,7 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %  if nkernel is >1
 %
 
-        [Q] = stok3d.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
+        [Q] = stok3d.velocity.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'double';

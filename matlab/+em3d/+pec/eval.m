@@ -42,8 +42,8 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
 %  Syntax
 %   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params)
 %   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, Q)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, Q, opts)
+%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo)
+%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, opts)
 %
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
@@ -71,23 +71,43 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
 %                         'nrccie'
 %        opts.nonsmoothonly - use smooth quadrature rule for
 %                             evaluating layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
+%
 %
 %
 %
 
-    if(nargin < 8) 
+    if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 7)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
     end
+
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      Q = opts.precomp_quadrature;
+      isprecompq = true;
+    end
+
+    if(isprecompq)
+      if ~(strcmpi(Q.format,'rsc'))
+        fprintf('Invalid precomputed quadrature format\n');
+        fprintf('Ignoring quadrature corrections\n');
+        opts_qcorr = [];
+        opts_qcorr.type = 'complex';
+
+        opts_qcorr.nker = nker;
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
+    end
+
     
     rep = 'nrccie';
 
@@ -108,22 +128,6 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
       end
     end
 
-    if(isprecompq)
-      if ~(strcmpi(Q.format,'rsc'))
-        fprintf('Invalid precomputed quadrature format\n');
-        fprintf('Ignoring quadrature corrections\n');
-        opts_qcorr = [];
-        opts_qcorr.type = 'complex';
-
-        opts_qcorr.nker = nker;
-        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
-      end
-    end
-
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
-    end
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);

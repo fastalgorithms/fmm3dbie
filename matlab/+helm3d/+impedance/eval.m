@@ -7,8 +7,8 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
 %  Syntax
 %   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha)
 %   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo)
-%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo,Q)
-%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo,Q,opts)
+%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo)
+%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo,opts)
 %
 %  Integral representation
 %     pot = S_{k} [\sigma] + i \alpha D_{k} S_{i|k|}[\sigma]
@@ -36,26 +36,29 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
-%    * Q: precomputed quadrature corrections struct (optional)
-%           currently only supports quadrature corrections
-%           computed in rsc format 
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%           currently only supports quadrature corrections
+%           computed in rsc format 
 %    
 
-    if(nargin < 8) 
+    if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{3};
+      opts = varargin{2};
     end
 
-    isprecompq = true;
-    if(nargin < 7)
-       Q = [];
-       isprecompq = false;
-    else
-       Q = varargin{2}; 
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      Q = opts.precomp_quadrature;
+      isprecompq = true;
+    end
+
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
     end
     
     if(isprecompq)
@@ -68,10 +71,6 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
       end
     end
 
-    nonsmoothonly = false;
-    if(isfield(opts,'nonsmoothonly'))
-      nonsmoothonly = opts.nonsmoothonly;
-    end
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
