@@ -1,5 +1,14 @@
 function [objout,varargout] = rot_surf(obj,euls)
 
+%%%%%
+%
+%       .   .   .   this routine rotates a surfer object
+%          according to the three euler angles specified by euls.
+%          in fact, it does so by calling the more general affine 
+%          transform routine.
+%
+%%%%%
+
     p1 = euls(1);
     p2 = euls(2);
     p3 = euls(3);
