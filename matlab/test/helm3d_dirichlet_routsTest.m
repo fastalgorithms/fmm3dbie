@@ -1,9 +1,9 @@
 %
 % This file tests the Helmholtz single layer
 % potenial on the sphere
+% 
+% Make sure you have run startup.m before running the test
 %
-%
-run ../startup.m
 
 
 % For quads
