@@ -1037,6 +1037,385 @@
 !
 !
 !
+      subroutine helm_comb_trans_eval(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, sigma, pot)
+!  Representations:
+!  u0 = 1/beta0 * (D_{k0}[\rho] + i*k0*S_{k0}[\lambda]) (exterior representation)
+!  u1 = 1/beta1 * (D_{k1}[\rho] + i*k1*S_{k1}[\lambda]) (interior representation)
+!  Input:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization on each patch
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!    - npts: integer
+!        total number of discretization points on the boundary
+!    - srccoefs: real *8 (9,npts)
+!        koornwinder expansion coefficients of xyz, dxyz/du,
+!        and dxyz/dv on each patch.
+!        For each point
+!          * srccoefs(1:3,i) is xyz info
+!          * srccoefs(4:6,i) is dxyz/du info
+!          * srccoefs(7:9,i) is dxyz/dv info
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!    - ndtarg: integer
+!        leading dimension of target array
+!    - ntarg: integer
+!        number of targets
+!    - targs: real *8 (ndtarg,ntarg)
+!        target info, the first three coordinates must be
+!        the xyz components of the target
+!    - ipatch_id: integer(ntarg)
+!        patch on which target is on if on-surface, =-1/0 if
+!        target is off-surface
+!    - uvs_targ: real *8 (2,ntarg)
+!        local uv coordinates on patch, if target is on surface
+!    - eps: real *8
+!        precision requested for computing quadrature and fmm
+!        tolerance
+!    - zpars: complex *16 (3)
+!        zpars(1) = k0
+!        zpars(2) = alpha0
+!        zpars(3) = beta0
+!        zpars(4) = k1
+!        zpars(5) = alpha1
+!        zpars(6) = beta1
+!    - sigma: complex *16(2*npts)
+!        densities which solve the transmission problem
+!        sigma(1:npts) = \lambda
+!        sigma(npts+1:2*npts) = \rho
+!
+!  Output arguments:
+!    - pot: complex *16(ntarg)
+!        potential at the target locations
+!
+      implicit none
+      integer, intent(in) :: npatches
+      integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches),npts
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+      integer, intent(in) :: ndtarg,ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg),eps
+      complex *16, intent(in) :: zpars(6),sigma(2*npts)
+      complex *16, intent(out) :: pot(ntarg)
+
+      integer i, ntargin, ntargout
+      real *8 dpars(2)
+      complex *16 zparsuse(3)
+      real *8, allocatable :: sigma1(:), pot1(:)
+      integer, allocatable :: inoutflag(:)
+      real *8, allocatable :: targsin(:,:), targsout(:,:)
+      complex *16, allocatable :: potin(:), potout(:)
+      complex *16, allocatable :: sigmause(:,:)
+      integer, allocatable :: ipatch_idin(:), ipatch_idout(:)
+      real *8, allocatable :: uvs_targin(:,:), uvs_targout(:,:)
+
+      complex *16 ima
+
+      data ima/(0.0d0,1.0d0)/
+
+!     find out each target is inside or outside
+!     this might need to fix, newtons method to test
+!
+      allocate(sigma1(npts))
+      allocate(pot1(ntarg))
+      sigma1(:) = -1
+      dpars(1) = 0
+      dpars(2) = 1
+      call lap_comb_dir_eval(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, dpars, sigma1, pot1)
+      allocate(inoutflag(ntarg))
+      ntargin = 0
+      ntargout = 0
+      do i=1,ntarg
+        if(pot1(i).le.0.5) then
+          inoutflag(i) = -1
+          ntargout = ntargout + 1
+        else
+          inoutflag(i) = 1
+          ntargin = ntargin + 1
+        endif
+      enddo
+      allocate(targsin(ndtarg,ntargin), targsout(ndtarg,ntargout))
+      allocate(potin(ntargin), potout(ntargout))
+      allocate(ipatch_idin(ntargin), ipatch_idout(ntargout))
+      allocate(uvs_targin(2,ntargin), uvs_targout(2,ntargout))
+      potin(:) = 0
+      potout(:) = 0
+      ntargin = 0
+      ntargout = 0
+      do i=1,ntarg
+        if(inoutflag(i).eq.1) then
+          targsin(:,ntargin+1) = targs(:,i)
+          ipatch_idin(ntargin+1) = ipatch_id(i)
+          uvs_targin(:,ntargin+1) = uvs_targ(:,i)
+          ntargin = ntargin + 1
+        else
+          targsout(:,ntargout+1) = targs(:,i)
+          ipatch_idout(ntargout+1) = ipatch_id(i)
+          uvs_targout(:,ntargout+1) = uvs_targ(:,i)
+          ntargout = ntargout + 1
+        endif
+      enddo
+
+      allocate(sigmause(2,npts))
+      do i=1,npts
+        sigmause(1,i) = sigma(i)
+        sigmause(2,i) = sigma(npts+i)
+      enddo
+
+!     evaluate the potentials for interior targets
+      zparsuse(1) = zpars(4)
+      zparsuse(2) = ima * zpars(4) / zpars(6)
+      zparsuse(3) = 1.0/zpars(6)
+!      call helm_comb_trans_eval_oneside(npatches, norders, ixyzs, &
+!        iptype, npts, srccoefs, srcvals, ndtarg, ntargin, targsin, &
+!        ipatch_id, uvs_targ, eps, zparsuse, sigmause, potin)
+      call lpcomp_helm_comb_split_dir(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntargin, targsin, &
+        ipatch_idin, uvs_targin, eps, zparsuse, sigma, potin)
+
+
+!     evaluate the potentials for exterior targets
+      zparsuse(1) = zpars(1)
+      zparsuse(2) = ima * zpars(1) / zpars(3)
+      zparsuse(3) = 1.0/zpars(3)
+!      call helm_comb_trans_eval_oneside(npatches, norders, ixyzs, &
+!        iptype, npts, srccoefs, srcvals, ndtarg, ntargout, targsout, &
+!        ipatch_id, uvs_targ, eps, zparsuse, sigmause, potout)
+      call lpcomp_helm_comb_split_dir(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntargout, targsout, &
+        ipatch_idout, uvs_targout, eps, zparsuse, sigma, potout)
+
+
+!     combine the potentials
+      ntargin = 0
+      ntargout = 0
+      do i=1,ntarg
+        if(inoutflag(i).eq.1) then
+          pot(i) = potin(ntargin+1)
+          ntargin = ntargin + 1
+        else
+          pot(i) = potout(ntargout+1)
+          ntargout = ntargout + 1
+        endif
+      enddo
+
+      return
+      end subroutine helm_comb_trans_eval
+!
+!
+!
+!
+!
+!
+!
+!
+      subroutine helm_comb_trans_eval_oneside(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, sigma, pot)
+!  Representations:
+!  u0 = 1/beta0 * (D_{k0}[\rho] + i*k0*S_{k0}[\lambda]) (exterior representation)
+!  u1 = 1/beta1 * (D_{k1}[\rho] + i*k1*S_{k1}[\lambda]) (interior representation)
+!  Input:
+!
+!    - npatches: integer
+!        number of patches
+!    - norders: integer(npatches)
+!        order of discretization on each patch
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!    - npts: integer
+!        total number of discretization points on the boundary
+!    - srccoefs: real *8 (9,npts)
+!        koornwinder expansion coefficients of xyz, dxyz/du,
+!        and dxyz/dv on each patch.
+!        For each point
+!          * srccoefs(1:3,i) is xyz info
+!          * srccoefs(4:6,i) is dxyz/du info
+!          * srccoefs(7:9,i) is dxyz/dv info
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!    - ndtarg: integer
+!        leading dimension of target array
+!    - ntarg: integer
+!        number of targets
+!    - targs: real *8 (ndtarg,ntarg)
+!        target info, the first three coordinates must be
+!        the xyz components of the target
+!    - ipatch_id: integer(ntarg)
+!        patch on which target is on if on-surface, =-1/0 if
+!        target is off-surface
+!    - uvs_targ: real *8 (2,ntarg)
+!        local uv coordinates on patch, if target is on surface
+!    - eps: real *8
+!        precision requested for computing quadrature and fmm
+!        tolerance
+!    - zpars: complex *16 (3)
+!        zpars(1) = k0
+!        zpars(2) = alpha0
+!        zpars(3) = beta0
+!        zpars(4) = k1
+!        zpars(5) = alpha1
+!        zpars(6) = beta1
+!    - sigma: complex *16(2,npts)
+!        densities which solve the transmission problem
+!
+!  Output arguments:
+!    - pot: complex *16(ntarg)
+!        potential at the target locations
+!
+!
+!
+!
+      implicit none
+      integer, intent(in) :: npatches
+      integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches),npts
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+      integer, intent(in) :: ndtarg,ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg),eps
+      complex *16, intent(in) :: zpars(3),sigma(2,npts)
+      complex *16, intent(out) :: pot(ntarg)
+
+      real *8 rfac, rfac0
+      integer i, j
+      integer iptype_avg, norder_avg
+      integer nnz, nquad, nker
+      integer ikerorder, iquadtype, npts_over
+      integer, allocatable :: row_ptr(:), col_ind(:), iquad(:)
+      real *8, allocatable :: cms(:,:), rads(:), rad_near(:)
+      complex *16, allocatable :: wnear(:,:)
+
+      real *8, allocatable :: srcover(:,:), wover(:)
+      integer, allocatable :: ixyzso(:), novers(:)
+      integer ipars(1)
+      real *8 dpars(1), work(1)
+      integer idensflag, ipotflag
+      integer ndd, ndi, ndz, lwork
+      integer ndim_s, ndim_p
+
+      complex *16 ima
+
+      data ima/(0.0d0,1.0d0)/
+
+!
+!     this might need fixing
+!
+      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
+      norder_avg = floor(sum(norders)/(npatches+0.0d0))
+
+      call get_rfacs(norder_avg, iptype_avg, rfac, rfac0)
+
+      allocate(cms(3,npatches), rads(npatches), rad_near(npatches))
+
+      call get_centroid_rads(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, cms, rads)
+
+!$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,npatches
+        rad_near(i) = rads(i)*rfac
+      enddo
+!$OMP END PARALLEL DO
+
+!
+!    find near quadrature correction interactions for inside
+!
+      call findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg, &
+         nnz)
+
+      allocate(row_ptr(ntarg+1),col_ind(nnz))
+
+      call findnear(cms, npatches, rad_near, ndtarg, targs, ntarg, &
+        row_ptr, col_ind)
+
+      allocate(iquad(nnz+1))
+      call get_iquad_rsc(npatches, ixyzs, ntarg, nnz, row_ptr, col_ind,&
+         iquad)
+
+      nquad = iquad(nnz+1) - 1
+      nker = 2
+
+      allocate(wnear(nker,nquad))
+      iquadtype = 0
+
+      call getnearquad_helm_comb_wdd_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars(1), iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+
+!
+!    estimate oversampling for far-field, and oversample geometry
+!
+      ikerorder = 0
+      allocate(novers(npatches),ixyzso(npatches+1))
+
+      print *, "beginning far order estimation"
+
+
+      call get_far_order(eps, npatches, norders, ixyzs, iptype, cms, &
+       rads, npts, srccoefs, ndtarg, ntarg, targs, ikerorder, zpars(1), &
+       nnz, row_ptr, col_ind, rfac, novers, ixyzso)
+
+      npts_over = ixyzso(npatches+1)-1
+
+      allocate(srcover(12,npts_over), wover(npts_over))
+
+      call oversample_geom(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, novers, ixyzso, npts_over, srcover)
+
+      call get_qwts(npatches, novers, ixyzso, iptype, npts_over, &
+        srcover, wover)
+
+      ndd = 0
+      ndz = 3
+      ndi = 0
+      lwork = 0
+
+      ndim_s = 2
+      ndim_p = 1
+      idensflag = 1
+      ipotflag = 1
+!     call wdd addsub
+      call helm_comb_wdd_eval_addsub(npatches, norders, &
+      ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+      eps, ndd, dpars, ndz, zpars, ndi, ipars, &
+      nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+      npts_over, ixyzso, srcover, wover, lwork, work, idensflag, &
+      ndim_s, sigma, ipotflag, ndim_p, pot)
+
+
+
+      return
+      end subroutine helm_comb_trans_eval_oneside
+
       subroutine lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
         uvs_targ,eps,zpars,sigma,pot)

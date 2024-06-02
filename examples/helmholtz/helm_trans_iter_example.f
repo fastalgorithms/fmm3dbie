@@ -6,7 +6,7 @@
 
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3),xyz_src(3),xyz_targ(3)
+      real *8 xyz_out(3),xyz_in(3),xyz_src(3),xyz_targ(3),xyz_all(3,2)
       complex *16, allocatable :: sigma(:),rhs(:),sigma1(:)
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
@@ -16,8 +16,9 @@
       complex alpha0,alpha1,beta0,beta1
       integer numit,niter
 
-      integer ipatch_id
-      real *8 uvs_targ(2)
+      integer ipatch_id(2)
+      real *8 uvs_targ(2,2)
+      complex *16 potall(2)
 
       logical isout0,isout1
 
@@ -127,51 +128,39 @@ c
       call prin2('errs=*',errs,niter)
 
 
+
+      ndtarg = 3
+      ntarg = 2
+      ipatch_id(1) = -1
+      ipatch_id(2) = -1
+      uvs_targ(1,1) = 0
+      uvs_targ(2,1) = 0
+      uvs_targ(1,2) = 0
+      uvs_targ(2,2) = 0
+      xyz_all(:,1) = xyz_in
+      xyz_all(:,2) = xyz_out
+      call helm_comb_trans_eval(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_all,ipatch_id,
+     2  uvs_targ,eps,zpars,sigma,potall)
+
 c
 c       test solution at interior point
 c
+      pot = potall(1)
       call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zk1,0,ipars,potex)
-
-      ndtarg = 3
-      ntarg = 1
-      ipatch_id = -1
-      uvs_targ(1) = 0
-      uvs_targ(2) = 0
-      zpars2(1) = zk1
-      zpars2(2) = ima*zk1/beta1
-      zpars2(3) = 1/beta1
-      call lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
-     2  uvs_targ,eps,zpars2,sigma,pot)
-
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)
       erra = abs(pot-potex)/abs(potex)
       call prin2('relative error at interior target=*',erra,1)
-
 c
 c       test solution at exterior point
 c
+      pot = potall(2)
       call h3d_slp(xyz_in,3,xyz_out,0,dpars,1,zk0,0,ipars,potex)
-
-      ndtarg = 3
-      ntarg = 1
-      ipatch_id = -1
-      uvs_targ(1) = 0
-      uvs_targ(2) = 0
-      zpars2(1) = zk0
-      zpars2(2) = ima*zk0/beta0
-      zpars2(3) = 1/beta0
-      call lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_out,ipatch_id,
-     2  uvs_targ,eps,zpars2,sigma,pot)
-
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)
       erra = abs(pot-potex)/abs(potex)
       call prin2('relative error at exterior target=*',erra,1)
-
-
 
       stop
       end
