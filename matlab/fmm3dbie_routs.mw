@@ -769,17 +769,15 @@ end
 %-------------------------------------------------
 
 @ +lap3d/+dirichlet/eval.m 
-function p = eval(S,sigma,eps,dpars,varargin)
+function p = eval(S,sigma,targinfo,eps,dpars,varargin)
 %
 %  lap3d.dirichlet.eval
 %    Evaluates the Laplace dirichlet layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars)
-%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo)
-%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo)
-%   pot = lap3d.dirichlet.eval(S,sigma,eps,dpars,targinfo,opts)
+%   pot = lap3d.dirichlet.eval(S,sigma,targinfo,eps,dpars)
+%   pot = lap3d.dirichlet.eval(S,sigma,targinfo,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]
@@ -794,19 +792,16 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
-%    * eps: precision requested
-%    * dpars: kernel parameters
-%        dpars(1) - single layer strength
-%        dpars(2) - double layer strength
-%    * targinfo: target info (optional)
+%    * targinfo: target info 
 %       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
-%       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
+%    * eps: precision requested
+%    * dpars: kernel parameters
+%        dpars(1) - single layer strength
+%        dpars(2) - double layer strength
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -818,7 +813,7 @@ function p = eval(S,sigma,eps,dpars,varargin)
     if(nargin < 6) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     nonsmoothonly = false;
@@ -848,22 +843,6 @@ function p = eval(S,sigma,eps,dpars,varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 5)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 
@@ -1276,17 +1255,15 @@ end
 %-------------------------------------------------
 
 @ +lap3d/+neumann/eval.m 
-function p = eval(S,sigma,eps,varargin)
+function p = eval(S,sigma,targinfo,eps,varargin)
 %
 %  lap3d.neumann.eval
 %    Evaluates the Laplace neumann layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = lap3d.neumann.eval(S,sigma,eps)
-%   pot = lap3d.neumann.eval(S,sigma,eps,targinfo)
-%   pot = lap3d.neumann.eval(S,sigma,eps,targinfo)
-%   pot = lap3d.neumann.eval(S,sigma,eps,targinfo,opts)
+%   pot = lap3d.neumann.eval(S,sigma,targinfo,eps)
+%   pot = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
 %
 %  Integral representation
 %     pot = S_{0} [\sigma] 
@@ -1299,17 +1276,14 @@ function p = eval(S,sigma,eps,varargin)
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
-%    * eps: precision requested
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
-%       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
+%    * eps: precision requested
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
 %        opts.precomp_quadrature: precomputed quadrature corrections 
@@ -1320,7 +1294,7 @@ function p = eval(S,sigma,eps,varargin)
     if(nargin < 5) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     nonsmoothonly = false;
@@ -1350,22 +1324,6 @@ function p = eval(S,sigma,eps,varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 4)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 
@@ -1803,17 +1761,15 @@ end
 %-------------------------------------------------
 
 @ +helm3d/+dirichlet/eval.m 
-function p = eval(S,sigma,eps,zk,rep_pars,varargin)
+function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %
 %  helm3d.dirichlet.eval
 %    Evaluates the helmholtz dirichlet layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars)
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo)
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo)
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo,opts)
+%   pot = helm3d.dirichlet.eval(S,sigma,targinfo,eps,zk,rep_pars)
+%   pot = helm3d.dirichlet.eval(S,sigma,targinfo,eps,zk,rep_pars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
@@ -1829,20 +1785,17 @@ function p = eval(S,sigma,eps,zk,rep_pars,varargin)
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
+%    * targinfo: target info (optional)
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zk: wave number
 %    * rep_pars: kernel parameters
 %        zpars(1) - single layer strength
 %        zpars(2) - double layer strength
-%    * targinfo: target info (optional)
-%       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
-%       targinfo.n = normal info
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -1854,7 +1807,7 @@ function p = eval(S,sigma,eps,zk,rep_pars,varargin)
     if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     nonsmoothonly = false;
@@ -1885,22 +1838,6 @@ function p = eval(S,sigma,eps,zk,rep_pars,varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 6)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 
@@ -2335,17 +2272,15 @@ end
 %-------------------------------------------------
 
 @ +helm3d/+neumann/eval.m 
-function p = eval(S,densities,eps,zk,alpha,varargin)
+function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
 %
 %  helm3d.neumann.eval
 %    Evaluates the helmholtz neumann layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha)
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo)
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo)
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo,opts)
+%   pot = helm3d.neumann.eval(S,densities,targinfo,eps,zk,alpha)
+%   pot = helm3d.neumann.eval(S,densities,targinfo,eps,zk,alpha,opts)
 %
 %  Integral representation
 %     pot = S_{k} [\sigma] + i \alpha D_{k} S_{i|k|}[\sigma]
@@ -2361,18 +2296,16 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * densities: layer potential densities
-%    * eps: precision requested
-%    * zk: wave number (k)
-%    * alpha: alpha above
-%    * targinfo: target info (optional)
+%    * targinfo: target info 
 %       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
+%    * eps: precision requested
+%    * zk: wave number (k)
+%    * alpha: alpha above
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -2384,7 +2317,7 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
     if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     nonsmoothonly = false;
@@ -2415,22 +2348,6 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 6)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 
@@ -2891,17 +2808,15 @@ end
 %-------------------------------------------------
 
 @ +helm3d/+impedance/eval.m 
-function p = eval(S,densities,eps,zk,alpha,varargin)
+function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
 %
 %  helm3d.impedance.eval
 %    Evaluates the helmholtz impedance layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha)
-%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo)
-%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo)
-%   pot = helm3d.impedance.eval(S,densities,eps,zk,alpha,targinfo,opts)
+%   pot = helm3d.impedance.eval(S,densities,targinfo,eps,zk,alpha)
+%   pot = helm3d.impedance.eval(S,densities,targinfo,eps,zk,alpha,opts)
 %
 %  Integral representation
 %     pot = S_{k} [\sigma] + i \alpha D_{k} S_{i|k|}[\sigma]
@@ -2917,18 +2832,15 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * densities: layer potential densities
-%    * eps: precision requested
-%    * zk: wave number
-%    * alpha: alpha above
-%    * targinfo: target info (optional)
+%    * targinfo: target info 
 %       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
-%       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
+%    * eps: precision requested
+%    * zk: wave number
+%    * alpha: alpha above
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -2940,7 +2852,7 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
     if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     isprecompq = false;
@@ -2971,22 +2883,6 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 6)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 
@@ -3452,17 +3348,15 @@ end
 %-------------------------------------------------
 
 @ +stok3d/+velocity/eval.m 
-function p = eval(S,sigma,eps,dpars,varargin)
+function p = eval(S,sigma,targinfo,eps,dpars,varargin)
 %
 %  stok3d.eval
 %    Evaluates the stokes layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = stok3d.velocity.eval(S,sigma,eps,dpars)
-%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo)
-%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo)
-%   pot = stok3d.velocity.eval(S,sigma,eps,dpars,targinfo,opts)
+%   pot = stok3d.velocity.eval(S,sigma,targinfo,eps,dpars)
+%   pot = stok3d.velocity.eval(S,sigma,targinfo,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
@@ -3477,19 +3371,16 @@ function p = eval(S,sigma,eps,dpars,varargin)
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: (3, ns) layer potential density
-%    * eps: precision requested
-%    * dpars: kernel parameters
-%        dpars(1) - single layer strength
-%        dpars(2) - double layer strength
-%    * targinfo: target info (optional)
+%    * targinfo: target info 
 %       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
-%       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
+%    * eps: precision requested
+%    * dpars: kernel parameters
+%        dpars(1) - single layer strength
+%        dpars(2) - double layer strength
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -3501,7 +3392,7 @@ function p = eval(S,sigma,eps,dpars,varargin)
     if(nargin < 6) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     isprecompq = false;
@@ -3532,22 +3423,6 @@ function p = eval(S,sigma,eps,dpars,varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 5)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 
@@ -3960,7 +3835,7 @@ end
 %-------------------------------------------------
 
 @ +em3d/+pec/eval.m 
-function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
+function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
 %
 %  em3d.pec.eval
 %
@@ -4002,10 +3877,8 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
 %  em3d.pec.Contents.m
 %
 %  Syntax
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, opts)
+%   [E, H] = em3d.pec.eval(S, densities, targinfo, eps, zk, rep_params)
+%   [E, H] = em3d.pec.eval(S, densities, targinfo, eps, zk, rep_params, opts)
 %
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
@@ -4014,19 +3887,16 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
 %    * S: surfer object, see README.md in matlab for details
 %    * densities: layer potential densities, of size (ndim, npts)
 %        where ndim depends on the integral representation used
-%    * eps: precision requested
-%    * zk : wave number
-%    * rep_params: parameters for integral representation 
-%                  for nrccie, it should be a scalar
-%    * targinfo: target info (optional)
+%    * targinfo: target info 
 %       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
-%       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
+%    * eps: precision requested
+%    * zk : wave number
+%    * rep_params: parameters for integral representation 
+%                  for nrccie, it should be a scalar
 %    * opts: options struct
 %        opts.rep - integral representation being used
 %                         Supported representations
@@ -4044,7 +3914,7 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
     if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     nonsmoothonly = false;
@@ -4097,22 +3967,6 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 6)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 

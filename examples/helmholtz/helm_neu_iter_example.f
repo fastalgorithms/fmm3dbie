@@ -57,15 +57,18 @@ c
       call get_sphere_npat(a, na, c0, norder, iptype0,
      1  npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
 
-      xyz_out(1) = 3.17d0
-      xyz_out(2) = -0.03d0
-      xyz_out(3) = 3.15d0
+      ra = 1.05d0
+      thet = 0.8d0*pi
+      phi = 1.13d0*2*pi
+
+      xyz_out(1) = ra*sin(thet)*cos(phi) 
+      xyz_out(2) = ra*sin(thet)*sin(phi) 
+      xyz_out(3) = ra*cos(thet) 
+
 
       xyz_in(1) = 0.17d0
       xyz_in(2) = 0.23d0
       xyz_in(3) = -0.11d0
-
-
 
       ifinout = 1
       if(ifinout.eq.0) then

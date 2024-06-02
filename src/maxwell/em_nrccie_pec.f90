@@ -1894,6 +1894,8 @@
       nquad = iquad(nnz+1) - 1
       nker = 4
       allocate(wnear(nker,nquad))
+
+      iquadtype = 1
     
       call getnearquad_em_nrccie_pec_eval(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &

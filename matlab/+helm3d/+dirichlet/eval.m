@@ -1,14 +1,12 @@
-function p = eval(S,sigma,eps,zk,rep_pars,varargin)
+function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %
 %  helm3d.dirichlet.eval
 %    Evaluates the helmholtz dirichlet layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars)
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo)
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo)
-%   pot = helm3d.dirichlet.eval(S,sigma,eps,zk,rep_pars,targinfo,opts)
+%   pot = helm3d.dirichlet.eval(S,sigma,targinfo,eps,zk,rep_pars)
+%   pot = helm3d.dirichlet.eval(S,sigma,targinfo,eps,zk,rep_pars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
@@ -24,20 +22,17 @@ function p = eval(S,sigma,eps,zk,rep_pars,varargin)
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
+%    * targinfo: target info (optional)
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zk: wave number
 %    * rep_pars: kernel parameters
 %        zpars(1) - single layer strength
 %        zpars(2) - double layer strength
-%    * targinfo: target info (optional)
-%       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
-%       targinfo.n = normal info
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -49,7 +44,7 @@ function p = eval(S,sigma,eps,zk,rep_pars,varargin)
     if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     nonsmoothonly = false;
@@ -80,23 +75,6 @@ function p = eval(S,sigma,eps,zk,rep_pars,varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 6)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      mex_id_ = 'get_patch_id_uvs(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io double[xx])';
-[patch_id, uvs_targ] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, patch_id, uvs_targ, 1, npatches, npatp1, npatches, 1, npts, 2, npts);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 

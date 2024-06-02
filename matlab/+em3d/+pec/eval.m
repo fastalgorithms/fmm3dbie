@@ -1,4 +1,4 @@
-function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
+function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
 %
 %  em3d.pec.eval
 %
@@ -40,10 +40,8 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
 %  em3d.pec.Contents.m
 %
 %  Syntax
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo)
-%   [E, H] = em3d.pec.eval(S, densities, eps, zk, rep_params, targinfo, opts)
+%   [E, H] = em3d.pec.eval(S, densities, targinfo, eps, zk, rep_params)
+%   [E, H] = em3d.pec.eval(S, densities, targinfo, eps, zk, rep_params, opts)
 %
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
@@ -52,19 +50,16 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
 %    * S: surfer object, see README.md in matlab for details
 %    * densities: layer potential densities, of size (ndim, npts)
 %        where ndim depends on the integral representation used
-%    * eps: precision requested
-%    * zk : wave number
-%    * rep_params: parameters for integral representation 
-%                  for nrccie, it should be a scalar
-%    * targinfo: target info (optional)
+%    * targinfo: target info 
 %       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
-%       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
+%    * eps: precision requested
+%    * zk : wave number
+%    * rep_params: parameters for integral representation 
+%                  for nrccie, it should be a scalar
 %    * opts: options struct
 %        opts.rep - integral representation being used
 %                         Supported representations
@@ -82,7 +77,7 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
     if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     nonsmoothonly = false;
@@ -135,23 +130,6 @@ function [E, H] = eval(S, densities, eps, zk, rep_params, varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 6)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      mex_id_ = 'get_patch_id_uvs(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io double[xx])';
-[patch_id, uvs_targ] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, patch_id, uvs_targ, 1, npatches, npatp1, npatches, 1, npts, 2, npts);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 

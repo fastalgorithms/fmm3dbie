@@ -27,7 +27,7 @@ rhs = helm3d.kern(zk, src_info, S, 'sprime') + ...
 targ_info = [];
 targ_info.r = xyz_out;
 
-pot = helm3d.impedance.eval(S, densities, eps, zk, alpha, targ_info);
+pot = helm3d.impedance.eval(S, densities, targ_info, eps, zk, alpha);
 pot_ex = helm3d.kern(zk, src_info,targ_info,'s');
 fprintf('Error in iterative solver=%d\n',abs(pot-pot_ex)/abs(pot_ex));
 

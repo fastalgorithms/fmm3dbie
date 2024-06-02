@@ -34,7 +34,7 @@ opts.eps_gmres = 1e-10;
 targ_info = [];
 targ_info.r = xyz_in;
 
-[E, H] = em3d.pec.eval(S, densities, eps, zk, alpha, targ_info);
+[E, H] = em3d.pec.eval(S, densities, targ_info, eps, zk, alpha);
 
 
 [E_ex, H_ex] = em3d.incoming_sources(zk, src_info, targ_info, 'ehd');

@@ -22,7 +22,7 @@ rhs = lap3d.kern(src_info, S, 'sprime');
 targ_info = [];
 targ_info.r = xyz_out;
 
-pot = lap3d.neumann.eval(S, sig, eps, targ_info);
+pot = lap3d.neumann.eval(S, sig, targ_info, eps);
 pot_ex = lap3d.kern(src_info,targ_info,'s');
 fprintf('Error in iterative solver=%d\n',abs(pot-pot_ex)/abs(pot_ex));
 

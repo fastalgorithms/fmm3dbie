@@ -65,13 +65,20 @@
       call get_sphere_npat(a, na, c0, norder, iptype0, &
         npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
 
-      xyz_out(1) = 3.17d0
-      xyz_out(2) = -0.03d0
-      xyz_out(3) = 3.15d0
+      ra = 3.05d0
+      thet = 0.8d0*pi
+      phi = 1.13d0*2*pi
 
-      xyz_in(1) = 0.17d0
-      xyz_in(2) = 0.23d0
-      xyz_in(3) = -0.11d0
+      xyz_out(1) = ra*sin(thet)*cos(phi) 
+      xyz_out(2) = ra*sin(thet)*sin(phi) 
+      xyz_out(3) = ra*cos(thet) 
+
+      ra = 0.95d0
+      thet = 0.23d0*pi
+      phi = 2.57d0*2*pi
+      xyz_in(1) = ra*sin(thet)*cos(phi) 
+      xyz_in(2) = ra*sin(thet)*sin(phi) 
+      xyz_in(3) = ra*cos(thet) 
 
 
       zk = 1.1d0 

@@ -1,14 +1,12 @@
-function p = eval(S,densities,eps,zk,alpha,varargin)
+function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
 %
 %  helm3d.neumann.eval
 %    Evaluates the helmholtz neumann layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha)
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo)
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo)
-%   pot = helm3d.neumann.eval(S,densities,eps,zk,alpha,targinfo,opts)
+%   pot = helm3d.neumann.eval(S,densities,targinfo,eps,zk,alpha)
+%   pot = helm3d.neumann.eval(S,densities,targinfo,eps,zk,alpha,opts)
 %
 %  Integral representation
 %     pot = S_{k} [\sigma] + i \alpha D_{k} S_{i|k|}[\sigma]
@@ -24,18 +22,16 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * densities: layer potential densities
-%    * eps: precision requested
-%    * zk: wave number (k)
-%    * alpha: alpha above
-%    * targinfo: target info (optional)
+%    * targinfo: target info 
 %       targinfo.r = (3,nt) target locations
-%       targinfo.du = u tangential derivative info
-%       targinfo.dv = v tangential derivative info
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
+%    * eps: precision requested
+%    * zk: wave number (k)
+%    * alpha: alpha above
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -47,7 +43,7 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
     if(nargin < 7) 
       opts = [];
     else
-      opts = varargin{2};
+      opts = varargin{1};
     end
 
     nonsmoothonly = false;
@@ -78,23 +74,6 @@ function p = eval(S,densities,eps,zk,alpha,varargin)
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
-
-    if(nargin < 6)
-      targinfo = [];
-      targinfo.r = S.r;
-      targinfo.du = S.du;
-      targinfo.dv = S.dv;
-      targinfo.n = S.n;
-      patch_id  = zeros(npts,1);
-      uvs_targ = zeros(2,npts);
-      mex_id_ = 'get_patch_id_uvs(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io double[xx])';
-[patch_id, uvs_targ] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, patch_id, uvs_targ, 1, npatches, npatp1, npatches, 1, npts, 2, npts);
-      targinfo.patch_id = patch_id;
-      targinfo.uvs_targ = uvs_targ;
-      opts = [];
-    else
-      targinfo = varargin{1};
-    end
 
     ff = 'rsc';
 

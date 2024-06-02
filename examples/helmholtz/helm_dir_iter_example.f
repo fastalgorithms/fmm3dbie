@@ -6,7 +6,8 @@
 
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3)
+      real *8 xyz_out(3), xyz_in(3)
+      real *8 xyz_src(3), xyz_targ(3)
       complex *16, allocatable :: sigma(:),rhs(:)
       complex *16 zk
       real *8, allocatable :: errs(:)
@@ -44,7 +45,7 @@ c
       igeom = 'sphere'
       if (trim(igeom).eq.'sphere') then
         a = 1
-        na = 4
+        na = 2
         c0(1) = 0
         c0(2) = 0
         c0(3) = 0
@@ -58,9 +59,12 @@ c
         call get_sphere_npat(a, na, c0, norder, iptype0,
      1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
 
-        xyz_out(1) = 3.17d0
-        xyz_out(2) = -0.03d0
-        xyz_out(3) = 3.15d0
+        ra = 1.05d0
+        thet = 0.8d0*pi
+        phi = 1.13d0*2*pi
+        xyz_out(1) = ra*sin(thet)*cos(phi) 
+        xyz_out(2) = ra*sin(thet)*sin(phi) 
+        xyz_out(3) = ra*cos(thet) 
 
         xyz_in(1) = 0.17d0
         xyz_in(2) = 0.23d0
@@ -100,21 +104,32 @@ c
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
-      isout0 = .false.
-      isout1 = .false.
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1  wts,xyz_in,isout0)
-      
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1   wts,xyz_out,isout1)
+      ifinout = 1
+      if(ifinout.eq.0) then
+        xyz_src(1) = xyz_out(1)
+        xyz_src(2) = xyz_out(2)
+        xyz_src(3) = xyz_out(3)
 
-       print *, isout0,isout1
+        xyz_targ(1) = xyz_in(1)
+        xyz_targ(2) = xyz_in(2)
+        xyz_targ(3) = xyz_in(3)
+      endif
+
+      if(ifinout.eq.1) then
+        xyz_src(1) = xyz_in(1)
+        xyz_src(2) = xyz_in(2)
+        xyz_src(3) = xyz_in(3)
+
+        xyz_targ(1) = xyz_out(1)
+        xyz_targ(2) = xyz_out(2)
+        xyz_targ(3) = xyz_out(3)
+      endif
 
 
       allocate(sigma(npts),rhs(npts))
 
       do i=1,npts
-        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,
+        call h3d_slp(xyz_src,3,srcvals(1,i),0,dpars,1,zpars,0,
      1     ipars,rhs(i))
         sigma(i) = 0 
       enddo
@@ -122,7 +137,6 @@ c
 
 
       numit = 200
-      ifinout = 0
       niter = 0
       allocate(errs(numit+1))
 
@@ -143,10 +157,10 @@ c
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
+      call h3d_slp(xyz_src,3,xyz_targ,0,dpars,1,zpars,0,ipars,potex)
       pot = 0
       do i=1,npts
-        call h3d_comb(srcvals(1,i),3,xyz_in,0,dpars,3,zpars,0,ipars,
+        call h3d_comb(srcvals(1,i),3,xyz_targ,0,dpars,3,zpars,0,ipars,
      1     ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
@@ -162,7 +176,7 @@ c
       uvs_targ(1) = 0
       uvs_targ(2) = 0
       call helm_comb_dir_eval(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_targ,ipatch_id,
      2  uvs_targ,eps,zpars,sigma,pot)
 
       call prin2('potex=*',potex,2)

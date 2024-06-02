@@ -148,6 +148,9 @@
       ndd = 0
       ndz = 1
       ndi = 0
+
+
+      allocate(wneartmp(nquad))
     
     
       if (iquadtype.eq.1) then

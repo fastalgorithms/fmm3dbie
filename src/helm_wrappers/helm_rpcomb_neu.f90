@@ -1905,13 +1905,15 @@
       nquad = iquad(nnz+1) - 1
       nker = 2
       allocate(wnear(nker,nquad))
+
+      iquadtype = 1
       
 
       call getnearquad_helm_rpcomb_eval(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
         col_ind, iquad, rfac0, nquad, wnear)
-
+      
 
       ikerorder = 0
 !

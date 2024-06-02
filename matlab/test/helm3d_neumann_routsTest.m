@@ -14,7 +14,7 @@ alpha = 1.0;
 eps = 1e-7;
 
 xyz_in = [0.3;0.5;0.1];
-xyz_out = [1.3;-5.2;0.1];
+xyz_out = [1.05;0.01;0.01];
 src_info = [];
 src_info.r = xyz_in;
 
@@ -25,7 +25,7 @@ rhs = helm3d.kern(zk, src_info, S, 'sprime');
 targ_info = [];
 targ_info.r = xyz_out;
 
-pot = helm3d.neumann.eval(S, densities, eps, zk, alpha, targ_info);
+pot = helm3d.neumann.eval(S, densities, targ_info, eps, zk, alpha);
 pot_ex = helm3d.kern(zk, src_info,targ_info,'s');
 fprintf('Error in iterative solver=%d\n',abs(pot-pot_ex)/abs(pot_ex));
 
