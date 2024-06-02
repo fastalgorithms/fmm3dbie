@@ -55,7 +55,7 @@ t3 = [cos(p1),sin(p1),0;-sin(p1),cos(p1),0;0,0,1];
 
 xyz_in = t1*t2*t3*xyz_in;
 xyz_out = t1*t2*t3*xyz_out;
-[S] = rot_surf(S,euls);
+[S] = rotate(S,euls);
 
 src_info = [];
 src_info.r = xyz_in;

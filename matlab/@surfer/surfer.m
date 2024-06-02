@@ -173,6 +173,7 @@ classdef surfer
          [objout,varargout] = affine_transf(obj,mat,shift);
          [varargout] = scatter(obj,varargin);
          [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear);
+         [objout,varargout] = rotate(obj, eul);
          
         
     end

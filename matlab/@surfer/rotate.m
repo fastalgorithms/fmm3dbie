@@ -1,4 +1,4 @@
-function [objout,varargout] = rot_surf(obj,euls)
+function [objout,varargout] = rotate(obj, euls)
 
 %%%%%
 %
