@@ -364,8 +364,8 @@
 !          * the third kernel is i*k0 S_{k0}' - i*k1 S_{k1}'
 !          * the fourth kernel is D_{k0}'- D_{k1}'
 !    - sigma: complex *16(2*npts)
-!        * sigma(1:npts) is the density \lambda
-!        * sigma(npts+1:2*npts) is the density \rho
+!        * sigma(1:npts) is the density \rho
+!        * sigma(npts+1:2*npts) is the density \lambda
 !    - novers: integer(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -770,8 +770,8 @@
 !        relative residual for computed solution
 !    - soln: complex *16(2*npts)
 !        densities which solve the transmission problem
-!        soln(1:npts) = \lambda
-!        soln(npts+1:2*npts) = \rho
+!        soln(1:npts) = \rho
+!        soln(npts+1:2*npts) = \lambda
 !
       implicit none
       integer npatches,norder,npols,npts
@@ -1095,8 +1095,8 @@
 !        zpars(6) = beta1
 !    - sigma: complex *16(2*npts)
 !        densities which solve the transmission problem
-!        sigma(1:npts) = \lambda
-!        sigma(npts+1:2*npts) = \rho
+!        sigma(1:npts) = \rho
+!        sigma(npts+1:2*npts) = \lambda
 !
 !  Output arguments:
 !    - pot: complex *16(ntarg)
@@ -1176,32 +1176,32 @@
 
       allocate(sigmause(2,npts))
       do i=1,npts
-        sigmause(1,i) = sigma(i)
-        sigmause(2,i) = sigma(npts+i)
+        sigmause(1,i) = sigma(npts+i)
+        sigmause(2,i) = sigma(i)
       enddo
 
 !     evaluate the potentials for interior targets
       zparsuse(1) = zpars(4)
       zparsuse(2) = ima * zpars(4) / zpars(6)
       zparsuse(3) = 1.0/zpars(6)
-!      call helm_comb_trans_eval_oneside(npatches, norders, ixyzs, &
-!        iptype, npts, srccoefs, srcvals, ndtarg, ntargin, targsin, &
-!        ipatch_id, uvs_targ, eps, zparsuse, sigmause, potin)
-      call lpcomp_helm_comb_split_dir(npatches, norders, ixyzs, &
+      call helm_comb_trans_eval_oneside(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntargin, targsin, &
-        ipatch_idin, uvs_targin, eps, zparsuse, sigma, potin)
+        ipatch_idin, uvs_targin, eps, zparsuse, sigmause, potin)
+!      call lpcomp_helm_comb_split_dir(npatches, norders, ixyzs, &
+!        iptype, npts, srccoefs, srcvals, ndtarg, ntargin, targsin, &
+!        ipatch_idin, uvs_targin, eps, zparsuse, sigma, potin)
 
 
 !     evaluate the potentials for exterior targets
       zparsuse(1) = zpars(1)
       zparsuse(2) = ima * zpars(1) / zpars(3)
       zparsuse(3) = 1.0/zpars(3)
-!      call helm_comb_trans_eval_oneside(npatches, norders, ixyzs, &
-!        iptype, npts, srccoefs, srcvals, ndtarg, ntargout, targsout, &
-!        ipatch_id, uvs_targ, eps, zparsuse, sigmause, potout)
-      call lpcomp_helm_comb_split_dir(npatches, norders, ixyzs, &
+      call helm_comb_trans_eval_oneside(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntargout, targsout, &
-        ipatch_idout, uvs_targout, eps, zparsuse, sigma, potout)
+        ipatch_idout, uvs_targout, eps, zparsuse, sigmause, potout)
+!      call lpcomp_helm_comb_split_dir(npatches, norders, ixyzs, &
+!        iptype, npts, srccoefs, srcvals, ndtarg, ntargout, targsout, &
+!        ipatch_idout, uvs_targout, eps, zparsuse, sigma, potout)
 
 
 !     combine the potentials
@@ -1231,8 +1231,7 @@
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         ipatch_id, uvs_targ, eps, zpars, sigma, pot)
 !  Representations:
-!  u0 = 1/beta0 * (D_{k0}[\rho] + i*k0*S_{k0}[\lambda]) (exterior representation)
-!  u1 = 1/beta1 * (D_{k1}[\rho] + i*k1*S_{k1}[\lambda]) (interior representation)
+!  u = \beta*D_{k}[\rho] + \alpha S_{k}[\lambda]
 !  Input:
 !
 !    - npatches: integer
@@ -1277,13 +1276,12 @@
 !        precision requested for computing quadrature and fmm
 !        tolerance
 !    - zpars: complex *16 (3)
-!        zpars(1) = k0
-!        zpars(2) = alpha0
-!        zpars(3) = beta0
-!        zpars(4) = k1
-!        zpars(5) = alpha1
-!        zpars(6) = beta1
+!        zpars(1) = k
+!        zpars(2) = alpha
+!        zpars(3) = beta
 !    - sigma: complex *16(2,npts)
+!        sigma(1:npts) = \rho
+!        sigma(npts+1:2*npts) = \lambda
 !        densities which solve the transmission problem
 !
 !  Output arguments:
@@ -1306,7 +1304,7 @@
       complex *16, intent(out) :: pot(ntarg)
 
       real *8 rfac, rfac0
-      integer i, j
+      integer i
       integer iptype_avg, norder_avg
       integer nnz, nquad, nker
       integer ikerorder, iquadtype, npts_over
@@ -1349,7 +1347,7 @@
 !    find near quadrature correction interactions for inside
 !
       call findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg, &
-         nnz)
+        nnz)
 
       allocate(row_ptr(ntarg+1),col_ind(nnz))
 
@@ -1358,13 +1356,13 @@
 
       allocate(iquad(nnz+1))
       call get_iquad_rsc(npatches, ixyzs, ntarg, nnz, row_ptr, col_ind,&
-         iquad)
+        iquad)
 
       nquad = iquad(nnz+1) - 1
       nker = 2
 
       allocate(wnear(nker,nquad))
-      iquadtype = 0
+      iquadtype = 1
 
       call getnearquad_helm_comb_wdd_eval(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
@@ -1381,8 +1379,8 @@
 
 
       call get_far_order(eps, npatches, norders, ixyzs, iptype, cms, &
-       rads, npts, srccoefs, ndtarg, ntarg, targs, ikerorder, zpars(1), &
-       nnz, row_ptr, col_ind, rfac, novers, ixyzso)
+        rads, npts, srccoefs, ndtarg, ntarg, targs, ikerorder, zpars(1), &
+        nnz, row_ptr, col_ind, rfac, novers, ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
 
@@ -1403,19 +1401,25 @@
       ndim_p = 1
       idensflag = 1
       ipotflag = 1
-!     call wdd addsub
-      call helm_comb_wdd_eval_addsub(npatches, norders, &
-      ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-      eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-      nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
-      npts_over, ixyzso, srcover, wover, lwork, work, idensflag, &
-      ndim_s, sigma, ipotflag, ndim_p, pot)
 
+      call helm_comb_wdd_eval_addsub(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        npts_over, ixyzso, srcover, wover, lwork, work, idensflag, &
+        ndim_s, sigma, ipotflag, ndim_p, pot)
 
 
       return
       end subroutine helm_comb_trans_eval_oneside
-
+!
+!
+!
+!
+!
+!
+!
+!
       subroutine lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,&
         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id, &
         uvs_targ,eps,zpars,sigma,pot)

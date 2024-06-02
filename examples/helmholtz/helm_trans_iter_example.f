@@ -13,7 +13,7 @@
       complex * 16 zpars(6),zpars2(3)
       complex *16 omega,ep0,ep1,mu0,mu1,zk0,zk1,ztmp,ztmp2
       complex *16 u0,dudn0,u1,dudn1
-      complex alpha0,alpha1,beta0,beta1
+      complex *16 alpha0,alpha1,beta0,beta1
       integer numit,niter
 
       integer ipatch_id(2)
