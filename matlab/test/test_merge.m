@@ -1,4 +1,4 @@
-run ../startup.m
+
 
 
 % For quads
@@ -6,17 +6,16 @@ S = geometries.sphere(1, 2, [0;0;0]);
 
 rad = 3;
 nsp = 6;
-Sarray = surfer.empty;
 
 
+shifts = zeros(3,nsp);
 for ii=1:nsp
     th = (ii-1)*(2*pi)/nsp;
     shift = rad*[cos(th),sin(th),0].';
-    Stmp = affine_transf(S,eye(3),shift);
-    Sarray(ii)= Stmp;
+    shifts(:,ii) = shift;
 end
 
- [S] = merge(Sarray);
+ [S] = translate(S,shifts);
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
 
  zk = 1.1;
