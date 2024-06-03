@@ -1,15 +1,25 @@
-function h = plot(obj, varargin)
+function varargout = plot(obj, varargin)
 %PLOT   Plot the surface.
 
 
 [srcvals,srccoefs,~,~,~,~] = extract_arrays(obj);
-f = srcvals(3,:);
-fcoefs = srccoefs(3,:);
+f = obj.curv.';
+fcoefs = vals_to_coefs_surface_fun(obj, f);
 istart = 1;
 if nargin > 1
     if isnumeric(varargin{1})
         if length(varargin{1}) == obj.npts
             f = reshape(varargin{1}, [1, obj.npts]);
+            fcoefs = vals_to_coefs_surface_fun(obj, f);
+            istart = 2;
+        elseif length(varargin{1}) == obj.npatches
+            fuse = reshape(varargin{1}, [1, obj.npatches]);
+            f = zeros(1, obj.npts);
+            for i = 1:obj.npatches
+                i1 = obj.ixyzs(i);
+                i2 = obj.ixyzs(i+1)-1;
+                f(i1:i2) = fuse(i);
+            end
             fcoefs = vals_to_coefs_surface_fun(obj, f);
             istart = 2;
         else
@@ -127,5 +137,9 @@ view(3)
 shading interp
 axis equal
 grid on 
+
+if nargout == 1
+    varargout{1} = h;
+end
 
 end

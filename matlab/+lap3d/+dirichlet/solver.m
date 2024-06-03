@@ -4,8 +4,8 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %    Solve the Laplace dirichlet boundary value problem
 %
 %  Syntax
-%   sigma = lap3d.dirichlet.solver(S,sigma,eps,dpars)
-%   sigma = lap3d.dirichlet.solver(S,sigma,eps,dpars,opts)
+%   sigma = lap3d.dirichlet.solver(S,rhs,eps,dpars)
+%   sigma = lap3d.dirichlet.solver(S,rhs,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]

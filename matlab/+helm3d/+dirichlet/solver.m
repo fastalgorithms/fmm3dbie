@@ -4,8 +4,8 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
 %    Solve the helmholtz dirichlet boundary value problem
 %
 %  Syntax
-%   sigma = helm3d.dirichlet.solver(S,sigma,eps,zk,rep_pars)
-%   sigma = helm3d.dirichlet.solver(S,sigma,eps,zk,rep_pars,opts)
+%   sigma = helm3d.dirichlet.solver(S,rhs,eps,zk,rep_pars)
+%   sigma = helm3d.dirichlet.solver(S,rhs,eps,zk,rep_pars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]

@@ -1,4 +1,4 @@
-function [pols,dersu,dersv] = ders(uv, norder, npols)
+function [pols,dersu,dersv] = ders(norder, uv)
   %
   % This subroutine evalutes a bunch of orthogonal polynomials (and
   % their first partial derivatives) on the simplex with
@@ -34,10 +34,13 @@ function [pols,dersu,dersv] = ders(uv, norder, npols)
   %   ders - partial derivatives with respect to u and v
   %
   %
-  
+
+  npols = (norder+1)*(norder+2)/2;
+
   pols = zeros(npols,size(uv,2));
   dersu = zeros(npols,size(uv,2));
   dersv = zeros(npols,size(uv,2));
+
   legpols = zeros(1,norder+1);
   jacpols = zeros(norder+1,norder+1);
   legu = zeros(1,norder+1);
@@ -111,10 +114,7 @@ function [pols,dersu,dersv] = ders(uv, norder, npols)
   iii = 0;
   for n = 0:norder
     for k = 0:n
-      sc = sqrt(done/(2*k+1)/(2*n+2)) ;
-
-      %%%%%%%%%%%%%%%%%%%%%%%%%%
-      sc = 1;
+      sc = sqrt(1.0/(2*k+1)/(2*n+2)) ;
       iii = iii + 1;
       pols(iii,i) = legpols(k+1)*jacpols(n-k+1,k+1)/sc ;
       dersu(iii,i) = legu(k+1)*jacpols(n-k+1,k+1)/sc ;

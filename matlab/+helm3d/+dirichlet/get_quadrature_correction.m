@@ -88,7 +88,7 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     if(isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id'))
       patch_id = targinfo.patch_id;
     else
-      patch_id = zeros(ntarg,1);
+      patch_id = -1*ones(ntarg,1);
     end
 
     if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))

@@ -4,8 +4,8 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %    Solve the Stokes boundary value problem
 %
 %  Syntax
-%   sigma = stok3d.velocity.solver(S,sigma,eps,dpars)
-%   sigma = stok3d.velocity.solver(S,sigma,eps,dpars,opts)
+%   sigma = stok3d.velocity.solver(S,rhs,eps,dpars)
+%   sigma = stok3d.velocity.solver(S,rhs,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]

@@ -117,8 +117,8 @@ subroutine get_far_order(eps,npatches,norders,ixyzs,iptype,cms,rads,&
 
   allocate(col_ptr(npatches+1),row_ind(nnz),iper(nnz))
 
-  call rsc_to_csc(npatches,ntarg,nnz,row_ptr,col_ind,col_ptr,&
-    row_ind,iper)
+  call rsc_to_csc(npatches, ntarg, nnz, row_ptr, col_ind, col_ptr, &
+    row_ind, iper)
 
   ixyzso(1) = 1
   do i=1,npatches

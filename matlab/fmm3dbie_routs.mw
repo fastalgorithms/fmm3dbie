@@ -626,7 +626,7 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
     [ndtarg,ntarg] = size(targs);
 
     ntp1 = ntarg + 1;
-    zk = Q.wavenumber;
+    zk = complex(Q.wavenumber);
     ikerorder = Q.kernel_order;
     row_ptr = Q.row_ptr;
     col_ind = Q.col_ind;
@@ -1108,8 +1108,8 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %    Solve the Laplace dirichlet boundary value problem
 %
 %  Syntax
-%   sigma = lap3d.dirichlet.solver(S,sigma,eps,dpars)
-%   sigma = lap3d.dirichlet.solver(S,sigma,eps,dpars,opts)
+%   sigma = lap3d.dirichlet.solver(S,rhs,eps,dpars)
+%   sigma = lap3d.dirichlet.solver(S,rhs,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]
@@ -2002,7 +2002,7 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     if(isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id'))
       patch_id = targinfo.patch_id;
     else
-      patch_id = zeros(ntarg,1);
+      patch_id = -1*ones(ntarg,1);
     end
 
     if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))
@@ -2062,7 +2062,7 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     zpars(1) = zk;
     zpars(2) = rep_pars(1);
     zpars(3) = rep_pars(2);
-    # FORTRAN getnearquad_helm_comb_dir_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,dcomplex[3] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] wnear);
+    # FORTRAN getnearquad_helm_comb_dir_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
     
     Q = [];
     Q.targinfo = targinfo;
@@ -2113,8 +2113,8 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
 %    Solve the helmholtz dirichlet boundary value problem
 %
 %  Syntax
-%   sigma = helm3d.dirichlet.solver(S,sigma,eps,zk,rep_pars)
-%   sigma = helm3d.dirichlet.solver(S,sigma,eps,zk,rep_pars,opts)
+%   sigma = helm3d.dirichlet.solver(S,rhs,eps,zk,rep_pars)
+%   sigma = helm3d.dirichlet.solver(S,rhs,eps,zk,rep_pars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
@@ -3688,8 +3688,8 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %    Solve the Stokes boundary value problem
 %
 %  Syntax
-%   sigma = stok3d.velocity.solver(S,sigma,eps,dpars)
-%   sigma = stok3d.velocity.solver(S,sigma,eps,dpars,opts)
+%   sigma = stok3d.velocity.solver(S,rhs,eps,dpars)
+%   sigma = stok3d.velocity.solver(S,rhs,eps,dpars,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
