@@ -1,4 +1,4 @@
-function plot(obj, varargin)
+function h = plot(obj, varargin)
 %PLOT   Plot the surface.
 
 
@@ -117,7 +117,7 @@ for k = 1:obj.npatches
 end
 
 
-trisurf(Ttot, xall, yall, zall, fall,...
+h = trisurf(Ttot, xall, yall, zall, fall,...
         'EdgeColor', 'None', ...
         'AmbientStrength', 0.6, 'DiffuseStrength', 0.4, ...
         'SpecularStrength', 0.3, varargin_use{:});
