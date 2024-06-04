@@ -7,7 +7,7 @@
       integer, allocatable :: norders(:),ixyzs(:),iptype(:)
 
       real *8 xyz_out(3),xyz_in(3),xyz_src(3),xyz_targ(3),xyz_all(3,2)
-      complex *16, allocatable :: sigma(:),rhs(:),sigma1(:)
+      complex *16, allocatable :: sigma(:,:),rhs(:,:)
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
       complex * 16 zpars(6),zpars2(3)
@@ -92,7 +92,7 @@ c
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
-      allocate(sigma(2*npts),rhs(2*npts))
+      allocate(sigma(2,npts),rhs(2,npts))
 
 c
 c  get boundary data
@@ -106,8 +106,8 @@ c
      1     ipars,u1)
         call h3d_sprime(xyz_out,12,srcvals(1,i),0,dpars,1,zk1,0,
      1     ipars,dudn1)
-        rhs(i) = alpha0*u0 - alpha1*u1
-        rhs(npts+i) = beta0*dudn0 - beta1*dudn1
+        rhs(1,i) = alpha0*u0 - alpha1*u1
+        rhs(2,i) = beta0*dudn0 - beta1*dudn1
       enddo
 
 

@@ -134,7 +134,7 @@
 !        per source target pair
 !
 !  Output arguments
-!    - wnear: complex *16(4*nquad)
+!    - wnear: complex *16(4,nquad)
 !        The desired near field quadrature
 !
 !
@@ -152,10 +152,11 @@
       integer nnz,ipars(2)
       real *8 dpars(1)
       integer row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
-      complex *16 wnear(4*nquad)
+      complex *16 wnear(4,nquad)
 
       integer, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_targ(:,:)
+      complex *16, allocatable :: wneartmp(:)
 
 
       complex *16 ima,z
@@ -198,41 +199,94 @@
 
       call get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts,&
         ipatch_id,uvs_targ)
-      ipv=0
-      fker => h3d_slp_diff
-      zpars_tmp(3) = z*ima*zk0*alpha0/beta0
-      zpars_tmp(4) = z*ima*zk1*alpha1/beta1
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
-        iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals,&
-        ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp,&
-        ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
+      allocate(wneartmp(nquad))
 
-      fker => h3d_dlp_diff
-      zpars_tmp(3) = z*alpha0/beta0
-      zpars_tmp(4) = z*alpha1/beta1
-      ipv = 1
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs, &
-        iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals, &
-        ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp, &
-        ndi,ipars,nnz,row_ptr,col_ind,iquad, &
-        rfac0,nquad,wnear(nquad+1))
+      if (iquadtype.eq.1) then
 
-      fker => h3d_sprime_diff
-      zpars_tmp(3) = ima*zk0
-      zpars_tmp(4) = ima*zk1
-      ipv = 1
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
-       iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals,&
-       ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp,ndi,&
-       ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(2*nquad+1))
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wneartmp(i) = 0
+        enddo
+!$OMP END PARALLEL DO
+        ipv=0
+        fker => h3d_slp_diff
+        zpars_tmp(3) = z*ima*zk0*alpha0/beta0
+        zpars_tmp(4) = z*ima*zk1*alpha1/beta1
+        call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
+          iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals,&
+          ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp,&
+          ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wneartmp)
 
-      ndz = 2
-      fker => h3d_dprime_diff
-      ipv = 0
-      call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
-       iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals,&
-       ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp,ndi,&
-       ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear(3*nquad+1))
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wnear(1,i) = wneartmp(i)
+        enddo
+!$OMP END PARALLEL DO
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wneartmp(i) = 0
+        enddo
+!$OMP END PARALLEL DO
+      
+        fker => h3d_dlp_diff
+        zpars_tmp(3) = z*alpha0/beta0
+        zpars_tmp(4) = z*alpha1/beta1
+        ipv = 1
+        call zgetnearquad_ggq_guru(npatches,norders,ixyzs, &
+          iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals, &
+          ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp, &
+          ndi,ipars,nnz,row_ptr,col_ind,iquad, &
+          rfac0,nquad,wneartmp)
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wnear(2,i) = wneartmp(i)
+        enddo
+!$OMP END PARALLEL DO
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wneartmp(i) = 0
+        enddo
+!$OMP END PARALLEL DO
+
+        fker => h3d_sprime_diff
+        zpars_tmp(3) = ima*zk0
+        zpars_tmp(4) = ima*zk1
+        ipv = 1
+        call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
+         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals,&
+         ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp,ndi,&
+         ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wneartmp)
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wnear(3,i) = wneartmp(i)
+        enddo
+!$OMP END PARALLEL DO
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wneartmp(i) = 0
+        enddo
+!$OMP END PARALLEL DO
+
+        ndz = 2
+        fker => h3d_dprime_diff
+        ipv = 0
+        call zgetnearquad_ggq_guru(npatches,norders,ixyzs,&
+         iptype,npts,srccoefs,srcvals,ndtarg,ntarg,srcvals,&
+         ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars_tmp,ndi,&
+         ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wneartmp)
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wnear(4,i) = wneartmp(i)
+        enddo
+!$OMP END PARALLEL DO
+
+      endif
 
       return
       end subroutine getnearquad_helm_comb_trans
@@ -284,7 +338,7 @@
 !    - on output, the identity terms are not included
 !    - We return 1/ep1 u1' - 1/ep0 u0' to align the identity
 !      terms in the two sets of equations.
-!    - The parameters that must be provided zpars(5), and how they
+!    - The parameters that must be provided zpars(6), and how they
 !      are related to the problem parameters
 !        zpars(1) = k0
 !        zpars(2) = alpha0
@@ -331,7 +385,16 @@
 !          * srcvals(10:12,i) - normals info
 !    - eps: real *8
 !        precision requested
-!    - zpars: complex *16 (6)
+!    - ndd: integer
+!        number of real parameters defining the kernel/
+!        integral representation (unused in this routine)
+!    - dpars: real *8(ndd)
+!        real parameters defining the kernel/
+!        integral representation (unused in this routine)
+!    - ndz: integer
+!        number of complex parameters defining the kernel/
+!        integral representation (must be six)
+!    - zpars: complex *16 (ndz)
 !        kernel parameters (See notes above)
 !        zpars(1) = k0
 !        zpars(2) = alpha0
@@ -339,6 +402,12 @@
 !        zpars(4) = k1
 !        zpars(5) = alpha1
 !        zpars(6) = beta1
+!    - ndi: integer
+!        number of integer parameters defining the kernel/
+!        integral representation (unused in this routine)
+!    - ipars: integer(ndi)
+!        integer parameters defining the kernel/
+!        integral represnetation (unused in this routine)
 !    - nnz: integer *8
 !        number of source patch-> target interactions in the near field
 !    - row_ptr: integer(npts+1)
@@ -357,15 +426,14 @@
 !        number of near field entries corresponding to each source target
 !        pair. The size of wnear is 4*nquad since there are 4 kernels
 !        per source target pair
-!    - wnear: complex *16(4*nquad)
+!    - nker: integer
+!        number of kernels in quadrature correction, must be 4
+!    - wnear: complex *16(nker, nquad)
 !        Precomputed near field quadrature
 !          * the first kernel is z*i*k0*alpha0/beta0 S_{k0} - z*i*k1*alpha1/beta0 S_{k1}
 !          * the second kernel is z*alpha0/beta0 D_{k0} - z*alpha1/beta1 D_{k1}
 !          * the third kernel is i*k0 S_{k0}' - i*k1 S_{k1}'
 !          * the fourth kernel is D_{k0}'- D_{k1}'
-!    - sigma: complex *16(2*npts)
-!        * sigma(1:npts) is the density \rho
-!        * sigma(npts+1:2*npts) is the density \lambda
 !    - novers: integer(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -378,12 +446,22 @@
 !        oversampled set of source information
 !    - whtsover: real *8 (nptso)
 !        smooth quadrature weights at oversampled nodes
+!    - lwork: integer
+!        size of work array (unused in this routine)
+!    - work: real *8(lwork)
+!        work array (unused in this routine)
+!    - ndim: integer
+!        number of densities per point on the surface,
+!        must be 2 for this routine
+!    - sigma: complex *16(ndim,npts)
+!        * sigma(1,:) is the density \rho
+!        * sigma(2,:) is the density \lambda
 !
 !  Output arguments:
-!    - pot: complex *16 (2*npts)
-!        * pot(1:npts) is the data u0-u1
-!        * pot(npts+1:2*npts) is the pv part of the
-!          data 1/ep1 u1' - 1/ep0u0'
+!    - pot: complex *16 (ndim, npts)
+!        * pot(1,:) is the data z (alph0 u0 - alpha1 u1)
+!        * pot(2,:) is the pv part of the
+!          data beta0 dudn0 - beta1 dudn1 
 !
 
       implicit none
@@ -398,17 +476,18 @@
       integer nnz,row_ptr(npts+1),col_ind(nnz),nquad
       integer nker,lwork,ndim
       integer iquad(nnz+1)
-      complex *16 sigma(2*npts)
-      complex *16 wnear(nker*nquad)
+      complex *16 sigma(ndim,npts)
+      complex *16 wnear(nker,nquad)
 
       integer novers(npatches)
       integer nover,npolso,nptso
       real *8 srcover(12,nptso),whtsover(nptso)
-      complex *16 pot(2*npts)
+      complex *16 pot(ndim,npts)
       complex *16 alpha0,alpha1,beta0,beta1,z,zslp0,zslp1,zdlp0,zdlp1
 
       real *8, allocatable :: sources(:,:),srctmp(:,:)
-      complex *16, allocatable :: charges0(:),dipvec0(:,:),sigmaover(:)
+      complex *16, allocatable :: charges0(:),dipvec0(:,:)
+      complex *16, allocatable :: sigmaover(:,:)
       complex *16, allocatable :: charges1(:),dipvec1(:,:)
       integer ns,nt
       complex *16 alpha,beta
@@ -470,7 +549,7 @@
       allocate(sources(3,ns),srctmp(3,npts))
       allocate(charges0(ns),dipvec0(3,ns))
       allocate(charges1(ns),dipvec1(3,ns))
-      allocate(sigmaover(2*ns))
+      allocate(sigmaover(2,ns))
       allocate(pot_aux(npts),grad_aux(3,npts))
 !
 !  estimate max number of sources in the near field of any target
@@ -483,10 +562,8 @@
 !
 !       oversample densities
 !
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,&
+      call oversample_fun_surf(4,npatches,norders,ixyzs,iptype,&
         npts,sigma,novers,ixyzso,ns,sigmaover)
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,&
-        npts,sigma(npts+1),novers,ixyzso,ns,sigmaover(ns+1))
 
 !
 !  extract source and target info
@@ -496,21 +573,21 @@
         sources(1,i) = srcover(1,i)
         sources(2,i) = srcover(2,i)
         sources(3,i) = srcover(3,i)
-        charges0(i) = sigmaover(ns+i)*whtsover(i)*over4pi*z*zslp0
-        charges1(i) = sigmaover(ns+i)*whtsover(i)*over4pi*z*zslp1
+        charges0(i) = sigmaover(2,i)*whtsover(i)*over4pi*z*zslp0
+        charges1(i) = sigmaover(2,i)*whtsover(i)*over4pi*z*zslp1
 
-        dipvec0(1,i) = sigmaover(i)*whtsover(i)*over4pi* &
+        dipvec0(1,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
            z*zdlp0*srcover(10,i)
-        dipvec0(2,i) = sigmaover(i)*whtsover(i)*over4pi* &
+        dipvec0(2,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
            z*zdlp0*srcover(11,i)
-        dipvec0(3,i) = sigmaover(i)*whtsover(i)*over4pi* &
+        dipvec0(3,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
            z*zdlp0*srcover(12,i)
 
-        dipvec1(1,i) = sigmaover(i)*whtsover(i)*over4pi* &
+        dipvec1(1,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
            z*zdlp1*srcover(10,i)
-        dipvec1(2,i) = sigmaover(i)*whtsover(i)*over4pi* &
+        dipvec1(2,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
            z*zdlp1*srcover(11,i)
-        dipvec1(3,i) = sigmaover(i)*whtsover(i)*over4pi* &
+        dipvec1(3,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
            z*zdlp1*srcover(12,i)
       enddo
 !$OMP END PARALLEL DO
@@ -525,8 +602,8 @@
         grad_aux(1,i) = 0
         grad_aux(2,i) = 0
         grad_aux(3,i) = 0
-        pot(i) = 0
-        pot(npts+i) = 0
+        pot(1,i) = 0
+        pot(2,i) = 0
       enddo
 
 !$OMP END PARALLEL DO
@@ -544,8 +621,8 @@
 !
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
-        pot(i) = pot_aux(i)
-        pot(npts+i) = zlp0inv*(grad_aux(1,i)*srcvals(10,i)+ &
+        pot(1,i) = pot_aux(i)
+        pot(2,i) = zlp0inv*(grad_aux(1,i)*srcvals(10,i)+ &
           grad_aux(2,i)*srcvals(11,i)+ &
           grad_aux(3,i)*srcvals(12,i))
       enddo
@@ -564,8 +641,8 @@
 !
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
-        pot(i) = pot(i)- pot_aux(i)
-        pot(npts+i) = pot(npts+i)-zlp1inv*(grad_aux(1,i)*srcvals(10,i)+&
+        pot(1,i) = pot(1,i)- pot_aux(i)
+        pot(2,i) = pot(2,i)-zlp1inv*(grad_aux(1,i)*srcvals(10,i)+&
           grad_aux(2,i)*srcvals(11,i)+ &
           grad_aux(3,i)*srcvals(12,i))
       enddo
@@ -587,13 +664,13 @@
           jquadstart = iquad(j)
           jstart = ixyzs(jpatch)
           do l=1,npols
-            pot(i) = pot(i) + wnear(jquadstart+l-1)*sigma(jstart+l-1+npts)
-            pot(i) = pot(i) + wnear(nquad+jquadstart+l-1)* &
-              sigma(jstart+l-1)
-            pot(i+npts) = pot(i+npts) + wnear(2*nquad+jquadstart+l-1)* &
-              sigma(jstart+l-1+npts)
-            pot(i+npts) = pot(i+npts) + wnear(3*nquad+jquadstart+l-1)* &
-              sigma(jstart+l-1)
+            pot(1,i) = pot(1,i) + wnear(1,jquadstart+l-1)*sigma(2,jstart+l-1)
+            pot(1,i) = pot(1,i) + wnear(2,jquadstart+l-1)* &
+              sigma(1,jstart+l-1)
+            pot(2,i) = pot(2,i) + wnear(3,jquadstart+l-1)* &
+              sigma(2,jstart+l-1)
+            pot(2,i) = pot(2,i) + wnear(4,jquadstart+l-1)* &
+              sigma(1,jstart+l-1)
           enddo
         enddo
       enddo
@@ -634,8 +711,8 @@
 
         call h3ddirectcdg(nd,zk0,srctmp2,ctmp0,dtmp0,nss,srctmp(1,i), &
           ntarg0,pottmp,gradtmp,thresh)
-        pot(i) = pot(i)  - pottmp
-        pot(npts+i) = pot(npts+i) - (gradtmp(1)*srcvals(10,i)+  &
+        pot(1,i) = pot(1,i)  - pottmp
+        pot(2,i) = pot(2,i) - (gradtmp(1)*srcvals(10,i)+  &
           gradtmp(2)*srcvals(11,i)+gradtmp(3)*srcvals(12,i))*zlp0inv
 
         pottmp = 0
@@ -645,13 +722,9 @@
 
         call h3ddirectcdg(nd,zk1,srctmp2,ctmp1,dtmp1,nss,srctmp(1,i), &
           ntarg0,pottmp,gradtmp,thresh)
-        pot(i) = pot(i)  + pottmp
-        pot(npts+i) = pot(npts+i) + (gradtmp(1)*srcvals(10,i)+  &
+        pot(1,i) = pot(1,i)  + pottmp
+        pot(2,i) = pot(2,i) + (gradtmp(1)*srcvals(10,i)+  &
           gradtmp(2)*srcvals(11,i)+gradtmp(3)*srcvals(12,i))*zlp1inv
-!
-!  flip sign of pot(npts+i)
-!
-!        pot(npts+i) = -pot(npts+i)
       enddo
 !$OMP END PARALLEL DO
 
@@ -701,7 +774,7 @@
 !  until a relative residual of eps_gmres is reached
 !
 !  NOTES:
-!    - The parameters that must be provided zpars(5), and how they
+!    - The parameters that must be provided zpars(6), and how they
 !      are related to the problem parameters
 !        zpars(1) = k0
 !        zpars(2) = alpha0
@@ -751,10 +824,10 @@
 !        zpars(6) = beta1
 !    - numit: integer
 !        max number of gmres iterations
-!    - rhs: complex *16(2*npts)
+!    - rhs: complex *16(2,npts)
 !        boundary data
-!          * rhs(1:npts) = f
-!          * rhs(npts+1:2*npts) = g
+!          * rhs(1,:) = f
+!          * rhs(2,:) = g
 !    - eps_gmres: real *8
 !        gmres tolerance requested
 !
@@ -768,10 +841,10 @@
 !        number (only errs(1:niter) is populated))
 !    - rres: real *8
 !        relative residual for computed solution
-!    - soln: complex *16(2*npts)
+!    - soln: complex *16(2,npts)
 !        densities which solve the transmission problem
-!        soln(1:npts) = \rho
-!        soln(npts+1:2*npts) = \lambda
+!        soln(1,:) = \rho
+!        soln(2,:) = \lambda
 !
       implicit none
       integer npatches,norder,npols,npts
@@ -779,8 +852,8 @@
       integer iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
       complex *16 zpars(6),z
-      complex *16 rhs(2*npts)
-      complex *16 soln(2*npts)
+      complex *16 rhs(2,npts)
+      complex *16 soln(2,npts)
 
       real *8, allocatable :: targs(:,:)
       integer, allocatable :: ipatch_id(:)
@@ -796,7 +869,7 @@
       integer nnz,nquad
       integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
 
-      complex *16, allocatable :: wnear(:)
+      complex *16, allocatable :: wnear(:,:)
 
       real *8, allocatable :: srcover(:,:),wover(:)
       integer, allocatable :: ixyzso(:),novers(:)
@@ -839,10 +912,9 @@
             (zpars(2)/zpars(3) + zpars(5)/zpars(6))
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
-        rhs(i) = rhs(i)*z
+        rhs(1,i) = rhs(1,i)*z
       enddo
 !$OMP END PARALLEL DO
-
 
 !
 !    initialize patch_id and uv_targ for on surface targets
@@ -919,12 +991,14 @@
 !   compute near quadrature correction
 !
       nquad = iquad(nnz+1)-1
-      print *, "nquad=",nquad
-      allocate(wnear(4*nquad))
+      allocate(wnear(nker,nquad))
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
-      do i=1,4*nquad
-        wnear(i)=0
+      do i=1,nquad
+        wnear(1,i)=0
+        wnear(2,i)=0
+        wnear(3,i)=0
+        wnear(4,i)=0
       enddo
 !$OMP END PARALLEL DO
 
@@ -938,7 +1012,6 @@
        ixyzs,iptype,npts,srccoefs,srcvals, &
        eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
        iquad,rfac0,nquad,wnear)
-
 
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()
@@ -977,8 +1050,8 @@
       integer iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
       complex *16 zpars(6)
-      complex *16 rhs(2*npts)
-      complex *16 soln(2*npts)
+      complex *16 rhs(2,npts)
+      complex *16 soln(2,npts)
       real *8 errs(numit+1)
       real *8 rres
       integer niter
@@ -1093,10 +1166,10 @@
 !        zpars(4) = k1
 !        zpars(5) = alpha1
 !        zpars(6) = beta1
-!    - sigma: complex *16(2*npts)
+!    - sigma: complex *16(2,npts)
 !        densities which solve the transmission problem
-!        sigma(1:npts) = \rho
-!        sigma(npts+1:2*npts) = \lambda
+!        sigma(1,:) = \rho
+!        sigma(2,:) = \lambda
 !
 !  Output arguments:
 !    - pot: complex *16(ntarg)
@@ -1111,7 +1184,7 @@
       real *8, intent(in) :: targs(ndtarg,ntarg)
       integer, intent(in) :: ipatch_id(ntarg)
       real *8, intent(in) :: uvs_targ(2,ntarg),eps
-      complex *16, intent(in) :: zpars(6),sigma(2*npts)
+      complex *16, intent(in) :: zpars(6),sigma(2,npts)
       complex *16, intent(out) :: pot(ntarg)
 
       integer i, ntargin, ntargout
@@ -1134,7 +1207,7 @@
 !
       allocate(sigma1(npts))
       allocate(pot1(ntarg))
-      sigma1(:) = -1
+      sigma1(1:npts) = -1
       dpars(1) = 0
       dpars(2) = 1
       call lap_comb_dir_eval(npatches, norders, ixyzs, &
@@ -1175,10 +1248,13 @@
       enddo
 
       allocate(sigmause(2,npts))
+!$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,npts
-        sigmause(1,i) = sigma(npts+i)
-        sigmause(2,i) = sigma(i)
+        sigmause(1,i) = sigma(2,i)
+        sigmause(2,i) = sigma(1,i)
       enddo
+!$OMP END PARALLEL DO      
+
 
 !     evaluate the potentials for interior targets
       zparsuse(1) = zpars(4)
@@ -1187,9 +1263,6 @@
       call helm_comb_trans_eval_oneside(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntargin, targsin, &
         ipatch_idin, uvs_targin, eps, zparsuse, sigmause, potin)
-!      call lpcomp_helm_comb_split_dir(npatches, norders, ixyzs, &
-!        iptype, npts, srccoefs, srcvals, ndtarg, ntargin, targsin, &
-!        ipatch_idin, uvs_targin, eps, zparsuse, sigma, potin)
 
 
 !     evaluate the potentials for exterior targets
@@ -1199,9 +1272,6 @@
       call helm_comb_trans_eval_oneside(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntargout, targsout, &
         ipatch_idout, uvs_targout, eps, zparsuse, sigmause, potout)
-!      call lpcomp_helm_comb_split_dir(npatches, norders, ixyzs, &
-!        iptype, npts, srccoefs, srcvals, ndtarg, ntargout, targsout, &
-!        ipatch_idout, uvs_targout, eps, zparsuse, sigma, potout)
 
 
 !     combine the potentials
