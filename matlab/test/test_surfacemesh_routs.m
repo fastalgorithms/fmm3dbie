@@ -50,7 +50,7 @@ x3 = reshape(x3,[n2,n2]);
 
 fprintf('error in interpolant=%d\n',norm(x3-x2'));
 
-%% Test normals
+% Test normals
 rndom = normal(dom);
 xyzu  = surfacefunv(surfacefun(dom.xu,dom),surfacefun(dom.yu,dom),surfacefun(dom.zu,dom));
 xyzv  = surfacefunv(surfacefun(dom.xv,dom),surfacefun(dom.yv,dom),surfacefun(dom.zv,dom));

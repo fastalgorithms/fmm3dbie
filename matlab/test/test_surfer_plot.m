@@ -1,6 +1,6 @@
 run ../startup.m
 close('all')
-B = surfer.load_from_file('~/git/fmm3dbie/geometries/sphere_768_o03.go3');
+B = surfer.load_from_file('../../geometries/sphere_768_o03.go3');
 figure
 clf
 tic, plot(B); toc;
