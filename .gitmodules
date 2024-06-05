@@ -1,3 +1,6 @@
 [submodule "FMM3D"]
 	path = FMM3D
 	url = https://github.com/flatironinstitute/FMM3D.git
+[submodule "matlab/chebfun"]
+	path = matlab/chebfun
+	url = https://github.com/chebfun/chebfun
