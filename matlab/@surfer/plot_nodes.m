@@ -19,9 +19,9 @@ function h = plot_nodes(S, v, varargin)
 %   h = plot_nodes(S, S.r(3,:))            % color by z-coord
 %   h.SizeData = 1000;                     % make larger blobs
 %
-% See also PLOT, SCATTER3
+% See also PLOT, SCATTER
 
-% Barnett 6/5/24
+% Barnett 6/5/24, before I found surfer.scatter
   
 if nargin==1 || isempty(v)
   h = scatter3(S.r(1,:),S.r(2,:), S.r(3,:), '.', varargin{:});

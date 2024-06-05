@@ -1,9 +1,15 @@
 function [coefs] = vals2coefs(obj,vals)
+% VALS2COEFS  convert values to coeffs on given surfer object
 %
-%  Oversamples the given geometry given a current discretization
-%  and a patchwise oversampling parameter, or a common oversampling
-%  order for all patches
+% [coefs] = vals2coefs(S,vals) returns a concatenated array of poly coeffs of
+%   the vector of vals on the nodes of S, a surfer object.
 %
+% Inputs: S is a surfer object
+%         vals is (S.npts * n) array (n=1,2... is the number of scalar funcs)
+% Outputs:
+%         coeffs is (S.npts * n) array of coeffs, in the native patch ordering
+%
+% *** to check this doc
     npatches = obj.npatches;
     npts = obj.npts;
     

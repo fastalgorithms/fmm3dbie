@@ -1,11 +1,12 @@
 classdef surfer
-%SURFER class which describes a surface divided into triangles/quads (patches). 
+%SURFER class which describes a surface divided into triangles/quads (patches).
+%
 % On each patch the surface is represented by the values of its position, 
 % its two tangential derivatives, and the corresponding basis function
 % expansions on either an RV grid on triangles or a tensor product GL/Chebyshev
 % grid on quads.
 %
-% Notes on geometry:
+% Notes:
 %
 % Cell arrays have one element per patch. For scalar quantities per patch,
 % a plain array is used.
@@ -65,10 +66,16 @@ classdef surfer
     %  npatches) and orders norders (integer vector of length npatches),
     %  using the 12*npts array srcvals, where npts must match the expected
     %  total number of nodes in all the patches (as determined from their
-    %  types and orders).
+    %  types and orders). If norders or iptype have length=1, the same value
+    %  is applied to all patches.
     %
-    % Note: under the hood this creates all surface node and patch info,
-    %  duplicating code in the fortran library.
+    % Note: under the hood this recreates all surface node and patch info
+    %  from srcvals, duplicating code in the fortran library. Its format is
+    %  srcvals = [r; du; dv; n] where
+    %             r is (3*npts) node coords
+    %             du is (3*npts) tangent dr/du coords
+    %             dv is (3*npts) tangent dr/dv coords
+    %             n is (3*npts) unit outward normal coords
       
 % This needs fixing particularly handling the varargin part, 
 % and also dealing with quad patches in the future

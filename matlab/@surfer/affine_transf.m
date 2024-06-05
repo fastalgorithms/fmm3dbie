@@ -1,16 +1,16 @@
 function [objout,varargout] = affine_transf(obj,mat,shift)
 % AFFINE_TRANSF Affine transformation of surfer object.
 %
-% S2 = affine_transf(S,M,v) returns S2 a copy of surfer object S with
+% S2 = affine_transf(S,M,v) returns S2, a copy of surfer object S, except with
 %  all geometry transformed under x -> Mx+v, the affine map from R3 to R3.
 %  M must be 3x3 matrix, and v a 3x1 column vector.
 %  If v is absent, the zero vector is assumed.
 %
-% See also TRANSLATE, ROTATE.
+% See also TRANSLATE, ROTATE, SCALE
   
     objout = obj;
 
- 	npatches = obj.npatches;
+    npatches = obj.npatches;
     norders  = obj.norders;
     
     srcvals  = obj.srcvals;

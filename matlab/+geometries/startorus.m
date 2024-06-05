@@ -1,5 +1,5 @@
 function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
-% STARTORUS  Get toroidal double Fourier surface object.
+% STARTORUS Create discretized torus surfer deformed poloidal Fourier mode.
 %
 % Surface is parameterized by
 %
