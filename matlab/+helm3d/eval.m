@@ -18,86 +18,145 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
 %   [p] = helm3d.eval(S, 'imp', densities, targinfo, eps, zk, alpha, opts);
 %
     switch lower(bc)
-      case {'dir', 'd', 'dirichlet'}
+      case {'dir', 'dirichlet'}
         if nargin < 6
           error('HELM3D.eval: not enough input arguments for dirichlet bc');
-        elseif nargin < 7
-          zk = varargin{1};
-          rep_params = [-1j*zk; 1];
-          opts = [];
-        elseif nargin < 8
-          zk = varargin{1};
+        end
+        zk = varargin{1};
+        rep_params = [-1j*zk; 1];
+        opts = [];
+
+        if nargin > 6
           if isa(varargin{2}, 'double')
             rep_params = varargin{2};
           else
             error('HELM3D.eval: rep_params, should be a double array');
           end
-          opts = [];
-        else 
-          zk = varargin{1};
-          if isa(varargin{2}, 'double')
-            rep_params = varargin{2};
-          else
-            error('HELM3D.eval: rep_params, should be a double array');
-          end
+        end 
+        if nargin > 7
           opts = varargin{3};
         end
         [p, varargout{2:nargout}] = helm3d.dirichlet.eval(S, ...
             densities, targinfo, eps, zk, rep_params, opts);
 
-      case {'neu', 'n', 'neumann'}
+      case {'s', 'single'}
+        if nargin < 6
+          error('HELM3D.eval: not enough input arguments for dirichlet bc');
+        end
+        zk = varargin{1};
+        rep_params = [1.0; 0.0];
+        opts = [];
+
+        if nargin > 6
+          opts = varargin{2};
+        end
+        [p, varargout{2:nargout}] = helm3d.dirichlet.eval(S, ...
+            densities, targinfo, eps, zk, rep_params, opts);
+
+      case {'d', 'double'}
+        if nargin < 6
+          error('HELM3D.eval: not enough input arguments for dirichlet bc');
+        end
+        zk = varargin{1};
+        rep_params = [0.0; 1.0];
+        opts = [];
+
+        if nargin > 6
+          opts = varargin{2};
+        end
+        [p, varargout{2:nargout}] = helm3d.dirichlet.eval(S, ...
+            densities, targinfo, eps, zk, rep_params, opts);
+
+      case {'c', 'comb'}
+        if nargin < 7
+          error('HELM3D.eval: not enough input arguments for dirichlet bc');
+        end
+        zk = varargin{1};
+        if isa(varargin{2}, 'double')
+          rep_params = varargin{2};
+        else
+          error('HELM3D.eval: rep_params, should be a double array');
+        end
+        opts = [];
+
+        if nargin > 7
+          opts = varargin{3};
+        end
+        [p, varargout{2:nargout}] = helm3d.dirichlet.eval(S, ...
+            densities, targinfo, eps, zk, rep_params, opts);
+
+      case {'neu', 'neumann'}
         if nargin < 6
           error('HELM3D.eval: not enough input arguments for neumann bc');
-        elseif nargin < 7
-          zk = varargin{1};
-          alpha = 1;
-          opts = [];
-        elseif nargin < 8
-          zk = varargin{1};
+        end
+        zk = varargin{1};
+        alpha = 1;
+        opts = [];
+
+        if nargin > 6
           if isa(varargin{2}, 'double')
             alpha = varargin{2};
           else
             error('HELM3D.eval: alpha, should be a complex number');
           end
-          opts = [];
-        else 
-          zk = varargin{1};
-          if isa(varargin{2}, 'double')
-            alpha = varargin{2};
-          else
-            error('HELM3D.eval: alpha should be a complex number');
-          end
+        end
+
+        if nargin > 7
           opts = varargin{3};
         end
         [p, varargout{2:nargout}] = helm3d.neumann.eval(S, ...
             densities, targinfo, eps, zk, alpha, opts);
 
-      case {'imp', 'i', 'impedance'}
+      case {'imp', 'impedance'}
         if nargin < 6
           error('HELM3D.eval: not enough input arguments for impedance bc');
-        elseif nargin < 7
-          zk = varargin{1};
-          alpha = 1;
-          opts = [];
-        elseif nargin < 8
-          zk = varargin{1};
+        end
+
+        zk = varargin{1};
+        alpha = 1;
+        opts = [];
+        if nargin > 6
           if isa(varargin{2}, 'double')
             alpha = varargin{2};
           else
             error('HELM3D.eval: rep_params, should be a double array');
           end
-          opts = [];
-        else 
-          zk = varargin{1};
-          if isa(varargin{2}, 'double')
-            alpha = varargin{2};
-          else
-            error('HELM3D.eval: rep_params, should be a double array');
-          end
+        end
+
+        if nargin > 7
           opts = varargin{3};
         end
         [p, varargout{2:nargout}] = helm3d.impedance.eval(S, ...
            densities, targinfo, eps, zk, alpha, opts);
+
+      case {'trans', 'transmission'}
+        if nargin < 7
+          error('HELM3D.eval: not enough input arguments for dirichlet bc');
+        end
+        zks = varargin{1};
+        if length(zks) ~=2
+          error('HELM3D.SOLVER: transmission problem requires 2 wavenumbers');
+        end
+
+        zks = zks(:);
+
+        if isa(varargin{2}, 'double')
+          rep_params = varargin{2};
+        else
+          error('HELM3D.eval: rep_params, should be a double array');
+        end
+        if length(rep_params) ~=4
+          error('HELM3D.SOLVER: transmission problem rep_params must be of length 4');
+        end
+
+        rep_params = rep_params(:);
+        opts = [];
+
+        if nargin > 7
+          opts = varargin{3};
+        end
+        [p, varargout{2:nargout}] = helm3d.transmission.eval(S, ...
+            densities, targinfo, eps, zks, rep_params, opts);
 
 
     end

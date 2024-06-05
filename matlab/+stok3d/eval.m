@@ -9,7 +9,7 @@ function [vel, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
 %
 %
     switch lower(bc)
-      case {'v', 'vel', 'velocity'}
+      case {'vel', 'velocity'}
         if nargin < 6
           rep_params = [1; 1];
           opts = [];

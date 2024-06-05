@@ -9,7 +9,7 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
 %
 %
     switch lower(bc)
-      case {'v', 'vel', 'velocity'}
+      case {'vel', 'velocity'}
         if nargin < 5
           rep_params = [1; 1];
           opts = [];
