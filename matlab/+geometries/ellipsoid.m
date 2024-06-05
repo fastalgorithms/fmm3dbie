@@ -1,5 +1,5 @@
 function [S] = ellipsoid(abc, nabc, c0, norder, iptype)
-% ELLIPSOID Get surface object for axes-aligned ellipsoid.
+% ELLIPSOID Create discretized axes-aligned ellipsoid surfer object.
 %
 %  Syntax
 %   S = geometries.ellipsoid(abc)
@@ -11,10 +11,10 @@ function [S] = ellipsoid(abc, nabc, c0, norder, iptype)
 %  Input arguments:
 %    * abc(3): semi-major axes in x,y, and z directions 
 %    * nabc(3): (optional, [2,2,2])
-%        number of pathes along the coordinate directions of the
+%        number of patches along the coordinate directions of the
 %        cube from which the ellipsoid is constructed
 %    * c0(3): (optional, [0,0,0])
-%        cetner of the ellipsoid
+%        center of the ellipsoid
 %    * norder: (optional, 4)
 %        order of discretization
 %    * iptype: (optional, 1)

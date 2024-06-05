@@ -1,5 +1,5 @@
 function [S] = sphere(a, na, c0, norder, iptype)
-% SPHERE Get surface object for a sphere.
+% SPHERE Create a discretized sphere surfer object.
 %
 %  Syntax
 %   S = geometries.sphere(a)
@@ -11,10 +11,10 @@ function [S] = sphere(a, na, c0, norder, iptype)
 %  Input arguments:
 %    * a: radius of the sphere 
 %    * na: (optional, 2) 
-%        number of pathes along the coordinate directions of the
+%        number of patches along the coordinate directions of the
 %        cube from which the sphere is constructed
 %    * c0(3): (optional, [0,0,0])
-%        cetner of the sphere
+%        center of the sphere
 %    * norder: (optional, 4)
 %        order of discretization
 %    * iptype: (optional, 1)
@@ -48,8 +48,3 @@ function [S] = sphere(a, na, c0, norder, iptype)
   S = geometries.ellipsoid(abc, nabc, c0, norder, iptype);
 
 end
-%
-%
-%
-%
-%--------------------------------------------
