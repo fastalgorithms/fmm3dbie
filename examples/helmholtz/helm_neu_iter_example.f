@@ -1,24 +1,24 @@
       implicit real *8 (a-h,o-z) 
-      real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
+      real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
       real *8, allocatable :: wts(:)
       character *100 fname
       integer ipars(2)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer, allocatable :: norders(:), ixyzs(:), iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3),xyz_src(3),xyz_targ(3)
-      complex *16, allocatable :: sigma(:),rhs(:),sigma1(:)
+      real *8 xyz_out(3), xyz_in(3), xyz_src(3), xyz_targ(3)
+      complex *16, allocatable :: sigma(:), rhs(:), sigma1(:)
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
       complex * 16 zpars(3)
-      integer numit,niter
+      integer numit, niter
 
       integer ipatch_id
       real *8 uvs_targ(2)
 
-      logical isout0,isout1
+      logical isout0, isout1
 
-      complex *16 pot,potex,ztmp,ima
+      complex *16 pot, potex, ztmp, ima
       real *8 c0(3)
 
       data ima/(0.0d0,1.0d0)/
@@ -57,15 +57,18 @@ c
       call get_sphere_npat(a, na, c0, norder, iptype0,
      1  npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
 
-      xyz_out(1) = 3.17d0
-      xyz_out(2) = -0.03d0
-      xyz_out(3) = 3.15d0
+      ra = 1.05d0
+      thet = 0.8d0*pi
+      phi = 1.13d0*2*pi
+
+      xyz_out(1) = ra*sin(thet)*cos(phi) 
+      xyz_out(2) = ra*sin(thet)*sin(phi) 
+      xyz_out(3) = ra*cos(thet) 
+
 
       xyz_in(1) = 0.17d0
       xyz_in(2) = 0.23d0
       xyz_in(3) = -0.11d0
-
-
 
       ifinout = 1
       if(ifinout.eq.0) then
@@ -89,13 +92,14 @@ c
       endif
 
       allocate(wts(npts))
-      call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
+      call get_qwts(npatches, norders, ixyzs, iptype, npts, srcvals, 
+     1   wts)
 
       allocate(sigma(npts),rhs(npts),sigma1(npts))
 
       do i=1,npts
-        call h3d_sprime(xyz_src,12,srcvals(1,i),0,dpars,1,zpars,0,
-     1     ipars,rhs(i))
+        call h3d_sprime(xyz_src, 12, srcvals(1,i), 0, dpars, 1, 
+     1    zpars, 0, ipars, rhs(i))
         sigma(i) = 0
         sigma1(i) = 0
       enddo
@@ -109,14 +113,14 @@ c
 
       eps_gmres = 0.5d-6
 
-      call helm_rpcomb_neu_solver_memest(npatches,norders,ixyzs,
-     1  iptype,npts,srccoefs,srcvals,eps,zpars,numit,rmem)
+      call helm_rpcomb_neu_solver_memest(npatches, norders, ixyzs,
+     1  iptype, npts, srccoefs, srcvals, eps, zpars, numit, rmem)
       
       call prin2('estimated memory=*',rmem,1)
 
-      call helm_rpcomb_neu_solver(npatches,norders,ixyzs,iptype,npts,
-     1  srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,
-     2  niter,errs,rres,sigma,sigma1)
+      call helm_rpcomb_neu_solver(npatches, norders, ixyzs, iptype, 
+     1  npts, srccoefs, srcvals, eps, zpars, numit, ifinout, rhs, 
+     2  eps_gmres, niter, errs, rres, sigma, sigma1)
 
       call prinf('niter=*',niter,1)
       call prin2('rres=*',rres,1)
@@ -126,16 +130,18 @@ c
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_targ,3,xyz_src,0,dpars,1,zpars,0,ipars,potex)
+      call h3d_slp(xyz_targ, 3, xyz_src, 0, dpars, 1, zpars, 0, 
+     1  ipars, potex)
 
       ndtarg = 3
       ntarg = 1
       ipatch_id = -1
       uvs_targ(1) = 0
       uvs_targ(2) = 0
-      call lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_targ,ipatch_id,
-     2  uvs_targ,eps,zpars,sigma,sigma1,pot)
+
+      call helm_rpcomb_eval(npatches, norders, ixyzs, iptype,
+     1  npts, srccoefs, srcvals, ndtarg, ntarg, xyz_targ, ipatch_id,
+     2  uvs_targ, eps, zpars, sigma, sigma1, pot)
 
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)

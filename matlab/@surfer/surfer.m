@@ -86,22 +86,27 @@ classdef surfer
             rwts = cell(nuni,1);
             umats = cell(nuni,1);
             npols = cell(nuni,1);
+            dumats = cell(nuni,1);
+            dvmats = cell(nuni,1);
             for i=1:nuni
                 ip0 = no_ip_uni(i,2);
                 if(ip0 == 1)
                     rnodes{i} = koorn.rv_nodes(no_ip_uni(i,1));
                     rwts{i} = koorn.rv_weights(no_ip_uni(i,1));
-                    umats{i} = koorn.vals2coefs(no_ip_uni(i,1),rnodes{i}); 
+                    umats{i} = koorn.vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    [~, dumats{i}, dvmats{i}] = koorn.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
                 elseif(ip0==11)
                     rnodes{i} = polytens.lege_nodes(no_ip_uni(i,1));
                     rwts{i} = polytens.lege_weights(no_ip_uni(i,1));
                     umats{i} = polytens.lege_vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    [~, dumats{i}, dvmats{i}] = polytens.lege_ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
                 elseif(ip0==12)
                     rnodes{i} = polytens.cheb_nodes(no_ip_uni(i,1));
                     rwts{i} = polytens.cheb_weights(no_ip_uni(i,1));
                     umats{i} = polytens.cheb_vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    [~, dumats{i}, dvmats{i}] = polytens.cheb_ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
                 else
                     fprintf('Invalid type of patch, exiting\n');
@@ -119,40 +124,66 @@ classdef surfer
             obj.npts = obj.ixyzs(end)-1;
             obj.patch_id = zeros(obj.npts,1);
             obj.uvs_targ = zeros(2,obj.npts);
-            obj.ffform = zeros(2,2,obj.npts);
-            obj.ffforminv = zeros(2,2,obj.npts);
+
+            ffform = zeros(2,2,obj.npts);
+            sfform = zeros(2,2,obj.npts);
+            ffforminv = zeros(2,2,obj.npts);
+            obj.curv = zeros(obj.npts,1);
+            obj.ffforminv = cell(npatches,1);
+            obj.ffform = cell(npatches,1);
             
             for i=1:npatches
                 iind = obj.ixyzs(i):(obj.ixyzs(i+1)-1);
                 obj.srcvals{i} = srcvals(:,iind);
                 obj.srccoefs{i} = obj.srcvals{i}(1:9,:)*umats{iuse(i)}';
+
                 du = obj.srcvals{i}(4:6,:);
                 dv = obj.srcvals{i}(7:9,:);
+                dn = obj.srcvals{i}(10:12,:);
+
+                dxucoefs = obj.srccoefs{i}(4:6,:);
+                dxvcoefs = obj.srccoefs{i}(7:9,:);
+
+                dxuu = dxucoefs*dumats{iuse(i)};
+                dxuv = 0.5*(dxucoefs*dvmats{iuse(i)} + dxvcoefs*dumats{iuse(i)});
+                dxvv = dxvcoefs*dvmats{iuse(i)};
+
+                L = dxuu(1,:).*dn(1,:) + dxuu(2,:).*dn(2,:) + dxuu(3,:).*dn(3,:);
+                M = dxuv(1,:).*dn(1,:) + dxuv(2,:).*dn(2,:) + dxuv(3,:).*dn(3,:);
+                N = dxvv(1,:).*dn(1,:) + dxvv(2,:).*dn(2,:) + dxvv(3,:).*dn(3,:);
+
                 dunormsq = sum(du.*du,1);
                 dvnormsq = sum(dv.*dv,1);
                 duv = sum(du.*dv,1);
-                ddinv = 1.0./dunormsq.*dvnormsq - duv.*duv;
-                obj.ffform(1,1,iind) = dunormsq;
-                obj.ffform(1,2,iind) = duv;
-                obj.ffform(2,1,iind) = duv;
-                obj.ffform(2,2,iind) = dvnormsq;
+
+                ddinv = 1.0./(dunormsq.*dvnormsq - duv.*duv);
+
+                ffform(1,1,iind) = dunormsq;
+                ffform(1,2,iind) = duv;
+                ffform(2,1,iind) = duv;
+                ffform(2,2,iind) = dvnormsq;
+
+                sfform(1,1,iind) = L;
+                sfform(1,2,iind) = M;
+                sfform(2,1,iind) = M;
+                sfform(2,2,iind) = N;
                 
-                obj.ffforminv(1,1,iind) = dvnormsq.*ddinv;
-                obj.ffforminv(1,2,iind) = -duv.*ddinv;
-                obj.ffforminv(2,1,iind) = -duv.*ddinv;
-                obj.ffforminv(2,2,iind) = dunormsq.*ddinv;
+                ffforminv(1,1,iind) = dvnormsq.*ddinv;
+                ffforminv(1,2,iind) = -duv.*ddinv;
+                ffforminv(2,1,iind) = -duv.*ddinv;
+                ffforminv(2,2,iind) = dunormsq.*ddinv;
+
+                obj.curv(iind) = -0.5*(L.*dvnormsq - ...
+                   2*M.*duv + dunormsq.*N).*ddinv;
+
+                obj.ffform{i} = ffform(:,:,iind);
+                obj.ffforminv{i} = ffforminv(:,:,iind);
                 
                 da = vecnorm(cross(du,dv),2).*rwts{iuse(i)};
                 obj.weights{i} = da(:);      
                 obj.patch_id(iind) = i;
                 obj.uvs_targ(1:2,iind) = rnodes{iuse(i)}; 
             end
-            obj.ifcurv = 0;
-            obj.ffform = 0;
-            obj.ffform = 0;
-            obj.curv = cell(npatches,1);
-            obj.ffforminv = cell(npatches,1);
-            obj.ffform = cell(npatches,1);
             
             sv = [obj.srcvals{:}];
             obj.wts = cat(1,obj.weights{:});
@@ -173,17 +204,13 @@ classdef surfer
          [objout,varargout] = affine_transf(obj,mat,shift);
          [varargout] = scatter(obj,varargin);
          [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear);
+         [objout,varargout] = rotate(obj, eul);
          
         
     end
 
     methods(Static)
         obj = load_from_file(fname,varargin);
-        obj = sphere(varargin);
-        obj = sphere_tri(varargin);
-        obj = sphere_quad(varargin);
-        obj = ellipsoid(varargin);
-        obj = axissym(fcurve,cparams,varargin);
         [obj,varargout] = surfacemesh_to_surfer(dom);
     end
 end

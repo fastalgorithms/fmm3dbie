@@ -39,7 +39,7 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
     [ndtarg,ntarg] = size(targs);
 
     ntp1 = ntarg + 1;
-    zk = Q.wavenumber;
+    zk = complex(Q.wavenumber);
     ikerorder = Q.kernel_order;
     row_ptr = Q.row_ptr;
     col_ind = Q.col_ind;

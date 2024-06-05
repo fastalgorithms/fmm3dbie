@@ -20,7 +20,6 @@
       done = 1
       pi = atan(done)*4
 
-      iptype0 = 1
       dlam = 0.5d0
 
       abc(1) = 2.1d0
@@ -51,6 +50,7 @@
         print *, "Testing ellipsoids"    
         print *, ""
         print *, "" 
+        iptype0 = 1
 
         call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, 
      1    npatches, npts)
@@ -99,6 +99,8 @@
 
         a = abc(1)
         na = nabc(1)
+
+        iptype0 = 1
         call get_sphere_npat_mem(a, na, c0, norder, iptype0, 
      1    npatches, npts)
         print *, "npatches tri=", npatches
@@ -158,6 +160,8 @@
         nuv(1) = 10
         nuv(2) = 15
 
+        iptype0 = 1
+
         call get_startorus_npat_mem(radii, nosc, abc, nuv, norder, 
      1    iptype0, npatches, npts)
         print *, "npatches tri=", npatches
@@ -208,6 +212,9 @@
 
         nuv(1) = 10
         nuv(2) = 30
+        npatches = 0
+
+        iptype0 = 1
 
         call get_stellarator_npat_mem(nuv, norder, iptype0, 
      1     npatches, npts)

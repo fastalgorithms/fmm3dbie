@@ -209,7 +209,7 @@ C$OMP$PRIVATE(ithread,istart,iend,icur,i,icur0,icur1,mend)
         istart = split(ithread)
         iend = split(ithread+1)
         icur = jsort(istart)
-        if(icur.eq.0) then
+        if(ithread.eq.1) then
           icur=1
         endif
         col_ptr(icur) = istart

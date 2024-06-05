@@ -1,8 +1,6 @@
 run ../startup.m
-% sphere(norder,nu,nref)
-S = surfer.sphere(6,1,3);
+S = geometries.sphere(1, 4, [0;0;0], 6);
 
-ndeg = 1;
 rr = sqrt(S.r(1,:).^2 + S.r(2,:).^2 + S.r(3,:).^2);
 rhs = S.r(3,:)./rr;
 

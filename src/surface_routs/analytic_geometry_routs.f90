@@ -673,8 +673,8 @@
 !  Input arugments:
 !    - radii: real *8(3)
 !         radii of the star shaped torus
-!         * radii(1) = rminor
-!         * radii(2) = rmajor
+!         * radii(1) = rmajor
+!         * radii(2) = rminor
 !         * radii(3) = rwave
 !    - nosc: integer
 !         number of oscillations in the star-shaped torus

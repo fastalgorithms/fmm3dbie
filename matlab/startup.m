@@ -1,2 +1,4 @@
-addpath(pwd);
-addpath([pwd '/src'])
+pth = mfilename('fullpath');
+dir = fileparts(pth);
+addpath(dir);
+addpath([dir '/src'])

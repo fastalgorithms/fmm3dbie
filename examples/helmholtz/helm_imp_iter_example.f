@@ -53,9 +53,13 @@ c
       call get_sphere_npat(a, na, c0, norder, iptype0,
      1  npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
 
-      xyz_out(1) = 3.17d0
-      xyz_out(2) = -0.03d0
-      xyz_out(3) = 3.15d0
+      ra = 1.05d0
+      thet = 0.8d0*pi
+      phi = 1.13d0*2*pi
+
+      xyz_out(1) = ra*sin(thet)*cos(phi) 
+      xyz_out(2) = ra*sin(thet)*sin(phi) 
+      xyz_out(3) = ra*cos(thet) 
 
       xyz_in(1) = 0.17d0
       xyz_in(2) = 0.23d0
@@ -165,7 +169,7 @@ c
       ipatch_id = -1
       uvs_targ(1) = 0
       uvs_targ(2) = 0
-      call lpcomp_helm_rpcomb_dir(npatches,norders,ixyzs,iptype,
+      call helm_rpcomb_eval(npatches,norders,ixyzs,iptype,
      1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_targ,ipatch_id,
      2  uvs_targ,eps,zpars,sigma,sigma1,pot)
 

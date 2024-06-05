@@ -1,63 +1,30 @@
-function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
+function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 %
 %  helm3d.neumann.get_quadrature_correction
 %    This subroutine returns the near quadrature correction
-%    for the chosen representation to solve the Helmholtz Neumann 
-%    problem, with densities supported on the surface, and targets 
-%    given by targinfo, as a cell array of sparse matrices or an array of matrices
-%    in the rsc format, where each cell of the matrix is the
-%    representation of the sparse matrix corresponding to one
-%    of the kernels
-%
-%  The routine supports the following representations:
-%  * s       (single layer)
-%  * rpcomb  (right preconditioned combined field representation)
-%
-%  The default quadrature corrections are for targets on surface, so  
-%  they assume that if targinfo is provided, then it comes equipped
-%  with normal information.
-%
-%  The representation must be set via setting opts.int_rep. 
-%  If unspecified, the default is rpcomb
-%
-%  To obtain the corresponding post-processing/off-surface 
-%  quadrature corrections, append '-eval'
-%  to the end of the integral representation. For example, for
-%  the off-surface S corrections, use opts.int_rep='s-eval'
-%
-%  In the input array zpars, the first parameter must always be 
-%  the wavenumber k
-%
+%    for the combined field representation with density supported
+%    on the surface S, and targets given by targinfo 
+%    as a sparse matrix/rsc format 
 %
 %  Syntax
-%   Q = helm3d.neumann.get_quadrature_correction(S,zpars,eps)
-%   Q = helm3d.neumann.get_quadrature_correction(S,zpars,eps,targinfo)
-%   Q = helm3d.neumann.get_quadrature_correction(S,zpars,eps,targinfo,opts)
+%   Q = helm3d.neumann.get_quadrature_correction(S,eps,zk,alpha)
+%   Q = helm3d.neumann.get_quadrature_correction(S,eps,zk,alpha,targinfo)
+%   Q = helm3d.neumann.get_quadrature_correction(S,eps,zk,alpha,targinfo,opts)
 %
-%  Integral representation             
-%   's':       pot = S_{k} [\sigma] 
-%   'rpcomb':  pot = S_{k} [\sigma] + 1i*\alpha D_{k} S_{i|k|}[\sigma]
-%
-%   opts.int_rep       kernels returned
-%     's'               S'_{k} 
-%     's-eval'          S_{k} 
-%     'rpcomb'          S_{k}', S_{i|k|}, S_{i|k|}', D_{k}' - D_{i|k|}'
-%     'rpcomb-eval'     S_{k}, D_{k}
+%  Integral representation
+%     pot = S_{k} [\sigma] + 1i \alpha D_{k} S_{i|k|} [\sigma]
 %
 %  S_{k}, D_{k}: helmholtz single and double layer potential
 %  
-%  k, \alpha = zpars(1:2)
 %
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * zpars: kernel parameters
-%        zpars(1) - wave number
-%        zpars(2) - single layer strength
-%        zpars(3) - double layer strength
 %    * eps: precision requested
+%    * zk: wave number
+%    * alpha: alpha above
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info
@@ -68,16 +35,16 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
-%        opts.int_rep - integral representation being used
-%                         Supported representations
-%                         's', 'rpcomb'
-%        opts.format  - Storage format for sparse matrices
-%                         'rsc' - row sparse compressed format
-%                         'csc' - column sparse compressed format
-%                         'sparse' - sparse matrix format
+%        opts.format - Storage format for sparse matrices
+%           'rsc' - row sparse compressed format
+%           'csc' - column sparse compressed format
+%           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
-%
-%  TODO: fix behavior for eval
+%        opts.rep - whether to compute correction for on surface
+%                   integral equation or post-processing
+%                   'rpcomb-bc' - on surface integral equation. If option
+%                   is 'rpcomb-bc' then targinfo is ignored
+%                   'rpcomb-eval' - post-processing
 %
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -86,18 +53,28 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
     [npatches,~] = size(norders);
     npatp1 = npatches+1;
     npp1 = npatches+1;
+    nsp1 = npts + 1;
     n3 = 3;
 
-
-    if(nargin < 4)
+    if nargin < 4
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
       targinfo.dv = S.dv;
       targinfo.n = S.n;
-      patch_id = S.patch_id;
-      uvs_targ = S.uvs_targ;
+      targinfo.patch_id = S.patch_id;
+      targinfo.uvs_targ = S.uvs_targ;
       opts = [];
+    end
+
+    qtype = 'rpcomb-bc';
+
+    if nargin < 5
+      opts = [];
+    end
+
+    if isfield(opts, 'rep')
+      qtype = opts.rep;
     end
 
     ff = 'rsc';
@@ -110,19 +87,33 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
        ff = 'rsc';
     end
 
+    tinfouse = [];
+    if strcmpi(qtype, 'rpcomb-bc')
+      tinfouse.r = S.r;
+      tinfouse.du = S.du;
+      tinfouse.dv = S.dv;
+      tinfouse.n = S.n;
+      tinfouse.patch_id = S.patch_id;
+      tinfouse.uvs_targ = S.uvs_targ;
+    else
+      tinfouse = targinfo;
+    end
 
-    targs = extract_targ_array(targinfo); 
+
+
+
+    targs = extract_targ_array(tinfouse); 
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
     
-    if(isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id'))
-      patch_id = targinfo.patch_id;
+    if(isfield(tinfouse,'patch_id') || isprop(tinfouse,'patch_id'))
+      patch_id = tinfouse.patch_id;
     else
       patch_id = zeros(ntarg,1);
     end
 
-    if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))
-      uvs_targ = targinfo.uvs_targ;
+    if(isfield(tinfouse,'uvs_targ') || isprop(tinfouse,'uvs_targ'))
+      uvs_targ = tinfouse.uvs_targ;
     else
       uvs_targ = zeros(2,ntarg);
     end
@@ -178,27 +169,29 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
       end
     end
 
-    int_rep = 'rpcomb';
-    if isfield(opts, 'int_rep')
-      int_rep = opts.int_rep;
-    end
+    zpars = complex(zeros(2,1));
+    zpars(1) = zk;
+    zpars(2) = alpha;
+    zkuse = complex(zk);
 
-    if strcmpi(int_rep, 's')
-       nker = 1;
-       wnear = complex(zeros(nquad,nker));
-       mex_id_ = 'getnearquad_helm_s_neu(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad, nker);
-    elseif strcmpi(int_rep', 'rpcomb')
-       nker = 4;
-       wnear = complex(zeros(nquad,nker));
-       mex_id_ = 'getnearquad_helm_rpcomb_neu(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad, nker);
+    if strcmpi(qtype, 'rpcomb-bc')
+      nker = 4;
+      wnear = complex(zeros(nker,nquad));
+      mex_id_ = 'getnearquad_helm_rpcomb_neu(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+    elseif strcmpi(qtype, 'rpcomb-eval')
+      nker = 2;
+      wnear = complex(zeros(nker,nquad));
+      mex_id_ = 'getnearquad_helm_rpcomb_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zkuse, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+    else
+      error('HELM3D.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
     end
     
     Q = [];
     Q.targinfo = targinfo;
     Q.ifcomplex = 1;
-    Q.wavenumber = zpars(1);
+    Q.wavenumber = zk;
     Q.kernel_order = -1;
     Q.rfac = rfac;
     Q.nquad = nquad;
@@ -230,4 +223,7 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
 end
 %
 %
+%
+%
+%-------------------------------------------------
 

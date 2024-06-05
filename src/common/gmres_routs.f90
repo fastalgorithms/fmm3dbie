@@ -72,13 +72,13 @@
 !    - ndz: integer
 !        number of complex parameters defining the kernel/
 !        integral representation
-!    - zpars: real *8(ndz)
+!    - zpars: complex *16(ndz)
 !        complex parameters defining the kernel/
 !        integral representation.
 !    - ndi: integer
 !        number of integer parameters defining the kernel/
 !        integral representation
-!    - ipars: real *8(ndi)
+!    - ipars: integer(ndi)
 !        integer parameters defining the kernel/
 !        integral representation
 !    - nnz: integer
@@ -434,13 +434,13 @@
 !    - ndz: integer
 !        number of complex parameters defining the kernel/
 !        integral representation
-!    - zpars: real *8(ndz)
+!    - zpars: complex *16(ndz)
 !        complex parameters defining the kernel/
 !        integral representation.
 !    - ndi: integer
 !        number of integer parameters defining the kernel/
 !        integral representation
-!    - ipars: real *8(ndi)
+!    - ipars: integer(ndi)
 !        integer parameters defining the kernel/
 !        integral representation
 !    - nnz: integer

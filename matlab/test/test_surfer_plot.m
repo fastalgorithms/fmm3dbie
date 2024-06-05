@@ -13,12 +13,12 @@ figure
 clf
 plot(Bover);
 
-B2 = surfer.sphere(4, 1, 1, 11);
+B2 = geometries.sphere(1, 4, [0;0;0], 6, 11);
 figure
 clf
 plot(B2)
 
-B2 = surfer.sphere(4, 1, 1, 12);
+B2 = geometries.sphere(1, 4, [0;0;0], 6, 12);
 figure
 clf
 plot(B2, B2.r(1,:));

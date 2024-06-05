@@ -310,11 +310,6 @@ C$OMP$PRIVATE(epsp,rsc,tmp,ipoly,ttype)
         if(iptype(ipatch).eq.12) ipoly = 1
         ttype = "F"
 
-c        print *, "ipatch=",ipatch
-c        print *, "npols=",npols
-c        print *, "iptype(ipatch)=",iptype(ipatch)
-        
-
         call get_disc_exps(norder,npols,iptype(ipatch),uvs,
      1     umatr,vmatr,wts)
 
@@ -766,6 +761,15 @@ C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
         norder = norders(ipatch)
 
+        allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
+        allocate(wts(npols))
+        if(iptype(ipatch).eq.11) ipoly = 0
+        if(iptype(ipatch).eq.12) ipoly = 1
+        ttype = "F"
+
+        call get_disc_exps(norder,npols,iptype(ipatch),uvs,
+     1     umatr,vmatr,wts)
+
         if(norder.le.4) then
           irad = 1
         else if(norder.le.8) then
@@ -773,12 +777,6 @@ C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
         else
           irad = 3
         endif
-
-        allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-        allocate(wts(npols))
-
-        call get_disc_exps(norder,npols,iptype(ipatch),uvs,umatr,
-     1     vmatr,wts)
 
 c
 c  estimate rescaling of epsp needed to account for the scale of the
@@ -842,8 +840,8 @@ c
      3      ipars,nqorder,npmax,rfac,sints_n,ifmetric,rn1,n2)
         
         if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) 
-     1      call dquadints(epsp,istrat,intype,ntest0,norder,npols,
-     1      ipoly,ttype,srccoefs(1,istart),ndtarg,ntarg_n,targ_near,
+     1      call dquadints(epsp,istrat,intype,ntest0,norder,ipoly,
+     1      ttype,npols,srccoefs(1,istart),ndtarg,ntarg_n,targ_near,
      1      ifp,xyztarg2,itargptr,ntarg_n,norder,npols,fker,ndd,dpars,
      1      ndz,zpars,ndi,ipars,nqorder,npmax,rfac,sints_n,ifmetric,
      1      rn1,n2)

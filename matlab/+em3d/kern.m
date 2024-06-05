@@ -1,13 +1,14 @@
 
 function submat= kern(zk,srcinfo,targinfo,type,varargin)
-%EM3D.KERN standard Helmholtz layer potential kernels in 3D
+%EM3D.KERN standard vector Helmholtz layer potential kernels 
+%in 3D required for Maxwell potentials
 % 
 % Syntax: submat = em3d.kern(zk,srcinfo,targinfo,type,varargin)
 %
 % Let x be targets and y be sources for these formulas, with
 % n_x and n_y the corresponding unit normals at those points.
 %  
-% Kernels based on S:= G(x,y) = exp(i*|x-y|)/(4*pi*|x-y|)
+% Kernels based on S:= G(x,y) = exp(i*k*|x-y|)/(4*pi*|x-y|)
 %
 %
 % NxDelS       = n \times \nabla S [scalar]
@@ -22,7 +23,7 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 % Input:
 %   zk - complex number, Maxwell wave number
 %   srcinfo - description of sources in ptinfo struct format, i.e.
-%                ptinfo.r - positions (2,:) array
+%                ptinfo.r - positions (3,:) array
 %                ptinfo.du - first derivative with respect to u in 
 %                     underlying parameterization (3,:)
 %                ptinfo.dv - first derivative with respect to u in 
@@ -45,7 +46,6 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %                type == 'NxCurlCurlS'
 %                type == 'NdotCurlCurlS'
 %                type == 'DeldotS'
-
 %   varargin{1} - alpha, beta in the combined layer formula, coef in eval 
 %                and evalg, otherwise does nothing
 %

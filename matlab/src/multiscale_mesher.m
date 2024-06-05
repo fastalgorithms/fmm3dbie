@@ -103,7 +103,9 @@ function S = multiscale_mesher(fnamein, norder, opts)
     end
 end
 %
-%%   Common routines
-%%
 %
-%-------------------------------------------------
+%  Geometry routines
+%
+%
+%
+%--------------------------------------------

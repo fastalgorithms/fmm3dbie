@@ -577,54 +577,6 @@ return
 end subroutine get_ngradSklambda
 
 
-! subroutine orthonormalize_all(du,normal,ru,rv,ns)
-! !f2py intent(in) du, normal, ns
-! !f2py intent(out) ru,rv
-! implicit none
-
-!     !List of calling arguments
-! 	integer, intent(in) :: ns
-! 	real ( kind = 8 ), intent(in) :: du(3,ns), normal(3,ns)
-! 	real ( kind = 8 ), intent(out) :: ru(3,ns), rv(3,ns)
-
-! 	!List of local variables
-! 	real ( kind = 8 ) aux
-! 	integer count1
-
-! 	do count1=1,ns
-! 		call orthonormalize(du(:,count1),normal(:,count1),ru(:,count1),rv(:,count1))
-! 	enddo
-
-! return
-! end subroutine orthonormalize_all
-
-
-
-
-
-
-! subroutine orthonormalize(du,normal,ru,rv)
-!   implicit none
-
-!   !List of calling arguments
-!   real ( kind = 8 ), intent(in) :: du(3), normal(3)
-!   real ( kind = 8 ), intent(out) :: ru(3), rv(3)
-
-!   !List of local variables
-!   real ( kind = 8 ) aux
-
-!   aux=sqrt(du(1)**2+du(2)**2+du(3)**2)
-
-!   ru(1)=du(1)/aux
-!   ru(2)=du(2)/aux
-!   ru(3)=du(3)/aux
-
-!   call my_cross_v2(normal, ru, rv)
-!   return
-! end subroutine orthonormalize
-
-
-
 
 
 
