@@ -5,29 +5,29 @@ classdef surfer
 % expansions on either an RV grid on triangles or a tensor product GL/Chebyshev
 % grid on quads
 %
-
+% To see fields and available methods: doc surfer
 
     
     properties
-        iptype
-        weights
-        norders
+        iptype        % type of each patch (1,11,12,..)
+        weights       % cell array of quadrature weight arrays per patch
+        norders       % expansion order of each patch
         
-        npatches
-        npts
-        srccoefs
+        npatches      % number of patches
+        npts          % total number of quadrature nodes
+        srccoefs      % cell array of orthog poly coeffs of [r;du;dv] per patch
     end
     
    	properties(SetAccess=private)
-        r
-        du
-        dv
-        dru
-        drv
-        n
-        wts
-        patch_id
-        uvs_targ
+        r             % quadrature node locations (3*npts)
+        du            % dr/du tangential vectors at nodes (3*npts)
+        dv            % dr/dv tangential vectors at nodes (3*npts)
+        dru           % normalized dr/du vectors at nodes (3*npts)
+        drv           % normalized dr/dv vectors at nodes (3*npts)
+        n             % unit outward normals at nodes (3*npts)
+        wts           % quadrature weights (surface element) (npts*1)
+        patch_id      % which patch each node belongs to (npts*1)
+        uvs_targ      % (u,v) param coords of all nodes (2*npts)
         curv
         ffform
         ffforminv
@@ -45,7 +45,8 @@ classdef surfer
     end
     
     methods
-        function obj = surfer(npatches,norders,srcvals,iptype)
+    function obj = surfer(npatches,norders,srcvals,iptype)
+    % create a surfer object
 % This needs fixing particularly handling the varargin part, 
 % and also dealing with quad patches in the future
             obj.npatches = npatches;

@@ -1,7 +1,5 @@
 function [S] = ellipsoid(abc, nabc, c0, norder, iptype)
-% GEOMETRIES.ELLIPSOID, get surface object for an ellipsoid
-% whose major axes are along the coordinate directions
-%
+% ELLIPSOID Get surface object for axes-aligned ellipsoid.
 %
 %  Syntax
 %   S = geometries.ellipsoid(abc)

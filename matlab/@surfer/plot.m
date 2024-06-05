@@ -1,7 +1,23 @@
 function varargout = plot(obj, varargin)
-%PLOT   Plot the surface.
-
-
+% PLOT  Plot surface patches of a surfer object in current figure
+%
+% plot(S) shows all patches, plotting in color the curvature function on nodes.
+%
+% plot(S,v) where v is vector of length S.npatches plots each patch
+%  in a color given by the elements of v. If instead v has length S.npts,
+%  plots as a function on the nodes. Both use current colormap.
+%
+% plot(S,v,...) passes other arguments (...) to trisurf.
+%
+% Some view and properties of the current axes are set for convenience of
+%  3D viewing.
+%
+% Example
+%   S = geometries.sphere(1.0);
+%   plot(S,rand(1,S.npatches))    % shows patches in random colors
+%
+% See also TRISURF
+  
 [srcvals,srccoefs,~,~,~,~] = extract_arrays(obj);
 f = obj.curv.';
 fcoefs = vals_to_coefs_surface_fun(obj, f);
@@ -23,7 +39,7 @@ if nargin > 1
             fcoefs = vals_to_coefs_surface_fun(obj, f);
             istart = 2;
         else
-            error('PLOT: Input plotting array is not the correct dimension');
+            error('plot array does not have length = npts or npatches');
         end
     end
 end
@@ -136,7 +152,8 @@ h = trisurf(Ttot, xall, yall, zall, fall,...
 view(3)
 shading interp
 axis equal
-grid on 
+% axis vis3d    % might be useful
+grid on
 
 if nargout == 1
     varargout{1} = h;

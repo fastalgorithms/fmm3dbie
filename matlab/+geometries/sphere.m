@@ -1,5 +1,5 @@
 function [S] = sphere(a, na, c0, norder, iptype)
-% GEOMETRIES.SPHERE, get surface object for a sphere 
+% SPHERE Get surface object for a sphere.
 %
 %  Syntax
 %   S = geometries.sphere(a)
