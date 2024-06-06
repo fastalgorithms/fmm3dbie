@@ -144,13 +144,11 @@ end
 
 
 h = trisurf(Ttot, xall, yall, zall, fall,...
-        'EdgeColor', '0.1', ...
         'AmbientStrength', 0.6, 'DiffuseStrength', 0.4, ...
         'SpecularStrength', 0.3, varargin_use{:});
 
-
 view(3)
-shading interp
+shading interp  % this removes edges already
 axis equal
 % axis vis3d    % might be useful
 grid on
