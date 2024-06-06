@@ -43,7 +43,7 @@ function fvals = array_to_surfacefun(vals,dom,S)
     [n,~] = size(dom.x{1});
     
     if(iptype == 11)
-        [xint, ~, w] = legpts(n);
+        [xint, ~, w] = lege.pts(n);
     elseif(iptype == 12)
         [xint, ~, w] = chebpts(n,[-1,1],1);
     else

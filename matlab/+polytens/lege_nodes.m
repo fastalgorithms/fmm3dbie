@@ -1,5 +1,5 @@
 function xvals = lege_nodes(norder)
-    [x] = legpts(norder+1);
+    [x] = lege.pts(norder+1);
     [yy,xx] = meshgrid(x);
     xx = xx(:);
     yy = yy(:);

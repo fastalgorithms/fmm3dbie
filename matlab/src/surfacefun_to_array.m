@@ -4,7 +4,7 @@ function vals = surfacefun_to_array(fvals,dom,S)
     [n,~] = size(dom.x{1});
     
     if(iptype == 11)
-        xint = legpts(n);
+        xint = lege.pts(n);
     elseif(iptype == 12)
         xint = chebpts(n,[-1,1],1);
     else

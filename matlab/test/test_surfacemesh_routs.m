@@ -15,7 +15,7 @@ dom = surfacemesh.sphere(norder+1,1);
 [n,~] = size(dom.x{1});
 
 n2 = n;
-xleg = legpts(n2);
+xleg = lege.pts(n2);
 xcheb = chebpts(n,[-1,1]);
 eval = barymat(xleg,xcheb);
 
