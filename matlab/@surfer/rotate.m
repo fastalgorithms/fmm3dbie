@@ -1,13 +1,10 @@
 function [objout,varargout] = rotate(obj, euls)
-
-%%%%%
+% ROTATE  Return a surfer object rotated by Euler angles
 %
-%       .   .   .   this routine rotates a surfer object
-%          according to the three euler angles specified by euls.
-%          in fact, it does so by calling the more general affine 
-%          transform routine.
+% S2 = rotate(S, euls) returns a rotated copy of surfer object S using
+%  Euler angles in the 3x1 or 1x3 vector euls = (alpha, beta, gamma).
 %
-%%%%%
+% See also: AFFINE_TRANSF
 
     p1 = euls(1);
     p2 = euls(2);

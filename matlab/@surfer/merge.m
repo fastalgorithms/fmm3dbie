@@ -1,5 +1,6 @@
 function [objout] = merge(Sarray)
-
+% MERGE  Combine array of surfer objects into a single such object.
+  
     npout  = 0;
     noout  = [];
     srout  = [];

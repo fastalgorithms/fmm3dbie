@@ -1,4 +1,17 @@
 function [S,varargout] = surfacemesh_to_surfer(dom,opts)
+% SURFACEMESH_TO_SURFER  Create a surfer object from structured quad array
+%
+% S = surfacemesh_to_surfer(dom) creates a surfer object from a surfacemesh
+%  object (cell array of structs) dom.
+%  *** to complete.
+%
+% S = surfacemesh_to_surfer(dom, opts) allows setting options such as
+%  opts.iptype = 11 (Legendre) or 12 (Chebyshev) for tensor prod nodes.
+%
+% [S domout] = surfacemesh_to_surfer(dom, opts)
+%  seems also to output a recreation of the dom object from just the node
+%  coords for error estimation?
+  
     if(nargin==1)
         opts = [];
     end
