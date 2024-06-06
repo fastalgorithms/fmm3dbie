@@ -1,5 +1,7 @@
 function [S] = stellarator(nuv, norder, iptype)
-% GEOMETRIES.stellarator, get toroidal double fourier surface given by
+%GEOMETRIES.STELLARATOR Create discretized stellarator as surfer object.
+%  
+% The surface is the following deformed torus:
 %
 % x(u,v) = hat(x)(u,v) \cos(v)
 % y(u,v) = hat(x)(u,v) \sin(v)  
@@ -31,6 +33,7 @@ function [S] = stellarator(nuv, norder, iptype)
 %   S = geometries.stellarator(nuv)
 %   S = geometries.stellarator(nuv, norder)
 %   S = geometries.stellarator(nuv, norder, iptype)
+%   If nuv and/or norder are empty, defaults are used.
 %
 %  Input arguments:
 %    * nuv(2): integer (optional, [5,15])
@@ -47,13 +50,12 @@ function [S] = stellarator(nuv, norder, iptype)
 %                       product Gauss-Legendre nodes
 %        * iptype = 12, quadrangular patch discretized using tensor
 %                       product Chebyshev 
-%
 
-  if nargin < 1
+  if nargin < 1 || isempty(nuv)
     nuv = [5;15];
   end
 
-  if nargin < 2
+  if nargin < 2 || isempty(norder)
     norder = 4;
   end
 

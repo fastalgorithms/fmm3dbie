@@ -48,9 +48,14 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %            rows equals the number of targets and the
 %            number of columns equals the number of sources  
 %
-% Examples (each returns zero)
-%   helm3d.kern(10,struct('r',[0;0;0]),struct('r',[1;0;0]),'s') - exp(1i*10)/(4*pi)
-%   helm3d.kern(10,struct('r',[0;0;0],'n',[1;0;0]),struct('r',[1;0;0]),'d') + (10i-1)*exp(1i*10)/(4*pi)
+% Examples
+%   s.r = [0;0;0]; s.n = [1;0;0];            % source struct
+%   t.r = [1;0;0];                           % target struct
+%   k = 10; S = exp(1i*k)/(4*pi); D = -(1i*k-1)*exp(1i*k)/(4*pi);
+%   helm3d.kern(k,s,t,'s') - S               % gives 0
+%   helm3d.kern(k,s,t,'d') - D               % gives 0
+%   eta = -1i*k; cfie = eta*S + 1.0*D;
+%   helm3d.kern(k,s,t,'c',eta,1.0) - cfie    % gives 0
 %
 % See also HELM3D.GREEN
   
