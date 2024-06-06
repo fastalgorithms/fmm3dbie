@@ -23,7 +23,7 @@ OMPFLAGS =-fopenmp
 OMPLIBS =-lgomp 
 
 # flags for MATLAB MEX compilation..
-MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 "CFLAGS=-std=gnu17 -Wno-implicit-function-declaration" 
+MFLAGS=-compatibleArrayDims -DMWF77_UNDERSCORE1 "CFLAGS=-std=gnu17 -Wno-implicit-function-declaration -fPIC" 
 MWFLAGS=-c99complex 
 MOMPFLAGS = -D_OPENMP
 
