@@ -28,7 +28,7 @@ needs_sphinx = '1.3'
 extensions = [
     'sphinx.ext.mathjax',
     'sphinxcontrib.bibtex',
-    'sphinx_math_dollar'
+    'texext'
 ]
 
 bibtex_bibfiles = ['references.bib']
