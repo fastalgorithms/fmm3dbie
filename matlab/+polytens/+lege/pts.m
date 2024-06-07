@@ -23,12 +23,14 @@ end
 if (or(stab,k<=200))
     if nargout > 1
         [x,w] = lege.rts_stab(k);
+        w = w.';
     else
         x = lege.rts_stab(k);
     end
 else
     if nargout > 1
         [x,w] = lege.rts(k);
+        w = w.';
     else
         x = lege.rts(k);
     end
@@ -39,4 +41,6 @@ if nargout > 2
   xx(1:k+1:end) = 1;
   ww = prod(xx,1);
   v = ww(1)./ww(:);
+  vmax = max(abs(v));
+  v = v/vmax;
 end

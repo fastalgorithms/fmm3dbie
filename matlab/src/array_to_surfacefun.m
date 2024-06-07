@@ -43,9 +43,9 @@ function fvals = array_to_surfacefun(vals,dom,S)
     [n,~] = size(dom.x{1});
     
     if(iptype == 11)
-        [xint, ~, w] = lege.pts(n);
+        [xint, ~, w] = polytens.lege.pts(n);
     elseif(iptype == 12)
-        [xint, ~, w] = chebpts(n,[-1,1],1);
+        [xint, ~, w] = polytens.cheb.pts(n);
     else
         fprintf('Invalid iptype, iptype must be 11 or 12\n');
         fprintf('returning empty surface fun\n');
@@ -56,7 +56,8 @@ function fvals = array_to_surfacefun(vals,dom,S)
         end
         return
     end
-    xcheb = chebpts(n,[-1,1]);
+    opts_use.kind = 2;
+    xcheb = polytens.cheb.pts(n,opts_use);
     
     eval = barymat(xcheb,xint,w);
     

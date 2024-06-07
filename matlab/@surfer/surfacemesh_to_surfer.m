@@ -22,16 +22,17 @@ function [S,varargout] = surfacemesh_to_surfer(dom,opts)
     [n,~] = size(dom.x{1});
     
     if(iptype == 11)
-        xint = legpts(n);
+        xint = polytens.lege.pts(n);
     elseif(iptype == 12)
-        xint = chebpts(n,[-1,1],1);
+        xint = polytens.cheb.pts(n);
     else
         fprintf('Invalid iptype, iptype must be 11 or 12\n');
         fprintf('Exiting\n');
         S = [];
         return
     end
-    xcheb = chebpts(n,[-1,1]);
+    opts_use.kind = 2;
+    xcheb = polytens.cheb.pts(n,opts_use);
     
     eval = barymat(xint,xcheb);
     [npatches,~] = size(dom.x);
