@@ -1,9 +1,13 @@
 function [objout,varargout] = oversample(obj,nover)
+% OVERSAMPLE  Creates surfer object with patches of higher order than given.
 %
-%  Oversamples the given geometry given a current discretization
+% Sover = oversample(S,nover) increases the order of each patch by a factor
+%   nover (must be an integer, or an array of length npatches of integers),
+%   returning a new object.
+%
+%  Ie, oversamples the given geometry given a current discretization
 %  and a patchwise oversampling parameter, or a common oversampling
-%  order for all patches
-%
+%  order for all patches.
     npatches = obj.npatches;
     npts = obj.npts;
     if(length(nover)==1)

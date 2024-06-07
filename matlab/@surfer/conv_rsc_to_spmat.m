@@ -1,4 +1,7 @@
 function spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear)
+% CONV_SRC_TO_SPMAT make sparse matrix from patchwise sparse format.
+%
+% *** to doc
     [~,ndim] = size(wnear);
     ixyzs = S.ixyzs(:);
     npatches = S.npatches;

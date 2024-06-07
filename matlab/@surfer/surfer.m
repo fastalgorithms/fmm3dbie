@@ -1,39 +1,52 @@
 classdef surfer
-%SURFER class which describes a surface divided into triangles/quads (patches). 
+%SURFER class which describes a surface divided into triangles/quads (patches).
+%
 % On each patch the surface is represented by the values of its position, 
 % its two tangential derivatives, and the corresponding basis function
 % expansions on either an RV grid on triangles or a tensor product GL/Chebyshev
-% grid on quads
+% grid on quads.
 %
-
-
+% Notes:
+%
+% Cell arrays have one element per patch. For scalar quantities per patch,
+% a plain array is used.
+% 
+% The types for each patch are:
+%        * iptype = 1,  triangular patch discretized using
+%                       Rokhlin-Vioreanu nodes
+%        * iptype = 11, quadrangular patch discretized using tensor
+%                       product Gauss-Legendre nodes
+%        * iptype = 12, quadrangular patch discretized using tensor
+%                       product Chebyshev
+% For order p=norder, a triangle patch uses (p+1)(p+2)/2 nodes, whereas
+%  either quad patch type uses p^2 nodes. The number of coeffs equals this
+%  number of nodes.
     
     properties
-        iptype
-        weights
-        norders
-        
-        npatches
-        npts
-        srccoefs
+        iptype        % type of each patch (integer, 1,11,12,...)
+        weights       % cell array of quadrature weight arrays per patch
+        norders       % expansion order p of each patch (length npatches)
+        npatches      % number of patches
+        npts          % total number of quadrature nodes
+        srccoefs      % cell array of orthog poly coeffs of [r;du;dv] per patch
     end
     
    	properties(SetAccess=private)
-        r
-        du
-        dv
-        dru
-        drv
-        n
-        wts
-        patch_id
-        uvs_targ
-        curv
-        ffform
-        ffforminv
+        r             % quadrature node locations (3,npts)
+        du            % dr/du tangent vectors at nodes (3,npts)
+        dv            % dr/dv tangent vectors at nodes (3,npts)
+        dru           % normalized dr/du vectors at nodes (3,npts)
+        drv           % normalized dru \times n at nodes (3,npts)
+        n             % unit outward normals at nodes (3,npts)
+        wts           % quadrature weights (surface element) (npts*1)
+        patch_id      % which patch each node belongs to (npts*1)
+        uvs_targ      % (u,v) param coords of nodes within own patch (2,npts)
+        mean_curv     % mean curvatures at nodes (npts*1)
+        ffform        % cell array of first fundamental forms at nodes (2,2,n)
+        ffforminv     % cell array of inverses of ffforms at nodes (2,2,n)
     end
     properties (Access = private)
-        srcvals
+        srcvals      % cell array of nodes vals of [r;du;dv;n] per patch
         
     end    
     properties (Hidden)
@@ -45,7 +58,25 @@ classdef surfer
     end
     
     methods
-        function obj = surfer(npatches,norders,srcvals,iptype)
+    function obj = surfer(npatches,norders,srcvals,iptype)
+    % SURFER Create a surfer object.
+    %
+    % S = surfer(npatches,norders,srcvals,iptype) creates a surfer object
+    %  with npatches patches, of types iptype (integer vector of length
+    %  npatches) and orders norders (integer vector of length npatches),
+    %  using the 12*npts array srcvals, where npts must match the expected
+    %  total number of nodes in all the patches (as determined from their
+    %  types and orders). If norders or iptype have length=1, the same value
+    %  is applied to all patches.
+    %
+    % Note: under the hood this recreates all surface node and patch info
+    %  from srcvals, duplicating code in the fortran library. Its format is
+    %  srcvals = [r; du; dv; n] where
+    %             r is (3,npts) node coords
+    %             du is (3,npts) tangent dr/du coords
+    %             dv is (3,npts) tangent dr/dv coords
+    %             n is (3,npts) unit outward normal coords
+      
 % This needs fixing particularly handling the varargin part, 
 % and also dealing with quad patches in the future
             obj.npatches = npatches;
@@ -128,7 +159,7 @@ classdef surfer
             ffform = zeros(2,2,obj.npts);
             sfform = zeros(2,2,obj.npts);
             ffforminv = zeros(2,2,obj.npts);
-            obj.curv = zeros(obj.npts,1);
+            obj.mean_curv = zeros(obj.npts,1);
             obj.ffforminv = cell(npatches,1);
             obj.ffform = cell(npatches,1);
             
@@ -173,8 +204,9 @@ classdef surfer
                 ffforminv(2,1,iind) = -duv.*ddinv;
                 ffforminv(2,2,iind) = dunormsq.*ddinv;
 
-                obj.curv(iind) = -0.5*(L.*dvnormsq - ...
-                   2*M.*duv + dunormsq.*N).*ddinv;
+                % Mean curvature (LG-2MF+NE)/2(EG-F^2):
+                obj.mean_curv(iind) = -0.5*(L.*dvnormsq - ...
+                                       2*M.*duv + dunormsq.*N).*ddinv;
 
                 obj.ffform{i} = ffform(:,:,iind);
                 obj.ffforminv{i} = ffforminv(:,:,iind);

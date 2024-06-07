@@ -1,5 +1,11 @@
 function scatter(obj,s,c,varargin)
-% plots values of a surfer object, with colors specified by data
+% SCATTER  Plots values of a surfer object, with colors specified by data.
+%
+% scatter(obj,s,c,...) plots surfer object obj nodes with points of size s and
+%  optional color values given by vector c.
+%  Other args are passed to scatter3.
+%
+% See also: PLOT_NODES
 
 ifhold = ishold();
 

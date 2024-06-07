@@ -7,9 +7,15 @@ function [fcoefs] = vals_to_coefs_surface_fun(obj, f)
     npatches = obj.npatches;
     npts = obj.npts;
     [m1, m2] = size(f);
-    if m2 ~= npts 
-        error('vals_to_coefs_surface_fun: invalid size of input array');
+    if m1 == npts
+       fuse = f.';
+    elseif m2 == npts
+      fuse = f;
+    else
+      error('vals_to_coefs_surface_fun: invalid size of input array');
     end
+    [m1, m2] = size(fuse);
+
     fcoefs = zeros(m1, m2);
 
     
@@ -40,6 +46,7 @@ function [fcoefs] = vals_to_coefs_surface_fun(obj, f)
         istart = obj.ixyzs(i);
         iend = obj.ixyzs(i+1)-1;
         iind = istart:iend;
-        fcoefs(:, iind) = f(:, iind)*umats{intmp(i)}';
-    end    
+        fcoefs(:, iind) = fuse(:, iind)*umats{intmp(i)}';
+    end   
+    fcoefs = reshape(fcoefs, size(f));
 end

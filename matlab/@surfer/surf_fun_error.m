@@ -1,24 +1,21 @@
 function [errps] = surf_fun_error(obj,fun,p)
-
-%%%
+% SURF_FUN_ERROR  estimate pointwise approximation error of func on surface.
 %
+% [errps] = surf_fun_error(obj,fun,p)
+%  
 %       This routine computes an estimate of the approximation error
 %       in a collection of functions defined on a surfer object.
 %
 %       Inputs:
 %       obj     --- the surfer object
-%       fun     --- (nfuns x npts) array containing function values
+%       fun     --- (nfuns*npts) array containing function values
 %                   at the points in obj
 %       p       --- optional: the norm to use to measure the coeffs
 %                   (default is infinity)
-%
-%       .   .   .  
 %       
 %       iptype = 1 : Koornwinder (look at last norder)
 %       iptype = 11: Gauss-Legendere (look at upper triangle > norder)
 %       iptype = 12: Chebyshev (look at upper triangle > norder)
-%
-%%%
 
     npatches = obj.npatches;
 
@@ -29,7 +26,11 @@ function [errps] = surf_fun_error(obj,fun,p)
     ntmp(:,2) = obj.iptype;
 
     [fcoefs] = vals_to_coefs_surface_fun(obj, fun);
-    fcoefs = fcoefs.';
+
+    [m1, m2] = size(fcoefs);
+    if m2 == obj.npts
+        fcoefs = fcoefs.';
+    end
     nfuns = size(fcoefs,2);
 
     errps = zeros(npatches,nfuns);
