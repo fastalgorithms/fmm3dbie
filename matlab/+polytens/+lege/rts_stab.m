@@ -60,7 +60,7 @@ for kk = 1:length(tsr)
     ifstop=0;
     for i=1:nnewt
 
-        [pol,der] = lege.pol(x1,n);
+        [pol,der] = polytens.lege.pol(x1,n);
         x1=x1-pol/der;
 
         if(abs(pol) < stoptol); ifstop=ifstop+1; end
@@ -75,7 +75,7 @@ ts(rstart:n) = tsr(:);
 ts(1:(rstart+ifodd-1)) = -flipud(tsr);
 
 if nargout > 1
-    [~,~,totr] = lege.polsum(tsr,n);
+    [~,~,totr] = polytens.lege.polsum(tsr,n);
     whts = zeros(n,1);
     whts(rstart:n) = 1./totr(:);
     whts(1:(rstart+ifodd-1)) = flipud(1./totr(:));

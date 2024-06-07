@@ -22,17 +22,17 @@ end
 
 if (or(stab,k<=200))
     if nargout > 1
-        [x,w] = lege.rts_stab(k);
+        [x,w] = polytens.lege.rts_stab(k);
         w = w.';
     else
-        x = lege.rts_stab(k);
+        x = polytens.lege.rts_stab(k);
     end
 else
     if nargout > 1
-        [x,w] = lege.rts(k);
+        [x,w] = polytens.lege.rts(k);
         w = w.';
     else
-        x = lege.rts(k);
+        x = polytens.lege.rts(k);
     end
 end
 
