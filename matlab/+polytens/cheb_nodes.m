@@ -3,7 +3,9 @@ function xvals = cheb_nodes(norder,kind)
     if(nargin == 2)
         kind0 = kind;
     end
-    [x] = chebpts(norder+1,[-1,1],kind0);
+    opts = [];
+    opts.kind = kind0;
+    [x] = polytens.cheb.pts(norder+1,opts);
     [yy,xx] = meshgrid(x);
     xx = xx(:);
     yy = yy(:);
