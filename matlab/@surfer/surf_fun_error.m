@@ -26,7 +26,11 @@ function [errps] = surf_fun_error(obj,fun,p)
     ntmp(:,2) = obj.iptype;
 
     [fcoefs] = vals_to_coefs_surface_fun(obj, fun);
-    fcoefs = fcoefs.';
+
+    [m1, m2] = size(fcoefs);
+    if m2 == obj.npts
+        fcoefs = fcoefs.';
+    end
     nfuns = size(fcoefs,2);
 
     errps = zeros(npatches,nfuns);

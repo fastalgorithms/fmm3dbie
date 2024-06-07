@@ -3,10 +3,8 @@ function [varargout] = eval_fields(S, pde, bc, densities, targinfo, eps, varargi
 %EVALUATE_FIELDS: Evaluate the fields for solution from integral equation 
 %  
 %  Syntax
-%    p = eval_fields(S, pde, bc, densities, eps, targinfo) 
-%    p = eval_fields(S, pde, bc, densities, eps, targinfo, opts) 
-%    [E, H] = eval_fields(S, pde, bc, densities, eps, targinfo) 
-%    [E, H] = eval_fields(S, pde, bc, densities, eps, targinfo, opts) 
+%    p = eval_fields(S, pde, bc, densities, targinfo, eps, varargin) 
+%    [E, H] = eval_fields(S, pde, bc, densities, targinfo, eps, varargin) 
 %
 %  Currently supported
 %  combination solvers for pde and bc are

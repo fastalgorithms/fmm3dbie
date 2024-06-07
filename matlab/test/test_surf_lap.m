@@ -7,6 +7,7 @@ rhs = S.r(3,:)./rr;
 surf_lap_f = get_surface_laplacian(S,rhs);
 wts = cat(1,S.weights{:});
 
+ndeg = 1;
 
 rfac = -(ndeg+0.0)*(ndeg+1.0);
 errf = norm((surf_lap_f - rfac*rhs).*sqrt(wts)');

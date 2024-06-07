@@ -15,8 +15,9 @@ dom = surfacemesh.sphere(norder+1,1);
 [n,~] = size(dom.x{1});
 
 n2 = n;
-xleg = legpts(n2);
-xcheb = chebpts(n,[-1,1]);
+xleg = polytens.lege.pts(n2);
+opts_use.kind = 2;
+xcheb = polytens.cheb.pts(n,opts_use);
 eval = barymat(xleg,xcheb);
 
 x2 = eval * dom.x{5} * eval.';
@@ -50,7 +51,7 @@ x3 = reshape(x3,[n2,n2]);
 
 fprintf('error in interpolant=%d\n',norm(x3-x2'));
 
-%% Test normals
+% Test normals
 rndom = normal(dom);
 xyzu  = surfacefunv(surfacefun(dom.xu,dom),surfacefun(dom.yu,dom),surfacefun(dom.zu,dom));
 xyzv  = surfacefunv(surfacefun(dom.xv,dom),surfacefun(dom.yv,dom),surfacefun(dom.zv,dom));

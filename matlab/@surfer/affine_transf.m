@@ -23,11 +23,11 @@ function [objout,varargout] = affine_transf(obj,mat,shift)
     end
     
     if (nargin == 2 && ~isequal(size(mat),[3,3]))
-        fprintf('Incompatible scaling matrix, returning same object \n');
+        error('Incompatible scaling matrix, returning same object \n');
         return
     end
     if (nargin == 3 && ~isequal(size(shift),[3,1]))
-        fprintf('Incompatible shift vector, returning same object \n');
+        error('Incompatible shift vector, returning same object \n');
         return
     end
     
