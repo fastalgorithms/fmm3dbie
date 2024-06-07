@@ -1,6 +1,5 @@
 function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
-%HELM3D.SOLVER: solve Helmholtz boundary value problems using integral 
-% equations
+%HELM3D.SOLVER  Solve Helmholtz boundary value problems using BIE
 %
 % Syntax for Dirichlet problems
 %   [densities] = helm3d.solver(S, 'dir', rhs, eps, zk);

@@ -1,12 +1,16 @@
 function [u, gradu] = planewave(zk, dir, targinfo)
-%HELM3D.planewave returns potential and its gradient 
-% due to a plane wave.
+%HELM3D.PLANEWAVE  Potential and gradient due to plane wave.
+%
+%  [u, gradu] = planewave(zk, dir, targinfo)
 %
 % Input arguments:
 %   zk - wave number
 %   dir(3) - incident planewave direction (should be a unit vector)
 %   targinfo - either (3,n) array or a struct
 %      with field targinfo.r which is a (3,n) array
+% Outputs:
+%  u - potential (N,1) at each point in targinfo.r
+%  gradu - gradient of potential at each point in targinfo.r
 %   
     if isa(targinfo, 'double')
       targs = targinfo; 

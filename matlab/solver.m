@@ -1,6 +1,5 @@
 function [densities, varargout] = solver(S, pde, bc, rhs, eps, varargin)
-%
-%SOLVER: Solve elliptic PDE with integral equations
+%SOLVER  Solve elliptic PDE using boundary integral equations.
 %
 %  densities = solver(S, pde, bc, rhs, eps, opts). Currently supported
 %  combination solvers for pde and bc are
