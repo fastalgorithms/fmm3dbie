@@ -67,7 +67,7 @@ whtsr = zeros(length(tsr),1);
 % evaluate at first point O(n), remainder with updates
 
 x0 = 0.0;
-[pol,der] = lege.pol(x0,n); 
+[pol,der] = polytens.lege.pol(x0,n); 
 
 polpre = pol;
 derpre = der;
@@ -91,7 +91,7 @@ for kk = 1:length(tsr)
     for i=1:nnewt
 
         h=x1-x0;
-        [pol,der] = lege.tayl(polpre,derpre,x0,h,n,k);
+        [pol,der] = polytens.lege.tayl(polpre,derpre,x0,h,n,k);
         x1=x1-pol/der;
 
         if(abs(pol) < stoptol); ifstop=ifstop+1; end

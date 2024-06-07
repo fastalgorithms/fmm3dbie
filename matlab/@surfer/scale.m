@@ -6,7 +6,7 @@ function [objout,varargout] = scale(obj,sf)
 %  factors apply in x,y,z axes respectively.
 
   nsf = numel(sf);
-  if numel(sf) = 1
+  if numel(sf) == 1
     sf = sf*ones(3,1);
   end
   if (nsf ~=3) 
