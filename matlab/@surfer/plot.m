@@ -19,16 +19,16 @@ function varargout = plot(obj, varargin)
 % See also TRISURF
   
 [srcvals,srccoefs,~,~,~,~] = extract_arrays(obj);
-f = obj.curv.';
+f = obj.mean_curv.';
 fcoefs = vals_to_coefs_surface_fun(obj, f);
 istart = 1;
 if nargin > 1
     if isnumeric(varargin{1})
-        if length(varargin{1}) == obj.npts
+        if length(varargin{1}(:)) == obj.npts
             f = reshape(varargin{1}, [1, obj.npts]);
             fcoefs = vals_to_coefs_surface_fun(obj, f);
             istart = 2;
-        elseif length(varargin{1}) == obj.npatches
+        elseif length(varargin{1}(:)) == obj.npatches
             fuse = reshape(varargin{1}, [1, obj.npatches]);
             f = zeros(1, obj.npts);
             for i = 1:obj.npatches

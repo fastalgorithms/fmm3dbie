@@ -11,7 +11,7 @@ function [objout,varargout] = translate(obj,r)
 
     sz = size(r);
     if (sz(1) ~=3) 
-        fprintf('incompatible sizes');
+        error('incompatible sizes\n');
         objout = surfer.empty;
         return
     end

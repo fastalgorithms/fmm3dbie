@@ -32,18 +32,18 @@ classdef surfer
     end
     
    	properties(SetAccess=private)
-        r             % quadrature node locations (3*npts)
-        du            % dr/du tangent vectors at nodes (3*npts)
-        dv            % dr/dv tangent vectors at nodes (3*npts)
-        dru           % normalized dr/du vectors at nodes (3*npts)
-        drv           % normalized dr/dv vectors at nodes (3*npts)
-        n             % unit outward normals at nodes (3*npts)
+        r             % quadrature node locations (3,npts)
+        du            % dr/du tangent vectors at nodes (3,npts)
+        dv            % dr/dv tangent vectors at nodes (3,npts)
+        dru           % normalized dr/du vectors at nodes (3,npts)
+        drv           % normalized dru \times n at nodes (3,npts)
+        n             % unit outward normals at nodes (3,npts)
         wts           % quadrature weights (surface element) (npts*1)
         patch_id      % which patch each node belongs to (npts*1)
-        uvs_targ      % (u,v) param coords of nodes within own patch (2*npts)
-        curv          % mean curvatures at nodes (npts*1)
-        ffform        % cell array of first fundamental forms at nodes (2*2*n)
-        ffforminv     % cell array of inverses of ffforms at nodes (2*2*n)
+        uvs_targ      % (u,v) param coords of nodes within own patch (2,npts)
+        mean_curv     % mean curvatures at nodes (npts*1)
+        ffform        % cell array of first fundamental forms at nodes (2,2,n)
+        ffforminv     % cell array of inverses of ffforms at nodes (2,2,n)
     end
     properties (Access = private)
         srcvals      % cell array of nodes vals of [r;du;dv;n] per patch
@@ -72,10 +72,10 @@ classdef surfer
     % Note: under the hood this recreates all surface node and patch info
     %  from srcvals, duplicating code in the fortran library. Its format is
     %  srcvals = [r; du; dv; n] where
-    %             r is (3*npts) node coords
-    %             du is (3*npts) tangent dr/du coords
-    %             dv is (3*npts) tangent dr/dv coords
-    %             n is (3*npts) unit outward normal coords
+    %             r is (3,npts) node coords
+    %             du is (3,npts) tangent dr/du coords
+    %             dv is (3,npts) tangent dr/dv coords
+    %             n is (3,npts) unit outward normal coords
       
 % This needs fixing particularly handling the varargin part, 
 % and also dealing with quad patches in the future
@@ -159,7 +159,7 @@ classdef surfer
             ffform = zeros(2,2,obj.npts);
             sfform = zeros(2,2,obj.npts);
             ffforminv = zeros(2,2,obj.npts);
-            obj.curv = zeros(obj.npts,1);
+            obj.mean_curv = zeros(obj.npts,1);
             obj.ffforminv = cell(npatches,1);
             obj.ffform = cell(npatches,1);
             
@@ -205,7 +205,7 @@ classdef surfer
                 ffforminv(2,2,iind) = dunormsq.*ddinv;
 
                 % Mean curvature (LG-2MF+NE)/2(EG-F^2):
-                obj.curv(iind) = -0.5*(L.*dvnormsq - ...
+                obj.mean_curv(iind) = -0.5*(L.*dvnormsq - ...
                                        2*M.*duv + dunormsq.*N).*ddinv;
 
                 obj.ffform{i} = ffform(:,:,iind);

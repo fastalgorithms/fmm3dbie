@@ -1,4 +1,4 @@
-function h = plot_nodes(S, v, varargin)
+function varargout = plot_nodes(S, v, varargin)
 % PLOT_NODES  show nodes of a surfer object, or function on nodes
 %
 % plot_nodes(S) shows all nodes of surfer object S as a point cloud
@@ -33,4 +33,8 @@ else
 end
 view(3)
 axis equal
+
+if nargout >=1
+   varargout{1} = h;
+end
 
