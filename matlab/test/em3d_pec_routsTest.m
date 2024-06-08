@@ -23,14 +23,14 @@ src_info.hdips = rand(3,1) + 1j*rand(3,1);
 
 [Einc, Hinc] = em3d.incoming_sources(zk, src_info, S, 'ehd');
 
-%%
+%
 
 zpars = complex([zk, alpha]);
 opts = [];
 opts.eps_gmres = 1e-10;
 [densities] = em3d.pec.solver(S, Einc, Hinc, eps, zk, alpha, opts);
 
-%%
+%
 targ_info = [];
 targ_info.r = xyz_in;
 
