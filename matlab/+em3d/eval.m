@@ -30,8 +30,11 @@ function [E, H, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
           opts = varargin{3};
         end
         
-        [E, H, varargout{3:nargout}] = em3d.pec.eval(S, ...
+        [E, H, varargout{1:nargout-2}] = em3d.pec.eval(S, ...
             densities, targinfo, eps, zk, rep_params, opts);
+
+        otherwise
+            error('EM3D.EVAL: representation %s not found\n',bc);
     end
     
 end

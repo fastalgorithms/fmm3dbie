@@ -28,7 +28,7 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
         if nargin > 5
           opts = varargin{2};
         end
-        [densities, varargout{2:nargout}] = lap3d.dirichlet.solver(S, rhs, eps, ... 
+        [densities, varargout{1:nargout-1}] = lap3d.dirichlet.solver(S, rhs, eps, ... 
                                     rep_params, opts);
 
       case {'neu', 'n', 'neumann'}
@@ -36,7 +36,10 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
         if nargin > 4
           opts = varargin{1};
         end
-        [densities, varargout{2:nargout}] = lap3d.neumann.solver(S, rhs, eps, opts);
+        [densities, varargout{1:nargout-1}] = lap3d.neumann.solver(S, rhs, eps, opts);
+
+        otherwise
+            error('LAP3D.SOLVER: boundary condition %s not found\n',bc);
     end
     
 end

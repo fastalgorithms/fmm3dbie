@@ -36,7 +36,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         if nargin > 7
           opts = varargin{3};
         end
-        [p, varargout{2:nargout}] = helm3d.dirichlet.eval(S, ...
+        [p, varargout{1:nargout-1}] = helm3d.dirichlet.eval(S, ...
             densities, targinfo, eps, zk, rep_params, opts);
 
       case {'s', 'single'}
@@ -50,7 +50,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         if nargin > 6
           opts = varargin{2};
         end
-        [p, varargout{2:nargout}] = helm3d.dirichlet.eval(S, ...
+        [p, varargout{1:nargout-1}] = helm3d.dirichlet.eval(S, ...
             densities, targinfo, eps, zk, rep_params, opts);
 
       case {'d', 'double'}
@@ -64,7 +64,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         if nargin > 6
           opts = varargin{2};
         end
-        [p, varargout{2:nargout}] = helm3d.dirichlet.eval(S, ...
+        [p, varargout{1:nargout-1}] = helm3d.dirichlet.eval(S, ...
             densities, targinfo, eps, zk, rep_params, opts);
 
       case {'c', 'comb'}
@@ -82,7 +82,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         if nargin > 7
           opts = varargin{3};
         end
-        [p, varargout{2:nargout}] = helm3d.dirichlet.eval(S, ...
+        [p, varargout{1:nargout-1}] = helm3d.dirichlet.eval(S, ...
             densities, targinfo, eps, zk, rep_params, opts);
 
       case {'neu', 'neumann'}
@@ -104,7 +104,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         if nargin > 7
           opts = varargin{3};
         end
-        [p, varargout{2:nargout}] = helm3d.neumann.eval(S, ...
+        [p, varargout{1:nargout-1}] = helm3d.neumann.eval(S, ...
             densities, targinfo, eps, zk, alpha, opts);
 
       case {'imp', 'impedance'}
@@ -126,7 +126,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         if nargin > 7
           opts = varargin{3};
         end
-        [p, varargout{2:nargout}] = helm3d.impedance.eval(S, ...
+        [p, varargout{1:nargout-1}] = helm3d.impedance.eval(S, ...
            densities, targinfo, eps, zk, alpha, opts);
 
       case {'trans', 'transmission'}
@@ -155,9 +155,11 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         if nargin > 7
           opts = varargin{3};
         end
-        [p, varargout{2:nargout}] = helm3d.transmission.eval(S, ...
+        [p, varargout{1:nargout-1}] = helm3d.transmission.eval(S, ...
             densities, targinfo, eps, zks, rep_params, opts);
 
+        otherwise
+            error('HELM3D.EVAL: representation %s not found\n',bc);
 
     end
     

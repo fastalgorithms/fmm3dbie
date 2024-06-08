@@ -43,8 +43,11 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
         else
           error('em3d.SOLVER: rhs must be a struct or an array');
         end
-        [densities, varargout{2:nargout}] = em3d.pec.solver(S, ...
+        [densities, varargout{1:nargout-1}] = em3d.pec.solver(S, ...
             einc, hinc, eps, zk, rep_params, opts);
+
+        otherwise
+            error('EM3D.SOLVER: boundary condition %s not found\n',bc);
     end
     
 end

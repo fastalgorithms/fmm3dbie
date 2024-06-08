@@ -28,8 +28,11 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
           end
           opts = varargin{2};
         end
-        [densities, varargout{2:nargout}] = stok3d.velocity.solver(S, rhs, eps, ... 
+        [densities, varargout{1:nargout-1}] = stok3d.velocity.solver(S, rhs, eps, ... 
                                     rep_params, opts);
+
+        otherwise
+            error('STOK3D.SOLVER: boundary condition %s not found\n',bc);
     end
 
     

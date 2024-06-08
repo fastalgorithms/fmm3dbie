@@ -28,8 +28,11 @@ function [vel, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
           end
           opts = varargin{2};
         end
-        [vel, varargout{2:nargout}] = stok3d.velocity.eval(S, densities, targinfo, eps, ... 
+        [vel, varargout{1:nargout-1}] = stok3d.velocity.eval(S, densities, targinfo, eps, ... 
                                     rep_params, opts);
+        
+        otherwise
+            error('STOK3D.EVAL: representation %s not found\n',bc);
     end
 
     
