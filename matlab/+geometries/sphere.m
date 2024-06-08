@@ -48,3 +48,8 @@ function [S] = sphere(a, na, c0, norder, iptype)
   S = geometries.ellipsoid(abc, nabc, c0, norder, iptype);
 
 end
+%
+%
+%
+%
+%--------------------------------------------

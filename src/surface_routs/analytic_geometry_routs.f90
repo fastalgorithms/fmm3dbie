@@ -825,13 +825,13 @@
 
       coefs(1,1,1) = radii(1)
       coefs(2,1,1) = radii(2)
-      coefs(1+nosc+1,1,1) = radii(3)/2
-      coefs(1+abs(nosc-1),1,1) = radii(3)/2
+      coefs(1+nosc+1,1,1) = coefs(1+nosc+1,1,1) + radii(3)/2
+      coefs(1+abs(nosc-1),1,1) = coefs(1+abs(nosc-1),1,1) + radii(3)/2
       
       coefs(m+2,1,3) = radii(2)
-      coefs(2*m+1,1,3) = radii(3)/2
-      if (nosc-1.gt.0) coefs(m+1+nosc-1,1,3) = -radii(3)/2
-      if (nosc-1.lt.0) coefs(m+1+abs(nosc-1),1,3) = radii(3)/2
+      coefs(2*m+1,1,3) = coefs(2*m+1,1,3) + radii(3)/2
+      if (nosc-1.gt.0) coefs(m+1+nosc-1,1,3) = coefs(m+1+nosc-1,1,3)-radii(3)/2
+      if (nosc-1.lt.0) coefs(m+1+abs(nosc-1),1,3) = coefs(m+1+abs(nosc-1),1,3) + radii(3)/2
 
       iort = 1
 

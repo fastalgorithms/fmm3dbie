@@ -46,7 +46,6 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
 %        * iptype = 12, quadrangular patch discretized using tensor
 %                       product Chebyshev 
 %
-
   if nargin < 2
      nosc = 0;
   end
@@ -72,18 +71,18 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
 
   coefs(1,1,1) = radii(1);
   coefs(2,1,1) = radii(2);
-  coefs(1+nosc,1,1) = radii(3)/2;
-  coefs(1+abs(nosc-1),1,1) = radii(3)/2;
+  coefs(2+nosc,1,1) = coefs(2+nosc,1,1) + radii(3)/2;
+  coefs(1+abs(nosc-1),1,1) = coefs(1+abs(nosc-1),1,1) + radii(3)/2;
 
   coefs(m+2,1,3) = radii(2);
-  coefs(2*m+1,1,3) = radii(3)/2;
+  coefs(2*m+1,1,3) = coefs(2*m+1,1,3) + radii(3)/2;
 
   if nosc-1 > 0
-    coefs(m+1+nosc-1,1,3) = -radii(3)/2;
+    coefs(m+1+nosc-1,1,3) = coefs(m+1+nosc-1,1,3) - radii(3)/2;
   end
 
   if nosc-1 < 0
-    coefs(m+1+abs(nosc-1),1,3) = radii(3)/2;
+    coefs(m+1+abs(nosc-1),1,3) = coefs(m+1+abs(nosc-1),1,3) + radii(3)/2;
   end
 
   iort = 1;
