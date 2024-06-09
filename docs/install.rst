@@ -200,7 +200,7 @@ directory and it should return::
 
 
    Totals:
-   24 Passed, 0 Failed, 0 Incomplete.
+   23 Passed, 0 Failed, 0 Incomplete.
    <time taken> seconds testing time.
 
 Example codes for available in the ``matlab/demo`` folder.
