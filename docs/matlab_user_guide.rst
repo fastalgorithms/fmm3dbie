@@ -125,6 +125,5 @@ Kernel routines
 
    guide/surfers
    guide/solvers
-   guide/evals
    
    

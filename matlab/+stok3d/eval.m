@@ -6,7 +6,8 @@ function [vel, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
 %   [vel] = stok3d.eval(S, 'vel', densities, targinfo, eps);
 %   [vel] = stok3d.eval(S, 'vel', densities, targinfo, eps, rep_pars);
 %   [vel] = stok3d.eval(S, 'vel', densities, targinfo, eps, rep_pars, opts);
-%
+% 
+% SEE ALSO: stok3d.solver, stok3d.velocity.eval
 %
     switch lower(bc)
       case {'vel', 'velocity'}

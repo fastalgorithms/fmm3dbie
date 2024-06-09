@@ -6,7 +6,8 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
 %   [densities] = stok3d.solver(S, 'vel', rhs, eps);
 %   [densities] = stok3d.solver(S, 'vel', rhs, eps, rep_pars);
 %   [densities] = stok3d.solver(S, 'vel', rhs, eps, rep_pars, opts);
-%
+% 
+% SEE ALSO: stok3d.eval, stok3d.velocity.solver
 %
     switch lower(bc)
       case {'vel', 'velocity'}

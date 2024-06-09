@@ -8,7 +8,7 @@ function [densities, varargout] = solver(S, pde, bc, rhs, eps, varargin)
 %      ---                               --
 %      
 %      'laplace' ('lap', 'l')            'dir', 'neu'
-%      'helmholtz' ('helm', 'h')         'dir', 'neu', 'imp'
+%      'helmholtz' ('helm', 'h')         'dir', 'neu', 'imp', 'trans'
 %      'stokes' ('stok', 's')            'vel'
 %      'maxwell' ('em', 'm')             'pec'
 %
@@ -37,6 +37,11 @@ function [densities, varargout] = solver(S, pde, bc, rhs, eps, varargin)
 %  For Helmholtz Dirichlet, Neumann, and Impedance problems, the
 %  data must be a complex array of size (S.npts,1)
 %
+%  For the Helmholtz tranmssion problem, the data must be a
+%  complex array of size (2, S.npts), the first component
+%  corresponds to the Dirichlet data, and the second
+%  component corresponds to the Neumann data.
+%
 %  And finally, for Maxwell boundary value problems, the data
 %  must be a complex array of size (6, S.npts), where
 %  (1:3, :) are the cartesian components of the incident electric
@@ -47,8 +52,10 @@ function [densities, varargout] = solver(S, pde, bc, rhs, eps, varargin)
 %  which correspond to the densities on surface if nd > 1, and
 %  of size (S.npts,1) if nd == 1.
 %
-%  SEE ALSO: lap3d.solver, helm3d.solver, stok3d.solver, and em3d.solver 
+%  SEE ALSO: lap3d.solver, helm3d.solver, stok3d.solver, and em3d.solver
 %
+
+%---------------
      switch lower(pde)
        case {'laplace', 'lap', 'l'}
          [densities, varargout{1:nargout-1}] = lap3d.solver(S, bc, rhs, ...

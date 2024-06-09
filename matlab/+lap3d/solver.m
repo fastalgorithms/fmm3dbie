@@ -11,6 +11,7 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
 %   [densities] = lap3d.solver(S, 'neu', rhs, eps);
 %   [densities] = lap3d.solver(S, 'neu', rhs, eps, opts);
 %
+% SEE ALSO: lap3d.eval, lap3d.dirichlet.solver, lap3d.neumann.solver
     switch lower(bc)
       case {'dir', 'dirichlet'}
 

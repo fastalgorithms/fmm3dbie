@@ -16,6 +16,16 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
 %   [p] = helm3d.eval(S, 'imp', densities, targinfo, eps, zk, alpha);
 %   [p] = helm3d.eval(S, 'imp', densities, targinfo, eps, zk, alpha, opts);
 %
+% Syntax for Transmission problems
+%   [p] = helm3d.eval(S, 'trans', densities, targinfo, eps, zks, rep_params);
+%   [p] = helm3d.eval(S, 'trans', densities, targinfo, eps, zks, rep_params, opts);
+%
+% SEE ALSO: helm3d.solver, helm3d.dirichlet.eval, helm3d.neumann.eval, helm3d.impedance.eval,
+%           helm3d.transmission.eval
+%          
+
+%------------------------------------
+%
     switch lower(bc)
       case {'dir', 'dirichlet'}
         if nargin < 6

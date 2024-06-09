@@ -6,7 +6,8 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
 %   [densities] = em3d.solver(S, 'pec', rhs, eps, zk);
 %   [densities] = em3d.solver(S, 'pec', rhs, eps, zk, rep_params);
 %   [densities] = em3d.solver(S, 'pec', rhs, eps, zk, rep_params, opts);
-%
+% 
+% SEE ALSO: em3d.eval, em3d.pec.solver
 %
     switch lower(bc)
       case {'pec', 'perfect electric conductor'}

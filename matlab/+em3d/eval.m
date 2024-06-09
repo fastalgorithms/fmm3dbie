@@ -6,8 +6,8 @@ function [E, H, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
 %   [E, H] = em3d.eval(S, 'pec', densities, targinfo, eps, zk);
 %   [E, H] = em3d.eval(S, 'pec', densities, targinfo, eps, zk, rep_params);
 %   [E, H] = em3d.eval(S, 'pec', densities, targinfo, eps, zk, rep_params, opts);
-%
-%
+% 
+% SEE ALSO: em3d.solver, em3d.pec.eval
     switch lower(bc)
       case {'pec', 'perfect electric conductor'}
         if nargin < 6

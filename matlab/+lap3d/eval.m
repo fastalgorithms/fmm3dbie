@@ -19,7 +19,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
 %   [densities] = lap3d.eval(S, 'neu', densities, targinfo, eps, opts);
 %
 %
-%  SEE ALSO: lap3d.solver, helm3d.eval, stok3d.eval, and em3d.eval  
+%  SEE ALSO: lap3d.solver, lap3d.dirichlet.eval, lap3d.neumann.eval 
 %
     switch lower(bc)
       case {'dir', 'dirichlet'}

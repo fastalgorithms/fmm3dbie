@@ -10,8 +10,7 @@ it into pieces, called "patches", which are then represented
 by polynomial interpolants using appropriate discretization nodes. This
 information is stored in a :matlab:`surfer` object.
 
-To see what is available in the `surfer` object, 
-the :matlab:`surfer` class documentation gives a survey of the available methods:
+The :matlab:`surfer` class documentation gives a survey of the available methods:
 
 .. include:: ../../matlab/@surfer/surfer.m
    :literal:

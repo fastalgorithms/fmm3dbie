@@ -59,6 +59,8 @@ function [varargout] = eval_fields(S, pde, bc, densities, targinfo, eps, varargi
 %
 %  SEE ALSO: lap3d.eval, helm3d.eval, stok3d.eval, and em3d.eval 
 %
+
+%---------------
      switch lower(pde)
        case {'laplace', 'lap', 'l'}
          [varargout{1:nargout}] = lap3d.eval(S, bc, densities, ...

@@ -20,6 +20,12 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
 %   [densities] = helm3d.solver(S, 'trans', rhs, eps, zk, rep_params);
 %   [densities] = helm3d.solver(S, 'trans', rhs, eps, zk, rep_params, opts);
 %
+% 
+% SEE ALSO: helm3d.eval, helm3d.dirichlet.solver, helm3d.neumann.solver, helm3d.impendance.solver, 
+%           helm3d.transmission.solver
+
+%--------------------
+%
     switch lower(bc)
       case {'dir', 'dirichlet'}
         if nargin < 5
