@@ -31,7 +31,7 @@ function [u, gradu] = planewave(zk, dir, targinfo)
     if length(dir(:)) == 2
        thet = dir(1);
        phi = dir(2);
-       d = [sin(thet)*cos(phi),; sin(thet)*sin(phi); cos(thet)]
+       d = [sin(thet)*cos(phi),; sin(thet)*sin(phi); cos(thet)];
     elseif length(dir(:)) == 3
        rn = sqrt(dir(1)^2 + dir(2)^2 + dir(3)^3);
        d = dir(:);

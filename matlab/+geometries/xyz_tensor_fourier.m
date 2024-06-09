@@ -1,7 +1,5 @@
 function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
-% GEOMETRIES.XYZ_TENSOR_FOURIER  Get toroidal double Fourier surface surfer object.
-%
-% Surface is given by
+% GEOMETRIES.xyz_tensor_fourier, get toroidal double fourier surface given by
 %
 % hat(x) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i} (u) b_{j} (v)
 % hat(y) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i} (u) b_{j} (v)
@@ -23,6 +21,7 @@ function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
 %   S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv)
 %   S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv, norder)
 %   S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
+%   If arguments scales, iort, nuv, norder, and/or iptype are empty, defaults are used 
 %
 %  Input arguments:
 %    * coefs(2*m+1, 2*m+1, 3): Fourier coefs
@@ -50,25 +49,24 @@ function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
 %        * iptype = 12, quadrangular patch discretized using tensor
 %                       product Chebyshev 
 %
-% Note: mostly a MEX interface to get_xyz_tensor_fourier_npat
 
-  if nargin < 2
+  if nargin < 2 || isempty(scales)
     scales = [1;1;1];
   end
-
-  if nargin < 3
+ 
+  if nargin < 3 || isempty(iort)
     iort = 1; 
   end
 
-  if nargin < 4
+  if nargin < 4 || isempty(nuv)
     nuv = [5;5];
   end
 
-  if nargin < 5
+  if nargin < 5 || isempty(norder)
     norder = 4;
   end
 
-  if nargin < 6
+  if nargin < 6 || isempty(iptype)
     iptype = 1;
   end
 

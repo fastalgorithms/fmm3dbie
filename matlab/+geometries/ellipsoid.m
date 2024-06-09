@@ -1,5 +1,5 @@
 function [S] = ellipsoid(abc, nabc, c0, norder, iptype)
-%GEOMETRIES.ELLIPSOID  Create discretized axes-aligned ellipsoid surfer object.
+% ELLIPSOID Create discretized axes-aligned ellipsoid surfer object.
 %
 %  Syntax
 %   S = geometries.ellipsoid(abc)
@@ -7,7 +7,7 @@ function [S] = ellipsoid(abc, nabc, c0, norder, iptype)
 %   S = geometries.ellipsoid(abc, nabc, c0)
 %   S = geometries.ellipsoid(abc, nabc, c0, norder)
 %   S = geometries.ellipsoid(abc, nabc, c0, norder, iptype)
-%   If arguments nabc, c0, and/or norder are empty, defaults are used
+%   If arguments nabc, c0, norder, and/or iptype are empty, defaults are used 
 %
 %  Input arguments:
 %    * abc(3): semi-major axes in x,y, and z directions 
@@ -26,10 +26,9 @@ function [S] = ellipsoid(abc, nabc, c0, norder, iptype)
 %                       product Gauss-Legendre nodes
 %        * iptype = 12, quadrangular patch discretized using tensor
 %                       product Chebyshev 
-%
 % Example
 %   S = geometries.ellipsoid([1.5,1,0.5], [5 3 2], [], 8, 11)
-  
+%
   if nargin < 2 || isempty(nabc)
     nabc = [2; 2; 2];
   end
@@ -42,7 +41,7 @@ function [S] = ellipsoid(abc, nabc, c0, norder, iptype)
     norder = 4;
   end
 
-  if nargin < 5
+  if nargin < 5 || isempty(iptype)
     iptype = 1;
   end
 

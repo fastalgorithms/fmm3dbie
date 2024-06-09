@@ -1,5 +1,5 @@
 function [S] = sphere(a, na, c0, norder, iptype)
-%GEOMETRIES.SPHERE  Create a discretized sphere surfer object.
+% SPHERE Create a discretized sphere surfer object.
 %
 %  Syntax
 %   S = geometries.sphere(a)
@@ -7,8 +7,8 @@ function [S] = sphere(a, na, c0, norder, iptype)
 %   S = geometries.sphere(a, na, c0)
 %   S = geometries.sphere(a, na, c0, norder)
 %   S = geometries.sphere(a, na, c0, norder, iptype)
-%   If any argument na, c0, norder is empty, default is used
-%  
+%   If arguments na, c0, norder, and/or iptype are empty, defaults are used 
+%
 %  Input arguments:
 %    * a: radius of the sphere 
 %    * na: (optional, 2) 
@@ -26,10 +26,9 @@ function [S] = sphere(a, na, c0, norder, iptype)
 %                       product Gauss-Legendre nodes
 %        * iptype = 12, quadrangular patch discretized using tensor
 %                       product Chebyshev 
-%
 % Example
 %  S = geometries.sphere(1.0, [], [], 10, 11)  % unit sphere, big 10th-ord GL-quad patches
-
+%
   if nargin < 2 || isempty(na)
     na = 2;
   end
@@ -42,7 +41,7 @@ function [S] = sphere(a, na, c0, norder, iptype)
     norder = 4;
   end
 
-  if nargin < 5
+  if nargin < 5 || isempty(iptype)
     iptype = 1;
   end
 

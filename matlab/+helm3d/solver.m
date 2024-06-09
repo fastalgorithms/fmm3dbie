@@ -99,7 +99,7 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
           error('HELM3D.SOLVER: not enough input args for helm transmission solver\n');
         end
         opts = [];
-        if nargin > 7 
+        if nargin > 6 
           opts = varargin{3};
         end
 

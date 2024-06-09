@@ -3,17 +3,17 @@
 %
 %
 run ../startup.m
-S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S = geometries.sphere(1, 8, [0;0;0], 4, 1);
 
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
 [~, npts] = size(srcvals);
 
-zks = [1.1; 2.1];
+zks = 2*pi/0.3*[1; sqrt(1.54)];
 alpha0 = 1;
-beta0 = 3.1;
+beta0 = 1;
 
-alpha1 = 2.1;
-beta1 = 1j*3.3;
+alpha1 = 1;
+beta1 = 1;
 
 rep_params = [alpha0; beta0; alpha1; beta1];
 

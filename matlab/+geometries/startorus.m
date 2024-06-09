@@ -1,5 +1,5 @@
 function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
-%GEOMETRIES.STARTORUS Create discretized torus with modulater cross-section, surfer object
+% STARTORUS Create discretized torus surfer deformed poloidal Fourier mode.
 %
 % Surface is parameterized by
 %
@@ -21,7 +21,7 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
 %   S = geometries.startorus(radii, nosc, scales, nuv)
 %   S = geometries.startorus(radii, nosc, scales, nuv, norder)
 %   S = geometries.startorus(radii, nosc, scales, nuv, norder, iptype)
-%   If any arguments from nosc to norder are empty, their default is used.
+%   If arguments nosc, scales, nuv, norder, and/or iptype are empty, defaults are used 
 %
 %  Input arguments:
 %    * radii(3): radii of star shaped torus
@@ -45,17 +45,13 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
 %        * iptype = 11, quadrangular patch discretized using tensor
 %                       product Gauss-Legendre nodes
 %        * iptype = 12, quadrangular patch discretized using tensor
-%                       product Chebyshev
-%
-
+%                       product Chebyshev 
 % Example
 %   % create 8th-order GL-quad patch with 5-pointed star cross-section:
 %   S = geometries.startorus([1,0.5,0.05], 5, [], [], 8, 11)
 %
 % Note: rwave small seems to generate very large negative curvatures
-
-% *** to discuss
-  
+%
   if nargin < 2 || isempty(nosc)
      nosc = 0;
   end
@@ -72,7 +68,7 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
     norder = 4;
   end
 
-  if nargin < 6
+  if nargin < 6 || isempty(iptype)
     iptype = 1;
   end
 

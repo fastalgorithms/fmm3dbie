@@ -1,17 +1,16 @@
 function S = multiscale_mesher(fnamein, norder, opts)
-% MULTISCALE_MESHER  Create high-order smooth tri surfer from 1/2-ord tri/quads
-%  
-%    Use a fast iterative surface-smoothing algorithm to create a high-order
-%    smooth triangulated surface which approximates an input mesh
-%    file containing first/second order triangles/quads.
-%    If the mesh comprises of quads, then each quad is split into two triangles. 
+% 
+%  MULTISCALE_MESHER creates a smooth high order triangulated surface 
+%    based on an input mesh file containing first/second order
+%    triangles/quads. If the mesh comprises of quads, then each quad
+%    is split into two triangles. 
 %
 %  Supported mesh formats include, .gidmsh, .tri, .msh, gmshv2, 
 %  and gmshv4
 %  
 %  Syntax
-%    Sarr = multiscale_mesher(fnamein, norder)
-%    Sarr = multiscale_mesher(fnamein, norder, opts)
+%    S = multiscale_mesher(fnamein, norder)
+%    S = multiscale_mesher(fnamein, norder, opts)
 %
 %  Input arguments:
 %    * fnamein: input mesh file name
@@ -28,20 +27,10 @@ function S = multiscale_mesher(fnamein, norder, opts)
 %          filetype = 3, for .gidmsh
 %          filetype = 4, for .msh gmsh v2
 %          filetype = 5, for .msh gmsh v2
-%  Outputs:
-%    Sarr = cell array (length 1+nrefine) of surfer objects
-%
-% Note: the algorithm takes several seconds to run when generating ~1e5 nodes
+%                               
+%      
 %  
-% Examples (run from matlab directory):
-%   Sarr = multiscale_mesher('../geometries/meshes/cow_new.msh',8);
-%   plot(Sarr{1});
-%   Sarr = multiscale_mesher('../geometries/meshes/cuboid_a1_b2_c1p3.tri',4);
-%   plot(Sarr{1});
-  
-% *** to do: explain "refinements"
-  
-  d = dir(fnamein);
+    d = dir(fnamein);
     if isempty(d)
         error('MULTISCALE_MESHER: invalid file\n');
     end
