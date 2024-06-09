@@ -1,19 +1,49 @@
-Installation
-============
+.. role::matlab(code)
+   :language: matlab
 
-Obtaining fmm3dbie
-******************
+Get fmm3dBIE
+=============
 
-The source code can be downloaded from https://github.com/fastalgorithms/fmm3dbie
+Installation from source
+*************************
 
-To get all dependencies along with the code run::
+Installation directly from source is not recommended for Windows machines.
+See source code with binaries below.
+
+- Get the source code:
+
+  * The source code can be downloaded from https://github.com/fastalgorithms/fmm3dbie
+
+  * To get all dependencies along with the code run::
 
     git clone --recurse-submodules https://github.com/fastalgorithms/fmm3dbie.git
+
+Install with Precompiled Windows Binaries
+------------------------------------------
+
+Windows compilation of fmm3dbie binaries and mex files tends to be a complicated
+process. For intel systems, we have zip files with `pre-compiled Windows binaries
+for matlab available <https://github.com/fastalgorithms/fmm3dbie/releases/tag/v1.0.0>`_.
+
+
+Instructions:
+
+- Select the zip file whose name has MATLAB version 2020 if your version is 2022 or older. Select 2023 otherwise.
+
+- The x86 version should work on most intel machines. The avx2 specification is also commonly available and will be faster if it is compatible with your machine.
+
+- Download the file and unzip. We recommend testing the fmm binaries by running the following in the matlab directory of fmm3dbie:
+
+.. code:: matlab
+   
+   startup
+   cd tests/
+   runtests
 
 Dependencies
 ************
 
-This library is supported for unix/linux, and Mac OSX.
+This library is supported for unix/linux, Mac OSX, and Windows.
 
 For the basic libraries
 
@@ -34,8 +64,9 @@ Quick install instructions
 Make sure you have dependencies downloaded, and `cd` into your fmm3dbie
 directory. 
 
--  For linux, run ``make install``.
--  For Mac OSX, run ``cp make.inc.macos.gnu make.inc`` followed by ``make install``.
+-  For linux, run ``make clean`` followed by ``make install``.
+-  For Intel Mac OSX, run ``cp make.inc.macos.gnu make.inc`` followed by ``make clean`` and ``make install``.
+-  For M1/M2/M3 Mac OSX, run ``cp make.inc.macos_arm.gnu make.inc`` followed by ``make clean`` and ``make install``.
 
 This should compile the static library for FMM3D in ``FMM3D/lib-static/``, 
 the static library for fmm3dbie in ``lib-static/``, 
@@ -156,7 +187,7 @@ Now you are in a virtual environment that starts from scratch. All pip installed
 
 
 Building the MATLAB wrappers
-****************************
+******************************
 
 First make sure you have MATLAB installed. 
 
@@ -164,16 +195,19 @@ Then run ``make matlab`` (after copying over the operating
 system specific make.inc.* file to make.inc) which links the .m files to
 the .c file in the matlab folder.
 
+To set the relevant paths, run ``startup`` in the ``matlab`` folder.
+
 To run tests, you can run ``runtests`` in the ``matlab/tests`` 
 directory and it should return::
 
 
    Totals:
-   7 Passed, 0 Failed, 0 Incomplete.
+   24 Passed, 0 Failed, 0 Incomplete.
    <time taken> seconds testing time.
 
-
 Example codes for available in the ``matlab/demo`` folder.
+
+Checkout our `MATLAB user guide <matlab_user_guide.html>`__  for info on how to use the MATLAB interface.
 
 Tips for installing dependencies
 **********************************

@@ -21,18 +21,64 @@ classdef surfer
 % For order p=norder, a triangle patch uses (p+1)(p+2)/2 nodes, whereas
 %  either quad patch type uses p^2 nodes. The number of coeffs equals this
 %  number of nodes.
+%
+% Surfer properties:
+%  obj.iptype      - type of each patch
+%  obj.weights     - cell array of quadrature weight arrays per patch
+%  obj.norders     - exapnsion order p of each patch
+%  obj.npatches    - numbers of patches
+%  obj.npts        - total number of discretization points
+%  obj.srcccoefs   - cell array of orthogonal polynomial coefs of
+%                       [r; du; dv] per patch
+%  obj.r           - discretization node locations (3,npts)
+%  obj.du          - dr/du tangent vectors at nodes (3,npts)
+%  obj.dv          - dr/dv tangent vectors at nodes (3,npts)
+%  obj.n           - unit outward normals at nodes (3,npts)
+%  obj.wts         - quadrature weights for integrating smooth functions
+%                    on surface (surface element) (npts,1)
+%  obj.patch_id    - which patch each node belongs to (npts,1)
+%  obj.uvs_targ    - (u,v) param coords of nodes within own patch (2,npts)
+%  obj.mean_curv   - mean curvatures at nodes (npts*1)
+%  obj.ffform      - cell array of first fundamental forms at nodes (2,2,n)
+%  obj.ffforminv   - cell array of inverses of ffforms at nodes (2,2,n)
+%
+%
+% Surfer methods
+%   plot(obj, varargin)      - plot the surface, by default plots the mean
+%                              curvature
+%   scatter(obj,s,c, ...)    - scatter plot of surface
+%   plot_nodes(obj,v, ...)   - plot discretization nodes describing the
+%                              surface
+%   extract_arrays(obj)      - extract flattened arrays for srcvals,
+%                              srccoefs, norders, ixyzs, iptype, and wts
+%   oversample(obj, novers)  - oversample patch(i) on the surface
+%                              to expansion order novers(i)
+%   affine_transf(obj,mat,s) - apply affine transformation, and translation
+%   conv_rsc_spmat(obj, ...) - convert row sparse representation of 
+%                              near quadrature to sparse matrix
+%                              representation
+%   rotate(obj, eul)         - rotate surface based on euler angles
+%   scale(obj, sf)           - scale object
+%   translate(obj, r)        - translate object
+%   merge([array of objs])   - merge an array of surface objects
+%   area(obj)                - compute the surface area of object
+%   surf_fun_error(obj,f,p)  - estimate error in function approximation
+%                              on surface via basis expansion tails
+%   vals2coefs(obj, vals)    - construct basis function expansions
+%                              of function on surface
+% author:
     
     properties
         iptype        % type of each patch (integer, 1,11,12,...)
         weights       % cell array of quadrature weight arrays per patch
         norders       % expansion order p of each patch (length npatches)
         npatches      % number of patches
-        npts          % total number of quadrature nodes
+        npts          % total number of discretization points
         srccoefs      % cell array of orthog poly coeffs of [r;du;dv] per patch
     end
     
    	properties(SetAccess=private)
-        r             % quadrature node locations (3,npts)
+        r             % discretization node locations (3,npts)
         du            % dr/du tangent vectors at nodes (3,npts)
         dv            % dr/dv tangent vectors at nodes (3,npts)
         dru           % normalized dr/du vectors at nodes (3,npts)
@@ -237,7 +283,12 @@ classdef surfer
          [varargout] = scatter(obj,varargin);
          [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear);
          [objout,varargout] = rotate(obj, eul);
-         
+         [varargout] = plot_nodes(S, v, varargin);
+         [objout,varargout] = scale(obj,sf);
+         [objout,varargout] = translate(obj, r);
+         [objout] = merge(Sarray);
+         [coefs] = vals2coefs(obj,vals);
+         [errps] = surf_fun_error(obj,fun,p);    
         
     end
 

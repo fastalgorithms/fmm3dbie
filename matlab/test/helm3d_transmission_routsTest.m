@@ -2,13 +2,14 @@
 % This file tests the Helmholtz impedance problem
 %
 %
+clear
 run ../startup.m
-S = geometries.sphere(1, 8, [0;0;0], 4, 1);
+S = geometries.sphere(1, 2, [0;0;0], 4, 1);
 
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
 [~, npts] = size(srcvals);
 
-zks = 2*pi/0.3*[1; sqrt(1.54)];
+zks = [1.1; 2.1];
 alpha0 = 1;
 beta0 = 1;
 

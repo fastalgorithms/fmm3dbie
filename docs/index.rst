@@ -75,6 +75,7 @@ format, and .step format.
    :maxdepth: 2
 	   
    install
+   matlab_user_guide
    lquad
    surface_reps
    near_reps
@@ -83,8 +84,6 @@ format, and .step format.
    helm_wrappers
    lap_wrappers
    stok_wrappers
-   build_wrappers
-   build_quadratures
    ref
    
    

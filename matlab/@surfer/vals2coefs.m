@@ -5,17 +5,20 @@ function [coefs] = vals2coefs(obj,vals)
 %   the vector of vals on the nodes of S, a surfer object.
 %
 % Inputs: S is a surfer object
-%         vals is (S.npts * n) array (n=1,2... is the number of scalar funcs)
+%         vals is (n, S.npts) or (S.npts, n) array (n=1,2... is the number of scalar funcs)
 % Outputs:
-%         coeffs is (S.npts * n) array of coeffs, in the native patch ordering
+%         coeffs is array of coeffs, in the native patch ordering, same size of vals
 %
 % *** to check this doc
     npatches = obj.npatches;
     npts = obj.npts;
     
-    vals = vals.';
-    if (size(vals,1) ~= npts)
-        disp("error in size");
+    vals_in = vals;
+    if size(vals,1) == npts
+    elseif size(vals,2) == npts
+       vals = vals.';
+    else
+        error("VALS2COEFS:error in size");
         coefs = [];
         return
     end
@@ -64,6 +67,6 @@ function [coefs] = vals2coefs(obj,vals)
         coefs(itot,:) = reshape(cftmp,[],size(vals,2));
     end
     
-    coefs = coefs.';
+    coefs = reshape(coefs, size(vals_in));
     
 end

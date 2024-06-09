@@ -114,18 +114,18 @@ The Impedance problem for the Helmholtz equation is given by
 
    (\Delta + k_{1}^2) u_{1} &= 0 \quad \mbox{ in } \Omega \, , \\
    (\Delta + k_{0}^2) u_{0} &= 0 \quad \mbox{ in } \Omega^c \, , \\
-   u_{0} - u_{1} &= f \quad \mbox{ on } \Gamma \, , \\
-   \frac{1}{\varepsilon_{0}}\frac{\partial u_{0}}{\partial n} - \frac{1}{\varepsilon_{1}} \frac{\partial u_{1}}{\partial n} &= g \quad \mbox{ on } \Gamma \, .
+   \alpha_{0} u_{0} - \alpha_{1} u_{1} &= f \quad \mbox{ on } \Gamma \, , \\
+   \beta_{0} \frac{\partial u_{0}}{\partial n} - \beta_{1} \frac{\partial u_{1}}{\partial n} &= g \quad \mbox{ on } \Gamma \, .
 
-where $k_{j} = \omega \sqrt{\mu_{j}} \sqrt{\varepsilon_{j}}$, $j=0,1$.
+where $k_{0, k_{1}$, are the interior and exterior wave numbers respectively
    
 For solving the above problem, we represent $u$ using the combined field
 representation:
 
 .. math::
 
-   u_{1} &= \varepsilon_{1}^2 \mathcal{S}_{k_{1}}[\lambda] + \varepsilon_{1} \mathcal{D}_{k_{1}}[\rho] \,, \\
-   u_{0} &= \varepsilon_{0}^2 \mathcal{S}_{k_{0}}[\lambda] + \varepsilon_{0} \mathcal{D}_{k_{0}}[\rho] \,.
+   u_{1} &= \frac{1}{\beta_{1}} \left( ik_{1} \mathcal{S}_{k_{1}}[\lambda] + \mathcal{D}_{k_{1}}[\rho] \right) \,, \\
+   u_{0} &= \frac{1}{\beta_{0}} \left( ik_{0} \mathcal{S}_{k_{0}}[\lambda] + \mathcal{D}_{k_{0}}[\rho] \right) \,.
 
 We have the following user callable routines:
 

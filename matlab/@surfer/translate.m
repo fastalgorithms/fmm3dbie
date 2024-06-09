@@ -1,4 +1,4 @@
-function [objout,varargout] = translate(obj,r)
+function [objout,varargout] = translate(obj, r)
 % TRANSLATE translate a surfer object by given vector(s)
 %
 % S2 = translate(S,v) where v is a 3x1 vector returns S translated by v.
