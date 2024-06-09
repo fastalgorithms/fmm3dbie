@@ -833,7 +833,7 @@
       if (nosc-1.gt.0) coefs(m+1+nosc-1,1,3) = coefs(m+1+nosc-1,1,3)-radii(3)/2
       if (nosc-1.lt.0) coefs(m+1+abs(nosc-1),1,3) = coefs(m+1+abs(nosc-1),1,3) + radii(3)/2
 
-      iort = 1
+      iort = -1
 
       call get_xyz_tensor_fourier_npat(coefs, m, scales, &
         iort, nuv, norder, iptype0, npatches, npts, norders, ixyzs, &
