@@ -37,7 +37,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         if nargin > 6
           opts = varargin{2};
         end
-        [p, varargout{2:nargout}] = lap3d.dirichlet.eval(S, densities, targinfo, eps, ... 
+        [p, varargout{1:nargout-1}] = lap3d.dirichlet.eval(S, densities, targinfo, eps, ... 
                                     rep_params, opts);
 
       case {'s', 'single'}
@@ -46,7 +46,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
           opts = varargin{1};
         end
         rep_params = [1.0; 0.0];
-        [p, varargout{2:nargout}] = lap3d.dirichlet.eval(S, densities, targinfo, eps, ...
+        [p, varargout{1:nargout-1}] = lap3d.dirichlet.eval(S, densities, targinfo, eps, ...
                                       rep_params, opts);
 
       case {'d', 'double'}
@@ -55,7 +55,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
           opts = varargin{1};
         end
         rep_params = [0.0; 1.0];
-        [p, varargout{2:nargout}] = lap3d.dirichlet.eval(S, densities, targinfo, eps, ...
+        [p, varargout{1:nargout-1}] = lap3d.dirichlet.eval(S, densities, targinfo, eps, ...
                                       rep_params, opts);
 
       case {'c', 'comb'}
@@ -67,14 +67,17 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         if nargin > 6
           opts = varargin{2};
         end
-        [p, varargout{2:nargout}] = lap3d.dirichlet.eval(S, densities, targinfo, eps, ...
+        [p, varargout{1:nargout-1}] = lap3d.dirichlet.eval(S, densities, targinfo, eps, ...
                                       rep_params, opts);
       case {'neu', 'neumann'}
         opts = [];
         if nargin > 5
           opts = varargin{1};
         end
-        [p, varargout{2:nargout}] = lap3d.neumann.eval(S, densities, targinfo, eps, opts);
+        [p, varargout{1:nargout-1}] = lap3d.neumann.eval(S, densities, targinfo, eps, opts);
+
+        otherwise
+            error('LAP3D.EVAL: representation %s not found\n',bc);
     end
     
 end

@@ -41,7 +41,7 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
           opts = varargin{3};
         end
 
-        [densities, varargout{2:nargout}] = helm3d.dirichlet.solver(S, ...
+        [densities, varargout{1:nargout-1}] = helm3d.dirichlet.solver(S, ...
             rhs, eps, zk, rep_params, opts);
 
       case {'neu', 'neumann'}
@@ -63,7 +63,7 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
         if nargin > 6
           opts = varargin{3};
         end
-        [densities, varargout{2:nargout}] = helm3d.neumann.solver(S, ...
+        [densities, varargout{1:nargout-1}] = helm3d.neumann.solver(S, ...
             rhs, eps, zk, alpha, opts);
 
       case {'imp', 'impedance'}
@@ -91,7 +91,7 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
         if nargin > 7
           opts = varargin{4};
         end
-        [densities, varargout{2:nargout}] = helm3d.impedance.solver(S, ...
+        [densities, varargout{1:nargout-1}] = helm3d.impedance.solver(S, ...
             zlams, rhs, eps, zk, alpha, opts);
 
       case {'trans', 'transmission'}
@@ -114,8 +114,11 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
           error('HELM3D.SOLVER: transmission problem requires 2 wavenumbers');
         end
         zks = zks(:);
-        [densities, varargout{2:nargout}] = helm3d.transmission.solver(S, ...
+        [densities, varargout{1:nargout-1}] = helm3d.transmission.solver(S, ...
             rhs, eps, zks, rep_params, opts);
+
+        otherwise
+            error('HELM3D.SOLVER: boundary condition %s not found\n',bc);
     end
     
 end
