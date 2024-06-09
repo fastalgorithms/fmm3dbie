@@ -28,8 +28,6 @@ for matlab available <https://github.com/fastalgorithms/fmm3dbie/releases/tag/v1
 
 Instructions:
 
-- Select the zip file whose name has MATLAB version 2020 if your version is 2022 or older. Select 2023 otherwise.
-
 - The x86 version should work on most intel machines. The avx2 specification is also commonly available and will be faster if it is compatible with your machine.
 
 - Download the file and unzip. We recommend testing the fmm binaries by running the following in the matlab directory of fmm3dbie:
