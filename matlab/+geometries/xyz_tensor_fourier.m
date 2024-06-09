@@ -1,5 +1,7 @@
 function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
-% GEOMETRIES.xyz_tensor_fourier, get toroidal double fourier surface given by
+% GEOMETRIES.XYZ_TENSOR_FOURIER  Get toroidal double Fourier surface surfer object.
+%
+% Surface is given by
 %
 % hat(x) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i} (u) b_{j} (v)
 % hat(y) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i} (u) b_{j} (v)
@@ -48,6 +50,7 @@ function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
 %        * iptype = 12, quadrangular patch discretized using tensor
 %                       product Chebyshev 
 %
+% Note: mostly a MEX interface to get_xyz_tensor_fourier_npat
 
   if nargin < 2
     scales = [1;1;1];

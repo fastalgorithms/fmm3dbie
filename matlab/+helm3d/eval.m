@@ -1,6 +1,5 @@
 function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
-%HELM3D.eval: solve Helmholtz boundary value problems using integral 
-% equations
+%HELM3D.eval: eval Helmholtz BVP boundary integral equation solution
 %
 % Syntax for Dirichlet problems
 %   [p] = helm3d.eval(S, 'dir', densities, targinfo, eps, zk);

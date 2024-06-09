@@ -148,9 +148,8 @@ h = trisurf(Ttot, xall, yall, zall, fall,...
         'AmbientStrength', 0.6, 'DiffuseStrength', 0.4, ...
         'SpecularStrength', 0.3, varargin_use{:});
 
-
 view(3)
-shading interp
+shading interp  % this doesn't display edges anyway
 axis equal
 % axis vis3d    % might be useful
 grid on
