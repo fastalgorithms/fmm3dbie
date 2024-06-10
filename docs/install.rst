@@ -16,7 +16,7 @@ See source code with binaries below.
 
   * To get all dependencies along with the code run::
 
-    git clone --recurse-submodules https://github.com/fastalgorithms/fmm3dbie.git
+    git clone - -recurse-submodules https://github.com/fastalgorithms/fmm3dbie.git
 
 Install with Precompiled Windows Binaries
 ------------------------------------------
