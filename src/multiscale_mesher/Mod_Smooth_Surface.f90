@@ -368,7 +368,7 @@ subroutine find_smooth_surface(Geometry1, Feval_stuff_1, adapt_flag, ier)
   !
   ! set some parameters for the newton routine for finding the surface
   !
-  tol = 1.0d-10
+  tol = 1.0d-9
   maxiter = 14
   flag = 0
 
