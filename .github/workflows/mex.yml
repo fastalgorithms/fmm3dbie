@@ -1,12 +1,12 @@
 name: Generate Matlab mex files
-on: [push]
+on: [push, pull_request]
 jobs:
   mex-ci:
     name: ${{ matrix.os }}
     strategy:
       matrix:
         #os: [ubuntu-latest, windows-latest, macos-latest]
-        os: [windows-latest]
+        os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
@@ -33,8 +33,9 @@ jobs:
       - name: Generate macOS mex file
         if: runner.os == 'macOS'
         run: |
-          brew install libomp
-          sed 's/\/Applications\/MATLAB_R20\*\*.app/\/Users\/runner\/hostedtoolcache\/MATLAB\/2023.2.999\/arm64\/MATLAB.app/' make.inc.macosx_arm64 > make.inc
+          brew install gfortran
+          sed 's/\/Applications\/MATLAB_R\*/\/Users\/runner\/hostedtoolcache\/MATLAB\/2023.2.999\/arm64\/MATLAB.app/' make.inc.macos_arm64.gnu > make.inc
+          sed -i -e 's/MEXLIBS += \$(MLBLAS.*/MEXLIBS = `gfortran --print-file-name libquadmath.a` `gfortran --print-file-name libstdc++.a` `gfortran --print-file-name libatomic.a` `gfortran --print-file-name libgfortran.a` `gfortran --print-file-name libgomp.a` `gfortran --print-file-name libgcc.a` -ld_classic -lmwblas -lmwlapack/' makefile
           make matlab
       - name: Generate Linux mex file
         if: runner.os == 'Linux'
