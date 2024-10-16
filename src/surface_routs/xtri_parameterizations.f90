@@ -881,6 +881,251 @@ end subroutine xtri_sphere_eval
 
 
 
+subroutine xtri_trefoilknot_eval(itri, u, v, xyz, dxyzduv,triainfo, radii, scales, p4)
+  implicit real *8 (a-h,o-z)
+  real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
+  real *8 :: radii(3),scales(4)
+
+  !
+  ! project the triangle itri in triainfo onto a trefoilknot
+  ! Note: incomplete documentation
+  !
+  !    Input:
+  ! itri - triangle number to map
+  ! u,v - local uv coordinates on triangle itri
+  ! triainfo - flat skeleton triangle info
+  ! radii - to be explained
+  ! scales - to be explained
+  ! p4 - to be explained
+  !
+  !    Output:
+  ! xyz - point on the trefoil knot
+  ! dxyzduv - first and second derivative information
+  !
+  !
+
+  x0=triainfo(1,1,itri)
+  y0=triainfo(2,1,itri)
+  z0=triainfo(3,1,itri)
+
+  x1=triainfo(1,2,itri)
+  y1=triainfo(2,2,itri)
+  z1=triainfo(3,2,itri)
+
+  x2=triainfo(1,3,itri)
+  y2=triainfo(2,3,itri)
+  z2=triainfo(3,3,itri)
+
+  r = radii(1)
+
+  a = scales(1)
+  b = scales(2)
+  c = scales(3)
+  d = scales(4)
+
+  done = 1
+  pi = atan(done)*4
+
+
+  !
+  ! ... process the geometry, return the point location on the trefoil knot
+  ! and the derivatives with respect to u and v
+  !
+  
+  s = x0+u*(x1-x0)+v*(x2-x0)
+  t = y0+u*(y1-y0)+v*(y2-y0)
+
+
+  xyz(1) = (a+b*dcos(c*s))*dcos(d*s) + r*dcos(c*s)*dcos(d*s) &
+       *dcos(t)+(dsqrt(2.0d0)*r*(d*(a + b*dcos(c*s))*dcos(d*s) &
+       *dsin(c*s)-b*c*dsin(d*s))*dsin(t))/dsqrt(2.0d0*(a**2.0d0) &
+       *(d**2.0d0)+(b**2.0d0)*(2.0d0*(c**2.0d0) + d**2.0d0) &
+       + b*(d**2.0d0)*(4*a*dcos(c*s) + b*dcos(2.0d0*c*s)))
+
+  xyz(2) = (a+b*dcos(c*s))*dsin(d*s) + r*dcos(c*s)*dcos(t)*dsin(d*s) &
+       + (dsqrt(2.0d0)*r*(b*c*dcos(d*s) &
+       + d*(a + b*dcos(c*s))*dsin(c*s)*dsin(d*s))*dsin(t)) &
+       /dsqrt(2.0d0*a**2.0d0*d**2.0d0 + b**2.0d0*(2.0d0*c**2.0d0 &
+       + d**2.0d0) + b*d**2.0d0*(4*a*dcos(c*s) + b*dcos(2.0d0*c*s)))
+
+
+  xyz(3) = b*dsin(c*s) + r*dcos(t)*dsin(c*s) &
+       - (dsqrt(2.0d0)*d*r*dcos(c*s)*(a + b*dcos(c*s))*dsin(t)) &
+       /dsqrt(2.0d0*a**2.0d0*d**2.0d0 + b**2.0d0*(2.0d0*c**2.0d0 &
+       + d**2.0d0) + b*d**2.0d0*(4*a*dcos(c*s) + b*dcos(2.0d0*c*s)))
+
+  dsdu = (x1-x0)
+  dsdv = (x2-x0)
+  dtdu = (y1-y0)
+  dtdv = (y2-y0)
+
+  
+  dxds = -(b*c*dcos(d*s)*dsin(c*s)) - c*r*dcos(d*s)*dcos(t)*dsin(c*s) &
+       - d*(a + b*dcos(c*s))*dsin(d*s)- d*r*dcos(c*s)*dcos(t)*dsin(d*s)
+
+  dxds = dxds + (2.0d0*dsqrt(2.0d0)*b*c*d**2.0d0*r*(a + b*dcos(c*s)) &
+       *dsin(c*s)*(d*(a + b*dcos(c*s))*dcos(d*s) * dsin(c*s) - b*c*dsin(d*s))*dsin(t)) &
+       /(2.0d0*a**2.0d0*d**2.0d0 + b**2.0d0*(2.0d0*c**2.0d0 + d**2.0d0) + b*d**2.0d0 &
+       *(4.0d0*a*dcos(c*s)+ b*dcos(2.0d0*c*s)))**1.5d0
+
+  dxds = dxds + (dsqrt(2.0d0)*d*r*(c*dcos(d*s)*(a*dcos(c*s) - 2.0d0*b*dsin(c*s)**2.0d0) &
+       - d*(a + b*dcos(c*s))*dsin(c*s)*dsin(d*s))*dsin(t)) &
+       /dsqrt(2.0d0*a**2.0d0*d**2.0d0 + b**2.0d0*(2.0d0*c**2.0d0 + d**2.0d0) &
+       + b*d**2.0d0*(4.0d0*a*dcos(c*s) + b*dcos(2.0d0*c*s)))
+
+  dyds = d*(a + b*dcos(c*s))*dcos(d*s) + d*r*dcos(c*s)*dcos(d*s)*dcos(t) &
+       - b*c*dsin(c*s)*dsin(d*s) - c*r*dcos(t)*dsin(c*s)*dsin(d*s)
+
+  dyds = dyds + (2.0d0*dsqrt(2.0d0)*b*c*d**2.0d0*r*(a + b*dcos(c*s))*dsin(c*s) &
+       *(b*c*dcos(d*s) + d*(a + b*dcos(c*s)) * dsin(c*s)*dsin(d*s))*dsin(t)) &
+       /(2.0d0*a**2.0d0*d**2.0d0 + b**2.0d0*(2.0d0*c**2.0d0 + d**2.0d0) + b*d**2.0d0 &
+       * (4.0d0*a*dcos(c*s) + b*dcos(2.0d0*c*s)))**1.5d0
+
+  dyds = dyds + (dsqrt(2.0d0)*d*r*(d*(a + b*dcos(c*s))*dcos(d*s) * dsin(c*s) + c*(a*dcos(c*s) &
+       - 2.0d0*b*dsin(c*s)**2.0d0) * dsin(d*s))*dsin(t))/dsqrt(2.0d0*a**2.0d0*d**2.0d0 &
+       + b**2.0d0*(2.0d0*c**2.0d0 + d**2.0d0) + b*d**2.0d0*(4.0d0*a*dcos(c*s) + b*dcos(2.0d0*c*s))) 
+
+  dzds = b*c*dcos(c*s) + c*r*dcos(c*s)*dcos(t)
+
+  dzds = dzds + (dsqrt(2.0d0)*c*d*r*(a + b*dcos(c*s))* dsin(c*s)*dsin(t)) &
+       /dsqrt(2.0d0*a**2.0d0*d**2.0d0 + b**2.0d0*(2.0d0*c**2.0d0 + d**2.0d0) &
+       + b*d**2.0d0*(4*a*dcos(c*s) + b*dcos(2.0d0*c*s)))
+
+  dzds = dzds - (dsqrt(2.0d0)*b*c*d**3*r * (a + b*dcos(c*s))**2.0d0*dsin(2.0d0*c*s)*dsin(t)) & 
+       /(2.0d0*a**2.0d0*d**2.0d0 + b**2.0d0*(2.0d0*c**2.0d0 + d**2.0d0) + b*d**2.0d0*(4*a*dcos(c*s) &
+       + b*dcos(2.0d0*c*s)))**1.5
+  
+  dzds = dzds + (b*c*d*r*dsin(2.0d0*c*s)*dsin(t))/(dsqrt(2.0d0)*dsqrt(2.0d0*a**2.0d0*d**2.0d0 & 
+       + b**2.0d0*(2.0d0*c**2.0d0 + d**2.0d0)+ b*d**2.0d0*(4*a*dcos(c*s) + b*dcos(2.0d0*c*s))))
+
+  dxdt = (dsqrt(2.0d0)*r*dcos(t)*(d*(a+ b*dcos(c*s))*dcos(d*s)*dsin(c*s)-b*c*dsin(d*s))) & 
+       /dsqrt(2.0d0*a**2.0d0*d**2.0d0+b**2.0d0 *(2.0d0*c**2.0d0+d**2.0d0)+b*d**2.0d0 &
+       *(4.0d0*a*dcos(c*s)+b*dcos(2.0d0*c*s)))- r*dcos(c*s)*dcos(d*s)*dsin(t)
+
+  dydt = (dsqrt(2.0d0)*r*dcos(t)*(b*c*dcos(d*s) + d*(a+b*dcos(c*s))*dsin(c*s)*dsin(d*s))) &
+       /dsqrt(2.0d0*a**2.0d0*d**2.0d0+b**2.0d0*(2.0d0*c**2.0d0 + d**2.0d0)+b*d**2.0d0 &
+       * (4.0d0*a*dcos(c*s)+b*dcos(2.0d0*c*s)))-r*dcos(c*s)*dsin(d*s)*dsin(t)
+  
+  dzdt = -((dsqrt(2.0d0)*d*r*dcos(c*s)*(a+b*dcos(c*s))*dcos(t)) &
+       /dsqrt(2.0d0*a**2.0d0*d**2.0d0+b**2.0d0*(2.0d0*c**2.0d0 &
+       +d**2.0d0)+b*d**2.0d0*(4.0d0*a*dcos(c*s)+b*dcos(2.0d0*c*s)))) - r*dsin(c*s)*dsin(t)
+
+  dxdu = dxds*dsdu + dxdt*dtdu
+  dydu = dyds*dsdu + dydt*dtdu
+  dzdu = dzds*dsdu + dzdt*dtdu
+
+  dxdv = dxds*dsdv + dxdt*dtdv
+  dydv = dyds*dsdv + dydt*dtdv
+  dzdv = dzds*dsdv + dzdt*dtdv
+
+  dxyzduv(1,1) = dxdu
+  dxyzduv(2,1) = dydu
+  dxyzduv(3,1) = dzdu
+
+  dxyzduv(1,2) = dxdv
+  dxyzduv(2,2) = dydv
+  dxyzduv(3,2) = dzdv
+
+  return
+end subroutine xtri_trefoilknot_eval
+
+subroutine xtri_cruller_eval(itri, u, v, xyz, dxyzduv,triainfo, params, p2,p3, p4)
+  implicit real *8 (a-h,o-z)
+  real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
+  real *8 :: params(5)
+
+  !
+  ! project the triangle itri in triainfo onto a cruller
+  !
+  !    Input:
+  ! itri - triangle number to map
+  ! u,v - local uv coordinates on triangle itri
+  ! triainfo - flat skeleton triangle info
+  !          params(1): major radius
+  !          params(2): minor radius
+  !          params(3): maximum deviation from minor radius
+  !          params(4): number of pertubations
+  !          params(5): number of rotations aroung the poloidal direction
+  !
+  ! params(4) and params(5) must be integers recast as double precision numbers
+  !
+  !    Output:
+  ! xyz - point on the cruller
+  ! dxyzduv - first and second derivative information
+  !
+  !
+
+  x0=triainfo(1,1,itri)
+  y0=triainfo(2,1,itri)
+  z0=triainfo(3,1,itri)
+
+  x1=triainfo(1,2,itri)
+  y1=triainfo(2,2,itri)
+  z1=triainfo(3,2,itri)
+
+  x2=triainfo(1,3,itri)
+  y2=triainfo(2,3,itri)
+  z2=triainfo(3,3,itri)
+
+  r = params(1)
+  a = params(2)
+  b = params(3)
+
+  c = params(4)
+  d = params(5)
+
+  done = 1
+  pi = atan(done)*4
+
+  !
+  ! ... process the geometry, return the point location on the cruller
+  ! and the derivatives with respect to u and v
+  !
+  s = x0+u*(x1-x0)+v*(x2-x0)
+  t = y0+u*(y1-y0)+v*(y2-y0)
+
+
+  h = a+b*dcos(c*s+d*t)
+  xyz(1) =  (r+h*dcos(t))*dcos(s)
+  xyz(2) =  (r+h*dcos(t))*dsin(s)
+  xyz(3) = h*dsin(t)
+
+  dsdu = (x1-x0)
+  dsdv = (x2-x0)
+  dtdu = (y1-y0)
+  dtdv = (y2-y0)
+
+  dxds = -((r+dcos(t)*(a+b*dcos(c*s+d*t)))*dsin(s)) &
+       -b*c*dcos(s)*dcos(t)*dsin(c*s+d*t)
+  dyds = dcos(s)*(r+dcos(t)*(a+b*dcos(c*s+d*t))) &
+       -b*c*dcos(t)*dsin(s)*dsin(c*s+d*t)
+  dzds = -b*c*dsin(t)*dsin(c*s+d*t)
+
+
+  dxdt = dcos(s)*(-((a+b*dcos(c*s+d*t))*dsin(t)) &
+       -b*d*dcos(t)*dsin(c*s+d*t))
+  dydt = dsin(s)*(-((a+b*dcos(c*s+d*t))*dsin(t)) &
+       -b*d*dcos(t)*dsin(c*s+d*t))
+  dzdt = dcos(t)*(a+b*dcos(c*s+d*t))-b*d*dsin(t)*dsin(c*s+d*t)
+
+  dxdu = dxds*dsdu + dxdt*dtdu
+  dydu = dyds*dsdu + dydt*dtdu
+  dzdu = dzds*dsdu + dzdt*dtdu
+
+  dxdv = dxds*dsdv + dxdt*dtdv
+  dydv = dyds*dsdv + dydt*dtdv
+  dzdv = dzds*dsdv + dzdt*dtdv
+
+  dxyzduv(1,1) = dxdu
+  dxyzduv(2,1) = dydu
+  dxyzduv(3,1) = dzdu
+
+  dxyzduv(1,2) = dxdv
+  dxyzduv(2,2) = dydv
+  dxyzduv(3,2) = dzdv
+
+  return
+end subroutine xtri_cruller_eval
 
 
 
@@ -1498,3 +1743,57 @@ end subroutine xtri_refine4_flat
 
 
 
+
+subroutine xtri_qtree_rectmesh(umin,umax,vmin,vmax,norder,nlevels,nboxes,ltree,itree,iptr,&
+     centers,boxsize,triaskel,maxtri)
+  
+  implicit none
+  integer ibox,ilev,ntri,maxtri
+  integer nlevels,nboxes,ltree,norder
+  integer iptr(8)
+  integer itree(ltree)
+  
+  real *8 centers(2,nboxes), boxsize(2,0:nlevels)
+  real *8 umin,umax,vmin,vmax,width,height,boxlenx,boxleny
+  real *8 triaskel(3,3,maxtri)
+  real *8 u0,u1,v0,v1,c0x,c0y
+!     
+!     NOTE: This code assumes that points in the quad-tree
+!     are mapped from [-1/2,1/2]^2.
+!     
+!     this routine returns a mesh consisting of triangles.
+!     The leaf level rectangles in a quadtree are split into two triangels.
+!     --- keep in mind the triangles are stored with u,v,w components,
+!     with w=0 (in order to be consistent with other skeleton meshes)
+!     
+!     Input:
+!     umin,umax, vmin,vmax - sets the dimensions of the rectangle
+!     maxtri - maximum number of allowable triangles
+!     
+!     Output:
+!     ntri - number of triangles created
+!     triaskel - skeleton mesh info, basically just vertices of each triangle
+!
+
+  width = umax-umin
+  height = vmax-vmin
+  boxlenx = boxsize(1,1)
+  boxleny = boxsize(2,1)
+
+  ntri = 0
+  !     loop over all boxes, if the box is a leaf, split it
+  do ibox = 1,nboxes         
+     if(itree(iptr(4)+ibox-1).eq.0) then
+        !     is a leaf box -> split into two triangles
+        ilev = itree(iptr(2)+ibox-1)
+        u0 = (centers(1,ibox) - boxsize(1,ilev)/2 + 1/2) * width + umin
+        u1 = (centers(1,ibox) + boxsize(1,ilev)/2 + 1/2) * width + umin
+        v0 = (centers(2,ibox) - boxsize(2,ilev)/2 + 1/2) * height + vmin
+        v1 = (centers(2,ibox) + boxsize(2,ilev)/2 + 1/2) * height + vmin
+        call xtri_rectmesh0(u0, u1, v0, v1, triaskel(1,1,ntri+1))
+        ntri= ntri + 2
+     endif
+  enddo
+
+  return
+end subroutine xtri_qtree_rectmesh
