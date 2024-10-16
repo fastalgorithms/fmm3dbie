@@ -1145,8 +1145,8 @@
       !  
       !  s,t \in [0, 2\pi]^2, and
       !
-      !  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(s) b_{j}(t))
-      !  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(s) b_{j}(t))
+      !  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2n+1} x_{ij} b_{i}(s) b_{j}(t))
+      !  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2n+1} z_{ij} b_{i}(s) b_{j}(t))
       
       pi = 4*datan(1.0d0)
 
