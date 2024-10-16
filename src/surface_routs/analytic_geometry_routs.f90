@@ -1056,3 +1056,189 @@
 
       return
       end
+
+!    
+!   Below are function handles for parametrizations of analytic charts. 
+!    
+!    The function handles are of the form
+!   
+!    call fun(nd,uv,dpars,zpars,ipars,f)
+!
+!    where uv is the location in (-1/2,1/2)^2.
+!
+!    dpars are a collection of real parameters, zpars are complex
+!    parameters and ipars are integer parameters, and f is a 
+!    real array of size nd
+
+    subroutine fun_ellipsoid(nd,uv,dpars,zpars,ipars,f)
+      implicit real *8 (a-h,o-z)
+      integer nd,ipars(100)
+      real *8 dpars(1000),f(nd),uv(2),s,t,pi
+      complex *16 zpars
+
+      pi = 4*datan(1.0d0)
+
+      !     assume u,v is in [-1/2,1/2]^2
+      !     scale u,v to st in [0,2\pi]\times[-pi/2,\pi/2]
+
+      s = (uv(1) + 0.5d0)*pi*2.0d0
+      t = uv(2)*pi
+
+      f(1) =  dpars(1)*dsin(t)*dcos(s)+dpars(2)
+      f(2) =  dpars(1)*dsin(t)*dsin(s)+dpars(3)
+      f(3) =  dpars(1)*dcos(t)+dpars(4)
+
+    end subroutine fun_ellipsoid
+
+
+    subroutine fun_wtorus(nd,uv,dpars,zpars,ipars,f)
+      implicit real *8 (a-h,o-z)
+      integer nd,ipars(100)
+      real *8 dpars(1000),f(nd),uv(2),s,t,pi
+      complex *16 zpars
+
+      pi = 4*datan(1.0d0)
+
+      !     assume u,v is in [-1/2,1/2]^2
+      !     scale u,v to s,t in [0,2\pi]^2
+
+      s = (uv(1) + 0.5d0)*pi*2.0d0
+      t = (uv(2) + 0.5d0)*pi*2.0d0
+      
+      !     rminor,rmajor - the two radii defining the torus,
+      !     rwave - the radius of osciallation
+      !     a,b,c - scaling for x,y,z components from the standard torus
+      !     nosc - number of oscillations (must be an integer currently recast
+      !     as a double precision number)
+      
+      rminor = dpars(1)
+      rmajor = dpars(2)
+      rwave = dpars(3)
+
+      a = dpars(4)
+      b = dpars(5)
+      c = dpars(6)
+
+      nosc = dpars(7)
+
+      rr = rmajor+rminor*cos(t)+rwave*cos(nosc*s)
+
+      f(1) = a*rr*cos(s)
+      f(2) = b*rr*sin(s)
+      f(3) = c*rminor*sin(t)
+
+    end subroutine fun_wtorus
+
+
+    subroutine fun_stellarator(nd,uv,dpars,zpars,ipars,f)
+      implicit real *8 (a-h,o-z)
+      integer nd,ipars(100),m,n
+      real *8 dpars(1000),f(nd),uv(2),s,t,pi
+      complex *16 zpars
+
+      !  Discretize the stellarator example in the fmm3dbie paper
+      !  given by
+      !
+      !  x(s,t) = \hat(x)(s,t) \cos(t)
+      !  y(s,t) = \hat(x)(s,t) \sin(t)
+      !  z(s,t) = \hat(z)(s,t)
+      !  
+      !  s,t \in [0, 2\pi]^2, and
+      !
+      !  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(s) b_{j}(t))
+      !  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(s) b_{j}(t))
+      
+      pi = 4*datan(1.0d0)
+
+      m = ipars(2)
+      n = ipars(3)
+
+      !     assume u,v is in [-1/2,1/2]^2
+      !     scale u,v to s,t in [0, 2\pi]^2
+
+      s = (uv(1) + 0.5d0)*pi*2.0d0
+      t = (uv(2) + 0.5d0)*pi*2.0d0
+
+
+      f(1) = 0
+      f(2) = 0
+      f(3) = 0
+
+
+      ct = cos(t)
+      st = sin(t) 
+      do i = -1,m
+         do j = -1,n
+            cst = cos((1.0d0-i)*s + j*t)
+            sst = sin((1.0d0-i)*s + j*t)
+            f(1) = f(1) + ct*dpars((m+2)*(j+1)+i+2)*cst
+            f(2) = f(2) + st*dpars((m+2)*(j+1)+i+2)*cst
+            f(3) = f(3) + dpars((m+2)*(j+1)+i+2)*sst
+
+         end do
+      end do
+
+    end subroutine fun_stellarator
+
+
+    subroutine fun_trefoilknot(nd,uv,dpars,zpars,ipars,f)
+      implicit real *8 (a-h,o-z)
+      integer nd,ipars(100)
+      real *8 dpars(1000),f(nd),uv(2),s,t,pi,r
+      complex *16 zpars
+
+      pi = 4*datan(1.0d0)
+
+      r = dpars(1)
+      a = dpars(2)
+      b = dpars(3)
+      c = dpars(4)
+      d = dpars(5)
+
+      !     assume u,v is in [-1/2,1/2]^2
+      !     scale u,v to s,t in [0,2\pi]^2
+
+      s = (uv(1) + 0.5d0)*pi*2.0d0
+      t = (uv(2) + 0.5d0)*pi*2.0d0
+
+      f(1) = (a + b*dcos(c*s))*dcos(d*s) + r*dcos(c*s)*dcos(d*s)*dcos(t) &
+           + (dsqrt(2.0d0)*r*(d*(a + b*dcos(c*s))*dcos(d*s)*dsin(c*s) &
+           - b*c*dsin(d*s))*dsin(t))/dsqrt(2.0d0*(a**2.0d0)*(d**2.0d0) &
+           + (b**2.0d0)*(2.0d0*(c**2.0d0) + d**2.0d0) &
+           + b*(d**2.0d0)*(4*a*dcos(c*s) + b*dcos(2.0d0*c*s)))
+
+      f(2) = (a + b*dcos(c*s))*dsin(d*s) + r*dcos(c*s)*dcos(t)*dsin(d*s) &
+           + (dsqrt(2.0d0)*r*(b*c*dcos(d*s) &
+           + d*(a + b*dcos(c*s))*dsin(c*s)*dsin(d*s))*dsin(t)) &
+           /dsqrt(2.0d0*a**2.0d0*d**2.0d0 + b**2.0d0*(2.0d0*c**2.0d0 &
+           + d**2.0d0) + b*d**2.0d0*(4*a*dcos(c*s) + b*dcos(2.0d0*c*s)))
+
+      f(3) = b*dsin(c*s) + r*dcos(t)*dsin(c*s) &
+           - (dsqrt(2.0d0)*d*r*dcos(c*s)*(a + b*dcos(c*s))*dsin(t)) &
+           /dsqrt(2.0d0*a**2.0d0*d**2.0d0 + b**2.0d0*(2.0d0*c**2.0d0 &
+           + d**2.0d0) + b*d**2.0d0*(4*a*dcos(c*s) + b*dcos(2.0d0*c*s)))
+
+    end subroutine fun_trefoilknot
+
+    subroutine fun_cruller(nd,uv,dpars,zpars,ipars,f)
+      implicit real *8 (a-h,o-z)
+      integer nd,ipars(100)
+      real *8 dpars(1000),f(nd),uv(2),s,t,pi
+      complex *16 zpars
+
+      pi = 4*datan(1.0d0)
+
+      !     assume u,v is in [-1/2,1/2]^2
+      !     scale u,v to s,t in [0,2\pi]^2
+
+      s = (uv(1) + 0.5d0)*pi*2.0d0
+      t = (uv(2) + 0.5d0)*pi*2.0d0
+
+      h = dpars(2) + dpars(3)*dcos(dpars(4)*s+dpars(5)*t)
+      f(1) =  (dpars(1)+h*dcos(t))*dcos(s)
+      f(2) =  (dpars(1)+h*dcos(t))*dsin(s)
+      f(3) =  h*dsin(t)
+
+    end subroutine fun_cruller
+
+
