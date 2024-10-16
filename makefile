@@ -107,7 +107,7 @@ MEXLIBS += $(MLBLAS)
 # Common objects
 COM = src/common
 COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
-	$(COM)/dlaran.o \
+	$(COM)/dlaran.o $(COM)/legetens.o \
 	$(COM)/rotmat_gmres.o $(COM)/setops.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o \
@@ -157,7 +157,7 @@ SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
 	$(SURF)/xtri_plot.o $(SURF)/write_go3.o $(SURF)/in_gidmsh2.o \
 	$(SURF)/in_gmsh2.o $(SURF)/patch_basis_routs.o \
 	$(SURF)/analytic_geometry_routs.o $(SURF)/analytic_charts.o \
-	$(SURF)/xquad_parametrizations.o \
+	$(SURF)/xquad_parametrizations.o  $(SURF)/surface_tree_routs.o\
 
 # Triangle adaptive integration routines
 TRIA = src/tria_routs
