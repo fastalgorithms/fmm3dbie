@@ -20,6 +20,7 @@
 
       complex *16 pot, potex, ztmp, ima
       real *8 c0(3)
+      character *100 rep
 
       data ima/(0.0d0,1.0d0)/
 
@@ -41,6 +42,12 @@ c                      = 11, for quadrangles with GL nodes
 c                      = 12, for quadrangles with Cheb nodes      
 c      
       iptype0 = 1
+
+c
+c  representation, rep = 'rpcomb', right preconditioned combined
+c                                  field representation             
+c                      = 's', single layer representation
+      rep = 's'      
 
       a = 1
       na = 2
@@ -113,15 +120,27 @@ c
 
       eps_gmres = 0.5d-6
 
-      call helm_rpcomb_neu_solver_memest(npatches, norders, ixyzs,
-     1  iptype, npts, srccoefs, srcvals, eps, zpars, numit, rmem)
+      if (trim(rep).eq.'rpcomb') then
+
+        call helm_rpcomb_neu_solver_memest(npatches, norders, ixyzs,
+     1    iptype, npts, srccoefs, srcvals, eps, zpars, numit, rmem)
       
+        call helm_rpcomb_neu_solver(npatches, norders, ixyzs, iptype, 
+     1    npts, srccoefs, srcvals, eps, zpars, numit, ifinout, rhs, 
+     2    eps_gmres, niter, errs, rres, sigma, sigma1)
+
+      elseif (trim(rep).eq.'s') then
+
+        call helm_s_neu_solver_memest(npatches, norders, ixyzs,
+     1    iptype, npts, srccoefs, srcvals, eps, zpars, numit, rmem)
+      
+        call helm_s_neu_solver(npatches, norders, ixyzs, iptype, 
+     1    npts, srccoefs, srcvals, eps, zpars, numit, ifinout, rhs, 
+     2    eps_gmres, niter, errs, rres, sigma)
+
+      endif
+
       call prin2('estimated memory=*',rmem,1)
-
-      call helm_rpcomb_neu_solver(npatches, norders, ixyzs, iptype, 
-     1  npts, srccoefs, srcvals, eps, zpars, numit, ifinout, rhs, 
-     2  eps_gmres, niter, errs, rres, sigma, sigma1)
-
       call prinf('niter=*',niter,1)
       call prin2('rres=*',rres,1)
       call prin2('errs=*',errs,niter)
@@ -138,10 +157,20 @@ c
       ipatch_id = -1
       uvs_targ(1) = 0
       uvs_targ(2) = 0
+      
+      if (trim(rep).eq.'rpcomb') then
 
-      call helm_rpcomb_eval(npatches, norders, ixyzs, iptype,
-     1  npts, srccoefs, srcvals, ndtarg, ntarg, xyz_targ, ipatch_id,
-     2  uvs_targ, eps, zpars, sigma, sigma1, pot)
+        call helm_rpcomb_eval(npatches, norders, ixyzs, iptype,
+     1    npts, srccoefs, srcvals, ndtarg, ntarg, xyz_targ, ipatch_id,
+     2    uvs_targ, eps, zpars, sigma, sigma1, pot)
+
+      elseif (trim(rep).eq.'s') then
+
+        call helm_s_eval(npatches, norders, ixyzs, iptype,
+     1    npts, srccoefs, srcvals, ndtarg, ntarg, xyz_targ, ipatch_id,
+     2    uvs_targ, eps, zpars, sigma, pot)
+
+      endif
 
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)

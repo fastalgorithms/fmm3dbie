@@ -32,7 +32,7 @@ sig = helm3d.dirichlet.solver(S,zpars,rhs,eps);
 targ_info = [];
 targ_info.r = xyz_out;
 
-dat = helm3d.kern(zk,S,targ_info,'c',zpars(2),zpars(3));
+dat = helm3d.kern(zk,S,targ_info,'c',[zpars(2),zpars(3)]);
 
 wts = S.wts;
 pot = dat*(sig.*wts);

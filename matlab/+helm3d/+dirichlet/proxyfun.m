@@ -19,7 +19,7 @@ function [Kpxy,lst] = proxyfun(x,slf,lst,proxy_dict,l,ctr,zpars,rn,wts)
       targinfo,'s'),w_sqrt);
     Kpxy1 = bsxfun(@times, weigt.', Kpxy1);
     Kpxy2 = bsxfun(@times,helm3d.kern(zpars(1),srcinfo, ...
-      targinfo,'c',zpars(2),zpars(3)),w_sqrt);
+      targinfo,'c',[zpars(2),zpars(3)]),w_sqrt);
     Kpxy2 = bsxfun(@times, weigt.', Kpxy2);
     
     Kpxy = [Kpxy1;Kpxy2];

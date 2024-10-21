@@ -1,5 +1,5 @@
 
-function submat= kern(zk,srcinfo,targinfo,type,varargin)
+function submat= kern(zk, srcinfo, targinfo, type, varargin)
 %HELM3D.KERN standard Helmholtz layer potential kernels in 3D
 % 
 % Syntax: submat = helm3d.kern(zk,srcinfo,targingo,type,varargin)
@@ -39,7 +39,9 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %                type == 'eval' computes matrices for both S and D
 %                type == 'evalg' computes matrices for both S and D, and 
 %                      their gradients
-%   varargin{1} - alpha, beta in the combined layer formula, coef in eval 
+%                type == 'cprime' computes the normal derivative of
+%                         combined layer alpha*S + beta*D
+%   varargin{1} - coefs = [alpha, beta] in the combined layer formula, coef in eval 
 %                and evalg, otherwise does nothing
 %
 % Output:
@@ -55,7 +57,7 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %   helm3d.kern(k,s,t,'s') - S               % gives 0
 %   helm3d.kern(k,s,t,'d') - D               % gives 0
 %   eta = -1i*k; cfie = eta*S + 1.0*D;
-%   helm3d.kern(k,s,t,'c',eta,1.0) - cfie    % gives 0
+%   helm3d.kern(k,s,t,'c',[eta,1.0]) - cfie    % gives 0
 %
 % See also HELM3D.GREEN
   
@@ -110,8 +112,23 @@ if strcmpi(type,'s')
 end
 
 if strcmpi(type,'dprime')
-  disp("unsupported kernel");
-  submat = 0;
+  targnorm = targinfo.n;
+  srcnorm = srcinfo.n;
+  [~, ~, hess] = helm3d.green(zk, src, targ);
+  nxsrc = repmat(srcnorm(1,:), nt, 1);
+  nysrc = repmat(srcnorm(2,:), nt, 1);
+  nzsrc = repmat(srcnorm(3,:), nt, 1);
+
+  nxtarg = repmat(targnorm(1,:).', 1, ns);
+  nytarg = repmat(targnorm(2,:).', 1, ns);
+  nztarg = repmat(targnorm(3,:).', 1, ns);
+
+  submat = -(hess(:,:,1,1).*nxsrc.*nxtarg + ...
+           hess(:,:,1,2).*(nxsrc.*nytarg + nysrc.*nxtarg) + ...
+           hess(:,:,1,3).*(nxsrc.*nztarg + nzsrc.*nxtarg) + ...
+           hess(:,:,2,2).*nysrc.*nytarg + ...
+           hess(:,:,2,3).*(nysrc.*nztarg + nzsrc.*nytarg)+ ...
+           hess(:,:,3,3).*nzsrc.*nztarg);
 end
 
 if strcmpi(type,'c')
@@ -119,8 +136,9 @@ if strcmpi(type,'c')
 %       .  .  .  alpha*S + beta*D
 %%%%%%
   srcnorm = srcinfo.n;
-  alpha = varargin{1};
-  beta  = varargin{2};
+  coefs = varargin{1};
+  alpha = coefs(1);
+  beta  = coefs(2);
   [s,grad] = helm3d.green(zk,src,targ);
   nx = repmat(srcnorm(1,:),nt,1);
   ny = repmat(srcnorm(2,:),nt,1);
@@ -128,6 +146,39 @@ if strcmpi(type,'c')
   submat = -beta*(grad(:,:,1).*nx + grad(:,:,2).*ny+grad(:,:,3).*nz)...
       +alpha*s;
 end
+
+
+if strcmpi(type,'cprime')
+%%%%%%
+%       .  .  .  alpha*S + beta*D
+%%%%%%
+  srcnorm = srcinfo.n;
+  targnorm = targinfo.n;
+  coefs = varargin{1};
+  alpha = coefs(1);
+  beta  = coefs(2);
+  [~, grad, hess] = helm3d.green(zk, src, targ);
+
+    nxsrc = repmat(srcnorm(1,:), nt, 1);
+  nysrc = repmat(srcnorm(2,:), nt, 1);
+  nzsrc = repmat(srcnorm(3,:), nt, 1);
+
+  nxtarg = repmat(targnorm(1,:).', 1, ns);
+  nytarg = repmat(targnorm(2,:).', 1, ns);
+  nztarg = repmat(targnorm(3,:).', 1, ns);
+
+  submat = -beta*(hess(:,:,1,1).*nxsrc.*nxtarg + ...
+           hess(:,:,1,2).*(nxsrc.*nytarg + nysrc.*nxtarg) + ...
+           hess(:,:,1,3).*(nxsrc.*nztarg + nzsrc.*nxtarg) + ...
+           hess(:,:,2,2).*nysrc.*nytarg + ...
+           hess(:,:,2,3).*(nysrc.*nztarg + nzsrc.*nytarg)+ ...
+           hess(:,:,3,3).*nzsrc.*nztarg) + ...
+           alpha*(grad(:,:,1).*nxtarg + grad(:,:,2).*nytarg + ...
+                  grad(:,:,3).*nztarg);
+
+  
+end
+
 
 if strcmpi(type,'all')
   disp("unsupported kernel");

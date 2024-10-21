@@ -36,7 +36,7 @@ sig = helm3d.dirichlet.solver(S,rhs,eps,zk,rep_pars);
 targ_info = [];
 targ_info.r = xyz_out;
 
-dat = helm3d.kern(zk,S,targ_info,'c',rep_pars(1),rep_pars(2));
+dat = helm3d.kern(zk,S,targ_info,'c',rep_pars);
 
 pot = dat*(sig.*wts);
 pot_ex = helm3d.kern(zk,src_info,targ_info,'s');
@@ -67,7 +67,7 @@ sig = helm3d.dirichlet.solver(S,rhs,eps,zk,rep_pars);
 targ_info = [];
 targ_info.r = xyz_out;
 
-dat = helm3d.kern(zk,S,targ_info,'c',rep_pars(1),rep_pars(2));
+dat = helm3d.kern(zk,S,targ_info,'c',rep_pars);
 
 pot = dat*(sig.*wts);
 pot_ex = helm3d.kern(zk,src_info,targ_info,'s');

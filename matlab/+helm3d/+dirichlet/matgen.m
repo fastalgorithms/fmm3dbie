@@ -64,7 +64,7 @@ function A = matgen(i,j,S,zpars,P,Q,opts)
         l2scale = opts.l2scale;
      end
      A1 = helm3d.kern(zpars(1),srcinfo, ...
-            targinfo,'c',zpars(2),zpars(3));
+            targinfo,'c',[zpars(2),zpars(3)]);
      A = bsxfun(@times,A1,S.wts(j).');
 
      if(nargin > 4)
