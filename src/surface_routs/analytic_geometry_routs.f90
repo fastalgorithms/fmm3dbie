@@ -1343,6 +1343,8 @@
         vmax = 0
       endif
 
+      nover = 0
+
       if (iptype0.eq.1) then
         do ich = 2,nch2d-1
           umin = tchse(ich)
