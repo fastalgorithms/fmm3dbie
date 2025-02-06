@@ -112,7 +112,9 @@
 !        number of near field entries corresponding to each source target
 !        pair
 !    - nker: integer
-!        number of kernels in quadrature correction, must be 4
+!        number of kernels in quadrature correction, must be 1 or 4
+!        nker is 1 is only allowed if E = S_{k}[J] or H = S_{k}[M]
+!        is requested
 !    - wnear: complex *16(nker, nquad)
 !        precomputed quadrature corrections
 !        * wnear(1,:) stores corrections for S_{k}
@@ -170,7 +172,7 @@
 !  Output arguments:
 !    - pot: complex *16 (ndim_p, ntarg)
 !        pot(1:3, :) is E if ipotflag = 1 or 3
-!        pot(4:6, :) is E if ipotflag = 2 or 3  
+!        pot(4:6, :) is H if ipotflag = 2 or 3  
 !
 
       implicit none

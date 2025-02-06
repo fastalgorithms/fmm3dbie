@@ -157,7 +157,7 @@ SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
 	$(SURF)/xtri_plot.o $(SURF)/write_go3.o $(SURF)/in_gidmsh2.o \
 	$(SURF)/in_gmsh2.o $(SURF)/patch_basis_routs.o \
 	$(SURF)/analytic_geometry_routs.o $(SURF)/analytic_charts.o \
-	$(SURF)/xquad_parametrizations.o \
+	$(SURF)/xquad_parametrizations.o $(SURF)/circ_mesh.o \
 
 # Triangle adaptive integration routines
 TRIA = src/tria_routs

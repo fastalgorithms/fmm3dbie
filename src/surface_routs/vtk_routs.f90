@@ -417,7 +417,7 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
   close(iunit1)
 
 
-
+  return
 end subroutine surf_vtk_plot_scalar
 !
 !
@@ -663,7 +663,7 @@ subroutine surf_vtk_plot_scalar_many(nd,npatches,norders,ixyzs,iptype, &
   close(iunit1)
 
 
-
+  return
 end subroutine surf_vtk_plot_scalar_many
 !
 !
@@ -759,8 +759,8 @@ end subroutine vtk_write_plane_vec
 
 
 
-subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
-  npts,srccoefs,srcvals,sigma,fname,title)
+subroutine surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, &
+  npts, srccoefs, srcvals, sigma, fname, title)
 !
 !   This subroutine writes a vtk to plot the surface along
 !   with a vector field. Currently only supports triangular patches
@@ -777,12 +777,14 @@ subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
   character (len=*) fname,title
 
   real *8, allocatable :: xyzs(:,:),uvs(:,:,:),splot(:,:)
+  real *8, allocatable :: uvs_quad(:,:,:)
   integer, allocatable :: kovers(:),nps(:),ipstart(:)
 
   integer i,j,k,l,ipatch,npout,kover,npols
   integer itrip,itric1,nb,nlmax,nuv,istart,iend,nd
   integer ilstart,itri,iunit1,m,ncell,ncsize,norder,nuvl,i1
   integer idim
+  integer imul, nordermax, npolmax
 
   real *8 ra,erra
 
@@ -790,12 +792,10 @@ subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
 !  get the coefs of the density
 !
    nd = 3
-   allocate(sigma_coefs(nd,npts))
+   allocate(sigma_coefs(3,npts))
    call surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
      sigma,sigma_coefs)
-
-
- 
+   
 !
 !   estimate kovers, nps 
 !
@@ -823,7 +823,7 @@ subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
   call cumsum(npatches,nps,ipstart(2))
   nps(1) = nps(1) - 1
 
-  allocate(xyzs(3,npout),splot(nd,npout))
+  allocate(xyzs(3,npout),splot(3,npout))
 
 !
 !   get uvs of all patches of type = 1
@@ -832,6 +832,8 @@ subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
   nlmax = 5
   nuv = (4**(nlmax+1)-1)/3
   allocate(uvs(2,3,nuv))
+  allocate(uvs_quad(2,4,nuv))
+
 
   uvs(1,1,1) = 0
   uvs(2,1,1) = 0
@@ -839,6 +841,16 @@ subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
   uvs(2,2,1) = 0
   uvs(1,3,1) = 0
   uvs(2,3,1) = 1
+
+  uvs_quad(1,1,1) = -1
+  uvs_quad(2,1,1) = -1
+  uvs_quad(1,2,1) = 1
+  uvs_quad(2,2,1) = -1
+  uvs_quad(1,3,1) = -1
+  uvs_quad(2,3,1) = 1
+
+  uvs_quad(1,4,1) = 1
+  uvs_quad(2,4,1) = 1
 
   do i=0,nlmax-1
     istart = (4**(i)-1)/3+1
@@ -848,52 +860,74 @@ subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
       itric1 = (itrip-istart)*4 + iend
       call gettrichildren(uvs(1,1,itrip),uvs(1,1,itric1+1), &
        uvs(1,1,itric1+2),uvs(1,1,itric1+3),uvs(1,1,itric1+4))   
+      call getquadchildren(uvs_quad(1,1,itrip),uvs_quad(1,1,itric1+1), &
+       uvs_quad(1,1,itric1+2),uvs_quad(1,1,itric1+3),uvs_quad(1,1,itric1+4))  
+      
+      do j=1,4
+        uvs_quad(1,4,itric1+j) = uvs_quad(1,2,itric1+j) + & 
+          uvs_quad(1,3,itric1+j) - uvs_quad(1,1,itric1+j)
+        uvs_quad(2,4,itric1+j) = uvs_quad(2,2,itric1+j) + &
+          uvs_quad(2,3,itric1+j) - uvs_quad(2,1,itric1+j)
+      enddo
     enddo
   enddo
 
 
+  nordermax = maxval(norders)
+  npolmax = (nordermax+1)**2
+  allocate(pols(npolmax))
   do ipatch=1,npatches
     istart = ipstart(ipatch)
     npols = ixyzs(ipatch+1)-ixyzs(ipatch)
     norder = norders(ipatch)
-    allocate(pols(npols))
-    if(iptype(ipatch).eq.1) then
 
-      nuvl = ipstart(ipatch+1)-ipstart(ipatch)
-      ilstart = (4**(kovers(ipatch))-1)/3+1
-      nb = 4**(kovers(ipatch))
-      do i=1,nb
-        itri = i+ilstart-1
-        do j=1,3
-          call koorn_pols(uvs(1,j,itri),norder,npols,pols)
+    nuvl = ipstart(ipatch+1)-ipstart(ipatch)
+    ilstart = (4**(kovers(ipatch))-1)/3+1
+    nb = 4**(kovers(ipatch))
+
+    if(iptype(ipatch).eq.1) imul = 3
+    if(iptype(ipatch).eq.11) imul = 4
+    if(iptype(ipatch).eq.12) imul = 4
+      
+    do i=1,nb
+      itri = i+ilstart-1
+      do j=1,imul
+        if(iptype(ipatch).eq.1) then
+          call get_basis_pols(uvs(1,j,itri),norder,npols, &
+            iptype(ipatch),pols)
+        else if (iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) then
+          call get_basis_pols(uvs_quad(1,j,itri),norder,npols, &
+            iptype(ipatch),pols)
+        endif
+         
           
-          do m=1,3
-            xyzs(m,istart+3*(i-1)+j-1) = 0
-          enddo
-          do idim=1,nd
-            splot(idim,istart+3*(i-1)+j-1) = 0
-          enddo
+        do m=1,3
+          xyzs(m,istart+imul*(i-1)+j-1) = 0
+        enddo
+        do idim=1,3
+          splot(idim,istart+imul*(i-1)+j-1) = 0
+        enddo
 
-          do l=1,npols
-            do m=1,3
-              xyzs(m,istart+3*(i-1)+j-1) = & 
-                xyzs(m,istart+3*(i-1)+j-1) + &
-                pols(l)*srccoefs(m,ixyzs(ipatch)+l-1)
-            enddo
-            do idim=1,nd
-              splot(idim,istart+3*(i-1)+j-1) = &
-               splot(idim,istart+3*(i-1)+j-1)+ &
-               pols(l)*sigma_coefs(idim,ixyzs(ipatch)+l-1)
-            enddo
+        do l=1,npols
+          do m=1,3
+            xyzs(m,istart+imul*(i-1)+j-1) = & 
+              xyzs(m,istart+imul*(i-1)+j-1) + &
+              pols(l)*srccoefs(m,ixyzs(ipatch)+l-1)
+          enddo
+          do idim=1,3
+            splot(idim,istart+imul*(i-1)+j-1) = &
+             splot(idim,istart+imul*(i-1)+j-1)+ &
+             pols(l)*sigma_coefs(idim,ixyzs(ipatch)+l-1)
           enddo
         enddo
       enddo
-    endif
-    deallocate(pols)
+    enddo
+
+
   enddo
   
   iunit1 = 877
-  open(unit = iunit1, file=trim(fname))
+  open(unit = iunit1, file=trim(fname), status='replace')
 
   write(iunit1,'(a)') "# vtk DataFile Version 3.0"
   write(iunit1,'(a)') trim(title)
@@ -908,33 +942,44 @@ subroutine surf_vtk_plot_vec(npatches,norders,ixyzs,iptype, &
   ncell = 0
   ncsize = 0
   do i=1,npatches
-    ncell = ncell + 4**kovers(i)
-    if(iptype(i).eq.1) ncsize = ncsize + 4*(4**kovers(i))
-    if(iptype(i).eq.11) ncsize = ncsize + 5*(4**kovers(i))
-    if(iptype(i).eq.12) ncsize = ncsize + 5*(4**kovers(i))
+    if(iptype(i).eq.1) then
+       ncell = ncell + 4**kovers(i)
+       ncsize = ncsize + 4**kovers(i)*4
+    endif
+    if(iptype(i).eq.11.or.iptype(i).eq.12) then
+      ncell = ncell + 4**kovers(i)
+      ncsize = ncsize + 4**kovers(i)*5
+    endif
   enddo
 
   write(iunit1,'(a,i9,i9)') "CELLS ", ncell, ncsize
 
   do ipatch=1,npatches
     nb = 4**kovers(ipatch)
-    if(iptype(ipatch).eq.1) then
-      istart = ipstart(ipatch) 
-      do i = 1,nb
-        i1 = istart + 3*(i-1) 
-        write(iunit1,'(a,i9,i9,i9)') "3 ", i1-1, i1, i1+1
-      enddo
-    endif
+    istart = ipstart(ipatch)
+    if(iptype(ipatch).eq.1) imul = 3
+    if(iptype(ipatch).eq.11) imul = 4
+    if(iptype(ipatch).eq.12) imul = 4
+
+    do i = 1,nb
+        i1 = istart + imul*(i-1) 
+        if(iptype(ipatch).eq.1) &
+          write(iunit1,'(a,i9,i9,i9)') "3 ", i1-1, i1, i1+1
+        if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) &
+          write(iunit1,'(a,i9,i9,i9,i9)') "4 ", i1-1, i1, i1+2,i1+1
+    enddo
+
+
+   
   end do
 
   write(iunit1,'(a,i9)') "CELL_TYPES ", ncell
   do ipatch = 1,npatches
     nb = 4**kovers(ipatch)
-    if(iptype(ipatch).eq.1) then
-      do i=1,nb
-        write(iunit1,'(a)') "5"
-      enddo
-    endif
+    do i=1,nb
+      if(iptype(ipatch).eq.1) write(iunit1,'(a)') "5"
+      if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) write(iunit1,'(a)') "9"
+    enddo
   end do
 
   write(iunit1,'(a)') ""

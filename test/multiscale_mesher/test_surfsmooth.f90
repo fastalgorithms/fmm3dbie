@@ -27,7 +27,7 @@ program smoother
 
   ! order with which to discretize the smooth patches, choose
   ! something reasonable: 4, 6, 8, 10, etc.
-  norder_smooth = 4
+  norder_smooth = 8
 
   ! Define number of refinements of smooth surface to be output in
   ! the go3 format
@@ -50,6 +50,7 @@ program smoother
   ! \sigma_{j} = D_{j}/rlam
   !
   rlam = 10.0d0 !(usual value)
+!  rlam = 2.5d0
 
   !rlam = .5d0
   !rlam = 1
@@ -60,15 +61,15 @@ program smoother
 ! specify the msh file to read in
 !
 
-!    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
-!    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
+    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
+    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
 
 !    fnamein='../../geometries/meshes/prism_50.gidmsh'
 !    fnameout_root='../../geometries/prism_50'
 
-    fnamein='../../geometries/meshes/sphere.msh'
-    fnameout_root='../../geometries/sphere'
-    
+!    fnamein='../../geometries/meshes/sphere.msh'
+!    fnameout_root='../../geometries/sphere'
+ 
 !    fnamein = '../../geometries/meshes/cow_new.msh'
 !    fnameout_root = '../../geometries/cow_new'
 

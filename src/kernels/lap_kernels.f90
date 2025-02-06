@@ -77,7 +77,7 @@ subroutine l3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   dz=targ(3)-src(3)
 
   d = dx*srcnorm(1) + dy*srcnorm(2) + dz*srcnorm(3)
-  r=sqrt(dx**2+dy**2+dz**2)
+  r = sqrt(dx**2+dy**2+dz**2)
 
   val =  d/(r**3)*over4pi
 

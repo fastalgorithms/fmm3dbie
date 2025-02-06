@@ -2492,7 +2492,7 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     nsp1 = npts + 1;
     n3 = 3;
 
-    if nargin < 4
+    if nargin < 5
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
@@ -2505,7 +2505,7 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 
     qtype = 'rpcomb-bc';
 
-    if nargin < 5
+    if nargin < 6
       opts = [];
     end
 

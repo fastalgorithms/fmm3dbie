@@ -183,7 +183,7 @@ subroutine xquad_xyz_tensor_fourier_eval(iquad, u, v, xyz, dxyzduv, &
   real *8 :: dxyzdst(3,2), scales(3)
 
   !
-  ! project the triangle itri in triainfo onto a double fourier toriodal
+  ! project the quadrilateral iquad in quadinfo onto a double fourier toriodal
   ! surface
   !
   !    Input:
@@ -413,6 +413,204 @@ subroutine xquad_sphere_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
 end subroutine xquad_sphere_eval
 
 
+!
+!
+!
+!
+subroutine xquad_axissym_fun_eval(iquad, u, v, xyz, dxyzduv, & 
+  quadinfo, np, pars, fcurve)
+!
+!  Project iquad onto axissymmetric domain from a cylindrical
+!  chart.
+!
+!    Input:
+! iquad - quadrilateral number to map
+! u,v - local uv coordinates on quadrilateral iquad
+! quadinfo - flat skeleton quadrilateral info
+! np - number of parameters for function handle 
+! pars(np)  - parameters for function handle 
+! fcurve - function handle describing r(s), z(s) 
+!
+!    Output:
+! xyz - point on the sphere
+! dxyzduv - first derivative information
+!
+!
+  implicit real *8 (a-h,o-z)
+  real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*)
+  real *8 :: pols(100),pars(np)
+  integer :: np
+  external fcurve
+      
+
+  x0=quadinfo(1,1,iquad)
+  y0=quadinfo(2,1,iquad)
+  z0=quadinfo(3,1,iquad)
+
+  x1=quadinfo(1,2,iquad)
+  y1=quadinfo(2,2,iquad)
+  z1=quadinfo(3,2,iquad)
+
+  x2=quadinfo(1,3,iquad)
+  y2=quadinfo(2,3,iquad)
+  z2=quadinfo(3,3,iquad)
+
+  s = x0 + (1.0d0+u)/2*(x1-x0) + (1.0d0+v)/2*(x2-x0)
+  t = y0 + (1.0d0+u)/2*(y1-y0) + (1.0d0+v)/2*(y2-y0)
+
+  dsdu = (x1-x0)/2
+  dtdu = (y1-y0)/2
+    
+  dsdv = (x2-x0)/2
+  dtdv = (y2-y0)/2
+!
+! s is coordinate in parametrization of r,z space
+! t is coorindate in theta space
+!
+
+
+!
+!  Compute r,z,drds,dzds
+! 
+!
+      
+  call fcurve(s, np, pars, r, z, drds, dzds, tmp1, tmp1)
+
+  xyz(1)= r*cos(t)
+  xyz(2)= r*sin(t)
+  xyz(3)= z
+
+! du
+  dxyzduv(1,1) = drds*cos(t)*dsdu - r*sin(t)*dtdu
+  dxyzduv(2,1) = drds*sin(t)*dsdu + r*cos(t)*dtdu 
+  dxyzduv(3,1) = dzds*dsdu
+
+! dv
+  dxyzduv(1,2) = drds*cos(t)*dsdv - r*sin(t)*dtdv
+  dxyzduv(2,2) = drds*sin(t)*dsdv + r*cos(t)*dtdv 
+  dxyzduv(3,2) = dzds*dsdv
+
+  return
+end subroutine xquad_axissym_fun_eval
+!
+!
+!
+!
+!
+subroutine xquad_axissym_fun_circ_eval(iquad, u, v, xyz, dxyzduv, & 
+  ptcoefs, ipars, pars, fcurve)
+!
+!  Project iquad onto axissymmetric domain from a polar cap
+!
+!    Input:
+! iquad - quadrilateral number to map
+! u,v - local uv coordinates on quadrilateral iquad
+! ptcoefs - flat skeleton quadrilateral info
+! ipars - ipars(1) is number of parameters for function handle,
+!         ipars(2) is norder for ptcoefs evaluator
+!         ipars(3) is iptype for ptcoefs evaluator
+!         the rest is the ixys array corresponding to ptinfo
+! pars(np+2)  - pars(1), pars(2) are rescaling of s
+!         variable, and the rest are parameters for function handle 
+! fcurve - function handle describing r(s), z(s) 
+!
+!    Output:
+! xyz - point on the sphere
+! dxyzduv - first derivative information
+!
+!
+  implicit real *8 (a-h,o-z)
+  real *8 :: xyz(3), dxyzduv(3,2), ptcoefs(6,*)
+  real *8 :: pols(500), pars(*)
+  integer :: ipars(*)
+  integer :: np, norder, iptype, istart
+  real *8 :: uv(2)
+  external fcurve
+
+!
+!  get values of s,t,dsdu,dtdu,dsdv,dtdv for
+!  the given quadrilateral on the circular patch
+!
+!
+
+!
+!  get values of s,t,dsdu,dtdu,dsdv,dtdv for
+!  the given triangle on the circular patch
+!
+!
+  uv(1) = u
+  uv(2) = v
+  np = ipars(1)
+  norder = ipars(2)
+  iptype = ipars(3)
+  
+  call get_npols(iptype, norder, npols)
+  call get_basis_pols(uv, norder, npols, iptype, pols)
+
+  a0 = pars(1)
+  b0 = pars(2)
+  
+  istart = ipars(3+iquad)
+  s0 = 0
+  t0 = 0
+  ds0du = 0
+  dt0du = 0
+  ds0dv = 0
+  dt0dv = 0
+  do i = 1,npols
+    s0 = s0 + ptcoefs(1,istart+i-1)*pols(i)
+    t0 = t0 + ptcoefs(2,istart+i-1)*pols(i)
+    ds0du = ds0du + ptcoefs(3,istart+i-1)*pols(i)
+    dt0du = dt0du + ptcoefs(4,istart+i-1)*pols(i)
+    ds0dv = ds0dv + ptcoefs(5,istart+i-1)*pols(i)
+    dt0dv = dt0dv + ptcoefs(6,istart+i-1)*pols(i)
+  enddo
+
+  rr = sqrt(s0**2 + t0**2)
+  s = a0 + (b0-a0)*rr
+  t = atan2(t0, s0)
+
+  drrdu = 1.0d0/rr*(s0*ds0du + t0*dt0du)
+  drrdv = 1.0d0/rr*(s0*ds0dv + t0*dt0dv)
+  
+  dsdu = (b0-a0)*drrdu
+  dsdv = (b0-a0)*drrdv
+  
+  dtdu = -t0/rr**2*ds0du + s0/rr**2*dt0du
+  dtdv = -t0/rr**2*ds0dv + s0/rr**2*dt0dv
+
+!
+! s is coordinate in parametrization of r,z space
+! t is coorindate in theta space
+!
+
+!
+!  Compute r,z,drds,dzds
+! 
+!
+      
+  call fcurve(s, np, pars(3), r, z, drds, dzds, tmp1, tmp1)
+
+  xyz(1)= r*cos(t)
+  xyz(2)= r*sin(t)
+  xyz(3)= z
+
+! du
+  dxyzduv(1,1) = drds*cos(t)*dsdu - r*sin(t)*dtdu
+  dxyzduv(2,1) = drds*sin(t)*dsdu + r*cos(t)*dtdu 
+  dxyzduv(3,1) = dzds*dsdu
+
+! dv
+  dxyzduv(1,2) = drds*cos(t)*dsdv - r*sin(t)*dtdv
+  dxyzduv(2,2) = drds*sin(t)*dsdv + r*cos(t)*dtdv 
+  dxyzduv(3,2) = dzds*dsdv
+
+  return
+end subroutine xquad_axissym_fun_circ_eval
+!
+!
+!
+!
 
 !
 !

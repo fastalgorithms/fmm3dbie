@@ -78,11 +78,11 @@ end
 
 if strcmpi(type,'sprime')
   targnorm = targinfo.n;
-  [~,grad] = helm3d.green(zk,src,targ);
+  [~, grad] = helm3d.green(zk, src, targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
-  submat = (grad(:,:,1).*nx + grad(:,:,2).*ny+grad(:,:,3).*nz);
+  submat = (grad(:,:,1).*nx + grad(:,:,2).*ny + grad(:,:,3).*nz);
 end
 
 if strcmpi(type,'sdu')
