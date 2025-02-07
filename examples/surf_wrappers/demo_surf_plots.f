@@ -6,6 +6,10 @@
       integer ipars(2)
 
       integer, allocatable :: norders(:), ixyzs(:), iptype(:)
+      integer, allocatable :: ixys2d(:), iptype2d(:)
+      real *8, allocatable :: srccoefs2d(:,:), srcvals2d(:,:)
+
+      real *8, allocatable :: ts(:), ws(:), umat(:,:), vmat(:,:)
 
       real *8 abc(3), c0(3)
       integer nabc(3), nuv(2)
@@ -42,13 +46,14 @@
       npatches = 0
       npts = 0
 
-      norder = 4
+      norder = 6
 
       ifellip = 0
       ifsphere = 0
       ifstartorus = 0
       ifstell = 0
-      ifoocyte = 1
+      ifoocyte = 0
+      ifoocyte_chunks = 1
 
       if (ifellip.eq.1) then
 
@@ -300,7 +305,7 @@ c        nrts(1:2,nch2d) = 0
         np = 2
         iort = 1
 
-        call get_axissym_fcurve_npat_mem(nch2d, tchse, k, 
+        call get_axissym_fcurve_npat_mem(nch2d, tchse,  
      1     funcurve_oocyte_riemann, np, pars, nrts, rmid, nmid, iort, 
      2     norder, iptype0, npatches, npts)
         print *, "npatches tri=", npatches
@@ -308,7 +313,7 @@ c        nrts(1:2,nch2d) = 0
         allocate(srcvals(12,npts), srccoefs(9,npts))
         allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
 
-        call get_axissym_fcurve_npat(nch2d, tchse, k, 
+        call get_axissym_fcurve_npat(nch2d, tchse,  
      1     funcurve_oocyte_riemann, np, pars, nrts, rmid, nmid, iort, 
      2     norder, iptype0, npatches, npts, norders, ixyzs, iptype, 
      3     srccoefs, srcvals)
@@ -332,7 +337,7 @@ c        nrts(1:2,nch2d) = 0
         npts = 0
         iptype0 = 11
 
-        call get_axissym_fcurve_npat_mem(nch2d, tchse, k, 
+        call get_axissym_fcurve_npat_mem(nch2d, tchse,  
      1     funcurve_oocyte_riemann, np, pars, nrts, rmid, nmid, iort, 
      2     norder, iptype0, npatches, npts)
         print *, "npatches quad=", npatches
@@ -340,7 +345,7 @@ c        nrts(1:2,nch2d) = 0
         allocate(srcvals(12,npts), srccoefs(9,npts))
         allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
 
-        call get_axissym_fcurve_npat(nch2d, tchse, k, 
+        call get_axissym_fcurve_npat(nch2d, tchse,  
      1     funcurve_oocyte_riemann, np, pars, nrts, rmid, nmid, iort, 
      2     norder, iptype0, npatches, npts, norders, ixyzs, iptype, 
      3     srccoefs, srcvals)
@@ -354,6 +359,155 @@ c        nrts(1:2,nch2d) = 0
         call surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, 
      1     npts, srccoefs, srcvals, srcvals(10:12,1:npts),
      2     'oocyte_quad_normals.vtk','a')
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+      endif
+
+      if (ifoocyte_chunks.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing oocyte chunks"     
+        print *, ""
+        print *, ""
+        
+        a = 0.25d0
+        b = 0.1d0
+
+        np = 2
+        
+        pars(1) = a
+        pars(2) = b
+
+        nmid = 20
+        iref = 0
+        nch2d = 2*(iref+1) + nmid
+        k = 16
+
+        allocate(tchse(nch2d+1), nrts(2,nch2d))
+        call get_oocyte3d_tchse(iref,nmid,nch2d,tchse)
+
+        npts2d = nch2d*k
+
+        allocate(srcvals2d(8,npts2d), srccoefs2d(6,npts2d))
+        allocate(ixys2d(nch2d+1), iptype2d(nch2d))
+
+        k = 16
+        itype = 2
+        allocate(ts(k), ws(k), umat(k,k), vmat(k,k))
+        call legeexps(itype, k, ts, umat, vmat, ws)
+
+        do i=1,nch2d
+          ixys2d(i) = (i-1)*k + 1
+          iptype2d(i) = 1
+        enddo
+
+        ixys2d(nch2d+1) = npts2d+1
+        do ich = 1,nch2d
+          tchstart = tchse(ich)
+          tchend = tchse(ich+1)
+          
+          hh = (tchend - tchstart)/2.0d0
+          
+          do j=1,k
+            ipt = (ich-1)*k + j
+            tt = tchstart + (ts(j)+1.0d0)/2.0d0*(tchend-tchstart)
+
+            call funcurve_oocyte_riemann(tt,np,pars,x,y,dx,dy,dx2,dy2)
+            srcvals2d(1,ipt) = x
+            srcvals2d(2,ipt) = y
+            srcvals2d(3,ipt) = dx*hh
+            srcvals2d(4,ipt) = dy*hh
+            srcvals2d(5,ipt) = dx2*hh**2
+            srcvals2d(6,ipt) = dy2*hh**2
+            ds = sqrt(dx**2 + dy**2)
+            srcvals2d(7,ipt) = dy/ds
+            srcvals2d(8,ipt) = -dx/ds
+          enddo
+          do j=1,k
+            jpt = (ich-1)*k + j
+            srccoefs2d(1:6,jpt) = 0
+            do l=1,k
+              lpt = (ich-1)*k + l
+              srccoefs2d(1:6,jpt) = srccoefs2d(1:6,jpt) + 
+     1            umat(j,l)*srcvals2d(1:6,lpt)
+            enddo
+          enddo
+        enddo
+
+
+        rmid = 0.5d0
+        iort = 1
+
+        nmid = 3
+
+        nrts(1,1:nch2d) = 3
+        nrts(2,1:nch2d) = 4
+
+c        nrts(1:2,1) = 0
+c        nrts(1:2,nch2d) = 0
+
+        npatches = 0
+        iptype0 = 1
+
+        iort = 1
+
+        call get_axissym_npat_mem(nch2d, npts2d, ixys2d, iptype2d,  
+     1     srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+
+        call get_axissym_npat(nch2d, npts2d, ixys2d, iptype2d,   
+     1     srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts, norders, ixyzs, iptype, 
+     3     srccoefs, srcvals)
+        
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'oocyte_c_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'oocyte_c_tri_msh.vtk',
+     2     'a')
+        call vtk_scatter_plot_scalar(npts, srcvals(1:3,1:npts),
+     1      srcvals(1,1:npts), 'oocyte_c_tri_scatter.vtk','a')
+        call surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, 
+     1     npts, srccoefs, srcvals, srcvals(10:12,1:npts),
+     2     'oocyte_c_tri_normals.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 11
+
+        call get_axissym_npat_mem(nch2d, npts2d, ixys2d, iptype2d,  
+     1     srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts)
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+
+        call get_axissym_npat(nch2d, npts2d, ixys2d, iptype2d,   
+     1     srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts, norders, ixyzs, iptype, 
+     3     srccoefs, srcvals)
+        
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'oocyte_c_quad.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'oocyte_c_quad_msh.vtk',
+     2     'a')
+        call vtk_scatter_plot_scalar(npts, srcvals(1:3,1:npts),
+     1      srcvals(1,1:npts), 'oocyte_c_quad_scatter.vtk','a')
+        call surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, 
+     1     npts, srccoefs, srcvals, srcvals(10:12,1:npts),
+     2     'oocyte_c_quad_normals.vtk','a')
         deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
       endif
 

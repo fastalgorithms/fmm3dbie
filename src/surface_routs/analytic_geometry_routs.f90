@@ -1060,7 +1060,7 @@
 !
 !
 !
-      subroutine get_axissym_fcurve_npat_mem(nch2d, tchse, k, fcurve, &
+      subroutine get_axissym_fcurve_npat_mem(nch2d, tchse, fcurve, &
         np, pars, nrts, rmid, nmid, iort, norder, iptype0, &
         npatches, npts)     
 !
@@ -1093,8 +1093,6 @@
 !    - tchse: real *8 (nch2d+1)
 !        starting and ending location of in parameter space
 !        for each 2d chunk
-!    - k: integer
-!        number of points per chunk (for the 2d curve)
 !    - fcurve: function handle
 !        function handle for corresponding to generating curve.
 !        Should have calling sequence
@@ -1133,7 +1131,7 @@
 !        Number of points on the discretized surface
 !
       implicit none
-      integer, intent(in) :: nch2d, k
+      integer, intent(in) :: nch2d
       real *8, intent(in) :: tchse(nch2d+1)
       integer, intent(in) :: nrts(2,nch2d), nmid
       integer, intent(in) :: iptype0, norder
@@ -1175,7 +1173,7 @@
 !
 !
 !
-      subroutine get_axissym_fcurve_npat(nch2d, tchse, k, fcurve, &
+      subroutine get_axissym_fcurve_npat(nch2d, tchse, fcurve, &
         np, pars, nrts, rmid, nmid, iort, norder, iptype0, &
         npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)     
 !
@@ -1208,8 +1206,6 @@
 !    - tchse: real *8 (nch2d+1)
 !        starting and ending location of in parameter space
 !        for each 2d chunk
-!    - k: integer
-!        number of points per chunk (for the 2d curve)
 !    - fcurve: function handle
 !        function handle for corresponding to generating curve.
 !        Should have calling sequence
@@ -1275,7 +1271,7 @@
 !
 !
       implicit none
-      integer, intent(in) :: nch2d, k
+      integer, intent(in) :: nch2d
       real *8, intent(in) :: tchse(nch2d+1)
       integer, intent(in) :: nrts(2,nch2d), nmid
       integer, intent(in) :: iptype0, norder
@@ -1412,7 +1408,7 @@
       npars(2) = nrts(1,nch2d)
       npars(3) = nrts(2,nch2d)
 
-      iort_use = iort*-1
+      iort_use = iort*(-1)
       call mesh_circle_pts_mem(rmid, npars, iort_use, norder, iptype0, &
         npatches_end, npts_end)
       allocate(ixys_end(npatches_end+1), ptinfo_end(6,npts_end))
@@ -1482,6 +1478,458 @@
 
       call getgeominfo(npatches_end, patchpnt_circ, ptr1, iptr2, ptr3, &
         fcurve, npols, uvs, umatr, srcvals(1,istart+1), &
+        srccoefs(1,istart+1))
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+      do i=1,npatches
+        norders(i) = norder
+        iptype(i) = iptype0
+        ixyzs(i) = (i-1)*npols + 1
+      enddo
+!$OMP END PARALLEL DO
+      
+      ixyzs(npatches+1) = npts + 1
+
+      return
+      end
+
+!
+!
+!
+!
+      subroutine get_axissym_npat_mem(nch2d, npts2d, ixys2d, &
+        iptype2d, srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, &
+        norder, iptype0, npatches, npts)     
+!
+!  This subroutine estimates the number of patches required to 
+!  discretize an axissymmetric geometry 
+!  where the generating curve is provided as a collection of panels 
+!  and their associated basis function expansions.
+!
+!  The axis of rotation is assumed to be the z axis.
+!
+!  The geometry is given by
+!  (r(s) \cos(t), r(s) \sin(t), z(s)), s \in [a,b], 
+!                                      t \in [0,2\pi]
+!
+!  where r(s), z(s) are accesible via their basis function expansions.
+!
+!  In three dimensions, this cylindrical domain for 
+!  s\in [tchse2d(i), tchse2d(i+1)] is discretized using
+!  nrts(1,i) patches in the s direction, and nrts(2,i) patches in the t 
+!  direction.
+!
+!  The above is true for all chunks in the 2d discretization expect 
+!  the first and the last chunk, which are assumed to be the polar caps.
+!  A circle mesh is used to discretize the polar caps. See documentation
+!  in circle_mesh.f90, but briefly the polar map is a map from the
+!  circle to the domain, and the circle will be discretized with nrts(1,1),
+!  points in a annular region outside a square of size rmid, and the 
+!  square is discretized using nmid \times nmid patches
+!  
+!  Input arguments:
+!    - nch2d: integer
+!        number of chunks describing the generating curve
+!    - npts2d: integer
+!        number of points on the generating curve
+!    - ixys2d: integer(nch2d+1)
+!        starting location of points on chunk i
+!    - iptype2d: integer(nch2d)
+!        type of chunk
+!        iptype = 1, gauss-legendre chunk with reference domain [-1,1]
+!    - srcvals2d: real *8 (8,npts2d)
+!        rz, drz/dt,d2rz/dt2, normals at all discretization nodes
+!    - srccoefs2d: real *8 (6,npts2d)
+!        Basis coefficient expansion of rz,drz/dt,d2rz/dt2
+!    - nrts: interger(2,nch2d)
+!        number of quadrilateral patches in the rz (s) direction,
+!        and the periodic (t) direction.
+!        if iptype is 1, then each quadrilateral patch
+!        is subdivided into two triangular patches 
+!    - rmid: real *8
+!        radius of the inner square on the unit circle mesh
+!        at the polar caps, should be between 0 and 1/sqrt(2)
+!    - nmid: integer
+!        * number of intervals in the middle square on the
+!          unit circl mesh at the polar caps
+!    - iort: integer
+!        orientiation flag
+!        if iort = 1, then parameter space is [a,b] \times [0,2\pi)
+!        if iort = -1, then parameter space is [a,b] \times [2\pi,0)
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!
+!  Output arguments:
+!    - npatches: integer
+!        number of patches
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+      implicit none
+      integer, intent(in) :: nch2d, npts2d
+      integer, intent(in) :: ixys2d(nch2d+1),iptype2d(nch2d)
+      real *8, intent(in) :: srccoefs2d(6,npts2d)
+      real *8, intent(in) :: srcvals2d(6,npts2d)
+      integer, intent(in) :: nrts(2,nch2d), nmid
+      integer, intent(in) :: iptype0, norder
+      real *8, intent(in) :: rmid
+      integer, intent(in) :: iort
+      integer, intent(out) :: npatches, npts
+
+      integer i, npat0
+      
+      npat0 = 2*nmid*nmid
+      do i=2,nch2d-1
+        npat0 = npat0 + nrts(1,i)*nrts(2,i)
+      enddo
+      npat0 = npat0 + 4*nrts(1,1)*nrts(2,1)
+      npat0 = npat0 + 4*nrts(1,nch2d)*nrts(2,nch2d)
+
+      npatches = 0
+      npts = 0
+      if (iptype0.eq.1) then
+        npatches = 2*npat0 
+        npts = npatches*(norder+1)*(norder+2)/2
+      endif
+
+      if (iptype0.eq.11.or.iptype0.eq.12) then
+        npatches = npat0 
+        npts = npatches*(norder+1)*(norder+1)
+      endif
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine get_axissym_npat(nch2d, npts2d, ixys2d, &
+        iptype2d, srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, &
+        norder, iptype0, npatches, npts, norders, ixyzs, iptype, &
+        srccoefs, srcvals)     
+!
+!
+!  This subroutine discretizes an axissymmetric geometry where the 
+!  where the generating curve is provided as a collection of panels 
+!  and their associated basis function expansions.
+!
+!  The axis of rotation is assumed to be the z axis.
+!
+!  The geometry is given by
+!  (r(s) \cos(t), r(s) \sin(t), z(s)), s \in [a,b], 
+!                                      t \in [0,2\pi]
+!
+!  where r(s), z(s) are accesible via their basis function expansions.
+!
+!  In three dimensions, this cylindrical domain for 
+!  s\in [tchse2d(i), tchse2d(i+1)] is discretized using
+!  nrts(1,i) patches in the s direction, and nrts(2,i) patches in the t 
+!  direction.
+!
+!  The above is true for all chunks in the 2d discretization expect 
+!  the first and the last chunk, which are assumed to be the polar caps.
+!  A circle mesh is used to discretize the polar caps. See documentation
+!  in circle_mesh.f90, but briefly the polar map is a map from the
+!  circle to the domain, and the circle will be discretized with nrts(1,1),
+!  points in a annular region outside a square of size rmid, and the 
+!  square is discretized using nmid \times nmid patches
+!  
+!  Input arguments:
+!    - nch2d: integer
+!        number of chunks describing the generating curve
+!    - npts2d: integer
+!        number of points on the generating curve
+!    - ixys2d: integer(nch2d+1)
+!        starting location of points on chunk i
+!    - iptype2d: integer(nch2d)
+!        type of chunk
+!        iptype = 1, gauss-legendre chunk with reference domain [-1,1]
+!    - srcvals2d: real *8 (8,npts2d)
+!        rz, drz/dt,d2rz/dt2, normals at all discretization nodes
+!    - srccoefs2d: real *8 (6,npts2d)
+!        Basis coefficient expansion of rz,drz/dt,d2rz/dt2
+!    - nrts: interger(2,nch2d)
+!        number of quadrilater patches in the rz (s) direction,
+!        and the periodic (t) direction.
+!        if iptype is 1, then each quadrilateral patch
+!        is subdivided into two triangular patches 
+!    - rmid: real *8
+!        radius of the inner square on the unit circle mesh
+!        at the polar caps, should be between 0 and 1/sqrt(2)
+!    - nmid: integer
+!        * number of intervals in the middle square on the
+!          unit circle mesh at the polar caps
+!    - iort: integer
+!        orientiation flag
+!        if iort = 1, then parameter space is [a,b] \times [0,2\pi)
+!        if iort = -1, then parameter space is [a,b] \times [2\pi,0)
+!    - norder: integer
+!        order of discretization on each patch
+!    - iptype0: integer
+!        type of patch to be used in the discretization
+!        * iptype = 1, triangular patch discretized using RV nodes
+!        * iptype = 11, quadrangular patch discretized with GL nodes
+!        * iptype = 12, quadrangular patch discretized with Chebyshev 
+!    - npatches: integer
+!        number of patches
+!    - npts: integer
+!        Number of points on the discretized surface
+!
+!  Output arguments:
+!    - norders: integer(npatches)
+!        order of discretization on each patch
+!        norders(i) = norder, for all i=1,2,...,npatches
+!    - ixyzs: integer(npatches+1)
+!        ixyzs(i) denotes the starting location in srccoefs,
+!        and srcvals array corresponding to patch i
+!    - iptype: integer(npatches)
+!        type of patch
+!        iptype = 1, triangular patch discretized using RV nodes
+!        iptype = 11, quadrangular patch discretized with GL nodes
+!        iptype = 12, quadrangular patch discretized with Chebyshev nodes
+!        iptype(i) = iptype0, for all i=1,2,...,npatches
+!    - srccoefs: real *8 (9,npts)
+!        basis expansion coefficients of xyz, dxyz/du,
+!        and dxyz/dv on each patch. 
+!        For each point 
+!          * srccoefs(1:3,i) is xyz info
+!          * srccoefs(4:6,i) is dxyz/du info
+!          * srccoefs(7:9,i) is dxyz/dv info
+!    - srcvals: real *8 (12,npts)
+!        xyz(u,v) and derivative info sampled at the 
+!        discretization nodes on the surface
+!          * srcvals(1:3,i) - xyz info
+!          * srcvals(4:6,i) - dxyz/du info
+!          * srcvals(7:9,i) - dxyz/dv info
+!          * srcvals(10:12,i) - normals info
+!
+!
+      implicit none
+      integer, intent(in) :: nch2d, npts2d
+      integer, intent(in), target :: ixys2d(nch2d+1)
+      integer, intent(in) :: iptype2d(nch2d)
+      real *8, intent(in) :: srcvals2d(8,npts2d)
+      real *8, target, intent(in) :: srccoefs2d(6,npts2d)
+      integer, intent(in) :: nrts(2,nch2d), nmid
+      integer, intent(in) :: iptype0, norder
+      integer, intent(in) :: iort
+      real *8, intent(in) :: rmid
+      integer, intent(in) :: npatches, npts
+
+      integer, intent(out) :: norders(npatches), iptype(npatches)
+      integer, intent(out) :: ixyzs(npatches+1)
+      real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
+
+      integer i, npat0
+
+      external xtri_axissym_eval, xtri_axissym_circ_eval
+      external xquad_axissym_eval, xquad_axissym_circ_eval
+      
+      procedure (), pointer :: patchpnt, patchpnt_circ
+
+      real *8 done, pi
+      integer npols
+      real *8, allocatable, target :: skel(:,:,:)
+      integer, allocatable, target :: ipars1(:), ipars_end(:)
+      integer, allocatable :: ixys1(:), ixys_end(:)
+      real *8, allocatable :: ptinfo1(:,:), ptinfo_end(:,:)
+      real *8, allocatable, target :: ptcoefs1(:,:), ptcoefs_end(:,:)
+      integer, allocatable :: iptype1(:), iptype_end(:)
+      integer, allocatable :: norders1(:), norders_end(:)
+      integer, allocatable, target :: ichuse(:)
+      real *8, target :: pars1(2), pars_end(2)
+
+
+      real *8, allocatable :: uvs(:,:), wts(:), umatr(:,:), vmatr(:,:)
+      integer npts1, npts_end
+      integer npatches1, npatches_end
+      real *8, pointer :: ptr1, ptr2, ptr3, ptr4
+      integer, pointer :: iptr1, iptr2, iptr3, iptr4
+      real *8 umin, umax, vmin, vmax
+      integer npatches0, istart, npars(3)
+      integer nover
+      integer ich, iort_use, j
+      real *8 dh
+
+
+      done = 1.0d0
+      pi = atan(done)*4
+      
+      
+      call get_npols(iptype0, norder, npols)
+      allocate(uvs(2,npols), wts(npols), umatr(npols,npols))
+      allocate(vmatr(npols,npols))
+      call get_disc_exps(norder, npols, iptype0, uvs, umatr, vmatr, wts)
+
+      allocate(skel(3,3,npatches))
+
+
+      npatches0 = 0
+      istart = 1
+      vmin = 0
+      vmax = 2*pi
+
+      if (iort.eq.-1) then
+        vmin = 2*pi
+        vmax = 0
+      endif
+
+      nover = 0
+      allocate(ichuse(npatches))
+
+      if (iptype0.eq.1) then
+        do ich = 2,nch2d-1
+          if(iptype2d(ich).eq.1) then
+            umin = -1.0d0 
+            umax = 1.0d0 
+          endif
+          call xtri_rectmesh_ani(umin, umax, vmin, vmax, nrts(1,ich), &
+            nrts(2,ich), nover, npatches, npatches0, skel(1,1,istart))
+          do j=1,npatches0
+            ichuse(istart+j-1) = ich
+          enddo
+          istart = istart + npatches0
+        enddo
+        npatches0 = istart - 1
+        
+
+        patchpnt => xtri_axissym_eval
+        patchpnt_circ => xtri_axissym_circ_eval
+      elseif (iptype0.eq.11.or.iptype0.eq.12) then
+        do ich = 2,nch2d-1  
+          if(iptype2d(ich).eq.1) then
+            umin = -1.0d0 
+            umax = 1.0d0 
+          endif
+          call xquad_rectmesh_ani(umin, umax, vmin, vmax, nrts(1,ich), &
+            nrts(2,ich), nover, npatches, npatches0, skel(1,1,istart))
+          do j=1,npatches0
+            ichuse(istart+j-1) = ich
+          enddo
+          istart = istart + npatches0
+        enddo
+        npatches0 = istart-1
+        patchpnt => xquad_axissym_eval
+        patchpnt_circ => xquad_axissym_circ_eval
+      endif
+
+!
+!  Now setup stuff for top and bottom polar caps
+!
+      npars(1) = nmid
+      npars(2) = nrts(1,1)
+      npars(3) = nrts(2,1)
+      call mesh_circle_pts_mem(rmid, npars, iort, norder, iptype0, &
+        npatches1, npts1)
+      allocate(ixys1(npatches1+1), ptinfo1(6,npts1))
+      allocate(ptcoefs1(6,npts1), iptype1(npatches1))
+      allocate(norders1(npatches1))
+      
+      call mesh_circle_pts(rmid, npars, iort, norder, iptype0, & 
+        npatches1, npts1, ixys1, ptinfo1)
+
+      do i=1,npatches1
+        iptype1(i) = iptype0
+        norders1(i) = norder
+      enddo
+
+       
+      call surf_vals_to_coefs(6, npatches1, norders1, ixys1, iptype1, &
+        npts1, ptinfo1, ptcoefs1)
+
+      npars(1) = nmid
+      npars(2) = nrts(1,nch2d)
+      npars(3) = nrts(2,nch2d)
+
+      iort_use = iort*(-1)
+      call mesh_circle_pts_mem(rmid, npars, iort_use, norder, iptype0, &
+        npatches_end, npts_end)
+      allocate(ixys_end(npatches_end+1), ptinfo_end(6,npts_end))
+      allocate(ptcoefs_end(6,npts_end), iptype_end(npatches_end))
+      allocate(norders_end(npatches_end))
+
+      call mesh_circle_pts(rmid, npars, iort_use, norder, iptype0, & 
+        npatches_end, npts_end, ixys_end, ptinfo_end)
+
+      do i=1,npatches_end
+        iptype_end(i) = iptype0
+        norders_end(i) = norder
+      enddo
+      call surf_vals_to_coefs(6, npatches_end, norders_end, ixys_end, &
+        iptype_end, npts_end, ptinfo_end, ptcoefs_end)
+
+!
+!  Let the discretrization begin
+!
+      allocate(ipars1(npatches1+5), ipars_end(npatches_end+5))
+      ipars1(1) = ixys2d(1)
+      ipars1(2) = ixys2d(2) - ixys2d(1) 
+      ipars1(3) = norder
+      ipars1(4) = iptype0
+
+      ipars_end(1) = ixys2d(nch2d)
+      ipars_end(2) = ixys2d(nch2d+1) - ixys2d(nch2d)
+      ipars_end(3) = norder
+      ipars_end(4) = iptype0
+
+      do i = 1,npatches1+1
+        ipars1(i+4) = ixys1(i)
+      enddo
+
+      do i = 1,npatches_end+1
+        ipars_end(i+4) = ixys_end(i)
+      enddo
+
+      pars1(1) = -1.0d0
+      pars1(2) = 1.0d0
+
+      pars_end(1) = 1.0d0
+      pars_end(2) = -1.0d0
+!
+! top cap
+!
+      ptr1 => ptcoefs1(1,1)
+      ptr2 => srccoefs2d(1,1)
+      iptr3 => ipars1(1)
+      ptr4 => pars1(1)
+
+
+
+      call getgeominfo(npatches1, patchpnt_circ, ptr1, ptr2, iptr3, &
+        ptr4, npols, uvs, umatr, srcvals, srccoefs)
+
+!
+! middle cylinder
+!
+      ptr1 => skel(1,1,1)
+      ptr2 => srccoefs2d(1,1)
+      iptr3 => ichuse(1) 
+      iptr4 => ixys2d(1)
+
+
+      call getgeominfo(npatches0, patchpnt, ptr1, ptr2, iptr3, &
+        iptr4, npols, uvs, umatr, srcvals(1,npts1+1), &
+        srccoefs(1,npts1+1))
+      
+      istart = npts1 + npatches0*npols
+
+!
+! bottom cap
+!
+      ptr1 => ptcoefs_end(1,1)
+      ptr2 => srccoefs2d(1,1)
+      iptr3 => ipars_end(1)
+      ptr4 => pars_end(1)
+
+
+      call getgeominfo(npatches_end, patchpnt_circ, ptr1, ptr2, iptr3, &
+        ptr4, npols, uvs, umatr, srcvals(1,istart+1), &
         srccoefs(1,istart+1))
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
