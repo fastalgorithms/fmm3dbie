@@ -20,6 +20,7 @@
       real *8 pars(2)
       real *8, allocatable :: tchse(:)
       integer, allocatable :: nrts(:,:)
+      real *8 pols(100)
 
       external funcurve_oocyte_riemann
 
@@ -46,14 +47,14 @@
       npatches = 0
       npts = 0
 
-      norder = 6
+      norder = 5
 
       ifellip = 0
       ifsphere = 0
       ifstartorus = 0
       ifstell = 0
-      ifoocyte = 0
-      ifoocyte_chunks = 1
+      ifoocyte = 1
+      ifoocyte_chunks = 0
 
       if (ifellip.eq.1) then
 
@@ -330,6 +331,7 @@ c        nrts(1:2,nch2d) = 0
         call surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, 
      1     npts, srccoefs, srcvals, srcvals(10:12,1:npts),
      2     'oocyte_tri_normals.vtk','a')
+        call write_go3('oocyte.go3', norder, npatches, npts, srcvals)
 
         deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
 
@@ -359,6 +361,8 @@ c        nrts(1:2,nch2d) = 0
         call surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, 
      1     npts, srccoefs, srcvals, srcvals(10:12,1:npts),
      2     'oocyte_quad_normals.vtk','a')
+        
+        
         deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
       endif
 
@@ -399,8 +403,8 @@ c        nrts(1:2,nch2d) = 0
           ixys2d(i) = (i-1)*k + 1
           iptype2d(i) = 1
         enddo
-
         ixys2d(nch2d+1) = npts2d+1
+
         do ich = 1,nch2d
           tchstart = tchse(ich)
           tchend = tchse(ich+1)
@@ -433,14 +437,32 @@ c        nrts(1:2,nch2d) = 0
           enddo
         enddo
 
+        call prin2('srcvals2d=*',srcvals2d(1:6,1:npts2d),16*6)
+        call prin2('srccoefs2d=*',srccoefs2d,16*6)
+
+        tt = hkrand(0)*(tchse(2) - tchse(1)) + tchse(1)
+        tuse = (tt-tchse(1))/(tchse(2)-tchse(1))*2 - 1
+        call legepols(tuse, k-1, pols)
+        r = 0
+        z = 0
+        do i=1,k
+          r = r + srccoefs2d(1,i)*pols(i)
+          z = z + srccoefs2d(2,i)*pols(i)
+        enddo
+
 
         rmid = 0.5d0
         iort = 1
 
         nmid = 3
 
-        nrts(1,1:nch2d) = 3
-        nrts(2,1:nch2d) = 4
+        nrts(1,1:nch2d) = 0
+        nrts(2,1:nch2d) = 0
+
+        nrts(1:2,1) = 3
+        nrts(1:2,nch2d) = 3
+
+        
 
 c        nrts(1:2,1) = 0
 c        nrts(1:2,nch2d) = 0

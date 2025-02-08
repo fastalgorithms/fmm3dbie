@@ -1,3 +1,28 @@
+      subroutine write_go3(fname, norder, npatches, npts, srcvals)
+      implicit real *8 (a-h,o-z)
+      integer, intent(in) :: norder, npatches, npts
+      real *8, intent(in) :: srcvals(12,npts)
+      character (len=*), intent(in) :: fname
+
+      open(unit=33,file=trim(fname))
+      write(33,*) norder
+      write(33,*) npatches
+
+      do l=1,12
+        do i=1,npts
+          write(33,*) srcvals(l,i) 
+        enddo
+      enddo
+
+      close(33)
+
+      return
+      end
+
+
+
+
+
 subroutine write_wtorus(fname,radii,scales,nosc,nu,nv,norder,pmax)
 !
 !f2py intent(in) fname,radii,scales,nosc,nu,nv,norder
