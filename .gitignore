@@ -17,3 +17,11 @@ int2*
 *.DS_STORE*
 *.msh*
 *.mod
+*.sh
+*egg-info
+make.inc
+todo
+*mex*
+*build*
+*old*
+*vscode
