@@ -1,4 +1,4 @@
-function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
+function [S] = startorus(radii, nosc, scales, nuv, norder, iptype, iort)
 % STARTORUS Create discretized torus surfer deformed poloidal Fourier mode.
 %
 % Surface is parameterized by
@@ -21,7 +21,9 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
 %   S = geometries.startorus(radii, nosc, scales, nuv)
 %   S = geometries.startorus(radii, nosc, scales, nuv, norder)
 %   S = geometries.startorus(radii, nosc, scales, nuv, norder, iptype)
-%   If arguments nosc, scales, nuv, norder, and/or iptype are empty, defaults are used 
+%   S = geometries.startorus(radii, nosc, scales, nuv, norder, iptype, iort)
+%   If arguments nosc, scales, nuv, norder, iptype, and/or iort are empty,
+%   defaults are used 
 %
 %  Input arguments:
 %    * radii(3): radii of star shaped torus
@@ -46,6 +48,10 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
 %                       product Gauss-Legendre nodes
 %        * iptype = 12, quadrangular patch discretized using tensor
 %                       product Chebyshev 
+%    * iort: (optional, 1)
+%         orientation vector, normals point in the unbounded region
+%         if iort = 1, and in the interior of the startorus otherwise
+%    
 % Example
 %   % create 8th-order GL-quad patch with 5-pointed star cross-section:
 %   S = geometries.startorus([1,0.5,0.05], 5, [], [], 8, 11)
@@ -72,6 +78,16 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
     iptype = 1;
   end
 
+  if nargin < 7 || isempty(iort)
+     iort = -1;
+  else
+     if iort == 1
+        iort = -1;
+     else
+        iort = 1;
+     end
+  end
+
   m = nosc + 1;
   coefs = zeros(2*m+1, 2*m+1, 3);
 
@@ -90,8 +106,6 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype)
   if nosc-1 < 0
     coefs(m+1+abs(nosc-1),1,3) = coefs(m+1+abs(nosc-1),1,3) + radii(3)/2;
   end
-
-  iort = -1;
 
   S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype);
 
