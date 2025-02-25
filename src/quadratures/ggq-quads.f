@@ -940,8 +940,8 @@ c  operator at a target on the interior of a triangluar patch
 c  using the generalized
 c  Gaussian quadratures developed by Bremer and Gimbutas.
 c
-c  The quadrature currently cannot handle targets on the boundary
-c  of the triangle
+c  The quadrature currently can only handle targets on the boundary
+c  of the triangle for ipv = 0, and cannot do so for ipv = 1
 c
 c  Input arguments:
 c    - ipv: integer
