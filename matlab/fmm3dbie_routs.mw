@@ -5086,4 +5086,56 @@ function [densities, varargout] = solver(S, einc, hinc, eps, zk, rep_params, opt
 end    
 %
 %
+%-------------
+%   POLYNYA routs
+%----------------------------------
+%
+@ +polynya3d/matgen.m
+function A = matgen(S, eps)
+%
+%  polynya3d.dirichlet.get_quadrature_correction
+%
+%  Syntax
+%   A = polynya3d.dirichlet.get_quadrature_correction(S,eps)
+%   Q = polynya3d.dirichlet.get_quadrature_correction(S,eps,targinfo)
+%   Q = polynya3d.dirichlet.get_quadrature_correction(S,eps,targinfo,opts)
+%
+%  Integral representation
+%     pot = (Update representation here) 
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%
 
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*npts+1);
+    col_ind = repmat(1:npatches,[1,npts]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*npts;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+    iquad = 1:npols:(npts*npts+1);
+    A = complex(zeros(npts,npts));
+    rfac0 = 1.25;
+    nquad = npts*npts;
+      # FORTRAN getnearquad_polynya_lps_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[1] zpuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[npts,npts] A);
+
+    
+end
+%
+%
+%
