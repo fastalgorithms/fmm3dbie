@@ -1,4 +1,4 @@
-function [S] = stellarator(nuv, norder, iptype)
+function [S] = stellarator(nuv, norder, iptype, iort)
 % GEOMETRIES.stellarator, get toroidal double fourier surface given by
 %
 % x(u,v) = hat(x)(u,v) \cos(v)
@@ -31,7 +31,8 @@ function [S] = stellarator(nuv, norder, iptype)
 %   S = geometries.stellarator(nuv)
 %   S = geometries.stellarator(nuv, norder)
 %   S = geometries.stellarator(nuv, norder, iptype)
-%   If arguments norder, and/or iptype are empty, defaults are used 
+%   S = geometries.stellarator(nuv, norder, iptype, iort)
+%   If arguments norder, iptype, and/or iort are empty, defaults are used 
 %
 %  Input arguments:
 %    * nuv(2): integer (optional, [5,15])
@@ -48,6 +49,9 @@ function [S] = stellarator(nuv, norder, iptype)
 %                       product Gauss-Legendre nodes
 %        * iptype = 12, quadrangular patch discretized using tensor
 %                       product Chebyshev 
+%    * iort: (optional, 1)
+%         orientation vector, normals point in the unbounded region
+%         if iort = 1, and in the interior of the startorus otherwise
 %
 
   if nargin < 1 || isempty(nuv)
@@ -60,6 +64,16 @@ function [S] = stellarator(nuv, norder, iptype)
 
   if nargin < 3 || isempty(iptype)
     iptype = 1;
+  end
+
+  if nargin < 7 || isempty(iort)
+     iort = -1;
+  else
+     if iort == 1
+        iort = -1;
+     else
+        iort = 1;
+     end
   end
 
   m = 2; 
@@ -82,10 +96,10 @@ function [S] = stellarator(nuv, norder, iptype)
   
   scales = [1;1;1];
 
+  nfp = 1;
 
-  iort = -1;
 
-  S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype);
+  S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort, nuv, norder, iptype);
 
 
 end

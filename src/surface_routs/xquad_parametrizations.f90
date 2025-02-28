@@ -177,9 +177,10 @@ end subroutine xquad_stell_eval
 !
 
 subroutine xquad_xyz_tensor_fourier_eval(iquad, u, v, xyz, dxyzduv, &
-    quadinfo, coefs, m, scales)
+    quadinfo, coefs, ipars, scales)
   implicit real *8 (a-h,o-z)
-  real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), coefs(2*m+1,2*m+1,3)
+  integer ipars(2)
+  real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), coefs(*)
   real *8 :: dxyzdst(3,2), scales(3)
 
   !
@@ -227,7 +228,8 @@ subroutine xquad_xyz_tensor_fourier_eval(iquad, u, v, xyz, dxyzduv, &
   s = x0+(1.0d0+u)*(x1-x0)/2+(1.0d0+v)*(x2-x0)/2
   t = y0+(1.0d0+u)*(y1-y0)/2+(1.0d0+v)*(y2-y0)/2
 
-  call xyz_tensor_fourier_eval(s, t, coefs, m, scales, xyz, dxyzdst)
+  call xyz_tensor_fourier_eval(s, t, coefs, ipars(1), ipars(2), &
+    scales, xyz, dxyzdst)
 
   dsdu = (x1-x0)/2
   dsdv = (x2-x0)/2

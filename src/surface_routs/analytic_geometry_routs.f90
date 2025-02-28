@@ -385,15 +385,15 @@
 !
 !
 !
-      subroutine get_xyz_tensor_fourier_npat_mem(coefs, m, scales, &
+      subroutine get_xyz_tensor_fourier_npat_mem(coefs, m, nfp, scales, &
         iort, nuv, norder, iptype0, npatches, npts)
 !
 !  Estimate the number of patches in the discretization of toroidal
 !  double fourier surface given by
 !
-!  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(u) b_{j}(v))
-!  hat(y) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i}(u) b_{j}(v))
-!  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(u) b_{j}(v))
+!  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(u) b_{j}(nfp*v))
+!  hat(y) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i}(u) b_{j}(nfp*v))
+!  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(u) b_{j}(nfp*v))
 !
 !  x(u,v) = (\hat(x) \cos(v) - \hat(y) \sin(v))*scales(1)
 !  y(u,v) = (\hat(x) \sin(v) + \hat(y) \cos(v))*scales(2)
@@ -412,6 +412,8 @@
 !        \hat(z) = coefs(2*m+1,2*m+1, 3)
 !    - m: integer
 !        max fourier content of \hat(x), \hat(y), and \hat(z)
+!    - nfp: integer
+!        number of field periods
 !    - scales: real *8(3)
 !        scaling parameter for the coordinates of the surface
 !    - iort: integer
@@ -442,6 +444,7 @@
 !
       implicit none
       integer, intent(in) :: m, nuv(2), iptype0, norder, iort
+      integer, intent(in) :: nfp
       real *8, intent(in) :: coefs(2*m+1,2*m+1,3), scales(3)
       integer, intent(out) :: npatches, npts
       
@@ -463,15 +466,15 @@
 !
 !
 !
-      subroutine get_xyz_tensor_fourier_npat(coefs, m, scales, &
+      subroutine get_xyz_tensor_fourier_npat(coefs, m, nfp, scales, &
         iort, nuv, norder, iptype0, npatches, npts, norders, ixyzs, &
         iptype, srccoefs, srcvals)
 !
 !  Discretize the toroidal double fourier surface given by
 !
-!  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(u) b_{j}(v))
-!  hat(y) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i}(u) b_{j}(v))
-!  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(u) b_{j}(v))
+!  hat(x) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i}(u) b_{j}(nfp*v))
+!  hat(y) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i}(u) b_{j}(nfp*v))
+!  hat(z) = (\sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i}(u) b_{j}(nfp*v))
 !
 !  x(u,v) = (\hat(x) \cos(v) - \hat(y) \sin(v))*scales(1)
 !  y(u,v) = (\hat(x) \sin(v) + \hat(y) \cos(v))*scales(2)
@@ -490,6 +493,8 @@
 !        \hat(z) = coefs(2*m+1,2*m+1, 3)
 !    - m: integer
 !        max fourier content of \hat(x), \hat(y), and \hat(z)
+!    - nfp: integer
+!        number of field periods
 !    - scales: real *8(3)
 !        scaling parameter for the coordinates of the surface
 !    - iort: integer
@@ -545,6 +550,7 @@
 !
       implicit none
       integer, intent(in) :: m, nuv(2), iptype0, norder
+      integer, intent(in) :: nfp
       real *8, intent(in) :: coefs(2*m+1,2*m+1,3), scales(3)
       integer, intent(in) :: npatches, npts, iort
       
@@ -559,7 +565,7 @@
       real *8, target :: p3(1), p4(3)
       real *8, pointer :: ptr1, ptr2, ptr3, ptr4
       integer, pointer :: iptr3
-      integer, target :: muse
+      integer, target :: ipars(2)
 
 
       real *8 done, pi
@@ -624,12 +630,13 @@
         enddo
       enddo
 
-      muse = m
+      ipars(1) = m
+      ipars(2) = nfp
       p4(1:3) = scales(1:3)
 
       ptr1 => skel(1,1,1)
       ptr2 => pcoefs(1,1,1)
-      iptr3 => muse 
+      iptr3 => ipars(1) 
       ptr4 => p4(1)
       
       call getgeominfo(npatches, patchpnt, ptr1, ptr2, iptr3, ptr4, &
@@ -809,7 +816,7 @@
       real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
 
       real *8, allocatable :: coefs(:,:,:)
-      integer i, j, k, m, iort
+      integer i, j, k, m, iort, nfp
 
       m = nosc + 1
 
@@ -834,8 +841,9 @@
       if (nosc-1.lt.0) coefs(m+1+abs(nosc-1),1,3) = coefs(m+1+abs(nosc-1),1,3) + radii(3)/2
 
       iort = -1
+      nfp = 1
 
-      call get_xyz_tensor_fourier_npat(coefs, m, scales, &
+      call get_xyz_tensor_fourier_npat(coefs, m, nfp, scales, &
         iort, nuv, norder, iptype0, npatches, npts, norders, ixyzs, &
         iptype, srccoefs, srcvals)
 
@@ -1014,7 +1022,7 @@
 
       real *8, allocatable :: coefs(:,:,:)
       real *8 scales(3)
-      integer i, j, k, m, iort
+      integer i, j, k, m, iort, nfp
 
       m = 2
 
@@ -1048,9 +1056,10 @@
       scales(3) = 1
 
       iort = -1
+      nfp = 1
 
 
-      call get_xyz_tensor_fourier_npat(coefs, m, scales, &
+      call get_xyz_tensor_fourier_npat(coefs, m, nfp, scales, &
         iort, nuv, norder, iptype0, npatches, npts, norders, ixyzs, &
         iptype, srccoefs, srcvals)
 

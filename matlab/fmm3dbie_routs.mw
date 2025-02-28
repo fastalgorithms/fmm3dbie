@@ -264,231 +264,13 @@ end
 %
 %
 %--------------------------------------------
-@ +geometries/startorus.m
-function [S] = startorus(radii, nosc, scales, nuv, norder, iptype, iort)
-% STARTORUS Create discretized torus surfer deformed poloidal Fourier mode.
-%
-% Surface is parameterized by
-%
-% x(u,v) = \rho(u) \cos(v) scales(1)
-% y(u,v) = \rho(u) \sin(v) scales(2)
-% z(u,v) = z(u) scales(3)
-%
-% u,v \in [0, 2\pi)^2, and
-%
-% \rho(u) = Rmajor + r(u)*cos(u)
-% z(u) = r(u)*sin(u)
-%
-% r(u) = rminor + rwave*cos(nosc*u)
-%
-%  Syntax
-%   S = geometries.startorus(radii)
-%   S = geometries.startorus(radii, nosc)
-%   S = geometries.startorus(radii, nosc, scales)
-%   S = geometries.startorus(radii, nosc, scales, nuv)
-%   S = geometries.startorus(radii, nosc, scales, nuv, norder)
-%   S = geometries.startorus(radii, nosc, scales, nuv, norder, iptype)
-%   S = geometries.startorus(radii, nosc, scales, nuv, norder, iptype, iort)
-%   If arguments nosc, scales, nuv, norder, iptype, and/or iort are empty,
-%   defaults are used 
-%
-%  Input arguments:
-%    * radii(3): radii of star shaped torus
-%         radii(1) = rmajor
-%         radii(2) = rminor
-%         radii(3) = rwave
-%    * nosc(1): integer (optional, 0)
-%         number of oscillations in star-shaped torus
-%    * scales(3): (optional, [1,1,1])
-%        scaling parameters for the coordinates of the surface
-%    * nuv(2): integer (optional, [5,5])
-%        number of quad patches in u, and v direction. if iptype is 1,
-%        then each quad patch is further divided into two triangular
-%        patches
-%    * norder: (optional, 4)
-%        order of discretization
-%    * iptype: (optional, 1)
-%        type of patch to be used in the discretization
-%        * iptype = 1, triangular patch discretized using
-%                      Rokhlin-Vioreanu nodes
-%        * iptype = 11, quadrangular patch discretized using tensor
-%                       product Gauss-Legendre nodes
-%        * iptype = 12, quadrangular patch discretized using tensor
-%                       product Chebyshev 
-%    * iort: (optional, 1)
-%         orientation vector, normals point in the unbounded region
-%         if iort = 1, and in the interior of the startorus otherwise
-%    
-% Example
-%   % create 8th-order GL-quad patch with 5-pointed star cross-section:
-%   S = geometries.startorus([1,0.5,0.05], 5, [], [], 8, 11)
-%
-% Note: rwave small seems to generate very large negative curvatures
-%
-  if nargin < 2 || isempty(nosc)
-     nosc = 0;
-  end
-
-  if nargin < 3 || isempty(scales)
-    scales = [1;1;1];
-  end
-
-  if nargin < 4 || isempty(nuv)
-    nuv = [5;5];
-  end
-
-  if nargin < 5 || isempty(norder)
-    norder = 4;
-  end
-
-  if nargin < 6 || isempty(iptype)
-    iptype = 1;
-  end
-
-  if nargin < 7 || isempty(iort)
-     iort = -1;
-  else
-     if iort == 1
-        iort = -1;
-     else
-        iort = 1;
-     end
-  end
-
-  m = nosc + 1;
-  coefs = zeros(2*m+1, 2*m+1, 3);
-
-  coefs(1,1,1) = radii(1);
-  coefs(2,1,1) = radii(2);
-  coefs(2+nosc,1,1) = coefs(2+nosc,1,1) + radii(3)/2;
-  coefs(1+abs(nosc-1),1,1) = coefs(1+abs(nosc-1),1,1) + radii(3)/2;
-
-  coefs(m+2,1,3) = radii(2);
-  coefs(2*m+1,1,3) = coefs(2*m+1,1,3) + radii(3)/2;
-
-  if nosc-1 > 0
-    coefs(m+1+nosc-1,1,3) = coefs(m+1+nosc-1,1,3) - radii(3)/2;
-  end
-
-  if nosc-1 < 0
-    coefs(m+1+abs(nosc-1),1,3) = coefs(m+1+abs(nosc-1),1,3) + radii(3)/2;
-  end
-
-  S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype);
-
-
-end
-%
-%
-%
-%
-%
-%--------------------------------------------
-@ +geometries/stellarator.m
-function [S] = stellarator(nuv, norder, iptype)
-% GEOMETRIES.stellarator, get toroidal double fourier surface given by
-%
-% x(u,v) = hat(x)(u,v) \cos(v)
-% y(u,v) = hat(x)(u,v) \sin(v)  
-% z(u,v) = hat(z)(u,v)
-%
-% u,v \in [2\pi,0)\times [0,2\pi) , and
-%
-% hat(x) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i} (u) b_{j} (v)
-% hat(z) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i} (u) b_{j} (v)
-%
-% with m = 2, and the only non-zero coefs are given by
-%
-% hat(x)(3,2) = 0.17
-% hat(x)(5,4) = 0.17
-% hat(x)(1,1) = 4.5
-% hat(x)(2,1) = 0.75
-% hat(x)(3,1) = 0.11
-% hat(x)(2,2)  -0.38
-% hat(x)(4,4) = -0.52
-%
-% hat(z)(5,2) = 0.17
-% hat(z)(3,4) = -0.17
-% hat(z)(5,1) = 0.11
-% hat(z)(4,2) = 0.52
-% hat(z)(2,4) = -0.38
-%
-%  Syntax
-%   S = geometries.stellarator()
-%   S = geometries.stellarator(nuv)
-%   S = geometries.stellarator(nuv, norder)
-%   S = geometries.stellarator(nuv, norder, iptype)
-%   If arguments norder, and/or iptype are empty, defaults are used 
-%
-%  Input arguments:
-%    * nuv(2): integer (optional, [5,15])
-%        number of quad patches in u, and v direction. if iptype is 1,
-%        then each quad patch is further divided into two triangular
-%        patches
-%    * norder: (optional, 4)
-%        order of discretization
-%    * iptype: (optional, 1)
-%        type of patch to be used in the discretization
-%        * iptype = 1, triangular patch discretized using
-%                      Rokhlin-Vioreanu nodes
-%        * iptype = 11, quadrangular patch discretized using tensor
-%                       product Gauss-Legendre nodes
-%        * iptype = 12, quadrangular patch discretized using tensor
-%                       product Chebyshev 
-%
-
-  if nargin < 1 || isempty(nuv)
-    nuv = [5;15];
-  end
-
-  if nargin < 2 || isempty(norder)
-    norder = 4;
-  end
-
-  if nargin < 3 || isempty(iptype)
-    iptype = 1;
-  end
-
-  m = 2; 
-  coefs = zeros(2*m+1, 2*m+1, 3);
-
-  coefs(3,2,1) = 0.17;
-  coefs(5,4,1) = 0.17;
-  coefs(1,1,1) = 4.5;
-  coefs(2,1,1) = 0.75;
-  coefs(3,1,1) = 0.11;
-  coefs(2,2,1) = -0.38;
-  coefs(4,4,1) = -0.52;
-
-  coefs(5,2,3) = 0.17;
-  coefs(3,4,3) = -0.17;
-  coefs(4,1,3) = 1.25;
-  coefs(5,1,3) = 0.11;
-  coefs(4,2,3) = 0.52;
-  coefs(2,4,3) = -0.38;
-  
-  scales = [1;1;1];
-
-
-  iort = -1;
-
-  S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype);
-
-
-end
-%
-%
-%
-
-%
-%--------------------------------------------
 @ +geometries/xyz_tensor_fourier.m
-function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
+function [S] = xyz_tensor_fourier(coefs, nfp, scales, iort, nuv, norder, iptype)
 % GEOMETRIES.xyz_tensor_fourier, get toroidal double fourier surface given by
 %
-% hat(x) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i} (u) b_{j} (v)
-% hat(y) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i} (u) b_{j} (v)
-% hat(z) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i} (u) b_{j} (v)
+% hat(x) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i} (u) b_{j} (nfp*v)
+% hat(y) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i} (u) b_{j} (nfp*v)
+% hat(z) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i} (u) b_{j} (nfp*v)
 %
 % x(u,v) = (hat(x) \cos(v) - hat(y) sin(v))*scales(1)
 % y(u,v) = (hat(x) \sin(v) + hat(y) cos(v))*scales(2)
@@ -501,11 +283,12 @@ function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
 %
 %  Syntax
 %   S = geometries.xyz_tensor_fourier(coefs)
-%   S = geometries.xyz_tensor_fourier(coefs, scales)
-%   S = geometries.xyz_tensor_fourier(coefs, scales, iort)
-%   S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv)
-%   S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv, norder)
-%   S = geometries.xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort, nuv)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort, nuv, norder)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort, nuv, norder, iptype)
 %   If arguments scales, iort, nuv, norder, and/or iptype are empty, defaults are used 
 %
 %  Input arguments:
@@ -513,6 +296,8 @@ function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
 %         hat(x) = coefs(:,:,1)
 %         hat(y) = coefs(:,:,2)
 %         hat(z) = coefs(:,:,3)
+%    * nfp: integer
+%         number of field periods
 %    * scales(3): (optional, [1,1,1])
 %        scaling parameters for the coordinates of the surface
 %    * iort: integer (optional, 1)
@@ -581,7 +366,7 @@ function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
   npatches = 0;
   npts = 0;
   
-  # FORTRAN get_xyz_tensor_fourier_npat_mem(double[muse,3] coefs_use, int[1] m, double[3] scales, int[1] iort, int[2] nuv, int[1] norder, int[1] iptype, inout int[1] npatches, inout int[1] npts);
+  # FORTRAN get_xyz_tensor_fourier_npat_mem(double[muse,3] coefs_use, int[1] m, int[1] nfp, double[3] scales, int[1] iort, int[2] nuv, int[1] norder, int[1] iptype, inout int[1] npatches, inout int[1] npts);
   
 
   srcvals = zeros(12,npts);
@@ -595,7 +380,7 @@ function [S] = xyz_tensor_fourier(coefs, scales, iort, nuv, norder, iptype)
   n9 = 9;
   n12 = 12;
 
-  # FORTRAN get_xyz_tensor_fourier_npat(double[muse,3] coefs_use, int[1] m, double[3] scales, int[1] iort, int[2] nuv, int[1] norder, int[1] iptype, int[1] npatches, int[1] npts, inout int[npatches] norders, inout int[npatp1] ixyzs, inout int[npatches] iptypes, inout double[n9,npts] srccoefs, inout double[n12,npts] srcvals);
+  # FORTRAN get_xyz_tensor_fourier_npat(double[muse,3] coefs_use, int[1] m, int[1] nfp, double[3] scales, int[1] iort, int[2] nuv, int[1] norder, int[1] iptype, int[1] npatches, int[1] npts, inout int[npatches] norders, inout int[npatp1] ixyzs, inout int[npatches] iptypes, inout double[n9,npts] srccoefs, inout double[n12,npts] srcvals);
 
   S = surfer(npatches, norder, srcvals, iptype);
 
