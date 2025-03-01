@@ -25,7 +25,7 @@ classdef surfer
 % Surfer properties:
 %  obj.iptype      - type of each patch
 %  obj.weights     - cell array of quadrature weight arrays per patch
-%  obj.norders     - exapnsion order p of each patch
+%  obj.norders     - expansion order p of each patch
 %  obj.npatches    - numbers of patches
 %  obj.npts        - total number of discretization points
 %  obj.srcccoefs   - cell array of orthogonal polynomial coefs of
