@@ -257,7 +257,7 @@ endif
 STATICLIBFMM:
 ifneq ($(wildcard ./FMM3D/src/.*),)
 	[ ! -f make.inc ] || cp make.inc ./FMM3D; 
-	cd FMM3D && make libfmm3d.a -j;
+	cd FMM3D && make libfmm3d.a;
 	echo "$(LFMMSTATICLIB)"; 
 	$(eval LFMMSTATICLIB := $(shell pwd)/FMM3D/lib-static/libfmm3d.a) 
 	echo "$(LFMMSTATICLIB)"; 
