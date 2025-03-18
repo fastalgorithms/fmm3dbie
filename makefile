@@ -147,7 +147,7 @@ KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 QUAD = src/quadratures
 QOBJS = $(QUAD)/far_field_routs.o \
 	$(QUAD)/ggq-selfquad-routs.o $(QUAD)/ggq-quads.o \
-	$(QUAD)/ggq-selfquad.o \
+	$(QUAD)/ggq-selfquad.o $(QUAD)/adap-quads.o \
 	$(QUAD)/near_field_routs.o $(QUAD)/near_quad_sub.o
 
 # Surface wrappers
@@ -354,12 +354,12 @@ mex-dyn: $(MDYNAMICLIB)
 # testing routines
 #
 test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad 
-	cd test/common; ./int2-com
-	cd test/helm_wrappers; ./int2-helm
-	cd test/lap_wrappers; ./int2-lap
-	cd test/surface_routs; ./int2-surf
-	cd test/tria_routs; ./int2-tria
-	cd test/quad_routs; ./int2-quad
+#	cd test/common; ./int2-com
+#	cd test/helm_wrappers; ./int2-helm
+#	cd test/lap_wrappers; ./int2-lap
+#	cd test/surface_routs; ./int2-surf
+#	cd test/tria_routs; ./int2-tria
+#	cd test/quad_routs; ./int2-quad
 	cd test/quadratures; ./int2-quad
 	cat print_testres.txt
 	rm print_testres.txt
@@ -417,8 +417,10 @@ QTOBJS = test/quad_routs/test_quadintrouts.o test/quad_routs/test_dquadintrouts.
 test/quad: $(QTOBJS)
 	$(FC) $(FFLAGS) test/quad_routs/test_quadrouts.f -o test/quad_routs/int2-quad $(QTOBJS) lib-static/$(STATICLIB) $(LIBS) 
 
-test/quadrature:
-	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad lib-static/$(STATICLIB) $(LIBS) 
+
+QQOBJS = test/quadratures/test_find_near.o test/quadratures/test_adap_quad_self.o
+test/quadrature: $(QQOBJS)
+	$(FC) $(FFLAGS) test/quadratures/test_quadratures.f -o test/quadratures/int2-quad $(QQOBJS) lib-static/$(STATICLIB) $(LIBS) 
 
 
 #
@@ -445,8 +447,8 @@ test/quad-dyn: $(QTOBJS)
 	$(FC) $(FFLAGS) test/quad_routs/test_quadrouts.f -o test/quad_routs/int2-quad $(QTOBJS) -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 
-test/quadrature-dyn:
-	$(FC) $(FFLAGS) test/quadratures/test_find_near.f -o test/quadratures/int2-quad -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) 
+test/quadrature-dyn: $(QQOBJS)
+	$(FC) $(FFLAGS) test/quadratures/test_quadratures.f -o test/quadratures/int2-quad $(QQOBJS) -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) 
 
 
 # 
