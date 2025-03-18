@@ -432,9 +432,11 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
     endif
   enddo
 end subroutine oversample_geom
-
-
-
+!
+!
+!
+!
+!
 
 
 subroutine oversample_fun_surf(nd,npatches,norders,ixyzs,iptype,npts, &
@@ -577,6 +579,76 @@ subroutine oversample_fun_guru(nd,norder,npols,iptype,u,nfar,nfar_pols, &
  
 end subroutine oversample_fun_guru
 !
+!
+!
+
+
+subroutine fun_surf_interp_coefs(nd, npatches, norders, ixyzs, iptype, &
+   npts, ucoefs, ntarg, ipatches, uvs_targ, uover)
+!
+!  This subroutine oversamples a function defined on a surface
+!
+!  input
+!    nd - integer
+!      number of functions
+!    npatches - integer
+!      number of patches on the surface
+!    norders - integer(npatches)
+!      order of discretization of patch i
+!    ixyzs - integer(npatches+1)
+!      starting location of points on patch i
+!    iptype - integer(npatches)
+!      type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    npts - integer
+!      total number of points on the surface
+!    ucoefs - real *8 (nd, npts)
+!      basis function expansions of functions 
+!    ntarg - integer
+!      number of targets
+!    ipatches - integer(ntarg)
+!      ipatches(i) is the patch on which target i belongs
+!    uvs_targ - real *8 (2,ntarg)
+!      local uv coordinates of targets 
+!  
+!
+!  output
+!    uover - real *8 (nd, ntarg)
+!       oversampled function
+!    
+   
+
+  implicit none
+  integer nd,npatches,norders(npatches),ixyzs(npatches+1)
+  integer iptype(npatches),npts
+  real *8 ucoefs(nd,npts)
+  integer ntarg, ipatches(ntarg)
+  real *8 uvs_targ(2,ntarg)
+  real *8 uover(nd,ntarg)
+  integer i,istart,istarto,npols,npolso
+  real *8 pols(500)
+  integer ipat,l,idim
+
+  do i=1,ntarg
+    ipat = ipatches(i)
+    call get_npols(iptype(ipat), norders(ipat), npols)
+    call get_basis_pols(uvs_targ(1,i), norders(ipat), npols, &
+            iptype(ipat), pols)
+    istart = ixyzs(ipat)
+
+    do idim=1,nd
+      uover(idim,i) = 0
+      do l=1,npols
+        uover(idim,i) = uover(idim,i) + ucoefs(idim,istart+l-1)*pols(l)
+      enddo
+    enddo
+  enddo
+
+
+  return
+end subroutine fun_surf_interp_coefs
 !
 !
 !
@@ -1965,34 +2037,13 @@ subroutine col_ind_to_patch_node_ind(npatches,ixyzs,ncol,col_ind, &
     endif
   enddo
 
-!  call sorti(ncol,col_ind,iper)
-!
-!  do i=1,ncol
-!    col_ind_sort(i) = col_ind(iper(i))
-!    patch_ind(i) = 0
-!    node_ind(i) = 0
-!  enddo
-!
-!
-!  j0 = 1
-!  do i=1,ncol
-!    do j=j0,npatches
-!      if(ixyzs(j+1).gt.col_ind_sort(i)) then
-!        patch_ind(iper(i)) = j
-!        node_ind(iper(i)) = col_ind(iper(i))-ixyzs(j)+1
-!        j0 = j
-!        goto 1111
-!      endif
-!    enddo
-! 1111 continue  
-!  enddo
-  
-
+  return
 end subroutine col_ind_to_patch_node_ind
-
-
-
-
+!
+!
+!
+!
+!
 subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
   npts,srccoefs,srcvals,fname,title)
 !
@@ -2091,7 +2142,6 @@ end subroutine plot_surface_info_all
 !
 !
 
-
 subroutine getpatchinfo(npatches, patchpnt, par1, par2, par3, par4, &
     npols, uvs, umatr, srcvals, srccoefs)
   implicit real *8 (a-h,o-z)
@@ -2169,7 +2219,11 @@ subroutine getpatchinfo(npatches, patchpnt, par1, par2, par3, par4, &
 
   return
 end subroutine getpatchinfo
-
+!
+!
+!
+!
+!
 
 subroutine get_surf_interp_mat_targ_mem(npatches,ixyzs,ntarg, &
   ipatchtarg,lmem)
@@ -2425,6 +2479,9 @@ end subroutine get_second_fundamental_form
 !
 !
 !
+!
+!
+
 subroutine get_mean_curvature(npatches,norders,ixyzs,iptype, &
   npts,srccoefs,srcvals,mean_curv)
 !
@@ -2493,12 +2550,6 @@ subroutine get_mean_curvature(npatches,norders,ixyzs,iptype, &
   call get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
   npts,srccoefs,srcvals,sfform)
   
-!  print *,"Point on surface:", srcvals(1,3),srcvals(2,3), srcvals(3,3) 
-!  print *,"First fundamental form=", ffform(:,:, 3) 
-!  print *,"Inverse first fundamental form=", ffforminv(:,:, 3)
-!  print *,"Second fundamental form=", sfform(:,:, 3)
- 
-
 
 ! Calculating mean curvature 
  
@@ -2508,7 +2559,6 @@ subroutine get_mean_curvature(npatches,norders,ixyzs,iptype, &
                      sfform(2,1,i)*ffforminv(1,2,i) + &
                      sfform(2,2,i)*ffforminv(2,2,i))
   enddo
-!  print *,"Mean=", mean_curv(3)
  
   return
 end subroutine get_mean_curvature
@@ -2594,6 +2644,5 @@ subroutine getgeominfo(npatches, patchpnt, par1, par2, par3, par4, &
 
   return
 end subroutine getgeominfo
-
 
 

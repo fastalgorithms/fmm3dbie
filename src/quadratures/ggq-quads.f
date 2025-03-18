@@ -16,7 +16,7 @@ c    * Fix behavior of getting quadrature nodes for different
 c      patch types for "far-near" part, currently
 c      nodes for both triangles are quads are generated. This needs
 c      to be changed to figuring out unique sets of patch types
-c      and storing the appropirate nodes and weights and then
+c      and storing the appropriate nodes and weights and then
 c      accessing them as needed in loop
 c
 c
@@ -313,9 +313,9 @@ C$OMP$PRIVATE(epsp,rsc,tmp,ipoly,ttype)
         call get_disc_exps(norder,npols,iptype(ipatch),uvs,
      1     umatr,vmatr,wts)
 
-        if(norder.le.4) then
+        if(norder.lt.4) then
           irad = 1
-        else if(norder.le.8) then
+        else if(norder.lt.8) then
           irad = 2
         else
           irad = 3
@@ -770,9 +770,9 @@ C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
         call get_disc_exps(norder,npols,iptype(ipatch),uvs,
      1     umatr,vmatr,wts)
 
-        if(norder.le.4) then
+        if(norder.lt.4) then
           irad = 1
-        else if(norder.le.8) then
+        else if(norder.lt.8) then
           irad = 2
         else
           irad = 3
