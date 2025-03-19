@@ -1136,10 +1136,6 @@ c
       allocate(fint_all(npols,nv))
       ttype = "F"
 
-      print *, "npols=", npols
-      print *, "nv=", nv
-      print *, "ipoly=",ipoly
-
 c
 c
 c
