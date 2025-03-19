@@ -3,7 +3,7 @@
       
       na = 1
       norder = 6
-      
+
       print *, "================"
       print *, "starting triangle test"
       call zcompute_errors(1, na, norder, erra_abs_tri1)
@@ -43,13 +43,11 @@
       rat_lege = erra_abs_lege_poly1/erra_abs_lege_poly2
       rat_cheb = erra_abs_cheb_poly1/erra_abs_cheb_poly2
 
-
-
-
-      
+      na = 1
       print *, "================"
       print *, "starting dtriangle test"
       call dcompute_errors(1, na, norder, erra_abs_tri1)
+
       print *, ""
       print *, ""
       print *, "================"
@@ -215,8 +213,8 @@
         allocate(fints(npols), fints_ex(npols))
 
         do ipol = 1,npols
-          fints(ipols) = 0
-          fints_ex(ipols) = 0
+          fints(ipol) = 0
+          fints_ex(ipol) = 0
           do j=1,npols
             fints(ipol) = fints(ipol) + pols(ipol,j)*znear_adap(j)
             fints_ex(ipol) = fints_ex(ipol) + pols(ipol,j)*znear_ggq(j)
@@ -318,8 +316,6 @@
      2  ipatch_id(ipt), uvs_src(1,ipt), eps, ipv, fker, ndd, dpars, 
      3  ndz, zk, ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, npols,
      4  dnear_ggq)
-      print *, "here1"
-      stop
       
       call dgetnearquad_adap_guru(npatches_use, norders, ixyzs, 
      1  iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals(1,ipt),
@@ -350,8 +346,8 @@
         allocate(fints(npols), fints_ex(npols))
 
         do ipol = 1,npols
-          fints(ipols) = 0
-          fints_ex(ipols) = 0
+          fints(ipol) = 0
+          fints_ex(ipol) = 0
           do j=1,npols
             fints(ipol) = fints(ipol) + pols(ipol,j)*dnear_adap(j)
             fints_ex(ipol) = fints_ex(ipol) + pols(ipol,j)*dnear_ggq(j)

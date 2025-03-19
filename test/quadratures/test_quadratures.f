@@ -2,7 +2,7 @@
       ntests = 1
       call test_find_near(i1)
 
-      ntests = ntests + 2
+      ntests = ntests + 6
       call test_adap_quad_self(i2)
 
       print *, i1, i2

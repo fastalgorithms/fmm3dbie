@@ -468,7 +468,7 @@ c
 
       subroutine dgetnearquad_adap_guru(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targvals,
-     2   ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,
+     2   ipatch_id,uvs_targ,eps,fker,ndd,dpars,ndz,zpars,
      3   ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
 c
 c------------------------
@@ -533,10 +533,6 @@ c    - uvs_targ: double precision (2,ntarg)
 c        local uv coordinates on patch if target on surface
 c    - eps: double precision
 c        precision requested
-c    - ipv: integer
-c        Flag for choosing type of self-quadrature
-c        * ipv = 0, for compact/weakly singular operators
-c        * ipv = 1, for singular operators
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
@@ -576,7 +572,7 @@ c        near field quadrature corrections
 c----------------------------------------------------               
 c
       implicit real *8 (a-h,o-z)
-      integer, intent(in) :: ndi,ndd,ndz,ipv
+      integer, intent(in) :: ndi,ndd,ndz
       integer, intent(in) :: ipars(ndi)
       integer, intent(in) :: ndtarg
       integer, intent(in) :: npatches,norders(npatches),npts
@@ -883,10 +879,10 @@ c
           iqstart = iquad(iper(i))-1
 
           if(ipatch.eq.jpatch) then
-            call dget_adap_self_quad_pt(ipv,norder,npols,
-     1      uvs_targ(1,jtarg),iptype(ipatch),umatr,srccoefs(1,istart),
-     2      ndtarg,targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
-     3      ipars,wnear(iqstart+1))
+            call dget_adap_self_quad_pt(epsp, norder, npols,
+     1      uvs_targ(1,jtarg), iptype(ipatch), uvs, umatr, 
+     2      srccoefs(1,istart), ndtarg, targvals(1,jtarg), fker, ndd,
+     3      dpars, ndz, zpars, ndi, ipars, nqorder, wnear(iqstart+1))
           endif
 
           if(ipatch.ne.jpatch) then
@@ -1230,7 +1226,7 @@ c
 c
       subroutine dget_adap_self_quad_pt(epsp, norder, npols, uvs, 
      1   iptype, rnodes, umat, srccoefs, ndtarg, targ, fker, ndd, 
-     2   dpars, ndz, zpars, ndi, ipars, dquad)
+     2   dpars, ndz, zpars, ndi, ipars, nqorder, dquad)
 c
 c
 c------------------
@@ -1501,8 +1497,8 @@ c
      1      fint, ifmetric, rn1, n2)
         call dgemv_guru('t', npols, npols, alpha, umat, npols, fint,
      1   1, beta, finttmp, 1)
-        call dgemv_guru('N', npols, npols, alpha, zptmp, npols, 
-     1    finttmp, 1, zbeta, fint_all(1,iv), 1)
+        call dgemv_guru('N', npols, npols, alpha, ptmp, npols, 
+     1    finttmp, 1, beta, fint_all(1,iv), 1)
       enddo
       
       do l=1,npols
