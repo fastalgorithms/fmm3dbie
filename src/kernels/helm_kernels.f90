@@ -17,7 +17,7 @@
 
 subroutine h3d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
-  real *8 :: src(*), targ(ndt),dpars(ndd)
+  real *8 :: src(*), targ(ndt), dpars(ndd)
   real *8 over4pi
   integer ipars(ndi)
   complex *16 :: zk, val

@@ -3769,6 +3769,141 @@ function [densities, varargout] = solver(S, rhs, eps, zks, rep_params, opts)
 end    
 %
 %
+%---------------------------
+%
+%   Helmholtz open surface routines
+%
+%-----------------------------
+%
+@ +helm3d/+opensurface/get_quadrature_correction.m 
+function Q = get_quadrature_correction(S, eps, ifscal, zk, opts)
+%
+%  helm3d.opensurface.get_quadrature_correction
+%    This subroutine returns the near quadrature correction
+%    for the single layer representation with density supported
+%    on the open surface S scaled by 1/sqrt(dist) to boundary
+%    if requested, as a sparse matrix/rsc format 
+%
+%  NOTE: the routine only works for a disk currently
+%
+%  Syntax
+%   Q = helm3d.opensurface.get_quadrature_correction(S,eps,ifscal,zk)
+%   Q = helm3d.opensurface.get_quadrature_correction(S,eps,ifscal,zk,opts)
+%
+%  Integral representation
+%     pot = S_{k} [\sigma]   if ifscal = 0
+%     pot = S_{k} [1/sqrt(d) \sigma]
+%
+%  S_{k}: helmholtz single layer potential
+%  
+%  k = zk
+%
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%    * ifscal: whether to scale rep by distance to boundary
+%    * zk: wave number
+%    * opts: options struct
+%        opts.format - Storage format for sparse matrices
+%           'rsc' - row sparse compressed format
+%           'csc' - column sparse compressed format
+%           'sparse' - sparse matrix format
+%        opts.quadtype - quadrature type, currently only 'ggq' or 'adap' supported
+%                       
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+
+
+    if nargin < 5
+      opts = [];
+    end
+
+    ff = 'rsc';
+    if(isfield(opts,'format'))
+       ff = opts.format;
+    end
+
+    if(~(strcmpi(ff,'rsc') || strcmpi(ff,'csc') || strcmpi(ff,'sparse')))
+       fprintf('invalid quadrature format, reverting to rsc format\n');
+       ff = 'rsc';
+    end
+
+    row_ptr = 1:npatches:(npatches*npts+1);
+    col_ind = repmat(1:npatches,[1,npts]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    nnz = npatches*npts;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+    iquad = 1:npols:(npts*npts+1);
+    nquad = iquad(nnz+1)-1;
+    wnear = complex(zeros(nquad,1));
+
+    if ifscal == 0
+      iquadtype = 1;
+    else
+      iquadtype = 2;
+    end
+    if(isfield(opts,'quadtype'))
+      if(strcmpi(opts.quadtype,'ggq'))
+         iquadtype = 1;
+      elseif(strcmpi(opts.quadtype,'adap'))
+         iquadtype = 2;
+      else
+        fprintf('Unsupported quadrature type, reverting to ggq\n');
+        iquadtype = 1;
+      end
+    end
+
+    zpars = complex(zk);
+    rfac0 = 1.25;
+
+    # FORTRAN getnearquad_helm_open_surface_disk(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] ifscal, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
+    
+    Q = [];
+    Q.targinfo = S;
+    Q.ifcomplex = 1;
+    Q.wavenumber = zpars(1);
+    Q.kernel_order = -1;
+    Q.nquad = nquad;
+    Q.format = ff;
+    
+
+    if(strcmpi(ff,'rsc'))
+        Q.iquad = iquad;
+        Q.wnear = wnear;
+        Q.row_ptr = row_ptr;
+        Q.col_ind = col_ind;
+    elseif(strcmpi(ff,'csc'))
+        col_ptr = zeros(npatches+1,1);
+        row_ind = zeros(nnz,1);
+        iper = zeros(nnz,1);
+        npatp1 = npatches+1;
+        # FORTRAN rsc_to_csc(int[1] npatches, int[1] ntarg, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, inout int[npatp1] col_ptr, inout int[nnz] row_ind, inout int[nnz] iper); 
+        Q.iquad = iquad;
+        Q.iper = iper;
+        Q.wnear = wnear;
+        Q.col_ptr = col_ptr;
+        Q.row_ind = row_ind;
+    else
+        spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
+        Q.spmat = spmat;
+    end
+    
+end
+%
+%
+%
 
 %-------------------------------------------------
 %
