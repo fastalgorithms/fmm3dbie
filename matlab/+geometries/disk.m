@@ -50,7 +50,7 @@ function [S] = disk(scales, rmid, npars, norder, iptype, iort)
 % Example
 %   % create 8th-order GL-quad patch for an ellipse with semi-major
 %   axes (1,0.5):
-%   S = geometries.disk([1,0.5], [], [], [], 8, 11)
+%   S = geometries.disk([1,0.5], [], [], 8, 11)
 %
   if nargin < 1 || isempty(scales)
     scales = [1;1];
@@ -61,7 +61,7 @@ function [S] = disk(scales, rmid, npars, norder, iptype, iort)
   end
 
   if nargin < 3 || isempty(npars)
-    npars = [3;3;3];
+    npars = [3;4;ceil(4*pi*(1+rmid)/4/(1-rmid))];
   end
 
   if nargin < 4 || isempty(norder)
@@ -78,10 +78,10 @@ function [S] = disk(scales, rmid, npars, norder, iptype, iort)
 
 
   if iptype == 1
-    npatches = 2*(npars(1)*npars(1) + 4*npars(2)*npars(3))
-    npts = npatches*(norder+1)*(norder+2)/2
+    npatches = 2*(npars(1)*npars(1) + 4*npars(2)*npars(3));
+    npts = npatches*(norder+1)*(norder+2)/2;
   elseif iptype == 11 || iptype == 12
-    npatches = npars(1)*npars(1) + 4*npars(2)*npars(3)
+    npatches = npars(1)*npars(1) + 4*npars(2)*npars(3);
     npts = npatches*(norder+1)*(norder+1)
   end
 

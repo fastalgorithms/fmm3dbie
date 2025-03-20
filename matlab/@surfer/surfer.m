@@ -90,6 +90,8 @@ classdef surfer
         mean_curv     % mean curvatures at nodes (npts*1)
         ffform        % cell array of first fundamental forms at nodes (2,2,n)
         ffforminv     % cell array of inverses of ffforms at nodes (2,2,n)
+        aspect_ratio  % measure of local aspect ratio of patch, (n,1);
+        patch_distortion % integral of aspect ratio
     end
     properties (Access = private)
         srcvals      % cell array of nodes vals of [r;du;dv;n] per patch
@@ -208,6 +210,8 @@ classdef surfer
             obj.mean_curv = zeros(obj.npts,1);
             obj.ffforminv = cell(npatches,1);
             obj.ffform = cell(npatches,1);
+            obj.aspect_ratio = zeros(obj.npts,1);
+            obj.patch_distortion = zeros(obj.npatches,1);
             
             for i=1:npatches
                 iind = obj.ixyzs(i):(obj.ixyzs(i+1)-1);
@@ -232,9 +236,14 @@ classdef surfer
                 dunormsq = sum(du.*du,1);
                 dvnormsq = sum(dv.*dv,1);
                 duv = sum(du.*dv,1);
-
+         
                 ddinv = 1.0./(dunormsq.*dvnormsq - duv.*duv);
-
+                tt = sqrt((dunormsq - dvnormsq).^2 + 4.*(duv.^2));
+                
+                 
+                asp_rat = (dunormsq + dvnormsq + tt).'./ ...
+                          (dunormsq + dvnormsq - tt).';  
+                obj.aspect_ratio(iind) = asp_rat;
                 ffform(1,1,iind) = dunormsq;
                 ffform(1,2,iind) = duv;
                 ffform(2,1,iind) = duv;
@@ -261,6 +270,10 @@ classdef surfer
                 obj.weights{i} = da(:);      
                 obj.patch_id(iind) = i;
                 obj.uvs_targ(1:2,iind) = rnodes{iuse(i)}; 
+
+                rsum = sum(da(:));
+                rp = sum(da(:).*asp_rat);
+                obj.patch_distortion(i) = rp/rsum;
             end
             
             sv = [obj.srcvals{:}];
