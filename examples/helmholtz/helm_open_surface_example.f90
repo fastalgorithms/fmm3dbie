@@ -114,7 +114,7 @@
       rfac0 = 1.25d0
       ipv = 0
       call zgetnearquad_ggq_guru(npatches, norders, ixyzs, iptype, &
-        npts, srcoefs, srcvals, ndtarg, nptuse, srcvals, ipatch_id, &
+        npts, srccoefs, srcvals, ndtarg, nptuse, srcvals, ipatch_id, &
         uvs_src, eps, ipv, h3d_slp_disk, ndd, dpars, ndz, zk, ndi, ipars, &
         nnz, row_ptr, col_ind, iquad, rfac0, nquad, amat)
       
