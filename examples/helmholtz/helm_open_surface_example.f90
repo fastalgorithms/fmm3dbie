@@ -100,6 +100,8 @@
         iquad(i) = (i-1)*npols+1
       enddo
       nquad = iquad(nnz+1)-1
+      call prinf('nptuse=*',nptuse,1)
+
 
 
       ndtarg = 12
