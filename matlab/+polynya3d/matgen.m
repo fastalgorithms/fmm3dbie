@@ -1,4 +1,4 @@
-function A = matgen(S, eps)
+function A = matgen(S,zpars,eps)
 %
 %  polynya3d.dirichlet.get_quadrature_correction
 %
@@ -40,10 +40,12 @@ function A = matgen(S, eps)
     rfac0 = 1.25;
     nquad = npts*npts;
       mex_id_ = 'getnearquad_polynya_lps_neu(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-[A] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpuse, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, npts, npts);
+[A] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, npts, npts);
 
     
 end
 %
 %
 %
+%-------------------------------------------------------------
+

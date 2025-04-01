@@ -104,7 +104,7 @@
       integer, intent(in) :: iptype(npatches)
       real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
       real *8, intent(in) :: eps
-      complex *16, intent(in) :: zpars(2)
+      complex *16, intent(in) :: zpars(6)
       integer, intent(in) :: iquadtype, nnz
       integer, intent(in) :: row_ptr(npts+1), col_ind(nnz)
       integer, intent(in) :: iquad(nnz+1)
@@ -126,10 +126,10 @@
       integer ndtarg, ntarg
 
       procedure (), pointer :: fker
-      external p3d_log
+      external gskern, p3d_log
 
 
-      ndz=0
+      ndz=6
       ndd=0
       ndi=0
       ndtarg = 12
@@ -155,7 +155,7 @@
       if (iquadtype.eq.1) then
         ipv=0
 
-        fker => p3d_log
+        fker => gskern
         call zgetnearquad_ggq_guru(npatches, norders, ixyzs, &
           iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals, &
           ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, zpars, &

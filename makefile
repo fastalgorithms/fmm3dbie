@@ -112,7 +112,9 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o \
 	$(COM)/rigidbodies.o $(COM)/polytens.o \
-	$(COM)/chebexps.o $(COM)/gmres_routs.o
+	$(COM)/chebexps.o $(COM)/gmres_routs.o \
+	$(COM)/hank103.o $(COM)/struve102.o
+	
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
@@ -146,7 +148,8 @@ POLYOBJS = $(POLY)/polynya_lps_neu.o
 # Kernels
 KER = src/kernels
 KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
-	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o
+	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o \
+	$(KER)/nl_helm_kernels.o
 
 # Quadrature wrappers
 QUAD = src/quadratures
@@ -163,6 +166,7 @@ SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
 	$(SURF)/in_gmsh2.o $(SURF)/patch_basis_routs.o \
 	$(SURF)/analytic_geometry_routs.o $(SURF)/analytic_charts.o \
 	$(SURF)/xquad_parametrizations.o $(SURF)/circ_mesh.o \
+	$(SURF)/findnearpnt.o	
 
 # Triangle adaptive integration routines
 TRIA = src/tria_routs
