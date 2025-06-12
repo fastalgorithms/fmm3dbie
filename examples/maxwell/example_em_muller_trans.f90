@@ -91,7 +91,6 @@
      &iptype,npts,srcvals,srccoefs,wts)
 
       allocate(sigma(4*npts),rhs(4*npts))
-      ifinout = 1
 
       thet = hkrand(0)*pi
       phi = hkrand(0)*2*pi
@@ -120,7 +119,7 @@
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      
       call em_muller_trans_solver(npatches,norders,ixyzs,iptype,npts,&
-     &srccoefs,srcvals,eps,zpars,numit,ifinout,rhs,eps_gmres,niter,errs,&
+     &srccoefs,srcvals,eps,zpars,numit,rhs,eps_gmres,niter,errs,&
      &rres,sigma)
 
       call prinf('niter=*',niter,1)

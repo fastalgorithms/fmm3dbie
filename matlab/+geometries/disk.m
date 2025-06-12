@@ -61,7 +61,7 @@ function [S] = disk(scales, rmid, npars, norder, iptype, iort)
   end
 
   if nargin < 3 || isempty(npars)
-    npars = [3;4;ceil(4*pi*(1+rmid)/4/(1-rmid))];
+    npars = [3;3;ceil(3*pi*(1+rmid)/4/(1-rmid))];
   end
 
   if nargin < 4 || isempty(norder)
