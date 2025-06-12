@@ -1932,9 +1932,9 @@ end subroutine get_rhs_em_muller_trans
 !
       implicit real *8 (a-h,o-z)
       real *8 eps_FMM
-      complex *16 sol(4*npts), zpars(5)
+      complex *16 sol(4*ns), zpars(5)
       integer ns, ntarg
-      real *8 wts(ns), srcvals(12,npts), targs(3,ntarg)
+      real *8 wts(ns), srcvals(12,ns), targs(3,ntarg)
       integer iside
       complex *16 E(3,ntarg), H(3,ntarg)
       complex *16 omega, ep, mu

@@ -5,7 +5,7 @@ function Q = init_empty_quadrature_correction(targinfo,opts)
     Q.row_ptr = ones(ntarg+1,1);
     Q.nnz = 0;
     Q.col_ind = 0;
-    ifcomplex = 0
+    ifcomplex = 0;
 
     nker = 1;
     if (isfield(opts,'nker'))
@@ -18,7 +18,7 @@ function Q = init_empty_quadrature_correction(targinfo,opts)
           Q.wnear = complex(zeros(nker,1));
        end
     end
-    Q.iquad = 1;
+    Q.iquad = [1,1];
     Q.nquad = 1;
     if(isfield(opts,'rfac'))
         Q.rfac = opts.rfac;
