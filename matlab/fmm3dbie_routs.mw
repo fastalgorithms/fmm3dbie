@@ -475,7 +475,7 @@ function [S] = disk(scales, rmid, npars, norder, iptype, iort)
     npts = npatches*(norder+1)*(norder+2)/2;
   elseif iptype == 11 || iptype == 12
     npatches = npars(1)*npars(1) + 4*npars(2)*npars(3);
-    npts = npatches*(norder+1)*(norder+1)
+    npts = npatches*(norder+1)*(norder+1);
   end
 
   npp1 = npatches+1;
@@ -539,9 +539,8 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
 
     n3 = 3;
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npatp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms;
+    rads = S.rads;
 
     novers = zeros(npatches,1);
     ixyzso = zeros(npatp1,1);
@@ -955,9 +954,8 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms;
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;
@@ -1457,9 +1455,8 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
     # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms;
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;
@@ -1955,9 +1952,8 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms;
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;
@@ -2485,9 +2481,8 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms; 
+    rads = S.rads;
 
     rad_near = rads*rfac;
     nnz = 0;
@@ -3019,9 +3014,8 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms;
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;
@@ -3525,9 +3519,8 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
     # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms;
+    rads = S.rads 
 
     rad_near = rads*rfac;
     nnz = 0;
@@ -4041,9 +4034,8 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms;
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;
@@ -4621,9 +4613,8 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
     # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms; 
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;
@@ -5133,9 +5124,8 @@ function Q = get_quadrature_correction(S, eps, om, rep_params)
     # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+    cms = S.cms; 
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;

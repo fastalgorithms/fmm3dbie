@@ -3,7 +3,7 @@
 %
 %
 run ../startup.m
-S = geometries.sphere(1, 12, [0;0;0], 6, 1);
+S = geometries.sphere(1, 2, [0;0;0]);
 
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
 [~, npts] = size(srcvals);

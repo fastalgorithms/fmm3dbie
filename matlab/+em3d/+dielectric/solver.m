@@ -132,6 +132,7 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
     mu0 = rep_params(2);
     ep1 = rep_params(3);
     mu1 = rep_params(4);
+
     rhs = complex(zeros(npts,4));
 
     rhs(:,1) = -sum(einc.*S.drv, 1).'/(mu0 + mu1);

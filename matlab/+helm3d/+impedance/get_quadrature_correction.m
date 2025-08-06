@@ -136,10 +136,8 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 [rfac, rfac0] = fmm3dbie_routs(mex_id_, norder0, iptype0, rfac, rfac0, 1, 1, 1, 1);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    mex_id_ = 'get_centroid_rads(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], io double[xx], io double[x])';
-[cms, rads] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, cms, rads, 1, npatches, npp1, npatches, 1, n9, npts, n3, npatches, npatches);
+    cms = S.cms;
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;

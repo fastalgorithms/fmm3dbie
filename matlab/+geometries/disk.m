@@ -82,7 +82,7 @@ function [S] = disk(scales, rmid, npars, norder, iptype, iort)
     npts = npatches*(norder+1)*(norder+2)/2;
   elseif iptype == 11 || iptype == 12
     npatches = npars(1)*npars(1) + 4*npars(2)*npars(3);
-    npts = npatches*(norder+1)*(norder+1)
+    npts = npatches*(norder+1)*(norder+1);
   end
 
   npp1 = npatches+1;

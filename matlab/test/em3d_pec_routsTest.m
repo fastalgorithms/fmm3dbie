@@ -4,7 +4,7 @@
 %
 run ../startup.m
 S = geometries.sphere(1, 4, [0;0;0], 4, 1);
-
+%%
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
 [~, npts] = size(srcvals);
 
@@ -27,7 +27,7 @@ src_info.hdips = rand(3,1) + 1j*rand(3,1);
 
 zpars = complex([zk, alpha]);
 opts = [];
-opts.eps_gmres = 1e-10;
+opts.eps_gmres = 1e-5;
 [densities] = em3d.pec.solver(S, Einc, Hinc, eps, zk, alpha, opts);
 
 %
