@@ -291,10 +291,10 @@
     end subroutine getnearquad_em_muller_trans
 
 
-      subroutine lpcomp_em_muller_trans_addsub(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-     &eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,sigma,novers,&
-     &nptso,ixyzso,srcover,whtsover,pot,wnear)
+      subroutine lpcomp_em_muller_trans_addsub(npatches,norders,ixyzs, &
+       iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+       eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, sigma, novers, &
+       nptso, ixyzso, srcover, whtsover, pot, wnear)
 
 !
 !  This subroutine evaluates the layer potential for
@@ -481,6 +481,7 @@
       integer nd,ntarg0
 
       real *8 ttot,done,pi
+      integer nmax
 
       parameter (nd=1,ntarg0=1)
 
@@ -495,130 +496,120 @@
       allocate(sources(3,ns),targvals(3,ntarg))
       allocate(charges(ns),dipvec(3,ns))
       allocate(sigmaover(4*ns))
-	    allocate(pot_aux(4*ntarg))
+      allocate(pot_aux(4*ntarg))
 
 ! 
 !       oversample density
     
-    call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,&
-	&npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-	       
-    call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,&
-	&npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
+      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype, &
+        npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
+       
+      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype, &
+        npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
-	call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
-	&npts,sigma(2*npts+1:3*npts),novers,ixyzso,ns,sigmaover(2*ns+1:3*ns))
+      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype, & 
+        npts,sigma(2*npts+1:3*npts),novers,ixyzso,ns,sigmaover(2*ns+1:3*ns))
 
-	call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
-	&npts,sigma(3*npts+1:4*npts),novers,ixyzso,ns,sigmaover(3*ns+1:4*ns))
+      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype, & 
+       npts,sigma(3*npts+1:4*npts),novers,ixyzso,ns,sigmaover(3*ns+1:4*ns))
 
       ra = 0
 
 
 !
-!       fmm
+! fmm
 !
 
-		call get_fmm_thresh(12,ns,srcover,ndtarg,ntarg,targs,thresh)
+       call get_fmm_thresh(12,ns,srcover,ndtarg,ntarg,targs,thresh)
        ifdir=0
-	  
-		!Calculate the far_field with FMM		
-    call em_muller_trans_FMM2(eps,zpars,ns,npts,srcover,targs,whtsover,&
-    &sigmaover(1:ns),sigmaover(ns+1:2*ns),sigmaover(2*ns+1:3*ns),&
-    &sigmaover(3*ns+1:4*ns),pot_aux(1:ntarg),pot_aux(ntarg+1:2*ntarg),&
-    &pot_aux(2*ntarg+1:3*ntarg),pot_aux(3*ntarg+1:4*ntarg),&
-    &thresh,ifdir)
+  
+!  Calculate the far_field with FMM		
+      call em_muller_trans_FMM2(eps, zpars, ns, npts, srcover, targs, &
+      whtsover, sigmaover(1:ns), sigmaover(ns+1:2*ns), &
+      sigmaover(2*ns+1:3*ns), sigmaover(3*ns+1:4*ns), &
+      pot_aux(1:ntarg),pot_aux(ntarg+1:2*ntarg), &
+      pot_aux(2*ntarg+1:3*ntarg), pot_aux(3*ntarg+1:4*ntarg), &
+      thresh,ifdir)
 
-		call cpu_time(t1)
-!C$      t1 = omp_get_wtime()
-!C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
-!C$OMP$PRIVATE(jstart,pottmp,npols)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart) &
+!$OMP PRIVATE(jstart,npols,l,count1,count2)
       do i=1,ntarg
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           npols = ixyzs(jpatch+1)-ixyzs(jpatch)
           jquadstart = iquad(j)
           jstart = ixyzs(jpatch) 
-          do l=1,npols	
-		        do count1=0,3
-			       do count2=0,3
-			         pot_aux(i+count1*npts) = pot_aux(i+count1*npts) + &
-				      &wnear((count1*4+count2)*nquad+jquadstart+l-1)*&
-				      &sigma(jstart+l-1+npts*count2)
-			       enddo
-			      enddo
+          do l=1,npols
+            do count1=0,3
+              do count2=0,3
+                pot_aux(i+count1*npts) = pot_aux(i+count1*npts) + &
+                  wnear((count1*4+count2)*nquad+jquadstart+l-1)* &
+                  sigma(jstart+l-1+npts*count2)
+              enddo
+            enddo
           enddo
         enddo
       enddo
+!$OMP END PARALLEL DO      
 
-!C$OMP END PARALLEL DO
-!C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2)
-!C$OMP$PRIVATE(ctmp2_u,ctmp2_v,wtmp2,nss,l,jstart,ii,E,npover)
-!		ipars(1)=1
-!		ipars(2)=1
-	ifdir=1
+      call get_near_corr_max(npts, row_ptr, nnz, col_ind, npatches, &
+        ixyzso, nmax)
+      allocate(srctmp2(12,nmax),wtmp2(nmax))
+      allocate(ctmp2_a_u(nmax),ctmp2_a_v(nmax))
+      allocate(ctmp2_b_u(nmax),ctmp2_b_v(nmax))
+
+      ifdir=1
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2) &
+!$OMP PRIVATE(ctmp2_a_u,ctmp2_a_v,ctmp2_b_u,ctmp2_b_v,wtmp2) &
+!$OMP PRIVATE(nss,l,jstart,ii,E,npover)
       do i=1,ntarg
         nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          nss = nss + ixyzso(jpatch+1)-ixyzso(jpatch)
-        enddo
-        allocate(srctmp2(12,nss),wtmp2(nss))
-        allocate(ctmp2_a_u(nss),ctmp2_a_v(nss))
-	      allocate(ctmp2_b_u(nss),ctmp2_b_v(nss))
-
-        rmin = 1.0d6
         ii = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           jstart = ixyzso(jpatch)-1
           npover = ixyzso(jpatch+1)-ixyzso(jpatch)
           do l=1,npover
-			      ii = ii+1
-			      srctmp2(:,ii) = srcover(:,jstart+l)
-			      ctmp2_a_u(ii)=sigmaover(jstart+l)
-			      ctmp2_a_v(ii)=sigmaover(jstart+l+ns)			
-			      ctmp2_b_u(ii)=sigmaover(jstart+l+2*ns)
-			      ctmp2_b_v(ii)=sigmaover(jstart+l+3*ns)
-			      wtmp2(ii)=whtsover(jstart+l)
+            ii = ii+1
+            srctmp2(:,ii) = srcover(:,jstart+l)
+            ctmp2_a_u(ii)=sigmaover(jstart+l)
+            ctmp2_a_v(ii)=sigmaover(jstart+l+ns)
+            ctmp2_b_u(ii)=sigmaover(jstart+l+2*ns)
+            ctmp2_b_v(ii)=sigmaover(jstart+l+3*ns)
+            wtmp2(ii)=whtsover(jstart+l)
           enddo
         enddo
+        nss = ii
         call em_muller_trans_FMM2(eps,zpars,nss,ntarg0,srctmp2,targs(:,i),&
         &wtmp2,ctmp2_a_u,ctmp2_a_v,ctmp2_b_u,ctmp2_b_v,&
         &E(1),E(2),E(3),E(4),thresh,ifdir)
-	 
+ 
         do j=0,3
           pot_aux(i+j*ntarg) = pot_aux(i+j*ntarg) - E(j+1)
         enddo
-		
-        deallocate(srctmp2,wtmp2)
-        deallocate(ctmp2_a_u,ctmp2_a_v,ctmp2_b_u,ctmp2_b_v)
-
       enddo
+!$OMP END PARALLEL DO      
 
-    omega = zpars(1)
-	  ep0 = zpars(2)
-    mu0 = zpars(3)
-	  ep1 = zpars(4)
-	  mu1 = zpars(5)
+      omega = zpars(1)
+      ep0 = zpars(2)
+      mu0 = zpars(3)
+      ep1 = zpars(4)
+      mu1 = zpars(5)
 
-	  do i=1,ntarg
-		  pot_aux(i)=pot_aux(i)/(mu0+mu1)
-		  pot_aux(i+ntarg)=pot_aux(i+ntarg)/(mu0+mu1)
-		  pot_aux(i+2*ntarg)=pot_aux(i+2*ntarg)/(ep0+ep1)
-		  pot_aux(i+3*ntarg)=pot_aux(i+3*ntarg)/(ep0+ep1)
-	  enddo
+      do i=1,ntarg
+        pot_aux(i)=pot_aux(i)/(mu0+mu1)
+        pot_aux(i+ntarg)=pot_aux(i+ntarg)/(mu0+mu1)
+        pot_aux(i+2*ntarg)=pot_aux(i+2*ntarg)/(ep0+ep1)
+        pot_aux(i+3*ntarg)=pot_aux(i+3*ntarg)/(ep0+ep1)
+      enddo
       
-	  
-	  do i=1,ntarg
-		  pot(i)=pot_aux(i)
-		  pot(i+ntarg)=pot_aux(i+ntarg)
-		  pot(i+2*ntarg)=pot_aux(i+2*ntarg)
-		  pot(i+3*ntarg)=pot_aux(i+3*ntarg)
-	  enddo
-	  
-	  return
-    end subroutine lpcomp_em_muller_trans_addsub
+  
+      do i=1,4*ntarg
+        pot(i)=pot_aux(i)
+      enddo
+  
+      return
+      end subroutine lpcomp_em_muller_trans_addsub
 
 
 

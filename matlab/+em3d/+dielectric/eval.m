@@ -115,8 +115,10 @@ function [E, H] = eval(S, densities, targinfo, eps, om, rep_params, varargin)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
+    out = setdiff(1:ntarg, in);
+
     targin = targs(:,in);
-    targout = targs(:,~in);
+    targout = targs(:,out);
     
     [~, ntin] = size(targin);
     [~, ntout] = size(targout);

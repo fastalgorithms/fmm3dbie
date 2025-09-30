@@ -50,7 +50,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'Boundary integral equation 3D'
 #copyright = u'2019-2019 The Simons Foundation, Inc. - All Rights Reserved'
-author = u'Leslie Greengard, Michael ONeil, Manas Rachh, and Felipe Vico'
+author = u'fmm3dbie development team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -234,8 +234,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'bie3d.tex', u'fmm3d Documentation',
-     u'Leslie Greengard \\and Mike ONeil \\and Manas Rachh \\and Felipe Vico', 'manual'),
+    (master_doc, 'bie3d.tex', u'fmm3dbie Documentation',
+     u'Travis Askham and Tristan Goodwill and Leslie Greengard \\and Jeremy Hoskins and Libin Lu and Mike ONeil \\and Manas Rachh and Vladimir Rokhlin\\and Felipe Vico', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
