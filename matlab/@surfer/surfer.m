@@ -289,7 +289,7 @@ classdef surfer
                 rr = sqrt((obj.cms(1,i) - everts(1,:)).^2 + ... 
                           (obj.cms(2,i) - everts(2,:)).^2 + ...
                           (obj.cms(3,i) - everts(3,:)).^2);
-                obj.rads(i) = min(rr);
+                obj.rads(i) = max(rr);
 
                 
                 
