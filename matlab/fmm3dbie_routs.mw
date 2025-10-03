@@ -1316,6 +1316,270 @@ end
 %
 %
 %
+%
+%
+@ +lap3d/+neumann/apply_sprime.m 
+function p = apply_sprime(S,sigma,eps,opts)
+%
+%  lap3d.neumann.apply_sprime
+%    Evaluates the Laplace neumann layer potential at a collection 
+%    of targets
+%
+%  Syntax
+
+%
+%  Integral representation
+%     pot = S_{0} [\sigma] 
+%
+%  S_{0}: Laplace single layer potential
+%  
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * sigma: layer potential density
+%    * opts: options struct
+%    * eps: precision requested
+%        opts.nonsmoothonly - use smooth quadrature rule for evaluating
+%           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections 
+%           struct currently only supports quadrature corrections
+%           computed in rsc format 
+%    
+
+    if(nargin < 4) 
+      opts = [];
+    end
+
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
+    end
+
+
+% Extract arrays
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+
+    targinfo = [];
+    targinfo.r = S.r;
+    targinfo.du = S.du;
+    targinfo.dv = S.dv;
+    targinfo.n = S.n;
+    patch_id  = zeros(npts,1);
+    uvs_targ = zeros(2,npts);
+    # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
+    targinfo.patch_id = patch_id;
+    targinfo.uvs_targ = uvs_targ;
+
+    ff = 'rsc';
+
+    nptsp1 = npts+1;
+
+% Compute quadrature corrections    
+    if(~nonsmoothonly)
+
+      if isfield(opts, 'quadrature_correction')
+         Q = opts.quadrature_correction;
+      else
+        opts_quad = [];
+        opts_quad.format = 'rsc';
+        opts_quad.rep = 'bc';
+%
+%  For now Q is going to be a struct with 'quad_format', 
+%  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
+%  and either, 'wnear', 'row_ind', 'col_ptr', or
+%  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
+%  if nkernel is >1
+%
+
+        [Q] = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts_quad);
+      end
+    else
+      opts_qcorr = [];
+      opts_qcorr.type = 'double';
+      opts_qcorr.nker = 1;
+      Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+    end
+    nnz = length(Q.col_ind);
+    nquad = Q.iquad(end)-1;
+    nnzp1 = nnz+1; 
+
+    [novers] = get_oversampling_parameters(S,Q,eps);
+    Sover = oversample(S,novers);
+
+
+% Extract oversampled arrays
+
+    [srcover,~,~,ixyzso,~,wover] = extract_arrays(Sover);
+    nptso = Sover.npts; 
+
+% Extract quadrature arrays
+    row_ptr = Q.row_ptr;
+    col_ind = Q.col_ind;
+    iquad = Q.iquad;
+    wnear = Q.wnear;
+
+
+    p = zeros(npts,1);
+
+    ndd = 1;
+    dpars = [0];
+    ndz = 0;
+    zpars = [];
+    ndi = 0;
+    ipars = [];
+    nker = 1;
+    lwork = 0;
+    work = [];
+    ndim_s = 1;
+    ndim_p = 1;
+    idensflag = 1;
+    ipotflag = 1;
+
+
+# FORTRAN lpcomp_lap_s_neu_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] ndd, double[ndd] dpars,int[1] ndz,dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker, double[nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover,int[1] lwork, double[lwork] work, int[1] ndim_s, double[npts] sigma, double[npts] p);
+
+end
+%
+%
+%
+%
+%
+@ +lap3d/+neumann/apply_s.m 
+function p = apply_s(S,sigma,eps,opts)
+%
+%  lap3d.neumann.apply_s
+%    Evaluates the Laplace neumann layer potential at a collection 
+%    of targets
+%
+%  Syntax
+
+%
+%  Integral representation
+%     pot = S_{0} [\sigma] 
+%
+%  S_{0}: Laplace single layer potential
+%  
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * sigma: layer potential density
+%    * opts: options struct
+%    * eps: precision requested
+%        opts.nonsmoothonly - use smooth quadrature rule for evaluating
+%           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections 
+%           struct currently only supports quadrature corrections
+%           computed in rsc format 
+%    
+
+    if(nargin < 4) 
+      opts = [];
+    end
+
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
+    end
+
+
+% Extract arrays
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+
+    targinfo = [];
+    targinfo.r = S.r;
+    targinfo.du = S.du;
+    targinfo.dv = S.dv;
+    targinfo.n = S.n;
+    patch_id  = zeros(npts,1);
+    uvs_targ = zeros(2,npts);
+    # FORTRAN get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2,npts] uvs_targ);
+    targinfo.patch_id = patch_id;
+    targinfo.uvs_targ = uvs_targ;
+
+    ff = 'rsc';
+
+    nptsp1 = npts+1;
+
+% Compute quadrature corrections    
+    if(~nonsmoothonly)
+
+      if isfield(opts, 'quadrature_correction')
+         Q = opts.quadrature_correction;
+      else
+        opts_quad = [];
+        opts_quad.format = 'rsc';
+        opts_quad.rep = 'eval';
+%
+%  For now Q is going to be a struct with 'quad_format', 
+%  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
+%  and either, 'wnear', 'row_ind', 'col_ptr', or
+%  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
+%  if nkernel is >1
+%
+
+        [Q] = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts_quad);
+      end
+    else
+      opts_qcorr = [];
+      opts_qcorr.type = 'double';
+      opts_qcorr.nker = 1;
+      Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+    end
+    nnz = length(Q.col_ind);
+    nquad = Q.iquad(end)-1;
+    nnzp1 = nnz+1; 
+
+    [novers] = get_oversampling_parameters(S,Q,eps);
+    Sover = oversample(S,novers);
+
+
+% Extract oversampled arrays
+
+    [srcover,~,~,ixyzso,~,wover] = extract_arrays(Sover);
+    nptso = Sover.npts; 
+
+% Extract quadrature arrays
+    row_ptr = Q.row_ptr;
+    col_ind = Q.col_ind;
+    iquad = Q.iquad;
+    wnear = Q.wnear;
+
+
+    p = zeros(npts,1);
+
+    ndd = 2;
+    dpars = [1,0];
+    ndz = 0;
+    zpars = [];
+    ndi = 0;
+    ipars = [];
+    nker = 1;
+    lwork = 0;
+    work = [];
+    ndim_s = 1;
+    ndim_p = 1;
+    idensflag = 1;
+    ipotflag = 1;
+
+
+# FORTRAN lpcomp_lap_comb_dir_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] ndd, double[ndd] dpars,int[1] ndz,dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker, double[nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover,int[1] lwork, double[lwork] work, int[1] ndim_s, double[npts] sigma, double[npts] p);
+
+end
+%
+%
+%
 %----------------------------------
 %
 @ +lap3d/+neumann/get_quadrature_correction.m 

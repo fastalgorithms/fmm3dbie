@@ -1099,6 +1099,8 @@ mxWrapReturnZDef_single   (mxWrapReturn_single_dcomplex, dcomplex,
 #define MWF77_get_patch_id_uvs GET_PATCH_ID_UVS
 #define MWF77_lap_comb_dir_solver_guru LAP_COMB_DIR_SOLVER_GURU
 #define MWF77_lap_s_neu_eval_addsub LAP_S_NEU_EVAL_ADDSUB
+#define MWF77_lpcomp_lap_s_neu_addsub LPCOMP_LAP_S_NEU_ADDSUB
+#define MWF77_lpcomp_lap_comb_dir_addsub LPCOMP_LAP_COMB_DIR_ADDSUB
 #define MWF77_getnearquad_lap_s_neu GETNEARQUAD_LAP_S_NEU
 #define MWF77_getnearquad_lap_s_neu_eval GETNEARQUAD_LAP_S_NEU_EVAL
 #define MWF77_lap_s_neu_solver_guru LAP_S_NEU_SOLVER_GURU
@@ -1143,6 +1145,8 @@ mxWrapReturnZDef_single   (mxWrapReturn_single_dcomplex, dcomplex,
 #define MWF77_get_patch_id_uvs get_patch_id_uvs_
 #define MWF77_lap_comb_dir_solver_guru lap_comb_dir_solver_guru_
 #define MWF77_lap_s_neu_eval_addsub lap_s_neu_eval_addsub_
+#define MWF77_lpcomp_lap_s_neu_addsub lpcomp_lap_s_neu_addsub_
+#define MWF77_lpcomp_lap_comb_dir_addsub lpcomp_lap_comb_dir_addsub_
 #define MWF77_getnearquad_lap_s_neu getnearquad_lap_s_neu_
 #define MWF77_getnearquad_lap_s_neu_eval getnearquad_lap_s_neu_eval_
 #define MWF77_lap_s_neu_solver_guru lap_s_neu_solver_guru_
@@ -1187,6 +1191,8 @@ mxWrapReturnZDef_single   (mxWrapReturn_single_dcomplex, dcomplex,
 #define MWF77_get_patch_id_uvs get_patch_id_uvs
 #define MWF77_lap_comb_dir_solver_guru lap_comb_dir_solver_guru
 #define MWF77_lap_s_neu_eval_addsub lap_s_neu_eval_addsub
+#define MWF77_lpcomp_lap_s_neu_addsub lpcomp_lap_s_neu_addsub
+#define MWF77_lpcomp_lap_comb_dir_addsub lpcomp_lap_comb_dir_addsub
 #define MWF77_getnearquad_lap_s_neu getnearquad_lap_s_neu
 #define MWF77_getnearquad_lap_s_neu_eval getnearquad_lap_s_neu_eval
 #define MWF77_lap_s_neu_solver_guru lap_s_neu_solver_guru
@@ -1231,6 +1237,8 @@ mxWrapReturnZDef_single   (mxWrapReturn_single_dcomplex, dcomplex,
 #define MWF77_get_patch_id_uvs get_patch_id_uvs__
 #define MWF77_lap_comb_dir_solver_guru lap_comb_dir_solver_guru__
 #define MWF77_lap_s_neu_eval_addsub lap_s_neu_eval_addsub__
+#define MWF77_lpcomp_lap_s_neu_addsub lpcomp_lap_s_neu_addsub__
+#define MWF77_lpcomp_lap_comb_dir_addsub lpcomp_lap_comb_dir_addsub__
 #define MWF77_getnearquad_lap_s_neu getnearquad_lap_s_neu__
 #define MWF77_getnearquad_lap_s_neu_eval getnearquad_lap_s_neu_eval__
 #define MWF77_lap_s_neu_solver_guru lap_s_neu_solver_guru__
@@ -1284,6 +1292,8 @@ MWF77_RETURN MWF77_rsc_to_csc(int*, int*, int*, int*, int*, int*, int*, int*);
 MWF77_RETURN MWF77_get_patch_id_uvs(int*, int*, int*, int*, int*, int*, double*);
 MWF77_RETURN MWF77_lap_comb_dir_solver_guru(int*, int*, int*, int*, int*, double*, double*, double*, double*, int*, int*, double*, int*, int*, int*, int*, int*, int*, double*, int*, int*, int*, double*, double*, double*, int*, double*, double*, double*);
 MWF77_RETURN MWF77_lap_s_neu_eval_addsub(int*, int*, int*, int*, int*, double*, double*, int*, int*, double*, double*, int*, double*, int*, dcomplex*, int*, int*, int*, int*, int*, int*, int*, int*, double*, int*, int*, int*, double*, double*, int*, double*, int*, int*, double*, int*, int*, double*);
+MWF77_RETURN MWF77_lpcomp_lap_s_neu_addsub(int*, int*, int*, int*, int*, double*, double*, double*, int*, double*, int*, dcomplex*, int*, int*, int*, int*, int*, int*, int*, int*, double*, int*, int*, int*, double*, double*, int*, double*, int*, double*, double*);
+MWF77_RETURN MWF77_lpcomp_lap_comb_dir_addsub(int*, int*, int*, int*, int*, double*, double*, double*, int*, double*, int*, dcomplex*, int*, int*, int*, int*, int*, int*, int*, int*, double*, int*, int*, int*, double*, double*, int*, double*, int*, double*, double*);
 MWF77_RETURN MWF77_getnearquad_lap_s_neu(int*, int*, int*, int*, int*, double*, double*, double*, int*, int*, int*, int*, int*, double*, int*, double*);
 MWF77_RETURN MWF77_getnearquad_lap_s_neu_eval(int*, int*, int*, int*, int*, double*, double*, int*, int*, double*, int*, double*, double*, int*, int*, int*, int*, int*, double*, int*, double*);
 MWF77_RETURN MWF77_lap_s_neu_solver_guru(int*, int*, int*, int*, int*, double*, double*, double*, int*, int*, double*, int*, int*, int*, int*, int*, int*, double*, int*, int*, int*, double*, double*, double*, int*, double*, double*, double*);
@@ -3961,7 +3971,7 @@ mw_err_label:
 
 /* ---- fmm3dbie_routs.mw: 954 ----
  * get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
- * Also at fmm3dbie_routs.mw: 1455
+ * Also at fmm3dbie_routs.mw: 1719
  */
 static const char* stubids13_ = "get_rfacs(i int[x], i int[x], io double[x], io double[x])";
 
@@ -4042,7 +4052,7 @@ mw_err_label:
 
 /* ---- fmm3dbie_routs.mw: 962 ----
  * findnearmem(double[n3, npatches] cms, int[1] npatches, double[npatches] rad_near, int[1] ndtarg, double[ndtarg, ntarg] targs, int[1] ntarg, inout int[1] nnz);
- * Also at fmm3dbie_routs.mw: 1463
+ * Also at fmm3dbie_routs.mw: 1727
  */
 static const char* stubids14_ = "findnearmem(i double[xx], i int[x], i double[x], i int[x], i double[xx], i int[x], io int[x])";
 
@@ -4183,7 +4193,7 @@ mw_err_label:
 
 /* ---- fmm3dbie_routs.mw: 968 ----
  * findnear(double[n3, npatches] cms, int[1] npatches, double[npatches] rad_near, int[1] ndtarg, double[ndtarg, ntarg] targs, int[1] ntarg, inout int[ntp1] row_ptr, inout int[nnz] col_ind);
- * Also at fmm3dbie_routs.mw: 1469
+ * Also at fmm3dbie_routs.mw: 1733
  */
 static const char* stubids15_ = "findnear(i double[xx], i int[x], i double[x], i int[x], i double[xx], i int[x], io int[x], io int[x])";
 
@@ -4340,7 +4350,7 @@ mw_err_label:
 
 /* ---- fmm3dbie_routs.mw: 971 ----
  * get_iquad_rsc(int[1] npatches, int[npp1] ixyzs, int[1] npts, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, inout int[nnzp1] iquad);
- * Also at fmm3dbie_routs.mw: 1472
+ * Also at fmm3dbie_routs.mw: 1736
  */
 static const char* stubids16_ = "get_iquad_rsc(i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], io int[x])";
 
@@ -4835,7 +4845,7 @@ mw_err_label:
 
 /* ---- fmm3dbie_routs.mw: 1010 ----
  * rsc_to_csc(int[1] npatches, int[1] ntarg, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, inout int[npatp1] col_ptr, inout int[nnz] row_ind, inout int[nnz] iper);
- * Also at fmm3dbie_routs.mw: 1516
+ * Also at fmm3dbie_routs.mw: 1780
  */
 static const char* stubids18_ = "rsc_to_csc(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io int[x], io int[x])";
 
@@ -4974,7 +4984,7 @@ mw_err_label:
 
 /* ---- fmm3dbie_routs.mw: 1105 ----
  * get_patch_id_uvs(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, inout int[npts] patch_id, inout double[2, npts] uvs_targ);
- * Also at fmm3dbie_routs.mw: 1606
+ * Also at fmm3dbie_routs.mw: 1375
  */
 static const char* stubids19_ = "get_patch_id_uvs(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io double[xx])";
 
@@ -6180,12 +6190,1030 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 1489 ----
+/* ---- fmm3dbie_routs.mw: 1445 ----
+ * lpcomp_lap_s_neu_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] ndim_s, double[npts] sigma, double[npts] p);
+ */
+static const char* stubids23_ = "lpcomp_lap_s_neu_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i double[x], i double[x])";
+
+void mexStub23(int nlhs, mxArray* plhs[],
+              int nrhs, const mxArray* prhs[])
+{
+    const char* mw_err_txt_ = 0;
+    int*        in0_ =0; /* npatches   */
+    int*        in1_ =0; /* norders    */
+    int*        in2_ =0; /* ixyzs      */
+    int*        in3_ =0; /* iptype     */
+    int*        in4_ =0; /* npts       */
+    double*     in5_ =0; /* srccoefs   */
+    double*     in6_ =0; /* srcvals    */
+    double*     in7_ =0; /* eps        */
+    int*        in8_ =0; /* ndd        */
+    double*     in9_ =0; /* dpars      */
+    int*        in10_ =0; /* ndz        */
+    dcomplex*   in11_ =0; /* zpars      */
+    int*        in12_ =0; /* ndi        */
+    int*        in13_ =0; /* ipars      */
+    int*        in14_ =0; /* nnz        */
+    int*        in15_ =0; /* row_ptr    */
+    int*        in16_ =0; /* col_ind    */
+    int*        in17_ =0; /* iquad      */
+    int*        in18_ =0; /* nquad      */
+    int*        in19_ =0; /* nker       */
+    double*     in20_ =0; /* wnear      */
+    int*        in21_ =0; /* novers     */
+    int*        in22_ =0; /* nptso      */
+    int*        in23_ =0; /* ixyzso     */
+    double*     in24_ =0; /* srcover    */
+    double*     in25_ =0; /* wover      */
+    int*        in26_ =0; /* lwork      */
+    double*     in27_ =0; /* work       */
+    int*        in28_ =0; /* ndim_s     */
+    double*     in29_ =0; /* sigma      */
+    double*     in30_ =0; /* p          */
+    mwSize      dim31_;   /* 1          */
+    mwSize      dim32_;   /* npatches   */
+    mwSize      dim33_;   /* npatp1     */
+    mwSize      dim34_;   /* npatches   */
+    mwSize      dim35_;   /* 1          */
+    mwSize      dim36_;   /* n9         */
+    mwSize      dim37_;   /* npts       */
+    mwSize      dim38_;   /* n12        */
+    mwSize      dim39_;   /* npts       */
+    mwSize      dim40_;   /* 1          */
+    mwSize      dim41_;   /* 1          */
+    mwSize      dim42_;   /* ndd        */
+    mwSize      dim43_;   /* 1          */
+    mwSize      dim44_;   /* ndz        */
+    mwSize      dim45_;   /* 1          */
+    mwSize      dim46_;   /* ndi        */
+    mwSize      dim47_;   /* 1          */
+    mwSize      dim48_;   /* nptsp1     */
+    mwSize      dim49_;   /* nnz        */
+    mwSize      dim50_;   /* nnzp1      */
+    mwSize      dim51_;   /* 1          */
+    mwSize      dim52_;   /* 1          */
+    mwSize      dim53_;   /* nquad      */
+    mwSize      dim54_;   /* npatches   */
+    mwSize      dim55_;   /* 1          */
+    mwSize      dim56_;   /* npatp1     */
+    mwSize      dim57_;   /* 12         */
+    mwSize      dim58_;   /* nptso      */
+    mwSize      dim59_;   /* nptso      */
+    mwSize      dim60_;   /* 1          */
+    mwSize      dim61_;   /* lwork      */
+    mwSize      dim62_;   /* 1          */
+    mwSize      dim63_;   /* npts       */
+    mwSize      dim64_;   /* npts       */
+
+    dim31_ = (mwSize) mxWrapGetScalar(prhs[31], &mw_err_txt_);
+    dim32_ = (mwSize) mxWrapGetScalar(prhs[32], &mw_err_txt_);
+    dim33_ = (mwSize) mxWrapGetScalar(prhs[33], &mw_err_txt_);
+    dim34_ = (mwSize) mxWrapGetScalar(prhs[34], &mw_err_txt_);
+    dim35_ = (mwSize) mxWrapGetScalar(prhs[35], &mw_err_txt_);
+    dim36_ = (mwSize) mxWrapGetScalar(prhs[36], &mw_err_txt_);
+    dim37_ = (mwSize) mxWrapGetScalar(prhs[37], &mw_err_txt_);
+    dim38_ = (mwSize) mxWrapGetScalar(prhs[38], &mw_err_txt_);
+    dim39_ = (mwSize) mxWrapGetScalar(prhs[39], &mw_err_txt_);
+    dim40_ = (mwSize) mxWrapGetScalar(prhs[40], &mw_err_txt_);
+    dim41_ = (mwSize) mxWrapGetScalar(prhs[41], &mw_err_txt_);
+    dim42_ = (mwSize) mxWrapGetScalar(prhs[42], &mw_err_txt_);
+    dim43_ = (mwSize) mxWrapGetScalar(prhs[43], &mw_err_txt_);
+    dim44_ = (mwSize) mxWrapGetScalar(prhs[44], &mw_err_txt_);
+    dim45_ = (mwSize) mxWrapGetScalar(prhs[45], &mw_err_txt_);
+    dim46_ = (mwSize) mxWrapGetScalar(prhs[46], &mw_err_txt_);
+    dim47_ = (mwSize) mxWrapGetScalar(prhs[47], &mw_err_txt_);
+    dim48_ = (mwSize) mxWrapGetScalar(prhs[48], &mw_err_txt_);
+    dim49_ = (mwSize) mxWrapGetScalar(prhs[49], &mw_err_txt_);
+    dim50_ = (mwSize) mxWrapGetScalar(prhs[50], &mw_err_txt_);
+    dim51_ = (mwSize) mxWrapGetScalar(prhs[51], &mw_err_txt_);
+    dim52_ = (mwSize) mxWrapGetScalar(prhs[52], &mw_err_txt_);
+    dim53_ = (mwSize) mxWrapGetScalar(prhs[53], &mw_err_txt_);
+    dim54_ = (mwSize) mxWrapGetScalar(prhs[54], &mw_err_txt_);
+    dim55_ = (mwSize) mxWrapGetScalar(prhs[55], &mw_err_txt_);
+    dim56_ = (mwSize) mxWrapGetScalar(prhs[56], &mw_err_txt_);
+    dim57_ = (mwSize) mxWrapGetScalar(prhs[57], &mw_err_txt_);
+    dim58_ = (mwSize) mxWrapGetScalar(prhs[58], &mw_err_txt_);
+    dim59_ = (mwSize) mxWrapGetScalar(prhs[59], &mw_err_txt_);
+    dim60_ = (mwSize) mxWrapGetScalar(prhs[60], &mw_err_txt_);
+    dim61_ = (mwSize) mxWrapGetScalar(prhs[61], &mw_err_txt_);
+    dim62_ = (mwSize) mxWrapGetScalar(prhs[62], &mw_err_txt_);
+    dim63_ = (mwSize) mxWrapGetScalar(prhs[63], &mw_err_txt_);
+    dim64_ = (mwSize) mxWrapGetScalar(prhs[64], &mw_err_txt_);
+
+    if (mxGetM(prhs[0])*mxGetN(prhs[0]) != dim31_) {
+        mw_err_txt_ = "Bad argument size: npatches";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[1])*mxGetN(prhs[1]) != dim32_) {
+        mw_err_txt_ = "Bad argument size: norders";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[2])*mxGetN(prhs[2]) != dim33_) {
+        mw_err_txt_ = "Bad argument size: ixyzs";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[3])*mxGetN(prhs[3]) != dim34_) {
+        mw_err_txt_ = "Bad argument size: iptype";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[4])*mxGetN(prhs[4]) != dim35_) {
+        mw_err_txt_ = "Bad argument size: npts";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[5]) != dim36_ ||
+        mxGetN(prhs[5]) != dim37_) {
+        mw_err_txt_ = "Bad argument size: srccoefs";
+        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[6]) != dim38_ ||
+        mxGetN(prhs[6]) != dim39_) {
+        mw_err_txt_ = "Bad argument size: srcvals";
+        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[7])*mxGetN(prhs[7]) != dim40_) {
+        mw_err_txt_ = "Bad argument size: eps";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[8])*mxGetN(prhs[8]) != dim41_) {
+        mw_err_txt_ = "Bad argument size: ndd";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[9])*mxGetN(prhs[9]) != dim42_) {
+        mw_err_txt_ = "Bad argument size: dpars";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[10])*mxGetN(prhs[10]) != dim43_) {
+        mw_err_txt_ = "Bad argument size: ndz";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[11])*mxGetN(prhs[11]) != dim44_) {
+        mw_err_txt_ = "Bad argument size: zpars";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[12])*mxGetN(prhs[12]) != dim45_) {
+        mw_err_txt_ = "Bad argument size: ndi";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[13])*mxGetN(prhs[13]) != dim46_) {
+        mw_err_txt_ = "Bad argument size: ipars";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[14])*mxGetN(prhs[14]) != dim47_) {
+        mw_err_txt_ = "Bad argument size: nnz";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[15])*mxGetN(prhs[15]) != dim48_) {
+        mw_err_txt_ = "Bad argument size: row_ptr";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[16])*mxGetN(prhs[16]) != dim49_) {
+        mw_err_txt_ = "Bad argument size: col_ind";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[17])*mxGetN(prhs[17]) != dim50_) {
+        mw_err_txt_ = "Bad argument size: iquad";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[18])*mxGetN(prhs[18]) != dim51_) {
+        mw_err_txt_ = "Bad argument size: nquad";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[19])*mxGetN(prhs[19]) != dim52_) {
+        mw_err_txt_ = "Bad argument size: nker";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[20])*mxGetN(prhs[20]) != dim53_) {
+        mw_err_txt_ = "Bad argument size: wnear";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[21])*mxGetN(prhs[21]) != dim54_) {
+        mw_err_txt_ = "Bad argument size: novers";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[22])*mxGetN(prhs[22]) != dim55_) {
+        mw_err_txt_ = "Bad argument size: nptso";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[23])*mxGetN(prhs[23]) != dim56_) {
+        mw_err_txt_ = "Bad argument size: ixyzso";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[24]) != dim57_ ||
+        mxGetN(prhs[24]) != dim58_) {
+        mw_err_txt_ = "Bad argument size: srcover";
+        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[25])*mxGetN(prhs[25]) != dim59_) {
+        mw_err_txt_ = "Bad argument size: wover";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[26])*mxGetN(prhs[26]) != dim60_) {
+        mw_err_txt_ = "Bad argument size: lwork";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[27])*mxGetN(prhs[27]) != dim61_) {
+        mw_err_txt_ = "Bad argument size: work";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[28])*mxGetN(prhs[28]) != dim62_) {
+        mw_err_txt_ = "Bad argument size: ndim_s";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[29])*mxGetN(prhs[29]) != dim63_) {
+        mw_err_txt_ = "Bad argument size: sigma";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[30])*mxGetN(prhs[30]) != dim64_) {
+        mw_err_txt_ = "Bad argument size: p";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[0])*mxGetN(prhs[0]) != 0) {
+        in0_ = mxWrapGetArray_int(prhs[0], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in0_ = NULL;
+    if (mxGetM(prhs[1])*mxGetN(prhs[1]) != 0) {
+        in1_ = mxWrapGetArray_int(prhs[1], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in1_ = NULL;
+    if (mxGetM(prhs[2])*mxGetN(prhs[2]) != 0) {
+        in2_ = mxWrapGetArray_int(prhs[2], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in2_ = NULL;
+    if (mxGetM(prhs[3])*mxGetN(prhs[3]) != 0) {
+        in3_ = mxWrapGetArray_int(prhs[3], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in3_ = NULL;
+    if (mxGetM(prhs[4])*mxGetN(prhs[4]) != 0) {
+        in4_ = mxWrapGetArray_int(prhs[4], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in4_ = NULL;
+    if (mxGetM(prhs[5])*mxGetN(prhs[5]) != 0) {
+        if( mxGetClassID(prhs[5]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in5_ = mxGetDoubles(prhs[5]);
+#else
+        in5_ = mxGetPr(prhs[5]);
+#endif
+    } else
+        in5_ = NULL;
+    if (mxGetM(prhs[6])*mxGetN(prhs[6]) != 0) {
+        if( mxGetClassID(prhs[6]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in6_ = mxGetDoubles(prhs[6]);
+#else
+        in6_ = mxGetPr(prhs[6]);
+#endif
+    } else
+        in6_ = NULL;
+    if (mxGetM(prhs[7])*mxGetN(prhs[7]) != 0) {
+        if( mxGetClassID(prhs[7]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in7_ = mxGetDoubles(prhs[7]);
+#else
+        in7_ = mxGetPr(prhs[7]);
+#endif
+    } else
+        in7_ = NULL;
+    if (mxGetM(prhs[8])*mxGetN(prhs[8]) != 0) {
+        in8_ = mxWrapGetArray_int(prhs[8], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in8_ = NULL;
+    if (mxGetM(prhs[9])*mxGetN(prhs[9]) != 0) {
+        if( mxGetClassID(prhs[9]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in9_ = mxGetDoubles(prhs[9]);
+#else
+        in9_ = mxGetPr(prhs[9]);
+#endif
+    } else
+        in9_ = NULL;
+    if (mxGetM(prhs[10])*mxGetN(prhs[10]) != 0) {
+        in10_ = mxWrapGetArray_int(prhs[10], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in10_ = NULL;
+    if (mxGetM(prhs[11])*mxGetN(prhs[11]) != 0) {
+        if( mxGetClassID(prhs[11]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+        in11_ = mxWrapGetArray_dcomplex(prhs[11], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in11_ = NULL;
+    if (mxGetM(prhs[12])*mxGetN(prhs[12]) != 0) {
+        in12_ = mxWrapGetArray_int(prhs[12], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in12_ = NULL;
+    if (mxGetM(prhs[13])*mxGetN(prhs[13]) != 0) {
+        in13_ = mxWrapGetArray_int(prhs[13], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in13_ = NULL;
+    if (mxGetM(prhs[14])*mxGetN(prhs[14]) != 0) {
+        in14_ = mxWrapGetArray_int(prhs[14], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in14_ = NULL;
+    if (mxGetM(prhs[15])*mxGetN(prhs[15]) != 0) {
+        in15_ = mxWrapGetArray_int(prhs[15], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in15_ = NULL;
+    if (mxGetM(prhs[16])*mxGetN(prhs[16]) != 0) {
+        in16_ = mxWrapGetArray_int(prhs[16], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in16_ = NULL;
+    if (mxGetM(prhs[17])*mxGetN(prhs[17]) != 0) {
+        in17_ = mxWrapGetArray_int(prhs[17], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in17_ = NULL;
+    if (mxGetM(prhs[18])*mxGetN(prhs[18]) != 0) {
+        in18_ = mxWrapGetArray_int(prhs[18], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in18_ = NULL;
+    if (mxGetM(prhs[19])*mxGetN(prhs[19]) != 0) {
+        in19_ = mxWrapGetArray_int(prhs[19], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in19_ = NULL;
+    if (mxGetM(prhs[20])*mxGetN(prhs[20]) != 0) {
+        if( mxGetClassID(prhs[20]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in20_ = mxGetDoubles(prhs[20]);
+#else
+        in20_ = mxGetPr(prhs[20]);
+#endif
+    } else
+        in20_ = NULL;
+    if (mxGetM(prhs[21])*mxGetN(prhs[21]) != 0) {
+        in21_ = mxWrapGetArray_int(prhs[21], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in21_ = NULL;
+    if (mxGetM(prhs[22])*mxGetN(prhs[22]) != 0) {
+        in22_ = mxWrapGetArray_int(prhs[22], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in22_ = NULL;
+    if (mxGetM(prhs[23])*mxGetN(prhs[23]) != 0) {
+        in23_ = mxWrapGetArray_int(prhs[23], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in23_ = NULL;
+    if (mxGetM(prhs[24])*mxGetN(prhs[24]) != 0) {
+        if( mxGetClassID(prhs[24]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in24_ = mxGetDoubles(prhs[24]);
+#else
+        in24_ = mxGetPr(prhs[24]);
+#endif
+    } else
+        in24_ = NULL;
+    if (mxGetM(prhs[25])*mxGetN(prhs[25]) != 0) {
+        if( mxGetClassID(prhs[25]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in25_ = mxGetDoubles(prhs[25]);
+#else
+        in25_ = mxGetPr(prhs[25]);
+#endif
+    } else
+        in25_ = NULL;
+    if (mxGetM(prhs[26])*mxGetN(prhs[26]) != 0) {
+        in26_ = mxWrapGetArray_int(prhs[26], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in26_ = NULL;
+    if (mxGetM(prhs[27])*mxGetN(prhs[27]) != 0) {
+        if( mxGetClassID(prhs[27]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in27_ = mxGetDoubles(prhs[27]);
+#else
+        in27_ = mxGetPr(prhs[27]);
+#endif
+    } else
+        in27_ = NULL;
+    if (mxGetM(prhs[28])*mxGetN(prhs[28]) != 0) {
+        in28_ = mxWrapGetArray_int(prhs[28], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in28_ = NULL;
+    if (mxGetM(prhs[29])*mxGetN(prhs[29]) != 0) {
+        if( mxGetClassID(prhs[29]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in29_ = mxGetDoubles(prhs[29]);
+#else
+        in29_ = mxGetPr(prhs[29]);
+#endif
+    } else
+        in29_ = NULL;
+    if (mxGetM(prhs[30])*mxGetN(prhs[30]) != 0) {
+        if( mxGetClassID(prhs[30]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in30_ = mxGetDoubles(prhs[30]);
+#else
+        in30_ = mxGetPr(prhs[30]);
+#endif
+    } else
+        in30_ = NULL;
+    if (mexprofrecord_)
+        mexprofrecord_[23]++;
+    MWF77_lpcomp_lap_s_neu_addsub(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_, in29_, in30_);
+
+mw_err_label:
+    if (in0_)  mxFree(in0_);
+    if (in1_)  mxFree(in1_);
+    if (in2_)  mxFree(in2_);
+    if (in3_)  mxFree(in3_);
+    if (in4_)  mxFree(in4_);
+    if (in8_)  mxFree(in8_);
+    if (in10_)  mxFree(in10_);
+    if (in11_)  mxFree(in11_);
+    if (in12_)  mxFree(in12_);
+    if (in13_)  mxFree(in13_);
+    if (in14_)  mxFree(in14_);
+    if (in15_)  mxFree(in15_);
+    if (in16_)  mxFree(in16_);
+    if (in17_)  mxFree(in17_);
+    if (in18_)  mxFree(in18_);
+    if (in19_)  mxFree(in19_);
+    if (in21_)  mxFree(in21_);
+    if (in22_)  mxFree(in22_);
+    if (in23_)  mxFree(in23_);
+    if (in26_)  mxFree(in26_);
+    if (in28_)  mxFree(in28_);
+    if (mw_err_txt_)
+        mexErrMsgTxt(mw_err_txt_);
+}
+
+/* ---- fmm3dbie_routs.mw: 1577 ----
+ * lpcomp_lap_comb_dir_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] ndim_s, double[npts] sigma, double[npts] p);
+ */
+static const char* stubids25_ = "lpcomp_lap_comb_dir_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i double[x], i double[x])";
+
+void mexStub25(int nlhs, mxArray* plhs[],
+              int nrhs, const mxArray* prhs[])
+{
+    const char* mw_err_txt_ = 0;
+    int*        in0_ =0; /* npatches   */
+    int*        in1_ =0; /* norders    */
+    int*        in2_ =0; /* ixyzs      */
+    int*        in3_ =0; /* iptype     */
+    int*        in4_ =0; /* npts       */
+    double*     in5_ =0; /* srccoefs   */
+    double*     in6_ =0; /* srcvals    */
+    double*     in7_ =0; /* eps        */
+    int*        in8_ =0; /* ndd        */
+    double*     in9_ =0; /* dpars      */
+    int*        in10_ =0; /* ndz        */
+    dcomplex*   in11_ =0; /* zpars      */
+    int*        in12_ =0; /* ndi        */
+    int*        in13_ =0; /* ipars      */
+    int*        in14_ =0; /* nnz        */
+    int*        in15_ =0; /* row_ptr    */
+    int*        in16_ =0; /* col_ind    */
+    int*        in17_ =0; /* iquad      */
+    int*        in18_ =0; /* nquad      */
+    int*        in19_ =0; /* nker       */
+    double*     in20_ =0; /* wnear      */
+    int*        in21_ =0; /* novers     */
+    int*        in22_ =0; /* nptso      */
+    int*        in23_ =0; /* ixyzso     */
+    double*     in24_ =0; /* srcover    */
+    double*     in25_ =0; /* wover      */
+    int*        in26_ =0; /* lwork      */
+    double*     in27_ =0; /* work       */
+    int*        in28_ =0; /* ndim_s     */
+    double*     in29_ =0; /* sigma      */
+    double*     in30_ =0; /* p          */
+    mwSize      dim31_;   /* 1          */
+    mwSize      dim32_;   /* npatches   */
+    mwSize      dim33_;   /* npatp1     */
+    mwSize      dim34_;   /* npatches   */
+    mwSize      dim35_;   /* 1          */
+    mwSize      dim36_;   /* n9         */
+    mwSize      dim37_;   /* npts       */
+    mwSize      dim38_;   /* n12        */
+    mwSize      dim39_;   /* npts       */
+    mwSize      dim40_;   /* 1          */
+    mwSize      dim41_;   /* 1          */
+    mwSize      dim42_;   /* ndd        */
+    mwSize      dim43_;   /* 1          */
+    mwSize      dim44_;   /* ndz        */
+    mwSize      dim45_;   /* 1          */
+    mwSize      dim46_;   /* ndi        */
+    mwSize      dim47_;   /* 1          */
+    mwSize      dim48_;   /* nptsp1     */
+    mwSize      dim49_;   /* nnz        */
+    mwSize      dim50_;   /* nnzp1      */
+    mwSize      dim51_;   /* 1          */
+    mwSize      dim52_;   /* 1          */
+    mwSize      dim53_;   /* nquad      */
+    mwSize      dim54_;   /* npatches   */
+    mwSize      dim55_;   /* 1          */
+    mwSize      dim56_;   /* npatp1     */
+    mwSize      dim57_;   /* 12         */
+    mwSize      dim58_;   /* nptso      */
+    mwSize      dim59_;   /* nptso      */
+    mwSize      dim60_;   /* 1          */
+    mwSize      dim61_;   /* lwork      */
+    mwSize      dim62_;   /* 1          */
+    mwSize      dim63_;   /* npts       */
+    mwSize      dim64_;   /* npts       */
+
+    dim31_ = (mwSize) mxWrapGetScalar(prhs[31], &mw_err_txt_);
+    dim32_ = (mwSize) mxWrapGetScalar(prhs[32], &mw_err_txt_);
+    dim33_ = (mwSize) mxWrapGetScalar(prhs[33], &mw_err_txt_);
+    dim34_ = (mwSize) mxWrapGetScalar(prhs[34], &mw_err_txt_);
+    dim35_ = (mwSize) mxWrapGetScalar(prhs[35], &mw_err_txt_);
+    dim36_ = (mwSize) mxWrapGetScalar(prhs[36], &mw_err_txt_);
+    dim37_ = (mwSize) mxWrapGetScalar(prhs[37], &mw_err_txt_);
+    dim38_ = (mwSize) mxWrapGetScalar(prhs[38], &mw_err_txt_);
+    dim39_ = (mwSize) mxWrapGetScalar(prhs[39], &mw_err_txt_);
+    dim40_ = (mwSize) mxWrapGetScalar(prhs[40], &mw_err_txt_);
+    dim41_ = (mwSize) mxWrapGetScalar(prhs[41], &mw_err_txt_);
+    dim42_ = (mwSize) mxWrapGetScalar(prhs[42], &mw_err_txt_);
+    dim43_ = (mwSize) mxWrapGetScalar(prhs[43], &mw_err_txt_);
+    dim44_ = (mwSize) mxWrapGetScalar(prhs[44], &mw_err_txt_);
+    dim45_ = (mwSize) mxWrapGetScalar(prhs[45], &mw_err_txt_);
+    dim46_ = (mwSize) mxWrapGetScalar(prhs[46], &mw_err_txt_);
+    dim47_ = (mwSize) mxWrapGetScalar(prhs[47], &mw_err_txt_);
+    dim48_ = (mwSize) mxWrapGetScalar(prhs[48], &mw_err_txt_);
+    dim49_ = (mwSize) mxWrapGetScalar(prhs[49], &mw_err_txt_);
+    dim50_ = (mwSize) mxWrapGetScalar(prhs[50], &mw_err_txt_);
+    dim51_ = (mwSize) mxWrapGetScalar(prhs[51], &mw_err_txt_);
+    dim52_ = (mwSize) mxWrapGetScalar(prhs[52], &mw_err_txt_);
+    dim53_ = (mwSize) mxWrapGetScalar(prhs[53], &mw_err_txt_);
+    dim54_ = (mwSize) mxWrapGetScalar(prhs[54], &mw_err_txt_);
+    dim55_ = (mwSize) mxWrapGetScalar(prhs[55], &mw_err_txt_);
+    dim56_ = (mwSize) mxWrapGetScalar(prhs[56], &mw_err_txt_);
+    dim57_ = (mwSize) mxWrapGetScalar(prhs[57], &mw_err_txt_);
+    dim58_ = (mwSize) mxWrapGetScalar(prhs[58], &mw_err_txt_);
+    dim59_ = (mwSize) mxWrapGetScalar(prhs[59], &mw_err_txt_);
+    dim60_ = (mwSize) mxWrapGetScalar(prhs[60], &mw_err_txt_);
+    dim61_ = (mwSize) mxWrapGetScalar(prhs[61], &mw_err_txt_);
+    dim62_ = (mwSize) mxWrapGetScalar(prhs[62], &mw_err_txt_);
+    dim63_ = (mwSize) mxWrapGetScalar(prhs[63], &mw_err_txt_);
+    dim64_ = (mwSize) mxWrapGetScalar(prhs[64], &mw_err_txt_);
+
+    if (mxGetM(prhs[0])*mxGetN(prhs[0]) != dim31_) {
+        mw_err_txt_ = "Bad argument size: npatches";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[1])*mxGetN(prhs[1]) != dim32_) {
+        mw_err_txt_ = "Bad argument size: norders";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[2])*mxGetN(prhs[2]) != dim33_) {
+        mw_err_txt_ = "Bad argument size: ixyzs";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[3])*mxGetN(prhs[3]) != dim34_) {
+        mw_err_txt_ = "Bad argument size: iptype";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[4])*mxGetN(prhs[4]) != dim35_) {
+        mw_err_txt_ = "Bad argument size: npts";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[5]) != dim36_ ||
+        mxGetN(prhs[5]) != dim37_) {
+        mw_err_txt_ = "Bad argument size: srccoefs";
+        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[6]) != dim38_ ||
+        mxGetN(prhs[6]) != dim39_) {
+        mw_err_txt_ = "Bad argument size: srcvals";
+        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[7])*mxGetN(prhs[7]) != dim40_) {
+        mw_err_txt_ = "Bad argument size: eps";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[8])*mxGetN(prhs[8]) != dim41_) {
+        mw_err_txt_ = "Bad argument size: ndd";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[9])*mxGetN(prhs[9]) != dim42_) {
+        mw_err_txt_ = "Bad argument size: dpars";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[10])*mxGetN(prhs[10]) != dim43_) {
+        mw_err_txt_ = "Bad argument size: ndz";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[11])*mxGetN(prhs[11]) != dim44_) {
+        mw_err_txt_ = "Bad argument size: zpars";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[12])*mxGetN(prhs[12]) != dim45_) {
+        mw_err_txt_ = "Bad argument size: ndi";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[13])*mxGetN(prhs[13]) != dim46_) {
+        mw_err_txt_ = "Bad argument size: ipars";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[14])*mxGetN(prhs[14]) != dim47_) {
+        mw_err_txt_ = "Bad argument size: nnz";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[15])*mxGetN(prhs[15]) != dim48_) {
+        mw_err_txt_ = "Bad argument size: row_ptr";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[16])*mxGetN(prhs[16]) != dim49_) {
+        mw_err_txt_ = "Bad argument size: col_ind";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[17])*mxGetN(prhs[17]) != dim50_) {
+        mw_err_txt_ = "Bad argument size: iquad";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[18])*mxGetN(prhs[18]) != dim51_) {
+        mw_err_txt_ = "Bad argument size: nquad";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[19])*mxGetN(prhs[19]) != dim52_) {
+        mw_err_txt_ = "Bad argument size: nker";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[20])*mxGetN(prhs[20]) != dim53_) {
+        mw_err_txt_ = "Bad argument size: wnear";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[21])*mxGetN(prhs[21]) != dim54_) {
+        mw_err_txt_ = "Bad argument size: novers";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[22])*mxGetN(prhs[22]) != dim55_) {
+        mw_err_txt_ = "Bad argument size: nptso";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[23])*mxGetN(prhs[23]) != dim56_) {
+        mw_err_txt_ = "Bad argument size: ixyzso";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[24]) != dim57_ ||
+        mxGetN(prhs[24]) != dim58_) {
+        mw_err_txt_ = "Bad argument size: srcover";
+        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[25])*mxGetN(prhs[25]) != dim59_) {
+        mw_err_txt_ = "Bad argument size: wover";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[26])*mxGetN(prhs[26]) != dim60_) {
+        mw_err_txt_ = "Bad argument size: lwork";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[27])*mxGetN(prhs[27]) != dim61_) {
+        mw_err_txt_ = "Bad argument size: work";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[28])*mxGetN(prhs[28]) != dim62_) {
+        mw_err_txt_ = "Bad argument size: ndim_s";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[29])*mxGetN(prhs[29]) != dim63_) {
+        mw_err_txt_ = "Bad argument size: sigma";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[30])*mxGetN(prhs[30]) != dim64_) {
+        mw_err_txt_ = "Bad argument size: p";        goto mw_err_label;
+    }
+
+    if (mxGetM(prhs[0])*mxGetN(prhs[0]) != 0) {
+        in0_ = mxWrapGetArray_int(prhs[0], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in0_ = NULL;
+    if (mxGetM(prhs[1])*mxGetN(prhs[1]) != 0) {
+        in1_ = mxWrapGetArray_int(prhs[1], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in1_ = NULL;
+    if (mxGetM(prhs[2])*mxGetN(prhs[2]) != 0) {
+        in2_ = mxWrapGetArray_int(prhs[2], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in2_ = NULL;
+    if (mxGetM(prhs[3])*mxGetN(prhs[3]) != 0) {
+        in3_ = mxWrapGetArray_int(prhs[3], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in3_ = NULL;
+    if (mxGetM(prhs[4])*mxGetN(prhs[4]) != 0) {
+        in4_ = mxWrapGetArray_int(prhs[4], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in4_ = NULL;
+    if (mxGetM(prhs[5])*mxGetN(prhs[5]) != 0) {
+        if( mxGetClassID(prhs[5]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in5_ = mxGetDoubles(prhs[5]);
+#else
+        in5_ = mxGetPr(prhs[5]);
+#endif
+    } else
+        in5_ = NULL;
+    if (mxGetM(prhs[6])*mxGetN(prhs[6]) != 0) {
+        if( mxGetClassID(prhs[6]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in6_ = mxGetDoubles(prhs[6]);
+#else
+        in6_ = mxGetPr(prhs[6]);
+#endif
+    } else
+        in6_ = NULL;
+    if (mxGetM(prhs[7])*mxGetN(prhs[7]) != 0) {
+        if( mxGetClassID(prhs[7]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in7_ = mxGetDoubles(prhs[7]);
+#else
+        in7_ = mxGetPr(prhs[7]);
+#endif
+    } else
+        in7_ = NULL;
+    if (mxGetM(prhs[8])*mxGetN(prhs[8]) != 0) {
+        in8_ = mxWrapGetArray_int(prhs[8], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in8_ = NULL;
+    if (mxGetM(prhs[9])*mxGetN(prhs[9]) != 0) {
+        if( mxGetClassID(prhs[9]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in9_ = mxGetDoubles(prhs[9]);
+#else
+        in9_ = mxGetPr(prhs[9]);
+#endif
+    } else
+        in9_ = NULL;
+    if (mxGetM(prhs[10])*mxGetN(prhs[10]) != 0) {
+        in10_ = mxWrapGetArray_int(prhs[10], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in10_ = NULL;
+    if (mxGetM(prhs[11])*mxGetN(prhs[11]) != 0) {
+        if( mxGetClassID(prhs[11]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+        in11_ = mxWrapGetArray_dcomplex(prhs[11], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in11_ = NULL;
+    if (mxGetM(prhs[12])*mxGetN(prhs[12]) != 0) {
+        in12_ = mxWrapGetArray_int(prhs[12], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in12_ = NULL;
+    if (mxGetM(prhs[13])*mxGetN(prhs[13]) != 0) {
+        in13_ = mxWrapGetArray_int(prhs[13], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in13_ = NULL;
+    if (mxGetM(prhs[14])*mxGetN(prhs[14]) != 0) {
+        in14_ = mxWrapGetArray_int(prhs[14], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in14_ = NULL;
+    if (mxGetM(prhs[15])*mxGetN(prhs[15]) != 0) {
+        in15_ = mxWrapGetArray_int(prhs[15], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in15_ = NULL;
+    if (mxGetM(prhs[16])*mxGetN(prhs[16]) != 0) {
+        in16_ = mxWrapGetArray_int(prhs[16], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in16_ = NULL;
+    if (mxGetM(prhs[17])*mxGetN(prhs[17]) != 0) {
+        in17_ = mxWrapGetArray_int(prhs[17], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in17_ = NULL;
+    if (mxGetM(prhs[18])*mxGetN(prhs[18]) != 0) {
+        in18_ = mxWrapGetArray_int(prhs[18], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in18_ = NULL;
+    if (mxGetM(prhs[19])*mxGetN(prhs[19]) != 0) {
+        in19_ = mxWrapGetArray_int(prhs[19], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in19_ = NULL;
+    if (mxGetM(prhs[20])*mxGetN(prhs[20]) != 0) {
+        if( mxGetClassID(prhs[20]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in20_ = mxGetDoubles(prhs[20]);
+#else
+        in20_ = mxGetPr(prhs[20]);
+#endif
+    } else
+        in20_ = NULL;
+    if (mxGetM(prhs[21])*mxGetN(prhs[21]) != 0) {
+        in21_ = mxWrapGetArray_int(prhs[21], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in21_ = NULL;
+    if (mxGetM(prhs[22])*mxGetN(prhs[22]) != 0) {
+        in22_ = mxWrapGetArray_int(prhs[22], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in22_ = NULL;
+    if (mxGetM(prhs[23])*mxGetN(prhs[23]) != 0) {
+        in23_ = mxWrapGetArray_int(prhs[23], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in23_ = NULL;
+    if (mxGetM(prhs[24])*mxGetN(prhs[24]) != 0) {
+        if( mxGetClassID(prhs[24]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in24_ = mxGetDoubles(prhs[24]);
+#else
+        in24_ = mxGetPr(prhs[24]);
+#endif
+    } else
+        in24_ = NULL;
+    if (mxGetM(prhs[25])*mxGetN(prhs[25]) != 0) {
+        if( mxGetClassID(prhs[25]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in25_ = mxGetDoubles(prhs[25]);
+#else
+        in25_ = mxGetPr(prhs[25]);
+#endif
+    } else
+        in25_ = NULL;
+    if (mxGetM(prhs[26])*mxGetN(prhs[26]) != 0) {
+        in26_ = mxWrapGetArray_int(prhs[26], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in26_ = NULL;
+    if (mxGetM(prhs[27])*mxGetN(prhs[27]) != 0) {
+        if( mxGetClassID(prhs[27]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in27_ = mxGetDoubles(prhs[27]);
+#else
+        in27_ = mxGetPr(prhs[27]);
+#endif
+    } else
+        in27_ = NULL;
+    if (mxGetM(prhs[28])*mxGetN(prhs[28]) != 0) {
+        in28_ = mxWrapGetArray_int(prhs[28], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in28_ = NULL;
+    if (mxGetM(prhs[29])*mxGetN(prhs[29]) != 0) {
+        if( mxGetClassID(prhs[29]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in29_ = mxGetDoubles(prhs[29]);
+#else
+        in29_ = mxGetPr(prhs[29]);
+#endif
+    } else
+        in29_ = NULL;
+    if (mxGetM(prhs[30])*mxGetN(prhs[30]) != 0) {
+        if( mxGetClassID(prhs[30]) != mxDOUBLE_CLASS )
+            mw_err_txt_ = "Invalid array argument, mxDOUBLE_CLASS expected";
+        if (mw_err_txt_) goto mw_err_label;
+#if MX_HAS_INTERLEAVED_COMPLEX
+        in30_ = mxGetDoubles(prhs[30]);
+#else
+        in30_ = mxGetPr(prhs[30]);
+#endif
+    } else
+        in30_ = NULL;
+    if (mexprofrecord_)
+        mexprofrecord_[25]++;
+    MWF77_lpcomp_lap_comb_dir_addsub(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_, in29_, in30_);
+
+mw_err_label:
+    if (in0_)  mxFree(in0_);
+    if (in1_)  mxFree(in1_);
+    if (in2_)  mxFree(in2_);
+    if (in3_)  mxFree(in3_);
+    if (in4_)  mxFree(in4_);
+    if (in8_)  mxFree(in8_);
+    if (in10_)  mxFree(in10_);
+    if (in11_)  mxFree(in11_);
+    if (in12_)  mxFree(in12_);
+    if (in13_)  mxFree(in13_);
+    if (in14_)  mxFree(in14_);
+    if (in15_)  mxFree(in15_);
+    if (in16_)  mxFree(in16_);
+    if (in17_)  mxFree(in17_);
+    if (in18_)  mxFree(in18_);
+    if (in19_)  mxFree(in19_);
+    if (in21_)  mxFree(in21_);
+    if (in22_)  mxFree(in22_);
+    if (in23_)  mxFree(in23_);
+    if (in26_)  mxFree(in26_);
+    if (in28_)  mxFree(in28_);
+    if (mw_err_txt_)
+        mexErrMsgTxt(mw_err_txt_);
+}
+
+/* ---- fmm3dbie_routs.mw: 1753 ----
  * getnearquad_lap_s_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear);
  */
-static const char* stubids26_ = "getnearquad_lap_s_neu(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io double[x])";
+static const char* stubids30_ = "getnearquad_lap_s_neu(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io double[x])";
 
-void mexStub26(int nlhs, mxArray* plhs[],
+void mexStub30(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -6428,7 +7456,7 @@ void mexStub26(int nlhs, mxArray* plhs[],
     } else
         in15_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[26]++;
+        mexprofrecord_[30]++;
     MWF77_getnearquad_lap_s_neu(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_);
     plhs[0] = mxCreateDoubleMatrix(dim33_, 1, mxREAL);
     mxWrapCopy_double(plhs[0], in15_, dim33_);
@@ -6450,12 +7478,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 1491 ----
+/* ---- fmm3dbie_routs.mw: 1755 ----
  * getnearquad_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, int[ntarg] patch_id, double[2, ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear);
  */
-static const char* stubids27_ = "getnearquad_lap_s_neu_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io double[x])";
+static const char* stubids31_ = "getnearquad_lap_s_neu_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io double[x])";
 
-void mexStub27(int nlhs, mxArray* plhs[],
+void mexStub31(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -6781,7 +7809,7 @@ void mexStub27(int nlhs, mxArray* plhs[],
     } else
         in20_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[27]++;
+        mexprofrecord_[31]++;
     MWF77_getnearquad_lap_s_neu_eval(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_);
     plhs[0] = mxCreateDoubleMatrix(dim45_, 1, mxREAL);
     mxWrapCopy_double(plhs[0], in20_, dim45_);
@@ -6806,12 +7834,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 1668 ----
+/* ---- fmm3dbie_routs.mw: 1932 ----
  * lap_s_neu_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, int[1] maxit, int[1] ifout, double[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout double[npts] sigma);
  */
-static const char* stubids30_ = "lap_s_neu_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[x])";
+static const char* stubids34_ = "lap_s_neu_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[x])";
 
-void mexStub30(int nlhs, mxArray* plhs[],
+void mexStub34(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -7234,7 +8262,7 @@ void mexStub30(int nlhs, mxArray* plhs[],
     } else
         in27_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[30]++;
+        mexprofrecord_[34]++;
     MWF77_lap_s_neu_solver_guru(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_);
     plhs[0] = mxCreateDoubleMatrix(dim55_, 1, mxREAL);
     mxWrapCopy_int(plhs[0], in24_, dim55_);
@@ -7270,12 +8298,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 1830 ----
+/* ---- fmm3dbie_routs.mw: 2094 ----
  * helm_comb_dir_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, dcomplex[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);
  */
-static const char* stubids31_ = "helm_comb_dir_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], io dcomplex[x])";
+static const char* stubids35_ = "helm_comb_dir_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], io dcomplex[x])";
 
-void mexStub31(int nlhs, mxArray* plhs[],
+void mexStub35(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -7831,7 +8859,7 @@ void mexStub31(int nlhs, mxArray* plhs[],
     } else
         in36_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[31]++;
+        mexprofrecord_[35]++;
     MWF77_helm_comb_dir_eval_addsub(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_, in29_, in30_, in31_, in32_, in33_, in34_, in35_, in36_);
     plhs[0] = mxCreateDoubleMatrix(dim77_, 1, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in36_, dim77_);
@@ -7870,12 +8898,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 1987 ----
+/* ---- fmm3dbie_routs.mw: 2251 ----
  * getnearquad_helm_comb_dir_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, int[ntarg] patch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
  */
-static const char* stubids36_ = "getnearquad_helm_comb_dir_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[x])";
+static const char* stubids40_ = "getnearquad_helm_comb_dir_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[x])";
 
-void mexStub36(int nlhs, mxArray* plhs[],
+void mexStub40(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -8220,7 +9248,7 @@ void mexStub36(int nlhs, mxArray* plhs[],
     } else
         in21_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[36]++;
+        mexprofrecord_[40]++;
     MWF77_getnearquad_helm_comb_dir_eval(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_);
     plhs[0] = mxCreateDoubleMatrix(dim47_, 1, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in21_, dim47_);
@@ -8246,12 +9274,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 2174 ----
+/* ---- fmm3dbie_routs.mw: 2438 ----
  * helm_comb_dir_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[3] zpars, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma);
  */
-static const char* stubids39_ = "helm_comb_dir_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x])";
+static const char* stubids43_ = "helm_comb_dir_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x])";
 
-void mexStub39(int nlhs, mxArray* plhs[],
+void mexStub43(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -8689,7 +9717,7 @@ void mexStub39(int nlhs, mxArray* plhs[],
     } else
         in28_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[39]++;
+        mexprofrecord_[43]++;
     MWF77_helm_comb_dir_solver_guru(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_);
     plhs[0] = mxCreateDoubleMatrix(dim57_, 1, mxREAL);
     mxWrapCopy_int(plhs[0], in25_, dim57_);
@@ -8728,13 +9756,13 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 2338 ----
+/* ---- fmm3dbie_routs.mw: 2602 ----
  * helm_rpcomb_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker, nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[2, npts] densities, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);
- * Also at fmm3dbie_routs.mw: 2872
+ * Also at fmm3dbie_routs.mw: 3136
  */
-static const char* stubids40_ = "helm_rpcomb_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], io dcomplex[x])";
+static const char* stubids44_ = "helm_rpcomb_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], io dcomplex[x])";
 
-void mexStub40(int nlhs, mxArray* plhs[],
+void mexStub44(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -9298,7 +10326,7 @@ void mexStub40(int nlhs, mxArray* plhs[],
     } else
         in36_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[40]++;
+        mexprofrecord_[44]++;
     MWF77_helm_rpcomb_eval_addsub(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_, in29_, in30_, in31_, in32_, in33_, in34_, in35_, in36_);
     plhs[0] = mxCreateDoubleMatrix(dim79_, 1, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in36_, dim79_);
@@ -9337,12 +10365,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 2519 ----
+/* ---- fmm3dbie_routs.mw: 2783 ----
  * getnearquad_helm_rpcomb_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker, nquad] wnear);
  */
-static const char* stubids45_ = "getnearquad_helm_rpcomb_neu(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
+static const char* stubids49_ = "getnearquad_helm_rpcomb_neu(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
 
-void mexStub45(int nlhs, mxArray* plhs[],
+void mexStub49(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -9608,7 +10636,7 @@ void mexStub45(int nlhs, mxArray* plhs[],
     } else
         in16_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[45]++;
+        mexprofrecord_[49]++;
     MWF77_getnearquad_helm_rpcomb_neu(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_);
     plhs[0] = mxCreateDoubleMatrix(dim35_, dim36_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in16_, dim35_*dim36_);
@@ -9631,13 +10659,13 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 2523 ----
+/* ---- fmm3dbie_routs.mw: 2787 ----
  * getnearquad_helm_rpcomb_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, int[ntarg] patch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zkuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker, nquad] wnear);
- * Also at fmm3dbie_routs.mw: 3057
+ * Also at fmm3dbie_routs.mw: 3321
  */
-static const char* stubids46_ = "getnearquad_helm_rpcomb_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
+static const char* stubids50_ = "getnearquad_helm_rpcomb_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
 
-void mexStub46(int nlhs, mxArray* plhs[],
+void mexStub50(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -9986,7 +11014,7 @@ void mexStub46(int nlhs, mxArray* plhs[],
     } else
         in21_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[46]++;
+        mexprofrecord_[50]++;
     MWF77_getnearquad_helm_rpcomb_eval(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_);
     plhs[0] = mxCreateDoubleMatrix(dim47_, dim48_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in21_, dim47_*dim48_);
@@ -10012,12 +11040,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 2709 ----
+/* ---- fmm3dbie_routs.mw: 2973 ----
  * helm_rpcomb_neu_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker, nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma, inout dcomplex[npts] siksigma);
  */
-static const char* stubids49_ = "helm_rpcomb_neu_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x], io dcomplex[x])";
+static const char* stubids53_ = "helm_rpcomb_neu_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x], io dcomplex[x])";
 
-void mexStub49(int nlhs, mxArray* plhs[],
+void mexStub53(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -10475,7 +11503,7 @@ void mexStub49(int nlhs, mxArray* plhs[],
     } else
         in29_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[49]++;
+        mexprofrecord_[53]++;
     MWF77_helm_rpcomb_neu_solver_guru(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_, in29_);
     plhs[0] = mxCreateDoubleMatrix(dim59_, 1, mxREAL);
     mxWrapCopy_int(plhs[0], in25_, dim59_);
@@ -10517,12 +11545,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 3053 ----
+/* ---- fmm3dbie_routs.mw: 3317 ----
  * getnearquad_helm_rpcomb_imp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker, nquad] wnear);
  */
-static const char* stubids55_ = "getnearquad_helm_rpcomb_imp(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
+static const char* stubids59_ = "getnearquad_helm_rpcomb_imp(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
 
-void mexStub55(int nlhs, mxArray* plhs[],
+void mexStub59(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -10788,7 +11816,7 @@ void mexStub55(int nlhs, mxArray* plhs[],
     } else
         in16_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[55]++;
+        mexprofrecord_[59]++;
     MWF77_getnearquad_helm_rpcomb_imp(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_);
     plhs[0] = mxCreateDoubleMatrix(dim35_, dim36_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in16_, dim35_*dim36_);
@@ -10811,12 +11839,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 3250 ----
+/* ---- fmm3dbie_routs.mw: 3514 ----
  * helm_rpcomb_imp_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[2] zpars, dcomplex[npts] zlams_use, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker, nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma, inout dcomplex[npts] siksigma);
  */
-static const char* stubids59_ = "helm_rpcomb_imp_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x], io dcomplex[x])";
+static const char* stubids63_ = "helm_rpcomb_imp_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i dcomplex[x], i int[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[x], io dcomplex[x])";
 
-void mexStub59(int nlhs, mxArray* plhs[],
+void mexStub63(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -11290,7 +12318,7 @@ void mexStub59(int nlhs, mxArray* plhs[],
     } else
         in30_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[59]++;
+        mexprofrecord_[63]++;
     MWF77_helm_rpcomb_imp_solver_guru(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_, in29_, in30_);
     plhs[0] = mxCreateDoubleMatrix(dim61_, 1, mxREAL);
     mxWrapCopy_int(plhs[0], in26_, dim61_);
@@ -11333,12 +12361,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 3367 ----
+/* ---- fmm3dbie_routs.mw: 3631 ----
  * helm_comb_trans_eval(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, int[ntarg] patch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, dcomplex[2, npts] densities, inout dcomplex[ntarg] p);
  */
-static const char* stubids60_ = "helm_comb_trans_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i dcomplex[xx], io dcomplex[x])";
+static const char* stubids64_ = "helm_comb_trans_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i dcomplex[xx], io dcomplex[x])";
 
-void mexStub60(int nlhs, mxArray* plhs[],
+void mexStub64(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -11607,7 +12635,7 @@ void mexStub60(int nlhs, mxArray* plhs[],
     } else
         in15_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[60]++;
+        mexprofrecord_[64]++;
     MWF77_helm_comb_trans_eval(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_);
     plhs[0] = mxCreateDoubleMatrix(dim36_, 1, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in15_, dim36_);
@@ -11628,12 +12656,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 3560 ----
+/* ---- fmm3dbie_routs.mw: 3824 ----
  * getnearquad_helm_comb_trans(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker, nquad] wnear);
  */
-static const char* stubids65_ = "getnearquad_helm_comb_trans(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
+static const char* stubids69_ = "getnearquad_helm_comb_trans(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
 
-void mexStub65(int nlhs, mxArray* plhs[],
+void mexStub69(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -11899,7 +12927,7 @@ void mexStub65(int nlhs, mxArray* plhs[],
     } else
         in16_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[65]++;
+        mexprofrecord_[69]++;
     MWF77_getnearquad_helm_comb_trans(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_);
     plhs[0] = mxCreateDoubleMatrix(dim35_, dim36_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in16_, dim35_*dim36_);
@@ -11922,12 +12950,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 3756 ----
+/* ---- fmm3dbie_routs.mw: 4020 ----
  * helm_comb_trans_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] maxit, dcomplex[2, npts] rhs_use, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker, nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[2, npts] densities);
  */
-static const char* stubids68_ = "helm_comb_trans_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[xx])";
+static const char* stubids72_ = "helm_comb_trans_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[xx])";
 
-void mexStub68(int nlhs, mxArray* plhs[],
+void mexStub72(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -12364,7 +13392,7 @@ void mexStub68(int nlhs, mxArray* plhs[],
     } else
         in27_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[68]++;
+        mexprofrecord_[72]++;
     MWF77_helm_comb_trans_solver_guru(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_);
     plhs[0] = mxCreateDoubleMatrix(dim57_, 1, mxREAL);
     mxWrapCopy_int(plhs[0], in24_, dim57_);
@@ -12402,12 +13430,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 3913 ----
+/* ---- fmm3dbie_routs.mw: 4177 ----
  * stok_comb_vel_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nker, nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, double[ndim_s, npts] sigma, int[1] ipotflag, int[1] ndim_p, inout double[ndim_p, ntarg] p);
  */
-static const char* stubids69_ = "stok_comb_vel_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i double[xx], i int[x], i int[x], io double[xx])";
+static const char* stubids73_ = "stok_comb_vel_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i double[xx], i int[x], i int[x], io double[xx])";
 
-void mexStub69(int nlhs, mxArray* plhs[],
+void mexStub73(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -12976,7 +14004,7 @@ void mexStub69(int nlhs, mxArray* plhs[],
     } else
         in36_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[69]++;
+        mexprofrecord_[73]++;
     MWF77_stok_comb_vel_eval_addsub(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_, in29_, in30_, in31_, in32_, in33_, in34_, in35_, in36_);
     plhs[0] = mxCreateDoubleMatrix(dim79_, dim80_, mxREAL);
     mxWrapCopy_double(plhs[0], in36_, dim79_*dim80_);
@@ -13013,12 +14041,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 4065 ----
+/* ---- fmm3dbie_routs.mw: 4329 ----
  * getnearquad_stok_comb_vel_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, int[ntarg] patch_id, double[2, ntarg] uvs_targ, double[1] eps, double[2] dpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nker, nquad] wnear);
  */
-static const char* stubids74_ = "getnearquad_stok_comb_vel_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io double[xx])";
+static const char* stubids78_ = "getnearquad_stok_comb_vel_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io double[xx])";
 
-void mexStub74(int nlhs, mxArray* plhs[],
+void mexStub78(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -13366,7 +14394,7 @@ void mexStub74(int nlhs, mxArray* plhs[],
     } else
         in21_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[74]++;
+        mexprofrecord_[78]++;
     MWF77_getnearquad_stok_comb_vel_eval(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_);
     plhs[0] = mxCreateDoubleMatrix(dim47_, dim48_, mxREAL);
     mxWrapCopy_double(plhs[0], in21_, dim47_*dim48_);
@@ -13391,12 +14419,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 4244 ----
+/* ---- fmm3dbie_routs.mw: 4508 ----
  * stok_comb_vel_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, double[2] dpars, int[1] maxit, int[1] ifout, double[3, npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nker, nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout double[3, npts] sigma);
  */
-static const char* stubids77_ = "stok_comb_vel_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i double[x], i int[x], i int[x], i double[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[xx])";
+static const char* stubids81_ = "stok_comb_vel_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i double[x], i int[x], i int[x], i double[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[xx])";
 
-void mexStub77(int nlhs, mxArray* plhs[],
+void mexStub81(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -13849,7 +14877,7 @@ void mexStub77(int nlhs, mxArray* plhs[],
     } else
         in28_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[77]++;
+        mexprofrecord_[81]++;
     MWF77_stok_comb_vel_solver_guru(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_);
     plhs[0] = mxCreateDoubleMatrix(dim59_, 1, mxREAL);
     mxWrapCopy_int(plhs[0], in25_, dim59_);
@@ -13885,12 +14913,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 4460 ----
+/* ---- fmm3dbie_routs.mw: 4724 ----
  * em_nrccie_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker, nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[ndim_s, npts] densities, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ndim_p, ntarg] p);
  */
-static const char* stubids78_ = "em_nrccie_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], io dcomplex[xx])";
+static const char* stubids82_ = "em_nrccie_eval_addsub(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i int[x], i double[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], io dcomplex[xx])";
 
-void mexStub78(int nlhs, mxArray* plhs[],
+void mexStub82(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -14458,7 +15486,7 @@ void mexStub78(int nlhs, mxArray* plhs[],
     } else
         in36_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[78]++;
+        mexprofrecord_[82]++;
     MWF77_em_nrccie_eval_addsub(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_, in29_, in30_, in31_, in32_, in33_, in34_, in35_, in36_);
     plhs[0] = mxCreateDoubleMatrix(dim79_, dim80_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in36_, dim79_*dim80_);
@@ -14497,12 +15525,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 4651 ----
+/* ---- fmm3dbie_routs.mw: 4915 ----
  * getnearquad_em_nrccie_pec(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker, nquad] wnear);
  */
-static const char* stubids83_ = "getnearquad_em_nrccie_pec(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
+static const char* stubids87_ = "getnearquad_em_nrccie_pec(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
 
-void mexStub83(int nlhs, mxArray* plhs[],
+void mexStub87(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -14768,7 +15796,7 @@ void mexStub83(int nlhs, mxArray* plhs[],
     } else
         in16_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[83]++;
+        mexprofrecord_[87]++;
     MWF77_getnearquad_em_nrccie_pec(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_);
     plhs[0] = mxCreateDoubleMatrix(dim35_, dim36_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in16_, dim35_*dim36_);
@@ -14791,12 +15819,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 4656 ----
+/* ---- fmm3dbie_routs.mw: 4920 ----
  * getnearquad_em_nrccie_pec_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, int[ntarg] patch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker, nquad] wnear);
  */
-static const char* stubids84_ = "getnearquad_em_nrccie_pec_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
+static const char* stubids88_ = "getnearquad_em_nrccie_pec_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
 
-void mexStub84(int nlhs, mxArray* plhs[],
+void mexStub88(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -15145,7 +16173,7 @@ void mexStub84(int nlhs, mxArray* plhs[],
     } else
         in21_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[84]++;
+        mexprofrecord_[88]++;
     MWF77_getnearquad_em_nrccie_pec_eval(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_);
     plhs[0] = mxCreateDoubleMatrix(dim47_, dim48_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in21_, dim47_*dim48_);
@@ -15171,12 +16199,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 4851 ----
+/* ---- fmm3dbie_routs.mw: 5115 ----
  * em_nrccie_pec_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] maxit, dcomplex[3, npts] einc, dcomplex[3, npts] hinc, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker, nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[3, npts] zjvec, inout dcomplex[npts] rho);
  */
-static const char* stubids87_ = "em_nrccie_pec_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i dcomplex[xx], i dcomplex[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[xx], io dcomplex[x])";
+static const char* stubids91_ = "em_nrccie_pec_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i dcomplex[xx], i dcomplex[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[xx], io dcomplex[x])";
 
-void mexStub87(int nlhs, mxArray* plhs[],
+void mexStub91(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -15649,7 +16677,7 @@ void mexStub87(int nlhs, mxArray* plhs[],
     } else
         in29_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[87]++;
+        mexprofrecord_[91]++;
     MWF77_em_nrccie_pec_solver_guru(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_, in27_, in28_, in29_);
     plhs[0] = mxCreateDoubleMatrix(dim61_, 1, mxREAL);
     mxWrapCopy_int(plhs[0], in25_, dim61_);
@@ -15691,13 +16719,13 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 5012 ----
+/* ---- fmm3dbie_routs.mw: 5276 ----
  * em_muller_trans_eval_oneside(double[1] eps, dcomplex[npts, 4] densities, dcomplex[5] zpars, int[1] npts, double[npts] wts, double[12, npts] srcvals, int[1] ntin, double[3, ntin] targin, int[1] iside, inout dcomplex[3, ntin] Ein, inout dcomplex[3, ntin] Hin);
- * Also at fmm3dbie_routs.mw: 5019
+ * Also at fmm3dbie_routs.mw: 5283
  */
-static const char* stubids88_ = "em_muller_trans_eval_oneside(i double[x], i dcomplex[xx], i dcomplex[x], i int[x], i double[x], i double[xx], i int[x], i double[xx], i int[x], io dcomplex[xx], io dcomplex[xx])";
+static const char* stubids92_ = "em_muller_trans_eval_oneside(i double[x], i dcomplex[xx], i dcomplex[x], i int[x], i double[x], i double[xx], i int[x], i double[xx], i int[x], io dcomplex[xx], io dcomplex[xx])";
 
-void mexStub88(int nlhs, mxArray* plhs[],
+void mexStub92(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -15899,7 +16927,7 @@ void mexStub88(int nlhs, mxArray* plhs[],
     } else
         in10_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[88]++;
+        mexprofrecord_[92]++;
     MWF77_em_muller_trans_eval_oneside(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_);
     plhs[0] = mxCreateDoubleMatrix(dim23_, dim24_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in9_, dim23_*dim24_);
@@ -15918,12 +16946,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 5151 ----
+/* ---- fmm3dbie_routs.mw: 5415 ----
  * getnearquad_em_muller_trans(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg, ntarg] targs, int[ntarg] patch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[5] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad, nker] wnear);
  */
-static const char* stubids94_ = "getnearquad_em_muller_trans(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
+static const char* stubids98_ = "getnearquad_em_muller_trans(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])";
 
-void mexStub94(int nlhs, mxArray* plhs[],
+void mexStub98(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -16272,7 +17300,7 @@ void mexStub94(int nlhs, mxArray* plhs[],
     } else
         in21_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[94]++;
+        mexprofrecord_[98]++;
     MWF77_getnearquad_em_muller_trans(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_);
     plhs[0] = mxCreateDoubleMatrix(dim47_, dim48_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in21_, dim47_*dim48_);
@@ -16298,12 +17326,12 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- fmm3dbie_routs.mw: 5321 ----
+/* ---- fmm3dbie_routs.mw: 5585 ----
  * em_muller_trans_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[5] zpars, int[1] maxit, dcomplex[npts, 4] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, dcomplex[nquad, nker] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts, 4] densities);
  */
-static const char* stubids96_ = "em_muller_trans_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[xx])";
+static const char* stubids100_ = "em_muller_trans_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i int[x], i int[x], i dcomplex[xx], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io dcomplex[xx])";
 
-void mexStub96(int nlhs, mxArray* plhs[],
+void mexStub100(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
 {
     const char* mw_err_txt_ = 0;
@@ -16727,7 +17755,7 @@ void mexStub96(int nlhs, mxArray* plhs[],
     } else
         in26_ = NULL;
     if (mexprofrecord_)
-        mexprofrecord_[96]++;
+        mexprofrecord_[100]++;
     MWF77_em_muller_trans_solver_guru(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_);
     plhs[0] = mxCreateDoubleMatrix(dim55_, 1, mxREAL);
     mxWrapCopy_int(plhs[0], in23_, dim55_);
@@ -16819,62 +17847,66 @@ void mexFunction(int nlhs, mxArray* plhs[],
         mexStub20(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids21_) == 0)
         mexStub21(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids26_) == 0)
-        mexStub26(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids27_) == 0)
-        mexStub27(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids23_) == 0)
+        mexStub23(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids25_) == 0)
+        mexStub25(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids30_) == 0)
         mexStub30(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids31_) == 0)
         mexStub31(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids36_) == 0)
-        mexStub36(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids39_) == 0)
-        mexStub39(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids34_) == 0)
+        mexStub34(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids35_) == 0)
+        mexStub35(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids40_) == 0)
         mexStub40(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids45_) == 0)
-        mexStub45(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids46_) == 0)
-        mexStub46(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids43_) == 0)
+        mexStub43(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids44_) == 0)
+        mexStub44(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids49_) == 0)
         mexStub49(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids55_) == 0)
-        mexStub55(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids50_) == 0)
+        mexStub50(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids53_) == 0)
+        mexStub53(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids59_) == 0)
         mexStub59(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids60_) == 0)
-        mexStub60(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids65_) == 0)
-        mexStub65(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids68_) == 0)
-        mexStub68(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids63_) == 0)
+        mexStub63(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids64_) == 0)
+        mexStub64(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids69_) == 0)
         mexStub69(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids74_) == 0)
-        mexStub74(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids77_) == 0)
-        mexStub77(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids72_) == 0)
+        mexStub72(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids73_) == 0)
+        mexStub73(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids78_) == 0)
         mexStub78(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids83_) == 0)
-        mexStub83(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids84_) == 0)
-        mexStub84(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids81_) == 0)
+        mexStub81(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids82_) == 0)
+        mexStub82(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids87_) == 0)
         mexStub87(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, stubids88_) == 0)
         mexStub88(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids94_) == 0)
-        mexStub94(nlhs,plhs, nrhs-1,prhs+1);
-    else if (strcmp(id, stubids96_) == 0)
-        mexStub96(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids91_) == 0)
+        mexStub91(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids92_) == 0)
+        mexStub92(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids98_) == 0)
+        mexStub98(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids100_) == 0)
+        mexStub100(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, "*profile on*") == 0) {
         if (!mexprofrecord_) {
-            mexprofrecord_ = (int*) malloc(97 * sizeof(int));
+            mexprofrecord_ = (int*) malloc(101 * sizeof(int));
             mexLock();
         }
-        memset(mexprofrecord_, 0, 97 * sizeof(int));
+        memset(mexprofrecord_, 0, 101 * sizeof(int));
     } else if (strcmp(id, "*profile off*") == 0) {
         if (mexprofrecord_) {
             free(mexprofrecord_);
@@ -16896,40 +17928,42 @@ void mexFunction(int nlhs, mxArray* plhs[],
         mexPrintf("%d calls to fmm3dbie_routs.mw:605\n", mexprofrecord_[10]);
         mexPrintf("%d calls to fmm3dbie_routs.mw:670\n", mexprofrecord_[11]);
         mexPrintf("%d calls to fmm3dbie_routs.mw:833\n", mexprofrecord_[12]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:954 (fmm3dbie_routs.mw:1455)\n", mexprofrecord_[13]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:962 (fmm3dbie_routs.mw:1463)\n", mexprofrecord_[14]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:968 (fmm3dbie_routs.mw:1469)\n", mexprofrecord_[15]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:971 (fmm3dbie_routs.mw:1472)\n", mexprofrecord_[16]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:954 (fmm3dbie_routs.mw:1719)\n", mexprofrecord_[13]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:962 (fmm3dbie_routs.mw:1727)\n", mexprofrecord_[14]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:968 (fmm3dbie_routs.mw:1733)\n", mexprofrecord_[15]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:971 (fmm3dbie_routs.mw:1736)\n", mexprofrecord_[16]);
         mexPrintf("%d calls to fmm3dbie_routs.mw:984\n", mexprofrecord_[17]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:1010 (fmm3dbie_routs.mw:1516)\n", mexprofrecord_[18]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:1105 (fmm3dbie_routs.mw:1606)\n", mexprofrecord_[19]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:1010 (fmm3dbie_routs.mw:1780)\n", mexprofrecord_[18]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:1105 (fmm3dbie_routs.mw:1375)\n", mexprofrecord_[19]);
         mexPrintf("%d calls to fmm3dbie_routs.mw:1164\n", mexprofrecord_[20]);
         mexPrintf("%d calls to fmm3dbie_routs.mw:1314\n", mexprofrecord_[21]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:1489\n", mexprofrecord_[26]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:1491\n", mexprofrecord_[27]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:1668\n", mexprofrecord_[30]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:1830\n", mexprofrecord_[31]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:1987\n", mexprofrecord_[36]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:2174\n", mexprofrecord_[39]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:2338 (fmm3dbie_routs.mw:2872)\n", mexprofrecord_[40]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:2519\n", mexprofrecord_[45]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:2523 (fmm3dbie_routs.mw:3057)\n", mexprofrecord_[46]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:2709\n", mexprofrecord_[49]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:3053\n", mexprofrecord_[55]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:3250\n", mexprofrecord_[59]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:3367\n", mexprofrecord_[60]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:3560\n", mexprofrecord_[65]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:3756\n", mexprofrecord_[68]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:3913\n", mexprofrecord_[69]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:4065\n", mexprofrecord_[74]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:4244\n", mexprofrecord_[77]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:4460\n", mexprofrecord_[78]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:4651\n", mexprofrecord_[83]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:4656\n", mexprofrecord_[84]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:4851\n", mexprofrecord_[87]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:5012 (fmm3dbie_routs.mw:5019)\n", mexprofrecord_[88]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:5151\n", mexprofrecord_[94]);
-        mexPrintf("%d calls to fmm3dbie_routs.mw:5321\n", mexprofrecord_[96]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:1445\n", mexprofrecord_[23]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:1577\n", mexprofrecord_[25]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:1753\n", mexprofrecord_[30]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:1755\n", mexprofrecord_[31]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:1932\n", mexprofrecord_[34]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:2094\n", mexprofrecord_[35]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:2251\n", mexprofrecord_[40]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:2438\n", mexprofrecord_[43]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:2602 (fmm3dbie_routs.mw:3136)\n", mexprofrecord_[44]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:2783\n", mexprofrecord_[49]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:2787 (fmm3dbie_routs.mw:3321)\n", mexprofrecord_[50]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:2973\n", mexprofrecord_[53]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:3317\n", mexprofrecord_[59]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:3514\n", mexprofrecord_[63]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:3631\n", mexprofrecord_[64]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:3824\n", mexprofrecord_[69]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:4020\n", mexprofrecord_[72]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:4177\n", mexprofrecord_[73]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:4329\n", mexprofrecord_[78]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:4508\n", mexprofrecord_[81]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:4724\n", mexprofrecord_[82]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:4915\n", mexprofrecord_[87]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:4920\n", mexprofrecord_[88]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:5115\n", mexprofrecord_[91]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:5276 (fmm3dbie_routs.mw:5283)\n", mexprofrecord_[92]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:5415\n", mexprofrecord_[98]);
+        mexPrintf("%d calls to fmm3dbie_routs.mw:5585\n", mexprofrecord_[100]);
     } else if (strcmp(id, "*profile log*") == 0) {
         FILE* logfp;
         if (nrhs != 2 || mxGetString(prhs[1], id, sizeof(id)) != 0)
@@ -16951,40 +17985,42 @@ void mexFunction(int nlhs, mxArray* plhs[],
         fprintf(logfp, "%d calls to fmm3dbie_routs.mw:605\n", mexprofrecord_[10]);
         fprintf(logfp, "%d calls to fmm3dbie_routs.mw:670\n", mexprofrecord_[11]);
         fprintf(logfp, "%d calls to fmm3dbie_routs.mw:833\n", mexprofrecord_[12]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:954 (fmm3dbie_routs.mw:1455)\n", mexprofrecord_[13]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:962 (fmm3dbie_routs.mw:1463)\n", mexprofrecord_[14]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:968 (fmm3dbie_routs.mw:1469)\n", mexprofrecord_[15]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:971 (fmm3dbie_routs.mw:1472)\n", mexprofrecord_[16]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:954 (fmm3dbie_routs.mw:1719)\n", mexprofrecord_[13]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:962 (fmm3dbie_routs.mw:1727)\n", mexprofrecord_[14]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:968 (fmm3dbie_routs.mw:1733)\n", mexprofrecord_[15]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:971 (fmm3dbie_routs.mw:1736)\n", mexprofrecord_[16]);
         fprintf(logfp, "%d calls to fmm3dbie_routs.mw:984\n", mexprofrecord_[17]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1010 (fmm3dbie_routs.mw:1516)\n", mexprofrecord_[18]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1105 (fmm3dbie_routs.mw:1606)\n", mexprofrecord_[19]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1010 (fmm3dbie_routs.mw:1780)\n", mexprofrecord_[18]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1105 (fmm3dbie_routs.mw:1375)\n", mexprofrecord_[19]);
         fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1164\n", mexprofrecord_[20]);
         fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1314\n", mexprofrecord_[21]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1489\n", mexprofrecord_[26]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1491\n", mexprofrecord_[27]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1668\n", mexprofrecord_[30]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1830\n", mexprofrecord_[31]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1987\n", mexprofrecord_[36]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2174\n", mexprofrecord_[39]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2338 (fmm3dbie_routs.mw:2872)\n", mexprofrecord_[40]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2519\n", mexprofrecord_[45]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2523 (fmm3dbie_routs.mw:3057)\n", mexprofrecord_[46]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2709\n", mexprofrecord_[49]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3053\n", mexprofrecord_[55]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3250\n", mexprofrecord_[59]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3367\n", mexprofrecord_[60]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3560\n", mexprofrecord_[65]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3756\n", mexprofrecord_[68]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3913\n", mexprofrecord_[69]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4065\n", mexprofrecord_[74]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4244\n", mexprofrecord_[77]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4460\n", mexprofrecord_[78]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4651\n", mexprofrecord_[83]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4656\n", mexprofrecord_[84]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4851\n", mexprofrecord_[87]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:5012 (fmm3dbie_routs.mw:5019)\n", mexprofrecord_[88]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:5151\n", mexprofrecord_[94]);
-        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:5321\n", mexprofrecord_[96]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1445\n", mexprofrecord_[23]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1577\n", mexprofrecord_[25]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1753\n", mexprofrecord_[30]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1755\n", mexprofrecord_[31]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:1932\n", mexprofrecord_[34]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2094\n", mexprofrecord_[35]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2251\n", mexprofrecord_[40]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2438\n", mexprofrecord_[43]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2602 (fmm3dbie_routs.mw:3136)\n", mexprofrecord_[44]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2783\n", mexprofrecord_[49]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2787 (fmm3dbie_routs.mw:3321)\n", mexprofrecord_[50]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:2973\n", mexprofrecord_[53]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3317\n", mexprofrecord_[59]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3514\n", mexprofrecord_[63]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3631\n", mexprofrecord_[64]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:3824\n", mexprofrecord_[69]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4020\n", mexprofrecord_[72]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4177\n", mexprofrecord_[73]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4329\n", mexprofrecord_[78]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4508\n", mexprofrecord_[81]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4724\n", mexprofrecord_[82]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4915\n", mexprofrecord_[87]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:4920\n", mexprofrecord_[88]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:5115\n", mexprofrecord_[91]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:5276 (fmm3dbie_routs.mw:5283)\n", mexprofrecord_[92]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:5415\n", mexprofrecord_[98]);
+        fprintf(logfp, "%d calls to fmm3dbie_routs.mw:5585\n", mexprofrecord_[100]);
         fclose(logfp);
     } else
         mexErrMsgTxt("Unknown identifier");
