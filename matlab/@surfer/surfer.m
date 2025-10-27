@@ -93,7 +93,8 @@ classdef surfer
         aspect_ratio  % measure of local aspect ratio of patch, (npts,1);
         patch_distortion % integral of aspect ratio
         cms           % centroid location of patches (3,npatches)
-        rads          % radii of boundaing (npatches,1)
+        rads          % radii of bounding (npatches,1)
+        end_pt_verts  % vertices of patch 
     end
     properties (Access = private)
         srcvals      % cell array of nodes vals of [r;du;dv;n] per patch
@@ -133,6 +134,7 @@ classdef surfer
             obj.srcvals = cell(npatches,1);
             obj.srccoefs = cell(npatches,1);
             obj.weights = cell(npatches,1);
+            obj.end_pt_verts = cell(npatches,1);
             if (nargin == 3)
                 obj.iptype = ones(npatches,1);
             else
@@ -284,6 +286,7 @@ classdef surfer
 
                 % compute centroid and bounding sphere radii
                 everts = obj.srccoefs{i}(1:3,:)*p_vert_mats{iuse(i)};
+                obj.end_pt_verts{i} = everts;
                 obj.cms(1:3,i) = mean(everts, 2);
 
                 rr = sqrt((obj.cms(1,i) - everts(1,:)).^2 + ... 

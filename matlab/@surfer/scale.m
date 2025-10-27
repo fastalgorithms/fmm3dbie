@@ -9,7 +9,7 @@ function [objout,varargout] = scale(obj,sf)
   if numel(sf) == 1
     sf = sf*ones(3,1);
   end
-  if (nsf ~=3) 
+  if (length(sf) ~=3) 
     fprintf('incompatible sizes');
     objout = surfer.empty;
     return
