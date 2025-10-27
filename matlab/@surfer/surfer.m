@@ -181,21 +181,21 @@ classdef surfer
                     epts = [0,0,1;0,1,0];
                     p_vert_mats{i} = koorn.pols(no_ip_uni(i,1), epts);
                 elseif(ip0 == 11)
-                    rnodes{i} = polytens.lege_nodes(no_ip_uni(i,1));
-                    rwts{i} = polytens.lege_weights(no_ip_uni(i,1));
-                    umats{i} = polytens.lege_vals2coefs(no_ip_uni(i,1),rnodes{i});
-                    [~, dumats{i}, dvmats{i}] = polytens.lege_ders(no_ip_uni(i,1), rnodes{i});
+                    rnodes{i} = polytens.lege.nodes(no_ip_uni(i,1));
+                    rwts{i} = polytens.lege.weights(no_ip_uni(i,1));
+                    umats{i} = polytens.lege.vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    [~, dumats{i}, dvmats{i}] = polytens.lege.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
                     epts = [-1,1,1,-1;-1,-1,1,1];
-                    p_vert_mats{i} = polytens.lege_pols(no_ip_uni(i,1), epts);
+                    p_vert_mats{i} = polytens.lege.pols(no_ip_uni(i,1), epts);
                 elseif(ip0 == 12)
-                    rnodes{i} = polytens.cheb_nodes(no_ip_uni(i,1));
-                    rwts{i} = polytens.cheb_weights(no_ip_uni(i,1));
-                    umats{i} = polytens.cheb_vals2coefs(no_ip_uni(i,1),rnodes{i});
-                    [~, dumats{i}, dvmats{i}] = polytens.cheb_ders(no_ip_uni(i,1), rnodes{i});
+                    rnodes{i} = polytens.cheb.nodes(no_ip_uni(i,1));
+                    rwts{i} = polytens.cheb.weights(no_ip_uni(i,1));
+                    umats{i} = polytens.cheb.vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    [~, dumats{i}, dvmats{i}] = polytens.cheb.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
                     epts = [-1,1,1,-1;-1,-1,1,1];
-                    p_vert_mats{i} = polytens.cheb_pols(no_ip_uni(i,1), epts);
+                    p_vert_mats{i} = polytens.cheb.pols(no_ip_uni(i,1), epts);
                 else
                     fprintf('Invalid type of patch, exiting\n');
                     return

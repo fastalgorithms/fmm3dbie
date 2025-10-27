@@ -28,8 +28,8 @@ x2 = eval * dom.x{5} * eval.';
 xcoeffs = surfacefun.vals2coeffs(dom.x);
 xcoeffs{5};
 
-uvs = polytens.cheb_nodes(norder,2);
-umat = polytens.cheb_vals2coefs(norder,uvs);
+uvs = polytens.cheb.nodes(norder,2);
+umat = polytens.cheb.vals2coefs(norder,uvs);
 xuse = dom.x{5}';
 xuse = xuse(:);
 xcoeffs2 = umat*xuse;
@@ -41,8 +41,8 @@ xcoeffs2test = xcoeffs2';
 fprintf('error in vals to coefs=%d\n',norm(xcoeffs2test-xcoeffs{5}));
 
 
-uvs2 = polytens.lege_nodes(n2-1);
-vmat = polytens.cheb_coefs2vals(norder,uvs2);
+uvs2 = polytens.lege.nodes(n2-1);
+vmat = polytens.cheb.coefs2vals(norder,uvs2);
 
 xuse = xcoeffs2;
 xuse = xuse(:);
