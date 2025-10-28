@@ -99,11 +99,11 @@ function Q = get_quadrature_cors(S, eps, ipars,dpars,zpars, fort_quad_handle, ke
     iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
     nquad = iquad(nnz+1)-1;
 
-    % get quadratures
+    %% get quadratures
     iquadtype = 1;
     wnear = fort_quad_handle(npatches,norders,ixyzs, ...
           iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
-          row_ptr,col_ind,iquad,rfac0,targinfo,nquad);
+          row_ptr,col_ind,iquad,rfac0,targinfo,nquad,ipars,dpars,zpars);
 
     %% tidy up
     Q = [];
