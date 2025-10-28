@@ -5328,3 +5328,69 @@ end
 %
 %
 %
+@ src/get_rfacs.m
+function [rfac, rfac0] = get_rfacs(norder_avg, iptype_avg)
+% get multiple of centroid radius that defines the nearfield
+    rfac = 0;
+    rfac0 = 0;
+    # FORTRAN get_rfacs(int[1] norder_avg, int[1] iptype_avg, inout double[1] rfac, inout double[1] rfac0);
+end
+
+@ src/get_centroid_rads.m
+function [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
+      srccoefs)
+% get the radius of each patch
+    n3 = 3;
+    [n9,~] = size(srccoefs);
+    cms = zeros(3,npatches);
+    rads = zeros(npatches,1);
+    npatp1 = npatches+1;
+
+    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npatp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+end
+
+@ src/findnearmem.m
+function nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg)
+% find the number of near field points
+    nnz = 0;
+    n3 = 3;
+
+    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+end
+
+@ src/findnear.m
+function [row_ptr, col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz)
+% for each target, find the nearby patches.
+% col_ind(row_ptr(i)):(col_ind(row_ptr(i+1))-1) are the indices of patches near target i
+    row_ptr = zeros(ntarg+1,1);
+    col_ind = zeros(nnz,1);
+    n3 = 3;
+
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind);
+end
+
+@ src/get_iquad_rsc.m
+function iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind)
+% get location in wnear_ij array where quadrature for col_ind(i) starts for a single kernel. 
+    iquad = zeros(nnz+1,1);
+    npp1 = npatches+1;
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+end
+
+
+@ src/rsc_to_csc.m
+function [col_ptr, row_ind, iper] = rsc_to_csc(npatches,ntarg,row_ptr,col_ind,nnz)
+% reorder rsc format to csc format
+% row_ind(col_ptr(i)):(row_ind(col_ptr(i+1))-1) are the indices of targets near patch i
+
+    col_ptr = zeros(npatches+1,1);
+    row_ind = zeros(nnz,1);
+    iper = zeros(nnz,1);
+    npatp1 = npatches+1;
+    # FORTRAN rsc_to_csc(int[1] npatches, int[1] ntarg, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, inout int[npatp1] col_ptr, inout int[nnz] row_ind, inout int[nnz] iper); 
+        
+end
