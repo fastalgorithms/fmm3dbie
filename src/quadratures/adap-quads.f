@@ -1232,8 +1232,7 @@ c
 c------------------
 c  This subroutine evaluates the integral of an integral
 c  operator at a target on the interior of a triangluar patch 
-c  using the generalized
-c  Gaussian quadratures developed by Bremer and Gimbutas.
+c  using adaptive integration
 c
 c  The quadrature currently cannot handle targets on the boundary
 c  of the triangle

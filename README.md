@@ -38,14 +38,12 @@ fmm3dbie team
 * Vladimir Rokhlin
 
 
-James Bremer provided generalized Gaussian quadrature rules
-(`src/quadratures/ggq-self-quadrouts.f`, `src/quadratures/ggq-selfquad.f`,
-and all files in `src/quadratures/ggq-self-quads/`). 
-
 Zydrunas Gimbutas provided the high order quadrature rules
 for integrating smooth functions `src/tria_routs/triasymq.f`, 
 `src/tria_routs/koorn-uvs-dat.txt`, `src/tria_routs/koorn-wts-dat.txt`,
-and, `src/quad_routs/squarearbq.f`; and also provided `src/common/dotcross3d.f`
+and, `src/quad_routs/squarearbq.f`; provided `src/common/dotcross3d.f`;
+and also provided all the quadrature nodes and weights in
+`src/quadratures/ggq-self-quad`
 
 References
 ============
