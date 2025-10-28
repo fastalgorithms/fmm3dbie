@@ -59,7 +59,7 @@ classdef surfer
 %                              representation
 %   rotate(obj, eul)         - rotate surface based on euler angles
 %   scale(obj, sf)           - scale object
-%   interpolate_dens(obj,...)- interpolate density to uv_targs and
+%   interpolate_data(obj,...)- interpolate density to uv_targs and
 %                              patch_ids
 %   translate(obj, r)        - translate object
 %   merge([array of objs])   - merge an array of surface objects
@@ -326,7 +326,7 @@ classdef surfer
          a = area(obj);
          [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(obj);
          [objout,varargout] = oversample(obj,novers);
-         dens_int = interpolate_dens(obj, dens, ipatch_ids, uvs_targ);
+         dens_int = interpolate_data(obj, dens, ipatch_ids, uvs_targ);
          [objout,varargout] = affine_transf(obj,mat,shift);
          [varargout] = scatter(obj,varargin);
          [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear);
