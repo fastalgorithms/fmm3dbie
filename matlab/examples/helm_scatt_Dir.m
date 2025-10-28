@@ -1,4 +1,4 @@
-% example of acoustic sound-hard (Dirichet BC) scattering from ellipsoid
+% example of acoustic sound-soft (Dirichet BC) scattering from ellipsoid
 % Barnett 6/7/24
 clear; format long g
 
