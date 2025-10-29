@@ -1,4 +1,4 @@
-function [coefs] = vals2coefs(obj,vals)
+function [coefs] = vals2coefs(obj, vals)
 % VALS2COEFS  convert values to coeffs on given surfer object
 %
 % [coefs] = vals2coefs(S,vals) returns a concatenated array of poly coeffs of
@@ -13,27 +13,14 @@ function [coefs] = vals2coefs(obj,vals)
     npatches = obj.npatches;
     npts = obj.npts;
     
-    vals_in = vals;
     if size(vals,1) == npts
+        ift = 0;
     elseif size(vals,2) == npts
+       ift = 1;
        vals = vals.';
     else
         error("VALS2COEFS:error in size");
-        coefs = [];
-        return
     end
-    
-    ikrn = find(obj.iptype == 1);
-    ileg = find(obj.iptype == 11);
-    iche = find(obj.iptype == 12);
-
-%%%%%%%%%%%%%%
-%       .   .   .   first the koornwinder
-
-    nords = obj.norders(ikrn);
-
-
-%%%%%%%%%%%%%%
 
     ntmp = zeros(npatches,2);
     ntmp(:,1) = obj.norders;
@@ -66,7 +53,7 @@ function [coefs] = vals2coefs(obj,vals)
         cftmp = umats{i}*reshape(vals(itot,:),npp,[]);
         coefs(itot,:) = reshape(cftmp,[],size(vals,2));
     end
-    
-    coefs = reshape(coefs, size(vals_in));
-    
+    if ift
+        coefs = coefs.';
+    end 
 end
