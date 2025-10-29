@@ -64,15 +64,15 @@ function [objout,varargout] = oversample(obj,nover)
                 
             
         elseif(iptype == 11)
-            rnodes = polytens.lege_nodes(norder);
-            rnodes_over = polytens.lege_nodes(nover);
-            vmats{i} = polytens.lege_coefs2vals(norder,rnodes_over);
-            umats{i} = polytens.lege_vals2coefs(norder,rnodes);
+            rnodes = polytens.lege.nodes(norder);
+            rnodes_over = polytens.lege.nodes(nover);
+            vmats{i} = polytens.lege.coefs2vals(norder,rnodes_over);
+            umats{i} = polytens.lege.vals2coefs(norder,rnodes);
         elseif(iptype == 12)
-            rnodes = polytens.cheb_nodes(norder);
-            rnodes_over = polytens.cheb_nodes(nover);
-            vmats{i} = polytens.cheb_coefs2vals(norder,rnodes_over);
-            umats{i} = polytens.cheb_vals2coefs(norder,rnodes);
+            rnodes = polytens.cheb.nodes(norder);
+            rnodes_over = polytens.cheb.nodes(nover);
+            vmats{i} = polytens.cheb.coefs2vals(norder,rnodes_over);
+            umats{i} = polytens.cheb.vals2coefs(norder,rnodes);
         end
         if(norder>nover)
             [lia,iindb] = ismembertol(rnodes_over',rnodes',1e-7,'ByRows',true);

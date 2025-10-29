@@ -1,4 +1,4 @@
-function [p,dersu,dersv] = cheb_pols(norder,uv)
+function [p,dersu,dersv] = ders(norder,uv)
    [~,m] = size(uv);
    chebpols_u = zeros(m,norder+1);
    chebpols_v = zeros(m,norder+1);

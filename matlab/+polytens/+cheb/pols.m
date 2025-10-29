@@ -1,4 +1,4 @@
-function p = cheb_pols(norder,uv)
+function p = pols(norder,uv)
    [~,m] = size(uv);
    chebpols_u = zeros(m,norder+1);
    chebpols_v = zeros(m,norder+1);

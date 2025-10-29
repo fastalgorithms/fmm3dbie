@@ -7,13 +7,13 @@ dfdv = @(u,v) -4.1*sin(3.2*u + 4.1*v);
 
 %% Legendre tests
 norder = 14;
-rnodes = polytens.lege_nodes(norder);
-rwts = polytens.lege_weights(norder);
+rnodes = polytens.lege.nodes(norder);
+rwts = polytens.lege.weights(norder);
 plot(rnodes(1,:),rnodes(2,:),'kx');
 
 
-umat = polytens.lege_vals2coefs(norder,rnodes);
-vmat = polytens.lege_coefs2vals(norder,rnodes);
+umat = polytens.lege.vals2coefs(norder,rnodes);
+vmat = polytens.lege.coefs2vals(norder,rnodes);
 
 Q = integral2(f,-1,1,-1,1);
 fvals = f(rnodes(1,:),rnodes(2,:));
@@ -28,7 +28,7 @@ semilogy(abs(fcoefs),'k.');
 uvtest = zeros(2,1);
 uvtest(1) = 0.3;
 uvtest(2) = 0.4;
-pp = polytens.lege_pols(norder,uvtest);
+pp = polytens.lege.pols(norder,uvtest);
 
 fex = f(uvtest(1),uvtest(2));
 ftest = fcoefs.'*pp;
@@ -36,7 +36,7 @@ rerr = norm(ftest-fex)/norm(fex);
 fprintf('Error in interpolant (legendre)=%d\n',rerr);
 
 % Now do the derivatives test
-[pp, dersu, dersv] = polytens.lege_ders(norder, uvtest);
+[pp, dersu, dersv] = polytens.lege.ders(norder, uvtest);
 ftest_u = fcoefs.'*dersu;
 dfduex = dfdu(uvtest(1), uvtest(2));
 rerr = norm(ftest_u-dfduex)/norm(dfduex);
@@ -49,13 +49,13 @@ fprintf('Error in interpolant of v derivative (legendre)=%d\n',rerr)
 
 %% Chebyshev tests
 norder = 14;
-rnodes = polytens.cheb_nodes(norder);
-rwts = polytens.cheb_weights(norder);
+rnodes = polytens.cheb.nodes(norder);
+rwts = polytens.cheb.weights(norder);
 plot(rnodes(1,:),rnodes(2,:),'kx');
 
 
-umat = polytens.cheb_vals2coefs(norder,rnodes);
-vmat = polytens.cheb_coefs2vals(norder,rnodes);
+umat = polytens.cheb.vals2coefs(norder,rnodes);
+vmat = polytens.cheb.coefs2vals(norder,rnodes);
 
 Q = integral2(f,-1,1,-1,1);
 fvals = f(rnodes(1,:),rnodes(2,:));
@@ -70,7 +70,7 @@ semilogy(abs(fcoefs),'k.');
 uvtest = zeros(2,1);
 uvtest(1) = 0.3;
 uvtest(2) = 0.4;
-pp = polytens.cheb_pols(norder,uvtest);
+pp = polytens.cheb.pols(norder,uvtest);
 
 fex = f(uvtest(1),uvtest(2));
 ftest = fcoefs.'*pp;
@@ -79,7 +79,7 @@ fprintf('Error in interpolant (cheb)=%d\n',rerr);
 
 
 % Now do the derivatives test
-[pp, dersu, dersv] = polytens.cheb_ders(norder, uvtest);
+[pp, dersu, dersv] = polytens.cheb.ders(norder, uvtest);
 ftest_u = fcoefs.'*dersu;
 dfduex = dfdu(uvtest(1), uvtest(2));
 rerr = norm(ftest_u-dfduex)/norm(dfduex);
