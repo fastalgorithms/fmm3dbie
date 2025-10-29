@@ -146,7 +146,7 @@ KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 
 # Quadrature wrappers
 QUAD = src/quadratures
-QOBJS = $(QUAD)/far_field_routs.o \
+QOBJS = $(QUAD)/far_field_routs.o $(QUAD)/quads-by-str.o \
 	$(QUAD)/ggq-selfquad-routs.o $(QUAD)/ggq-quads.o \
 	$(QUAD)/ggq-selfquad.o $(QUAD)/adap-quads.o \
 	$(QUAD)/near_field_routs.o $(QUAD)/near_quad_sub.o

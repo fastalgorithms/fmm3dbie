@@ -1,13 +1,7 @@
+c  This file contains user callable routines which compute 
+c  near field quadratures for compact/pv/hypersingular kernels.
 c
-c
-c
-c
-c     This file has the following user callable routines
-c
-c        ?getnearquad_ggq_guru - guru interface for 
-c         computing near field quadrature for a compact/pv kernel
-c        
-c
+c        ?getnearquad_ggq_guru - function handles specified
 c         z - complex
 c         d - double precision
 c
@@ -20,6 +14,7 @@ c      and storing the appropriate nodes and weights and then
 c      accessing them as needed in loop
 c
 c
+
 
       subroutine zgetnearquad_ggq_guru(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targvals,
