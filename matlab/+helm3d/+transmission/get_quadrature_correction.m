@@ -147,7 +147,7 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
     
 
     cms = S.cms;
-    rads = S.rads 
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;
