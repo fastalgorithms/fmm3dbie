@@ -399,7 +399,7 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   nfar = nfars(iistart)
   call get_npols(iptype,nfar,npolsf)
 
-  call get_disc_nodes_wts(nfar,npolsf,uvs,wts)
+  call get_disc_nodes_wts(nfar,npolsf,iptype,uvs,wts)
 
 
   do i=1,npolsf

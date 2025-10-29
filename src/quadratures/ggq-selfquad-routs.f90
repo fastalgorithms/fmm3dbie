@@ -512,6 +512,13 @@
       implicit none
       integer norder, nr
       real *8 xs(*), ws(*)
+
+      if (norder.gt.24) then
+        print *, "no quadrautres found in rquads_rlogr_rinv"
+        print *, "returning without any quadratures"
+        nr = 0
+        return
+      endif
       
       INCLUDE 'ggq-self-quads/rlogr_rinv_quads.txt'
       nr = norder
