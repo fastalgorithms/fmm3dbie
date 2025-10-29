@@ -84,7 +84,7 @@
       real *8 d, rtmp1, rtmp2, vtmp(2)
       real *8 r, w, rcut, rcmin, t, tw, dd 
       integer i, j, k, l, nq1, nlege, ifwhts, nthet, iquad 
-      real *8 xr(100), wr(100), pi, xtmp, ytmp
+      real *8 xr(150), wr(150), pi, xtmp, ytmp
       integer nr, nr0
       integer ier0
       data pi/3.14159265358979323846264338327950288d0/
@@ -347,7 +347,7 @@
       real *8 rcut_scaled, r, theta
       integer iquad, ier0
       integer ifreflect, irad, nr, nr0, nt, i, j, it, istart, ir
-      real *8 xr(100), wr(100), xt(100), wt(100)
+      real *8 xr(200), wr(200), xt(200), wt(200)
       real *8 xtmp, ytmp
       real *8 ct, st, t, twht, rwht, ruse, rsc, rr2, rl
       
@@ -431,6 +431,7 @@
         print *, "Returning without returning self quadrature"
         return
       endif
+
 
 !
 !
@@ -656,7 +657,7 @@
       integer nn(25,25),nrs,nts
       integer i
 
-      eps = 1.0d-12
+      eps = 1.0d-14
 
       if(irad.lt.1.or.irad.gt.9) then
         call prinf('invalid parameter irad*',i,0)
