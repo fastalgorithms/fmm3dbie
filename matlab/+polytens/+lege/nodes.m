@@ -1,4 +1,4 @@
-function xvals = lege_nodes(norder)
+function xvals = nodes(norder)
     [x] = polytens.lege.pts(norder+1);
     [yy,xx] = meshgrid(x);
     xx = xx(:);

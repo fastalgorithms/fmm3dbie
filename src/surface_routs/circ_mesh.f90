@@ -428,6 +428,8 @@
       real *8 skel(3,3,2*n), v1(2), v2(2), v3(2), v4(2)
       real *8, allocatable :: skeltmp(:,:,:)
       integer i, j, k
+
+     
       
       allocate(skeltmp(3,3,n))
 
@@ -451,7 +453,9 @@
          v3(1) = v1(1) + dx
          v3(2) = v1(2) + dy
 
-         if (v1(1) < 0.5d0) then
+
+         if ((v1(1).ge.0.5d0.and.v1(2).le.0.5d0).or. &
+           (v1(1).ge.0.5d0.and.v1(2).le.0.5d0)) then
            skel(1:2,1,2*i-1) = v1(1:2)
            skel(1:2,2,2*i-1) = v2(1:2)
            skel(1:2,3,2*i-1) = v3(1:2)

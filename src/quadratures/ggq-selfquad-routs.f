@@ -102,9 +102,21 @@ c
 
           x2 = verts(1,ivn)
           y2 = verts(2,ivn)
-          call raddiag0(irad,x1,y1,x2,y2,nquad1,xs(istart),ys(istart),
+c
+c  test if the points are collinear, then do nothing
+c
+          xmeas = 1.0d0
+          if(abs(x1).gt.abs(y1).and.abs(x2).gt.abs(y2)) then
+            xmeas = abs(y1/x1 - y2/x2)
+          elseif(abs(x1).lt.abs(y1).and.abs(x2).lt.abs(y2)) then
+            xmeas = abs(x1/y1 - x2/y2) 
+          endif
+
+          if(xmeas.ge.1.0d-8) then
+            call raddiag0(irad,x1,y1,x2,y2,nquad1,xs(istart),ys(istart),
      1        whts(istart))
-          istart = istart+nquad1
+            istart = istart+nquad1
+          endif
         enddo
         nquad = istart-1
 c

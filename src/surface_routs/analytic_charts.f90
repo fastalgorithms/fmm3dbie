@@ -48,15 +48,15 @@
 
 
 
-      subroutine xyz_tensor_fourier_eval(s, t, coefs, m, scales, &
+      subroutine xyz_tensor_fourier_eval(s, t, coefs, m, nfp, scales, &
         xyz, dxyzdst)
 !
 !  This subroutine is the chart for a double fourier toroidal
 !  discretization
 !
-!  \hat(x) = \sum_{i=1}^{2m+1} \sum_{j=1} x_{ij} b_{i}(s) b_{j}(t)
-!  \hat(y) = \sum_{i=1}^{2m+1} \sum_{j=1} y_{ij} b_{i}(s) b_{j}(t)
-!  \hat(z) = \sum_{i=1}^{2m+1} \sum_{j=1} z_{ij} b_{i}(s) b_{j}(t)
+!  \hat(x) = \sum_{i=1}^{2m+1} \sum_{j=1} x_{ij} b_{i}(s) b_{j}(nfp*t)
+!  \hat(y) = \sum_{i=1}^{2m+1} \sum_{j=1} y_{ij} b_{i}(s) b_{j}(nfp*t)
+!  \hat(z) = \sum_{i=1}^{2m+1} \sum_{j=1} z_{ij} b_{i}(s) b_{j}(nfp*t)
 !
 !  x(s,t) = (\hat(x) \cos(t) - \hat(y) \sin(t))*scales(1)
 !  y(s,t) = (\hat(x) \sin(t) + \hat(y) \cos(t))*scales(2)
@@ -68,6 +68,7 @@
       real *8 :: bis(2*m+1), bjs(2*m+1), bdis(2*m+1), bdjs(2*m+1)
       real *8 :: scales(3)
       complex *16 zmuls, zmult, ima, zfacs, zfact
+      integer nfp
       data ima/(0.0d0,1.0d0)/
 
       xyz(1) = 0
@@ -90,8 +91,11 @@
   
       ct = cos(t)
       st = sin(t)
+      
+      c4t = cos(nfp*t)
+      s4t = sin(nfp*t)
       zmuls = cos(s) + ima*sin(s)
-      zmult = ct + ima*st
+      zmult = c4t + ima*s4t
 
 
       zfacs = zmuls
@@ -113,8 +117,8 @@
         bjs(i+1) = real(zmult)
         bjs(i+1+m) = imag(zmult)
 
-        bdjs(i+1) = -i*imag(zmult)
-        bdjs(i+1+m) = i*real(zmult)
+        bdjs(i+1) = -nfp*i*imag(zmult)
+        bdjs(i+1+m) = nfp*i*real(zmult)
 
 
         zmuls = zmuls*zfacs

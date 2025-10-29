@@ -25,7 +25,7 @@ classdef surfer
 % Surfer properties:
 %  obj.iptype      - type of each patch
 %  obj.weights     - cell array of quadrature weight arrays per patch
-%  obj.norders     - exapnsion order p of each patch
+%  obj.norders     - expansion order p of each patch
 %  obj.npatches    - numbers of patches
 %  obj.npts        - total number of discretization points
 %  obj.srcccoefs   - cell array of orthogonal polynomial coefs of
@@ -59,6 +59,8 @@ classdef surfer
 %                              representation
 %   rotate(obj, eul)         - rotate surface based on euler angles
 %   scale(obj, sf)           - scale object
+%   interpolate_data(obj,...)- interpolate density to uv_targs and
+%                              patch_ids
 %   translate(obj, r)        - translate object
 %   merge([array of objs])   - merge an array of surface objects
 %   area(obj)                - compute the surface area of object
@@ -88,8 +90,13 @@ classdef surfer
         patch_id      % which patch each node belongs to (npts*1)
         uvs_targ      % (u,v) param coords of nodes within own patch (2,npts)
         mean_curv     % mean curvatures at nodes (npts*1)
-        ffform        % cell array of first fundamental forms at nodes (2,2,n)
-        ffforminv     % cell array of inverses of ffforms at nodes (2,2,n)
+        ffform        % cell array of first fundamental forms at nodes (2,2,npts)
+        ffforminv     % cell array of inverses of ffforms at nodes (2,2,npts)
+        aspect_ratio  % measure of local aspect ratio of patch, (npts,1);
+        patch_distortion % integral of aspect ratio
+        cms           % centroid location of patches (3,npatches)
+        rads          % radii of bounding (npatches,1)
+        end_pt_verts  % vertices of patch 
     end
     properties (Access = private)
         srcvals      % cell array of nodes vals of [r;du;dv;n] per patch
@@ -104,7 +111,7 @@ classdef surfer
     end
     
     methods
-    function obj = surfer(npatches,norders,srcvals,iptype)
+    function obj = surfer(npatches, norders, srcvals, iptype)
     % SURFER Create a surfer object.
     %
     % S = surfer(npatches,norders,srcvals,iptype) creates a surfer object
@@ -129,10 +136,11 @@ classdef surfer
             obj.srcvals = cell(npatches,1);
             obj.srccoefs = cell(npatches,1);
             obj.weights = cell(npatches,1);
+            obj.end_pt_verts = cell(npatches,1);
             if (nargin == 3)
                 obj.iptype = ones(npatches,1);
             else
-                if(length(iptype)==1)
+                if isscalar(iptype)
                     obj.iptype = iptype*ones(npatches,1);
                 elseif(length(iptype)==npatches)
                     obj.iptype = iptype;
@@ -143,8 +151,7 @@ classdef surfer
                 
             end
             
-            if(length(norders)==1)
-                
+            if isscalar(norders)
                 obj.norders = ones(npatches,1)*norders;
             elseif(length(norders) == npatches)
                 obj.norders = norders;
@@ -165,6 +172,8 @@ classdef surfer
             npols = cell(nuni,1);
             dumats = cell(nuni,1);
             dvmats = cell(nuni,1);
+            % matrices for interpolating to patch vertices
+            p_vert_mats = cell(nuni,1); 
             for i=1:nuni
                 ip0 = no_ip_uni(i,2);
                 if(ip0 == 1)
@@ -173,18 +182,24 @@ classdef surfer
                     umats{i} = koorn.vals2coefs(no_ip_uni(i,1),rnodes{i});
                     [~, dumats{i}, dvmats{i}] = koorn.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
-                elseif(ip0==11)
-                    rnodes{i} = polytens.lege_nodes(no_ip_uni(i,1));
-                    rwts{i} = polytens.lege_weights(no_ip_uni(i,1));
-                    umats{i} = polytens.lege_vals2coefs(no_ip_uni(i,1),rnodes{i});
-                    [~, dumats{i}, dvmats{i}] = polytens.lege_ders(no_ip_uni(i,1), rnodes{i});
+                    epts = [0,0,1;0,1,0];
+                    p_vert_mats{i} = koorn.pols(no_ip_uni(i,1), epts);
+                elseif(ip0 == 11)
+                    rnodes{i} = polytens.lege.nodes(no_ip_uni(i,1));
+                    rwts{i} = polytens.lege.weights(no_ip_uni(i,1));
+                    umats{i} = polytens.lege.vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    [~, dumats{i}, dvmats{i}] = polytens.lege.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
-                elseif(ip0==12)
-                    rnodes{i} = polytens.cheb_nodes(no_ip_uni(i,1));
-                    rwts{i} = polytens.cheb_weights(no_ip_uni(i,1));
-                    umats{i} = polytens.cheb_vals2coefs(no_ip_uni(i,1),rnodes{i});
-                    [~, dumats{i}, dvmats{i}] = polytens.cheb_ders(no_ip_uni(i,1), rnodes{i});
+                    epts = [-1,1,1,-1;-1,-1,1,1];
+                    p_vert_mats{i} = polytens.lege.pols(no_ip_uni(i,1), epts);
+                elseif(ip0 == 12)
+                    rnodes{i} = polytens.cheb.nodes(no_ip_uni(i,1));
+                    rwts{i} = polytens.cheb.weights(no_ip_uni(i,1));
+                    umats{i} = polytens.cheb.vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    [~, dumats{i}, dvmats{i}] = polytens.cheb.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
+                    epts = [-1,1,1,-1;-1,-1,1,1];
+                    p_vert_mats{i} = polytens.cheb.pols(no_ip_uni(i,1), epts);
                 else
                     fprintf('Invalid type of patch, exiting\n');
                     return
@@ -208,6 +223,11 @@ classdef surfer
             obj.mean_curv = zeros(obj.npts,1);
             obj.ffforminv = cell(npatches,1);
             obj.ffform = cell(npatches,1);
+            obj.aspect_ratio = zeros(obj.npts,1);
+            obj.patch_distortion = zeros(obj.npatches,1);
+            obj.cms = zeros(3,obj.npatches);
+            obj.rads = zeros(obj.npatches,1);
+            
             
             for i=1:npatches
                 iind = obj.ixyzs(i):(obj.ixyzs(i+1)-1);
@@ -218,6 +238,34 @@ classdef surfer
                 dv = obj.srcvals{i}(7:9,:);
                 dn = obj.srcvals{i}(10:12,:);
 
+
+                dunormsq = sum(du.*du,1);
+                dvnormsq = sum(dv.*dv,1);
+                duv = sum(du.*dv,1);
+         
+                ddinv = 1.0./(dunormsq.*dvnormsq - duv.*duv);
+                tt = sqrt((dunormsq - dvnormsq).^2 + 4.*(duv.^2));
+                
+                % compute aspect ratio
+                 
+                asp_rat = (dunormsq + dvnormsq + tt).'./ ...
+                          (dunormsq + dvnormsq - tt).';  
+                obj.aspect_ratio(iind) = asp_rat;
+
+                % compute first fundamental form and its inverse
+                ffform(1,1,iind) = dunormsq;
+                ffform(1,2,iind) = duv;
+                ffform(2,1,iind) = duv;
+                ffform(2,2,iind) = dvnormsq;
+                obj.ffform{i} = ffform(:,:,iind);
+
+                ffforminv(1,1,iind) = dvnormsq.*ddinv;
+                ffforminv(1,2,iind) = -duv.*ddinv;
+                ffforminv(2,1,iind) = -duv.*ddinv;
+                ffforminv(2,2,iind) = dunormsq.*ddinv;
+                obj.ffforminv{i} = ffforminv(:,:,iind);
+
+                % compute second fundamental form
                 dxucoefs = obj.srccoefs{i}(4:6,:);
                 dxvcoefs = obj.srccoefs{i}(7:9,:);
 
@@ -229,38 +277,37 @@ classdef surfer
                 M = dxuv(1,:).*dn(1,:) + dxuv(2,:).*dn(2,:) + dxuv(3,:).*dn(3,:);
                 N = dxvv(1,:).*dn(1,:) + dxvv(2,:).*dn(2,:) + dxvv(3,:).*dn(3,:);
 
-                dunormsq = sum(du.*du,1);
-                dvnormsq = sum(dv.*dv,1);
-                duv = sum(du.*dv,1);
-
-                ddinv = 1.0./(dunormsq.*dvnormsq - duv.*duv);
-
-                ffform(1,1,iind) = dunormsq;
-                ffform(1,2,iind) = duv;
-                ffform(2,1,iind) = duv;
-                ffform(2,2,iind) = dvnormsq;
-
                 sfform(1,1,iind) = L;
                 sfform(1,2,iind) = M;
                 sfform(2,1,iind) = M;
                 sfform(2,2,iind) = N;
-                
-                ffforminv(1,1,iind) = dvnormsq.*ddinv;
-                ffforminv(1,2,iind) = -duv.*ddinv;
-                ffforminv(2,1,iind) = -duv.*ddinv;
-                ffforminv(2,2,iind) = dunormsq.*ddinv;
 
                 % Mean curvature (LG-2MF+NE)/2(EG-F^2):
                 obj.mean_curv(iind) = -0.5*(L.*dvnormsq - ...
                                        2*M.*duv + dunormsq.*N).*ddinv;
 
-                obj.ffform{i} = ffform(:,:,iind);
-                obj.ffforminv{i} = ffforminv(:,:,iind);
+                % compute centroid and bounding sphere radii
+                everts = obj.srccoefs{i}(1:3,:)*p_vert_mats{iuse(i)};
+                obj.end_pt_verts{i} = everts;
+                obj.cms(1:3,i) = mean(everts, 2);
+
+                rr = sqrt((obj.cms(1,i) - everts(1,:)).^2 + ... 
+                          (obj.cms(2,i) - everts(2,:)).^2 + ...
+                          (obj.cms(3,i) - everts(3,:)).^2);
+                obj.rads(i) = max(rr);
+
+                
+                
+                
                 
                 da = vecnorm(cross(du,dv),2).*rwts{iuse(i)};
                 obj.weights{i} = da(:);      
                 obj.patch_id(iind) = i;
                 obj.uvs_targ(1:2,iind) = rnodes{iuse(i)}; 
+
+                rsum = sum(da(:));
+                rp = sum(da(:).*asp_rat);
+                obj.patch_distortion(i) = rp/rsum;
             end
             
             sv = [obj.srcvals{:}];
@@ -279,6 +326,7 @@ classdef surfer
          a = area(obj);
          [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(obj);
          [objout,varargout] = oversample(obj,novers);
+         dens_int = interpolate_data(obj, dens, ipatch_ids, uvs_targ);
          [objout,varargout] = affine_transf(obj,mat,shift);
          [varargout] = scatter(obj,varargin);
          [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear);

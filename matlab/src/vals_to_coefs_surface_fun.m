@@ -34,11 +34,11 @@ function [fcoefs] = vals_to_coefs_surface_fun(obj, f)
             rnodes = koorn.rv_nodes(norder);
             umats{i} = koorn.vals2coefs(norder,rnodes);  
         elseif(iptype == 11)
-            rnodes = polytens.lege_nodes(norder);
-            umats{i} = polytens.lege_vals2coefs(norder,rnodes);
+            rnodes = polytens.lege.nodes(norder);
+            umats{i} = polytens.lege.vals2coefs(norder,rnodes);
         elseif(iptype == 12)
-            rnodes = polytens.cheb_nodes(norder);
-            umats{i} = polytens.cheb_vals2coefs(norder,rnodes);
+            rnodes = polytens.cheb.nodes(norder);
+            umats{i} = polytens.cheb.vals2coefs(norder,rnodes);
         end
     end
 

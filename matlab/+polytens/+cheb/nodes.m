@@ -1,4 +1,4 @@
-function xvals = cheb_nodes(norder,kind)
+function xvals = nodes(norder,kind)
     kind0 = 1;
     if(nargin == 2)
         kind0 = kind;

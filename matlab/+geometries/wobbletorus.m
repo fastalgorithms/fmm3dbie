@@ -1,5 +1,5 @@
-function [S] = startorus(radii, nosc, scales, nuv, norder, iptype, iort)
-% STARTORUS Create discretized torus surfer deformed poloidal Fourier mode.
+function [S] = wobbletorus(radii, nosc, scales, nuv, norder, iptype)
+% STARTORUS Create discretized torus surfer deformed toroidal Fourier mode.
 %
 % Surface is parameterized by
 %
@@ -9,21 +9,19 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype, iort)
 %
 % u,v \in [0, 2\pi)^2, and
 %
-% \rho(u) = Rmajor + r(u)*cos(u)
+% \rho(u) = Rmajor +rwave*cos(nosc*v) + r(u)*cos(u)
 % z(u) = r(u)*sin(u)
 %
-% r(u) = rminor + rwave*cos(nosc*u)
+% r(u) = rminor;
 %
 %  Syntax
-%   S = geometries.startorus(radii)
-%   S = geometries.startorus(radii, nosc)
-%   S = geometries.startorus(radii, nosc, scales)
-%   S = geometries.startorus(radii, nosc, scales, nuv)
-%   S = geometries.startorus(radii, nosc, scales, nuv, norder)
-%   S = geometries.startorus(radii, nosc, scales, nuv, norder, iptype)
-%   S = geometries.startorus(radii, nosc, scales, nuv, norder, iptype, iort)
-%   If arguments nosc, scales, nuv, norder, iptype, and/or iort are empty,
-%   defaults are used 
+%   S = geometries.wobbletorus(radii)
+%   S = geometries.wobbletorus(radii, nosc)
+%   S = geometries.wobbletorus(radii, nosc, scales)
+%   S = geometries.wobbletorus(radii, nosc, scales, nuv)
+%   S = geometries.wobbletorus(radii, nosc, scales, nuv, norder)
+%   S = geometries.wobbletorus(radii, nosc, scales, nuv, norder, iptype)
+%   If arguments nosc, scales, nuv, norder, and/or iptype are empty, defaults are used 
 %
 %  Input arguments:
 %    * radii(3): radii of star shaped torus
@@ -48,15 +46,9 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype, iort)
 %                       product Gauss-Legendre nodes
 %        * iptype = 12, quadrangular patch discretized using tensor
 %                       product Chebyshev 
-%    * iort: (optional, 1)
-%         orientation vector, normals point in the unbounded region
-%         if iort = 1, and in the interior of the startorus otherwise
-%    
 % Example
-%   % create 8th-order GL-quad patch with 5-pointed star cross-section:
-%   S = geometries.startorus([1,0.5,0.05], 5, [], [], 8, 11)
-%
-% Note: rwave small seems to generate very large negative curvatures
+%   % create 8th-order GL-quad patch with 5-pointed star:
+%   S = geometries.wobbletorus([1,0.5,0.05], 5, [], [], 8, 11)
 %
   if nargin < 2 || isempty(nosc)
      nosc = 0;
@@ -78,35 +70,15 @@ function [S] = startorus(radii, nosc, scales, nuv, norder, iptype, iort)
     iptype = 1;
   end
 
-  if nargin < 7 || isempty(iort)
-     iort = -1;
-  else
-     if iort == 1
-        iort = -1;
-     else
-        iort = 1;
-     end
-  end
-
   m = nosc + 1;
   coefs = zeros(2*m+1, 2*m+1, 3);
 
   coefs(1,1,1) = radii(1);
   coefs(2,1,1) = radii(2);
-  coefs(2+nosc,1,1) = coefs(2+nosc,1,1) + radii(3)/2;
-  coefs(1+abs(nosc-1),1,1) = coefs(1+abs(nosc-1),1,1) + radii(3)/2;
-
+  coefs(1,1+nosc,1) =radii(3)/2;
   coefs(m+2,1,3) = radii(2);
-  coefs(2*m+1,1,3) = coefs(2*m+1,1,3) + radii(3)/2;
-
-  if nosc-1 > 0
-    coefs(m+1+nosc-1,1,3) = coefs(m+1+nosc-1,1,3) - radii(3)/2;
-  end
-
-  if nosc-1 < 0
-    coefs(m+1+abs(nosc-1),1,3) = coefs(m+1+abs(nosc-1),1,3) + radii(3)/2;
-  end
-
+  
+  iort = -1;
   nfp = 1;
 
   S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort, nuv, norder, iptype);

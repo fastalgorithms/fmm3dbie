@@ -204,7 +204,7 @@
       call get_patch_id_uvs(npatches, norders, ixyzs, iptype, npts, &
         ipatch_id, uvs_targ)
 
-      ipv=1
+      ipv = 1
       fker => l3d_sprime 
       call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals, &
