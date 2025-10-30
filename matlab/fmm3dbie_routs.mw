@@ -5328,19 +5328,6 @@ end
 %
 %
 %
-@ src/rsc_to_csc.m
-function [col_ptr, row_ind, iper] = rsc_to_csc(npatches,ntarg,row_ptr,col_ind,nnz)
-% reorder rsc format to csc format
-% row_ind(col_ptr(i)):(row_ind(col_ptr(i+1))-1) are the indices of targets near patch i
-
-    col_ptr = zeros(npatches+1,1);
-    row_ind = zeros(nnz,1);
-    iper = zeros(nnz,1);
-    npatp1 = npatches+1;
-    # FORTRAN rsc_to_csc(int[1] npatches, int[1] ntarg, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, inout int[npatp1] col_ptr, inout int[nnz] row_ind, inout int[nnz] iper); 
-        
-end
-
 @ src/getnear.m
 function [row_ptr, col_ind, iquad] = getnear(S, targinfo, rfac)
 %
