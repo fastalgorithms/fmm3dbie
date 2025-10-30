@@ -10,3 +10,4 @@ function [col_ptr, row_ind, iper] = rsc_to_csc(npatches,ntarg,row_ptr,col_ind,nn
 [col_ptr, row_ind, iper] = fmm3dbie_routs(mex_id_, npatches, ntarg, nnz, row_ptr, col_ind, col_ptr, row_ind, iper, 1, 1, 1, ntp1, nnz, npatp1, nnz, nnz);
         
 end
+
