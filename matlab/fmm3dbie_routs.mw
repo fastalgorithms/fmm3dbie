@@ -5351,7 +5351,7 @@ function [rsc] = getnear(S, targinfo, rfac)
 %    * S: surfer object, see README.md in matlab for details
 %    * targinfo: target info (optional) 
 %       targinfo.r = (3,nt) target locations
-%      targinfo = S if unspecified
+%       targinfo is set to S if unspecified
 %    * rfac: radius defining near neighborhood (optional)
 %        target t_{i} is close to patch \Gamma_{j} if 
 %        d(t_{i}, c_{j}) <= rfac*R_{j}
@@ -5381,8 +5381,10 @@ function [rsc] = getnear(S, targinfo, rfac)
     if nargin < 2
        targs = S.r;
     else
-       if isa(S, 'struct') || isa(S,'surfer')
-           targs = targinfo.r;
+        if isempty(targinfo)
+            targs = S.r;
+        elseif isa(S, 'struct') || isa(S,'surfer')
+            targs = targinfo.r;
         else
             targs = targinfo;
         end
