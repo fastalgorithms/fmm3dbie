@@ -5329,17 +5329,58 @@ end
 %
 %
 @ src/getnear.m
-function [row_ptr, col_ind, iquad] = getnear(S, targinfo, rfac)
+function [rsc] = getnear(S, targinfo, rfac)
 %
-%  getnear
-%    This subroutine returns the indices of the near quadrature corrections
+%  getnear(S, varargin)
+%
+%  Syntax: 
+%   [rsc] = getnear(S) 
+%   [rsc] = getnear(S, targinfo)
+%   [rsc] = getnear(S, targinfo, rfac)
+%
+%  This subroutine returns the row sparse compressed struct
+%  for near interactions between the surface S, and targets.
+%
+%  The row sparse compressed representation is a sparse format
+%  between target indices and patch indices of the surface. 
+%  It additionally includes an indexing array which points to where 
+%  quadrature corrections for interaction between target and patch
+%  are stored.
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info (optional) 
+%       targinfo.r = (3,nt) target locations
+%      targinfo = S if unspecified
+%    * rfac: radius defining near neighborhood (optional)
+%        target t_{i} is close to patch \Gamma_{j} if 
+%        d(t_{i}, c_{j}) <= rfac*R_{j}
+%        where c_{j} is the centroid of \Gamma_{j}, and 
+%        R_{j} is the radius of the bounding sphere
+%        centered at c_{j}
+%
+%  Output arguments:
+%    * rsc: row sparse compressed struct
+%       rsc.row_ptr: (nt+1,1)
+%         pointer to col_ind array where list of relevant source
+%         patches for target i starts
+%       rsc.col_ind: (nnz,1)
+%         list of source patches relevant for all targets,
+%         sorted by target number
+%       rsc.iquad: (nnz+1,1)
+%         iquad(i) is the location in quadrature correction array 
+%         where quadrature for interaction corresponding to
+%         col_ind(i) starts
+%      
+%    
+
     [~,~,norders,ixyzs,iptype,~] = extract_arrays(S);
     npatches = S.npatches;
     npts = S.npts;
 
     if nargin < 2
        targs = S.r;
-   else
+    else
        if isa(S, 'struct') || isa(S,'surfer')
            targs = targinfo.r;
         else
@@ -5350,9 +5391,14 @@ function [row_ptr, col_ind, iquad] = getnear(S, targinfo, rfac)
     ntarg = size(targs,2); 
 
     if nargin < 3
-        iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
-        norder_avg = floor(sum(norders)/(npatches+0.0d0));
-        
+        [iptype_c, iptype_n] = groupcounts(iptype);
+        [~, ind] = max(iptype_c);
+        iptype_avg = iptype_n(ind);
+
+        [norder_c, norder_n] = groupcounts(norders);
+        [~, ind] = max(norder_c);
+        norder_avg = norder_n(ind);
+
         % get nearfield definition
         rfac = 0;
         rfac0 = 0;
@@ -5380,5 +5426,10 @@ function [row_ptr, col_ind, iquad] = getnear(S, targinfo, rfac)
     iquad = zeros(nnz+1,1);
     npp1 = npatches+1;
     # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+    
+    rsc = [];
+    rsc.row_ptr = row_ptr;
+    rsc.col_ind = col_ind;
+    rsc.iquad = iquad;
 
 end
