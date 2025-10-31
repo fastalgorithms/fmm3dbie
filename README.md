@@ -37,8 +37,8 @@ fmm3dbie team
 * Libin Lu
 * Mike O'Neil
 * Manas Rachh
-* Felipe Vico
 * Vladimir Rokhlin
+* Felipe Vico
 
 
 References
