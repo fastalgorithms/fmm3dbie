@@ -12,6 +12,7 @@ function shape = shape_op(obj)
     iffrm(2,1,:) = -ffrm(2,1,:)./dffrm;
 
     shape_red = pmt(iffrm,ffrm2);
+    shape_red = pmt(shape_red,iffrm);
 
     du = obj.du;
     dv = obj.dv;
