@@ -1,4 +1,7 @@
 function Q = init_empty_quadrature_correction(targinfo,opts)
+    if nargin < 2
+        opts = [];
+    end
     Q = [];
     [~,ntarg] = size(targinfo.r);
     Q.targinfo = targinfo;

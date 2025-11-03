@@ -133,10 +133,12 @@ classdef surfer
 % This needs fixing particularly handling the varargin part, 
 % and also dealing with quad patches in the future
             obj.npatches = npatches;
-            obj.srcvals = cell(npatches,1);
-            obj.srccoefs = cell(npatches,1);
-            obj.weights = cell(npatches,1);
-            obj.end_pt_verts = cell(npatches,1);
+            
+            srcvals_cell = cell(npatches,1);
+            srccoefs_cell = cell(npatches,1);
+            wts_cell = cell(npatches,1);
+            end_pt_verts_cell = cell(npatches,1);
+
             if (nargin == 3)
                 obj.iptype = ones(npatches,1);
             else
@@ -220,9 +222,12 @@ classdef surfer
             ffform = zeros(2,2,obj.npts);
             sfform = zeros(2,2,obj.npts);
             ffforminv = zeros(2,2,obj.npts);
+            
             obj.mean_curv = zeros(obj.npts,1);
-            obj.ffforminv = cell(npatches,1);
-            obj.ffform = cell(npatches,1);
+            
+            
+            ffforminv_cell = cell(npatches,1);
+            ffform_cell = cell(npatches,1);
             obj.aspect_ratio = zeros(obj.npts,1);
             obj.patch_distortion = zeros(obj.npatches,1);
             obj.cms = zeros(3,obj.npatches);
@@ -231,12 +236,13 @@ classdef surfer
             
             for i=1:npatches
                 iind = obj.ixyzs(i):(obj.ixyzs(i+1)-1);
-                obj.srcvals{i} = srcvals(:,iind);
-                obj.srccoefs{i} = obj.srcvals{i}(1:9,:)*umats{iuse(i)}';
+                srcvals_cell{i} = srcvals(:,iind);
+                srccoefs_tmp = srcvals(1:9,iind)*umats{iuse(i)}';
+                srccoefs_cell{i} = srccoefs_tmp;
 
-                du = obj.srcvals{i}(4:6,:);
-                dv = obj.srcvals{i}(7:9,:);
-                dn = obj.srcvals{i}(10:12,:);
+                du = srcvals(4:6,iind);
+                dv = srcvals(7:9,iind);
+                dn = srcvals(10:12,iind);
 
 
                 dunormsq = sum(du.*du,1);
@@ -257,17 +263,17 @@ classdef surfer
                 ffform(1,2,iind) = duv;
                 ffform(2,1,iind) = duv;
                 ffform(2,2,iind) = dvnormsq;
-                obj.ffform{i} = ffform(:,:,iind);
+                ffform_cell{i} = ffform(:,:,iind);
 
                 ffforminv(1,1,iind) = dvnormsq.*ddinv;
                 ffforminv(1,2,iind) = -duv.*ddinv;
                 ffforminv(2,1,iind) = -duv.*ddinv;
                 ffforminv(2,2,iind) = dunormsq.*ddinv;
-                obj.ffforminv{i} = ffforminv(:,:,iind);
+                ffforminv_cell{i} = ffforminv(:,:,iind);
 
                 % compute second fundamental form
-                dxucoefs = obj.srccoefs{i}(4:6,:);
-                dxvcoefs = obj.srccoefs{i}(7:9,:);
+                dxucoefs = srccoefs_tmp(4:6,:);
+                dxvcoefs = srccoefs_tmp(7:9,:);
 
                 dxuu = dxucoefs*dumats{iuse(i)};
                 dxuv = 0.5*(dxucoefs*dvmats{iuse(i)} + dxvcoefs*dumats{iuse(i)});
@@ -287,21 +293,17 @@ classdef surfer
                                        2*M.*duv + dunormsq.*N).*ddinv;
 
                 % compute centroid and bounding sphere radii
-                everts = obj.srccoefs{i}(1:3,:)*p_vert_mats{iuse(i)};
-                obj.end_pt_verts{i} = everts;
+                everts = srccoefs_tmp(1:3,:)*p_vert_mats{iuse(i)};
+                end_pt_verts_cell{i} = everts;
                 obj.cms(1:3,i) = mean(everts, 2);
 
                 rr = sqrt((obj.cms(1,i) - everts(1,:)).^2 + ... 
                           (obj.cms(2,i) - everts(2,:)).^2 + ...
                           (obj.cms(3,i) - everts(3,:)).^2);
                 obj.rads(i) = max(rr);
-
-                
-                
-                
                 
                 da = vecnorm(cross(du,dv),2).*rwts{iuse(i)};
-                obj.weights{i} = da(:);      
+                wts_cell{i} = da(:);      
                 obj.patch_id(iind) = i;
                 obj.uvs_targ(1:2,iind) = rnodes{iuse(i)}; 
 
@@ -310,8 +312,8 @@ classdef surfer
                 obj.patch_distortion(i) = rp/rsum;
             end
             
-            sv = [obj.srcvals{:}];
-            obj.wts = cat(1,obj.weights{:});
+            sv = [srcvals_cell{:}];
+            obj.wts = cat(1,wts_cell{:});
             obj.r  = sv(1:3,:);
             obj.du = sv(4:6,:);
             obj.dv = sv(7:9,:);
@@ -319,6 +321,13 @@ classdef surfer
             obj.dru = obj.du./repmat(vecnorm(obj.du,2,1),[3,1]);
             drv = cross(obj.n,obj.du);
             obj.drv = drv./repmat(vecnorm(drv,2,1),[3,1]);
+
+            obj.srcvals = srcvals_cell;
+            obj.srccoefs = srccoefs_cell;
+            obj.weights = wts_cell;
+            obj.end_pt_verts = end_pt_verts_cell;
+            obj.ffforminv = ffforminv_cell;
+            obj.ffform = ffform_cell;
         end
         
         

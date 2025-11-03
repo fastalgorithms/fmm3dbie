@@ -94,7 +94,7 @@ for i=1:nuni
         rnodes = zeros(2,nuse);
         rnodes(1,:) = x(:);
         rnodes(2,:) = y(:);
-        pols{i} = polytens.lege_pols(norder, rnodes);
+        pols{i} = polytens.lege.pols(norder, rnodes);
         nstot{i} = nuse;
         T{i} = tri_quad;
     elseif ip0 == 12
@@ -102,7 +102,7 @@ for i=1:nuni
         rnodes = zeros(2,nuse);
         rnodes(1,:) = x(:);
         rnodes(2,:) = y(:);
-        pols{i} = polytens.cheb_pols(norder, rnodes);
+        pols{i} = polytens.cheb.pols(norder, rnodes);
         nstot{i} = nuse;
         T{i} = tri_quad;
     end
