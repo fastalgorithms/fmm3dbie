@@ -1,4 +1,4 @@
-function wts = cheb_weights(norder)
+function wts = weights(norder)
     [~,w] = polytens.cheb.pts(norder+1);
     wts = w'*w;
     wts = wts(:).'; 

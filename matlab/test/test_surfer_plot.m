@@ -1,7 +1,6 @@
 % tester for surfer plotting.
 % assumes pwd is the directory this script is in
 
-run ../startup.m
 close('all')
 B = surfer.load_from_file('../../geometries/sphere_768_o03.go3');
 figure

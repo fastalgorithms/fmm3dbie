@@ -1,4 +1,4 @@
-function p = lege_pols(norder,uv)
+function p = pols(norder,uv)
    [~,m] = size(uv);
    legpols_u = zeros(m,norder+1);
    legpols_v = zeros(m,norder+1);

@@ -112,6 +112,7 @@ subroutine get_far_order(eps,npatches,norders,ixyzs,iptype,cms,rads,&
   integer, allocatable :: col_ptr(:),row_ind(:),iper(:)
 
   real *8, allocatable :: targtmp(:,:)
+  integer nmax
   real *8, allocatable :: uvs(:,:),wts(:),umat(:,:),vmat(:,:)
   character *1 transa,transb
 
@@ -120,18 +121,28 @@ subroutine get_far_order(eps,npatches,norders,ixyzs,iptype,cms,rads,&
   call rsc_to_csc(npatches, ntarg, nnz, row_ptr, col_ind, col_ptr, &
     row_ind, iper)
 
-  ixyzso(1) = 1
+  nmax = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, ntmp) &
+!$OMP REDUCTION(max:nmax)
+  do i=1,npatches
+    ntmp = col_ptr(i+1) - col_ptr(i)
+    if(ntmp.gt.nmax) nmax = ntmp
+  enddo
+!$OMP END PARALLEL DO 
+  allocate(targtmp(ndtarg,nmax))
+    
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, npols) &
+!$OMP PRIVATE (istart, norder, ntarg0, targtmp, j, jpt) &
+!$OMP PRIVATE(ii, l, rad0, npolsf)
   do i=1,npatches
     npols = ixyzs(i+1)-ixyzs(i)
     istart = ixyzs(i)
     norder = norders(i)
-
-
 !
 !      gather the targets
 !
     ntarg0 = col_ptr(i+1)-col_ptr(i)
-    allocate(targtmp(ndtarg,ntarg0))
 
     ii = 0
     do j=col_ptr(i),col_ptr(i+1)-1
@@ -143,16 +154,18 @@ subroutine get_far_order(eps,npatches,norders,ixyzs,iptype,cms,rads,&
     enddo
 
     rad0 = rfac*rads(i)
-
-
-
       
-     call get_far_order_guru(eps,norder,npols,iptype(i),cms(1,i),rad0,&
+    call get_far_order_guru(eps,norder,npols,iptype(i),cms(1,i),rad0,&
         srccoefs(1,istart),ikerorder,zk, &
         ndtarg,ntarg0,targtmp,nfars(i),npolsf)
-    ixyzso(i+1) = ixyzso(i)+npolsf
-    deallocate(targtmp)
 
+  enddo
+!$OMP END PARALLEL DO
+
+  ixyzso(1) = 1
+  do i=1,npatches
+    call get_npols(iptype(i), nfars(i), npolsf)
+    ixyzso(i+1) = ixyzso(i) + npolsf
   enddo
 end subroutine get_far_order
 
@@ -399,7 +412,7 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   nfar = nfars(iistart)
   call get_npols(iptype,nfar,npolsf)
 
-  call get_disc_nodes_wts(nfar,npolsf,uvs,wts)
+  call get_disc_nodes_wts(nfar,npolsf,iptype,uvs,wts)
 
 
   do i=1,npolsf

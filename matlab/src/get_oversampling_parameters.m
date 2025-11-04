@@ -1,4 +1,4 @@
-function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
+function [novers, varargout] = get_oversampling_parameters(S, Q, eps)
 %
 %  get_oversampling_parameters
 %     subroutine to estimate the oversampling paramters for a given

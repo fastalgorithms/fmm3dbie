@@ -18,15 +18,14 @@ function varargout = plot(obj, varargin)
 %
 % See also TRISURF
   
-[srcvals,srccoefs,~,~,~,~] = extract_arrays(obj);
 f = obj.mean_curv.';
-fcoefs = vals_to_coefs_surface_fun(obj, f);
+fcoefs = obj.vals2coefs(f);
 istart = 1;
 if nargin > 1
     if isnumeric(varargin{1})
         if length(varargin{1}(:)) == obj.npts
             f = reshape(varargin{1}, [1, obj.npts]);
-            fcoefs = vals_to_coefs_surface_fun(obj, f);
+            fcoefs = obj.vals2coefs(f);
             istart = 2;
         elseif length(varargin{1}(:)) == obj.npatches
             fuse = reshape(varargin{1}, [1, obj.npatches]);
@@ -36,7 +35,7 @@ if nargin > 1
                 i2 = obj.ixyzs(i+1)-1;
                 f(i1:i2) = fuse(i);
             end
-            fcoefs = vals_to_coefs_surface_fun(obj, f);
+            fcoefs = obj.vals2coefs(f);
             istart = 2;
         else
             error('plot array does not have length = npts or npatches');
@@ -95,7 +94,7 @@ for i=1:nuni
         rnodes = zeros(2,nuse);
         rnodes(1,:) = x(:);
         rnodes(2,:) = y(:);
-        pols{i} = polytens.lege_pols(norder, rnodes);
+        pols{i} = polytens.lege.pols(norder, rnodes);
         nstot{i} = nuse;
         T{i} = tri_quad;
     elseif ip0 == 12
@@ -103,7 +102,7 @@ for i=1:nuni
         rnodes = zeros(2,nuse);
         rnodes(1,:) = x(:);
         rnodes(2,:) = y(:);
-        pols{i} = polytens.cheb_pols(norder, rnodes);
+        pols{i} = polytens.cheb.pols(norder, rnodes);
         nstot{i} = nuse;
         T{i} = tri_quad;
     end

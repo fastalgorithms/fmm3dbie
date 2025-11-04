@@ -1,4 +1,4 @@
-function [coefs] = vals2coefs(obj,vals)
+function [coefs] = vals2coefs(obj, vals)
 % VALS2COEFS  convert values to coeffs on given surfer object
 %
 % [coefs] = vals2coefs(S,vals) returns a concatenated array of poly coeffs of
@@ -13,27 +13,14 @@ function [coefs] = vals2coefs(obj,vals)
     npatches = obj.npatches;
     npts = obj.npts;
     
-    vals_in = vals;
     if size(vals,1) == npts
+        ift = 0;
     elseif size(vals,2) == npts
+       ift = 1;
        vals = vals.';
     else
         error("VALS2COEFS:error in size");
-        coefs = [];
-        return
     end
-    
-    ikrn = find(obj.iptype == 1);
-    ileg = find(obj.iptype == 11);
-    iche = find(obj.iptype == 12);
-
-%%%%%%%%%%%%%%
-%       .   .   .   first the koornwinder
-
-    nords = obj.norders(ikrn);
-
-
-%%%%%%%%%%%%%%
 
     ntmp = zeros(npatches,2);
     ntmp(:,1) = obj.norders;
@@ -52,11 +39,11 @@ function [coefs] = vals2coefs(obj,vals)
             rnodes = koorn.rv_nodes(norder);
             umats{i} = koorn.vals2coefs(norder,rnodes);       
         elseif(iptype == 11)
-            rnodes = polytens.lege_nodes(norder);
-            umats{i} = polytens.lege_vals2coefs(norder,rnodes);
+            rnodes = polytens.lege.nodes(norder);
+            umats{i} = polytens.lege.vals2coefs(norder,rnodes);
         elseif(iptype == 12)
-            rnodes = polytens.cheb_nodes(norder);
-            umats{i} = polytens.cheb_vals2coefs(norder,rnodes);
+            rnodes = polytens.cheb.nodes(norder);
+            umats{i} = polytens.cheb.vals2coefs(norder,rnodes);
         end
         npp  = size(umats{i},2);
         inds = (intmp == i);
@@ -66,7 +53,7 @@ function [coefs] = vals2coefs(obj,vals)
         cftmp = umats{i}*reshape(vals(itot,:),npp,[]);
         coefs(itot,:) = reshape(cftmp,[],size(vals,2));
     end
-    
-    coefs = reshape(coefs, size(vals_in));
-    
+    if ift
+        coefs = coefs.';
+    end 
 end

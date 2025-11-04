@@ -1,4 +1,4 @@
-function [p, dersu, dersv] = lege_ders(norder,uv)
+function [p, dersu, dersv] = ders(norder,uv)
    [~,m] = size(uv);
 
    legpols_u = zeros(m,norder+1);
