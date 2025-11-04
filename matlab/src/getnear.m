@@ -37,9 +37,14 @@ function [rsc] = getnear(S, targinfo, rfac)
 %         list of source patches relevant for all targets,
 %         sorted by target number
 %       rsc.iquad: (nnz+1,1)
+%         The rsc format stores relevant
+%         indices going from patches on the surface to the target
+%         while the quadrature corrections are sparse corrections
+%         from discretization points on the surface to the target. 
 %         iquad(i) is the location in quadrature correction array 
 %         where quadrature for interaction corresponding to
-%         col_ind(i) starts
+%         col_ind(i) starts. 
+%         
 %      
 %    
 
