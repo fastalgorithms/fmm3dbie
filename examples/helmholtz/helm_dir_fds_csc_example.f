@@ -223,7 +223,7 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
       enddo
 
 
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,
+      call helm_comb_dir_eval(npatches,norders,ixyzs,
      1  iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,ipatch_id,
      2  uvs_targ,eps,zpars,rhs,sigma2)
 
