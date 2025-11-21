@@ -29,6 +29,20 @@ rhs = -uinc;
 fprintf('solving...\n'); tic
 dens = helm3d.solver(S, 'dir', rhs, tol, k);         % solve (uses CFIE)
 toc, fprintf('eval soln...\n'); tic
+
+%% Evaluate solution densely
+P = zeros(S.npts,1);
+opts_quad = [];
+opts_quad.format='sparse';
+rep_pars=  [-1j*k, 1];
+
+Q = helm3d.dirichlet.get_quadrature_correction(S, tol, k, rep_pars, ...
+       S,opts_quad);
+
+A = helm3d.dirichlet.matgen(1:S.npts,1:S.npts,S,[k rep_pars], P, Q); 
+dens2 = A\rhs;
+
+%% Postprocess
 uscpt = helm3d.eval(S, 'dir', dens, pt, tol, k)       % eval u scatt @ pt
 uscsh = helm3d.eval(S, 'dir', dens, sheet, tol, k);   % eval u scatt @ sheet
 toc
