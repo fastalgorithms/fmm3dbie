@@ -8,7 +8,7 @@ rng(iseed);
 S = geometries.disk([],[],[3 3 3],8,1);
 dens = [eval_gauss(S.r(1,:),S.r(2,:)) eval_gauss(S.r(2,:),S.r(1,:)).^2];
 
-ipatchids = randsample(S.npatches,4);
+ipatchids = randi(S.npatches,[4,1]);
 uvs_targ = [0.1 0.8; 0.3 0.5; 0.7 0.1; 0.24 0.31].';
 
 xs = S.interpolate_data(S.r(1,:),ipatchids,uvs_targ);
@@ -25,7 +25,7 @@ iseed = 312;
 rng(iseed);
 dens = [eval_gauss(S.r(1,:),S.r(2,:)) eval_gauss(S.r(2,:),S.r(1,:)).^2].';
 
-ipatchids = randsample(S.npatches,4);
+ipatchids = randi(S.npatches,[4,1]);
 
 xs = S.interpolate_data(S.r(1,:),ipatchids,uvs_targ);
 ys = S.interpolate_data(S.r(2,:),ipatchids,uvs_targ);
