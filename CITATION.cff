@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: 'fmm3dbie: a boundary integral toolbox for solving PDEs on surfaces'
+title: 'fmm3dbie: boundary integral equation solvers in 3D'
 message: >-
   If you use this software, please cite it using the metadata from this file.
 type: software

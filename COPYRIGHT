@@ -7,19 +7,15 @@ fmm3dbie Development Team (see AUTHORS) - All Rights Reserved.
 
 
 fmm3dbie is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 2 of the License, or (at your
-option) any later version.
+under the terms of the BSD 3-Clause License.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not you can find copies here:
-http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
-http://www.gnu.org/licenses/gpl-3.0.txt
+You should have received a copy of the License
+along with this program. if not you can find copies here:
+https://www.gnu.org/licenses/license-list.html#ModifiedBSD
 
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-General Public License for more details.
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 
 Exceptions
 ==========
@@ -36,10 +32,12 @@ and released under public domain license.
 References
 ==========
 In addition, we kindly ask you to acknowledge fmm3dbie and its authors
-in any program or publication in which you use the software. (You are
-not required to do so; it is up to your common sense to decide whether
-you want to comply with this request or not.) For general
-publications, we suggest referencing:
+in any program or publication in which you use the software. 
+For general publications, we suggest referencing:
+
+- Askham, T., Gimbutas, Z., Goodwill, T., Hoskins, J., Lu, L., O'Neil, 
+M., Rachh, M., Rokhlin, V., & Vico, F. (2025). fmm3dbie: boundary integral equation 
+solvers in 3D. (in prep)
 
 - Greengard, L., O'Neil, M., Rachh, M., & Vico, F. (2021). Fast multipole methods for 
 the evaluation of layer potentials with locally-corrected quadratures. 
