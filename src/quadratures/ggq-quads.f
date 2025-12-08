@@ -161,7 +161,6 @@ c
       complex *16, allocatable :: svtmp2(:,:)
 
       real *8, allocatable :: xyztarg2(:,:)
-      integer irad
 
       real *8, allocatable :: qnodes_tri(:,:),qwts_tri(:)
       real *8, allocatable :: qnodes_quad(:,:),qwts_quad(:)
@@ -191,7 +190,7 @@ c
 
 
 c
-c        find chunk radisu and centroid again
+c        find chunk radius and centroid again
 c
 
       call get_centroid_rads(npatches,norders,ixyzs,iptype,npts,
@@ -296,7 +295,7 @@ C$OMP$PRIVATE(ipatch,ntarg2,xyztarg2,sints_n,sints_f,svtmp_n,svtmp_f)
 C$OMP$PRIVATE(ii,ii2,i,jpatch,svtmp2,iiif,l,ntarg2m)
 C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
-C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder,irad)
+C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder)
 C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
 C$OMP$PRIVATE(epsp,rsc,tmp,ipoly,ttype)
 
@@ -312,14 +311,6 @@ C$OMP$PRIVATE(epsp,rsc,tmp,ipoly,ttype)
 
         call get_disc_exps(norder,npols,iptype(ipatch),uvs,
      1     umatr,vmatr,wts)
-
-        if(norder.lt.4) then
-          irad = 1
-        else if(norder.lt.8) then
-          irad = 2
-        else
-          irad = 3
-        endif
 
 c
 c  estimate rescaling of epsp needed to account for the scale of the
@@ -443,7 +434,7 @@ c
             call zget_ggq_self_quad_pt(ipv,norder,npols,
      1      uvs_targ(1,jtarg),iptype(ipatch),
      2      umatr,srccoefs(1,istart),ndtarg,
-     2      targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
+     2      targvals(1,jtarg),fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,wnear(iqstart+1))
           endif
 
@@ -616,7 +607,6 @@ c
       real *8, allocatable :: svtmp2(:,:)
 
       real *8, allocatable :: xyztarg2(:,:)
-      integer irad
 
       real *8, allocatable :: qnodes_tri(:,:),qwts_tri(:)
       real *8, allocatable :: qnodes_quad(:,:),qwts_quad(:)
@@ -752,7 +742,7 @@ C$OMP$PRIVATE(ipatch,ntarg2,xyztarg2,sints_n,sints_f,svtmp_n,svtmp_f)
 C$OMP$PRIVATE(ii,ii2,i,jpatch,svtmp2,iiif,l,ntarg2m)
 C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
-C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder,irad)
+C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder)
 C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
 C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
 
@@ -769,14 +759,6 @@ C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
 
         call get_disc_exps(norder,npols,iptype(ipatch),uvs,
      1     umatr,vmatr,wts)
-
-        if(norder.lt.4) then
-          irad = 1
-        else if(norder.lt.8) then
-          irad = 2
-        else
-          irad = 3
-        endif
 
 c
 c  estimate rescaling of epsp needed to account for the scale of the
@@ -896,7 +878,7 @@ c
           if(ipatch.eq.jpatch) then
             call dget_ggq_self_quad_pt(ipv,norder,npols,
      1      uvs_targ(1,jtarg),iptype(ipatch),umatr,srccoefs(1,istart),
-     2      ndtarg,targvals(1,jtarg),irad,fker,ndd,dpars,ndz,zpars,ndi,
+     2      ndtarg,targvals(1,jtarg),fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,wnear(iqstart+1))
           endif
 
@@ -930,15 +912,15 @@ c
 c
 
       subroutine zget_ggq_self_quad_pt(ipv,norder,npols,uvs,iptype,umat,
-     1   srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
+     1   srccoefs,ndtarg,targ,fker,ndd,dpars,ndz,zpars,ndi,
      2   ipars,zquad)
 c
 c
 c------------------
 c  This subroutine evaluates the integral of an integral
 c  operator at a target on the interior of a triangluar patch 
-c  using the generalized
-c  Gaussian quadratures developed by Bremer and Gimbutas.
+c  using the generalized Gaussian quadratures developed by 
+c  Gimbutas in https://github.com/zgimbutas/selfquad3d
 c
 c  The quadrature currently can only handle targets on the boundary
 c  of the triangle for ipv = 0, and cannot do so for ipv = 1
@@ -974,13 +956,6 @@ c        leading dimension of target array
 c    - targ: double precision (ndtarg)
 c        target info. First three components must be x,y,z
 c        coordinates
-c    - irad: integer
-c        which order of self quadrature to use
-c        * for norder<=4, irad=1
-c        * for 4<norder<=8, irad=2
-c        * for 8<norder<=12, irad=3
-c        * irad = 3, for higher orders, but there might be some loss
-c          in precision
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
@@ -1073,15 +1048,8 @@ c
         fint(j) = 0
       enddo
       ns = 0
-      if(ipv.eq.0) then
-        call self_quadrature_new(irad,verts,nv,uvs(1),
-     1    uvs(2),srcvals(4),ns,xs,ys,ws)
-      endif
-
-      if(ipv.eq.1) then
-        call pv_self_quadrature_new(irad,verts,nv,uvs(1),
-     1    uvs(2),srcvals(4),ns,xs,ys,ws)
-      endif
+      call self_quadrature(norder, ipv, verts, nv, uvs(1), uvs(2),
+     1    srcvals(4), ns, xs, ys, ws, ier)
      
       allocate(srctmp(12,ns),qwts(ns))
       allocate(sigvals(npols,ns))
@@ -1135,15 +1103,15 @@ c
 c
 
       subroutine dget_ggq_self_quad_pt(ipv,norder,npols,uvs,iptype,
-     1   umat,srccoefs,ndtarg,targ,irad,fker,ndd,dpars,ndz,zpars,ndi,
+     1   umat,srccoefs,ndtarg,targ,fker,ndd,dpars,ndz,zpars,ndi,
      2   ipars,dquad)
 c
 c
 c------------------
 c  This subroutine evaluates the integral of an integral
 c  operator at a target on the interior of a triangluar patch 
-c  using the generalized
-c  Gaussian quadratures developed by Bremer and Gimbutas.
+c  using the generalized Gaussian quadratures developed by
+c  Gimbutas in https://github.com/zgimbutas/selfquad3d
 c
 c  The quadrature currently cannot handle targets on the boundary
 c  of the triangle
@@ -1179,13 +1147,6 @@ c        leading dimension of target array
 c    - targ: double precision (ndtarg)
 c        target info. First three components must be x,y,z
 c        coordinates
-c    - irad: integer
-c        which order of self quadrature to use
-c        * for norder<=4, irad=1
-c        * for 4<norder<=8, irad=2
-c        * for 8<norder<=12, irad=3
-c        * irad = 3, for higher orders, but there might be some loss
-c          in precision
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
@@ -1282,15 +1243,8 @@ c
         fint(j) = 0
       enddo
       ns = 0
-      if(ipv.eq.0) then
-        call self_quadrature_new(irad,verts,nv,uvs(1),
-     1    uvs(2),srcvals(4),ns,xs,ys,ws)
-      endif
-
-      if(ipv.eq.1) then
-        call pv_self_quadrature_new(irad,verts,nv,uvs(1),
-     1    uvs(2),srcvals(4),ns,xs,ys,ws)
-      endif
+      call self_quadrature(norder, ipv, verts, nv, uvs(1), uvs(2),
+     1    srcvals(4), ns, xs, ys, ws, ier)
      
       allocate(srctmp(12,ns),qwts(ns))
       allocate(sigvals(npols,ns))

@@ -12,7 +12,8 @@
 CC = gcc
 CXX = g++
 FC = gfortran
-FFLAGS = -fPIC -O3 -march=native -funroll-loops -std=legacy -w 
+FFLAGS = -fPIC -O3 -march=native -funroll-loops -std=legacy -w
+FFLAGS2 = -fPIC -march=native -std=legacy
 
 # extra flags for multithreaded: C/Fortran, MATLAB
 OMPFLAGS =-fopenmp
@@ -148,7 +149,7 @@ KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 QUAD = src/quadratures
 QOBJS = $(QUAD)/far_field_routs.o \
 	$(QUAD)/ggq-selfquad-routs.o $(QUAD)/ggq-quads.o \
-	$(QUAD)/ggq-selfquad.o $(QUAD)/adap-quads.o \
+	$(QUAD)/adap-quads.o \
 	$(QUAD)/near_field_routs.o $(QUAD)/near_quad_sub.o
 
 # Surface wrappers
@@ -241,6 +242,12 @@ usage:
 %.o: %.c %.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
+#
+# Special rule for ggq-quads
+#
+QUAD = src/quadratures
+$(QUAD)/ggq-selfquad-routs.o: $(QUAD)/ggq-selfquad-routs.f90
+	$(FC) -c $(FFLAGS2) $< -o $@
 
 #
 # build the library...
