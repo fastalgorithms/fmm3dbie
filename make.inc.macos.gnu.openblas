@@ -11,7 +11,6 @@
 CC=gcc
 CXX=g++
 FC=gfortran
-FFLAGS= -fPIC -O3 -march=native -funroll-loops -std=legacy 
 
 ifeq ($(PREFIX),)
     FMMBIE_INSTALL_DIR=/usr/local/lib
