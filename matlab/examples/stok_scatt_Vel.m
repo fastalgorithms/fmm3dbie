@@ -78,3 +78,11 @@ title('error estimate for density')
 figure(3); clf 
 semilogy(gmres_rres,'b-x')
 title('gmres relative residual')
+
+mat = stok3d.velocity.matgen(S, tol, [1,1]);
+mat = mat + eye(size(mat,1))/2;
+%%
+dens2 = gmres(mat,rhs(:),[],1e-13,400); 
+dens2 = reshape(dens2, 3, []);
+err = norm((dens - dens2).*sqrt(S.wts(:).'));
+fprintf('relative error in matgen solution and full solver=%d\n',err);

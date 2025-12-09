@@ -44,7 +44,9 @@ function [rsc] = getnear(S, targinfo, rfac)
 %         iquad(i) is the location in quadrature correction array 
 %         where quadrature for interaction corresponding to
 %         col_ind(i) starts. 
-%         
+%         iquad(i) is the location in quadrature correction array 
+%         where quadrature for interaction corresponding to
+%         col_ind(i) starts
 %      
 %    
 
@@ -78,7 +80,7 @@ function [rsc] = getnear(S, targinfo, rfac)
         % get nearfield definition
         rfac = 0;
         rfac0 = 0;
-        mex_id_ = 'get_rfacs(i int[x], i int[x], io double[x], io double[x])';
+        mex_id_ = 'get_rfacs(c i int[x], c i int[x], c io double[x], c io double[x])';
 [rfac, rfac0] = fmm3dbie_routs(mex_id_, norder_avg, iptype_avg, rfac, rfac0, 1, 1, 1, 1);
     end
     
@@ -90,7 +92,7 @@ function [rsc] = getnear(S, targinfo, rfac)
     nnz = 0;
     n3 = 3;
     % find the number of near field points
-    mex_id_ = 'findnearmem(i double[xx], i int[x], i double[x], i int[x], i double[xx], i int[x], io int[x])';
+    mex_id_ = 'findnearmem(c i double[xx], c i int[x], c i double[x], c i int[x], c i double[xx], c i int[x], c io int[x])';
 [nnz] = fmm3dbie_routs(mex_id_, cms, npatches, rad_near, ndtarg, targs, ntarg, nnz, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, 1);
     row_ptr = zeros(ntarg+1,1);
     col_ind = zeros(nnz,1);
@@ -98,13 +100,13 @@ function [rsc] = getnear(S, targinfo, rfac)
     ntp1 = ntarg+1;
     nnzp1 = nnz+1;
     % find indices of near field points
-    mex_id_ = 'findnear(i double[xx], i int[x], i double[x], i int[x], i double[xx], i int[x], io int[x], io int[x])';
+    mex_id_ = 'findnear(c i double[xx], c i int[x], c i double[x], c i int[x], c i double[xx], c i int[x], c io int[x], c io int[x])';
 [row_ptr, col_ind] = fmm3dbie_routs(mex_id_, cms, npatches, rad_near, ndtarg, targs, ntarg, row_ptr, col_ind, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, ntp1, nnz);
 
     % get location in wnear_ij array where quadrature for col_ind(i) starts for a single kernel. 
     iquad = zeros(nnz+1,1);
     npp1 = npatches+1;
-    mex_id_ = 'get_iquad_rsc(i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], io int[x])';
+    mex_id_ = 'get_iquad_rsc(c i int[x], c i int[x], c i int[x], c i int[x], c i int[x], c i int[x], c io int[x])';
 [iquad] = fmm3dbie_routs(mex_id_, npatches, ixyzs, npts, nnz, row_ptr, col_ind, iquad, 1, npp1, 1, 1, ntp1, nnz, nnzp1);
     
     rsc = [];

@@ -99,7 +99,7 @@ function [S] = xyz_tensor_fourier(coefs, nfp, scales, iort, nuv, norder, iptype)
   npatches = 0;
   npts = 0;
   
-  mex_id_ = 'get_xyz_tensor_fourier_npat_mem(i double[xx], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], io int[x], io int[x])';
+  mex_id_ = 'get_xyz_tensor_fourier_npat_mem(c i double[xx], c i int[x], c i int[x], c i double[x], c i int[x], c i int[x], c i int[x], c i int[x], c io int[x], c io int[x])';
 [npatches, npts] = fmm3dbie_routs(mex_id_, coefs_use, m, nfp, scales, iort, nuv, norder, iptype, npatches, npts, muse, 3, 1, 1, 3, 1, 2, 1, 1, 1, 1);
   
 
@@ -114,7 +114,7 @@ function [S] = xyz_tensor_fourier(coefs, nfp, scales, iort, nuv, norder, iptype)
   n9 = 9;
   n12 = 12;
 
-  mex_id_ = 'get_xyz_tensor_fourier_npat(i double[xx], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io int[x], io int[x], io double[xx], io double[xx])';
+  mex_id_ = 'get_xyz_tensor_fourier_npat(c i double[xx], c i int[x], c i int[x], c i double[x], c i int[x], c i int[x], c i int[x], c i int[x], c i int[x], c i int[x], c io int[x], c io int[x], c io int[x], c io double[xx], c io double[xx])';
 [norders, ixyzs, iptypes, srccoefs, srcvals] = fmm3dbie_routs(mex_id_, coefs_use, m, nfp, scales, iort, nuv, norder, iptype, npatches, npts, norders, ixyzs, iptypes, srccoefs, srcvals, muse, 3, 1, 1, 3, 1, 2, 1, 1, 1, 1, npatches, npatp1, npatches, n9, npts, n12, npts);
 
   S = surfer(npatches, norder, srcvals, iptype);

@@ -48,7 +48,7 @@ function [S] = ellipsoid(abc, nabc, c0, norder, iptype)
   npatches = 0;
   npts = 0;
   
-  mex_id_ = 'get_ellipsoid_npat_mem(i double[x], i int[x], i double[x], i int[x], i int[x], io int[x], io int[x])';
+  mex_id_ = 'get_ellipsoid_npat_mem(c i double[x], c i int[x], c i double[x], c i int[x], c i int[x], c io int[x], c io int[x])';
 [npatches, npts] = fmm3dbie_routs(mex_id_, abc, nabc, c0, norder, iptype, npatches, npts, 3, 3, 3, 1, 1, 1, 1);
   
 
@@ -63,7 +63,7 @@ function [S] = ellipsoid(abc, nabc, c0, norder, iptype)
   n9 = 9;
   n12 = 12;
 
-  mex_id_ = 'get_ellipsoid_npat(i double[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], io int[x], io int[x], io int[x], io double[xx], io double[xx])';
+  mex_id_ = 'get_ellipsoid_npat(c i double[x], c i int[x], c i double[x], c i int[x], c i int[x], c i int[x], c i int[x], c io int[x], c io int[x], c io int[x], c io double[xx], c io double[xx])';
 [norders, ixyzs, iptypes, srccoefs, srcvals] = fmm3dbie_routs(mex_id_, abc, nabc, c0, norder, iptype, npatches, npts, norders, ixyzs, iptypes, srccoefs, srcvals, 3, 3, 3, 1, 1, 1, 1, npatches, npatp1, npatches, n9, npts, n12, npts);
 
   S = surfer(npatches, norder, srcvals, iptype);

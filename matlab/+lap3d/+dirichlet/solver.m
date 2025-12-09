@@ -74,7 +74,7 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
     targinfo.n = S.n;
     patch_id  = zeros(npts,1);
     uvs_targ = zeros(2,npts);
-    mex_id_ = 'get_patch_id_uvs(i int[x], i int[x], i int[x], i int[x], i int[x], io int[x], io double[xx])';
+    mex_id_ = 'get_patch_id_uvs(c i int[x], c i int[x], c i int[x], c i int[x], c i int[x], c io int[x], c io double[xx])';
 [patch_id, uvs_targ] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, patch_id, uvs_targ, 1, npatches, npatp1, npatches, 1, npts, 2, npts);
     targinfo.patch_id = patch_id;
     targinfo.uvs_targ = uvs_targ;
@@ -134,7 +134,7 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
     nker = 1;
 
 % Call the layer potential evaluator
-    mex_id_ = 'lap_comb_dir_solver_guru(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i double[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i int[x], i double[xx], i double[x], i double[x], io int[x], io double[x], io double[x], io double[x])';
+    mex_id_ = 'lap_comb_dir_solver_guru(c i int[x], c i int[x], c i int[x], c i int[x], c i int[x], c i double[xx], c i double[xx], c i double[x], c i double[x], c i int[x], c i int[x], c i double[x], c i int[x], c i int[x], c i int[x], c i int[x], c i int[x], c i int[x], c i double[x], c i int[x], c i int[x], c i int[x], c i double[xx], c i double[x], c i double[x], c io int[x], c io double[x], c io double[x], c io double[x])';
 [niter, errs, rres, sigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, dpars, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts);
 
     errs = errs(1:niter);

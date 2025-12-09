@@ -3917,10 +3917,87 @@ end
 %
 %----------------------------------
 %
+%
+@ +stok3d/+velocity/matgen.m
+function mat = matgen(S, eps, dpars)
+%  stok3d.velocity.matgen
+%    This subroutine generates the matrix for the combined
+%    field layer potential
+%  
+%  Syntax
+%    mat = stok3d.velocity.matgen(S, eps, dpars)
+%
+%  Integral representation
+%     pot = \alpha S_{stok} [\sigma] + \beta D_{stok} [\sigma]
+%
+%  S_{stok}, D_{stok}: stokes single and double layer potential
+%  
+%  \alpha, beta = dpars(1:2)
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%    * dpars: kernel parameters
+%        dpars(1) - single layer strength
+%        dpars(2) - double layer strength
+%
+%  Note that the matrix only returns the principal
+%  part of the discretization, the identity terms need to be included
+%  by the user
+%
+%  Output:
+%    * mat: double(3*n, 3*n)
+%        discretized matrix ordered where components of velocity
+%        and density at a point are continunous in memory
+%        if \sigma_{i,j} is the ith component at the jth point
+%        then the ordering is \sigma_{1,1}, \sigma_{2,1}, \sigma_{3,1}
+%        \sigma{1,2}, \sigma_{2,2,} \ldots \sigma_{1,n}, \sigma_{2,n}
+%        \sigma_{3,n}
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+    ntp1 = npts+1;
+    
+    nnz = S.npatches*S.npts;
+    row_ptr = 1:S.npatches:nnz+1;
+    col_ind = repmat(1:S.npatches, [1,npts]);
+    nnzp1 = nnz+1;
+    iquad = zeros(nnz+1,1);
+    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+     
+    iquadtype = 1;
+    rfac0 = 1.25;
+    uvs = S.uvs_targ;
+    patch_id = S.patch_id;
+    nker = 6;
+    nquad = iquad(nnz+1)-1;
+    wnear = zeros(nker,nquad);
+
+    # FORTRAN getnearquad_stok_comb_vel_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] n12,int[1] npts,double[n12,npts] srcvals, int[npts] patch_id, double[2,npts] uvs,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
+
+    n = S.npts;
+    mat = zeros(3*n,3*n);
+    mat(1:3:end,1:3:end) = reshape(wnear(1,:),[n,n]).';
+    mat(2:3:end,1:3:end) = reshape(wnear(2,:),[n,n]).';
+    mat(1:3:end,2:3:end) = reshape(wnear(2,:),[n,n]).';
+    mat(3:3:end,1:3:end) = reshape(wnear(3,:),[n,n]).';
+    mat(1:3:end,3:3:end) = reshape(wnear(3,:),[n,n]).';
+    mat(2:3:end,2:3:end) = reshape(wnear(4,:),[n,n]).';
+    mat(3:3:end,2:3:end) = reshape(wnear(5,:),[n,n]).';
+    mat(2:3:end,3:3:end) = reshape(wnear(5,:),[n,n]).';
+    mat(3:3:end,3:3:end) = reshape(wnear(6,:),[n,n]).';
+
+end  
+%------------------
 @ +stok3d/+velocity/get_quadrature_correction.m 
 function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %
-%  stok3d.get_quadrature_correction
+%  stok3d.velocity.get_quadrature_correction
 %    This subroutine returns the near quadrature correction
 %    for the combined field representation with density supported
 %    on the surface S, and targets given by targinfo 
