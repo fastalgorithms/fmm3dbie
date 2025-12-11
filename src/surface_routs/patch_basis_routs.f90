@@ -559,4 +559,267 @@
       
       return
       end
+!
+!
+!
+      subroutine surf_funtail_error(nd,npatches,norders,ixyzs,iptype, &
+          npts,dvals,wts,errp,errm,rl2s,rl2tails,patcharea)
+!
+!  This subroutine computes patchwise and global tail errors for one
+!  or more functions defined on a discretized surface.
+!
+!  Input arguments:
+!    - nd: integer
+!        number of functions
+!    - npatches: integer
+!        number of patches
+!    - norders(npatches): integer
+!        discretization orders for each patch
+!    - ixyzs(npatches+1): integer
+!        starting indices for each patch's values/coefficients
+!    - iptype(npatches): integer
+!        patch type
+!        * 1   triangular patch with RV nodes
+!        * 11  quad patch with GL nodes
+!        * 12  quad patch with Cheb nodes
+!    - npts: integer
+!        total number of discretization nodes
+!    - dvals(nd,npts): real *8
+!        values of the function(s) at the discretization nodes
+!    - wts(npts): real *8
+!        quadrature weights for integrating smooth functions
+!
+!  Output arguments:
+!    - errp(nd,npatches): real *8
+!        patchwise tail error
+!    - errm(nd): real *8
+!        maximum patch error per function
+!    - rl2s(nd): real *8
+!        global L2 norm of dvals
+!    - rl2tails(nd): real *8
+!        global L2 norm of tails
+!    - patcharea(npatches): real *8
+!        approximate area of each patch
+!
+      implicit real *8(a-h,o-z)
+
+      integer nd, npatches, npts
+      integer norders(npatches), ixyzs(npatches+1)
+      integer iptype(npatches)
+
+      real*8 dvals(nd,npts), wts(npts)
+
+      real*8 errp(nd,npatches), errm(nd)
+      real*8 rl2s(nd), rl2tails(nd)
+      real*8 patcharea(npatches)
+
+!
+!   temporary variables
+!
+      real*8, allocatable :: errsq(:)
+
+      integer ip, i, idim, ipt, j, jj, ic
+      integer norder, npols, istart0, ntailcoefs
+      integer nmax, npmax, maxorder
+
+      real*8, allocatable :: dcoefs(:,:), dtail(:,:)
+      real*8, allocatable :: uvs(:,:), pols(:)
+      integer, allocatable  :: itailcoefs(:)
+
+!
+!  initialize outputs
+!
+      allocate(dcoefs(nd,npts), dtail(nd,npts))
+      dcoefs = 0.0d0
+      dtail  = 0.0d0
+      do idim=1,nd
+         errm(idim)      = 0.0d0
+         rl2s(idim)      = 0.0d0
+         rl2tails(idim)  = 0.0d0
+      enddo
+      errp = 0.0d0
+      patcharea = 0.0d0
+
+!
+!  convert nodal values to coefficients
+!
+      call surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,
+     1     npts,dvals,dcoefs)
+
+
+!
+!  determine maximum order to size temporary arrays
+!
+      maxorder = 0
+      do ip=1,npatches
+         if(norders(ip).gt.maxorder) maxorder = norders(ip)
+      enddo
+      if(maxorder.le.0) maxorder = 20
+
+      nmax  = max(20,maxorder)
+      npmax = (nmax+1)*(nmax+2)
+
+      allocate(uvs(2,npmax), pols(npmax), itailcoefs(npmax))
+      allocate(errsq(nd))
+
+!
+!  loop over patches
+!
+      do ip=1,npatches
+
+         norder  = norders(ip)
+         istart0 = ixyzs(ip)
+         npols   = ixyzs(ip+1) - ixyzs(ip)
+
+         call get_disc_nodes(norder,npols,iptype(ip),uvs)
+         call get_tail_coefs(norder,npols,iptype(ip), &
+             itailcoefs,ntailcoefs)
+
+!
+!  get tail values dtail(*,ipt) if there are tail coefficients
+!
+         if(ntailcoefs.gt.0) then
+
+            do i=1,npols
+               ipt = istart0 + i - 1
+               call get_basis_pols(uvs(1,i),norder,npols,iptype(ip), &
+                   pols)
+
+               do idim=1,nd
+                  dtail(idim,ipt) = 0.0d0
+               enddo
+
+               do jj=1,ntailcoefs
+                  j  = itailcoefs(jj)
+                  ic = istart0 + j - 1
+                  do idim=1,nd
+                     dtail(idim,ipt) = dtail(idim,ipt) &
+                         + pols(j) * dcoefs(idim,ic)
+                  enddo
+               enddo
+
+            enddo
+         endif
+
+!
+!  compute patcharea, rl2s, rl2tails, and patchwist errsq
+!
+         patcharea(ip) = 0.0d0
+         do idim=1,nd
+            errsq(idim) = 0.0d0
+         enddo
+
+         do i=1,npols
+            ipt = istart0 + i - 1
+            patcharea(ip) = patcharea(ip) + wts(ipt)
+
+            do idim=1,nd
+               rl2s(idim)     = rl2s(idim)     + dvals(idim,ipt)**2 * wts(ipt)
+               rl2tails(idim) = rl2tails(idim) + dtail(idim,ipt)**2 * wts(ipt)
+               errsq(idim)    = errsq(idim)    + dtail(idim,ipt)**2 * wts(ipt)
+            enddo
+         enddo
+
+!
+!  compute patchwise L2 errors and update patchwise maxima
+!
+         do idim=1,nd
+            errp(idim,ip) = sqrt(errsq(idim))
+            if(errp(idim,ip).gt.errm(idim)) errm(idim) = errp(idim,ip)
+         enddo
+
+      enddo
+!
+!  compute global norms
+!
+      do idim=1,nd
+         rl2s(idim)      = sqrt(rl2s(idim))
+         rl2tails(idim)  = sqrt(rl2tails(idim))
+      enddo
+
+      return
+      end
+!
+!
+!
+      subroutine find_refine_patches_list(nd,npatches,errp,errm,
+     1     rl2s,rl2tails,patcharea,tol,list,nlist)
+!
+!  This subroutine generates a list of patches that should be
+!  refined based on tail error relative to a tolerance.
+!
+!  Input arguments:
+!    - nd: integer
+!    - npatches: integer
+!    - errp(nd,npatches): real *8
+!        patchwise tail errors
+!    - errm(nd): real *8
+!        maximum errors (not used)
+!    - rl2s(nd): real *8
+!        global L2 norms of functions
+!    - rl2tails(nd): real *8
+!        global tail norms (not used)
+!    - patcharea(npatches): real *8
+!        area of each patch
+!    - tol: real *8
+!        tolerance
+!
+!  Output arguments:
+!    - list(npatches): integer
+!        indices of patches to refine
+!    - nlist: integer
+!        number of entries in list, number of patches to refine
+!
+      implicit real *8(a-h,o-z)
+
+      integer nd,npatches
+      integer list(npatches),nlist
+      real*8 errp(nd,npatches),errm(nd)
+      real*8 rl2s(nd),rl2tails(nd)
+      real*8 patcharea(npatches),tol
+
+
+!
+!   temporary variables
+!
+      integer ict,idim,ip
+      real*8 surfarea,rsc
+      real*8, allocatable :: errsq(:)
+
+!
+!   approximate surface area as sum of patchwise area
+!
+      surfarea = 0.0d0
+      do ip=1,npatches
+         surfarea = surfarea + patcharea(ip)
+         list(ip) = 0
+      enddo
+
+      ict = 0
+
+      if(surfarea.le.0.0d0) then
+         nlist = 0
+         return
+      endif
+!
+!     check for each patch if refinement criterion is satisfied. If not
+!     satisfied, label the patch for refinement.
+!           
+      do idim=1,nd
+         rsc = rl2s(idim)*tol/surfarea
+         do ip=1,npatches
+            if(errp(idim,ip).gt.patcharea(ip)*rsc) then
+               ict = ict + 1
+               list(ict) = ip
+            endif
+         enddo
+      enddo
+
+      nlist = ict
+
+      return
+      end
+!
+!
+!
 
