@@ -643,8 +643,8 @@
 !
 !  convert nodal values to coefficients
 !
-      call surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,
-     1     npts,dvals,dcoefs)
+      call surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype, &
+          npts,dvals,dcoefs)
 
 
 !
@@ -742,8 +742,8 @@
 !
 !
 !
-      subroutine find_refine_patches_list(nd,npatches,errp,errm,
-     1     rl2s,rl2tails,patcharea,tol,list,nlist)
+      subroutine find_refine_patches_list(nd,npatches,errp,errm, &
+          rl2s,rl2tails,patcharea,tol,list,nlist)
 !
 !  This subroutine generates a list of patches that should be
 !  refined based on tail error relative to a tolerance.

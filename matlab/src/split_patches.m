@@ -1,4 +1,5 @@
-function [Sover,ipatchid,uvstot,interp_mat,ivec,jvec,vvec] = split_patches(S,patch_ids)
+function [Sover, ipatchid, uvstot, interp_mat, ivec, jvec, vvec] = ...
+         split_patches(S, patch_ids)
 % SPLIT_PATCHES  Refine selected patches of a surface discretization.
 %
 % Syntax:
@@ -26,6 +27,7 @@ function [Sover,ipatchid,uvstot,interp_mat,ivec,jvec,vvec] = split_patches(S,pat
 %                    that interp_mat(ivec,jvec) = vvec
 %
 % Notes:
+%   Assumes uniform input order
 %   Supported interpolation types are determined by S.iptype:
 %        * iptype = 1,  triangular patch discretized using
 %                       Rokhlin-Vioreanu nodes
@@ -157,10 +159,10 @@ function [Sover,ipatchid,uvstot,interp_mat,ivec,jvec,vvec] = split_patches(S,pat
         if ismember(ii,patch_ids)
             % map the geometry of patch ii at the quadrature nodes to 
             % of each of its four subpatches.
-            panval1 = S.srccoefs{ii}(1:3,:)*c2vover1.';
-            panval2 = S.srccoefs{ii}(1:3,:)*c2vover2.';
-            panval3 = S.srccoefs{ii}(1:3,:)*c2vover3.';
-            panval4 = S.srccoefs{ii}(1:3,:)*c2vover4.';
+            panval1 = S.srccoefs{ii}(1:9,:)*c2vover1.';
+            panval2 = S.srccoefs{ii}(1:9,:)*c2vover2.';
+            panval3 = S.srccoefs{ii}(1:9,:)*c2vover3.';
+            panval4 = S.srccoefs{ii}(1:9,:)*c2vover4.';
             srcvals = [srcvals {panval1,panval2,panval3,panval4}];
             % store local uv coordinates
             uvstot = [uvstot uvssplit];
@@ -172,7 +174,7 @@ function [Sover,ipatchid,uvstot,interp_mat,ivec,jvec,vvec] = split_patches(S,pat
             rows_idx = [rows_idx row_ctr+(1:4)];
             row_ctr = row_ctr + 4;                    
         else
-            srcvals = [srcvals {S.srccoefs{ii}(1:3,:)*c2v.'}];
+            srcvals = [srcvals {S.srccoefs{ii}(1:9,:)*c2v.'}];
             uvstot = [uvstot uvs];
             ipatchid = [ipatchid; ii*ones(length(uvs),1)];
             % unrefined patch: contributes a single identity block-row.
@@ -187,9 +189,9 @@ function [Sover,ipatchid,uvstot,interp_mat,ivec,jvec,vvec] = split_patches(S,pat
 
     for ii = 1:length(srcvals)
         tmp = zeros(12,size(uvs,2));
-        tmp(1:3,:) = srcvals{ii};
-        tmp(4:6,:) = srcvals{ii}*val2du.';
-        tmp(7:9,:) = srcvals{ii}*val2dv.';
+        tmp(1:9,:) = srcvals{ii};
+        %tmp(4:6,:) = srcvals{ii}*val2du.';
+        %tmp(7:9,:) = srcvals{ii}*val2dv.';
         srcmat = [srcmat tmp];
     end
 
