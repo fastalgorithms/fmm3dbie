@@ -9,6 +9,7 @@ CC = icc
 CXX = icpc
 FC = ifort
 FFLAGS= -fPIC -O2 -march=native -funroll-loops
+FFLAGS2= -fPIC -march=native -funroll-loops
 
 ifeq ($(PREFIX),)
     FMMBIE_INSTALL_DIR=/usr/local/lib
