@@ -1,4 +1,5 @@
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
 
       ntests = 8
       call test_get_uni(i1,i2)
@@ -25,6 +26,7 @@
       subroutine test_get_uni(isuccess0,isuccess1)
 
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       integer *8, allocatable :: a(:),iuni(:),iuniind(:)
       integer *8, allocatable :: b(:),c(:)
       integer *8, allocatable :: iuni3(:,:)
@@ -108,6 +110,7 @@
       subroutine test_setdecomp(isuccess)
 
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       integer *8, allocatable :: a(:),iauni(:),auni(:)
       integer *8, allocatable :: b(:),ibuni(:),buni(:)
       integer *8, allocatable :: aintb(:),iaintba(:)
@@ -235,6 +238,7 @@ c
       subroutine test_cumsum(isuccess)
 c$    use omp_lib
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       integer *8, allocatable :: a(:), b(:), b2(:)
       integer *8 :: ns(10), idiff(10), nn, nmax, i, nrange, ntimes
 
@@ -517,6 +521,7 @@ c
 
       subroutine test_rsc_to_csc(isuccess)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       integer *8, allocatable :: row_ptr(:),col_ind(:),col_ptr(:),
      1   row_ind(:),iper(:)
       integer *8 ns, nt, nnz

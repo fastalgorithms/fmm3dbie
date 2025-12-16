@@ -155,7 +155,7 @@ c
 c
 c
       subroutine polytens_ind2pow(ndim,ndeg,type,iind2p)
-      integer *8 ndeg, iind2p(ndim,*)
+      integer *8 ndim, ndeg, iind2p(ndim,*)
       character type
 
       integer *8 i

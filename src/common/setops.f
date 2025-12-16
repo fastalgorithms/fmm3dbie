@@ -58,6 +58,7 @@ c---------------------------
 
       
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       integer *8, intent(in) :: n,m
       integer *8, intent(in) :: a(n),b(m)
       integer *8, intent(out) :: amb(n),bma(m)
@@ -194,6 +195,7 @@ c
       subroutine setdecomp(n,a,m,b,naintb,aintb,iaintba,iaintbb,naintbc,
      1   aintbc,iaintbc)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       integer *8 n,a(n),m,b(m),aintb(n),iaintba(n),aintbc(n),iaintbc(n)
       integer *8 iaintbb(n)
       integer *8, allocatable :: asort(:),bsort(:),iasort(:),ibsort(:)
@@ -325,6 +327,7 @@ c        given an array a, find unique set of indices
 c        in the array and a mapping from where the indices
 c        are contained in the shorter array
 c
+      implicit integer *8 (i-n)
       integer *8 n, a(n),nuni,iuni(n),iuniind(n)
       integer *8, allocatable :: iind(:),asort(:),iunisort(:)
 
@@ -368,6 +371,7 @@ c        given an array a, find unique set of indices
 c        in the array and a mapping from where the indices
 c        are contained in the shorter array
 c
+      implicit integer *8 (i-n)
       integer *8 n, a(n),nuni,iuni(n),iuniind(n)
       integer *8, allocatable :: iind(:),asort(:),iunisort(:)
 
@@ -410,6 +414,7 @@ c        given an array a, find unique set of indices
 c        in the array and a mapping from where the indices
 c        are contained in the shorter array
 c
+      implicit integer *8 (i-n)
       integer *8 n, a(n),b(n),c(n),nuni,iuni(3,n),iuniind(n)
       integer *8, allocatable :: iind(:),asort(:),iunisort(:)
       integer *8, allocatable :: bsort(:),csort(:)

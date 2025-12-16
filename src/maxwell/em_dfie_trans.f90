@@ -1564,8 +1564,8 @@ implicit none
 	call fieldsEDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,int8_0)
 	call fieldsMDomega(omega,ep0,mu0,P0,srcvals,ns,E,H,vf,int8_1)
 
-	call fieldsEDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,1)
-	call fieldsMDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,1)
+	call fieldsEDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,int8_1)
+	call fieldsMDomega(omega,ep1,mu1,Pt,srcvals,ns,E,H,vf_m,int8_1)
 !	read (*,*)
 	
 	do count1=1,ns	

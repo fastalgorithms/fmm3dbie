@@ -1941,7 +1941,7 @@ c
       complex *16, allocatable :: cinttmp(:,:,:)
 
       integer *8 i,ipatch,j,lda,ldb,itarg,ldc,ntarg0,ii, idim
-      integer int8_9
+      integer *8 int8_9
 
       complex *16 fval(nd)
       real *8 da,ra

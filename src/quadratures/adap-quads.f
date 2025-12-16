@@ -1522,7 +1522,7 @@ c
      1      dpars, ndz, zpars, ndi, ipars, nqorder, npmax, rfac,
      1      fint, ifmetric, rn1, n2)
         call dgemv_guru('t', npols, npols, alpha, umat, npols, fint,
-     1   1, beta, finttmp, int8_1)
+     1   int8_1, beta, finttmp, int8_1)
         call dgemv_guru('N', npols, npols, alpha, ptmp, npols, 
      1    finttmp, int8_1, beta, fint_all(1,iv), int8_1)
       enddo

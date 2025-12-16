@@ -1272,7 +1272,7 @@ implicit none
 	alpha=zpars(2)
 	
 	write (*,*) 'P0',P0
-	call em_aumfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,1,P0,wts,sol_v(1:ns),sol_v(ns+1:2*ns),sol_s,Et1,Ht1)
+	call em_aumfie_pec_FMM_targ(eps_FMM,zk,ns,srcvals,int8_1,P0,wts,sol_v(1:ns),sol_v(ns+1:2*ns),sol_s,Et1,Ht1)
 		
 	call fieldsED(zk,Pt,P0,int8_1,Et2,Ht2,vf,int8_0)
 	call fieldsMD(zk,Pt,P0,int8_1,Et2,Ht2,vf,int8_1)

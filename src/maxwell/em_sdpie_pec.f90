@@ -1311,7 +1311,7 @@ implicit none
 		ima=(0.0d0,1.0d0)
 		pi=3.1415926535897932384626433832795028841971d0
 
-call sdpie_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,sol(1:ns),phi1)
+call sdpie_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,1_8,Pt,wts,sol(1:ns),phi1)
 		
 		
 !		call fieldsED(zk,P0,Pt,1,Et2,Ht2,vf,0)
@@ -1319,7 +1319,7 @@ call sdpie_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,sol(1:ns),phi1)
 		!call point_source_vector_helmholtz(1,P0,vf,Pt,zk,Et2,E_aux,phi2)
 		!!	call point_source_scalar_helmholtz(P0,ns,points,normals,zk,pot,dpot_dnormal)
 !		call point_source_scalar_helmholtz(P0,ns,srcvals(1:3,:),srcvals(10:12,:),zk,pot,dpot_dnormal)
-        call point_source_scalar_helmholtz(P0,1,Pt,Pt,zk,phi2,Et2(1))
+        call point_source_scalar_helmholtz(P0,1_8,Pt,Pt,zk,phi2,Et2(1))
 
 !		write (*,*) Et2
 

@@ -532,10 +532,10 @@ subroutine dleastsq(m,n,a,nrhs,rhs,eps,info,sol,irank)
      lwkmin = 1
      lwkopt = 1
   else
-     nb1 = ilaenv( 1, 'DGEQRF', ' ', m, n, -1, -1 )
-     nb2 = ilaenv( 1, 'DGERQF', ' ', m, n, -1, -1 )
-     nb3 = ilaenv( 1, 'DORMQR', ' ', m, n, nrhs, -1 )
-     nb4 = ilaenv( 1, 'DORMRQ', ' ', m, n, nrhs, -1 )
+     nb1 = ilaenv( 1, 'DGEQRF', ' ', muse, nuse, -1, -1 )
+     nb2 = ilaenv( 1, 'DGERQF', ' ', muse, nuse, -1, -1 )
+     nb3 = ilaenv( 1, 'DORMQR', ' ', muse, nuse, nrhsuse, -1 )
+     nb4 = ilaenv( 1, 'DORMRQ', ' ', muse, nuse, nrhsuse, -1 )
      nb = max( nb1, nb2, nb3, nb4 )
      lwkmin = mn + max( 2*mn, n + 1, mn + nrhs )
      lwkopt = max( lwkmin, mn + 2*n + nb*( n + 1 ), 2*mn + nb*nrhs )
