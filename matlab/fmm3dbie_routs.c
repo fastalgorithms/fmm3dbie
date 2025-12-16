@@ -979,7 +979,7 @@ typedef _Complex float fcomplex;
 #define imag_fcomplex(z) cimagf(z)
 #define setz_fcomplex(z,r,i)  *z = r + i*_Complex_I
 
-  
+ #include <stdint.h>
  #if defined(MWF77_CAPS)
  #define MWF77_multiscale_mesher MULTISCALE_MESHER_UNIF_REFINE_CFNAME
  #define MWF77_get_filetype GET_FILETYPE_CFNAME
