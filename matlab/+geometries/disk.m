@@ -89,7 +89,7 @@ function [S] = disk(scales, rmid, npars, norder, iptype, iort)
   ixys = zeros(npp1,1);
   ptinfo = zeros(6,npts);
 
-  mex_id_ = 'mesh_circle_pts(i double[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], io int64_t[x], io double[xx])';
+  mex_id_ = 'mesh_circle_pts(c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io int64_t[x], c io double[xx])';
 [ixys, ptinfo] = fmm3dbie_routs(mex_id_, rmid, npars, iort, norder, iptype, npatches, npts, ixys, ptinfo, 1, 3, 1, 1, 1, 1, 1, npp1, 6, npts);
 
   norders = norder*ones(npatches,1);

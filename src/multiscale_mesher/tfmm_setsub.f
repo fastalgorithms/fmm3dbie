@@ -69,7 +69,8 @@ c
 
       integer *8 ltree,ipointer(8)
       integer *8, allocatable :: itree(:)
-      integer *8, allocatable :: il1(:),il2(:),ilint(:),il1m2(:),il2m1(:)
+      integer *8, allocatable :: il1(:),il2(:),ilint(:),il1m2(:)
+      integer *8, allocatable :: il2m1(:)
       real *8, allocatable :: boxsize(:),centers(:,:)
       integer *8, allocatable :: isrcse(:,:),isrcper(:)
       integer *8, allocatable :: itargse(:,:),itargper(:)

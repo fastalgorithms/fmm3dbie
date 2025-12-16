@@ -2057,80 +2057,80 @@ implicit none
 
             endif
 
-            if ( ((CBS(Current_box,2)).and.(CBS(Current_box,5)).and.(CBS(Current_box,11)))) then
+            if ( ((CBS(Current_box,2_8)).and.(CBS(Current_box,5_8)).and.(CBS(Current_box,11_8)))) then
                 P_vect(2,1,1)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,5)).and.(CBS(Current_box,8)).and.(CBS(Current_box,17)))) then
+            if ( ((CBS(Current_box,5_8)).and.(CBS(Current_box,8_8)).and.(CBS(Current_box,17_8)))) then
                 P_vect(2,3,1)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,5)).and.(CBS(Current_box,4)).and.(CBS(Current_box,13)))) then
+            if ( ((CBS(Current_box,5_8)).and.(CBS(Current_box,4_8)).and.(CBS(Current_box,13_8)))) then
                 P_vect(1,2,1)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,5)).and.(CBS(Current_box,6)).and.(CBS(Current_box,15)))) then
+            if ( ((CBS(Current_box,5_8)).and.(CBS(Current_box,6_8)).and.(CBS(Current_box,15_8)))) then
                 P_vect(3,2,1)=-1.0d0
             endif
 
 
 
 
-            if ( ((CBS(Current_box,20)).and.(CBS(Current_box,23)).and.(CBS(Current_box,11)))) then
+            if ( ((CBS(Current_box,20_8)).and.(CBS(Current_box,23_8)).and.(CBS(Current_box,11_8)))) then
                 P_vect(2,1,3)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,23)).and.(CBS(Current_box,26)).and.(CBS(Current_box,17)))) then
+            if ( ((CBS(Current_box,23_8)).and.(CBS(Current_box,26_8)).and.(CBS(Current_box,17_8)))) then
                 P_vect(2,3,3)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,22)).and.(CBS(Current_box,23)).and.(CBS(Current_box,13)))) then
+            if ( ((CBS(Current_box,22_8)).and.(CBS(Current_box,23_8)).and.(CBS(Current_box,13_8)))) then
                 P_vect(1,2,3)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,23)).and.(CBS(Current_box,24)).and.(CBS(Current_box,15)))) then
+            if ( ((CBS(Current_box,23_8)).and.(CBS(Current_box,24_8)).and.(CBS(Current_box,15_8)))) then
                 P_vect(3,2,3)=-1.0d0
             endif
 
 
-            if ( ((CBS(Current_box,10)).and.(CBS(Current_box,11)).and.(CBS(Current_box,13)))) then
+            if ( ((CBS(Current_box,10_8)).and.(CBS(Current_box,11_8)).and.(CBS(Current_box,13_8)))) then
                 P_vect(1,1,2)=-1.0d0
             endif
 
 
-            if ( ((CBS(Current_box,13)).and.(CBS(Current_box,16)).and.(CBS(Current_box,17)))) then
+            if ( ((CBS(Current_box,13_8)).and.(CBS(Current_box,16_8)).and.(CBS(Current_box,17_8)))) then
                 P_vect(1,3,2)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,11)).and.(CBS(Current_box,12)).and.(CBS(Current_box,15)))) then
+            if ( ((CBS(Current_box,11_8)).and.(CBS(Current_box,12_8)).and.(CBS(Current_box,15_8)))) then
                 P_vect(3,1,2)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,17)).and.(CBS(Current_box,18)).and.(CBS(Current_box,15)))) then
+            if ( ((CBS(Current_box,17_8)).and.(CBS(Current_box,18_8)).and.(CBS(Current_box,15_8)))) then
                 P_vect(3,3,2)=-1.0d0
             endif
 
-            if (CBS(Current_box,5)) then
+            if (CBS(Current_box,5_8)) then
                 P_vect(2,2,1)=-1.0d0
             endif
 
-            if (CBS(Current_box,23)) then
+            if (CBS(Current_box,23_8)) then
                 P_vect(2,2,3)=-1.0d0
             endif
 
-            if (CBS(Current_box,11)) then
+            if (CBS(Current_box,11_8)) then
                 P_vect(2,1,2)=-1.0d0
             endif
 
-            if (CBS(Current_box,17)) then
+            if (CBS(Current_box,17_8)) then
                 P_vect(2,3,2)=-1.0d0
             endif
 
-            if (CBS(Current_box,13)) then
+            if (CBS(Current_box,13_8)) then
                 P_vect(1,2,2)=-1.0d0
             endif
 
-            if (CBS(Current_box,15)) then
+            if (CBS(Current_box,15_8)) then
                 P_vect(3,2,2)=-1.0d0
             endif
 
