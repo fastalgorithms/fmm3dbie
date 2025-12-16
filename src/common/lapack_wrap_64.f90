@@ -39,7 +39,7 @@ subroutine zvecvec(n, x, y, cd)
 !
 !  Input arguments:
 !  
-!    - n: integer
+!    - n: integer *8
 !        length of the complex vectors
 !    - x: double complex(n)
 !        input vector 1
@@ -80,7 +80,7 @@ subroutine zzero(n, z)
 !
 !  Input arguments:
 !
-!    - n: integer
+!    - n: integer *8
 !        length of the vector
 !
 !  Output arguments:
@@ -110,9 +110,9 @@ subroutine ztranspose(m, n, a)
 !  of a complex matrix
 !
 !  Input arguments:
-!    - m: integer
+!    - m: integer *8
 !        number of rows
-!    - n: integer
+!    - n: integer *8
 !        number of columns
 !
 !  Inout arguments:
@@ -372,7 +372,7 @@ subroutine zinverse(n, a, info, ainv)
   implicit integer *8 (i-n)
   complex *16 :: a(n,n), ainv(n,n)
 
-  integer, allocatable :: ipiv(:)
+  integer *8, allocatable :: ipiv(:)
   complex *16, allocatable :: work(:)
   integer *8 n1,n2,incx,incy,lwork,info1
 
@@ -710,6 +710,7 @@ subroutine zmatvec(m, n, a, x, y)
   incy = 1
   m1 = m
   n1 = n
+  if (m.eq.0.or.n.eq.0) return
   call zgemv(trans, m1, n1, alpha, a, m1, x, incx, beta, y, incy)
 
   return
@@ -734,6 +735,7 @@ subroutine dmatvec(m, n, a, x, y)
   incy = 1
   m1 = m
   n1 = n
+  if (m.eq.0.or.n.eq.0) return
   call dgemv(trans, m1, n1, alpha, a, m1, x, incx, beta, y, incy)
 
   return
@@ -794,6 +796,7 @@ subroutine dmatzvec_saved(m, n, a, x, y)
     xi(i) = imag(x(i))
   end do
 
+  if(m.eq.0.or.n.eq.0) return
   call dgemv(trans, m1, n1, alpha, a, m1, xr, incx, beta, yr, incy)
   call dgemv(trans, m1, n1, alpha, a, m1, xi, incx, beta, yi, incy)
 
@@ -833,6 +836,7 @@ subroutine zmatmat(m, n, a, k, b, c)
   n1 = n
   k1 = k 
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0) return
   call zgemm(transa, transb, m1, k1, n1, alpha, a, lda, b, ldb, &
       beta, c, ldc)
 
@@ -865,6 +869,7 @@ subroutine dmatmat(m, n, a, k, b, c)
   n1 = n
   k1 = k
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0) return
   call dgemm(transa, transb, m1, k1, n1, alpha, a, lda, b, ldb, &
       beta, c, ldc)
 
@@ -911,6 +916,7 @@ subroutine zrmatmatt(m, n, a, k, b, c)
   n1 = n
   m1 = m
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0) return
   call zgemm(transa, transb, k1, m1, n1, alpha, bz, n1, a, n1, &
       beta, c, k1)
 
@@ -938,6 +944,8 @@ subroutine dgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
   m1 = m
   n1 = n
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0.or.lda.eq.0.or.ldb.eq.0.or.ldc.eq.0) &
+    return
   call dgemm(transa,transb,m1,n1,k1,alpha,a,lda1,b,ldb1,beta,c,ldc1)
 
   return
@@ -963,6 +971,8 @@ subroutine zgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
   m1 = m
   n1 = n
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0.or.lda.eq.0.or.ldb.eq.0.or.ldc.eq.0) &
+    return
   call zgemm(transa,transb,m1,n1,k1,alpha,a,lda1,b,ldb1,beta,c,ldc1)
 
   return
@@ -987,6 +997,7 @@ subroutine dgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
   m1 = m
   n1 = n
 
+  if(m.eq.0.or.n.eq.0.or.lda.eq.0) return
   call dgemv(trans,m1,n1,alpha,a,lda1,x,incx1,beta,y,incy1)
 
   return
@@ -1011,6 +1022,7 @@ subroutine zgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
   m1 = m
   n1 = n
 
+  if(m.eq.0.or.n.eq.0.or.lda.eq.0) return
   call zgemv(trans,m1,n1,alpha,a,lda1,x,incx1,beta,y,incy1)
 
   return

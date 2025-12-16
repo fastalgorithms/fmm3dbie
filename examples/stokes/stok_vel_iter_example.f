@@ -183,7 +183,7 @@ c
 
       ndt_in = 3
       nt_in = 1
-      call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
+      call stok_comb_vel_eval(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_targ,
      2     ipatch_id,uvs_targ,eps,dpars,soln,udir)
 

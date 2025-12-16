@@ -1,3 +1,5 @@
+      subroutine test_find_near(nsuccess)
+
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
       real *8, allocatable :: src(:,:),targ(:,:),rads(:)
@@ -78,12 +80,6 @@
       if(i0+i1+i2.eq.3) isuc = 1
       nsuccess = isuc
 
-      ntests = 1
-      open(unit=33,file='../../print_testres.txt',access='append')
-      write(33,'(a,i2,a,i2,a)') 'Successfully completed ',nsuccess,
-     1  ' out of ',ntests,' in quadratures testing suite'
-      close(33)
 
-
-      stop
+      return
       end

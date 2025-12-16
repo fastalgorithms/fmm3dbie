@@ -16,3 +16,12 @@ int2*
 *.asv
 *.DS_STORE*
 *.msh*
+*.mod
+*.sh
+*egg-info
+make.inc
+todo
+*mex*
+*build*
+*old*
+*vscode

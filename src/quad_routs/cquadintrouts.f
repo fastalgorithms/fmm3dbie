@@ -950,15 +950,15 @@ c
              nn2 = nppols*npmax
              nn3 = 12*npmax
              nn4 = nquad*6
-             call dcopy(nn1,sigvals,1,sigvals2,1)
-             call dcopy(nn2,sigvalsdens,1,sigvalsdens2,1)
-             call dcopy(nn3,srcvals,1,srcvals2,1)
-             call dcopy(npmax,qwts,1,qwts2,1)
+             call dcopy_guru(nn1,sigvals,int8_1,sigvals2,int8_1)
+             call dcopy_guru(nn2,sigvalsdens,int8_1,sigvalsdens2,int8_1)
+             call dcopy_guru(nn3,srcvals,int8_1,srcvals2,int8_1)
+             call dcopy_guru(npmax,qwts,int8_1,qwts2,int8_1)
              do ii=1,nquad
                ichild_start2(ii) = ichild_start(ii)
              enddo
-             call dcopy(nn4,tvs,1,tvs2,1)
-             call dcopy(nquad,da,1,da2,1)
+             call dcopy_guru(nn4,tvs,int8_1,tvs2,int8_1)
+             call dcopy_guru(nquad,da,int8_1,da2,int8_1)
 
 
              deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
@@ -975,15 +975,15 @@ c
                ichild_start(ii) = -1
              enddo
 
-             call dcopy(nn1,sigvals2,1,sigvals,1)
-             call dcopy(nn2,sigvalsdens2,1,sigvalsdens,1)
-             call dcopy(nn3,srcvals2,1,srcvals,1)
-             call dcopy(npmax,qwts2,1,qwts,1)
+             call dcopy_guru(nn1,sigvals2,int8_1,sigvals,int8_1)
+             call dcopy_guru(nn2,sigvalsdens2,int8_1,sigvalsdens,int8_1)
+             call dcopy_guru(nn3,srcvals2,int8_1,srcvals,int8_1)
+             call dcopy_guru(npmax,qwts2,int8_1,qwts,int8_1)
              do ii=1,nquad
                ichild_start(ii) = ichild_start2(ii)
              enddo
-             call dcopy(nn4,tvs2,1,tvs,1)
-             call dcopy(nquad,da2,1,da,1)
+             call dcopy_guru(nn4,tvs2,int8_1,tvs,int8_1)
+             call dcopy_guru(nquad,da2,int8_1,da,int8_1)
 
              npmax = npmax0
              nqmaxuse = nqmaxuse0
@@ -1786,11 +1786,13 @@ c
       
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
-      integer *8 int8_9
+      integer *8 int8_9, int8_2, int8_1
 
       data ima/(0.0d0,1.0d0)/
 
       int8_9 = 9
+      int8_2 = 2
+      int8_1 = 1
       allocate(cvals(nppols,nquadmax))
       allocate(istack(2*nquadmax))
 
@@ -1887,8 +1889,8 @@ c
          allocate(umattmp(nqpols,nqpols),vmattmp(nqpols,nqpols))
          itype = 1
          
-         call polytens_exps_nd(2,ipoly,itype,nqorder+1,ttype,uvsq,
-     1     umattmp,1,vmattmp,1,wts)
+         call polytens_exps_nd(int8_2,ipoly,itype,nqorder+1,ttype,uvsq,
+     1     umattmp,int8_1,vmattmp,int8_1,wts)
       
          deallocate(umattmp,vmattmp)
       endif

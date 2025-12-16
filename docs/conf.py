@@ -12,16 +12,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
-import os
-import sphinx.ext.autodoc
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('..'))
-sys.path.append(os.path.abspath('sphinxext'))
-sys.path.insert(0,os.path.abspath('../../texext'))
 
 # -- General configuration ------------------------------------------------
 
@@ -33,13 +26,9 @@ needs_sphinx = '1.3'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.todo',
-    'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
-#    'sphinx.ext.autosectionlabel',   # needs v 1.4; can :ref: other files w/o this; removed 7/29/18
-    'texext',
     'sphinxcontrib.bibtex',
+    'sphinx_math_dollar'
 ]
 
 bibtex_bibfiles = ['references.bib']
@@ -61,7 +50,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'Boundary integral equation 3D'
 #copyright = u'2019-2019 The Simons Foundation, Inc. - All Rights Reserved'
-author = u'Leslie Greengard, Michael ONeil, Manas Rachh, and Felipe Vico'
+author = u'fmm3dbie development team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -77,7 +66,7 @@ release = u'0.1.0'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -245,8 +234,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'bie3d.tex', u'fmm3d Documentation',
-     u'Leslie Greengard \\and Mike ONeil \\and Manas Rachh \\and Felipe Vico', 'manual'),
+    (master_doc, 'bie3d.tex', u'fmm3dbie Documentation',
+     u'Travis Askham and Tristan Goodwill and Leslie Greengard \\and Jeremy Hoskins and Libin Lu and Mike ONeil \\and Manas Rachh and Vladimir Rokhlin\\and Felipe Vico', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

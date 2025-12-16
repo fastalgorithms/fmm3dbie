@@ -10,6 +10,7 @@ CC=icc
 CXX=icpc
 FC=ifort
 FFLAGS= -fPIC -O3 -march=native -funroll-loops 
+FFLAGS2= -fPIC -march=native
 
 
 OMPLIBS = -qopenmp 

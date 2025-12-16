@@ -57,9 +57,11 @@ subroutine zvecvec(n, x, y, cd)
   complex *16, intent(in) :: x(n), y(n)
   complex *16, intent(out) :: cd
   complex *16 zdotu
+  integer n1
 
+  n1 = n
   cd = 0
-  cd = zdotu(n,x,1,y,1)
+  cd = zdotu(n1,x,1,y,1)
   return
 end subroutine zvecvec
 
@@ -707,6 +709,8 @@ subroutine zmatvec(m, n, a, x, y)
   incx = 1
   beta = 0
   incy = 1
+
+  if (m.eq.0.or.n.eq.0) return
   call zgemv(trans, muse, nuse, alpha, a, muse, x, incx, beta, y, incy)
 
   return
@@ -731,6 +735,8 @@ subroutine dmatvec(m, n, a, x, y)
   incx = 1
   beta = 0
   incy = 1
+
+  if (m.eq.0.or.n.eq.0) return
   call dgemv(trans, muse, nuse, alpha, a, muse, x, incx, beta, y, incy)
 
   return
@@ -797,8 +803,11 @@ subroutine dmatzvec_saved(m, n, a, x, y)
     xi(i) = imag(x(i))
   end do
 
-  call dgemv(trans, muse, nuse, alpha, a, m, xr, incx, beta, yr, incy)
-  call dgemv(trans, muse, nuse, alpha, a, m, xi, incx, beta, yi, incy)
+  if(m.eq.0.or.n.eq.0) return
+  call dgemv(trans, muse, nuse, alpha, a, muse, xr, incx, beta, yr, &
+      incy)
+  call dgemv(trans, muse, nuse, alpha, a, muse, xi, incx, beta, yi, &
+      incy)
 
   do i = 1,m
     y(i) = yr(i) + ima*yi(i)
@@ -836,6 +845,7 @@ subroutine zmatmat(m, n, a, k, b, c)
   ldb = n
   ldc = m
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0) return
   call zgemm(transa, transb, muse, kuse, nuse, alpha, a, lda, b, ldb, &
       beta, c, ldc)
 
@@ -869,6 +879,7 @@ subroutine dmatmat(m, n, a, k, b, c)
   ldb = n
   ldc = m
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0) return
   call dgemm(transa, transb, muse, kuse, nuse, alpha, a, lda, b, ldb, &
       beta, c, ldc)
 
@@ -914,6 +925,7 @@ subroutine zrmatmatt(m, n, a, k, b, c)
   alpha = 1
   beta = 0
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0) return
   call zgemm(transa, transb, kuse, muse, nuse, alpha, bz, nuse, a, nuse, &
       beta, c, kuse)
 
@@ -932,6 +944,9 @@ subroutine dgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
   character transa,transb
 
   double precision a(lda,*),b(ldb,*),c(ldc,*)
+
+  if(m.eq.0.or.n.eq.0.or.k.eq.0.or.lda.eq.0.or.ldb.eq.0.or.ldc.eq.0) &
+    return
 
   kuse = k
   ldause = lda
@@ -958,6 +973,9 @@ subroutine zgemm_guru(transa,transb,m,n,k,alpha,a,lda,b,ldb,beta,c,ldc)
 
   double complex a(lda,*),b(ldb,*),c(ldc,*)
 
+  if(m.eq.0.or.n.eq.0.or.k.eq.0.or.lda.eq.0.or.ldb.eq.0.or.ldc.eq.0) &
+    return
+
   kuse = k
   ldause = lda
   ldbuse = ldb
@@ -981,8 +999,10 @@ subroutine dgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
   integer *8 incx,incy,lda,m,n
   character trans
   integer incxuse,incyuse,ldause,muse,nuse
-  
+
   double precision a(lda,*),x(*),y(*)
+
+  if(m.eq.0.or.n.eq.0.or.lda.eq.0) return
 
   incxuse = incx
   incyuse = incy
@@ -1005,9 +1025,10 @@ subroutine zgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
   integer *8 incx,incy,lda,m,n
   character trans
   integer incxuse,incyuse,ldause,muse,nuse
-  
+
   double complex a(lda,*),x(*),y(*)
 
+  if(m.eq.0.or.n.eq.0.or.lda.eq.0) return
   incxuse = incx
   incyuse = incy
   ldause = lda
@@ -1015,7 +1036,6 @@ subroutine zgemv_guru(trans,m,n,alpha,a,lda,x,incx,beta,y,incy)
   nuse = n
   call zgemv(trans,muse,nuse,alpha,a,ldause,x,incxuse, &
     beta,y,incyuse)
-
 
   return
 end subroutine zgemv_guru

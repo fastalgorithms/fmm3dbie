@@ -47,9 +47,9 @@ Input arguments:
       zpars(1) = k 
       zpars(2) = $\alpha$
       zpars(3) = $\beta$
-  - sigma: double complex(2 . npts)
-      sigma(1:npts) = density of single layer potential ($\lambda$ above) ,
-      sigma((npts+1):(2 $\cdot$ npts)) = density of double layer potential ($\rho$ above) 
+  - sigma: double complex(2, npts)
+      sigma(1,:) = density of single layer potential ($\lambda$ above) ,
+      sigma(2,:) = density of double layer potential ($\rho$ above) 
 
 Output arguments
   - pot: double complex(ntarg)

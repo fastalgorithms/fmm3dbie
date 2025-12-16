@@ -539,7 +539,7 @@ c
          itype = 1
          
          call polytens_exps_nd(int8_2,ipoly,itype,nqorder+1,ttype,
-     1     uvsq,umattmp,1,vmattmp,1,wts)
+     1     uvsq,umattmp,int8_1,vmattmp,int8_1,wts)
       
          deallocate(umattmp,vmattmp)
       endif
@@ -869,7 +869,7 @@ c
          itype = 1
          
          call polytens_exps_nd(int8_2,ipoly,itype,nqorder+1,ttype,
-     1     uvsq,umattmp,int8_1,vmattmp,int8_2,wts)
+     1     uvsq,umattmp,int8_1,vmattmp,int8_1,wts)
       
          deallocate(umattmp,vmattmp)
       endif
@@ -948,15 +948,15 @@ c
              nn2 = nppols*npmax
              nn3 = 12*npmax
              nn4 = nquad*6
-             call dcopy(nn1,sigvals,int8_1,sigvals2,int8_1)
-             call dcopy(nn2,sigvalsdens,int8_1,sigvalsdens2,int8_1)
-             call dcopy(nn3,srcvals,int8_1,srcvals2,int8_1)
-             call dcopy(npmax,qwts,int8_1,qwts2,int8_1)
+             call dcopy_guru(nn1,sigvals,int8_1,sigvals2,int8_1)
+             call dcopy_guru(nn2,sigvalsdens,int8_1,sigvalsdens2,int8_1)
+             call dcopy_guru(nn3,srcvals,int8_1,srcvals2,int8_1)
+             call dcopy_guru(npmax,qwts,int8_1,qwts2,int8_1)
              do ii=1,nquad
                ichild_start2(ii) = ichild_start(ii)
              enddo
-             call dcopy(nn4,tvs,int8_1,tvs2,int8_1)
-             call dcopy(nquad,da,int8_1,da2,int8_1)
+             call dcopy_guru(nn4,tvs,int8_1,tvs2,int8_1)
+             call dcopy_guru(nquad,da,int8_1,da2,int8_1)
 
 
              deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
@@ -973,15 +973,15 @@ c
                ichild_start(ii) = -1
              enddo
 
-             call dcopy(nn1,sigvals2,int8_1,sigvals,int8_1)
-             call dcopy(nn2,sigvalsdens2,int8_1,sigvalsdens,int8_1)
-             call dcopy(nn3,srcvals2,int8_1,srcvals,int8_1)
-             call dcopy(npmax,qwts2,int8_1,qwts,int8_1)
+             call dcopy_guru(nn1,sigvals2,int8_1,sigvals,int8_1)
+             call dcopy_guru(nn2,sigvalsdens2,int8_1,sigvalsdens,int8_1)
+             call dcopy_guru(nn3,srcvals2,int8_1,srcvals,int8_1)
+             call dcopy_guru(npmax,qwts2,int8_1,qwts,int8_1)
              do ii=1,nquad
                ichild_start(ii) = ichild_start2(ii)
              enddo
-             call dcopy(nn4,tvs2,int8_1,tvs,int8_1)
-             call dcopy(nquad,da2,int8_1,da,int8_1)
+             call dcopy_guru(nn4,tvs2,int8_1,tvs,int8_1)
+             call dcopy_guru(nquad,da2,int8_1,da,int8_1)
 
              npmax = npmax0
              nqmaxuse = nqmaxuse0

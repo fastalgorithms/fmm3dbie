@@ -1,4 +1,17 @@
-c (c) Zydrunas Gimbutas 
+cc Copyright (C): Zydrunas Gimbutas
+cc Contact: Zydrunas Gimbutas <gimbutas@courant.nyu.edu>
+cc 
+cc This program is free software; you can redistribute it and/or modify 
+cc it under the terms of the GNU General Public License as published by 
+cc the Free Software Foundation; either version 2 of the License, or 
+cc (at your option) any later version.  This program is distributed in 
+cc the hope that it will be useful, but WITHOUT ANY WARRANTY; without 
+cc even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+cc PARTICULAR PURPOSE.  See the GNU General Public License for more 
+cc details. You should have received a copy of the GNU General Public 
+cc License along with this program; 
+cc if not, see <http://www.gnu.org/licenses/>.
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c 
 c  This file contains the following user callable routines:
 c  
@@ -322,21 +335,20 @@ c
 c
 c
 
-        subroutine orthonormalize_all(du,normal,ru,rv,ns)
+        subroutine orthonormalize_all(du, rnormal, ru, rv, ns)
 c!f2py intent(in) du, normal, ns
 c!f2py intent(out) ru,rv
         implicit none
 c       !List of calling arguments
         integer *8, intent(in) :: ns
-        double precision, intent(in) :: du(3,ns), normal(3,ns)
+        double precision, intent(in) :: du(3,ns), rnormal(3,ns)
         double precision, intent(out) :: ru(3,ns), rv(3,ns)
 
 c       !List of local variables
-        double precision :: aux
         integer *8 :: j
 
         do j=1,ns
-           call orthonormalize(du(:,j), normal(:,j), ru(:,j), rv(:,j))
+           call orthonormalize(du(:,j), rnormal(:,j), ru(:,j), rv(:,j))
          enddo
 
         return
@@ -347,7 +359,7 @@ c       !List of local variables
 
 
 
-        subroutine orthonormalize(du, normal, ru, rv)
+        subroutine orthonormalize(du, rnormal, ru, rv)
         implicit none
 c
 c       This routine computes:
@@ -355,19 +367,19 @@ C           ru = du / ||du||
 C           rv = normal X ru
 c
 c       !List of calling arguments
-        double precision, intent(in) :: du(3), normal(3)
+        double precision, intent(in) :: du(3), rnormal(3)
         double precision, intent(out) :: ru(3), rv(3)
 c
 c       !List of local variables
         double precision :: aux
 c
-        aux=sqrt(du(1)**2+du(2)**2+du(3)**2)
+        aux=sqrt(du(1)**2 + du(2)**2 + du(3)**2)
         ru(1)=du(1)/aux
         ru(2)=du(2)/aux
         ru(3)=du(3)/aux
 c
-        call cross_prod3d(normal, ru, rv)
-c        call my_cross_v2(normal, ru, rv)
+        call cross_prod3d(rnormal, ru, rv)
+
         return
         end
 

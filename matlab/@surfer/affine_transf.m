@@ -1,15 +1,20 @@
 function [objout,varargout] = affine_transf(obj,mat,shift)
+% AFFINE_TRANSF Affine transformation of surfer object.
 %
-%  performs an affine transformation of the given object
+% S2 = affine_transf(S,M,v) returns S2, a copy of surfer object S, except with
+%  all geometry transformed under x -> Mx+v, the affine map from R3 to R3.
+%  M must be 3x3 matrix, and v a 3x1 column vector.
+%  If v is absent, the zero vector is assumed.
 %
+% See also TRANSLATE, ROTATE, SCALE
+  
     objout = obj;
 
- 	npatches = obj.npatches;
+    npatches = obj.npatches;
     norders  = obj.norders;
     
     srcvals  = obj.srcvals;
-    srccoefs = obj.srccoefs;
-    weights  = obj.weights;
+    iptype   = obj.iptype;
     
     if (nargin < 2)
         return
@@ -18,43 +23,15 @@ function [objout,varargout] = affine_transf(obj,mat,shift)
     end
     
     if (nargin == 2 && ~isequal(size(mat),[3,3]))
-        fprintf('Incompatible scaling matrix, returning same object \n');
+        error('Incompatible scaling matrix, returning same object \n');
         return
     end
     if (nargin == 3 && ~isequal(size(shift),[3,1]))
-        fprintf('Incompatible shift vector, returning same object \n');
+        error('Incompatible shift vector, returning same object \n');
         return
     end
     
-    if(length(norders)==1)
-        
-        obj.norders = ones(npatches,1)*norders;
-        
-        rwts = cell(1);
-        umats = cell(1);
-        rnodes = koorn.rv_nodes(norders);
-        rwts{1} = koorn.rv_weights(norders);
-        umats{1} = koorn.vals2coefs(norders,rnodes);
-        
-        iuse = ones(npatches,1);
-        
-        
-        
-    elseif(length(norders)==npatches)
-        obj.norders = norders;
-        [norders_uni,~,iuse] = unique(norders);
-        nuni = length(norders_uni);
-        rwts = cell(nuni,1);
-        umats = cell(nuni,1);
-        for i=1:nuni
-            rnodes = koorn.rv_nodes(norders_uni(i));
-            rwts{i} = koorn.rv_weights(norders_uni(i));
-            umats{i} = koorn.vals2coefs(norders_uni(i),rnodes);
-        end
-    else
-        fprintf('Incompatible size of norders, returning\n');
-        return;
-    end
+
     
     for i=1:npatches
         sptch = [srcvals{i}];
@@ -66,22 +43,13 @@ function [objout,varargout] = affine_transf(obj,mat,shift)
         r = mat*r+shift;
         du= mat*du;
         dv= mat*dv;
-        n = mat*n;
-        da = vecnorm(cross(du,dv),2).*rwts{iuse(i)};
-        weights{i} = da(:);
-        
+        n = cross(du,dv);
+        nnorm = vecnorm(n,2,1);
+        n = n./nnorm;
         sptch = [r;du;dv;n];
-        srccoefs{i} = sptch(1:9,:)*umats{iuse(i)}';
         srcvals{i}  = sptch;
     end    
-    
-    objout.weights = weights;
-    objout.srcvals = srcvals;
-    objout.srccoefs = srccoefs;
-    sv = [objout.srcvals{:}];
-    objout.r  = sv(1:3,:);
-    objout.du = sv(4:6,:);
-    objout.dv = sv(7:9,:);
-    objout.n  = sv(10:12,:);
+    srcvals = [srcvals{:}];
+    objout = surfer(npatches,norders,srcvals,iptype);
     
 end

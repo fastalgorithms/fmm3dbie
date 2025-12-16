@@ -217,7 +217,7 @@ subroutine koorn_pols(uv, nmax, npols, pols)
   ! polynomials, which are classically defined on the triangle with
   ! vertices (0,0), (1,0), (1,1), and given analytically as:
   !
-  !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x+1)  x^k  P_k(2y/x-1)
+  !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x-1)  x^k  P_k(2y/x-1)
   !
   ! After mapping to the uv-simplex via the change of variables
   !
@@ -362,7 +362,7 @@ subroutine koorn_ders(uv, nmax, npols, pols, ders)
   ! are classically defined on the triangle with vertices (0,0),
   ! (1,0), (1,1), and given analytically as:
   !
-  !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x+1)  x^k  P_k(2y/x-1)
+  !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x-1)  x^k  P_k(2y/x-1)
   !
   ! After mapping to the uv-simplex via the change of variables
   !
@@ -923,7 +923,7 @@ subroutine koornf_pols(uv, nmax, npols, pols, rat1, rat2, rsc1)
   ! polynomials, which are classically defined on the triangle with
   ! vertices (0,0), (1,0), (1,1), and given analytically as:
   !
-  !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x+1)  x^k  P_k(2y/x-1)
+  !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x-1)  x^k  P_k(2y/x-1)
   !
   ! After mapping to the uv-simplex via the change of variables
   !
@@ -1086,7 +1086,7 @@ subroutine koornf_ders(uv, nmax, npols, pols, ders, rat1, rat2, rsc1)
   ! are classically defined on the triangle with vertices (0,0),
   ! (1,0), (1,1), and given analytically as:
   !
-  !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x+1)  x^k  P_k(2y/x-1)
+  !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x-1)  x^k  P_k(2y/x-1)
   !
   ! After mapping to the uv-simplex via the change of variables
   !

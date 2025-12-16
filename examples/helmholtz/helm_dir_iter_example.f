@@ -7,7 +7,8 @@
 
       integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3)
+      real *8 xyz_out(3), xyz_in(3)
+      real *8 xyz_src(3), xyz_targ(3)
       complex *16, allocatable :: sigma(:),rhs(:)
       complex *16 zk
       real *8, allocatable :: errs(:)
@@ -21,7 +22,10 @@
       logical isout0,isout1
 
       complex *16 pot,potex,ztmp,ima
+      real *8 c0(3)
       integer *8 int8_0,int8_1,int8_3
+      integer *8 nuv(2)
+      character *100, igeom
 
       data ima/(0.0d0,1.0d0)/
 
@@ -34,42 +38,57 @@
       done = 1
       pi = atan(done)*4
 
-
+      norder = 4 
 c
-c       select geometry type
-c       igeomtype = 1 => sphere
-c       igeomtype = 2 => stellarator
-c 
-      igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 2
-      if(igeomtype.eq.2) ipars(1) = 10
+c  patch type, iptype0 = 1, for triangles with RV nodes
+c                      = 11, for quadrangles with GL nodes
+c                      = 12, for quadrangles with Cheb nodes      
+c      
+      iptype0 = 11
 
-      if(igeomtype.eq.1) then
-        npatches = 12*(4**ipars(1))
-      endif
-      if(igeomtype.eq.2) then
-        ipars(2) = ipars(1)*3
-        npatches = 2*ipars(1)*ipars(2)
-      endif
+      igeom = 'sphere'
+      if (trim(igeom).eq.'sphere') then
+        a = 1
+        na = 2
+        c0(1) = 0
+        c0(2) = 0
+        c0(3) = 0
+        call get_sphere_npat_mem(a, na, c0, norder, iptype0, 
+     1    npatches, npts)
 
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(ixyzs(npatches+1), iptype(npatches))
+        allocate(norders(npatches))
 
-      zk = 1.11d0+ima*0.0d0
-cc      zk = 1.0d-6
-      zpars(1) = zk 
-      zpars(2) = ima*zk
-      zpars(3) = 1.0d0 
+        call get_sphere_npat(a, na, c0, norder, iptype0,
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
 
-      if(igeomtype.eq.1) then
-        xyz_out(1) = 3.17d0
-        xyz_out(2) = -0.03d0
-        xyz_out(3) = 3.15d0
+        ra = 1.05d0
+        thet = 0.8d0*pi
+        phi = 1.13d0*2*pi
+        xyz_out(1) = ra*sin(thet)*cos(phi) 
+        xyz_out(2) = ra*sin(thet)*sin(phi) 
+        xyz_out(3) = ra*cos(thet) 
 
         xyz_in(1) = 0.17d0
         xyz_in(2) = 0.23d0
         xyz_in(3) = -0.11d0
-      endif
+      elseif (trim(igeom).eq.'stellarator') then
 
-      if(igeomtype.eq.2) then
+        nuv(1) = 10
+        nuv(2) = 30
+        
+        call get_stellarator_npat_mem(nuv, norder, iptype0, 
+     1    npatches, npts)
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(ixyzs(npatches+1), iptype(npatches))
+        allocate(norders(npatches))
+
+        call get_stellarator_npat(nuv, norder, iptype0,
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+
         xyz_in(1) = -4.501d0
         xyz_in(2) = 1.7d-3
         xyz_in(3) = 0.00001d0
@@ -80,44 +99,41 @@ cc      zk = 1.0d-6
       endif
 
 
-      norder = 4 
-      npols = (norder+1)*(norder+2)/2
 
-      npts = npatches*npols
-      allocate(srcvals(12,npts),srccoefs(9,npts))
-      ifplot = 0
+      zk = 1.11d0+ima*0.0d0
+      zpars(1) = zk 
+      zpars(2) = ima*zk
+      zpars(3) = 1.0d0 
 
-
-      call setup_geom(igeomtype,norder,npatches,ipars, 
-     1       srcvals,srccoefs,ifplot,fname)
-
-      allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
-
-      do i=1,npatches
-        norders(i) = norder
-        ixyzs(i) = 1 +(i-1)*npols
-        iptype(i) = 1
-      enddo
-
-      ixyzs(npatches+1) = 1+npols*npatches
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
-      isout0 = .false.
-      isout1 = .false.
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1  wts,xyz_in,isout0)
-      
-      call test_exterior_pt(npatches,norder,npts,srcvals,srccoefs,
-     1   wts,xyz_out,isout1)
+      ifinout = 1
+      if(ifinout.eq.0) then
+        xyz_src(1) = xyz_out(1)
+        xyz_src(2) = xyz_out(2)
+        xyz_src(3) = xyz_out(3)
 
-       print *, isout0,isout1
+        xyz_targ(1) = xyz_in(1)
+        xyz_targ(2) = xyz_in(2)
+        xyz_targ(3) = xyz_in(3)
+      endif
+
+      if(ifinout.eq.1) then
+        xyz_src(1) = xyz_in(1)
+        xyz_src(2) = xyz_in(2)
+        xyz_src(3) = xyz_in(3)
+
+        xyz_targ(1) = xyz_out(1)
+        xyz_targ(2) = xyz_out(2)
+        xyz_targ(3) = xyz_out(3)
+      endif
 
 
       allocate(sigma(npts),rhs(npts))
 
       do i=1,npts
-        call h3d_slp(xyz_out,int8_3,srcvals(1,i),int8_0,dpars,
+        call h3d_slp(xyz_src,int8_3,srcvals(1,i),int8_0,dpars,
      1     int8_1,zpars,int8_0,ipars,rhs(i))
         sigma(i) = 0 
       enddo
@@ -125,7 +141,6 @@ cc      zk = 1.0d-6
 
 
       numit = 200
-      ifinout = 0
       niter = 0
       allocate(errs(numit+1))
 
@@ -146,11 +161,11 @@ cc      zk = 1.0d-6
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_1,
+      call h3d_slp(xyz_src,int8_3,xyz_targ,int8_0,dpars,int8_1,
      1             zpars,int8_0,ipars,potex)
       pot = 0
       do i=1,npts
-        call h3d_comb(srcvals(1,i),int8_3,xyz_in,int8_0,dpars,
+        call h3d_comb(srcvals(1,i),int8_3,xyz_targ,int8_0,dpars,
      1     int8_3,zpars,int8_0,ipars,ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
@@ -165,8 +180,8 @@ c
       ipatch_id = -1
       uvs_targ(1) = 0
       uvs_targ(2) = 0
-      call lpcomp_helm_comb_dir(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
+      call helm_comb_dir_eval(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_targ,ipatch_id,
      2  uvs_targ,eps,zpars,sigma,pot)
 
       call prin2('potex=*',potex,2)
@@ -179,112 +194,6 @@ c
       stop
       end
 
-
-
-
-      subroutine setup_geom(igeomtype,norder,npatches,ipars, 
-     1    srcvals,srccoefs,ifplot,fname)
-      implicit real *8 (a-h,o-z)
-      implicit integer *8 (i-n)
-      integer *8 igeomtype,norder,npatches,ipars(*),ifplot
-      character (len=*) fname
-      real *8 srcvals(12,*), srccoefs(9,*)
-      real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
-
-      real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer *8, pointer :: iptr1,iptr2,iptr3,iptr4
-      real *8, target :: p1(10),p2(10),p3(10),p4(10)
-      real *8, allocatable, target :: triaskel(:,:,:)
-      real *8, allocatable, target :: deltas(:,:)
-      integer *8, allocatable :: isides(:)
-      integer *8, target :: nmax,mmax
-
-      procedure (), pointer :: xtri_geometry
-
-
-      external xtri_stell_eval,xtri_sphere_eval
-      
-      npols = (norder+1)*(norder+2)/2
-      allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-      allocate(wts(npols))
-
-      call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
-
-      if(igeomtype.eq.1) then
-        itype = 2
-        allocate(triaskel(3,3,npatches))
-        allocate(isides(npatches))
-        npmax = npatches
-        ntri = 0
-        call xtri_platonic(itype, ipars(1), npmax, ntri, 
-     1      triaskel, isides)
-
-        xtri_geometry => xtri_sphere_eval
-        ptr1 => triaskel(1,1,1)
-        ptr2 => p2(1)
-        ptr3 => p3(1)
-        ptr4 => p4(1)
-
-
-        if(ifplot.eq.1) then
-           call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2, 
-     1         ptr3,ptr4, norder,'Triangulated surface of the sphere')
-        endif
-
-
-        call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,ptr3,ptr4,
-     1     npols,uvs,umatr,srcvals,srccoefs)
-      endif
-
-      if(igeomtype.eq.2) then
-        done = 1
-        pi = atan(done)*4
-        umin = 0
-        umax = 2*pi
-        vmin = 2*pi
-        vmax = 0
-        allocate(triaskel(3,3,npatches))
-        nover = 0
-        call xtri_rectmesh_ani(umin,umax,vmin,vmax,ipars(1),ipars(2),
-     1     nover,npatches,npatches,triaskel)
-
-        mmax = 2
-        nmax = 1
-        xtri_geometry => xtri_stell_eval
-
-        allocate(deltas(-1:mmax,-1:nmax))
-        deltas(-1,-1) = 0.17d0
-        deltas(0,-1) = 0
-        deltas(1,-1) = 0
-        deltas(2,-1) = 0
-
-        deltas(-1,0) = 0.11d0
-        deltas(0,0) = 1
-        deltas(1,0) = 4.5d0
-        deltas(2,0) = -0.25d0
-
-        deltas(-1,1) = 0
-        deltas(0,1) = 0.07d0
-        deltas(1,1) = 0
-        deltas(2,1) = -0.45d0
-
-        ptr1 => triaskel(1,1,1)
-        ptr2 => deltas(-1,-1)
-        iptr3 => mmax
-        iptr4 => nmax
-
-        if(ifplot.eq.1) then
-           call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2, 
-     1         iptr3,iptr4, norder,
-     2         'Triangulated surface of the stellarator')
-        endif
-
-        call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,iptr3,iptr4,
-     1     npols,uvs,umatr,srcvals,srccoefs)
-      endif
-      
-      return  
-      end
 
 
       subroutine test_exterior_pt(npatches,norder,npts,srcvals,

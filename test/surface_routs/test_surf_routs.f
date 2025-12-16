@@ -1,7 +1,7 @@
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
 
-      ntests = 2
+      ntests = 3
       nsuccess = 0
       call test_surf_lap(nsuccess)
 
@@ -35,6 +35,7 @@ c
       complex *16, allocatable :: drhs_cart_ex(:,:)
       complex *16, allocatable :: drhs_cart(:,:)
       complex *16, allocatable :: sigma2(:),rhs2(:)
+      real *8, allocatable :: rmean_curv(:)
       real *8, allocatable :: errs(:)
       real *8 thet,phi,eps_gmres
       complex * 16 zpars(3)
@@ -107,7 +108,22 @@ c     1  npts,srccoefs,srcvals,'sph-msh.vtk','msh')
 
 
       allocate(sigma(npts),rhs(npts),rhs2(npts))
+      allocate(rmean_curv(npts))
       allocate(ffform(2,2,npts))
+
+      call get_mean_curvature(npatches, norders, ixyzs, iptype, npts, 
+     1    srccoefs, srcvals, rmean_curv)
+
+      erra = 0
+      ra = 0
+      do i=1,npts
+        erra = erra + (rmean_curv(i) - 1)**2*wts(i)
+        ra = ra + wts(i)
+      enddo
+
+      erra = sqrt(erra/ra)
+      print *, "error in mean curvature=",erra
+      if(erra.lt.1.0d-6) nsuccess=nsuccess+1
 
 c
 c       define rhs to be one of the ynm's

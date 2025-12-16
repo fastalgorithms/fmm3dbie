@@ -34,6 +34,10 @@ user callable routines::
 
 List of wrappers:
 
-- `Helmholtz <helm_wrappers.html#hwrap>`__ 
+- `Helmholtz <helm_wrappers.html#hwrap>`__
+    - `Dirichlet <helm_dir_wrappers.html#hdirwrap>`__ 
+    - `Neumann <helm_neu_wrappers.html#hneuwrap>`__ 
+    - `Impedance <helm_imp_wrappers.html#himpwrap>`__ 
+    - `Transmission <helm_trans_wrappers.html#htranswrap>`__ 
 - `Laplace <lap_wrappers.html#lwrap>`__
-- `Stokes <stok_wrappers.html$swrap>`__
+- `Stokes <stok_wrappers.html#swrap>`__

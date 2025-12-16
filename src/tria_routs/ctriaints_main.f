@@ -193,6 +193,7 @@ c
 
 
       integer *8 n2
+      integer *8 ier
 
       complex *16 cintvals(nppols,ntarg)
       
@@ -213,12 +214,18 @@ c
       if(istrat.eq.1) then
           rn1 = 0
           n2 = 0
+          ier = 0
           
           call ctriaints_dist(eps,intype,npatches,norder,npols,
      1        srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,itargptr,
      2        ntargptr,nporder,nppols,ntrimax,rat1,rat2,rsc1,
      3        rat1p,rat2p,rsc1p,fker,ndd,
-     3        dpars,ndz,zpars,ndi,ipars,nqorder,rfac,cintvals)
+     3        dpars,ndz,zpars,ndi,ipars,nqorder,rfac,cintvals, ier)
+          if(ier.ne.0) then
+              print *, "Too few tirangles in ctriaints_dist"
+              print *, "Try running with larger value of ntrimax"
+              return
+          endif
       endif
 
       if(istrat.eq.2) then

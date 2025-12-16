@@ -1,28 +1,62 @@
-Installation
-============
+.. role::matlab(code)
+   :language: matlab
 
-Obtaining fmm3dbie
-******************
+Get fmm3dBIE
+=============
 
-The source code can be downloaded from https://github.com/fastalgorithms/fmm3dbie 
+Installation from source
+*************************
 
+Installation directly from source is not recommended for Windows machines.
+See source code with binaries below.
+
+- Get the source code:
+
+  * The source code can be downloaded from https://github.com/fastalgorithms/fmm3dbie
+
+  * To get all dependencies along with the code run::
+
+    git clone - -recurse-submodules https://github.com/fastalgorithms/fmm3dbie.git
+
+Install with Precompiled Windows Binaries
+------------------------------------------
+
+Windows compilation of fmm3dbie binaries and mex files tends to be a complicated
+process. For intel systems, we have zip files with `pre-compiled Windows binaries
+for matlab available <https://github.com/fastalgorithms/fmm3dbie/releases/tag/v1.0.0>`_.
+
+
+Instructions:
+
+- Select the zip file whose name has MATLAB version 2020 if your version is 2022 or older. Select 2023 otherwise.
+
+- The x86 version should work on most intel machines. The avx2 specification is also commonly available and will be faster if it is compatible with your machine.
+
+- Download the file and unzip. We recommend testing the fmm binaries by running the following in the matlab directory of fmm3dbie:
+
+.. code:: matlab
+   
+   startup
+   cd tests/
+   runtests
 
 Dependencies
 ************
 
-This library is supported for unix/linux, and Mac OSX.
+This library is supported for unix/linux, Mac OSX, and Windows.
 
 For the basic libraries
 
 * Fortran compiler, such as ``gfortran`` packaged with GCC
 * GNU make
-* `FMM3D <https://github.com/flatironinstitute/FMM3D>`_
 * Blocked linear algebra routines and LAPACK (default used: Netlib BLAS
   on Linux machines, and framework accelerate on MacOS)
 
 Optional:
 
-* for building Python wrappers you will need ``python`` and ``pip`` 
+* for building Python wrappers you will need ``python`` and ``pip``
+* for building standard MATLAB wrappers: MATLAB
+* for modifying MATLAB wrappers (experts only): ``mwrap``
 
 Quick install instructions
 *********************************************
@@ -30,11 +64,13 @@ Quick install instructions
 Make sure you have dependencies downloaded, and `cd` into your fmm3dbie
 directory. 
 
--  For linux, run ``make install``.
--  For Mac OSX, run ``cp make.inc.macos.gnu make.inc`` followed by ``make install``.
+-  For linux, run ``make clean`` followed by ``make install``.
+-  For Intel Mac OSX, run ``cp make.inc.macos.gnu make.inc`` followed by ``make clean`` and ``make install``.
+-  For M1/M2/M3 Mac OSX, run ``cp make.inc.macos_arm.gnu make.inc`` followed by ``make clean`` and ``make install``.
 
-This should compile the static library
-in ``lib-static/``, the dynamic library in ``lib/`` and copy the dynamic 
+This should compile the static library for FMM3D in ``FMM3D/lib-static/``, 
+the static library for fmm3dbie in ``lib-static/``, 
+the dynamic library for fmm3dbie in ``lib/`` and copy the dynamic 
 library to ``$(HOME)/lib`` on Linux, and to ``/usr/local/lib`` on Mac OSX.
 The location of the default installation directory can be changed by
 running::
@@ -52,7 +88,7 @@ In order to link against the dynamic library, you will have to update
 the ``LD_LIBRARY_PATH`` environment
 variable on Linux and ``DYLD_LIBRARY_PATH`` environment variable on Mac OSX
 to the installation directory.
-You may then link to the fmm3dbie library using the ``-L$(FMMBIE_INSTALL_DIR) -lfmm3dbie -L$(FMM_INSTALL_DIR) -lfmm3d`` 
+You may then link to the fmm3dbie library using the ``-L$(FMMBIE_INSTALL_DIR) -lfmm3dbie`` 
 option.
 
 .. note :: 
@@ -63,14 +99,16 @@ option.
 To verify successful compilation of the program, run ``make test``
 which compiles some fortran test drivers in ``test/`` linked against
 the static library, after which it
-runs the test programs. The last 7 lines of the terminal output should be::
+runs the test programs. The last 9 lines of the terminal output should be::
 
    cat print_testres.txt
-   Successfully completed 6 out of 6 tests in common testing suite
+   Successfully completed 8 out of 8 tests in common testing suite
    Successfully completed 2 out of 2 tests in helm_wrappers testing suite
    Successfully completed 2 out of 2 tests in lap_wrappers testing suite
    Successfully completed 2 out of 2 tests in surface routs testing suite
    Successfully completed 27 out of 27 tests in tria_routs testing suite
+   Successfully completed 24 out of 24 tests in quad_routs testing suite
+   Successfully completed 1 out of 1 tests in quadratures testing suite
    rm print_testres.txt
 
 
@@ -90,8 +128,8 @@ same as above.
 
 If ``make test`` fails, see more detailed instructions below. 
 
-If ``make test-dyn`` fails with an error about not finding ``-lfmm3d``
-or ``-lfmm3dbie`` make sure that the appropriate environment variables
+If ``make test-dyn`` fails with an error about not finding ``-lfmm3dbie`` 
+make sure that the appropriate environment variables
 have been set. If it fails with other issues, see more detailed
 instructions below. 
 
@@ -105,15 +143,14 @@ Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``examples`` directory is a good place to see usage 
-examples for Fortran.
-There are three sample Fortran drivers for both iterative and direct
-solvers for the Helmholtz Dirichlet problem. 
+examples for Fortran. There are several sample drivers for Laplace, Helmholtz,
+Stokes and Maxwell solvers.
 
-The sample drivers are
-``helm_dir/helm_dir_fds_example.f``, ``helm_dir/helm_dir_iter_example.f``, and
-``helm_dir/helm_dir_iter_example2.f``, and the corresponding makefiles
-are ``helm_dir/helm_dir_fds_example.make``, ``helm_dir/helm_dir_iter_example.make``, and
-``helm_dir/helm_dir_iter_example2.make``. These demonstrate how to link
+For example, in the ``helmholtz`` directory, the sample drivers are
+``helm_dir_fds_example.f``, ``helm_dir_iter_example.f``, and
+``helm_dir_iter_example2.f``, and the corresponding makefiles
+are ``helm_dir_fds_example.make``, ``helm_dir_iter_example.make``, and
+``helm_dir_iter_example2.make``. These demonstrate how to link
 to the dynamic library ``libfmm3dbie.so``. The first is an example for
 using the matrix entry generators which are needed by fast direct
 solvers. The last two are examples of iterative solvers - the geometry
@@ -148,6 +185,29 @@ There can be confusion and conflicts between various versions of Python and inst
 
 Now you are in a virtual environment that starts from scratch. All pip installed packages will go inside the env1 directory. (You can get out of the environment by typing ``deactivate``)
 
+
+Building the MATLAB wrappers
+******************************
+
+First make sure you have MATLAB installed. 
+
+Then run ``make matlab`` (after copying over the operating
+system specific make.inc.* file to make.inc) which links the .m files to
+the .c file in the matlab folder.
+
+To set the relevant paths, run ``startup`` in the ``matlab`` folder.
+
+To run tests, you can run ``runtests`` in the ``matlab/tests`` 
+directory and it should return::
+
+
+   Totals:
+   23 Passed, 0 Failed, 0 Incomplete.
+   <time taken> seconds testing time.
+
+Example codes for available in the ``matlab/demo`` folder.
+
+Checkout our `MATLAB user guide <matlab_user_guide.html>`__  for info on how to use the MATLAB interface.
 
 Tips for installing dependencies
 **********************************
@@ -212,5 +272,22 @@ Make sure you have homebrew installed. See `Tips for installing dependencies -> 
 
 Then use `make python3` instead of `make python`. You will only need to
 do this in case the default version of `python` and `pip` is not >=3.0 
+
+
+Installing MWrap
+~~~~~~~~~~~~~~~~~~
+
+If you make any changes to the 
+fortran code, you will need to regenerate the .c files
+from the .mw files for which mwrap is required.
+This is not needed for most users.
+`MWrap <http://www.cs.cornell.edu/~bindel/sw/mwrap>`_
+is a very useful MEX interface generator by Dave Bindel.
+
+Make sure you have ``flex`` and ``bison`` installed.
+Download version 0.33.5 or later from https://github.com/zgimbutas/mwrap, un-tar the package, cd into it, then::
+  
+  make
+  sudo cp mwrap /usr/local/bin/
 
 

@@ -4,25 +4,29 @@ problem using the combined field integral representation
 
 .. math::
 
-   u_{1} &= \varepsilon_{1}^2 \mathcal{S}_{k_{1}}[\lambda] + \varepsilon_{1} \mathcal{D}_{k_{1}}[\rho] \,, \\
-   u_{0} &= \varepsilon_{0}^2 \mathcal{S}_{k_{0}}[\lambda] + \varepsilon_{0} \mathcal{D}_{k_{0}}[\rho] \,.
+   u_{1} &= \frac{1}{\beta_{1}} \left( ik_{1} \mathcal{S}_{k_{1}}[\lambda] + \mathcal{D}_{k_{1}}[\rho] \right) \,, \\
+   u_{0} &= \frac{1}{\beta_{0}} \left( ik_{0} \mathcal{S}_{k_{0}}[\lambda] + \mathcal{D}_{k_{0}}[\rho] \right) \,.
 
 The integral equation on the boundary is given by
 
 .. math::
    
-   f &=  \frac{(\varepsilon_{0} + \varepsilon_{1})}{2} \rho + 
-   (\varepsilon_{0} \mathcal{D}_{k_{0}} - \varepsilon_{1} 
-   \mathcal{D}_{k_{1}})[\rho] + 
-   (\varepsilon_{0}^2 \mathcal{S}_{k_{0}} - \varepsilon_{1}^2 
-   \mathcal{S}_{k_{1}})[\lambda] \, , \\ 
-   g &=  -\frac{(\varepsilon_{0} + \varepsilon_{1})}{2} \lambda + 
+   z f &=  -\frac{i}{2}(k_{0} + k_{1}) \rho + 
+   z \left( \frac{\alpha_{0}}{\beta_{0}} \mathcal{D}_{k_{0}} -
+   \frac{\alpha_{1}}{\beta_{1}} \mathcal{D}_{k_{1}} \right) [\rho] + 
+   z \left(ik_{0} \frac{\alpha_{0}}{\beta_{0}} \mathcal{S}_{k_{0}} -
+   \frac{\alpha_{1}}{\beta_{1}} \mathcal{S}_{k_{1}} \right) [\lambda] \\ 
+   g &=  -\frac{i}{2}(k_{0} + k_{1})  + 
    (\mathcal{D}_{k_{0}}' - \mathcal{D}_{k_{1}}')[\rho] + 
-   (\varepsilon_{0} \mathcal{S}_{k_{0}}' - \varepsilon_{1} 
+   (ik_{0} \mathcal{S}_{k_{0}}' - ik_{1} 
    \mathcal{S}_{k_{1}}')[\lambda] \, , \\ 
 
-where f,g are the boundary data, and $k_{j} = \omega \sqrt{\mu_{j}} 
-\sqrt{\varepsilon_{j}}$, $j=0,1$.
+where f,g are the boundary data, $k_{0}, k_{1}$,
+are the interior and exterior wavenumbers, and 
+
+.. math::
+  
+  z = -i\frac{(k_{0} + k_{1}) \beta_{0} \beta_{1}}{\alpha_{0} \beta_{1} + \beta_{0} \alpha_{1}}
 
 Input arguments:
 
@@ -45,11 +49,12 @@ Input arguments:
         discretization nodes
     - eps: double precision
          precision requested for computing quadrature and fmm tolerance
-    - zpars: double complex(5)
-         kernel parameters, zpars(1)=$\omega$, zpars(2)=$\varepsilon_{0}$,
-         zpars(3)=$\mu_{0}$, zpars(4)=$\varepsilon_{1}$, zpars(5) = $\mu_{1}$
-    - rhs: double complex(2 . npts)
-         rhs(1:npts) is boundary data f, and rhs((npts+1):(2 $\cdot$ npts))
+    - zpars: double complex(6)
+         kernel parameters, zpars(1)=$k_{0}$, zpars(2)=$\alpha_{0}$,
+         zpars(3)=$\beta_{0}$, zpars(4)=$k_{1}$, zpars(5) = $\alpha_{1}$,
+         zpars(6)=$\beta_{1}$
+    - rhs: double complex(2, npts)
+         rhs(1,:) is boundary data f, and rhs(2,:)
          is boundary data g
     - eps_gmres: double precision
          gmres tolerance requested
@@ -63,7 +68,7 @@ Output arguments:
          relative residual as a function of iteration number
     - rres: double precision
          relative residual of the computed solution
-    - sigma: double complex(2 . npts)
-         sigma(1:npts) = density of single layer potential ($\lambda$ above) ,
-         sigma((npts+1):(2 $\cdot$ npts)) = density of double layer potential ($\rho$ above) 
+    - sigma: double complex(2, npts)
+         sigma(1,:) = density of single layer potential ($\lambda$ above) ,
+         sigma(2,:) = density of double layer potential ($\rho$ above) 
     

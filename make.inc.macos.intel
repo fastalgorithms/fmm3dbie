@@ -9,6 +9,7 @@ CC = icc
 CXX = icpc
 FC = ifort
 FFLAGS= -fPIC -O2 -march=native -funroll-loops
+FFLAGS2= -fPIC -march=native -funroll-loops
 
 ifeq ($(PREFIX),)
     FMMBIE_INSTALL_DIR=/usr/local/lib
@@ -24,5 +25,17 @@ OMPLIBS =
 
 LBLAS = -mkl
 
+# Wl flags for loading objects from static library into dynamic library
+WLDL = -Wl,-force_load
+WLDLEND = 
+
+
+#MATLAB interface:
+FDIR=$$(dirname `gfortran --print-file-name libgfortran.dylib`)
+MFLAGS +=-L${FDIR}
+MEX = $(shell ls -d /Applications/MATLAB_R* | sort | tail -1)/bin/mex
+
+#MWRAP location
+MWRAP=~/git/mwrap/mwrap
 
 

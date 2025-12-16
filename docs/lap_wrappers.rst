@@ -31,6 +31,6 @@ We have the following user callable routines:
 - `Dirichlet post-processor <lap_dir_wrappers.html#lpcomp-lap-comb-dir>`__
 
 To see a demo of the use of these interfaces see
-``examples/lap_wrappers/lap_dir_iter_example.f``. 
+``examples/laplace/lap_dir_iter_example.f``. 
 This script can be run using ``make -f lap_dir_iter_example.make`` in the
-``examples/lap_wrappers`` folder.
+``examples/laplace`` folder.

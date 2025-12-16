@@ -291,10 +291,10 @@
     end subroutine getnearquad_em_muller_trans
 
 
-      subroutine lpcomp_em_muller_trans_addsub(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,&
-     &eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,sigma,novers,&
-     &nptso,ixyzso,srcover,whtsover,pot,wnear)
+      subroutine lpcomp_em_muller_trans_addsub(npatches,norders,ixyzs, &
+       iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+       eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, sigma, novers, &
+       nptso, ixyzso, srcover, whtsover, pot, wnear)
 
 !
 !  This subroutine evaluates the layer potential for
@@ -481,6 +481,7 @@
       integer *8 nd,ntarg0
 
       real *8 ttot,done,pi
+      integer *8 nmax
       integer *8 int8_2,int8_12
 
       parameter (nd=1,ntarg0=1)
@@ -498,136 +499,126 @@
       allocate(sources(3,ns),targvals(3,ntarg))
       allocate(charges(ns),dipvec(3,ns))
       allocate(sigmaover(4*ns))
-	    allocate(pot_aux(4*ntarg))
+      allocate(pot_aux(4*ntarg))
 
 ! 
 !       oversample density
     
-    call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,&
-	&npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-	       
-    call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,&
-	&npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype, &
+        npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
+       
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype, &
+        npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
-	call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,&
-	&npts,sigma(2*npts+1:3*npts),novers,ixyzso,ns,sigmaover(2*ns+1:3*ns))
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype, & 
+        npts,sigma(2*npts+1:3*npts),novers,ixyzso,ns,sigmaover(2*ns+1:3*ns))
 
-	call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,&
-	&npts,sigma(3*npts+1:4*npts),novers,ixyzso,ns,sigmaover(3*ns+1:4*ns))
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype, & 
+       npts,sigma(3*npts+1:4*npts),novers,ixyzso,ns,sigmaover(3*ns+1:4*ns))
 
       ra = 0
 
 
 !
-!       fmm
+! fmm
 !
 
-		call get_fmm_thresh(int8_12,ns,srcover,ndtarg,ntarg,targs,thresh)
+       call get_fmm_thresh(int8_12,ns,srcover,ndtarg,ntarg,targs,thresh)
        ifdir=0
-	  
-		!Calculate the far_field with FMM		
-    call em_muller_trans_FMM2(eps,zpars,ns,npts,srcover,targs,whtsover,&
-    &sigmaover(1:ns),sigmaover(ns+1:2*ns),sigmaover(2*ns+1:3*ns),&
-    &sigmaover(3*ns+1:4*ns),pot_aux(1:ntarg),pot_aux(ntarg+1:2*ntarg),&
-    &pot_aux(2*ntarg+1:3*ntarg),pot_aux(3*ntarg+1:4*ntarg),&
-    &thresh,ifdir)
+  
+!  Calculate the far_field with FMM		
+      call em_muller_trans_FMM2(eps, zpars, ns, npts, srcover, targs, &
+      whtsover, sigmaover(1:ns), sigmaover(ns+1:2*ns), &
+      sigmaover(2*ns+1:3*ns), sigmaover(3*ns+1:4*ns), &
+      pot_aux(1:ntarg),pot_aux(ntarg+1:2*ntarg), &
+      pot_aux(2*ntarg+1:3*ntarg), pot_aux(3*ntarg+1:4*ntarg), &
+      thresh,ifdir)
 
-		call cpu_time(t1)
-!C$      t1 = omp_get_wtime()
-!C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
-!C$OMP$PRIVATE(jstart,pottmp,npols)
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart) &
+!$OMP PRIVATE(jstart,npols,l,count1,count2)
       do i=1,ntarg
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           npols = ixyzs(jpatch+1)-ixyzs(jpatch)
           jquadstart = iquad(j)
           jstart = ixyzs(jpatch) 
-          do l=1,npols	
-		        do count1=0,3
-			       do count2=0,3
-			         pot_aux(i+count1*npts) = pot_aux(i+count1*npts) + &
-				      &wnear((count1*4+count2)*nquad+jquadstart+l-1)*&
-				      &sigma(jstart+l-1+npts*count2)
-			       enddo
-			      enddo
+          do l=1,npols
+            do count1=0,3
+              do count2=0,3
+                pot_aux(i+count1*npts) = pot_aux(i+count1*npts) + &
+                  wnear((count1*4+count2)*nquad+jquadstart+l-1)* &
+                  sigma(jstart+l-1+npts*count2)
+              enddo
+            enddo
           enddo
         enddo
       enddo
+!$OMP END PARALLEL DO      
 
-!C$OMP END PARALLEL DO
-!C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2)
-!C$OMP$PRIVATE(ctmp2_u,ctmp2_v,wtmp2,nss,l,jstart,ii,E,npover)
-!		ipars(1)=1
-!		ipars(2)=1
-	ifdir=1
+      call get_near_corr_max(npts, row_ptr, nnz, col_ind, npatches, &
+        ixyzso, nmax)
+      allocate(srctmp2(12,nmax),wtmp2(nmax))
+      allocate(ctmp2_a_u(nmax),ctmp2_a_v(nmax))
+      allocate(ctmp2_b_u(nmax),ctmp2_b_v(nmax))
+
+      ifdir=1
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2) &
+!$OMP PRIVATE(ctmp2_a_u,ctmp2_a_v,ctmp2_b_u,ctmp2_b_v,wtmp2) &
+!$OMP PRIVATE(nss,l,jstart,ii,E,npover)
       do i=1,ntarg
         nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          nss = nss + ixyzso(jpatch+1)-ixyzso(jpatch)
-        enddo
-        allocate(srctmp2(12,nss),wtmp2(nss))
-        allocate(ctmp2_a_u(nss),ctmp2_a_v(nss))
-	      allocate(ctmp2_b_u(nss),ctmp2_b_v(nss))
-
-        rmin = 1.0d6
         ii = 0
         do j=row_ptr(i),row_ptr(i+1)-1
           jpatch = col_ind(j)
           jstart = ixyzso(jpatch)-1
           npover = ixyzso(jpatch+1)-ixyzso(jpatch)
           do l=1,npover
-			      ii = ii+1
-			      srctmp2(:,ii) = srcover(:,jstart+l)
-			      ctmp2_a_u(ii)=sigmaover(jstart+l)
-			      ctmp2_a_v(ii)=sigmaover(jstart+l+ns)			
-			      ctmp2_b_u(ii)=sigmaover(jstart+l+2*ns)
-			      ctmp2_b_v(ii)=sigmaover(jstart+l+3*ns)
-			      wtmp2(ii)=whtsover(jstart+l)
+            ii = ii+1
+            srctmp2(:,ii) = srcover(:,jstart+l)
+            ctmp2_a_u(ii)=sigmaover(jstart+l)
+            ctmp2_a_v(ii)=sigmaover(jstart+l+ns)
+            ctmp2_b_u(ii)=sigmaover(jstart+l+2*ns)
+            ctmp2_b_v(ii)=sigmaover(jstart+l+3*ns)
+            wtmp2(ii)=whtsover(jstart+l)
           enddo
         enddo
+        nss = ii
         call em_muller_trans_FMM2(eps,zpars,nss,ntarg0,srctmp2,targs(:,i),&
         &wtmp2,ctmp2_a_u,ctmp2_a_v,ctmp2_b_u,ctmp2_b_v,&
         &E(1),E(2),E(3),E(4),thresh,ifdir)
-	 
+ 
         do j=0,3
           pot_aux(i+j*ntarg) = pot_aux(i+j*ntarg) - E(j+1)
         enddo
-		
-        deallocate(srctmp2,wtmp2)
-        deallocate(ctmp2_a_u,ctmp2_a_v,ctmp2_b_u,ctmp2_b_v)
-
       enddo
+!$OMP END PARALLEL DO      
 
-    omega = zpars(1)
-	  ep0 = zpars(2)
-    mu0 = zpars(3)
-	  ep1 = zpars(4)
-	  mu1 = zpars(5)
+      omega = zpars(1)
+      ep0 = zpars(2)
+      mu0 = zpars(3)
+      ep1 = zpars(4)
+      mu1 = zpars(5)
 
-	  do i=1,ntarg
-		  pot_aux(i)=pot_aux(i)/(mu0+mu1)
-		  pot_aux(i+ntarg)=pot_aux(i+ntarg)/(mu0+mu1)
-		  pot_aux(i+2*ntarg)=pot_aux(i+2*ntarg)/(ep0+ep1)
-		  pot_aux(i+3*ntarg)=pot_aux(i+3*ntarg)/(ep0+ep1)
-	  enddo
+      do i=1,ntarg
+        pot_aux(i)=pot_aux(i)/(mu0+mu1)
+        pot_aux(i+ntarg)=pot_aux(i+ntarg)/(mu0+mu1)
+        pot_aux(i+2*ntarg)=pot_aux(i+2*ntarg)/(ep0+ep1)
+        pot_aux(i+3*ntarg)=pot_aux(i+3*ntarg)/(ep0+ep1)
+      enddo
       
-	  
-	  do i=1,ntarg
-		  pot(i)=pot_aux(i)
-		  pot(i+ntarg)=pot_aux(i+ntarg)
-		  pot(i+2*ntarg)=pot_aux(i+2*ntarg)
-		  pot(i+3*ntarg)=pot_aux(i+3*ntarg)
-	  enddo
-	  
-	  return
-    end subroutine lpcomp_em_muller_trans_addsub
+  
+      do i=1,4*ntarg
+        pot(i)=pot_aux(i)
+      enddo
+  
+      return
+      end subroutine lpcomp_em_muller_trans_addsub
 
 
 
-subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
-     &iptype,npts,srccoefs,srcvals,eps,zpars,numit,ifinout,&
-     &rhs,eps_gmres,niter,errs,rres,soln)
+subroutine em_muller_trans_solver(npatches, norders, ixyzs, &
+      iptype, npts, srccoefs, srcvals, eps, zpars, numit, &
+      rhs, eps_gmres, niter, errs, rres, soln)
 !
 !  This subroutine solves the Scattering Maxwell homogeneous dielectric
 !  problem.
@@ -699,13 +690,7 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
 !      zpars(4) = ep1
 !      zpars(5) = mu1
 !
-!    ifinout - integer *8
-!      flag for interior or exterior problems (normals assumed to 
-!        be pointing in exterior of region)
-!      ifinout = 0, interior problem
-!      ifinout = 1, exterior problem
-!
-!    rhs - complex *16(npts)
+!    rhs - complex *16(4*npts)
 !      right hand side
 !
 !    eps_gmres - real *8
@@ -740,7 +725,6 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
 
       implicit none
       integer *8 npatches,norder,npols,npts
-      integer *8 ifinout
       integer *8 norders(npatches),ixyzs(npatches+1)
       integer *8 iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
@@ -755,7 +739,7 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
 
       real *8 errs(numit+1)
       real *8 rres,eps2
-      integer *8 niter
+      integer *8 niter, numit
 
 
       integer *8 nover,npolso,nptso
@@ -779,24 +763,16 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
       real *8 rfac,rfac0
       integer *8 iptype_avg,norder_avg
       integer *8 ikerorder, iquadtype,npts_over
-	    integer *8 n_var
+      integer *8 n_var
 
 !
 !
 !       gmres variables
 !
-      complex *16 zid,ztmp
-      real *8 rb,wnrm2
-      integer *8 numit,it,iind,it1,k,l,count1
-      real *8 rmyerr
-      complex *16 temp
-      complex *16, allocatable :: vmat(:,:),hmat(:,:)
-      complex *16, allocatable :: cs(:),sn(:)
-      complex *16, allocatable :: svec(:),yvec(:),wtmp(:)
       complex *16 ima
 
       ima=(0.0d0,1.0d0)
-	  
+  
 !
 !   n_var is the number of unknowns in the linear system.
 !   as we have two vector unknown a and b 
@@ -804,10 +780,6 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
 !
 
       n_var=4*npts
-
-      allocate(vmat(n_var,numit+1),hmat(numit,numit))
-      allocate(cs(numit),sn(numit))
-      allocate(wtmp(n_var),svec(numit+1),yvec(numit+1))
 
 
       done = 1
@@ -921,7 +893,7 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      
 
-      call getnearquad_em_muller_trans(npatches,norders,&
+       call getnearquad_em_muller_trans(npatches,norders,&
      &ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
      &ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
      &iquad,rfac0,nquad,wnear)
@@ -932,6 +904,127 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
      
  1111 continue     
       print *, "done generating near quadrature, now starting gmres"
+
+      call em_muller_trans_solver_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, zpars, numit, rhs, &
+        nnz, row_ptr, col_ind, iquad, nquad, wnear, novers, npts_over, &
+        ixyzso, srcover, wover, eps_gmres, niter, errs, rres, soln)
+
+      return
+      end
+!
+!
+!
+!
+!
+
+      subroutine em_muller_trans_solver_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, zpars, numit, rhs, &
+        nnz, row_ptr, col_ind, iquad, nquad, wnear, novers, npts_over, &
+        ixyzso, srcover, wover, eps_gmres, niter, errs, rres, soln)
+!
+!  Guru subroutine for em_muller_trans_solver.
+!
+!  Documentation coming soon
+!
+!
+      implicit none
+
+      integer *8 npatches,norder,npols,npts
+      integer *8 norders(npatches),ixyzs(npatches+1)
+      integer *8 iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
+      complex *16 zpars(5)
+      complex *16 rhs(4*npts)
+      complex *16 soln(4*npts)
+
+      real *8, allocatable :: targs(:,:)
+      integer *8, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_targ(:,:)
+      integer *8 ndtarg,ntarg
+
+      real *8 errs(numit+1)
+      real *8 rres,eps2
+      integer *8 niter
+
+
+      integer *8 nover,npolso,nptso
+      integer *8 nnz,nquad
+      integer *8 row_ptr(npts+1), col_ind(nnz), iquad(nnz+1)
+
+      complex *16 wnear(16*nquad)
+
+      real *8 srcover(12,npts_over),wover(npts_over)
+      integer *8 ixyzso(npatches+1),novers(npatches)
+
+
+      integer *8 i,j,jpatch,jquadstart,jstart
+
+      integer *8 ipars(2)
+      real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
+
+
+      real *8 ttot,done,pi
+      real *8 rfac,rfac0
+      integer *8 iptype_avg,norder_avg
+      integer *8 ikerorder, iquadtype,npts_over
+      integer *8 n_var
+
+!
+!
+!       gmres variables
+!
+      complex *16 zid,ztmp
+      real *8 rb,wnrm2
+      integer *8 numit,it,iind,it1,k,l,count1
+      real *8 rmyerr
+      complex *16 temp
+      complex *16, allocatable :: vmat(:,:),hmat(:,:)
+      complex *16, allocatable :: cs(:),sn(:)
+      complex *16, allocatable :: svec(:),yvec(:),wtmp(:)
+      complex *16 ima
+
+!
+!   n_var is the number of unknowns in the linear system.
+!   as we have two vector unknown a and b 
+!   we need n_var=4*npts
+!
+
+      n_var=4*npts
+
+      allocate(vmat(n_var,numit+1),hmat(numit,numit))
+      allocate(cs(numit),sn(numit))
+      allocate(wtmp(n_var),svec(numit+1),yvec(numit+1))
+
+
+      done = 1
+      pi = atan(done)*4
+
+
+
+!
+!        setup targets as on surface discretization points
+! 
+      ndtarg = 12
+      ntarg = npts
+      allocate(targs(ndtarg,npts),uvs_targ(2,ntarg),ipatch_id(ntarg))
+!C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        targs(:,i)=srcvals(:,i)
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
+      enddo
+!C$OMP END PARALLEL DO   
+
+
+!
+!    initialize patch_id and uv_targ for on surface targets
+!
+      call get_patch_id_uvs(npatches, norders, ixyzs, iptype, npts, &
+        ipatch_id, uvs_targ)
+
+
 
 
 !
@@ -944,7 +1037,7 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
 !       part of the matvec
 !
 
-	  zid=0.5d0
+      zid=0.5d0
 
 
       niter=0
@@ -1081,7 +1174,7 @@ subroutine em_muller_trans_solver(npatches,norders,ixyzs,&
       enddo
 !
       return
-      end subroutine em_muller_trans_solver
+      end subroutine em_muller_trans_solver_guru
 
 
 
@@ -1826,6 +1919,43 @@ return
 end subroutine get_rhs_em_muller_trans
 
 
+      subroutine em_muller_trans_eval_oneside(eps_FMM, sol, zpars, ns, & 
+        wts, srcvals, ntarg, targs, iside, E, H)
+!
+!  Postprocess muller solution at a given collection of targets
+!
+!  documentation tbd
+!
+!
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8 ns, ntarg
+      real *8 eps_FMM
+      complex *16 sol(4*ns), zpars(5)
+      real *8 wts(ns), srcvals(12,ns), targs(3,ntarg)
+      integer *8 iside
+      complex *16 E(3,ntarg), H(3,ntarg)
+      complex *16 omega, ep, mu
+
+      omega = zpars(1)
+
+      if(iside.eq.0) then
+        ep = zpars(2)
+        mu = zpars(3)
+      else
+        ep = zpars(4)
+        mu = zpars(5)
+      endif
+
+      call em_muller_trans_FMM_targ(eps_FMM, omega, ep, mu, ns, &
+      srcvals, ntarg, targs, wts, sol(1), sol(ns+1), sol(2*ns+1), &
+      sol(3*ns+1:4*ns), E, H)
+
+      return
+      end
+
+
+
 subroutine test_accuracy_em_muller_trans(eps_FMM,sol,zpars,ns,wts,srcvals,P0,vf,Pt)
 implicit none
 
@@ -1843,7 +1973,7 @@ implicit none
 	  real ( kind = 8 ) ru_s(3),rv_s(3),n_s(3),sour(3),r,dr(3)
 	  real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3),error_E,rel_err_E,error_H,rel_err_H
 	  real ( kind = 8 ) pi
-	  integer *8 count1,int8_0,int8_1
+	  integer *8 count1,int8_0,int8_1,iside
 
 
       int8_0 = 0
@@ -1857,17 +1987,23 @@ implicit none
 	  ep1 = zpars(4)
 	  mu1 = zpars(5)
 
+      iside  = 0
+      call em_muller_trans_eval_oneside(eps_FMM, sol, zpars, ns, & 
+        wts, srcvals, int8_1, Pt, iside, Et1, Ht1)
+      iside = 1
+      call em_muller_trans_eval_oneside(eps_FMM, sol, zpars, ns, & 
+        wts, srcvals, int8_1, P0, iside, E01, H01)
 
-		call em_muller_trans_FMM_targ(eps_FMM,omega,ep0,mu0,ns,srcvals,int8_1,Pt,wts,&
-     &sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),sol(3*ns+1:4*ns),Et1,Ht1)
-		call em_muller_trans_FMM_targ(eps_FMM,omega,ep1,mu1,ns,srcvals,int8_1,P0,wts,&
-     &sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),sol(3*ns+1:4*ns),E01,H01)
-		
-		call fieldsEDomega(omega,ep0,mu0,P0,Pt,int8_1,Et2,Ht2,vf,int8_0)
-		call fieldsMDomega(omega,ep0,mu0,P0,Pt,int8_1,Et2,Ht2,vf,int8_1)
-		
-		call fieldsEDomega(omega,ep1,mu1,Pt,P0,int8_1,E02,H02,vf,int8_0)
-		call fieldsMDomega(omega,ep1,mu1,Pt,P0,int8_1,E02,H02,vf,int8_1)
+!      call em_muller_trans_FMM_targ(eps_FMM,omega,ep0,mu0,ns,srcvals,int8_1,Pt,wts,&
+!     &sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),sol(3*ns+1:4*ns),Et1,Ht1)
+!		call em_muller_trans_FMM_targ(eps_FMM,omega,ep1,mu1,ns,srcvals,int8_1,P0,wts,&
+!     &sol(1:ns),sol(ns+1:2*ns),sol(2*ns+1:3*ns),sol(3*ns+1:4*ns),E01,H01)
+
+        call fieldsEDomega(omega,ep0,mu0,P0,Pt,int8_1,Et2,Ht2,vf,int8_0)
+        call fieldsMDomega(omega,ep0,mu0,P0,Pt,int8_1,Et2,Ht2,vf,int8_1)
+
+        call fieldsEDomega(omega,ep1,mu1,Pt,P0,int8_1,E02,H02,vf,int8_0)
+        call fieldsMDomega(omega,ep1,mu1,Pt,P0,int8_1,E02,H02,vf,int8_1)
 
         write (*,*) 'Errors at the EXTERIOR region:'
         error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+abs(Et1(3)-Et2(3))**2)

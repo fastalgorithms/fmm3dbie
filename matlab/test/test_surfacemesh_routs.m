@@ -1,9 +1,9 @@
 %
 %  Additional dependency: surface-hps
 %
-run ~/git/surface-hps/setup.m
-addpath(genpath('~/git/fmm3dbie/matlab'))
+run ../startup.m
 
+if ~exist('surfacemesh', 'class'); return; end;
 
 % Test surface_mesh conversion script
 
@@ -15,8 +15,9 @@ dom = surfacemesh.sphere(norder+1,1);
 [n,~] = size(dom.x{1});
 
 n2 = n;
-xleg = legpts(n2);
-xcheb = chebpts(n,[-1,1]);
+xleg = polytens.lege.pts(n2);
+opts_use.kind = 2;
+xcheb = polytens.cheb.pts(n,opts_use);
 eval = barymat(xleg,xcheb);
 
 x2 = eval * dom.x{5} * eval.';
@@ -27,8 +28,8 @@ x2 = eval * dom.x{5} * eval.';
 xcoeffs = surfacefun.vals2coeffs(dom.x);
 xcoeffs{5};
 
-uvs = polytens.cheb_nodes(norder,2);
-umat = polytens.cheb_vals2coefs(norder,uvs);
+uvs = polytens.cheb.nodes(norder,2);
+umat = polytens.cheb.vals2coefs(norder,uvs);
 xuse = dom.x{5}';
 xuse = xuse(:);
 xcoeffs2 = umat*xuse;
@@ -40,8 +41,8 @@ xcoeffs2test = xcoeffs2';
 fprintf('error in vals to coefs=%d\n',norm(xcoeffs2test-xcoeffs{5}));
 
 
-uvs2 = polytens.lege_nodes(n2-1);
-vmat = polytens.cheb_coefs2vals(norder,uvs2);
+uvs2 = polytens.lege.nodes(n2-1);
+vmat = polytens.cheb.coefs2vals(norder,uvs2);
 
 xuse = xcoeffs2;
 xuse = xuse(:);
@@ -50,7 +51,7 @@ x3 = reshape(x3,[n2,n2]);
 
 fprintf('error in interpolant=%d\n',norm(x3-x2'));
 
-%% Test normals
+% Test normals
 rndom = normal(dom);
 xyzu  = surfacefunv(surfacefun(dom.xu,dom),surfacefun(dom.yu,dom),surfacefun(dom.zu,dom));
 xyzv  = surfacefunv(surfacefun(dom.xv,dom),surfacefun(dom.yv,dom),surfacefun(dom.zv,dom));

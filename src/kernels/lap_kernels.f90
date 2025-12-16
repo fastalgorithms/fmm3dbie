@@ -79,7 +79,7 @@ subroutine l3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   dz=targ(3)-src(3)
 
   d = dx*srcnorm(1) + dy*srcnorm(2) + dz*srcnorm(3)
-  r=sqrt(dx**2+dy**2+dz**2)
+  r = sqrt(dx**2+dy**2+dz**2)
 
   val =  d/(r**3)*over4pi
 
@@ -100,19 +100,17 @@ subroutine l3d_sprime(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   real *8 :: over4pi
   complex *16 :: zk
 
-  complex *16 :: ima
-  data ima/(0.0d0,1.0d0)/
   data over4pi/0.07957747154594767d0/
   !
   ! returns the normal derivative of the single layer kernel
   !
 
-  dx=targinfo(1)-srcinfo(1)
-  dy=targinfo(2)-srcinfo(2)
-  dz=targinfo(3)-srcinfo(3)
+  dx = targinfo(1) - srcinfo(1)
+  dy = targinfo(2) - srcinfo(2)
+  dz = targinfo(3) - srcinfo(3)
 
   d = dx*targinfo(10) + dy*targinfo(11) + dz*targinfo(12)
-  r=sqrt(dx**2+dy**2+dz**2)
+  r = sqrt(dx**2 + dy**2 + dz**2)
 
   val =  -d/(r**3)*over4pi
 

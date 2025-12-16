@@ -3,265 +3,607 @@
       implicit integer *8 (i-n)
 
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
-      real *8, allocatable :: wts(:)
       character *100 fname
       integer *8 ipars(2)
 
       integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: ixys2d(:), iptype2d(:)
+      real *8, allocatable :: srccoefs2d(:,:), srcvals2d(:,:)
 
-      real *8 xyz_out(3),xyz_in(3)
-      complex *16 zk
+      real *8, allocatable :: ts(:), ws(:), umat(:,:), vmat(:,:)
+
+      real *8 abc(3), c0(3)
+      integer *8 nabc(3), nuv(2)
+      real *8 radii(3)
 
       integer *8 ipatch_id
       real *8 uvs_targ(2)
+      real *8 pars(2)
+      real *8, allocatable :: tchse(:)
+      integer *8, allocatable :: nrts(:,:)
+      real *8 pols(100)
 
-      logical isout0,isout1
-
-
-      data ima/(0.0d0,1.0d0)/
-
+      external funcurve_oocyte_riemann
 
       call prini(6,13)
+
 
       done = 1
       pi = atan(done)*4
 
+      dlam = 0.5d0
 
-c
-c       select geometry type
-c       igeomtype = 1 => sphere
-c       igeomtype = 2 => stellarator
-c 
-      igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 0
-      if(igeomtype.eq.2) ipars(1) = 10
+      abc(1) = 2.1d0
+      abc(2) = 1.0d0
+      abc(3) = 4.0d0
 
-      if(igeomtype.eq.1) then
-        npatches = 12*(4**ipars(1))
+      nabc(1) = 5
+      nabc(2) = 3
+      nabc(3) = 10
+
+      c0(1) = 0
+      c0(2) = 5
+      c0(3) = -3
+
+      npatches = 0
+      npts = 0
+
+      norder = 5
+
+      ifellip = 0
+      ifsphere = 0
+      ifstartorus = 0
+      ifstell = 0
+      ifoocyte = 1
+      ifoocyte_chunks = 0
+
+      if (ifellip.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing ellipsoids"    
+        print *, ""
+        print *, "" 
+        iptype0 = 1
+
+        call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, 
+     1    npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'ellip_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs, 
+     1     iptype, npts, srccoefs, srcvals, 'ellip_tri_msh.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 11
+
+        call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, 
+     1    npatches, npts) 
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'ellip_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
       endif
-      if(igeomtype.eq.2) then
-        ipars(2) = ipars(1)*3
-        npatches = 2*ipars(1)*ipars(2)
+
+      if (ifsphere.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing sphere"    
+        print *, ""
+        print *, "" 
+
+        a = abc(1)
+        na = nabc(1)
+
+        iptype0 = 1
+        call get_sphere_npat_mem(a, na, c0, norder, iptype0, 
+     1    npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_sphere_npat(a, na, c0, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'sphere_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'sphere_tri_msh.vtk','a')
+
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 12
+
+        call get_sphere_npat_mem(a, na, c0, norder, iptype0, 
+     1    npatches, npts) 
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_sphere_npat(a, na, c0, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'sphere_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+      endif
+
+      if (ifstartorus.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing star tourus"    
+        print *, ""
+        print *, ""
+
+        radii(1) = 2
+        radii(2) = 0.75d0
+        radii(3) = 0.25d0
+
+        abc(1) = 1
+        abc(2) = 1
+        abc(3) = 1
+        
+        nosc = 5
+
+        nuv(1) = 10
+        nuv(2) = 15
+
+        iptype0 = 1
+
+        call get_startorus_npat_mem(radii, nosc, abc, nuv, norder, 
+     1    iptype0, npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_startorus_npat(radii, nosc, abc, nuv, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'star_torus_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'star_torus_tri_msh.vtk',
+     2     'a')
+
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 12
+
+        call get_startorus_npat_mem(radii, nosc, abc, nuv, norder, 
+     1    iptype0, npatches, npts)
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_startorus_npat(radii, nosc, abc, nuv, norder, iptype0, 
+     1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'star_torus_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+      endif
+
+      if (ifstell.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing stellarator"    
+        print *, ""
+        print *, ""
+
+
+        nuv(1) = 10
+        nuv(2) = 30
+        npatches = 0
+
+        iptype0 = 1
+
+        call get_stellarator_npat_mem(nuv, norder, iptype0, 
+     1     npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_stellarator_npat(nuv, norder, iptype0, npatches, npts, 
+     1     norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'stellarator_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'stellarator_tri_msh.vtk',
+     2     'a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 11
+
+        call get_stellarator_npat_mem(nuv, norder, iptype0, 
+     1     npatches, npts)
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_stellarator_npat(nuv, norder, iptype0, npatches, npts, 
+     1     norders, ixyzs, iptype, srccoefs, srcvals)
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'stellarator_quad.vtk','a')
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
       endif
 
 
-      zk = 1.11d0+ima*0.0d0
+      if (ifoocyte.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing oocyte"    
+        print *, ""
+        print *, ""
+        
+        a = 0.25d0
+        b = 0.1d0
+        
+        pars(1) = a
+        pars(2) = b
+
+        nmid = 5
+        iref = 0
+        nch2d = 2*(iref+1) + nmid
+        k = 16
+
+        allocate(tchse(nch2d+1), nrts(2,nch2d))
+        call get_oocyte3d_tchse(iref,nmid,nch2d,tchse)
+
+        rmid = 0.5d0
+        iort = 1
+
+        nmid = 3
+
+        nrts(1,1:nch2d) = 3
+        nrts(2,1:nch2d) = 4
+
+c        nrts(1:2,1) = 0
+c        nrts(1:2,nch2d) = 0
+
+        npatches = 0
+        iptype0 = 1
+
+        np = 2
+        iort = 1
+
+        call get_axissym_fcurve_npat_mem(nch2d, tchse,  
+     1     funcurve_oocyte_riemann, np, pars, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_axissym_fcurve_npat(nch2d, tchse,  
+     1     funcurve_oocyte_riemann, np, pars, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts, norders, ixyzs, iptype, 
+     3     srccoefs, srcvals)
+        
+
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'oocyte_tri.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'oocyte_tri_msh.vtk',
+     2     'a')
+        call vtk_scatter_plot_scalar(npts, srcvals(1:3,1:npts),
+     1      srcvals(1,1:npts), 'oocyte_tri_scatter.vtk','a')
+        call surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, 
+     1     npts, srccoefs, srcvals, srcvals(10:12,1:npts),
+     2     'oocyte_tri_normals.vtk','a')
+        call write_go3('oocyte.go3', norder, npatches, npts, srcvals)
+
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 11
+
+        call get_axissym_fcurve_npat_mem(nch2d, tchse,  
+     1     funcurve_oocyte_riemann, np, pars, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts)
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_axissym_fcurve_npat(nch2d, tchse,  
+     1     funcurve_oocyte_riemann, np, pars, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts, norders, ixyzs, iptype, 
+     3     srccoefs, srcvals)
+        
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'oocyte_quad.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'oocyte_quad_msh.vtk',
+     2     'a')
+        call surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, 
+     1     npts, srccoefs, srcvals, srcvals(10:12,1:npts),
+     2     'oocyte_quad_normals.vtk','a')
+        
+        
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+      endif
+
+      if (ifoocyte_chunks.eq.1) then
+
+        print *, "========================================="
+        print *, "Testing oocyte chunks"     
+        print *, ""
+        print *, ""
+        
+        a = 0.25d0
+        b = 0.1d0
+
+        np = 2
+        
+        pars(1) = a
+        pars(2) = b
+
+        nmid = 20
+        iref = 0
+        nch2d = 2*(iref+1) + nmid
+        k = 16
+
+        allocate(tchse(nch2d+1), nrts(2,nch2d))
+        call get_oocyte3d_tchse(iref,nmid,nch2d,tchse)
+
+        npts2d = nch2d*k
+
+        allocate(srcvals2d(8,npts2d), srccoefs2d(6,npts2d))
+        allocate(ixys2d(nch2d+1), iptype2d(nch2d))
+
+        k = 16
+        itype = 2
+        allocate(ts(k), ws(k), umat(k,k), vmat(k,k))
+        call legeexps(itype, k, ts, umat, vmat, ws)
+
+        do i=1,nch2d
+          ixys2d(i) = (i-1)*k + 1
+          iptype2d(i) = 1
+        enddo
+        ixys2d(nch2d+1) = npts2d+1
+
+        do ich = 1,nch2d
+          tchstart = tchse(ich)
+          tchend = tchse(ich+1)
+          
+          hh = (tchend - tchstart)/2.0d0
+          
+          do j=1,k
+            ipt = (ich-1)*k + j
+            tt = tchstart + (ts(j)+1.0d0)/2.0d0*(tchend-tchstart)
+
+            call funcurve_oocyte_riemann(tt,np,pars,x,y,dx,dy,dx2,dy2)
+            srcvals2d(1,ipt) = x
+            srcvals2d(2,ipt) = y
+            srcvals2d(3,ipt) = dx*hh
+            srcvals2d(4,ipt) = dy*hh
+            srcvals2d(5,ipt) = dx2*hh**2
+            srcvals2d(6,ipt) = dy2*hh**2
+            ds = sqrt(dx**2 + dy**2)
+            srcvals2d(7,ipt) = dy/ds
+            srcvals2d(8,ipt) = -dx/ds
+          enddo
+          do j=1,k
+            jpt = (ich-1)*k + j
+            srccoefs2d(1:6,jpt) = 0
+            do l=1,k
+              lpt = (ich-1)*k + l
+              srccoefs2d(1:6,jpt) = srccoefs2d(1:6,jpt) + 
+     1            umat(j,l)*srcvals2d(1:6,lpt)
+            enddo
+          enddo
+        enddo
+
+        call prin2('srcvals2d=*',srcvals2d(1:6,1:npts2d),16*6)
+        call prin2('srccoefs2d=*',srccoefs2d,16*6)
+
+        tt = hkrand(0)*(tchse(2) - tchse(1)) + tchse(1)
+        tuse = (tt-tchse(1))/(tchse(2)-tchse(1))*2 - 1
+        call legepols(tuse, k-1, pols)
+        r = 0
+        z = 0
+        do i=1,k
+          r = r + srccoefs2d(1,i)*pols(i)
+          z = z + srccoefs2d(2,i)*pols(i)
+        enddo
 
 
-      norder = 2 
-      npols = (norder+1)*(norder+2)/2
+        rmid = 0.5d0
+        iort = 1
 
-      npts = npatches*npols
-      allocate(srcvals(12,npts),srccoefs(9,npts))
-      ifplot = 0
+        nmid = 3
+
+        nrts(1,1:nch2d) = 0
+        nrts(2,1:nch2d) = 0
+
+        nrts(1:2,1) = 3
+        nrts(1:2,nch2d) = 3
+
+        
+
+c        nrts(1:2,1) = 0
+c        nrts(1:2,nch2d) = 0
+
+        npatches = 0
+        iptype0 = 1
+
+        iort = 1
+
+        call get_axissym_npat_mem(nch2d, npts2d, ixys2d, iptype2d,  
+     1     srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts)
+        print *, "npatches tri=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
 
 
-      call setup_geom(igeomtype,norder,npatches,ipars, 
-     1       srcvals,srccoefs,ifplot,fname)
+        call get_axissym_npat(nch2d, npts2d, ixys2d, iptype2d,   
+     1     srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts, norders, ixyzs, iptype, 
+     3     srccoefs, srcvals)
+        
 
-      allocate(norders(npatches),ixyzs(npatches+1),iptype(npatches))
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'oocyte_c_tri.vtk','a')
 
-      do i=1,npatches
-        norders(i) = norder
-        ixyzs(i) = 1 +(i-1)*npols
-        iptype(i) = 1
-      enddo
-      ixyzs(npatches+1) = 1+npols*npatches
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'oocyte_c_tri_msh.vtk',
+     2     'a')
+        call vtk_scatter_plot_scalar(npts, srcvals(1:3,1:npts),
+     1      srcvals(1,1:npts), 'oocyte_c_tri_scatter.vtk','a')
+        call surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, 
+     1     npts, srccoefs, srcvals, srcvals(10:12,1:npts),
+     2     'oocyte_c_tri_normals.vtk','a')
 
-      dlam = 2*pi/real(zk)
-      call plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,'stell.vtk','a')
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+
+        npatches = 0
+        npts = 0
+        iptype0 = 11
+
+        call get_axissym_npat_mem(nch2d, npts2d, ixys2d, iptype2d,  
+     1     srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts)
+        print *, "npatches quad=", npatches
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+
+        call get_axissym_npat(nch2d, npts2d, ixys2d, iptype2d,   
+     1     srcvals2d, srccoefs2d, nrts, rmid, nmid, iort, 
+     2     norder, iptype0, npatches, npts, norders, ixyzs, iptype, 
+     3     srccoefs, srcvals)
+        
+        call plot_surface_info_all(dlam, npatches, norders, ixyzs, 
+     1    iptype, npts, srccoefs, srcvals, 'oocyte_c_quad.vtk','a')
+
+        call surf_quadratic_msh_vtk_plot(npatches, norders, ixyzs,
+     1     iptype, npts, srccoefs, srcvals, 'oocyte_c_quad_msh.vtk',
+     2     'a')
+        call vtk_scatter_plot_scalar(npts, srcvals(1:3,1:npts),
+     1      srcvals(1,1:npts), 'oocyte_c_quad_scatter.vtk','a')
+        call surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, 
+     1     npts, srccoefs, srcvals, srcvals(10:12,1:npts),
+     2     'oocyte_c_quad_normals.vtk','a')
+        deallocate(srcvals, srccoefs, norders, ixyzs, iptype)
+      endif
 
       stop
       end
 
 
-
-
-      subroutine setup_geom(igeomtype,norder,npatches,ipars, 
-     1    srcvals,srccoefs,ifplot,fname)
-      implicit real *8 (a-h,o-z)
-      implicit integer *8 (i-n)
-      integer *8 igeomtype,norder,npatches,ipars(*),ifplot
-      character (len=*) fname
-      real *8 srcvals(12,*), srccoefs(9,*)
-      real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
-
-      real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer *8, pointer :: iptr1,iptr2,iptr3,iptr4
-      real *8, target :: p1(10),p2(10),p3(10),p4(10)
-      real *8, allocatable, target :: triaskel(:,:,:)
-      real *8, allocatable, target :: deltas(:,:)
-      integer *8, allocatable :: isides(:)
-      integer *8, target :: nmax,mmax
-
-      procedure (), pointer :: xtri_geometry
-
-
-      external xtri_stell_eval,xtri_sphere_eval
-      
-      npols = (norder+1)*(norder+2)/2
-      allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-      allocate(wts(npols))
-
-      call vioreanu_simplex_quad(norder,npols,uvs,umatr,vmatr,wts)
-
-      if(igeomtype.eq.1) then
-        itype = 2
-        allocate(triaskel(3,3,npatches))
-        allocate(isides(npatches))
-        npmax = npatches
-        ntri = 0
-        call xtri_platonic(itype, ipars(1), npmax, ntri, 
-     1      triaskel, isides)
-
-        xtri_geometry => xtri_sphere_eval
-        ptr1 => triaskel(1,1,1)
-        ptr2 => p2(1)
-        ptr3 => p3(1)
-        ptr4 => p4(1)
-
-
-        if(ifplot.eq.1) then
-           call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2, 
-     1         ptr3,ptr4, norder,'Triangulated surface of the sphere')
-        endif
-
-
-        call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,ptr3,ptr4,
-     1     npols,uvs,umatr,srcvals,srccoefs)
-      endif
-
-      if(igeomtype.eq.2) then
-        done = 1
-        pi = atan(done)*4
-        umin = 0
-        umax = 2*pi
-        vmin = 2*pi
-        vmax = 0
-        allocate(triaskel(3,3,npatches))
-        nover = 0
-        call xtri_rectmesh_ani(umin,umax,vmin,vmax,ipars(1),ipars(2),
-     1     nover,npatches,npatches,triaskel)
-
-        mmax = 2
-        nmax = 1
-        xtri_geometry => xtri_stell_eval
-
-        allocate(deltas(-1:mmax,-1:nmax))
-        deltas(-1,-1) = 0.17d0
-        deltas(0,-1) = 0
-        deltas(1,-1) = 0
-        deltas(2,-1) = 0
-
-        deltas(-1,0) = 0.11d0
-        deltas(0,0) = 1
-        deltas(1,0) = 4.5d0
-        deltas(2,0) = -0.25d0
-
-        deltas(-1,1) = 0
-        deltas(0,1) = 0.07d0
-        deltas(1,1) = 0
-        deltas(2,1) = -0.45d0
-
-        ptr1 => triaskel(1,1,1)
-        ptr2 => deltas(-1,-1)
-        iptr3 => mmax
-        iptr4 => nmax
-
-        if(ifplot.eq.1) then
-           call xtri_vtk_surf(fname,npatches,xtri_geometry, ptr1,ptr2, 
-     1         iptr3,iptr4, norder,
-     2         'Triangulated surface of the stellarator')
-        endif
-
-        call getgeominfo(npatches,xtri_geometry,ptr1,ptr2,iptr3,iptr4,
-     1     npols,uvs,umatr,srcvals,srccoefs)
-      endif
-      
-      return  
-      end
-
-
-      subroutine test_exterior_pt(npatches,norder,npts,srcvals,
-     1   srccoefs,wts,xyzout,isout)
-c
-c
-c  this subroutine tests whether the pt xyzin, is
-c  in the exterior of a surface, and also estimates the error
-c  in representing e^{ir/2}/r and \grad e^{ir/2}/r \cdot n
-c  centered at the interior point. Whether a point 
-c  is in the interior or not is tested using Gauss' 
-c  identity for the flux due to a point charge
-c
-c
-c  input:
-c    npatches - integer *8
-c       number of patches
-c    norder - integer *8
-c       order of discretization
-c    npts - integer *8
-c       total number of discretization points on the surface
-c    srccoefs - real *8 (9,npts)
-c       koornwinder expansion coefficients of geometry info
-c    xyzout -  real *8 (3)
-c       point to be tested
-c
-c  output: 
-c    isout - boolean
-c      whether the target is in the interior or not
-c
-
-      implicit none
-      integer *8 npatches,norder,npts,npols
-      real *8 srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
-      real *8 tmp(3)
-      real *8 dpars,done,pi
-      real *8, allocatable :: rsurf(:),err_p(:,:) 
-      integer *8 ipars,norderhead,nd
-      complex *16, allocatable :: sigma_coefs(:,:), sigma_vals(:,:)
-      complex *16 zk,val
-
-      integer *8 ipatch,j,i
-      real *8 ra,ds
-      logical isout
-      integer *8 int8_0,int8_1,int8_12
-
-      int8_0 = 0
-      int8_1 = 1
-      int8_12 = 12
-      done = 1
-      pi = atan(done)*4
-
-      npols = (norder+1)*(norder+2)/2
-
-
-      zk = 0
-
-      ra = 0
-
-
-
-      do ipatch=1,npatches
-        do j=1,npols
-          i = (ipatch-1)*npols + j
-          call h3d_sprime(xyzout,int8_12,srcvals(1,i),int8_0,dpars,
-     1       int8_1,zk,int8_0,ipars,val)
-
-          call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
-          ds = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
-          ra = ra + real(val)*wts(i)
-        enddo
-      enddo
-
-      if(abs(ra+4*pi).le.1.0d-1) isout = .false.
-      if(abs(ra).le.1.0d-1) isout = .true.
-
-      return
-      end
-
    
 
 
+
+
+
+      subroutine funcurve_oocyte_riemann(t,np,pars,x,y,dxdt, 
+     1   dydt,d2xdt2,d2ydt2)
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      real *8 t,pars(np),pi
+
+
+      done = 1.0d0
+      pi = atan(done)*4
+
+      a = pars(1)
+      b = pars(2)
+      w = sqrt(1.0d0 + a**2 + b**2)
+
+      tt = pi*t
+      x = w/2*sin(tt) - a/2*sin(tt) - b/2/sqrt(2.0d0)*sin(2*tt)
+      dxdt = pi*(w/2*cos(tt) - a/2*cos(tt) - b/sqrt(2.0d0)*cos(2*tt))
+      d2xdt2 = -pi*pi*(w/2*sin(tt) - a/2*sin(tt) -  
+     1    b*sqrt(2.0d0)*sin(2*tt))
+      
+      y = w*cos(tt) + a*cos(tt) + b/sqrt(2.0d0)*cos(2*tt)
+      dydt = -pi*(w*sin(tt) + a*sin(tt) + b*sqrt(2.0d0)*sin(2*tt))
+      d2ydt2 = -pi*pi*(w*cos(tt) + a*cos(tt) + 
+     1   b*sqrt(2.0d0)*2*cos(2*tt))
+
+      
+      return
+      end subroutine funcurve_oocyte_riemann
+      
+
+
+      subroutine get_oocyte3d_tchse(iref,nmid,nch2d,tchse)
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8 iref,nmid,nch2d
+      real *8 tchse(nch2d+1)
+
+
+      tchse(1) = 0.0d0
+      hpan = 1.0d0/(nmid+2)
+      rpan = hpan*(0.5d0)**(iref)
+      tchse(2) = tchse(1) + rpan
+      do i=2,iref+1
+        tchse(i+1) = tchse(i) + rpan
+        rpan = rpan*2
+      enddo
+
+      do i=iref+2,iref+1+nmid
+        tchse(i+1) = tchse(i) + hpan
+      enddo
+
+      rpan = hpan/2
+      do i=iref+2+nmid,nch2d-1
+        tchse(i+1) = tchse(i) + rpan
+        rpan = rpan/2
+      enddo
+      tchse(nch2d+1) = 1.0d0
+
+
+      return
+      end subroutine get_oocyte3d_tchse
 
 

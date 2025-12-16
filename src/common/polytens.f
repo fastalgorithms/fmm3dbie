@@ -1085,7 +1085,7 @@ c     local
       if (ipoly.eq.0) call legepolders(val,pols,ders,ndeg)
       if (ipoly.eq.1) call chebpolders(val,pols,ders,ndeg)
 
-      call polytens_npol_2d(ipoly,ndeg,type,npol2)
+      call polytens_npol_2d(ndeg,type,npol2)
 
       n = ndeg+1
 
@@ -1240,7 +1240,7 @@ c     local
       allocate(dxxmat(0:ndeg,0:ndeg))
       call polycoeff_d2mat(ipoly,ndeg,dxxmat,n)
 
-      call polytens_npol_3d(ipoly,ndeg,type,npol)
+      call polytens_npol_3d(ndeg,type,npol)
 
       n = ndeg + 1
       

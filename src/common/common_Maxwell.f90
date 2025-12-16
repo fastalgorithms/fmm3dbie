@@ -380,9 +380,10 @@ end subroutine
 
 
 
-subroutine Vector_Helmholtz_targ2(eps,zk,ns,source,wts,ifa_vect,a_vect,&
- &ifb_vect,b_vect,iflambda,lambda,ifrho,rho,norm_vect,ifE,E,ifcurlE,curlE,&
- &ifdivE,divE,nt,targets,thresh,ifdir)
+subroutine Vector_Helmholtz_targ2(eps, zk, ns, source, wts, ifa_vect, &
+  a_vect, ifb_vect, b_vect, iflambda, lambda, ifrho, rho, &
+  norm_vect, ifE, E, ifcurlE, curlE, ifdivE, divE, nt, targets, &
+  thresh, ifdir)
 implicit none
 
 !  This function computes the following calculation usign FMM or direct
@@ -498,27 +499,27 @@ implicit none
   integer *8 ier
   integer *8 ifcharge,ifdipole,ifpot,ifgrad
   real ( kind = 8 ) pi
-	
+
   pi=3.141592653589793238462643383d0
 
   !!Initialize sources
   allocate(sigma_vect(3,ns))
   allocate(dipvect_vect(3,3,ns))
-  allocate(gradE_vect(3,3,nt))	
+  allocate(gradE_vect(3,3,nt))
 
   do count1=1,nt
     E(1,count1)=0.0d0
     E(2,count1)=0.0d0
     E(3,count1)=0.0d0
-	gradE_vect(1,1,count1)=0.0d0
-	gradE_vect(1,2,count1)=0.0d0
-	gradE_vect(1,3,count1)=0.0d0
-	gradE_vect(2,1,count1)=0.0d0
-	gradE_vect(2,2,count1)=0.0d0
-	gradE_vect(2,3,count1)=0.0d0
-	gradE_vect(3,1,count1)=0.0d0
-	gradE_vect(3,2,count1)=0.0d0
-	gradE_vect(3,3,count1)=0.0d0
+    gradE_vect(1,1,count1)=0.0d0
+    gradE_vect(1,2,count1)=0.0d0
+    gradE_vect(1,3,count1)=0.0d0
+    gradE_vect(2,1,count1)=0.0d0
+    gradE_vect(2,2,count1)=0.0d0
+    gradE_vect(2,3,count1)=0.0d0
+    gradE_vect(3,1,count1)=0.0d0
+    gradE_vect(3,2,count1)=0.0d0
+    gradE_vect(3,3,count1)=0.0d0
   enddo
   do count1=1,ns
     sigma_vect(1,count1)=0.0d0
@@ -540,9 +541,9 @@ implicit none
 
   if (ifrho.eq.1) then
    do count1=1,ns
-	sigma_vect(1,count1)=sigma_vect(1,count1)+norm_vect(1,count1)*rho(count1)
-	sigma_vect(2,count1)=sigma_vect(2,count1)+norm_vect(2,count1)*rho(count1)
-	sigma_vect(3,count1)=sigma_vect(3,count1)+norm_vect(3,count1)*rho(count1)
+    sigma_vect(1,count1)=sigma_vect(1,count1)+norm_vect(1,count1)*rho(count1)
+    sigma_vect(2,count1)=sigma_vect(2,count1)+norm_vect(2,count1)*rho(count1)
+    sigma_vect(3,count1)=sigma_vect(3,count1)+norm_vect(3,count1)*rho(count1)
    enddo
   endif
 
@@ -564,34 +565,31 @@ implicit none
 
   if (ifa_vect.eq.1) then
     do count1=1,ns
-!!            dipvect_x(1,count1)=dipvect_x(1,count1)+0.0d0
       dipvect_vect(1,2,count1)=dipvect_vect(1,2,count1)-a_vect(3,count1)
       dipvect_vect(1,3,count1)=dipvect_vect(1,3,count1)+a_vect(2,count1)
 
       dipvect_vect(2,1,count1)=dipvect_vect(2,1,count1)+a_vect(3,count1)
-!!            dipvect_y(2,count1)=dipvect_y(2,count1)+0.0d0
       dipvect_vect(2,3,count1)=dipvect_vect(2,3,count1)-a_vect(1,count1)
 
       dipvect_vect(3,1,count1)=dipvect_vect(3,1,count1)-a_vect(2,count1)
       dipvect_vect(3,2,count1)=dipvect_vect(3,2,count1)+a_vect(1,count1)
-!!            dipvect_z(3,count1)=dipvect_z(3,count1)+0.0d0
 
     enddo
   endif
-	
+
   do count1=1,ns
     sigma_vect(1,count1)=sigma_vect(1,count1)*wts(count1)
     sigma_vect(2,count1)=sigma_vect(2,count1)*wts(count1)
     sigma_vect(3,count1)=sigma_vect(3,count1)*wts(count1)
-		
+
     dipvect_vect(1,1,count1)=dipvect_vect(1,1,count1)*wts(count1)
     dipvect_vect(1,2,count1)=dipvect_vect(1,2,count1)*wts(count1)
     dipvect_vect(1,3,count1)=dipvect_vect(1,3,count1)*wts(count1)
-		
+
     dipvect_vect(2,1,count1)=dipvect_vect(2,1,count1)*wts(count1)
     dipvect_vect(2,2,count1)=dipvect_vect(2,2,count1)*wts(count1)
     dipvect_vect(2,3,count1)=dipvect_vect(2,3,count1)*wts(count1)
-		
+
     dipvect_vect(3,1,count1)=dipvect_vect(3,1,count1)*wts(count1)
     dipvect_vect(3,2,count1)=dipvect_vect(3,2,count1)*wts(count1)
     dipvect_vect(3,3,count1)=dipvect_vect(3,3,count1)*wts(count1)
@@ -601,9 +599,6 @@ implicit none
   ifdipole=1
   ifpot=1
   ifgrad=1
-!     if (ifE.eq.0) then
-!        ifpot=0
-!    endif
   if ((ifcurlE.eq.0).and.(ifdivE.eq.0)) then
     ifgrad=0
   endif
@@ -616,22 +611,22 @@ implicit none
     
   nd=3
   if ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.&
-   &(ifdipole.eq.1)) then	
+   &(ifdipole.eq.1)) then
     if (ifdir.eq.1) then
       call h3ddirectcdg(nd,zk,source,sigma_vect,dipvect_vect,ns&
-	   &,targets,nt,E,gradE_vect,thresh)
+       &,targets,nt,E,gradE_vect,thresh)
     else
       call hfmm3d_t_cd_g_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect&
-	   &,nt,targets,E,gradE_vect,ier)
+         &,nt,targets,E,gradE_vect,ier)
     endif
   elseif ((ifpot.eq.1).and.(ifgrad.eq.0).and.(ifcharge.eq.1).and.&
    &(ifdipole.eq.1)) then
     if (ifdir.eq.1) then
       call h3ddirectcdp(nd,zk,source,sigma_vect,dipvect_vect,ns&
-	   &,targets,nt,E,thresh)
+         &,targets,nt,E,thresh)
     else
-	  call hfmm3d_t_cd_p_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect&
-	   &,nt,targets,E,ier)
+      call hfmm3d_t_cd_p_vec(nd,eps,zk,ns,source,sigma_vect,dipvect_vect&
+        &,nt,targets,E,ier)
     endif
   elseif ((ifpot.eq.1).and.(ifgrad.eq.1).and.(ifcharge.eq.1).and.&
    &(ifdipole.eq.0)) then
@@ -670,7 +665,7 @@ implicit none
   if (ifdivE.eq.1) then
     do count1=1,nt
       divE(count1)=gradE_vect(1,1,count1)+gradE_vect(2,2,count1)+&
-	   &gradE_vect(3,3,count1)			
+      &gradE_vect(3,3,count1)
       divE(count1)=divE(count1)/(4.0d0*pi)
     enddo
   endif
@@ -684,7 +679,7 @@ implicit none
     do count1=1,nt
       curlE(1,count1)=gradE_vect(3,2,count1)-gradE_vect(2,3,count1)
       curlE(2,count1)=gradE_vect(1,3,count1)-gradE_vect(3,1,count1)
-      curlE(3,count1)=gradE_vect(2,1,count1)-gradE_vect(1,2,count1)			 
+      curlE(3,count1)=gradE_vect(2,1,count1)-gradE_vect(1,2,count1) 
       curlE(:,count1)=curlE(:,count1)/(4.0d0*pi)
     enddo
   endif

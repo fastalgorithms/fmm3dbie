@@ -1,7 +1,10 @@
 % choose domain type
+run ../startup.m
 
+if ~exist('surfacemesh', 'class'); return; end;
 geomtype = 'sphere';
 funtype = 'spharm';
+opts.iptype = 11;
 
 iref = 0;
 if(strcmpi(geomtype,'sphere'))
@@ -12,7 +15,7 @@ elseif(strcmpi(geomtype,'stellarator'))
     nv = 24*nref;
     domtmp = surfacemesh.stellarator(12,nu,nv);    
 end
-[S,dom] = surfer.surfacemesh_to_surfer(domtmp);
+[S,dom] = surfer.surfacemesh_to_surfer(domtmp,opts);
 
 % Choose function type
 
@@ -30,6 +33,4 @@ rhs = rhs(:);
 
 frhs2 = array_to_surfacefun(rhs,dom,S);
 err1 = norm(frhs-frhs2)/norm(frhs);
-fprintf('Error in interpolant =%d\n',err1);
-
-
+fprintf('Error in interpolant = %d\n',err1);

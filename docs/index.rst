@@ -69,13 +69,13 @@ right triangle is stored at order $p$ Vioreanu-Rokhlin nodes.
 The input format currently assumes that each patch is discretized using
 the same order nodes. Upcoming support will be provided for
 triangulations stored in .gmsh
-format, and .step format, and quadrilaterizations in all of the above
-formats.
+format, and .step format.
 
 .. toctree::
    :maxdepth: 2
 	   
    install
+   matlab_user_guide
    lquad
    surface_reps
    near_reps
@@ -84,8 +84,6 @@ formats.
    helm_wrappers
    lap_wrappers
    stok_wrappers
-   build_wrappers
-   build_quadratures
    ref
    
    

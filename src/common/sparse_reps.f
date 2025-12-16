@@ -62,8 +62,8 @@ C$OMP END PARALLEL DO
         call sorti(nnz,col_ind,iper)
         call conv_to_csc(nnz,ncol,row_ind_exp,col_ind,col_ptr,row_ind)
       else
-        call sorti(nnz,col_ind,iper)
-        call conv_to_csc(nnz,ncol,row_ind_exp,col_ind,col_ptr,
+        call sorti_para(nnz,col_ind,iper)
+        call conv_to_csc_para(nnz,ncol,row_ind_exp,col_ind,col_ptr,
      1     row_ind)
       endif
 
@@ -209,7 +209,7 @@ C$OMP$PRIVATE(ithread,istart,iend,icur,i,icur0,icur1,mend)
         istart = split(ithread)
         iend = split(ithread+1)
         icur = jsort(istart)
-        if(icur.eq.0) then
+        if(ithread.eq.1) then
           icur=1
         endif
         col_ptr(icur) = istart

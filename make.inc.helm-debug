@@ -31,7 +31,7 @@ LBLAS=-framework accelerate
 #MATLAB interface:
 FDIR=$$(dirname `gfortran --print-file-name libgfortran.dylib`)
 MFLAGS +=-L${FDIR}
-MEX = $(shell ls -d /Applications/MATLAB_R20**.app)/bin/mex
+MEX = $(shell ls -d /Applications/MATLAB_R* | sort | tail -1)/bin/mex
 
 #MWRAP location
 MWRAP=~/git/mwrap/mwrap

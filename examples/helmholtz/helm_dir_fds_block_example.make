@@ -6,30 +6,23 @@ HOST = gcc-openmp
 
 #
 # For linux systems, it is assumed that the environment
-# variable LD_LIBRARY_PATH contains the locations to libfmm3d.so
-# and libsolvers3d.so, for Macosx, these .so files also need to be
+# variable LD_LIBRARY_PATH contains the locations to libfmm3dbie.so
+# for Macosx, these .so files also need to be
 # copied over /usr/local/lib
 
 
 FMMBIE_INSTALL_DIR = $(PREFIX)
 FMM_INSTALL_DIR = $(PREFIX_FMM)
-LFMMLINKLIB = -lfmm3d
 LLINKLIB = -lfmm3dbie
 
 ifneq ($(OS),Windows_NT) 
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Darwin)
-        ifeq ($(PREFIX_FMM),)
-            FMM_INSTALL_DIR=/usr/local/lib
-        endif
         ifeq ($(PREFIX),)
             FMMBIE_INSTALL_DIR=/usr/local/lib
         endif
     endif
     ifeq ($(UNAME_S),Linux)
-        ifeq ($(PREFIX_FMM),)
-            FMM_INSTALL_DIR=${HOME}/lib
-        endif
         ifeq ($(PREFIX),)
             FMMBIE_INSTALL_DIR=${HOME}/lib
         endif
@@ -44,7 +37,7 @@ endif
 
 ifeq ($(HOST),gcc-openmp)
     FC = gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy 
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy
 endif
 
 ifeq ($(HOST),intel)
@@ -57,7 +50,7 @@ ifeq ($(HOST),intel-openmp)
     FFLAGS= -O3 -fPIC -march=native -qopenmp
 endif
 
-FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
+FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) 
 
 .PHONY: all clean 
 

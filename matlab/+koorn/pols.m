@@ -7,7 +7,7 @@ function [pols]=pols(nmax,uv)
 %   ! polynomials, which are classically defined on the triangle with
 %   ! vertices (0,0), (1,0), (1,1), and given analytically as:
 %   !
-%   !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x+1)  x^k  P_k(2y/x-1)
+%   !   K_{n,k}(x,y) = P_{n-k}^(0,2k+1) (2x-1)  x^k  P_k(2y/x-1)
 %   !
 %   ! After mapping to the uv-simplex via the change of variables
 %   !

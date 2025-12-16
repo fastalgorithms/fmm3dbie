@@ -521,7 +521,7 @@ c
 c 
       SUBROUTINE legepolders(X,VALs,ders,N)
       IMPLICIT REAL *8 (A-H,O-Z)
-      implicit integer *8 (i-n)
+      IMPLICIT INTEGER *8 (I-N)
       REAL *8 vals(1),ders(1)
 C 
 C     This subroutine computes the values and the derivatives

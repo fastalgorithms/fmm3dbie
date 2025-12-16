@@ -32,6 +32,6 @@ We have the following user callable routines:
 - `Velocity post-processor <stok_vel_wrappers.html#lpcomp-stok-comb-vel>`__
 
 To see a demo of the use of these interfaces see
-``examples/stok_wrappers/stok_vel_iter_example.f``. 
+``examples/stokes/stok_vel_iter_example.f``. 
 This script can be run using ``make -f stok_vel_iter_example.make`` in the
-``examples/stok_wrappers`` folder.
+``examples/stokes`` folder.

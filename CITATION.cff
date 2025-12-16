@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+title: 'fmm3dbie: boundary integral equation solvers in 3D'
+message: >-
+  If you use this software, please cite it using the metadata from this file.
+type: software
+authors:
+  - given-names: Travis
+    family-names: Askham
+  - given-names: Zydrunas
+    family-names: Gimbutas
+  - given-names: Tristan
+    family-names: Goodwill 
+  - given-names: Leslie 
+    family-names: Greengard
+  - given-names: Jeremy 
+    family-names: Hoskins 
+  - given-names: Libin 
+    family-names: Lu 
+  - given-names: Michael 
+    family-names: O'Neil  
+  - given-names: Manas 
+    family-names: Rachh 
+  - given-names: Vladimir 
+    family-names: Rokhlin 
+  - given-names: Felipe 
+    family-names: Vico 
+repository-code: 'https://github.com/fastalgorithms/fmm3dbie'
+url: 'https://fmm3dbie.readthedocs.io/'
+version: 1.0.0
+date-released: '2024-06-10'
+

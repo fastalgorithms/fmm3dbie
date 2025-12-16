@@ -1,4 +1,4 @@
-function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
+function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
 %
 %  helm3d.dirichlet.get_quadrature_correction
 %    This subroutine returns the near quadrature correction
@@ -7,27 +7,28 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
 %    as a sparse matrix/rsc format 
 %
 %  Syntax
-%   Q = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps)
-%   Q = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo)
-%   Q = helm3d.dirichlet.get_quadrature_correction(S,zpars,eps,targinfo,opts)
+%   Q = helm3d.dirichlet.get_quadrature_correction(S,eps,zk,rep_pars)
+%   Q = helm3d.dirichlet.get_quadrature_correction(S,eps,zk,rep_pars,targinfo)
+%   Q = helm3d.dirichlet.get_quadrature_correction(S,eps,zk,rep_pars,targinfo,opts)
 %
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
 %
 %  S_{k}, D_{k}: helmholtz single and double layer potential
 %  
-%  k, \alpha, beta = zpars(1:3)
+%  \alpha, beta = rep_pars(1:2)
+%  k = zk
 %
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * zpars: kernel parameters
-%        zpars(1) - wave number
-%        zpars(2) - single layer strength
-%        zpars(3) - double layer strength
 %    * eps: precision requested
+%    * zk: wave number
+%    * rep_pars: kernel parameters
+%        rep_pars(1) - single layer strength
+%        rep_pars(2) - double layer strength
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.du = u tangential derivative info
@@ -54,14 +55,18 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
     n3 = 3;
 
 
-    if(nargin < 4)
+    if nargin < 5
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
       targinfo.dv = S.dv;
       targinfo.n = S.n;
-      patch_id = S.patch_id;
-      uvs_targ = S.uvs_targ;
+      targinfo.patch_id = S.patch_id;
+      targinfo.uvs_targ = S.uvs_targ;
+      opts = [];
+    end
+
+    if nargin < 6
       opts = [];
     end
 
@@ -83,7 +88,7 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
     if(isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id'))
       patch_id = targinfo.patch_id;
     else
-      patch_id = zeros(ntarg,1);
+      patch_id = -1*ones(ntarg,1);
     end
 
     if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))
@@ -111,10 +116,8 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
 [rfac, rfac0] = fmm3dbie_routs(mex_id_, norder0, iptype0, rfac, rfac0, 1, 1, 1, 1);
     
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-    mex_id_ = 'get_centroid_rads(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], io double[xx], io double[x])';
-[cms, rads] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, cms, rads, 1, npatches, npp1, npatches, 1, n9, npts, n3, npatches, npatches);
+    cms = S.cms;
+    rads = S.rads; 
 
     rad_near = rads*rfac;
     nnz = 0;
@@ -143,8 +146,13 @@ function Q = get_quadrature_correction(S,zpars,eps,targinfo,opts)
         iquadtype = 1;
       end
     end
-    mex_id_ = 'getnearquad_helm_comb_dir(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i int64_t[x], i int64_t[x], i double[xx], i int64_t[x], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], i int64_t[x], io dcomplex[x])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, npts, 2, npts, 1, 3, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
+
+    zpars = complex(zeros(3,1));
+    zpars(1) = zk;
+    zpars(2) = rep_pars(1);
+    zpars(3) = rep_pars(2);
+    mex_id_ = 'getnearquad_helm_comb_dir_eval(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i int64_t[x], i int64_t[x], i double[xx], i int64_t[x], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], i int64_t[x], io dcomplex[x])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 3, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
     
     Q = [];
     Q.targinfo = targinfo;

@@ -7,17 +7,19 @@
 
       integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      real *8 xyz_out(3),xyz_in(3),xyz_src(3),xyz_targ(3)
-      complex *16, allocatable :: sigma(:),rhs(:),sigma1(:)
+      real *8 xyz_out(3),xyz_in(3),xyz_src(3),xyz_targ(3),xyz_all(3,2)
+      complex *16, allocatable :: sigma(:,:),rhs(:,:)
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
-      complex * 16 zpars(5),zpars2(3)
+      complex * 16 zpars(6),zpars2(3)
       complex *16 omega,ep0,ep1,mu0,mu1,zk0,zk1,ztmp,ztmp2
       complex *16 u0,dudn0,u1,dudn1
+      complex *16 alpha0,alpha1,beta0,beta1
       integer *8 numit,niter
 
-      integer *8 ipatch_id
-      real *8 uvs_targ(2)
+      integer *8 ipatch_id(2)
+      real *8 uvs_targ(2,2)
+      complex *16 potall(2)
 
       logical isout0,isout1
 
@@ -52,11 +54,18 @@ c
       mu1 = 1.2d0
       zk0 = omega*sqrt(ep0*mu0)
       zk1 = omega*sqrt(ep1*mu1)
-      zpars(1) = omega
-      zpars(2) = ep0
-      zpars(3) = mu0
-      zpars(4) = ep1
-      zpars(5) = mu1
+
+      alpha0 = 1.0d0
+      alpha1 = 1.0d0
+      beta0 = 1.0d0
+      beta1 = 1.0d0
+
+      zpars(1) = zk0
+      zpars(2) = alpha0
+      zpars(3) = beta0
+      zpars(4) = zk1
+      zpars(5) = alpha1
+      zpars(6) = beta1
 
       xyz_out(1) = 3.17d0
       xyz_out(2) = -0.03d0
@@ -66,7 +75,7 @@ c
       xyz_in(2) = 0.23d0
       xyz_in(3) = -0.11d0
 
-      norder = 4 
+      norder = 4
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
@@ -89,7 +98,7 @@ c
       allocate(wts(npts))
       call get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,wts)
 
-      allocate(sigma(2*npts),rhs(2*npts))
+      allocate(sigma(2,npts),rhs(2,npts))
 
 c
 c  get boundary data
@@ -103,8 +112,8 @@ c
      1     int8_1,zk1,int8_0,ipars,u1)
         call h3d_sprime(xyz_out,int8_12,srcvals(1,i),int8_0,dpars,
      1     int8_1,zk1,int8_0,ipars,dudn1)
-        rhs(i) = u0-u1
-        rhs(npts+i) = dudn0/ep0 - dudn1/ep1
+        rhs(1,i) = alpha0*u0 - alpha1*u1
+        rhs(2,i) = beta0*dudn0 - beta1*dudn1
       enddo
 
 
@@ -125,53 +134,41 @@ c
       call prin2('errs=*',errs,niter)
 
 
+
+      ndtarg = 3
+      ntarg = 2
+      ipatch_id(1) = -1
+      ipatch_id(2) = -1
+      uvs_targ(1,1) = 0
+      uvs_targ(2,1) = 0
+      uvs_targ(1,2) = 0
+      uvs_targ(2,2) = 0
+      xyz_all(:,1) = xyz_in
+      xyz_all(:,2) = xyz_out
+      call helm_comb_trans_eval(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_all,ipatch_id,
+     2  uvs_targ,eps,zpars,sigma,potall)
+
 c
 c       test solution at interior point
 c
+      pot = potall(1)
       call h3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_1,zk1,
      1             int8_0,ipars,potex)
-
-      ndtarg = 3
-      ntarg = 1
-      ipatch_id = -1
-      uvs_targ(1) = 0
-      uvs_targ(2) = 0
-      zpars2(1) = zk1
-      zpars2(2) = ep1**2
-      zpars2(3) = ep1
-      call lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_in,ipatch_id,
-     2  uvs_targ,eps,zpars2,sigma,pot)
-
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)
       erra = abs(pot-potex)/abs(potex)
       call prin2('relative error at interior target=*',erra,1)
-
 c
 c       test solution at exterior point
 c
-      call h3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_1,zk0,
+      pot = potall(2)
+      call h3d_slp(xyz_in,int8_3,xyz_out,int8_0,dpars,int8_1,zk0,
      1             int8_0,ipars,potex)
-
-      ndtarg = 3
-      ntarg = 1
-      ipatch_id = -1
-      uvs_targ(1) = 0
-      uvs_targ(2) = 0
-      zpars2(1) = zk0
-      zpars2(2) = ep0**2
-      zpars2(3) = ep0
-      call lpcomp_helm_comb_split_dir(npatches,norders,ixyzs,iptype,
-     1  npts,srccoefs,srcvals,ndtarg,ntarg,xyz_out,ipatch_id,
-     2  uvs_targ,eps,zpars2,sigma,pot)
-
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)
       erra = abs(pot-potex)/abs(potex)
       call prin2('relative error at exterior target=*',erra,1)
-
-
 
       stop
       end
@@ -200,7 +197,7 @@ c
 
 
       external xtri_stell_eval,xtri_sphere_eval
-      
+
       npols = (norder+1)*(norder+2)/2
       allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
       allocate(wts(npols))
