@@ -188,11 +188,13 @@ c
       ifp = 0
       ifmetric = 0
       ntrimax = 3000
+      isd = 0
+      ndsc = 9
 
       
 
-      call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+      call dtriaints(eps,istrat,intype,npatches,norder,npols,isd,
+     1      ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dlslp,ndd,dpars,ndz,zpars,ndi,ipars,
      3      nqorder,
      3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
@@ -226,8 +228,8 @@ c
 
       
 
-      call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+      call dtriaints(eps,istrat,intype,npatches,norder,npols,isd,
+     1      ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dlslp,ndd,dpars,ndz,zpars,ndi,ipars,
      3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -262,8 +264,8 @@ c
       ifmetric = 0
 
 
-      call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+      call dtriaints(eps,istrat,intype,npatches,norder,npols,isd,
+     1      ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dlslp,ndd,dpars,ndz,zpars,ndi,ipars,
      3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -299,8 +301,8 @@ c
       ifmetric = 0
 
 
-      call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+      call dtriaints(eps,istrat,intype,npatches,norder,npols,isd,
+     1      ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dlslp,ndd,dpars,ndz,zpars,ndi,ipars,
      3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -343,8 +345,8 @@ c
       ifmetric = 0
 
 
-      call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+      call dtriaints(eps,istrat,intype,npatches,norder,npols,isd,
+     1      ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,
      3      dlslp,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,ntrimax,
      3      rfac,cintvals,ifmetric,rn1,n2)
@@ -383,8 +385,8 @@ c
       nqorder = 10
 
 
-      call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+      call dtriaints(eps,istrat,intype,npatches,norder,npols,isd,
+     1      ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,
      3      dlslp,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,ntrimax,rfac,
      3      cintvals,ifmetric,rn1,n2)
@@ -428,10 +430,9 @@ c
       allocate(qnodes(2,npts),qwts(npts))
 
       call gen_xg_unif_nodes_tri(nlev,nqorder,nnodes,npts,qnodes,qwts)
+      
 
-
-
-      call dtriaints_wnodes(npatches,norder,npols,srccoefs,
+      call dtriaints_wnodes(npatches,norder,npols,isd,ndsc,srccoefs,
      1      3,ntarg,xyztarg,itargptr,
      2      ntargptr,nporder,nppols,
      3      dlslp,ndd,dpars,ndz,zpars,ndi,ipars,npts,qnodes,
@@ -650,6 +651,9 @@ cc      call prin2('xyztarg=*',xyztarg,9)
       ndi = 1
       ndz = 1
 
+      isd = 0
+      ndsc = 9
+
 
       nqorder = 16
 c
@@ -670,7 +674,7 @@ c
       
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      isd,ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -707,7 +711,7 @@ c
       
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      isd,ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,
      3      ifmetric,rn1,n2)
@@ -752,7 +756,7 @@ c
 
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      isd,ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,
      3      ntrimax,rfac,cintvals,
@@ -791,7 +795,7 @@ c
 
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      isd,ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -833,7 +837,7 @@ c
       ifmetric = 0
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      isd,ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -873,7 +877,7 @@ c
 
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      isd,ndsc,srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 

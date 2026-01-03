@@ -9,8 +9,8 @@ c
 c   The maps \rho_{m} are stored as coefficients 
 c   of the koornwinder expansion of xyz(u,v) 
 c   along with expansions of first derivative 
-c   information of xyz with respect to u,v. 
-
+c   information of xyz with respect to u,v.
+c
 c
 c  Routines in this file
 c  ----------------------       
@@ -65,9 +65,9 @@ c                       Vectorized version of ctriaints_wnodes
 c
 c
       subroutine ctriaints_wnodes(npatches, norder, npols,
-     1   srccoefs, ndtarg, ntarg, xyztarg, itargptr, ntargptr,
-     2   nporder, nppols, fker, ndd, dpars, ndz, zpars, ndi, ipars,
-     3   nqpts, qnodes, wts, cintvals)
+     1   isd, ndsc, srccoefs, ndtarg, ntarg, xyztarg, itargptr, 
+     2   ntargptr, nporder, nppols, fker, ndd, dpars, ndz, zpars, 
+     3   ndi, ipars, nqpts, qnodes, wts, cintvals)
 c
 c  Compute the integrals in (1) defined at the top of the file
 c  using a prescribed set of nodes and weights.
@@ -79,10 +79,23 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols, npatches)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - ndtarg: integer
 c        leading dimension of target information
 c    - ntarg: integer
@@ -135,10 +148,12 @@ c
       implicit none
       integer, intent(in) :: npatches, norder, npols, ndtarg
       integer, intent(in) :: nporder, nppols
-      real *8, intent(in) :: srccoefs(9,npols,npatches)
+      integer, intent(in) :: ndsc
+      real *8, intent(in) :: srccoefs(ndsc,npols,npatches)
       real *8, intent(in) :: xyztarg(ndtarg,ntarg)
       integer, intent(in) :: ntarg
       integer, intent(in) :: itargptr(npatches), ntargptr(npatches)
+      integer, intent(in) :: isd
       integer, intent(in) :: ndd, ndz, ndi
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
@@ -155,6 +170,7 @@ c
       complex *16, allocatable :: xkernvals(:,:)
 
       integer i,ipatch,j,lda,ldb,itarg,ldc,ntarg0,ii
+      integer nds
 
       complex *16 fval
       real *8 da,ra
@@ -179,10 +195,11 @@ c
       call koornf_init(nporder,rat1p,rat2p,rsc1p) 
 
       allocate(rsigtmp(nppols))
-
       allocate(sigvals(nppols,nqpts),rsigvals(npols,nqpts))
-
-      allocate(srcvals(12,nqpts),qwts(nqpts))
+      
+      nds = 12
+      if(isd.ne.0) nds = 24
+      allocate(srcvals(nds,nqpts),qwts(nqpts))
 
       do i=1,nqpts
         call koornf_pols(qnodes(1,i),norder,npols,rsigvals(1,i),
@@ -205,18 +222,17 @@ c
         transb = 'N'
         alpha = 1
         beta = 0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = nds
 
         da = 1
 
-        call dgemm_guru(transa,transb,9,nqpts,npols,alpha,
+        call dgemm_guru(transa,transb,ndsc,nqpts,npols,alpha,
      1     srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
 
-   
-        call get_norms_qwts_tri(nqpts,wts,srcvals,
-     1        da,qwts)
+        call get_srcvals_auxinfo_tri(nqpts, wts, isd, nds, srcvals, 
+     1    da, qwts)
 c
 c
 c          compute the kernel values for all the targets
@@ -255,7 +271,7 @@ c
 
 
       subroutine ctriaints_dist(eps, intype, npatches, norder, npols,
-     1     srccoefs, ndtarg, ntarg, xyztarg, ifp, xyzproxy,
+     1     isd, ndsc, srccoefs, ndtarg, ntarg, xyztarg, ifp, xyzproxy,
      2     itargptr, ntargptr, nporder, nppols, ntrimax, rat1, rat2, 
      3     rsc1, rat1p, rat2p, rsc1p, fker, ndd, dpars, ndz, zpars,
      4     ndi, ipars, nqorder, rfac, cintvals, ier)
@@ -282,10 +298,23 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols, npatches)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - ndtarg: integer
 c        leading dimension of target information
 c    - ntarg: integer
@@ -378,7 +407,8 @@ c
       integer intype,ifp
       integer npatches,norder,npols
       integer nporder,nppols
-      real *8 srccoefs(9,npols,npatches)
+      integer isd, ndsc
+      real *8 srccoefs(ndsc,npols,npatches)
       
       integer ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
@@ -430,7 +460,7 @@ c
       complex *16, allocatable :: fkervals(:),sigmatmp(:,:)
       real *8, allocatable :: rsigtmp(:,:)
       real *8 xyztmp(3)
-      integer itmp
+      integer itmp,nds
       complex *16 ima
       complex *16 alpha_c, beta_c
 
@@ -471,7 +501,7 @@ c
       
 
       if(ifp.eq.1) then
-        call gettritree(npatches, norder, npols, srccoefs, ntarg,
+        call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
      1     xyzproxy, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri, 
      2     nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3     ier)
@@ -483,7 +513,7 @@ c
             xyztargtmp(j,i) = xyztarg(j,i)
           enddo
         enddo
-        call gettritree(npatches, norder, npols, srccoefs, ntarg,
+        call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
      1      xyztargtmp, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri, 
      2      nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3      ier)        
@@ -544,8 +574,10 @@ cc      call prinf('nqpols=*',nqpols,1)
 
       npmax = ntri*nqpols
       allocate(sigvals(npols,npmax))
-      allocate(srcvals(12,npmax),qwts(npmax))
-
+      nds = 12
+      if(isd.ne.0) nds = 24
+      allocate(srcvals(nds,npmax),qwts(npmax))
+      
       allocate(sigmatmp(nppols,npmax),fkervals(npmax))
       allocate(rsigtmp(nppols,npmax))
 
@@ -560,7 +592,7 @@ cc      call prinf('nqpols=*',nqpols,1)
         do i=1,nqpols
           ii = istart+i
           call koornf_pols(uvtmp(1,i), norder, npols, sigvals(1,ii),
-     1        rat1, rat2, rsc1)
+     1       rat1, rat2, rsc1)
           call koornf_pols(uvtmp(1,i), nporder, nppols, rsigtmp(1,ii),
      1        rat1p, rat2p, rsc1p)
         enddo
@@ -575,14 +607,13 @@ c
         transb = 'N'
         alpha = 1
         beta = 0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = nds
 
-        call dgemm_guru(transa, transb, 9, npmax, npols, alpha,
+        call dgemm_guru(transa, transb, ndsc, npmax, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals,
      2     ldc)
-
 
 c
 c        compute all the quadrature weights
@@ -590,8 +621,8 @@ c
 
         do i=1,ntri
           istart = (i-1)*nqpols+1
-          call get_norms_qwts_tri(nqpols, wts, srcvals(1,istart),
-     1        da(i), qwts(istart))
+          call get_srcvals_auxinfo_tri(nqpols, wts, isd, 
+     1       nds, srcvals(1,istart), da(i), qwts(istart))
         enddo
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
@@ -617,9 +648,6 @@ c
             endif
           enddo
 
-c
-c          TODO:  fix this to call mkl blas with single thread
-c
           call zgemv_guru('n', nppols, npts, alpha_c, sigmatmp,
      1      nppols, fkervals, 1, beta_c, cintvals(1,itarg), 1)
         enddo
@@ -634,7 +662,7 @@ c
 c
 c
       subroutine ctriaints_adap(eps, intype,
-     1     npatches, norder, npols, srccoefs, ndtarg,
+     1     npatches, norder, npols, isd, ndsc, srccoefs, ndtarg,
      2     ntarg, xyztarg, itargptr, ntargptr, nporder, nppols,
      3     ntrimax, rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
      4     fker, ndd, dpars, ndz, zpars, ndi, ipars, nqorder,
@@ -661,10 +689,23 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols, npatches)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - ndtarg: integer
 c        leading dimension of target information
 c    - ntarg: integer
@@ -741,7 +782,8 @@ c
       integer intype
       integer npatches,norder,npols
       integer nporder,nppols
-      real *8 srccoefs(9,npols,npatches)
+      integer isd,ndsc
+      real *8 srccoefs(ndsc,npols,npatches)
       
       integer ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
@@ -761,6 +803,7 @@ c
       real *8 rat1p(2,0:nporder)
       real *8 rat2p(3,0:nporder,0:nporder)
       real *8 rsc1p(0:nporder,0:nporder)
+
 
       integer nqorder
 
@@ -793,7 +836,7 @@ c
 
       character *1 transa,transb
       real *8 alpha,beta
-      integer lda,ldb,ldc
+      integer lda,ldb,ldc,nds
       integer nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
       
       
@@ -864,8 +907,10 @@ c
       npmax = ntrimax*nqpols
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
-      allocate(srcvals(12,npmax),qwts(npmax))
-
+      nds = 12
+      if(isd.ne.0) nds = 24
+      allocate(srcvals(nds,npmax),qwts(npmax))
+       
 c
 c      current number of triangles in the adaptive structure
 c
@@ -892,14 +937,15 @@ c
         transb = 'N'
         alpha = 1
         beta = 0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = nds 
 
-        call dgemm_guru(transa, transb, 9, nqpols, npols, alpha,
+        call dgemm_guru(transa, transb, ndsc, nqpols, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals,
      2     ldc)
-        call get_norms_qwts_tri(nqpols, wts, srcvals, da, qwts)
+        call get_srcvals_auxinfo_tri(nqpols, wts, isd, nds, srcvals, 
+     1    da, qwts)
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
 
@@ -908,22 +954,22 @@ c
           ier = 0
           call triaadap(eps, nqorder, nqpols, nlmax, ntmaxuse,
      1       ntri, ichild_start, tvs, da, uvsq,wts, 
-     2       norder, npols, srccoefs(1,1,itri), npmax, srcvals,
-     3       qwts, sigvals, nporder, nppols, sigvalsdens, ndtarg,
-     4       xyztarg(1,itarg), rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
-     5       fker, ndd, dpars, ndz, zpars, ndi, ipars,
+     2       norder, npols, isd, ndsc, srccoefs(1,1,itri), npmax, 
+     3       nds, srcvals, qwts, sigvals, nporder, nppols, sigvalsdens, 
+     4       ndtarg, xyztarg(1,itarg), rat1, rat2, rsc1, rat1p, rat2p, 
+     5       rsc1p, fker, ndd, dpars, ndz, zpars, ndi, ipars,
      6       cintvals(1,itarg), ier)
            if(ier.eq.4) then
              ntmaxuse0 = ntmaxuse*4
              npmax0 = ntmaxuse0*nqpols
              allocate(sigvals2(npols,npmax))
              allocate(sigvalsdens2(nppols,npmax))
-             allocate(srcvals2(12,npmax),qwts2(npmax))
+             allocate(srcvals2(nds,npmax),qwts2(npmax))
              allocate(ichild_start2(ntmaxuse),tvs2(2,3,ntmaxuse))
              allocate(da2(ntmaxuse))
              nn1 = npols*npmax
              nn2 = nppols*npmax
-             nn3 = 12*npmax
+             nn3 = nds*npmax
              nn4 = ntri*6
              call dcopy_guru(nn1, sigvals, 1, sigvals2, 1)
              call dcopy_guru(nn2, sigvalsdens, 1, sigvalsdens2, 1)
@@ -942,7 +988,7 @@ c
 
              allocate(sigvals(npols,npmax0))
              allocate(sigvalsdens(nppols,npmax0))
-             allocate(srcvals(12,npmax0),qwts(npmax0))
+             allocate(srcvals(nds,npmax0),qwts(npmax0))
              allocate(ichild_start(ntmaxuse0),tvs(2,3,ntmaxuse0))
              allocate(da(ntmaxuse0))
 
@@ -987,9 +1033,9 @@ c
 c
       subroutine triaadap(eps, m, kpols, nlmax, ntmax, ntri,
      1             ichild_start, tvs, da, uvsq, wts,
-     2             norder, npols, srccoefs, npmax, srcvals,
-     3             qwts, sigvals, nporder, nppols, sigvalsdens,
-     4             ndtarg, xt, rat1, rat2, rsc1,
+     2             norder, npols, isd, ndsc, srccoefs, npmax, nds, 
+     3             srcvals, qwts, sigvals, nporder, nppols, 
+     4             sigvalsdens, ndtarg, xt, rat1, rat2, rsc1,
      5             rat1p, rat2p, rsc1p,
      6             fker, ndd, dpars, ndz, zpars, ndi,
      7             ipars, cintall, ier)
@@ -1029,13 +1075,30 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - npmax: integer
 c        max number of points = ntmax*kpols
-c    - srcvals: real *8(12,npmax)
+c    - nds: integer
+c        leading dimension of srcvals array, if isd = 0,
+c        then nds must be 12, and if isd = 1, then
+c        nds must be 24
+c    - srcvals: real *8(nds,npmax)
 c        geometry info on heirarchy of meshes
 c    - qwts: real *8(npmax)
 c        quadrature weights 
@@ -1110,10 +1173,11 @@ c
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
       integer nproclist0, nproclist
       integer idone
-      real *8 srccoefs(9,npols)
+      integer isd, ndsc, nds
+      real *8 srccoefs(ndsc,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
-      real *8 srcvals(12,*),qwts(npmax)
+      real *8 srcvals(nds,*),qwts(npmax)
       complex *16, allocatable :: xkernvals(:)
       real *8 xt(ndtarg)
       complex *16 cintall(nppols),fval
@@ -1176,8 +1240,8 @@ c
 
 
       call triaadap_main(eps, kpols, nlmax, ntmax, ntri, ichild_start,
-     1      tvs, da, uvsq, wts, norder, npols, srccoefs,
-     2      npmax, srcvals, qwts, sigvals, nporder, nppols,
+     1      tvs, da, uvsq, wts, norder, npols, isd, ndsc, srccoefs,
+     2      npmax, nds, srcvals, qwts, sigvals, nporder, nppols,
      3      sigvalsdens, ndtarg, xt, rat1, rat2, rsc1,
      3      rat1p, rat2p, rsc1p, fker, ndd, dpars,
      3      ndz, zpars, ndi, ipars, cvals, istack, nproclist0,
@@ -1193,8 +1257,8 @@ c
        
       subroutine triaadap_main(eps, kpols, nlmax, ntmax, 
      1    ntri, ichild_start, tvs, da, uvsq, wts, norder, npols,
-     2    srccoefs, npmax, srcvals, qwts, sigvals, nporder, nppols,
-     3    sigvalsdens, ndtarg, xt, rat1, rat2, rsc1,
+     2    isd, ndsc, srccoefs, npmax, nds, srcvals, qwts, sigvals, 
+     3    nporder, nppols, sigvalsdens, ndtarg, xt, rat1, rat2, rsc1,
      4    rat1p, rat2p, rsc1p, fker, ndd, dpars, ndz,
      3    zpars, ndi, ipars, cvals, istack, nproclist0, xkernvals,
      4    cintall, ier)
@@ -1208,13 +1272,14 @@ c
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
       integer  nproclist
       integer idone
-      real *8 srccoefs(9,npols)
+      integer isd, ndsc, nds
+      real *8 srccoefs(ndsc,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
       real *8 qwts(npmax)
       complex *16 xkernvals(npmax)
       real *8 xt(ndtarg)
-      real *8 srcvals(12,*)
+      real *8 srcvals(nds,*)
       complex *16 cintall(nppols),fval,ctmp(nppols)
       complex *16 cvals(nppols,ntmax)
 
@@ -1293,16 +1358,15 @@ c               print *, "Exiting without computing anything"
               transb = 'N'
               alpha = 1
               beta = 0
-              lda = 9
+              lda = ndsc
               ldb = npols
-              ldc = 12
+              ldc = nds
 
-              call dgemm_guru(transa, transb, 9, kpols, npols, alpha,
+              call dgemm_guru(transa, transb, ndsc, kpols, npols, alpha,
      1           srccoefs, lda, sigvals(1,istart), ldb, beta,
      2           srcvals(1,istart), ldc)
-              call get_norms_qwts_tri(kpols, wts, srcvals(1,istart),
-     1           rr, qwts(istart))
-
+              call get_srcvals_auxinfo_tri(kpols, wts, isd, 
+     1          nds, srcvals(1,istart), rr, qwts(istart)) 
             enddo
             ntri = ntri+4
           endif
@@ -1392,7 +1456,7 @@ c
 c
 c
       subroutine ctriaints_comb(eps, intype,
-     1     npatches, norder, npols, srccoefs, ndtarg,
+     1     npatches, norder, npols, isd, ndsc, srccoefs, ndtarg,
      2     ntarg, xyztarg, ifp, xyzproxy,
      3     itargptr, ntargptr, nporder, nppols, ntrimax,
      4     rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
@@ -1427,10 +1491,23 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols, npatches)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - ndtarg: integer
 c        leading dimension of target information
 c    - ntarg: integer
@@ -1517,7 +1594,8 @@ c
       integer intype,ifp
       integer npatches,norder,npols
       integer nporder,nppols
-      real *8 srccoefs(9,npols,npatches)
+      integer isd, ndsc
+      real *8 srccoefs(ndsc,npols,npatches)
       
       integer ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
@@ -1572,7 +1650,7 @@ c
       complex *16, allocatable :: sigmatmp(:,:)
       real *8, allocatable :: xyztargtmp(:,:)
       real *8 xyztmp(3)
-      integer itmp
+      integer itmp, nds
 
       complex *16, allocatable :: xkernvals(:)
       integer, allocatable :: istack(:)
@@ -1627,7 +1705,7 @@ c
       
 
       if(ifp.eq.1) then
-        call gettritree(npatches, norder, npols, srccoefs, ntarg,
+        call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
      1     xyzproxy, itargptr, ntargptr, ntrimax, nlmax, rfac, 
      2     ntri, nlev, ichild_start, da, tricm, trirad, tverts,
      3     itrireltmp, ier)
@@ -1638,7 +1716,7 @@ c
             xyztargtmp(j,i) = xyztarg(j,i)
           enddo
         enddo
-        call gettritree(npatches, norder, npols, srccoefs, ntarg,
+        call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
      1     xyztargtmp, itargptr, ntargptr, ntrimax, nlmax, rfac,
      2     ntri, nlev, ichild_start, da, tricm, trirad, tverts,
      3     itrireltmp, ier)
@@ -1713,7 +1791,13 @@ cc      call prinf('nqpols=*',nqpols,1)
       npmax = ntrimax*nqpols
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
-      allocate(srcvals(12,npmax),qwts(npmax))
+      allocate(qwts(npmax))
+
+      nds = 12
+      if(isd.gt.0) nds = 24
+      allocate(srcvals(nds,npmax))
+
+      
 
       allocate(xkernvals(npmax))
 
@@ -1743,11 +1827,11 @@ c
         transb = 'N'
         alpha = 1.0d0
         beta = 0.0d0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = nds
 
-        call dgemm_guru(transa, transb, 9, npts0, npols, alpha,
+        call dgemm_guru(transa, transb, ndsc, npts0, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals, ldc)
 
 
@@ -1758,8 +1842,8 @@ c
 
         do i=1,ntri
           istart = (i-1)*nqpols+1
-          call get_norms_qwts_tri(nqpols, wts, srcvals(1,istart),
-     1        da(i), qwts(istart))
+          call get_srcvals_auxinfo_tri(nqpols, wts, isd, 
+     1      nds, srcvals(1,istart), da(i), qwts(istart)) 
         enddo
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
@@ -1805,9 +1889,9 @@ c
           ier = 0
           call triaadap_main(eps, nqpols, nlmax, ntrimax, ntri, 
      1     ichild_start, tverts, da, uvsq, wts, norder, npols,
-     2     srccoefs(1,1,itri), npmax, srcvals, qwts, sigvals,
-     3     nporder, nppols, sigvalsdens, ndtarg, xyztarg(1,itarg),
-     4     rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
+     2     isd, ndsc, srccoefs(1,1,itri), npmax, nds, srcvals, qwts, 
+     3     sigvals, nporder, nppols, sigvalsdens, ndtarg, 
+     4     xyztarg(1,itarg), rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
      5     fker, ndd, dpars, ndz, zpars, ndi, ipars, cvals,
      6     istack, nproclist0, xkernvals, cintvals(1,itarg), ier)
 
@@ -1829,8 +1913,8 @@ c
 c
 c
 c
-      subroutine ctriaints_wnodes_vec(npatches, norder, npols,
-     1   srccoefs, ndtarg, ntarg, xyztarg, itargptr, ntargptr,
+      subroutine ctriaints_wnodes_vec(npatches, norder, npols, isd, 
+     1   ndsc, srccoefs, ndtarg, ntarg, xyztarg, itargptr, ntargptr,
      2   nporder, nppols, fker, nd, ndd, dpars, ndz, zpars, ndi, ipars,
      3   nqpts, qnodes, wts, cintvals)
 c
@@ -1844,10 +1928,23 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols, npatches)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - ndtarg: integer
 c        leading dimension of target information
 c    - ntarg: integer
@@ -1902,7 +1999,8 @@ c
       implicit none
       integer, intent(in) :: npatches, norder, npols, ndtarg
       integer, intent(in) :: nporder, nppols
-      real *8, intent(in) :: srccoefs(9,npols,npatches)
+      integer, intent(in) :: isd, ndsc
+      real *8, intent(in) :: srccoefs(ndsc,npols,npatches)
       real *8, intent(in) :: xyztarg(ndtarg,ntarg)
       integer, intent(in) :: ntarg
       integer, intent(in) :: itargptr(npatches), ntargptr(npatches)
@@ -1923,6 +2021,7 @@ c
       complex *16, allocatable :: cinttmp(:,:,:)
 
       integer i,ipatch,j,lda,ldb,itarg,ldc,ntarg0,ii, idim
+      integer nds
 
       complex *16 fval(nd)
       real *8 da,ra
@@ -1950,7 +2049,9 @@ c
 
       allocate(sigvals(nppols,nqpts),rsigvals(npols,nqpts))
 
-      allocate(srcvals(12,nqpts),qwts(nqpts))
+      nds = 12
+      if(isd.ne.0) nds = 24
+      allocate(srcvals(nds,nqpts),qwts(nqpts))
 
       do i=1,nqpts
         call koornf_pols(qnodes(1,i),norder,npols,rsigvals(1,i),
@@ -1973,19 +2074,19 @@ c
         transb = 'N'
         alpha = 1
         beta = 0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = nds
 
         da = 1
 
-        call dgemm_guru(transa, transb, 9, nqpts, npols, alpha,
+        call dgemm_guru(transa, transb, ndsc, nqpts, npols, alpha,
      1     srccoefs(1,1,ipatch), lda, rsigvals, ldb, beta,
      2     srcvals, ldc)
 
    
-        call get_norms_qwts_tri(nqpts, wts, srcvals,
-     1        da, qwts)
+        call get_srcvals_auxinfo_tri(nqpts, wts, isd, nds, srcvals, 
+     1    da, qwts)
 c
 c
 c          compute the kernel values for all the targets
@@ -2034,7 +2135,7 @@ c
 
 
       subroutine ctriaints_dist_vec(eps, intype,
-     1     npatches, norder, npols, srccoefs, ndtarg,
+     1     npatches, norder, npols, isd, ndsc, srccoefs, ndtarg,
      2     ntarg, xyztarg, ifp, xyzproxy,
      3     itargptr, ntargptr, nporder, nppols, ntrimax, 
      4     rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
@@ -2064,10 +2165,23 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols, npatches)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - ndtarg: integer
 c        leading dimension of target information
 c    - ntarg: integer
@@ -2156,7 +2270,8 @@ c
       integer intype,ifp,nd
       integer npatches,norder,npols
       integer nporder,nppols
-      real *8 srccoefs(9,npols,npatches)
+      integer isd, ndsc
+      real *8 srccoefs(ndsc,npols,npatches)
       
       integer ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
@@ -2208,7 +2323,7 @@ c
       complex *16, allocatable :: fkervals(:,:),sigmatmp(:,:)
       real *8, allocatable :: rsigtmp(:,:)
       real *8 xyztmp(3)
-      integer itmp,idim
+      integer itmp,idim,nds
       complex *16 ima
 
       character *1 transa,transb
@@ -2249,7 +2364,7 @@ c
       
 
       if(ifp.eq.1) then
-        call gettritree(npatches, norder, npols, srccoefs, ntarg,
+        call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
      1    xyzproxy, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri,
      2    nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3    ier)
@@ -2261,7 +2376,7 @@ c
           enddo
         enddo
 
-        call gettritree(npatches, norder, npols, srccoefs, ntarg,
+        call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
      1     xyztargtmp, itargptr, ntargptr, ntrimax, nlmax, rfac, 
      2     ntri, nlev, ichild_start, da, tricm, trirad, tverts,
      3     itrireltmp, ier)
@@ -2328,7 +2443,9 @@ cc      call prinf('nqpols=*',nqpols,1)
 
       npmax = ntri*nqpols
       allocate(sigvals(npols,npmax))
-      allocate(srcvals(12,npmax),qwts(npmax))
+      nds = 12
+      if(isd.ne.0) nds = 24
+      allocate(srcvals(nds,npmax),qwts(npmax))
 
       allocate(sigmatmp(nppols,npmax),fkervals(nd,npmax))
       allocate(rsigtmp(nppols,npmax))
@@ -2358,11 +2475,11 @@ c
         transb = 'N'
         alpha = 1
         beta = 0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = nds
 
-        call dgemm_guru(transa, transb, 9, npmax, npols, alpha,
+        call dgemm_guru(transa, transb, ndsc, npmax, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals, ldc)
 
 
@@ -2372,8 +2489,8 @@ c
 
         do i=1,ntri
           istart = (i-1)*nqpols+1
-          call get_norms_qwts_tri(nqpols, wts, srcvals(1,istart),
-     1        da(i), qwts(istart))
+          call get_srcvals_auxinfo_tri(nqpols, wts, isd, 
+     1       nds, srcvals(1,istart), da(i), qwts(istart))
         enddo
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
@@ -2423,7 +2540,7 @@ c
 c
 c
       subroutine ctriaints_adap_vec(eps, intype,
-     1     npatches, norder, npols, srccoefs, ndtarg,
+     1     npatches, norder, npols, isd, ndsc, srccoefs, ndtarg,
      2     ntarg, xyztarg, itargptr, ntargptr, nporder, nppols, 
      3     ntrimax, rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
      4     fker, nd, ndd, dpars, ndz, zpars, ndi, ipars, nqorder,
@@ -2452,10 +2569,23 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols, npatches)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - ndtarg: integer
 c        leading dimension of target information
 c    - ntarg: integer
@@ -2534,6 +2664,7 @@ c
       integer intype,nd
       integer npatches,norder,npols
       integer nporder,nppols
+      integer isd, ndsc
       real *8 srccoefs(9,npols,npatches)
       
       integer ntarg,ndtarg
@@ -2586,7 +2717,7 @@ c
 
       character *1 transa,transb
       real *8 alpha,beta
-      integer lda,ldb,ldc
+      integer lda,ldb,ldc,nds
       integer nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
       
       
@@ -2658,7 +2789,9 @@ c
      
       npmax = ntrimax*nqpols
       allocate(sigvals(npols,npmax),sigvalsdens(nppols,npmax))
-      allocate(srcvals(12,npmax),qwts(npmax))
+      nds = 12
+      if(isd.ne.0) nds = 24
+      allocate(srcvals(nds,npmax),qwts(npmax))
 
 
 c
@@ -2687,14 +2820,15 @@ c
         transb = 'N'
         alpha = 1
         beta = 0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = nds
 
-        call dgemm_guru(transa, transb, 9, nqpols, npols, alpha,
+        call dgemm_guru(transa, transb, ndsc, nqpols, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals,
      2     ldc)
-        call get_norms_qwts_tri(nqpols, wts, srcvals, da, qwts)
+        call get_srcvals_auxinfo_tri(nqpols, wts, isd, nds, srcvals, da, 
+     1     qwts)
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
 
@@ -2702,22 +2836,22 @@ c
 
           call triaadap_vec(eps, nqorder, nqpols, nlmax, ntmaxuse,
      1       ntri, ichild_start, tvs, da, uvsq, wts, 
-     2       norder, npols, srccoefs(1,1,itri), npmax, srcvals,
-     2       qwts, sigvals, nporder, nppols, sigvalsdens, ndtarg,
-     3       xyztarg(1,itarg), rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
-     3       fker, nd, ndd, dpars, ndz, zpars, ndi, ipars,
+     2       norder, npols, isd, ndsc, srccoefs(1,1,itri), npmax, nds, 
+     2       srcvals, qwts, sigvals, nporder, nppols, sigvalsdens, 
+     3       ndtarg, xyztarg(1,itarg), rat1, rat2, rsc1, rat1p, rat2p, 
+     3       rsc1p, fker, nd, ndd, dpars, ndz, zpars, ndi, ipars,
      3       cintvals(1,1,itarg), ier)
            if(ier.eq.4) then
              ntmaxuse0 = ntmaxuse*4
              npmax0 = ntmaxuse0*nqpols
              allocate(sigvals2(npols,npmax))
              allocate(sigvalsdens2(nppols,npmax))
-             allocate(srcvals2(12,npmax),qwts2(npmax))
+             allocate(srcvals2(nds,npmax),qwts2(npmax))
              allocate(ichild_start2(ntmaxuse),tvs2(2,3,ntmaxuse))
              allocate(da2(ntmaxuse))
              nn1 = npols*npmax
              nn2 = nppols*npmax
-             nn3 = 12*npmax
+             nn3 = nds*npmax
              nn4 = ntri*6
              call dcopy_guru(nn1, sigvals, 1, sigvals2, 1)
              call dcopy_guru(nn2, sigvalsdens, 1, sigvalsdens2, 1)
@@ -2736,7 +2870,7 @@ c
 
              allocate(sigvals(npols,npmax0))
              allocate(sigvalsdens(nppols,npmax0))
-             allocate(srcvals(12,npmax0),qwts(npmax0))
+             allocate(srcvals(nds,npmax0),qwts(npmax0))
              allocate(ichild_start(ntmaxuse0),tvs(2,3,ntmaxuse0))
              allocate(da(ntmaxuse0))
 
@@ -2781,8 +2915,8 @@ c
 c
       subroutine triaadap_vec(eps, m, kpols, nlmax, ntmax, ntri,
      1             ichild_start, tvs, da, uvsq, wts,
-     1             norder, npols, srccoefs, npmax, srcvals,
-     2             qwts, sigvals, nporder, nppols, sigvalsdens, 
+     1             norder, npols, isd, ndsc, srccoefs, npmax, nds, 
+     2             srcvals, qwts, sigvals, nporder, nppols, sigvalsdens, 
      3             ndtarg, xt, rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
      3             fker, nd, ndd, dpars, ndz, zpars, ndi,
      3             ipars, cintall, ier)
@@ -2823,13 +2957,28 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - npmax: integer
 c        max number of points = ntmax*kpols
-c    - srcvals: real *8(12,npmax)
+c    - nds: integer
+c        leading dimension of srcvals array
+c    - srcvals: real *8(nds,npmax)
 c        geometry info on heirarchy of meshes
 c    - qwts: real *8(npmax)
 c        quadrature weights 
@@ -2907,10 +3056,11 @@ c        * ier = 4, too few triangles, try with more triangles
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
       integer nproclist0, nproclist
       integer idone
-      real *8 srccoefs(9,npols)
+      integer isd, ndsc, nds
+      real *8 srccoefs(ndsc,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
-      real *8 srcvals(12,*),qwts(npmax)
+      real *8 srcvals(nds,*),qwts(npmax)
       complex *16, allocatable :: xkernvals(:,:)
       real *8 xt(ndtarg)
       complex *16 cintall(nd,npols),fval(nd)
@@ -2978,8 +3128,8 @@ c
 
       call triaadap_main_vec(eps, kpols, nlmax, ntmax, ntri, 
      1       ichild_start, tvs, da, uvsq, wts, norder, npols,
-     2       srccoefs, npmax, srcvals, qwts, sigvals, nporder,
-     3       nppols, sigvalsdens, ndtarg, xt, rat1, rat2, rsc1,
+     2       isd, ndsc, srccoefs, npmax, nds, srcvals, qwts, sigvals, 
+     3       nporder, nppols, sigvalsdens, ndtarg, xt, rat1, rat2, rsc1,
      4       rat1p, rat2p, rsc1p, fker, nd, ndd, dpars, ndz,
      5       zpars, ndi, ipars, cvals, istack, nproclist0,
      6       xkernvals, cintall, ier)
@@ -2993,11 +3143,11 @@ c
 c
        
       subroutine triaadap_main_vec(eps, kpols, nlmax, ntmax, ntri,
-     1      ichild_start, tvs, da, uvsq, wts, norder, npols, srccoefs,
-     2      npmax, srcvals, qwts, sigvals, nporder, nppols, 
-     3      sigvalsdens, ndtarg, xt, rat1, rat2, rsc1, rat1p, rat2p,
-     4      rsc1p, fker, nd, ndd, dpars, ndz, zpars, ndi, ipars, cvals,
-     5      istack, nproclist0, xkernvals, cintall, ier)
+     1      ichild_start, tvs, da, uvsq, wts, norder, npols, 
+     2      isd, ndsc, srccoefs, npmax, nds, srcvals, qwts, sigvals, 
+     3      nporder, nppols, sigvalsdens, ndtarg, xt, rat1, rat2, rsc1, 
+     4      rat1p, rat2p, rsc1p, fker, nd, ndd, dpars, ndz, zpars, ndi, 
+     5      ipars, cvals, istack, nproclist0, xkernvals, cintall, ier)
       
 
       implicit real *8 (a-h,o-z)
@@ -3008,13 +3158,14 @@ c
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
       integer  nproclist
       integer idone
-      real *8 srccoefs(9,npols)
+      integer isd, ndsc, nds
+      real *8 srccoefs(ndsc,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
       real *8 qwts(npmax)
       complex *16 xkernvals(nd,npmax)
       real *8 xt(ndtarg)
-      real *8 srcvals(12,*)
+      real *8 srcvals(nds,*)
       complex *16 cintall(nd,nppols),fval(nd),ctmp(nd,nppols)
       complex *16 cvals(nd,nppols,ntmax)
 
@@ -3092,15 +3243,15 @@ c               print *, "Exiting without computing anything"
               transb = 'N'
               alpha = 1
               beta = 0
-              lda = 9
+              lda = ndsc
               ldb = npols
-              ldc = 12
+              ldc = nds
 
-              call dgemm_guru(transa, transb, 9, kpols, npols, alpha,
+              call dgemm_guru(transa, transb, ndsc, kpols, npols, alpha,
      1           srccoefs, lda, sigvals(1,istart), ldb, beta,
      2           srcvals(1,istart), ldc)
-              call get_norms_qwts_tri(kpols, wts, srcvals(1,istart),
-     1           rr, qwts(istart))
+              call get_srcvals_auxinfo_tri(kpols, wts, isd, 
+     1          nds, srcvals(1,istart), rr, qwts(istart))
 
             enddo
             ntri = ntri+4
@@ -3209,7 +3360,7 @@ c
 c
 c
       subroutine ctriaints_comb_vec(eps, intype,
-     1     npatches, norder, npols, srccoefs, ndtarg,
+     1     npatches, norder, npols, isd, ndsc, srccoefs, ndtarg,
      2     ntarg, xyztarg, ifp, xyzproxy,
      3     itargptr, ntargptr, nporder, nppols, ntrimax,
      4     rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
@@ -3246,10 +3397,23 @@ c    - norder: integer
 c        order of discretization on patches
 c    - npols: integer
 c        number of points/basis functions on the 
-c        patch = (norder+1)*(norded+2)/2
-c    - srccoefs: real *8 (9, npols, npatches)
+c        patch = (norder+1)*(norder+2)/2
+c    - isd: integer
+c        flag for computing and passing second derivative
+c        information in srcvals.
+c        if isd = 0, leading dim of srcvals = 12, with 
+c        xyz, dxyz/du, dxyz/dv, and normals passed
+c        else, leading dim of srcvals = 24, with
+c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        are principal curvatures, det(g) is the determinant
+c        of the metric tensor
+c    - ndsc: integer
+c        leading dimension of srccoefs array, should be 9
+c        if isd = 0, and 18 otherwise
+c    - srccoefs: real *8 (ndsc, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
-c        d/dv (xyz)
+c        d/dv (xyz), (d2(xyz)/du2, d2(xyz)/duv, d2(xyz)/dv2)
 c    - ndtarg: integer
 c        leading dimension of target information
 c    - ntarg: integer
@@ -3338,7 +3502,8 @@ c
       integer intype,ifp,nd
       integer npatches,norder,npols
       integer nporder,nppols
-      real *8 srccoefs(9,npols,npatches)
+      integer ndsc, isd
+      real *8 srccoefs(ndsc,npols,npatches)
       
       integer ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
@@ -3411,7 +3576,7 @@ c
       character *1 transa,transb
       
       real *8 alpha,beta
-      integer lda,ldb,ldc
+      integer lda,ldb,ldc,nds
 
       data ima/(0.0d0,1.0d0)/
 
@@ -3450,7 +3615,7 @@ c
       
 
       if(ifp.eq.1) then
-        call gettritree(npatches, norder, npols, srccoefs, ntarg,
+        call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
      1    xyzproxy, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri,
      2    nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3    ier)
@@ -3461,7 +3626,7 @@ c
             xyztargtmp(j,i) = xyztarg(j,i)
           enddo
         enddo
-        call gettritree(npatches, norder, npols, srccoefs, ntarg,
+        call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
      1     xyztargtmp, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri,
      2     nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3     ier)
@@ -3536,7 +3701,9 @@ cc      call prinf('nqpols=*',nqpols,1)
       npmax = ntrimax*nqpols
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
-      allocate(srcvals(12,npmax),qwts(npmax))
+      nds = 12
+      if(isd.eq.0) nds = 24
+      allocate(srcvals(nds,npmax),qwts(npmax))
 
       allocate(xkernvals(nd,npmax))
 
@@ -3566,11 +3733,11 @@ c
         transb = 'N'
         alpha = 1.0d0
         beta = 0.0d0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = nds
 
-        call dgemm_guru(transa, transb, 9, npts0, npols, alpha,
+        call dgemm_guru(transa, transb, ndsc, npts0, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals, ldc)
 
 
@@ -3581,8 +3748,8 @@ c
 
         do i=1,ntri
           istart = (i-1)*nqpols+1
-          call get_norms_qwts_tri(nqpols, wts, srcvals(1,istart),
-     1        da(i), qwts(istart))
+          call get_srcvals_auxinfo_tri(nqpols, wts, isd, 
+     1      nds, srcvals(1,istart), da(i), qwts(istart))
         enddo
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
@@ -3637,7 +3804,8 @@ c
 
           call triaadap_main_vec(eps, nqpols, nlmax, ntrimax, ntri,
      1      ichild_start, tverts, da, uvsq, wts, norder, npols, 
-     2      srccoefs(1,1,itri), npmax, srcvals, qwts, sigvals,
+     2      isd, ndsc, srccoefs(1,1,itri), npmax, nds, srcvals, qwts, 
+     2      sigvals,
      3      nporder, nppols, sigvalsdens, ndtarg, xyztarg(1,itarg),
      3      rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
      3      fker, nd, ndd, dpars, ndz, zpars, ndi, ipars, cvals, 

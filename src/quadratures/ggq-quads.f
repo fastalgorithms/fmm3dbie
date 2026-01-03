@@ -285,7 +285,8 @@ c
      1   qnodes_quad,qwts_quad)
       ra = sum(qwts_quad)
 
-
+      isd = 0
+      ndsc = 9
 
       t1 = second()
 C$        t1 = omp_get_wtime()
@@ -372,9 +373,9 @@ c
         sints_f = 0
         if(iptype(ipatch).eq.1) 
      1      call ctriaints(epsp,istrat,intype,ntest0,norder,npols,
-     1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
-     2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
-     3      ipars,nqorder,npmax,rfac,sints_n,ifmetric,rn1,n2)
+     2      isd,ndsc,srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,
+     3      xyztarg2,itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,
+     4      zpars,ndi,ipars,nqorder,npmax,rfac,sints_n,ifmetric,rn1,n2)
         
         if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) 
      1      call cquadints(epsp,istrat,intype,ntest0,norder,ipoly,
@@ -389,7 +390,7 @@ cc
 cc       fill out far part of layer potential
 c
         if(iptype(ipatch).eq.1) 
-     1     call ctriaints_wnodes(ntest0,norder,npols,
+     1     call ctriaints_wnodes(ntest0,norder,npols,isd,ndsc,
      1      srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
      3      ndi,ipars,npts_f_tri,qnodes_tri,qwts_tri,sints_f)
@@ -733,6 +734,8 @@ c
       call gen_xg_unif_nodes_quad(nlev,nqorder_f,nnodes,npts_f_quad,
      1   qnodes_quad,qwts_quad)
 
+      isd = 0
+      ndsc = 9
 
       t1 = second()
 C$        t1 = omp_get_wtime()
@@ -817,9 +820,9 @@ c
 
         if(iptype(ipatch).eq.1) 
      1      call dtriaints(epsp,istrat,intype,ntest0,norder,npols,
-     1      srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,xyztarg2,
-     2      itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,zpars,ndi,
-     3      ipars,nqorder,npmax,rfac,sints_n,ifmetric,rn1,n2)
+     2      isd,ndsc,srccoefs(1,istart),ndtarg,ntarg_n,targ_near,ifp,
+     3      xyztarg2,itargptr,ntarg_n,norder,npols,fker,ndd,dpars,ndz,
+     4      zpars,ndi,ipars,nqorder,npmax,rfac,sints_n,ifmetric,rn1,n2)
         
         if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) 
      1      call dquadints(epsp,istrat,intype,ntest0,norder,ipoly,
@@ -835,7 +838,7 @@ c
 c       fill out far part of layer potential
 c
         if(iptype(ipatch).eq.1) 
-     1     call dtriaints_wnodes(ntest0,norder,npols,
+     1     call dtriaints_wnodes(ntest0,norder,npols,isd,ndsc,
      1      srccoefs(1,istart),ndtarg,ntarg_f,targ_far,
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
      3      ndi,ipars,npts_f_tri,qnodes_tri,qwts_tri,sints_f)
