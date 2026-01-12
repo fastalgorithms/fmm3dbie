@@ -1,6 +1,3 @@
-
-n
-
 !
 ! the following routines rely on the srcinfo and targinfo arrays
 ! containing the following information, standardized in the following
