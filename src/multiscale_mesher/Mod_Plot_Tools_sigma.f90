@@ -18,7 +18,7 @@ implicit none
 !List of calling arguments
 type ( Fast_Sigma_stuff ), pointer :: FSS_1
 type ( Geometry ), pointer :: Geometry1
-integer, intent(in) :: adapt_flag
+integer *8, intent(in) :: adapt_flag
 
 !List of local variables
 type ( TreeLRD ), pointer :: TreeLRD_1
@@ -26,7 +26,7 @@ character ( len=100 ) nombre,filename,plot_name
 real ( kind = 8 ) x_min,x_max,y_min,y_max,z_min,z_max,Lx,Ly,Lz
 real ( kind = 8 ) xp_min,xp_max,yp_min,yp_max,zp_min,zp_max
 real ( kind = 8 ), allocatable :: F_plot(:,:),targ_vect(:,:),sgma(:),sgma_x(:),sgma_y(:),sgma_z(:)
-integer N_plot,M_plot,count,count1,count2,icount,n_targ
+integer *8 N_plot,M_plot,count,count1,count2,icount,n_targ
 
 
     TreeLRD_1 => FSS_1%TreeLRD_1
@@ -144,7 +144,7 @@ type ( TreeLRD ), pointer :: TreeLRD_1
 !List of local variables
 character ( len=100 ) plot_name
 real ( kind = 8 ), allocatable :: W_boxes(:)
-integer icount,tot_num_box
+integer *8 icount,tot_num_box
 
     plot_name='./plot_tools/plot_tree'
     tot_num_box=total_number_leaf_boxes(TreeLRD_1%Main_box)
@@ -163,12 +163,12 @@ implicit none
 
 !List of calling arguments
 type ( Box ), pointer :: Current_box
-integer, intent(in) :: tot_num_box!List of local variables
-integer, intent(inout) :: icount!List of local variables
+integer *8, intent(in) :: tot_num_box!List of local variables
+integer *8, intent(inout) :: icount!List of local variables
 real ( kind = 8 ), intent(inout) :: W_boxes(4*tot_num_box)
 
 !List of local variables
-integer count1
+integer *8 count1
 
     if (Current_box%is_leaf) then
         W_boxes(icount)=Current_box%Box_center(1)
@@ -196,12 +196,12 @@ implicit none
 
 !List of calling arguments
 type ( Box ), pointer :: Current_box
-integer, intent(in) :: tot_num_box!List of local variables
-integer, intent(inout) :: icount!List of local variables
+integer *8, intent(in) :: tot_num_box!List of local variables
+integer *8, intent(inout) :: icount!List of local variables
 real ( kind = 8 ), intent(inout) :: W_boxes(4*tot_num_box)
 
 !List of local variables
-integer count1
+integer *8 count1
 
     if (Current_box%is_leaf) then
         W_boxes(icount)=Current_box%Box_center(1)

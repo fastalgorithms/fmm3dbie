@@ -100,14 +100,14 @@ implicit none
     type ( Fast_Sigma_stuff ), pointer ::  FSS_1             !! Tree where we place the centroids and sigma values at the centroids
 
     !List of local variables
-    integer n_max_leaf
+    integer *8 n_max_leaf
     double precision :: Centroids(3,Geometry1%ntri)
     double precision :: sgmas(Geometry1%ntri), rlam, sigma0
 
     !! Tree where we place the centroids and sigma values at the
     !! centroids
     type ( TreeLRD ), pointer ::  TreeLRD_1             
-    integer n_leaf_boxes,count1
+    integer *8 n_leaf_boxes,count1
     real ( kind = 8 ), allocatable :: centers(:,:),sgmas_2(:)
 
         allocate(FSS_1)
@@ -201,7 +201,7 @@ subroutine function_eval_sigma(FSS_1,targ_vect,n_targ,sgma, &
   !!
   !! adapt_flag=2 means recursive sigma definition (HUGE adaptivity
   !!   and a bit slower)
-  integer, intent(in) :: n_targ,adapt_flag
+  integer *8, intent(in) :: n_targ,adapt_flag
 
   !! vector with the targets
   real ( kind = 8 ), intent(in) :: targ_vect(3,n_targ)
@@ -258,7 +258,7 @@ implicit none
 
 
     !List of local variables
-    integer count
+    integer *8 count
     real ( kind = 8 ) lambda,d1,d2,d3,dmax,sgma_mean,rlam
     real ( kind = 8 ) P1(3),P2(3),P3(3),Pc(3),Pd1(3),Pd2(3),Pd3(3)
 
@@ -299,13 +299,13 @@ implicit none
 
     !List of calling arguments
     type ( Fast_Sigma_stuff ), pointer ::  FSS_1
-    integer, intent(in) :: n_targ
+    integer *8, intent(in) :: n_targ
     real ( kind = 8 ), intent(in) :: targ_vect(3,n_targ)
     real ( kind = 8 ), intent(out) :: sgma(n_targ),Gx(n_targ),Gy(n_targ),Gz(n_targ)
 
     !List of local variables
     real ( kind = 8 ) F,D,dF_x,dF_y,dF_z,dD_x,dD_y,dD_z,di,my_exp
-    integer count1,count2
+    integer *8 count1,count2
 
         do count1=1,n_targ
             Gx(count1)=0.0d0
@@ -338,13 +338,13 @@ subroutine fast_gaussian_global_new(FSS_1, targ_vect, n_targ, sgma, &
   ! List of calling arguments
   type ( Fast_Sigma_stuff ), pointer ::  FSS_1
 
-  integer :: n_targ, adapt_flag
+  integer *8 :: n_targ, adapt_flag
   double precision :: targ_vect(3,n_targ)
   double precision :: sgma(n_targ), sgma_x(n_targ)
   double precision :: sgma_y(n_targ),sgma_z(n_targ)
 
   ! List of local variables
-  integer :: count1, count2
+  integer *8 :: count1, count2
   double precision :: sgma_min, sgma_max
   double precision :: d_aux,alpha,my_exp,F,D,dF_x,dF_y,dF_z
   double precision :: dF_sigma,dD_sigma,denom
@@ -354,11 +354,11 @@ subroutine fast_gaussian_global_new(FSS_1, targ_vect, n_targ, sgma, &
   double precision :: sgm_rad0,sgm_radm1
   double precision :: f0,fm1,d0,dm1,dd
 
-  integer nhalf,j
+  integer *8 nhalf,j
   
   double precision :: fprime, tes,tes2,resid,hstep,sigma
 
-  integer :: count_max
+  integer *8 :: count_max
   type ( TreeLRD ), pointer :: TreeLRD_1
 
   TreeLRD_1 => FSS_1%TreeLRD_1
@@ -547,13 +547,13 @@ subroutine fast_gaussian_global(FSS_1, targ_vect, n_targ, sgma, &
   ! List of calling arguments
   type ( Fast_Sigma_stuff ), pointer ::  FSS_1
 
-  integer, intent(in) :: n_targ,adapt_flag
+  integer *8, intent(in) :: n_targ,adapt_flag
   real ( kind = 8 ), intent(in) :: targ_vect(3,n_targ)
   real ( kind = 8 ), intent(out) :: sgma(n_targ),sgma_x(n_targ)
   double precision :: sgma_y(n_targ),sgma_z(n_targ)
 
   ! List of local variables
-  integer count1,count2
+  integer *8 count1,count2
   double precision :: d_aux,alpha,my_exp,F,D,dF_x,dF_y,dF_z
   double precision :: dD_x,dD_y,dD_z,sgm_rad,tol,pot1,pot2,err
   double precision :: dF_sigma, dD_sigma,denom
@@ -647,7 +647,7 @@ implicit none
     real ( kind = 8 ), intent(inout) :: F,D
 
     !List of local variables
-    integer :: count1,count2,count3
+    integer *8 :: count1,count2,count3
     real ( kind = 8 ) d_aux,my_exp
     real ( kind = 8 ) d2
 
@@ -706,7 +706,7 @@ recursive subroutine fast_gaussian_box_v2(Current_box,targ,sgm_rad,alpha,F,D)
   real ( kind = 8 ), intent(inout) :: F,D
 
     !List of local variables
-    integer  count1,count2,count3
+    integer *8  count1,count2,count3
     real ( kind = 8 ) d_aux,my_exp
     real ( kind = 8 ) d2
 
@@ -772,7 +772,7 @@ recursive subroutine fast_gaussian_box_grad(adapt_flag,Current_box,targ,sgm_rad,
   double precision :: dD_x,dD_y,dD_z,dF_sigma,dD_sigma
 
   !List of local variables
-  integer  count1,count2,count3, adapt_flag
+  integer *8  count1,count2,count3, adapt_flag
   real ( kind = 8 ) d_aux,my_exp
   real ( kind = 8 ) d2, rtmp
 
@@ -905,13 +905,13 @@ implicit none
 
     !List of calling arguments
     type ( Fast_Sigma_stuff ), pointer ::  FSS_1
-    integer, intent(in) :: n_targ
+    integer *8, intent(in) :: n_targ
     real ( kind = 8 ), intent(in) :: targ_vect(3,n_targ)
     real ( kind = 8 ), intent(out) :: sgma(n_targ),Gx(n_targ),Gy(n_targ),Gz(n_targ)
 
     !List of local variables
     real ( kind = 8 ) F,D,dF_x,dF_y,dF_z,dD_x,dD_y,dD_z,di,my_exp,alpha
-    integer count1,count2
+    integer *8 count1,count2
     type ( TreeLRD ), pointer :: TreeLRD_1
 
 
@@ -960,12 +960,12 @@ implicit none
     !List of calling arguments
     type ( Fast_Sigma_stuff ), pointer ::  FSS_1
 !    type ( TreeLRD ), pointer :: TreeLRD_1
-    integer, intent(in) :: n
+    integer *8, intent(in) :: n
     real ( kind = 8 ), intent(in) :: Points(3,n)
     real ( kind = 8 ), intent(out) :: sgma(n),sgma_x(n),sgma_y(n),sgma_z(n)
 
     !List of local variables
-    integer count1
+    integer *8 count1
     type ( Box ), pointer :: p_box
     real ( kind = 8 ) x,y,z
 
@@ -1043,13 +1043,13 @@ implicit none
 
     !List of calling arguments
     type ( Fast_Sigma_stuff ), pointer ::  FSS_1
-    integer, intent(in) :: n_targ
+    integer *8, intent(in) :: n_targ
     real ( kind = 8 ), intent(in) :: targ_vect(3,n_targ)
     real ( kind = 8 ), intent(out) :: sgma(n_targ),Gx(n_targ),Gy(n_targ),Gz(n_targ)
 
     !List of local variables
     real ( kind = 8 ) F,D,dF_x,dF_y,dF_z,dD_x,dD_y,dD_z,di2,my_exp,alpha,aux_center(3),sigma2_aux,lambda,beta
-    integer count1,count2
+    integer *8 count1,count2
     type ( TreeLRD ), pointer :: TreeLRD_1
     type ( Box ), pointer :: p_box
 

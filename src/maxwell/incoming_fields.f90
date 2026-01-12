@@ -35,7 +35,7 @@
 !  Input arguments:
 !    - zk: complex *16
 !        Wavenumber
-!    - ns: integer
+!    - ns: integer *8
 !        number of source locations
 !    - src: real *8 (3,ns)
 !        xyz coordinates of source locations
@@ -43,9 +43,9 @@
 !        orientation/strength of electric dipoles
 !    - zhdips: complex *16 (3,ns)
 !        orientation/strength of magnetic dipoles
-!    - ndtarg: integer
+!    - ndtarg: integer *8
 !        leading dimension of target information array
-!    - ntarg: integer
+!    - ntarg: integer *8
 !        number of targets
 !    - targs: real *8(ndtarg,ntarg)
 !        target information 
@@ -58,10 +58,10 @@
 !
       implicit none
       complex *16, intent(in) :: zk
-      integer, intent(in) :: ns
+      integer *8, intent(in) :: ns
       real *8, intent(in) :: src(3,ns)
       complex *16, intent(in) :: zedips(3,ns), zhdips(3,ns)
-      integer, intent(in) :: ndtarg, ntarg
+      integer *8, intent(in) :: ndtarg, ntarg
       real *8, intent(in) :: targs(ndtarg, ntarg)
 
       complex *16, intent(out) :: einc(3,ntarg), hinc(3,ntarg)
@@ -70,7 +70,7 @@
 ! List of local variables
       real *8 dx, dy, dz ,r, done, pi
       complex *16 ztmp1, ztmp2, ztmp3, ztmp4, zexp, ima, zki
-      integer i, j
+      integer *8 i, j
       data ima/(0.0d0, 1.0d0)/
 
       done = 1.0d0
@@ -142,7 +142,7 @@ subroutine point_source_scalar_helmholtz(P0,ns,points,normals,zk,pot,dpot_dnorma
 implicit none
 
 	!List of calling arguments
-	integer ( kind = 4 ), intent(in)  :: ns
+	integer ( kind = 8 ), intent(in)  :: ns
 	real ( kind = 8 ), intent(in) :: P0(3)
 	real ( kind = 8 ), intent(in) :: points(3,ns)
 	real ( kind = 8 ), intent(in) :: normals(3,ns)
@@ -151,7 +151,7 @@ implicit none
 	complex ( kind = 8 ), intent(out) :: dpot_dnormal(ns)
 
     !List of local variables
-	integer ( kind = 4 ) count1
+	integer ( kind = 8 ) count1
 	real ( kind = 8 ) r
 	complex (kind = 8 ) ima
 	complex ( kind = 8 ) gradpot_aux(3),aux
@@ -176,7 +176,7 @@ subroutine point_source_scalar_helmholtz2(P0,qv,ns,points,zk,pot,gradpot,init)
 implicit none
 
 	!List of calling arguments
-	integer ( kind = 4 ), intent(in)  :: ns,init
+	integer ( kind = 8 ), intent(in)  :: ns,init
 	real ( kind = 8 ), intent(in) :: P0(3)
 	real ( kind = 8 ), intent(in) :: points(3,ns)
 	complex ( kind = 8 ), intent(in) :: zk,qv
@@ -184,7 +184,7 @@ implicit none
 	complex ( kind = 8 ), intent(out) :: gradpot(3,ns)
 
     !List of local variables
-	integer ( kind = 4 ) count1
+	integer ( kind = 8 ) count1
 	real ( kind = 8 ) r
 	complex (kind = 8 ) ima
 	complex ( kind = 8 ) aux
@@ -214,7 +214,7 @@ implicit none
 ! a small electric dipole; that is: E=vf*exp(ima*zk*r)/r 
 
 	!List of calling arguments
-	integer ( kind = 4 ), intent(in) :: ns
+	integer ( kind = 8 ), intent(in) :: ns
 	real ( kind = 8 ), intent(in) :: P0(3)
 	complex ( kind = 8 ), intent(in) :: vf(3)
 	real ( kind = 8 ), intent(in) :: points(3,ns)
@@ -224,7 +224,7 @@ implicit none
 	complex ( kind = 8 ), intent(out) :: divE(ns)
 	
     !List of local variables
-	integer ( kind = 4 ) count1
+	integer ( kind = 8 ) count1
 	real ( kind = 8 ) dx,dy,dz,r
 	complex (kind = 8 ) ima
 	complex (kind = 8 ) R1
@@ -264,7 +264,7 @@ subroutine fieldsED(zk, P0, points, n, E, H, vf, init)
   ! where  A = vf*exp(ima*zk*r)/r
 	
   ! List of calling arguments
-  integer, intent(in) :: n,init
+  integer *8, intent(in) :: n,init
   real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
   complex ( kind = 8 ), intent(in) :: vf(3),zk
   complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
@@ -272,7 +272,7 @@ subroutine fieldsED(zk, P0, points, n, E, H, vf, init)
   ! List of local variables
   real ( kind = 8 ) dx,dy,dz,r
   complex ( kind = 8 ) R1,R2,au1,au2,ima
-  integer i
+  integer *8 i
 	
   ima = (0.0d0,1.0d0)
   do i=1,n
@@ -323,7 +323,7 @@ subroutine fieldsMD(zk,P0,points,n,E,H,vf,initial)
 ! H = 1/(ima*zk)*curlcurlF
 
 ! List of calling arguments
-      integer, intent(in) :: n,initial
+      integer *8, intent(in) :: n,initial
       real *8, intent(in) :: P0(3),points(12,n)
       complex *16, intent(in) :: vf(3),zk
       complex *16, intent(out) :: E(3,n),H(3,n)
@@ -331,7 +331,7 @@ subroutine fieldsMD(zk,P0,points,n,E,H,vf,initial)
 ! List of local variables
       real *8 dx,dy,dz,r
       complex *16 R1,R2,au1,au2,ima
-      integer i
+      integer *8 i
       data ima/(0.0d0, 1.0d0)/
 
       ima = (0.0d0,1.0d0)
@@ -373,12 +373,12 @@ subroutine fieldsPW(zk,xyz,n,nsource,E,H)
 ! a plane wave; that is: E=exp(ima*zk*z) ux
 ! H=exp(ima*zk*z) uy
 
-	integer, intent(in) :: n
+	integer *8, intent(in) :: n
 	real ( kind = 8 ), intent(in) :: xyz(3,n)
 	complex ( kind = 8 ), intent(in) :: zk
 	complex *16 E(3,n),H(3,n)
 	complex *16 ima
-	integer i
+	integer *8 i
     data ima/(0.0d0,1.0d0)/
 
       do i=1,n
@@ -401,13 +401,13 @@ subroutine ScalarPW(zk,xyz,n,pot)
 ! a plane wave; that is: E=exp(ima*zk*z) ux
 ! H=exp(ima*zk*z) uy
 
-	integer, intent(in) :: n
+	integer *8, intent(in) :: n
 	real ( kind = 8 ), intent(in) :: xyz(3,n)
 	complex ( kind = 8 ), intent(in) :: zk
 	complex *16 pot(n)
 	complex *16 ima
 	real ( kind = 8 ) phi,pheta,kx,ky,kz
-	integer i
+	integer *8 i
 	data ima/(0.0d0,1.0d0)/
 	real ( kind = 8 ) pi
 	
@@ -488,7 +488,7 @@ implicit none
 ! E=1/(-ima*omega*ep)*curlcurlA
 	
 	!List of calling arguments
-	integer, intent(in) :: n,init
+	integer *8, intent(in) :: n,init
 	real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),omega,ep,mu
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
@@ -496,7 +496,7 @@ implicit none
 	!List of local variables
 	real ( kind = 8 ) dx,dy,dz,r
 	complex ( kind = 8 ) R1,R2,au1,au2,ima,zk
-	integer i
+	integer *8 i
 	
 	ima = (0.0d0,1.0d0)
 	zk=omega*sqrt(ep*mu)
@@ -539,7 +539,7 @@ implicit none
 ! H=1/(ima*omega*mu)*curlcurlF
 
 	!List of calling arguments
-	integer, intent(in) :: n,initial
+	integer *8, intent(in) :: n,initial
 	real ( kind = 8 ), intent(in) :: P0(3),points(12,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),omega,ep,mu
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n)
@@ -547,7 +547,7 @@ implicit none
 	!List of local variables
 	real ( kind = 8 ) dx,dy,dz,r,zk
 	complex ( kind = 8 ) R1,R2,au1,au2,ima
-	integer i
+	integer *8 i
 	
 	zk=omega*sqrt(ep*mu)
 	ima = (0.0d0,1.0d0)
@@ -594,7 +594,7 @@ implicit none
 ! E=1/(-ima*zk)*curlcurlA
 	
 	!List of calling arguments
-	integer, intent(in) :: n,init,ndtarg
+	integer *8, intent(in) :: n,init,ndtarg
 	real ( kind = 8 ), intent(in) :: P0(3),points(ndtarg,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),zk
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n),A(3,n)
@@ -604,7 +604,7 @@ implicit none
 	real ( kind = 8 ) dx,dy,dz,r
 	complex ( kind = 8 ) R1,R2,au1,au2,ima,myexp
 	complex ( kind = 8 ) e_aux1,e_aux2,e_aux3,a_aux1,a_aux2,a_aux3
-	integer i
+	integer *8 i
 	
 	ima = (0.0d0,1.0d0)
 
@@ -684,7 +684,7 @@ implicit none
 ! H=1/(ima*zk)*curlcurlF
 
 	!List of calling arguments
-	integer, intent(in) :: n,initial,ndtarg
+	integer *8, intent(in) :: n,initial,ndtarg
 	real ( kind = 8 ), intent(in) :: P0(3),points(ndtarg,n)
 	complex ( kind = 8 ), intent(in) :: vf(3),zk
 	complex ( kind = 8 ), intent(out) :: E(3,n),H(3,n),A(3,n)
@@ -693,7 +693,7 @@ implicit none
 	!List of local variables
 	real ( kind = 8 ) dx,dy,dz,r
 	complex ( kind = 8 ) R1,R2,au1,au2,ima,e_aux1,e_aux2,e_aux3,myexp
-	integer i
+	integer *8 i
 	
 	ima = (0.0d0,1.0d0)
 

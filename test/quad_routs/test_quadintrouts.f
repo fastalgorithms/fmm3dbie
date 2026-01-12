@@ -3,6 +3,7 @@
       subroutine quadintrouts_testing(istrat,ifp,intype,ipoly,ttype,
      1   isuccess)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 xyztarg(3,3),xyztarg0(3,3)
       real *8, allocatable :: srcvals(:,:,:)
       real *8, allocatable :: srccoefs(:,:,:)
@@ -11,19 +12,24 @@
       complex *16, allocatable :: dlp(:,:)
       complex *16, allocatable :: slp_ex(:,:)
       complex *16, allocatable :: dlp_ex(:,:)
-      integer ipars(10)
-      integer, allocatable :: iprint(:,:)
-      integer itargptr(2),ntargptr(2)
+      integer *8 ipars(10)
+      integer *8, allocatable :: iprint(:,:)
+      integer *8 itargptr(2),ntargptr(2)
       character *1 ttype
 
 
       real *8 dpars(5)
       complex * 16 zpars(3),ima
+      integer *8 int8_0,int8_1,int8_2,int8_3
 
       external hslp,hdlp
 
       character type
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_2 = 2
+      int8_3 = 3
       ima = dcmplx(0.0d0,1.0d0)
       
       done = 1
@@ -56,7 +62,7 @@
       print *, "npts=",npts
       print *, "npols=",npols
       itype = 2
-      call polytens_exps_nd(2,ipoly,itype,norder+1,ttype,uvs,
+      call polytens_exps_nd(int8_2,ipoly,itype,norder+1,ttype,uvs,
      1     umatr,npols,vmatr,npts,wts)
       thet = pi/4
       rr = 1.0d-1
@@ -190,9 +196,9 @@ c
       ntargptr(1) = 2
       ntargptr(2) = 1
       call cquadints(eps,istrat,intype,npatches,norder,ipoly,ttype,
-     1  npols,srccoefs,3,ntarg,xyztarg,ifp,xyztarg,itargptr,ntargptr,
-     2  norder,npols,hslp,0,dpars,1,zpars,0,ipars,nqorder,nquadmax,
-     3  rfac,slp,ifmetric,rn1,n2)
+     1  npols,srccoefs,int8_3,ntarg,xyztarg,ifp,xyztarg,itargptr,
+     2  ntargptr,norder,npols,hslp,int8_0,dpars,int8_1,zpars,
+     3  int8_0,ipars,nqorder,nquadmax,rfac,slp,ifmetric,rn1,n2)
 
       
       errmax = 0.0d0
@@ -246,10 +252,11 @@ c
 
       subroutine hslp(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 x(3),y(ndt),dpars(ndd)
       complex *16 zpars(ndz),ima
       data ima/(0.0d0,1.0d0)/
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
       complex *16 f
 
       rr = sqrt((x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2)

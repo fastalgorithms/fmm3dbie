@@ -2,9 +2,9 @@
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
       real *8, allocatable :: wts(:)
       character *100 fname
-      integer ipars(2)
+      integer *8 ipars(2)
 
-      integer, allocatable :: norders(:), ixyzs(:), iptype(:)
+      integer *8, allocatable :: norders(:), ixyzs(:), iptype(:)
 
       real *8 xyz_out(3), xyz_in(3), xyz_src(3), xyz_targ(3)
       real *8, allocatable :: sigma(:), rhs(:)
@@ -12,13 +12,13 @@
       real *8 eps_gmres
       real *8 dpars(2)
       real *8 c0(3)
-      integer nuv(2)
+      integer *8 nuv(2)
       complex * 16 zpars(3)
-      integer numit,niter
+      integer *8 numit,niter
 
-      integer ipatch_id
+      integer *8 ipatch_id
       real *8 uvs_targ(2), dtmp
-      integer iptype0
+      integer *8 iptype0
 
       real *8 pot,potex
       character *100, igeom

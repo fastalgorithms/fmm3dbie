@@ -3,10 +3,10 @@ program smoother
 
   implicit none
 
-  integer :: N, count,nrefine, ifplot
-  integer :: adapt_flag, ifflatten
-  integer :: interp_flag
-  integer :: norder_skel, norder_smooth
+  integer *8 :: N, count,nrefine, ifplot
+  integer *8 :: adapt_flag, ifflatten
+  integer *8 :: interp_flag
+  integer *8 :: norder_skel, norder_smooth
 
   character (len=100) :: fnamein, fnameout_root,name_aux
   character (len=21) :: plot_name
@@ -14,7 +14,7 @@ program smoother
   character (len=2) :: arg_comm
 
   real *8 rlam
-  integer i, ier, ifiletype
+  integer *8 i, ier, ifiletype
   
 
 

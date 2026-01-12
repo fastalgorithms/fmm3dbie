@@ -1,21 +1,22 @@
       implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
-      integer, allocatable :: norders(:), ixyzs(:), iptype(:)
+      integer *8, allocatable :: norders(:), ixyzs(:), iptype(:)
       real *8, allocatable :: wts(:)
       real *8, allocatable :: ru(:,:), rv(:,:)
-      integer ipars(2)
+      integer *8 ipars(2)
 
 
       real *8 xyz_out(3), xyz_in(3)
 
       real *8, allocatable :: cms(:,:), rads(:), rad_near(:) 
-      integer nover, npolso, nptso
-      integer nnz, nquad
-      integer, allocatable :: row_ptr(:), col_ind(:), iquad(:)
+      integer *8 nover, npolso, nptso
+      integer *8 nnz, nquad
+      integer *8, allocatable :: row_ptr(:), col_ind(:), iquad(:)
       complex *16, allocatable :: wnear(:,:)
 
       real *8, allocatable :: srcover(:,:), wover(:)
-      integer, allocatable :: ixyzso(:), novers(:)
+      integer *8, allocatable :: ixyzso(:), novers(:)
 
       complex *16, allocatable :: einc(:,:), hinc(:,:)
       complex *16, allocatable :: zjvec(:,:), rho(:)
@@ -35,10 +36,10 @@
       real *8, allocatable :: errs(:)
       real *8 thet,phi
       complex * 16 zpars(3)
-      integer numit,niter
+      integer *8 numit,niter
       character *200 title, fname, fname1, fname2
 
-      integer ipatch_id
+      integer *8 ipatch_id
       real *8 uvs_targ(2)
 
       logical isout0, isout1
@@ -55,10 +56,13 @@
       complex *16 zmat(3,3), zmatuse(3,3), zmatinv(3,3)
       complex *16 zhu, zhx, zeu, zex, zey
 
-      integer count1
+      integer *8 count1
+      integer *8 int8_3, int8_2
 
       data ima/(0.0d0,1.0d0)/
 
+      int8_3 = 3
+      int8_2 = 2
 
       call prini(6,13)
 
@@ -203,7 +207,7 @@
 
 
       call l3getsph(nmax, mm, nn, ndtarg, srcvals, zynm, npts, w)
-      call get_surf_grad(2, npatches, norders, ixyzs, iptype, npts, &
+      call get_surf_grad(int8_2, npatches, norders, ixyzs, iptype, npts, &
         srccoefs, srcvals, zynm, unm_uv)
 
 !
@@ -360,7 +364,7 @@
       zrhsvec(3) = zey
       
       info = 0 
-      call zinverse(3, zmatuse, info, zmatinv)
+      call zinverse(int8_3, zmatuse, info, zmatinv)
 
       do i=1,3
         zsolvec(i) = 0

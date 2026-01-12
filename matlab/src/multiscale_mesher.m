@@ -69,7 +69,7 @@ function S = multiscale_mesher(fnamein, norder, opts)
     else
         ier = 0;
         ifiletype = 0;
-        mex_id_ = 'MWF77_get_filetype(i cstring[x], io int[x], io int[x])';
+        mex_id_ = 'MWF77_get_filetype(c i cstring[x], c io int64_t[x], c io int64_t[x])';
 [ifiletype, ier] = fmm3dbie_routs(mex_id_, fnameuse, ifiletype, ier, 1000, 1, 1);
         if ier > 0
             error('MULTISCALE_MESHER: error determining file type\n');
@@ -84,7 +84,7 @@ function S = multiscale_mesher(fnamein, norder, opts)
         error('MULTISCALE_MESHER: opts.nquad too high, must be less than 20');
     end
     ier = 0;
-    mex_id_ = 'MWF77_multiscale_mesher(i cstring[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i cstring[x], io int[x])';
+    mex_id_ = 'MWF77_multiscale_mesher(c i cstring[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i cstring[x], c io int64_t[x])';
 [ier] = fmm3dbie_routs(mex_id_, fnameuse, ifiletype, norder_skel, norder_smooth, nrefine, adapt_sigma, rlam, fnameoutuse, ier, 1000, 1, 1, 1, 1, 1, 1, 1000, 1);
 
     if ier == 3 || ier == 4

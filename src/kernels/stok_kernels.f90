@@ -38,8 +38,9 @@
 subroutine st3d_slp_vec(nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi, &
      ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   
   complex *16 :: zk
   real *8 :: val(nd)
@@ -90,7 +91,7 @@ end subroutine st3d_slp_vec
 subroutine st3d_slp(src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   real *8 :: src(*), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
 
   complex *16 :: zk
   real *8 :: val, dr(3),over4pi
@@ -142,8 +143,9 @@ subroutine st3d_dlp_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
 !f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   complex *16 :: zk
   real *8 :: val(nd),over4pi
 
@@ -200,8 +202,9 @@ subroutine st3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz, &
 !f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   complex *16 :: zk
   real *8 :: val,over4pi
 
@@ -254,8 +257,9 @@ subroutine st3d_comb_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
 !f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   complex *16 :: zk
   real *8 :: val(nd)
 
@@ -326,8 +330,9 @@ subroutine st3d_comb(srcinfo,ndt,targ,ndd,dpars,ndz, &
 !f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   complex *16 :: zk
   real *8 :: val
 
@@ -390,8 +395,9 @@ end subroutine st3d_comb
 subroutine st3d_strac_vec(nd,srcinfo,ndt,targinfo, &
      ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val(9), targ(3), src(3), targnorm(3),over4pi
   data over4pi/0.07957747154594767d0/
 !f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
@@ -449,8 +455,9 @@ end subroutine st3d_strac_vec
 subroutine st3d_strac(srcinfo,ndt,targinfo,ndd,dpars, &
      ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val, targ(3), src(3), targnorm(3), dr(3),over4pi
   data over4pi/0.07957747154594767d0/
   

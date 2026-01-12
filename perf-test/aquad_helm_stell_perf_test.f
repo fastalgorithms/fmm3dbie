@@ -1,15 +1,16 @@
       implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:),targs(:,:)
       real *8, allocatable :: wts(:)
       real *8, allocatable :: cms(:,:),rads(:),rad_near(:)
       real *8 errs(6),ts(2)
       real *8, allocatable :: rfacs(:,:)
       character *100 fname
-      integer ipars(2)
-      integer, allocatable :: row_ptr(:),col_ind(:)
-      integer, allocatable :: iquad(:)
-      integer, allocatable :: col_ptr(:),row_ind(:)
-      integer, allocatable :: iper(:)
+      integer *8 ipars(2)
+      integer *8, allocatable :: row_ptr(:),col_ind(:)
+      integer *8, allocatable :: iquad(:)
+      integer *8, allocatable :: col_ptr(:),row_ind(:)
+      integer *8, allocatable :: iper(:)
       real *8, allocatable :: srcover(:,:),wover(:)
       complex *16, allocatable :: uval(:),dudnval(:)
       complex *16, allocatable :: sigmaover(:),slp_near(:),dlp_near(:)
@@ -19,17 +20,23 @@
 
       complex *16 zk
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
-      integer, allocatable :: ixyzso(:),nfars(:)
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: ixyzso(:),nfars(:)
 
-      integer, allocatable :: ipatch_id(:),inode_id(:)
+      integer *8, allocatable :: ipatch_id(:),inode_id(:)
       real *8, allocatable :: uvs_targ(:,:)
       real *8 xyz_out(3),xyz_in(3)
       complex *16, allocatable :: sigma(:)
       complex * 16 zpars(3)
+      integer *8 int8_0,int8_1,int8_3,int8_12
 
 
       external h3d_ggq_comb,h3d_ggq_slp
+
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
+      int8_12 = 12
 
       call prini(6,13)
 
@@ -145,10 +152,10 @@
       allocate(sigma(npts),uval(npts),dudnval(npts))
 
       do i=1,npts
-        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,
-     1     ipars,uval(i))
-        call h3d_sprime(xyz_out,12,srcvals(1,i),0,dpars,1,zpars,0,
-     1     ipars,dudnval(i))
+        call h3d_slp(xyz_out,int8_3,srcvals(1,i),int8_0,dpars,int8_1,
+     1     zpars,int8_0,ipars,uval(i))
+        call h3d_sprime(xyz_out,int8_12,srcvals(1,i),int8_0,dpars,
+     1     int8_1,zpars,int8_0,ipars,dudnval(i))
       enddo
 
       ndtarg = 3
@@ -313,18 +320,19 @@ c
       subroutine setup_geom(igeomtype,norder,npatches,ipars, 
      1    srcvals,srccoefs,ifplot,fname)
       implicit real *8 (a-h,o-z)
-      integer igeomtype,norder,npatches,ipars(*),ifplot
+      implicit integer *8 (i-n)
+      integer *8 igeomtype,norder,npatches,ipars(*),ifplot
       character (len=*) fname
       real *8 srcvals(12,*), srccoefs(9,*)
       real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
 
       real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer, pointer :: iptr1,iptr2,iptr3,iptr4
+      integer *8, pointer :: iptr1,iptr2,iptr3,iptr4
       real *8, target :: p1(10),p2(10),p3(10),p4(10)
       real *8, allocatable, target :: triaskel(:,:,:)
       real *8, allocatable, target :: deltas(:,:)
-      integer, allocatable :: isides(:)
-      integer, target :: nmax,mmax
+      integer *8, allocatable :: isides(:)
+      integer *8, target :: nmax,mmax
 
       procedure (), pointer :: xtri_geometry
 

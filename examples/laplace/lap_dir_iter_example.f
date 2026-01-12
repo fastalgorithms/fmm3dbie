@@ -1,10 +1,11 @@
       implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
       real *8, allocatable :: wts(:)
       character *100 fname
-      integer ipars(2)
+      integer *8 ipars(2)
 
-      integer, allocatable :: norders(:), ixyzs(:), iptype(:)
+      integer *8, allocatable :: norders(:), ixyzs(:), iptype(:)
 
       real *8 xyz_out(3), xyz_in(3)
       real *8, allocatable :: sigma(:), rhs(:)
@@ -12,15 +13,15 @@
       real *8 eps_gmres
       real *8 dpars(2)
       real *8 c0(3)
-      integer nuv(2)
+      integer *8 nuv(2)
       complex * 16 zpars(3)
-      integer numit,niter
+      integer *8 numit,niter
 
-      integer ipatch_id
+      integer *8 ipatch_id
       real *8 uvs_targ(2), dtmp
-      integer iptype0
-
+      integer *8 iptype0
       real *8 pot,potex
+      integer *8 int8_0,int8_1,int8_3
       character *100, igeom
 
       data ima/(0.0d0,1.0d0)/
@@ -28,6 +29,9 @@
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
       done = 1
       pi = atan(done)*4
 
@@ -102,8 +106,8 @@ c
       allocate(sigma(npts),rhs(npts))
 
       do i=1,npts
-        call l3d_slp(xyz_out, 3, srcvals(1,i), 0, dpars, 1, zpars, 0,
-     1     ipars, rhs(i))
+        call l3d_slp(xyz_out, int8_3, srcvals(1,i), int8_0, dpars,
+     1     int8_1, zpars, int8_0, ipars, rhs(i))
         sigma(i) = 0 
       enddo
 
@@ -127,12 +131,12 @@ c
 c
 c       test solution at interior point
 c
-      call l3d_slp(xyz_out, 3, xyz_in, 0, dpars, 1, zpars, 0,
-     1   ipars,potex)
+      call l3d_slp(xyz_out, int8_3, xyz_in, int8_0, dpars, int8_1,
+     1             zpars, int8_0, ipars, potex)
       pot = 0
       do i=1,npts
-        call l3d_comb(srcvals(1,i), 3, xyz_in, 0, dpars, 3, zpars,
-     1    0, ipars, dtmp)
+        call l3d_comb(srcvals(1,i), int8_3, xyz_in, int8_0, dpars,
+     1     int8_3, zpars, int8_0, ipars, dtmp)
         pot = pot + sigma(i)*wts(i)*dtmp
       enddo
 

@@ -45,21 +45,21 @@ c
 c
 c  Input arguments:
 c
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norders: integer(npatches)
+c    - norders: integer *8(npatches)
 c        order of discretization on each patch
-c    - ixyzs: integer(npatches+1)
+c    - ixyzs: integer *8(npatches+1)
 c        ixyzs(i) denotes the starting location in srccoefs,
 c        and srcvals array corresponding to patch i
-c    - iptype: integer(npatches)
+c    - iptype: integer *8(npatches)
 c        type of patch
 c        *  iptype = 1, triangular patch discretized using RV nodes
 c        *  iptype = 11, quadrangular patch discretized using GL nodes,
 c                        full degree polynomials
 c        *  iptype = 12, quadrangular patch discretized using cheb nodes,
 c                        full degree polynomials
-c    - npts: integer
+c    - npts: integer *8
 c        total number of discretization points on the boundary
 c    - srccoefs: double precision (9,npts)
 c        basis expansion coefficients of xyz, dxyz/du,
@@ -74,14 +74,14 @@ c        * srcvals(1:3,i) - xyz info
 c        * srcvals(4:6,i) - dxyz/du info
 c        * srcvals(7:9,i) - dxyz/dv info
 c        * srcvals(10:12,i) - normals info
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target array
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - targvals: double precision (ndtarg,ntarg)
 c        target info. First three components must be x,y,z
 c        coordinates
-c    - ipatch_id: integer(ntarg)
+c    - ipatch_id: integer *8(ntarg)
 c        patch id of target, patch_id = -1, if target off-surface
 c    - uvs_targ: double precision (2,ntarg)
 c        local uv coordinates on patch if target on surface
@@ -90,33 +90,33 @@ c        precision requested
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of double precision parameters
 c    - dpars: double precision(ndd)
 c        double precision parameters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of double complex parameters
 c    - zpars: double complex(ndz)
 c        double complex parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nnz: integer
+c    - nnz: integer *8
 c        number of source patch-> target interactions in the near field
-c    - row_ptr: integer(ntarg+1)
+c    - row_ptr: integer *8(ntarg+1)
 c        row_ptr(i) is the pointer
 c        to col_ind array where list of relevant source patches
 c        for target i start
-c    - col_ind: integer (nnz)
+c    - col_ind: integer *8 (nnz)
 c        list of source patches relevant for all targets, sorted
 c        by the target number
-c    - iquad: integer(nnz+1)
+c    - iquad: integer *8(nnz+1)
 c        location in wnear array where quadrature for col_ind(i)
 c        starts
-c    - rfac0: integer
+c    - rfac0: integer *8
 c        radius parameter for near field
-c    - nquad: integer
+c    - nquad: integer *8
 c        number of entries in wnear
 c
 c  Output parameters:
@@ -126,47 +126,50 @@ c        near field quadrature corrections
 c----------------------------------------------------               
 c
       implicit real *8 (a-h,o-z)
-      integer, intent(in) :: ndi,ndd,ndz
-      integer, intent(in) :: ipars(ndi)
-      integer, intent(in) :: ndtarg
-      integer, intent(in) :: npatches,norders(npatches),npts
-      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: ndi,ndd,ndz
+      integer *8, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: ndtarg
+      integer *8, intent(in) :: npatches,norders(npatches),npts
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
-      integer, intent(in) :: ntarg,ipatch_id(ntarg)
+      integer *8, intent(in) :: ntarg,ipatch_id(ntarg)
       real *8, intent(in) :: uvs_targ(2,ntarg)
       real *8, intent(in) :: targvals(ndtarg,ntarg)
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
-      integer, intent(in) :: nnz
-      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       complex *16, intent(out) :: wnear(nquad)
 
-      integer ntrimax
+      integer *8 ntrimax
       real *8, allocatable :: cms(:,:),rads(:)
       real *8, allocatable :: targ_near(:,:),targ_far(:,:)
-      integer, allocatable :: iind_near(:),iind_far(:)
+      integer *8, allocatable :: iind_near(:),iind_far(:)
       real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
 
 c
 c        temporary variables
 c
-      integer, allocatable :: col_ptr(:),row_ind(:),iper(:)
+      integer *8, allocatable :: col_ptr(:),row_ind(:),iper(:)
       complex *16, allocatable :: sints_n(:,:),svtmp_n(:,:)
       complex *16, allocatable :: sints_f(:,:),svtmp_f(:,:)
       complex *16, allocatable :: svtmp2(:,:)
 
       real *8, allocatable :: xyztarg2(:,:)
-      integer irad
+      integer *8 irad
 
       real *8, allocatable :: qnodes_tri(:,:),qwts_tri(:)
       real *8, allocatable :: qnodes_quad(:,:),qwts_quad(:)
       real *8 ra
 
       complex *16 ff1,ff2,cra1,cra2
-      integer nlev, nqorder_f,norder_avg
+      integer *8 nlev, nqorder_f,norder_avg
       real *8 rfac0,rsc,rr,tmp(3),epsp
 
-      integer ipoly
+      integer *8 ipoly
+      integer *8 int8_1, int8_11
       character *1 ttype
 
       external fker
@@ -200,6 +203,9 @@ c
       norder0 = norder
       nqorder = 8
       eps_adap = eps
+
+      int8_1 = 1
+      int8_11 = 11
 
 
 c      suppress computation of 
@@ -250,7 +256,8 @@ c
 c
 c    Get triangle parameters
 c
-      call get_quadparams_adap(eps,1,nqorder,eps_adap,nlev,nqorder_f)
+      call get_quadparams_adap(eps,int8_1,nqorder,eps_adap,nlev,
+     1   nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
       
@@ -265,7 +272,8 @@ c
 c   Get quad parameters
 c
       
-      call get_quadparams_adap(eps,11,nqorder,eps_adap,nlev,nqorder_f)
+      call get_quadparams_adap(eps,int8_11,nqorder,eps_adap,nlev,
+     1   nqorder_f)
 
       call squarearbq_pts(nqorder_f,nnodes)
       
@@ -491,21 +499,21 @@ c
 c
 c  Input arguments:
 c
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norders: integer(npatches)
+c    - norders: integer *8(npatches)
 c        order of discretization on each patch
-c    - ixyzs: integer(npatches+1)
+c    - ixyzs: integer *8(npatches+1)
 c        ixyzs(i) denotes the starting location in srccoefs,
 c        and srcvals array corresponding to patch i
-c    - iptype: integer(npatches)
+c    - iptype: integer *8(npatches)
 c        type of patch
 c        *  iptype = 1, triangular patch discretized using RV nodes
 c        *  iptype = 11, quadrangular patch discretized using GL nodes,
 c                        full degree polynomials
 c        *  iptype = 12, quadrangular patch discretized using cheb nodes,
 c                        full degree polynomials
-c    - npts: integer
+c    - npts: integer *8
 c        total number of discretization points on the boundary
 c    - srccoefs: double precision (9,npts)
 c        basis expansion coefficients of xyz, dxyz/du,
@@ -520,14 +528,14 @@ c        * srcvals(1:3,i) - xyz info
 c        * srcvals(4:6,i) - dxyz/du info
 c        * srcvals(7:9,i) - dxyz/dv info
 c        * srcvals(10:12,i) - normals info
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target array
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - targvals: double precision (ndtarg,ntarg)
 c        target info. First three components must be x,y,z
 c        coordinates
-c    - ipatch_id: integer(ntarg)
+c    - ipatch_id: integer *8(ntarg)
 c        patch id of target, patch_id = -1, if target off-surface
 c    - uvs_targ: double precision (2,ntarg)
 c        local uv coordinates on patch if target on surface
@@ -536,33 +544,33 @@ c        precision requested
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of double precision parameters
 c    - dpars: double precision(ndd)
 c        double precision parameters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of double complex parameters
 c    - zpars: double complex(ndz)
 c        double complex parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nnz: integer
+c    - nnz: integer *8
 c        number of source patch-> target interactions in the near field
-c    - row_ptr: integer(ntarg+1)
+c    - row_ptr: integer *8(ntarg+1)
 c        row_ptr(i) is the pointer
 c        to col_ind array where list of relevant source patches
 c        for target i start
-c    - col_ind: integer (nnz)
+c    - col_ind: integer *8 (nnz)
 c        list of source patches relevant for all targets, sorted
 c        by the target number
-c    - iquad: integer(nnz+1)
+c    - iquad: integer *8(nnz+1)
 c        location in wnear array where quadrature for col_ind(i)
 c        starts
-c    - rfac0: integer
+c    - rfac0: integer *8
 c        radius parameter for near field
-c    - nquad: integer
+c    - nquad: integer *8
 c        number of entries in wnear
 c
 c  Output parameters:
@@ -572,53 +580,58 @@ c        near field quadrature corrections
 c----------------------------------------------------               
 c
       implicit real *8 (a-h,o-z)
-      integer, intent(in) :: ndi,ndd,ndz
-      integer, intent(in) :: ipars(ndi)
-      integer, intent(in) :: ndtarg
-      integer, intent(in) :: npatches,norders(npatches),npts
-      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: ndi,ndd,ndz
+      integer *8, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: ndtarg
+      integer *8, intent(in) :: npatches,norders(npatches),npts
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
-      integer, intent(in) :: ntarg,ipatch_id(ntarg)
+      integer *8, intent(in) :: ntarg,ipatch_id(ntarg)
       real *8, intent(in) :: uvs_targ(2,ntarg)
       real *8, intent(in) :: targvals(ndtarg,ntarg)
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
-      integer, intent(in) :: nnz
-      integer, intent(in) :: row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(out) :: wnear(nquad)
 
-      integer ntrimax
+      integer *8 ntrimax
       real *8, allocatable :: cms(:,:),rads(:)
       real *8, allocatable :: targ_near(:,:),targ_far(:,:)
-      integer, allocatable :: iind_near(:),iind_far(:)
+      integer *8, allocatable :: iind_near(:),iind_far(:)
       real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
 
 c
 c        temporary variables
 c
-      integer, allocatable :: col_ptr(:),row_ind(:),iper(:)
+      integer *8, allocatable :: col_ptr(:),row_ind(:),iper(:)
       real *8, allocatable :: sints_n(:,:),svtmp_n(:,:)
       real *8, allocatable :: sints_f(:,:),svtmp_f(:,:)
       real *8, allocatable :: svtmp2(:,:)
 
       real *8, allocatable :: xyztarg2(:,:)
-      integer irad
+      integer *8 irad
 
       real *8, allocatable :: qnodes_tri(:,:),qwts_tri(:)
       real *8, allocatable :: qnodes_quad(:,:),qwts_quad(:)
       real *8 ra
 
       real *8 ff1,ff2,cra1,cra2
-      integer nlev, nqorder_f
+      integer *8 nlev, nqorder_f
       real *8 rfac0,rsc,rr,tmp(3),epsp
       real *8 done,dzero
-      integer norder_avg
-      integer ipoly
+      integer *8 norder_avg
+      integer *8 ipoly
+      integer *8 int8_1, int8_11
       character *1 ttype
 
 
       external fker
 
+      int8_1 = 1
+      int8_11 = 11
       done = 1
       dzero = 0
 c
@@ -702,7 +715,8 @@ c
 c
 c    Get triangle parameters
 c
-      call get_quadparams_adap(eps,1,nqorder,eps_adap,nlev,nqorder_f)
+      call get_quadparams_adap(eps,int8_1,nqorder,eps_adap,nlev,
+     1   nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
       
@@ -717,7 +731,8 @@ c
 c   Get quad parameters
 c
       
-      call get_quadparams_adap(eps,11,nqorder,eps_adap,nlev,nqorder_f)
+      call get_quadparams_adap(eps,int8_11,nqorder,eps_adap,nlev,
+     1   nqorder_f)
 
       call squarearbq_pts(nqorder_f,nnodes)
       
@@ -928,17 +943,17 @@ c  3/4 patches with the target at the origin of each of them.
 c
 c
 c  Input arguments:
-c    - ipv: integer
+c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
-c    - norder: integer
+c    - norder: integer *8
 c        order of patch discretization
-c    - npols: integer
+c    - npols: integer *8
 c        number of discretization nodes on patch
 c    - uvs: double precision(2)
 c        local u,v coordinates of target
-c    - iptype: integer(npatches)
+c    - iptype: integer *8(npatches)
 c        type of patch
 c        *  iptype = 1, triangular patch discretized using RV nodes
 c        *  iptype = 11, quadrangular patch discretized using GL nodes,
@@ -955,7 +970,7 @@ c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
 c        * srccoefs(7:9,i) is dxyz/dv info
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target array
 c    - targ: double precision (ndtarg)
 c        target info. First three components must be x,y,z
@@ -963,19 +978,19 @@ c        coordinates
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of double precision parameters
 c    - dpars: double precision(ndd)
 c        double precision parameters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of double complex parameters
 c    - zpars: double complex(ndz)
 c        double complex parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqorder: integer
+c    - nqorder: integer *8
 c        order of integration to use in adaptive integration
 c
 c  Output parameters:
@@ -988,12 +1003,13 @@ c
 
 
       implicit real *8(a-h,o-z)
-      integer, intent(in) :: norder,npols,ndtarg
+      implicit integer *8(i-n)
+      integer *8, intent(in) :: norder,npols,ndtarg
       real *8, intent(in) :: srccoefs(9,npols)
       real *8, intent(in) :: targ(ndtarg)
       real *8, intent(in) :: uvs(2),umat(npols,npols)
-      integer, intent(in) :: ndi,ndd,ndz
-      integer, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: ndi,ndd,ndz
+      integer *8, intent(in) :: ipars(ndi)
       real *8, intent(in) :: dpars(ndd)
       real *8, intent(in) :: rnodes(2,npols)
       complex *16, intent(in) :: zpars(ndz)
@@ -1014,14 +1030,17 @@ c
       complex *16, allocatable :: fint(:), finttmp(:)
       complex *16, allocatable :: fint_all(:,:)
       character *1 transa, transb, ttype
-      integer ipoly
+      integer *8 ipoly
       real *8, allocatable :: rnodes_use(:,:)
       real *8 rfacuse
-      integer iv
+      integer *8 iv
+      integer *8 int8_9, int8_1
 
       external fker
 
 
+      int8_9 = 9
+      int8_1 = 1
 
       allocate(rnodes_tmp(2,npols))
       allocate(srcvals_tmp(9,npols))
@@ -1161,8 +1180,9 @@ c  compute geometry info at discretization node on smaller patch
 c
         alpha = 1.0d0
         beta = 0.0d0
-        call dgemm_guru('n', 'n', 9, npols, npols, alpha, srccoefs, 9,
-     1    ptmp, npols, beta, srcvals_tmp, 9)
+        call dgemm_guru('n', 'n', int8_9, npols, npols, alpha,
+     1     srccoefs, int8_9, ptmp, npols, beta, srcvals_tmp,
+     2     int8_9)
         
 c
 c  note that the u and v derivatives need to be updated to
@@ -1181,8 +1201,9 @@ c
           enddo
         enddo
         
-        call dgemm_guru('N', 'T', 9, npols, npols, alpha, srcvals_use,
-     1     9, umat, npols, beta, srccoefs_use, 9)
+        call dgemm_guru('N', 'T', int8_9, npols, npols, alpha,
+     1     srcvals_use, int8_9, umat, npols, beta, srccoefs_use,
+     2     int8_9)
       
 
         if(iptype.eq.1) 
@@ -1198,11 +1219,11 @@ c
      1      ifp, targ, itargptr, ntarg0, norder, npols, fker, ndd, 
      1      dpars, ndz, zpars, ndi, ipars, nqorder, npmax, rfac,
      1      fint, ifmetric, rn1, n2)
-        call zrmatmatt(1, npols, fint, npols, umat, finttmp)
+        call zrmatmatt(int8_1, npols, fint, npols, umat, finttmp)
         zalpha = 1.0d0
         zbeta = 0.0d0
         call zgemv_guru('N', npols, npols, alpha, zptmp, npols, 
-     1    finttmp, 1, zbeta, fint_all(1,iv), 1)
+     1    finttmp, int8_1, zbeta, fint_all(1,iv), int8_1)
       enddo
       
       do l=1,npols
@@ -1213,7 +1234,7 @@ c
           finttmp(l) = finttmp(l) + fint_all(l,iv)
         enddo
       enddo
-      call zrmatmatt(1, npols, finttmp, npols, umat, zquad)
+      call zrmatmatt(int8_1, npols, finttmp, npols, umat, zquad)
         
 
       return
@@ -1238,13 +1259,13 @@ c  The quadrature currently cannot handle targets on the boundary
 c  of the triangle
 c
 c  Input arguments:
-c    - norder: integer
+c    - norder: integer *8
 c        order of patch discretization
-c    - npols: integer
+c    - npols: integer *8
 c        number of discretization nodes on patch
 c    - uvs: double precision(2)
 c        local u,v coordinates of target
-c    - iptype: integer(npatches)
+c    - iptype: integer *8(npatches)
 c        type of patch
 c        *  iptype = 1, triangular patch discretized using RV nodes
 c        *  iptype = 11, quadrangular patch discretized using GL nodes,
@@ -1261,7 +1282,7 @@ c        and dxyz/dv on each patch. For each patch
 c        * srccoefs(1:3,i) is xyz info
 c        * srccoefs(4:6,i) is dxyz/du info
 c        * srccoefs(7:9,i) is dxyz/dv info
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target array
 c    - targ: double precision (ndtarg)
 c        target info. First three components must be x,y,z
@@ -1269,17 +1290,17 @@ c        coordinates
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of double precision parameters
 c    - dpars: double precision(ndd)
 c        double precision parameters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of double complex parameters
 c    - zpars: double complex(ndz)
 c        double complex parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
 c
 c  Output parameters:
@@ -1292,13 +1313,14 @@ c
 
 
       implicit real *8(a-h,o-z)
-      integer, intent(in) :: norder,npols,ndtarg
+      implicit integer *8(i-n)
+      integer *8, intent(in) :: norder,npols,ndtarg
       real *8, intent(in) :: srccoefs(9,npols)
       real *8, intent(in) :: targ(ndtarg)
       real *8, intent(in) :: uvs(2),umat(npols,npols)
       real *8, intent(in) :: rnodes(2,npols)
-      integer, intent(in) :: ndi,ndd,ndz
-      integer, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: ndi,ndd,ndz
+      integer *8, intent(in) :: ipars(ndi)
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
       real *8, intent(out) :: dquad(npols)
@@ -1315,13 +1337,17 @@ c
       real *8, allocatable :: fint(:), finttmp(:)
       real *8, allocatable :: fint_all(:,:)
       character *1 transa, transb, ttype
-      integer ipoly
+      integer *8 ipoly
       real *8, allocatable :: rnodes_use(:,:)
       real *8 rfacuse
 
       external fker
 
-      integer iv
+      integer *8 iv
+      integer *8 int8_9, int8_1
+
+      int8_9 = 9
+      int8_1 = 1
 
 
       allocate(rnodes_tmp(2,npols))
@@ -1457,8 +1483,8 @@ c  compute geometry info at discretization node on smaller patch
 c
         alpha = 1.0d0
         beta = 0.0d0
-        call dgemm_guru('n', 'n', 9, npols, npols, alpha, srccoefs, 9,
-     1    ptmp, npols, beta, srcvals_tmp, 9)
+        call dgemm_guru('n', 'n', int8_9, npols, npols, alpha,
+     1     srccoefs, int8_9, ptmp, npols, beta, srcvals_tmp, int8_9)
         
 c
 c  note that the u and v derivatives need to be updated to
@@ -1477,8 +1503,9 @@ c
           enddo
         enddo
         
-        call dgemm_guru('N', 'T', 9, npols, npols, alpha, srcvals_use,
-     1     9, umat, npols, beta, srccoefs_use, 9)
+        call dgemm_guru('N', 'T', int8_9, npols, npols, alpha,
+     1     srcvals_use, int8_9, umat, npols, beta, srccoefs_use,
+     2     int8_9)
       
 
         if(iptype.eq.1) 
@@ -1495,9 +1522,9 @@ c
      1      dpars, ndz, zpars, ndi, ipars, nqorder, npmax, rfac,
      1      fint, ifmetric, rn1, n2)
         call dgemv_guru('t', npols, npols, alpha, umat, npols, fint,
-     1   1, beta, finttmp, 1)
+     1   int8_1, beta, finttmp, int8_1)
         call dgemv_guru('N', npols, npols, alpha, ptmp, npols, 
-     1    finttmp, 1, beta, fint_all(1,iv), 1)
+     1    finttmp, int8_1, beta, fint_all(1,iv), int8_1)
       enddo
       
       do l=1,npols
@@ -1509,7 +1536,7 @@ c
         enddo
       enddo
       call dgemv_guru('t', npols, npols, alpha, umat, npols, finttmp,
-     1   1, beta, dquad, 1)
+     1   int8_1, beta, dquad, int8_1)
         
 
       return

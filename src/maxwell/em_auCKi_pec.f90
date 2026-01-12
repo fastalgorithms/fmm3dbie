@@ -117,24 +117,24 @@
 !
 
       implicit none 
-      integer npatches,norders(npatches),npts,nquad
-      integer ixyzs(npatches+1),iptype(npatches)
+      integer *8 npatches,norders(npatches),npts,nquad
+      integer *8 ixyzs(npatches+1),iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,rfac0
-      integer ndtarg,ntarg
-      integer iquadtype
+      integer *8 ndtarg,ntarg
+      integer *8 iquadtype
       real *8 targs(ndtarg,ntarg)
       complex *16 zpars(3)
-      integer nnz,ipars(2)
+      integer *8 nnz,ipars(2)
       real *8 dpars(1)
-      integer row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
+      integer *8 row_ptr(ntarg+1),col_ind(nnz),iquad(nnz+1)
       complex *16 wnear(12*nquad)
-      integer ipatch_id(ntarg),count1,count2,icount
+      integer *8 ipatch_id(ntarg),count1,count2,icount
       real *8 uvs_targ(2,ntarg)
 
       complex *16 alpha,beta
-      integer i,j,ndi,ndd,ndz
+      integer *8 i,j,ndi,ndd,ndz
 
-      integer ipv
+      integer *8 ipv
 
 !      procedure (), pointer :: fker
 !      external h3d_slp, h3d_dlp, h3d_comb
@@ -401,46 +401,46 @@ subroutine em_auCKi_pec_solver(npatches,norders,ixyzs,&
 !
 
       implicit none
-      integer npatches,norder,npols,npts
-      integer ifinout
-      integer norders(npatches),ixyzs(npatches+1)
-      integer iptype(npatches)
+      integer *8 npatches,norder,npols,npts
+      integer *8 ifinout
+      integer *8 norders(npatches),ixyzs(npatches+1)
+      integer *8 iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps,eps_gmres
       complex *16 zpars(3)
       complex *16 rhs(2*npts)
       complex *16 soln(2*npts),sigma2(3*npts),scalar_RHS(npts)
 
       real *8, allocatable :: targs(:,:)
-      integer, allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_targ(:,:)
-      integer ndtarg,ntarg
+      integer *8 ndtarg,ntarg
 
       real *8 errs(numit+1)
       real *8 rres,eps2
-      integer niter
+      integer *8 niter
 
 
-      integer nover,npolso,nptso
-      integer nnz,nquad
-      integer, allocatable :: row_ptr(:),col_ind(:),iquad(:)
+      integer *8 nover,npolso,nptso
+      integer *8 nnz,nquad
+      integer *8, allocatable :: row_ptr(:),col_ind(:),iquad(:)
 
       complex *16, allocatable :: wnear(:)
       real *8, allocatable :: srcover(:,:),wover(:)
-      integer, allocatable :: ixyzso(:),novers(:)
+      integer *8, allocatable :: ixyzso(:),novers(:)
 
       real *8, allocatable :: cms(:,:),rads(:),rad_near(:) 
 
-      integer i,j,jpatch,jquadstart,jstart
+      integer *8 i,j,jpatch,jquadstart,jstart
 
-      integer ipars
+      integer *8 ipars
       real *8 dpars(1),timeinfo(10),t1,t2,omp_get_wtime
 
 
       real *8 ttot,done,pi
       real *8 rfac,rfac0
-      integer iptype_avg,norder_avg
-      integer ikerorder, iquadtype,npts_over
-	  integer n_var
+      integer *8 iptype_avg,norder_avg
+      integer *8 ikerorder, iquadtype,npts_over
+	  integer *8 n_var
 
 !
 !       gmres variables
@@ -448,7 +448,7 @@ subroutine em_auCKi_pec_solver(npatches,norders,ixyzs,&
 
       complex *16 zid,ztmp
       real *8 rb,wnrm2
-      integer numit,it,iind,it1,k,l,count1
+      integer *8 numit,it,iind,it1,k,l,count1
       real *8 rmyerr
       complex *16 temp
       complex *16, allocatable :: vmat(:,:),hmat(:,:)
@@ -480,10 +480,10 @@ subroutine em_auCKi_pec_solver(npatches,norders,ixyzs,&
       allocate(targs(ndtarg,npts),uvs_targ(2,ntarg),ipatch_id(ntarg))
 !C$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ntarg
-		targs(:,i)=srcvals(:,i)
-		ipatch_id(i) = -1
-		uvs_targ(1,i) = 0
-		uvs_targ(2,i) = 0
+        targs(:,i)=srcvals(:,i)
+        ipatch_id(i) = -1
+        uvs_targ(1,i) = 0
+        uvs_targ(2,i) = 0
       enddo
 !C$OMP END PARALLEL DO   
 
@@ -549,7 +549,6 @@ subroutine em_auCKi_pec_solver(npatches,norders,ixyzs,&
 
       npts_over = ixyzso(npatches+1)-1
       print *, "npts_over=",npts_over
-      call prinf('novers=*',novers,100)
 
       allocate(srcover(12,npts_over),wover(npts_over))
 
@@ -569,7 +568,7 @@ subroutine em_auCKi_pec_solver(npatches,norders,ixyzs,&
       
 !C$OMP PARALLEL DO DEFAULT(SHARED)      
       do i=1,12*nquad
-		wnear(i)=0
+         wnear(i)=0
       enddo
 !C$OMP END PARALLEL DO    
 
@@ -587,13 +586,7 @@ subroutine em_auCKi_pec_solver(npatches,norders,ixyzs,&
      &ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
      &ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
      &iquad,rfac0,nquad,wnear)
-	 
-!	 do count1=1,100
-!		write(*,*) count1,wnear34(count1)
-!	 enddo
-!stop
-!	 read (*,*)
-	 
+ 
       call cpu_time(t2)
 !C$      t2 = omp_get_wtime()     
 
@@ -612,7 +605,7 @@ subroutine em_auCKi_pec_solver(npatches,norders,ixyzs,&
 !       part of the matvec
 !
 !      zid = -(-1)**(ifinout)*2*pi!*zpars(3)
-	  zid=0.5d0
+      zid=0.5d0
 !     write (*,*) 'zid', zid,ifinout,zpars(3)
 
       niter=0
@@ -763,10 +756,10 @@ implicit none
 ! zgetnearquad_ggq_guru through getnearquad_CKi
 
     !List of calling arguments
-    integer, intent(in) :: ndt,ndd,ndz,ndi
+    integer *8, intent(in) :: ndt,ndd,ndz,ndi
     real ( kind = 8 ), intent(in) :: srcinfo(12)
     real ( kind = 8 ), intent(in) :: targinfo(ndt)
-    integer, intent(in) :: ipars(ndi)
+    integer *8, intent(in) :: ipars(ndi)
     real ( kind = 8 ), intent(in) :: dpars(ndd)
     complex ( kind = 8 ), intent(in) :: zpars(ndz)
     complex ( kind = 8 ), intent(out) :: E_val
@@ -985,21 +978,21 @@ end subroutine fker_em_auCKi_pec
 !
 
       implicit none
-      integer npatches,norder,npols,npts
-      integer ndtarg,ntarg
-      integer norders(npatches),ixyzs(npatches+1)
-      integer ixyzso(npatches+1),iptype(npatches)
+      integer *8 npatches,norder,npols,npts
+      integer *8 ndtarg,ntarg
+      integer *8 norders(npatches),ixyzs(npatches+1)
+      integer *8 ixyzso(npatches+1),iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps
       real *8 targs(ndtarg,ntarg)
       complex *16 zpars(3),alpha,zk
-      integer nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
-      integer iquad(nnz+1)
+      integer *8 nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
+      integer *8 iquad(nnz+1)
       complex *16 sigma(2*npts),sigma2(3*npts)
 	  
       complex *16 wnear(12*nquad)
 
-      integer novers(npatches+1)
-      integer nover,npolso,nptso
+      integer *8 novers(npatches+1)
+      integer *8 nover,npolso,nptso
       real *8 srcover(12,nptso),whtsover(nptso)
       complex *16 pot(2*ntarg)
       complex *16, allocatable :: potsort(:)
@@ -1009,35 +1002,35 @@ end subroutine fker_em_auCKi_pec
 	  complex *16, allocatable :: sigma_aux(:),sigmaover_aux(:)
 	  complex *16, allocatable :: pot_aux(:)
 
-      integer ns,nt
+      integer *8 ns,nt
       complex *16 beta
-      integer ifcharge,ifdipole
-      integer ifpgh,ifpghtarg
+      integer *8 ifcharge,ifdipole
+      integer *8 ifpgh,ifpghtarg
       complex *16 tmp(10),val,E(3)
 
       real *8 xmin,xmax,ymin,ymax,zmin,zmax,sizey,sizez,boxsize
 
-      integer i,j,jpatch,jquadstart,jstart
+      integer *8 i,j,jpatch,jquadstart,jstart
 
-      integer ifaddsub,ifdir
+      integer *8 ifaddsub,ifdir
 
-      integer ntj
+      integer *8 ntj
       
       complex *16 zdotu,pottmp
       complex *16, allocatable :: dtmp2(:,:),ctmp2_b_u(:),ctmp2_b_v(:)
 	  complex *16, allocatable :: ctmp2_a_u(:),ctmp2_a_v(:),ctmp2_b_s(:)
       real *8 radexp,epsfmm
 
-      integer ipars(2)
+      integer *8 ipars(2)
       real *8 dpars(1),timeinfo(10),t1,t2,omp_get_wtime
 
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp2(:,:)
       real *8 thresh,ra
       real *8 rr,rmin
-      integer nss,ii,l,npover
+      integer *8 nss,ii,l,npover
 
-      integer nd,ntarg0
+      integer *8 nd,ntarg0
 
       real *8 ttot,done,pi
 
@@ -1045,8 +1038,12 @@ end subroutine fker_em_auCKi_pec
       complex *16 pot_x,pot_y,pot_z,pot2_x,pot2_y,pot2_z
       real *8 u_vect(3),v_vect(3),n_vect(3)
 	  complex *16 ima
+      integer *8 int8_2,int8_12
 
       parameter (nd=1,ntarg0=1)
+
+      int8_2 = 2
+      int8_12 = 12
 
       ns = nptso
       done = 1
@@ -1066,9 +1063,9 @@ end subroutine fker_em_auCKi_pec
 		zk=zpars(1)
 		alpha=zpars(2)
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
       ra = 0
@@ -1076,7 +1073,7 @@ end subroutine fker_em_auCKi_pec
       !
       !     FMM call to compute nxSkia and -n·curlSkia
       !
-	  call get_fmm_thresh(12,ns,srcover,ndtarg,ntarg,targs,thresh)
+	  call get_fmm_thresh(int8_12,ns,srcover,ndtarg,ntarg,targs,thresh)
 	  
        ifdir=0
 	   
@@ -1196,12 +1193,12 @@ end subroutine fker_em_auCKi_pec
       enddo
 
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover_aux(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,&
      &sigmaover_aux(ns+1:2*ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,&
      &sigmaover_aux(2*ns+1:3*ns))
 
@@ -1383,14 +1380,14 @@ implicit none
     !List of calling arguments
     real ( kind = 8 ), intent(in) :: eps
     complex ( kind = 8 ), intent(in) :: zk
-    integer, intent(in) :: ns,nt
+    integer *8, intent(in) :: ns,nt
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),wts(ns)
     real ( kind = 8 ), intent(in) :: targvals(12,nt)
     complex ( kind = 8 ), intent(in) :: a_u(ns),a_v(ns),b_u(ns),b_v(ns)
     complex ( kind = 8 ), intent(in) :: rho_in(ns)
     complex ( kind = 8 ), intent(out) :: AA_u(nt),AA_v(nt)
     real ( kind = 8 ), intent(in) :: thresh
-    integer, intent(in) :: ifdir 
+    integer *8, intent(in) :: ifdir 
 
     !List of local variables
 	real ( kind = 8 ), allocatable :: n_vect_s(:,:),u_vect_s(:,:)
@@ -1404,8 +1401,8 @@ implicit none
     complex ( kind = 8 ), allocatable :: E(:,:),curlE(:,:),divE(:)
     complex ( kind = 8 ) ima
 
-    integer count1,count2
-    integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
+    integer *8 count1,count2
+    integer *8 ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
 
 	ima=(0.0d0,1.0d0)
 
@@ -1563,7 +1560,7 @@ implicit none
 !
 
     !List of calling arguments
-    integer ( kind = 4 ), intent(in) :: ns
+    integer ( kind = 8 ), intent(in) :: ns
     real ( kind = 8 ), intent(in) :: P0(3)
     complex ( kind = 8 ), intent(in) :: vf(3)
     real ( kind = 8 ), intent(in) :: srcvals(12,ns)
@@ -1572,12 +1569,15 @@ implicit none
 	
     !List of local variables
     complex ( kind = 8 ), allocatable :: E(:,:), H(:,:)
-    integer count1
+    integer *8 count1
     real ( kind = 8 ) ru(3),rv(3),cross_aux(3)
+    integer *8 int8_0,int8_1
 
+    int8_0 = 0
+    int8_1 = 1
     allocate(E(3,ns), H(3,ns))
-    call fieldsED(zk,P0,srcvals,ns,E,H,vf,0)
-    call fieldsMD(zk,P0,srcvals,ns,E,H,vf,1)
+    call fieldsED(zk,P0,srcvals,ns,E,H,vf,int8_0)
+    call fieldsMD(zk,P0,srcvals,ns,E,H,vf,int8_1)
 
     do count1=1,ns	
       call orthonormalize(srcvals(4:6,count1),srcvals(10:12,count1),&
@@ -1659,13 +1659,13 @@ implicit none
     !List of calling arguments
     real ( kind = 8 ), intent(in) :: eps
     complex ( kind = 8 ), intent(in) :: zk
-    integer, intent(in) :: ns,nt
+    integer *8, intent(in) :: ns,nt
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),wts(ns)
     real ( kind = 8 ), intent(in) :: targvals(12,nt)
     complex ( kind = 8 ), intent(in) :: a_u(ns),a_v(ns)
     complex ( kind = 8 ), intent(out) :: AA_u(nt),AA_v(nt),PHI(nt)
     real ( kind = 8 ), intent(in) :: thresh
-    integer, intent(in) :: ifdir
+    integer *8, intent(in) :: ifdir
 
     !List of local variables
     real ( kind = 8 ), allocatable :: n_vect_s(:,:),u_vect_s(:,:)
@@ -1679,8 +1679,8 @@ implicit none
     complex ( kind = 8 ), allocatable :: E(:,:),curlE(:,:),divE(:)
     complex ( kind = 8 ) ima,izk
 
-    integer count1,count2
-    integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
+    integer *8 count1,count2
+    integer *8 ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
 
     ima=(0.0d0,1.0d0)
     izk=zk*ima
@@ -1849,14 +1849,14 @@ implicit none
     !List of calling arguments
     real ( kind = 8 ), intent(in) :: eps
     complex ( kind = 8 ), intent(in) :: zpars(3)
-    integer, intent(in) :: ns,nt
+    integer *8, intent(in) :: ns,nt
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),wts(ns)
     real ( kind = 8 ), intent(in) :: targvals(12,nt)
     complex ( kind = 8 ), intent(in) :: a_u(ns),a_v(ns)
     complex ( kind = 8 ), intent(in) :: b_u(ns),b_v(ns)
     complex ( kind = 8 ), intent(out) :: PHI(nt)
     real ( kind = 8 ), intent(in) :: thresh
-    integer, intent(in) :: ifdir
+    integer *8, intent(in) :: ifdir
 
 
     !List of local variables
@@ -1870,8 +1870,8 @@ implicit none
     complex ( kind = 8 ), allocatable :: E(:,:),curlE(:,:),divE(:),rho(:)
     complex ( kind = 8 ) ima,izk,zk,alpha
 
-    integer count1,count2
-    integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
+    integer *8 count1,count2
+    integer *8 ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
 
     ima=(0.0d0,1.0d0)
     zk=zpars(1)
@@ -2029,7 +2029,7 @@ implicit none
 
     !List of calling arguments
     complex ( kind = 8 ), intent(in) :: zk,alpha
-    integer, intent(in) :: ns
+    integer *8, intent(in) :: ns
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),eps_FMM
     real ( kind = 8 ), intent(in) :: wts(ns),P0(3),Pt(3)
     complex ( kind = 8 ), intent(in) :: a_vect(2*ns),vf(3),a_vect2(3*ns)
@@ -2042,21 +2042,23 @@ implicit none
     real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3)
     real ( kind = 8 ) error_E,rel_err_E,error_H,rel_err_H
     real ( kind = 8 ) pi
-    integer count1
+    integer *8 count1,int8_0,int8_1
 
+    int8_0 = 0
+    int8_1 = 1
     ima=(0.0d0,1.0d0)
     pi=3.1415926535897932384626433832795028841971d0
 !	write (*,*) 'alpha value at accu: ', alpha
     write (*,*) 'AUGMENTED ALGORITHM:'
 
-    call auCKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,&
+    call auCKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,wts,&
     &a_vect(1:ns),a_vect(ns+1:2*ns),a_vect2(1:ns),a_vect2(ns+1:2*ns),&
     &a_vect2(2*ns+1:3*ns),Et1,Ht1)
 !	call CKif_FMM_targ_v2(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),Et1,Ht1,nnz,norder,row_ptr,col_ind,CKif_near)
 !	write (*,*) Et1
 	
-    call fieldsED(zk,P0,Pt,1,Et2,Ht2,vf,0)
-    call fieldsMD(zk,P0,Pt,1,Et2,Ht2,vf,1)
+    call fieldsED(zk,P0,Pt,int8_1,Et2,Ht2,vf,int8_0)
+    call fieldsMD(zk,P0,Pt,int8_1,Et2,Ht2,vf,int8_1)
 
     write (*,*) 'Errors at the EXTERIOR region:'
     error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+&
@@ -2065,7 +2067,7 @@ implicit none
     write (*,*) 'Relative Error in E: ', error_E/&
     &sqrt(abs(Et2(1))**2+abs(Et2(2))**2+abs(Et2(3))**2)
 				
-    call h_neumann_Hfield_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,1,Pt,&
+    call h_neumann_Hfield_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,&
     &wts,sigma,sigma2,Ht1)
 
     error_H=sqrt(abs(Ht1(1)-Ht2(1))**2+abs(Ht1(2)-Ht2(2))**2+&
@@ -2141,7 +2143,7 @@ implicit none
     !List of calling arguments
     real ( kind = 8 ), intent(in) :: eps
     complex ( kind = 8 ), intent(in) :: zk, alpha
-    integer, intent(in) :: ns,nt
+    integer *8, intent(in) :: ns,nt
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),targ(3,nt)
     real ( kind = 8 ), intent(in) :: wts(ns)
     complex ( kind = 8 ), intent(in) :: rho_in(ns),sigma2(ns)
@@ -2154,8 +2156,8 @@ implicit none
     complex ( kind = 8 ), allocatable :: pot_aux2(:)
     complex ( kind = 8 ) ima
 
-    integer count1,count2,npols,ntri,ier
-    integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
+    integer *8 count1,count2,npols,ntri,ier
+    integer *8 ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
     real ( kind = 8 ) pi
     pi=3.1415926535897932384626433832795028841971d0
 
@@ -2278,7 +2280,7 @@ implicit none
     !List of calling arguments
     real ( kind = 8 ), intent(in) :: eps
     complex ( kind = 8 ), intent(in) :: zk,alpha
-    integer, intent(in) :: ns,nt
+    integer *8, intent(in) :: ns,nt
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),targ(3,nt)
     real ( kind = 8 ), intent(in) :: wts(ns)
     complex ( kind = 8 ), intent(in) :: a_u(ns),a_v(ns)
@@ -2293,8 +2295,8 @@ implicit none
     complex ( kind = 8 ), allocatable :: curlE(:,:),divE(:)
     complex ( kind = 8 ) ima
 
-    integer count1,count2
-    integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
+    integer *8 count1,count2
+    integer *8 ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
 
     ima=(0.0d0,1.0d0)
 
@@ -2436,7 +2438,7 @@ implicit none
 !      zpars(2) = alpha
 !      zpars(3) = - (not used)
 !
-!    ns - integer
+!    ns - integer *8
 !      number of sources
 !
 !    wts - real *8(ns)
@@ -2462,7 +2464,7 @@ implicit none
 
     !List of calling arguments
     complex ( kind = 8 ), intent(in) :: zk,alpha
-    integer, intent(in) :: ns
+    integer *8, intent(in) :: ns
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),eps_FMM
     real ( kind = 8 ), intent(in) :: wts(ns),P0(3),Pt(3)
     complex ( kind = 8 ), intent(in) :: a_vect(2*ns),vf(3),a_vect2(3*ns)
@@ -2475,19 +2477,21 @@ implicit none
     real ( kind = 8 ) xprod_aux1(3),xprod_aux2(3)
     real ( kind = 8 ) error_E,rel_err_E,error_H,rel_err_H
     real ( kind = 8 ) pi
-    integer count1
+    integer *8 count1,int8_0,int8_1
 
+    int8_0 = 0
+    int8_1 = 1
     ima=(0.0d0,1.0d0)
     pi=3.1415926535897932384626433832795028841971d0
 !		write (*,*) 'alpha value at accu: ', alpha
-    call CKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,&
+    call CKif_FMM_targ(eps_FMM,zk,alpha,ns,srcvals,int8_1,Pt,wts,&
     &a_vect(1:ns),a_vect(ns+1:2*ns),a_vect2(1:ns),a_vect2(ns+1:2*ns),&
     &a_vect2(2*ns+1:3*ns),Et1,Ht1)
 !	call CKif_FMM_targ_v2(eps_FMM,zk,alpha,ns,srcvals,1,Pt,wts,sol(1:ns),sol(ns+1:2*ns),Et1,Ht1,nnz,norder,row_ptr,col_ind,CKif_near)
 !	write (*,*) Et1
 	
-    call fieldsED(zk,P0,Pt,1,Et2,Ht2,vf,0)
-    call fieldsMD(zk,P0,Pt,1,Et2,Ht2,vf,1)
+    call fieldsED(zk,P0,Pt,int8_1,Et2,Ht2,vf,int8_0)
+    call fieldsMD(zk,P0,Pt,int8_1,Et2,Ht2,vf,int8_1)
 
     write (*,*) 'Errors at the EXTERIOR region:'
     error_E=sqrt(abs(Et1(1)-Et2(1))**2+abs(Et1(2)-Et2(2))**2+&
@@ -2537,10 +2541,10 @@ implicit none
 !    zk - complex *16
 !      Helmholtz parameter 
 !
-!    ns - integer
+!    ns - integer *8
 !      number of sources
 !   
-!    nt - integer
+!    nt - integer *8
 !      number of targets
 !
 !    srcvals - real *8(12,ns)
@@ -2580,7 +2584,7 @@ implicit none
     !List of calling arguments
     real ( kind = 8 ), intent(in) :: eps
     complex ( kind = 8 ), intent(in) :: zk,alpha
-    integer, intent(in) :: ns,nt
+    integer *8, intent(in) :: ns,nt
     real ( kind = 8 ), intent(in) :: srcvals(12,ns),targ(3,nt)
     real ( kind = 8 ), intent(in) :: wts(ns)
     complex ( kind = 8 ), intent(in) :: a_u(ns),a_v(ns),b_u(ns),b_v(ns)
@@ -2595,8 +2599,8 @@ implicit none
     complex ( kind = 8 ), allocatable :: curlE(:,:),divE(:)
     complex ( kind = 8 ) ima
 
-    integer count1,count2
-    integer ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
+    integer *8 count1,count2
+    integer *8 ifa_vect,ifb_vect,iflambda,ifrho,ifE,ifcurlE,ifdivE
 
     ima=(0.0d0,1.0d0)
 
@@ -2710,21 +2714,21 @@ end subroutine CKif_FMM_targ
 !
 !
 !  input:
-!    npatches - integer
+!    npatches - integer *8
 !      number of patches
 !
-!    norders- integer(npatches)
+!    norders- integer *8(npatches)
 !      order of discretization on each patch 
 !
-!    ixyzs - integer(npatches+1)
+!    ixyzs - integer *8(npatches+1)
 !      ixyzs(i) denotes the starting location in srccoefs,
 !      and srcvals array corresponding to patch i
 !   
-!    iptype - integer(npatches)
+!    iptype - integer *8(npatches)
 !      type of patch
 !      iptype = 1, triangular patch discretized using RV nodes
 !
-!    npts - integer
+!    npts - integer *8
 !      total number of discretization points on the boundary
 ! 
 !    srccoefs - real *8 (9,npts)
@@ -2741,10 +2745,10 @@ end subroutine CKif_FMM_targ
 !        srcvals(4:6,i) - dxyz/du info
 !        srcvals(7:9,i) - dxyz/dv info
 ! 
-!    ndtarg - integer
+!    ndtarg - integer *8
 !      leading dimension of target array
 !        
-!    ntarg - integer
+!    ntarg - integer *8
 !      number of targets
 !
 !    targs - real *8 (ndtarg,ntarg)
@@ -2759,22 +2763,22 @@ end subroutine CKif_FMM_targ
 !      zpars(2) = alpha
 !      zpars(3) = - ( not used )
 !
-!    nnz - integer *8
+!    nnz - integer *8 *8
 !      number of source patch-> target interactions in the near field
 ! 
-!    row_ptr - integer(ntarg+1)
+!    row_ptr - integer *8(ntarg+1)
 !      row_ptr(i) is the pointer
 !      to col_ind array where list of relevant source patches
 !      for target i start
 !
-!    col_ind - integer (nnz)
+!    col_ind - integer *8 (nnz)
 !      list of source patches relevant for all targets, sorted
 !      by the target number
 !
-!    iquad - integer(nnz+1)
+!    iquad - integer *8(nnz+1)
 !      location in wnear array where quadrature for col_ind(i) starts
 !
-!    nquad - integer
+!    nquad - integer *8
 !      number of entries in wnear
 !
 !    wnear  - complex *16(nquad)
@@ -2787,15 +2791,15 @@ end subroutine CKif_FMM_targ
 !      sol(ns+1:2*ns) - second component of J along
 !        the (srcvals(10:12,i) x srcvals(4:6,i)) direction
 !
-!    novers - integer(npatches)
+!    novers - integer *8(npatches)
 !      order of discretization for oversampled sources and
 !      density
 !
-!    ixyzso - integer(npatches+1)
+!    ixyzso - integer *8(npatches+1)
 !      ixyzso(i) denotes the starting location in srcover,
 !      corresponding to patch i
 !   
-!    nptso - integer
+!    nptso - integer *8
 !      total number of oversampled points
 !
 !    srcover - real *8 (12,nptso)
@@ -2807,21 +2811,21 @@ end subroutine CKif_FMM_targ
 
 
       implicit none
-      integer npatches,norder,npols,npts
-      integer ndtarg,ntarg
-      integer norders(npatches),ixyzs(npatches+1)
-      integer ixyzso(npatches+1),iptype(npatches)
+      integer *8 npatches,norder,npols,npts
+      integer *8 ndtarg,ntarg
+      integer *8 norders(npatches),ixyzs(npatches+1)
+      integer *8 ixyzso(npatches+1),iptype(npatches)
       real *8 srccoefs(9,npts),srcvals(12,npts),eps
       real *8 targs(ndtarg,ntarg)
       complex *16 zpars(3),alpha,zk
-      integer nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
-      integer iquad(nnz+1)
+      integer *8 nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
+      integer *8 iquad(nnz+1)
       complex *16 sigma(2*npts),sigma2(3*npts)
 	  
       complex *16 wnear(12*nquad)
 
-      integer novers(npatches+1)
-      integer nover,npolso,nptso
+      integer *8 novers(npatches+1)
+      integer *8 nover,npolso,nptso
       real *8 srcover(12,nptso),whtsover(nptso)
       complex *16 pot(2*ntarg),scalar_RHS(npts)
       complex *16, allocatable :: potsort(:)
@@ -2831,19 +2835,19 @@ end subroutine CKif_FMM_targ
 	  complex *16, allocatable :: sigma_aux(:),sigmaover_aux(:)
 	  complex *16, allocatable :: pot_aux(:)
 
-      integer ns,nt
+      integer *8 ns,nt
       complex *16 beta
-      integer ifcharge,ifdipole
-      integer ifpgh,ifpghtarg
+      integer *8 ifcharge,ifdipole
+      integer *8 ifpgh,ifpghtarg
       complex *16 tmp(10),val,E(3)
 
       real *8 xmin,xmax,ymin,ymax,zmin,zmax,sizey,sizez,boxsize
 
-      integer i,j,jpatch,jquadstart,jstart
+      integer *8 i,j,jpatch,jquadstart,jstart
 
-      integer ifaddsub,ifdir
+      integer *8 ifaddsub,ifdir
 
-      integer ntj
+      integer *8 ntj
       
       complex *16 zdotu,pottmp
       complex *16, allocatable :: dtmp2(:,:),ctmp2_b_u(:),ctmp2_b_v(:)
@@ -2851,16 +2855,16 @@ end subroutine CKif_FMM_targ
       complex *16, allocatable :: ctmp2_u(:),ctmp2_v(:),ctmp2_s(:)
       real *8 radexp,epsfmm
 
-      integer ipars(2)
+      integer *8 ipars(2)
       real *8 dpars(1),timeinfo(10),t1,t2,omp_get_wtime
 
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp2(:,:)
       real *8 thresh,ra
       real *8 rr,rmin
-      integer nss,ii,l,npover
+      integer *8 nss,ii,l,npover
 
-      integer nd,ntarg0
+      integer *8 nd,ntarg0
 
       real *8 ttot,done,pi
 
@@ -2868,8 +2872,12 @@ end subroutine CKif_FMM_targ
       complex *16 pot_x,pot_y,pot_z,pot2_x,pot2_y,pot2_z
       real *8 u_vect(3),v_vect(3),n_vect(3)
 	  complex *16 ima
+      integer *8 int8_2,int8_12
 
       parameter (nd=1,ntarg0=1)
+
+      int8_2 = 2
+      int8_12 = 12
 
       ns = nptso
       done = 1
@@ -2889,9 +2897,9 @@ end subroutine CKif_FMM_targ
 		zk=zpars(1)
 		alpha=zpars(2)
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
       ra = 0
@@ -2899,7 +2907,7 @@ end subroutine CKif_FMM_targ
       !
       !     FMM call to compute nxSkia and -n·curlSkia
       !
-	  call get_fmm_thresh(12,ns,srcover,ndtarg,ntarg,targs,thresh)
+	  call get_fmm_thresh(int8_12,ns,srcover,ndtarg,ntarg,targs,thresh)
 	  
        ifdir=0
 	   
@@ -3019,12 +3027,12 @@ end subroutine CKif_FMM_targ
       enddo
 
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover_aux(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,&
      &sigmaover_aux(ns+1:2*ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,&
      &sigmaover_aux(2*ns+1:3*ns))
 
@@ -3143,12 +3151,12 @@ end subroutine CKif_FMM_targ
 	  pot_aux(i)=0.0d0
 	enddo
 
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(1:npts),novers,ixyzso,ns,sigmaover_aux(1:ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(npts+1:2*npts),novers,ixyzso,ns,&
      &sigmaover_aux(ns+1:2*ns))
-      call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      call oversample_fun_surf(int8_2,npatches,norders,ixyzs,iptype,& 
      &npts,sigma_aux(2*npts+1:3*npts),novers,ixyzso,ns,&
      &sigmaover_aux(2*ns+1:3*ns))
 
@@ -3285,10 +3293,10 @@ implicit none
 ! zgetnearquad_ggq_guru through getnearquad_CKi
 
     !List of calling arguments
-    integer, intent(in) :: ndt,ndd,ndz,ndi
+    integer *8, intent(in) :: ndt,ndd,ndz,ndi
     real ( kind = 8 ), intent(in) :: srcinfo(12)
     real ( kind = 8 ), intent(in) :: targinfo(ndt)
-    integer, intent(in) :: ipars(ndi)
+    integer *8, intent(in) :: ipars(ndi)
     real ( kind = 8 ), intent(in) :: dpars(ndd)
     complex ( kind = 8 ), intent(in) :: zpars(ndz)
     complex ( kind = 8 ), intent(out) :: E_val

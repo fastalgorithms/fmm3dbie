@@ -56,10 +56,10 @@ type, public :: Geometry
     !
 
     ! flag for triangle type, flat or quadratic
-    integer :: ifflat
+    integer *8 :: ifflat
     
     !Triangles of the skeleton (each triangle 6 points)
-    integer, allocatable :: Tri(:,:)
+    integer *8, allocatable :: Tri(:,:)
 
     !Points that define the msh file (Each quadratic triangle has 6 points)
     real ( kind = 8 ), allocatable :: Points(:,:)
@@ -72,40 +72,40 @@ type, public :: Geometry
     real ( kind = 8 ), allocatable :: Base_Points_V(:,:)        !U vector defined on each base point of the smooth surface
     real ( kind = 8 ), allocatable :: Dummy_targ(:,:)        !Dummy targets on pseudonormals
     real ( kind = 8 ), allocatable :: height(:)                 !Value of the root in newton where F(h)=1/2 for each point on the smooth surface
-    integer n_dummy_targ   !total number of dummy targets
+    integer *8 n_dummy_targ   !total number of dummy targets
 
 !Edges and Boundary is use to compute the line integral in the non-FMM case (beyond that line integral, the kernel is 1/r and erf=1)
-    integer, allocatable :: Edges(:,:)             !Set of 3 integers with the location of the points Points(1:3,:) for each edge in the skeleton (set of quadratic triangles)
+    integer *8, allocatable :: Edges(:,:)             !Set of 3 integers with the location of the points Points(1:3,:) for each edge in the skeleton (set of quadratic triangles)
     real ( kind = 8 ), allocatable :: skelet_line_p(:,:,:)            ! integration nodes along each boundary of each triangle on the skeleton
     real ( kind = 8 ), allocatable :: skelet_line_dl(:,:,:)           ! vector dl along each boundary to compute line integrals (3,n_nodes per side,edge number)
-    integer, allocatable :: Boundary(:,:)          ! Set of 3 Edges for each triangle in the skeleton:  Boundary(n_edge=1 to 3,num of triangle)
+    integer *8, allocatable :: Boundary(:,:)          ! Set of 3 Edges for each triangle in the skeleton:  Boundary(n_edge=1 to 3,num of triangle)
 !!
-    integer npoints                                !Total number of points in the skeleton
-    integer n_Sf_points                            !total number of points on the real smooth surface
-    integer n_Sk_points                            !total number of integration nodes on the skeleton
-    integer ntri                                   !Total number of triangles on the smooth surface
-    integer ntri_sk                                !Total number of
+    integer *8 npoints                                !Total number of points in the skeleton
+    integer *8 n_Sf_points                            !total number of points on the real smooth surface
+    integer *8 n_Sk_points                            !total number of integration nodes on the skeleton
+    integer *8 ntri                                   !Total number of triangles on the smooth surface
+    integer *8 ntri_sk                                !Total number of
     !triangles on the skeleton
 
     ! order of smooth discretization, and points per triangle
-    integer norder_skel
-    integer nskel
+    integer *8 norder_skel
+    integer *8 nskel
     
-    integer norder_smooth
-    integer nsmooth
+    integer *8 norder_smooth
+    integer *8 nsmooth
     !number of nodes per smooth triangle (45 or 78)
-    integer n_order_sf   
+    integer *8 n_order_sf   
 
 end type Geometry
 
 type, public :: Variable_Matrix
-    integer n_Mat, current_n_Mat
+    integer *8 n_Mat, current_n_Mat
     real ( kind = 8 ), allocatable :: Mat(:,:)
 end type Variable_Matrix
 
 type, public :: My_cell
     type (Variable_Matrix), allocatable :: Var_Mat(:)
-    integer n_Cell
+    integer *8 n_Cell
 end type My_cell
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -1,9 +1,10 @@
-      implicit real *8 (a-h,o-z) 
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       real *8, allocatable :: wts(:),rsigma(:)
-      integer ipars(2)
+      integer *8 ipars(2)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
 
       real *8 xyz_out(3),xyz_in(3)
       complex *16, allocatable :: sigma(:),rhs(:)
@@ -11,21 +12,25 @@
       real *8, allocatable :: errs(:)
       real *8 thet,phi,eps_gmres
       complex * 16 zpars(3)
-      integer numit,niter
+      integer *8 numit,niter
       character *100 title,fname
 
-      integer ipatch_id
+      integer *8 ipatch_id
       real *8 uvs_targ(2)
 
       logical isout0,isout1
 
       complex *16 pot,potex,ztmp,ima
+      integer *8 int8_0,int8_1,int8_3
 
       data ima/(0.0d0,1.0d0)/
 
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
       done = 1
       pi = atan(done)*4
 
@@ -63,12 +68,12 @@
       ifinout = 1
 
       do i=1,npts
-        if(ifinout.eq.0) 
-     1     call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,
-     2       ipars,rhs(i))
+        if(ifinout.eq.0)
+     1     call h3d_slp(xyz_out,int8_3,srcvals(1,i),int8_0,dpars,
+     2       int8_1,zpars,int8_0,ipars,rhs(i))
         if(ifinout.eq.1) 
-     1     call h3d_slp(xyz_in,3,srcvals(1,i),0,dpars,1,zpars,0,
-     1     ipars,rhs(i))
+     1     call h3d_slp(xyz_in,int8_3,srcvals(1,i),int8_0,dpars,
+     2     int8_1,zpars,int8_0,ipars,rhs(i))
         rhs(i) = rhs(i)
         sigma(i) = 0
       enddo
@@ -106,15 +111,16 @@ C$      t2 = omp_get_wtime()
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
+      call h3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_1,
+     1             zpars,int8_0,ipars,potex)
       pot = 0
       do i=1,npts
         if(ifinout.eq.0) 
-     1     call h3d_comb(srcvals(1,i),3,xyz_in,0,dpars,3,zpars,1,ipars,
-     2      ztmp)
+     1     call h3d_comb(srcvals(1,i),int8_3,xyz_in,int8_0,dpars,
+     2      int8_3,zpars,int8_1,ipars,ztmp)
         if(ifinout.eq.1) 
-     1     call h3d_comb(srcvals(1,i),3,xyz_out,0,dpars,3,zpars,1,ipars,
-     1     ztmp)
+     1     call h3d_comb(srcvals(1,i),int8_3,xyz_out,int8_0,dpars,
+     2     int8_3,zpars,int8_1,ipars,ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 
@@ -125,7 +131,6 @@ c
 
       stop
       end
-
 
 
 

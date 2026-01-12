@@ -1,25 +1,26 @@
 
       implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
 
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       character *100 fname
-      integer ipars(2)
+      integer *8 ipars(2)
 
-      integer, allocatable :: norders(:), ixyzs(:), iptype(:)
-      integer, allocatable :: ixys2d(:), iptype2d(:)
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: ixys2d(:), iptype2d(:)
       real *8, allocatable :: srccoefs2d(:,:), srcvals2d(:,:)
 
       real *8, allocatable :: ts(:), ws(:), umat(:,:), vmat(:,:)
 
       real *8 abc(3), c0(3)
-      integer nabc(3), nuv(2)
+      integer *8 nabc(3), nuv(2)
       real *8 radii(3)
 
-      integer ipatch_id
+      integer *8 ipatch_id
       real *8 uvs_targ(2)
       real *8 pars(2)
       real *8, allocatable :: tchse(:)
-      integer, allocatable :: nrts(:,:)
+      integer *8, allocatable :: nrts(:,:)
       real *8 pols(100)
 
       external funcurve_oocyte_riemann
@@ -546,6 +547,7 @@ c        nrts(1:2,nch2d) = 0
       subroutine funcurve_oocyte_riemann(t,np,pars,x,y,dxdt, 
      1   dydt,d2xdt2,d2ydt2)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 t,pars(np),pi
 
 
@@ -575,7 +577,8 @@ c        nrts(1:2,nch2d) = 0
 
       subroutine get_oocyte3d_tchse(iref,nmid,nch2d,tchse)
       implicit real *8 (a-h,o-z)
-      integer iref,nmid,nch2d
+      implicit integer *8 (i-n)
+      integer *8 iref,nmid,nch2d
       real *8 tchse(nch2d+1)
 
 

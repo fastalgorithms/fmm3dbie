@@ -33,17 +33,17 @@ subroutine surf_quadratic_msh_vtk_plot(npatches,norders,ixyzs,iptype, &
 ! Currently only supports triangulation
 !
 !  Input arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location in srccoefs,srcvals array where data for
 !        patch i begins
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch with RV nodes
-!    - npts: integere
+!    - npts: integer *8e
 !        number of points in discretization
 !    - srccoefs: real *8 (9,npts)
 !        xyz,dxyz/du,dxyz/dv koornwinder expansion coeffs for all patches
@@ -53,15 +53,15 @@ subroutine surf_quadratic_msh_vtk_plot(npatches,norders,ixyzs,iptype, &
 !        file name where vtk output should be written
 !
   implicit none
-  integer, intent(in) :: npatches,norders(npatches),ixyzs(npatches+1)
-  integer, intent(in) :: iptype(npatches),npts
+  integer *8, intent(in) :: npatches,norders(npatches),ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches),npts
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
   character (len=*), intent(in) :: fname,title
 
   real *8 uvs(2,6)
   real *8, allocatable :: xyzs(:,:),pols(:)
 
-  integer i,j,k,l,n0,npuv,ipatch,ipt,i1,m,norder,npols,iunit1
+  integer *8 i,j,k,l,n0,npuv,ipatch,ipt,i1,m,norder,npols,iunit1
 
   uvs(1,1) = 0.0d0
   uvs(2,1) = 0.0d0
@@ -163,13 +163,13 @@ subroutine surf_vtk_plot(npatches,norders,ixyzs,iptype,npts,srccoefs,&
   !f2py intent(in) srcvals,fname,title
   !
   implicit none
-  integer npatches,norders(npatches),ixyzs(npatches+1),npts
-  integer iptype(npatches)
+  integer *8 npatches,norders(npatches),ixyzs(npatches+1),npts
+  integer *8 iptype(npatches)
   real *8 srccoefs(9,npts),srcvals(12,npts)
   real *8, allocatable :: sigma(:)
   character (len=*) fname,title
 
-  integer i
+  integer *8 i
    
   allocate(sigma(npts))
   !$OMP PARALLEL DO DEFAULT(SHARED)   
@@ -199,20 +199,20 @@ subroutine surf_vtk_plot_scalar(npatches,norders,ixyzs,iptype, &
 !f2py intent(in) srcvals,sigma,fname,title
 !
   implicit none
-  integer npatches,norders(npatches),ixyzs(npatches+1),npts
-  integer iptype(npatches)
+  integer *8 npatches,norders(npatches),ixyzs(npatches+1),npts
+  integer *8 iptype(npatches)
   real *8 srccoefs(9,npts),srcvals(12,npts),sigma(npts)
   real *8, allocatable :: sigma_coefs(:),pols(:),rtmp(:)
   character (len=*) fname,title
 
   real *8, allocatable :: xyzs(:,:),uvs(:,:,:),splot(:)
   real *8, allocatable :: uvs_quad(:,:,:)
-  integer, allocatable :: kovers(:),nps(:),ipstart(:)
+  integer *8, allocatable :: kovers(:),nps(:),ipstart(:)
 
-  integer i,j,k,l,ipatch,npout,kover,npols
-  integer itrip,itric1,nb,nlmax,nuv,istart,iend,nd
-  integer ilstart,itri,iunit1,m,ncell,ncsize,norder,nuvl,i1
-  integer imul,nordermax,npolmax
+  integer *8 i,j,k,l,ipatch,npout,kover,npols
+  integer *8 itrip,itric1,nb,nlmax,nuv,istart,iend,nd
+  integer *8 ilstart,itri,iunit1,m,ncell,ncsize,norder,nuvl,i1
+  integer *8 imul,nordermax,npolmax
 
   real *8 ra,erra
 
@@ -435,9 +435,9 @@ subroutine surf_vtk_plot_scalar_many(nd,npatches,norders,ixyzs,iptype, &
 !
 !
   implicit none
-  integer nd,nsc
-  integer npatches,norders(npatches),ixyzs(npatches+1),npts
-  integer iptype(npatches)
+  integer *8 nd,nsc
+  integer *8 npatches,norders(npatches),ixyzs(npatches+1),npts
+  integer *8 iptype(npatches)
   real *8 srccoefs(9,npts),srcvals(12,npts),sigma(nd,npts)
 
   real *8, allocatable :: sigma_coefs(:,:),pols(:),rtmp(:)
@@ -446,12 +446,12 @@ subroutine surf_vtk_plot_scalar_many(nd,npatches,norders,ixyzs,iptype, &
 
   real *8, allocatable :: xyzs(:,:),uvs(:,:,:),splot(:,:)
   real *8, allocatable :: uvs_quad(:,:,:)
-  integer, allocatable :: kovers(:),nps(:),ipstart(:)
+  integer *8, allocatable :: kovers(:),nps(:),ipstart(:)
 
-  integer i,j,k,l,ipatch,npout,kover,npols,idim
-  integer itrip,itric1,nb,nlmax,nuv,istart,iend
-  integer ilstart,itri,iunit1,m,ncell,ncsize,norder,nuvl,i1
-  integer imul,nordermax,npolmax
+  integer *8 i,j,k,l,ipatch,npout,kover,npols,idim
+  integer *8 itrip,itric1,nb,nlmax,nuv,istart,iend
+  integer *8 ilstart,itri,iunit1,m,ncell,ncsize,norder,nuvl,i1
+  integer *8 imul,nordermax,npolmax
 
   real *8 ra,erra
 
@@ -677,7 +677,7 @@ subroutine vtk_write_plane(ndims,ntarg,xyz,dxyz,f,title,fname)
 !   writes data for a structured grid on a plane in vtk format
 !
   implicit none
-  integer ndims(3),ntarg,i,iunit1
+  integer *8 ndims(3),ntarg,i,iunit1
   real *8 xyz(3),dxyz(3),f(ntarg)
   character (len=*) fname,title
 
@@ -720,7 +720,7 @@ subroutine vtk_write_plane_vec(ndims,ntarg,xyz,dxyz,f,title,fname)
 !   writes data for a structured grid on a plane in vtk format
 !
   implicit none
-  integer ndims(3),ntarg,i,iunit1
+  integer *8 ndims(3),ntarg,i,iunit1
   real *8 xyz(3),dxyz(3),f(3,ntarg)
   character (len=*) fname,title
 
@@ -770,21 +770,21 @@ subroutine surf_vtk_plot_vec(npatches, norders, ixyzs, iptype, &
 !f2py intent(in) srcvals,sigma,fname,title
 !
   implicit none
-  integer npatches,norders(npatches),ixyzs(npatches+1),npts
-  integer iptype(npatches)
+  integer *8 npatches,norders(npatches),ixyzs(npatches+1),npts
+  integer *8 iptype(npatches)
   real *8 srccoefs(9,npts),srcvals(12,npts),sigma(3,npts)
   real *8, allocatable :: sigma_coefs(:,:),pols(:),rtmp(:)
   character (len=*) fname,title
 
   real *8, allocatable :: xyzs(:,:),uvs(:,:,:),splot(:,:)
   real *8, allocatable :: uvs_quad(:,:,:)
-  integer, allocatable :: kovers(:),nps(:),ipstart(:)
+  integer *8, allocatable :: kovers(:),nps(:),ipstart(:)
 
-  integer i,j,k,l,ipatch,npout,kover,npols
-  integer itrip,itric1,nb,nlmax,nuv,istart,iend,nd
-  integer ilstart,itri,iunit1,m,ncell,ncsize,norder,nuvl,i1
-  integer idim
-  integer imul, nordermax, npolmax
+  integer *8 i,j,k,l,ipatch,npout,kover,npols
+  integer *8 itrip,itric1,nb,nlmax,nuv,istart,iend,nd
+  integer *8 ilstart,itri,iunit1,m,ncell,ncsize,norder,nuvl,i1
+  integer *8 idim
+  integer *8 imul, nordermax, npolmax
 
   real *8 ra,erra
 
@@ -1012,8 +1012,8 @@ subroutine surf_vtk_plot_zvec(npatches,norders,ixyzs,iptype, &
 !f2py intent(in) srcvals,sigma,fname,title
 !
   implicit none
-  integer npatches,norders(npatches),ixyzs(npatches+1),npts
-  integer iptype(npatches)
+  integer *8 npatches,norders(npatches),ixyzs(npatches+1),npts
+  integer *8 iptype(npatches)
   real *8 srccoefs(9,npts),srcvals(12,npts)
   complex *16 sigma(3,npts)
   real *8, allocatable :: pols(:),rtmp(:)
@@ -1022,12 +1022,12 @@ subroutine surf_vtk_plot_zvec(npatches,norders,ixyzs,iptype, &
 
   real *8, allocatable :: xyzs(:,:),uvs(:,:,:)
   complex *16, allocatable :: splot(:,:)
-  integer, allocatable :: kovers(:),nps(:),ipstart(:)
+  integer *8, allocatable :: kovers(:),nps(:),ipstart(:)
 
-  integer i,j,k,l,ipatch,npout,kover,npols
-  integer itrip,itric1,nb,nlmax,nuv,istart,iend,nd,nd2
-  integer ilstart,itri,iunit1,m,ncell,ncsize,norder,nuvl,i1
-  integer idim
+  integer *8 i,j,k,l,ipatch,npout,kover,npols
+  integer *8 itrip,itric1,nb,nlmax,nuv,istart,iend,nd,nd2
+  integer *8 ilstart,itri,iunit1,m,ncell,ncsize,norder,nuvl,i1
+  integer *8 idim
 
   real *8 ra,erra
 
@@ -1204,7 +1204,7 @@ subroutine vtk_scatter_plot_scalar(n,xyzs,f,fname,title)
 !  given function values
 !
 !  Input arguments:
-!    - n: integer
+!    - n: integer *8
 !        number of points
 !    - xyzs: real *8 (3,n)
 !         xyz coordinates of the points
@@ -1216,12 +1216,12 @@ subroutine vtk_scatter_plot_scalar(n,xyzs,f,fname,title)
 !         title of plot
 !
   implicit none
-  integer n
+  integer *8 n
   character (len=*) fname,title
   real *8 xyzs(3,n),f(n)
 
-  integer i
-  integer iunit1
+  integer *8 i
+  integer *8 iunit1
 
   
   iunit1 = 877

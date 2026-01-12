@@ -1,4 +1,5 @@
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
 
       ntests = 8
       call test_get_uni(i1,i2)
@@ -25,9 +26,11 @@
       subroutine test_get_uni(isuccess0,isuccess1)
 
       implicit real *8 (a-h,o-z)
-      integer, allocatable :: a(:),iuni(:),iuniind(:)
-      integer, allocatable :: b(:),c(:)
-      integer, allocatable :: iuni3(:,:)
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: a(:),iuni(:),iuniind(:)
+      integer *8, allocatable :: b(:),c(:)
+      integer *8, allocatable :: iuni3(:,:)
+      integer *8 n, nuni
 
 
       call prini(6,13)
@@ -107,12 +110,16 @@
       subroutine test_setdecomp(isuccess)
 
       implicit real *8 (a-h,o-z)
-      integer, allocatable :: a(:),iauni(:),auni(:)
-      integer, allocatable :: b(:),ibuni(:),buni(:)
-      integer, allocatable :: aintb(:),iaintba(:),iaintbb(:),aintbc(:)
-      integer, allocatable :: iaintbc(:),binta(:),ibinta(:)
-      integer, allocatable :: bintac(:),ibaintac(:)
-      integer, allocatable :: itmp1(:),itmp2(:),aunisort(:),bunisort(:)
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: a(:),iauni(:),auni(:)
+      integer *8, allocatable :: b(:),ibuni(:),buni(:)
+      integer *8, allocatable :: aintb(:),iaintba(:)
+      integer *8, allocatable :: iaintbb(:),aintbc(:)
+      integer *8, allocatable :: iaintbc(:),binta(:),ibinta(:)
+      integer *8, allocatable :: bintac(:),ibaintac(:)
+      integer *8, allocatable :: itmp1(:),itmp2(:)
+      integer *8, allocatable :: aunisort(:),bunisort(:)
+      integer *8 nauni, nbuni, m, n
 
 
       call prini(6,13)
@@ -231,8 +238,9 @@ c
       subroutine test_cumsum(isuccess)
 c$    use omp_lib
       implicit real *8 (a-h,o-z)
-      integer, allocatable :: a(:), b(:), b2(:)
-      integer :: ns(10), idiff(10), nn, nmax, i, nrange, ntimes
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: a(:), b(:), b2(:)
+      integer *8 :: ns(10), idiff(10), nn, nmax, i, nrange, ntimes
 
       call prini(6,13)
 
@@ -302,12 +310,12 @@ C$       t4 = omp_get_wtime()
       subroutine test_sort(isuccess)
 c$    use omp_lib
       implicit none
-      integer isuccess
-      integer, allocatable :: data(:),ind1(:),ind2(:)
-      integer i,j,n,nn,ns(5)
+      integer *8 isuccess
+      integer *8, allocatable :: data(:),ind1(:),ind2(:)
+      integer *8 i,j,n,nn,ns(5)
       double precision t1,t2,t3,t4,hkrand
-      integer,parameter :: seed = 86456
-      integer :: irand,nmax
+      integer *8,parameter :: seed = 86456
+      integer *8 :: irand,nmax
 
       isuccess = 1
       ns(1) = 100001
@@ -355,13 +363,13 @@ C$      t4 = omp_get_wtime()
       subroutine test_conv_csc(isuccess)
 c$    use omp_lib
       implicit none
-      integer isuccess,nent,m,i,ns(5),ms(5),j,nn
-      integer, allocatable :: iind(:),jind(:)
-      integer, allocatable :: col_ptr1(:),row_ind1(:)
-      integer, allocatable :: col_ptr2(:),row_ind2(:)
+      integer *8 isuccess,nent,m,i,ns(5),ms(5),j,nn
+      integer *8, allocatable :: iind(:),jind(:)
+      integer *8, allocatable :: col_ptr1(:),row_ind1(:)
+      integer *8, allocatable :: col_ptr2(:),row_ind2(:)
       double precision t1,t2,t3,t4,hkrand
-      integer,parameter :: seed = 86456
-      integer :: ii,jj
+      integer *8,parameter :: seed = 86456
+      integer *8 :: ii,jj
 
       isuccess = 1
       ns(1) = 100001
@@ -383,7 +391,7 @@ c$    use omp_lib
         allocate(iind(nent),jind(nent),col_ptr1(m+1),row_ind1(nent))
         allocate(col_ptr2(m+1),row_ind2(nent))
 
-        call srand(seed)
+c        call srand(seed)
         do i=1,nent
           ii = hkrand(0)*m*2
           jj = hkrand(0)*m*2
@@ -423,11 +431,14 @@ c
 c
 c
       subroutine test_findnear(isuccess)
-      implicit real *8 (a-h,o-z)
+      implicit none
       real *8, allocatable :: src(:,:),targ(:,:),rads(:)
-      integer, allocatable :: row_ptr(:),row_ptr2(:)
-      integer, allocatable :: col_ind(:),col_ind2(:)
-      integer, allocatable :: isort(:),wsort(:),isort2(:),wsort2(:)
+      real *8 hkrand
+      integer *8, allocatable :: row_ptr(:),row_ptr2(:)
+      integer *8, allocatable :: col_ind(:),col_ind2(:)
+      integer *8, allocatable :: isort(:),wsort(:),isort2(:),wsort2(:)
+      integer *8 n1, n2, isuccess, ns, nt, erra
+      integer *8 i, j, nnz, nnz2, ndt
 
       call prini(6,13)
 
@@ -510,8 +521,10 @@ c
 
       subroutine test_rsc_to_csc(isuccess)
       implicit real *8 (a-h,o-z)
-      integer, allocatable :: row_ptr(:),col_ind(:),col_ptr(:),
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: row_ptr(:),col_ind(:),col_ptr(:),
      1   row_ind(:),iper(:)
+      integer *8 ns, nt, nnz
 
       
       ns = 301

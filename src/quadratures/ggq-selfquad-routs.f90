@@ -33,16 +33,16 @@
 !  by an ordered set of vertices
 !
 !  Input arguments:
-!    - norder: integer
+!    - norder: integer *8
 !        order of polynomials for representing sigma on S
-!    - ipv: integer
+!    - ipv: integer *8
 !        nature of singularity of the kernel K (see above)
 !        * ipv = 0, single layer like + log singular kernels
 !        * ipv = 1, p.v. integrals
 !        * ipv = 2, hypersingular integrals
 !    - verts: real *8(2,nv)
 !        coordinates defining the convex polygon
-!    - nv: integer
+!    - nv: integer *8
 !        number of vertices
 !    - x0: real *8
 !        x coordinate of target point on the polygon S
@@ -54,7 +54,7 @@
 !        is a parametrization of the surface
 !
 !  Output arguments:
-!    - nquad: integer
+!    - nquad: integer *8
 !        number of nodes in the final quadrature rule
 !    - xs: real *8(nquad)
 !        x coordinates of quadrature nodes on S
@@ -62,17 +62,17 @@
 !        y coordinates of quadrature nodes on S
 !    - whts: real *8(nquad)
 !        quadrature weights on S
-!    - ier: integer
+!    - ier: integer *8
 !        error code
 !        ier = 0 => successful execution
 !
       implicit none
-      integer, intent(in) :: norder
-      integer, intent(in) :: ipv
-      integer, intent(in) :: nv
+      integer *8, intent(in) :: norder
+      integer *8, intent(in) :: ipv
+      integer *8, intent(in) :: nv
       real *8, intent(in) :: verts(2,nv), x0, y0
       real *8, intent(in) :: dr(3,2)
-      integer, intent(out) :: nquad, ier
+      integer *8, intent(out) :: nquad, ier
       real *8, intent(out) :: xs(*), ys(*), whts(*)
 
 !
@@ -83,10 +83,10 @@
       real *8 hdis(nv)
       real *8 d, rtmp1, rtmp2, vtmp(2)
       real *8 r, w, rcut, rcmin, t, tw, dd 
-      integer i, j, k, l, nq1, nlege, ifwhts, nthet, iquad 
+      integer *8 i, j, k, l, nq1, nlege, ifwhts, nthet, iquad 
       real *8 xr(150), wr(150), pi, xtmp, ytmp
-      integer nr, nr0
-      integer ier0
+      integer *8 nr, nr0
+      integer *8 ier0
       data pi/3.14159265358979323846264338327950288d0/
 
 !
@@ -308,9 +308,9 @@
 !  Here T is a triangle with vertices (0,0), v0, v1.
 !
 !  Input arguments:
-!    - norder: integer
+!    - norder: integer *8
 !        order of polynomials for representing sigma on S
-!    - ipv: integer
+!    - ipv: integer *8
 !        nature of singularity of the kernel K (see above)
 !        * ipv = 0, single layer like + log singular kernels
 !        * ipv = 1, p.v. integrals
@@ -329,24 +329,24 @@
 !        y coordinates of quadrature nodes on the triangle
 !    - ws: real *8(nquad)
 !        quadrature weights
-!    - ier: integer
+!    - ier: integer *8
 !        error code
 !        * ier = 0 => successful execution
 !        * ier = 4 => couldn't fetch theta quadratures
 !
 !
       implicit none
-      integer, intent(in) :: norder, ipv
+      integer *8, intent(in) :: norder, ipv
       real *8, intent(in) :: rcut, v0(2), v1(2)
-      integer, intent(out) :: nquad, ier
+      integer *8, intent(out) :: nquad, ier
       real *8, intent(out) :: xs(*), ys(*), ws(*)
 !
 ! Temporary variables
 !
       real *8 r0, r1, xmeas, rr, sina, cosa, xx, yy
       real *8 rcut_scaled, r, theta
-      integer iquad, ier0
-      integer ifreflect, irad, nr, nr0, nt, i, j, it, istart, ir
+      integer *8 iquad, ier0
+      integer *8 ifreflect, irad, nr, nr0, nt, i, j, it, istart, ir
       real *8 xr(200), wr(200), xt(200), wt(200)
       real *8 xtmp, ytmp
       real *8 ct, st, t, twht, rwht, ruse, rsc, rr2, rl
@@ -510,7 +510,7 @@
 
       subroutine rquads_rlogr_rinv(norder, xs, ws, nr)
       implicit none
-      integer norder, nr
+      integer *8 norder, nr
       real *8 xs(*), ws(*)
 
       if (norder.gt.24) then
@@ -536,9 +536,9 @@
 !  f(x) = phi(x) + 1/(x+a) + 1/(x+a)^2 when ipv = 2 
 !
 !  Input arguments:
-!    - norder: integer
+!    - norder: integer *8
 !        order of polynomials for representing sigma on S
-!    - ipv: integer
+!    - ipv: integer *8
 !        nature of singularity of the kernel K (see above)
 !        * ipv = 1, p.v. integrals
 !        * ipv = 2, hypersingular integrals
@@ -548,23 +548,23 @@
 !        quadrature nodes
 !    - wr: real *8(nr)
 !        quadarture weights
-!    - nr: integer
+!    - nr: integer *8
 !        number of quadrature nodes/weights
-!    - ier: integer
+!    - ier: integer *8
 !        error code
 !        ier = 0 => successful execution
 !----------------------------------
       implicit none
-      integer, intent(in) :: ipv, norder
+      integer *8, intent(in) :: ipv, norder
       real *8, intent(in) :: a, b
       real *8, intent(out) :: xr(*), wr(*)
-      integer, intent(out) :: nr, ier
+      integer *8, intent(out) :: nr, ier
 
 !
 !  temporary variables
 ! 
       real *8 rs(29), delta
-      integer i, n
+      integer *8 i, n
 
       delta = a/b
 
@@ -608,9 +608,10 @@
 
       subroutine hs_disk_quad(n, xr, wr, nr)
       implicit real *8 (a-h,o-z)
-      integer, intent(in) :: n
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: n
       real *8, intent(out) :: xr(*), wr(*)
-      integer, intent(out) :: nr
+      integer *8, intent(out) :: nr
       
       INCLUDE 'ggq-self-quads/rhs_quads_disk.txt'
 
@@ -629,11 +630,11 @@
 !
 !  Input arugments:
 !
-!    - ipv: integer
+!    - ipv: integer *8
 !        flag for extracting compact/pv quadratures
 !        ipv = 0, compact quadratures
 !        ipv = 1, pv quadratures
-!    - irad: integer
+!    - irad: integer *8
 !        type of radial quadrature to be used
 !        for norder<=4, use irad=1,
 !        for 4<norder<=8, use irad=2,
@@ -648,21 +649,21 @@
 !
 !  Output arguments:
 !
-!    - n: integer
+!    - n: integer *8
 !        number of quadrature nodes in the region
-!    - ir: integer
+!    - ir: integer *8
 !        radial region number
-!    - it: integer
+!    - it: integer *8
 !        theta region number
 !
       implicit none
-      integer, intent(in) :: irad,ipv,ier
+      integer *8, intent(in) :: irad,ipv,ier
       real *8, intent(in) :: r,t
-      integer, intent(out) :: n,ir,it
+      integer *8, intent(out) :: n,ir,it
 
       real *8 rs(2,25),ts(2,25),eps
-      integer nn(25,25),nrs,nts
-      integer i
+      integer *8 nn(25,25),nrs,nts
+      integer *8 i
 
       eps = 1.0d-14
 
@@ -702,22 +703,22 @@
 !
 !  Input arugments:
 !
-!    - ipv: integer
+!    - ipv: integer *8
 !        flag for extracting compact/pv quadratures
 !        ipv = 0, compact quadratures
 !        ipv = 1, pv quadratures
-!    - irad: integer
+!    - irad: integer *8
 !        type of radial quadrature to be used
 !        for norder<=4, use irad=1,
 !        for 4<norder<=8, use irad=2,
 !        else use irad=3, there will be some loss in accuracy
 !        if norder>12. Support for higher orders will be made
 !        available with irad=4, and so on
-!    - ir: integer
+!    - ir: integer *8
 !        radial region number
-!    - it: integer
+!    - it: integer *8
 !        theta region number
-!    - nt: integer
+!    - nt: integer *8
 !        number of quadrature nodes in the region
 !
 !  Output arguments:
@@ -728,7 +729,7 @@
 !        quadrature weights
 !
       implicit none
-      integer, intent(in) :: irad,ir,it,nt,ipv
+      integer *8, intent(in) :: irad,ir,it,nt,ipv
       real *8, intent(out) :: ts(nt),wts(nt)
 
       INCLUDE 'ggq-self-quads/radfetch-data.txt'

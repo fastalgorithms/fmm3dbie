@@ -136,7 +136,7 @@ function [E, H] = eval(S, densities, targinfo, eps, om, rep_params, varargin)
     
     if (ntin > 0)
       iside = 1;
-      mex_id_ = 'em_muller_trans_eval_oneside(i double[x], i dcomplex[xx], i dcomplex[x], i int[x], i double[x], i double[xx], i int[x], i double[xx], i int[x], io dcomplex[xx], io dcomplex[xx])';
+      mex_id_ = 'em_muller_trans_eval_oneside(c i double[x], c i dcomplex[xx], c i dcomplex[x], c i int64_t[x], c i double[x], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c io dcomplex[xx], c io dcomplex[xx])';
 [Ein, Hin] = fmm3dbie_routs(mex_id_, eps, densities, zpars, npts, wts, srcvals, ntin, targin, iside, Ein, Hin, 1, npts, 4, 5, 1, npts, 12, npts, 1, 3, ntin, 1, 3, ntin, 3, ntin);
       E(:,in) = Ein;
       H(:,in) = Hin;
@@ -144,7 +144,7 @@ function [E, H] = eval(S, densities, targinfo, eps, om, rep_params, varargin)
 
     if(ntout > 0)
       iside = 0;
-      mex_id_ = 'em_muller_trans_eval_oneside(i double[x], i dcomplex[xx], i dcomplex[x], i int[x], i double[x], i double[xx], i int[x], i double[xx], i int[x], io dcomplex[xx], io dcomplex[xx])';
+      mex_id_ = 'em_muller_trans_eval_oneside(c i double[x], c i dcomplex[xx], c i dcomplex[x], c i int64_t[x], c i double[x], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c io dcomplex[xx], c io dcomplex[xx])';
 [Eout, Hout] = fmm3dbie_routs(mex_id_, eps, densities, zpars, npts, wts, srcvals, ntout, targout, iside, Eout, Hout, 1, npts, 4, 5, 1, npts, 12, npts, 1, 3, ntout, 1, 3, ntout, 3, ntout);
       E(:,out) = Eout;
       H(:,out) = Hout;

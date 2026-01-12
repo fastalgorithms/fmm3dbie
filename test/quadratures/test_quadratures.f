@@ -1,4 +1,5 @@
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       ntests = 1
       call test_find_near(i1)
 

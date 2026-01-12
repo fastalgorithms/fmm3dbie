@@ -1,15 +1,16 @@
       implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       real *8, allocatable :: wts(:)
       character *100 fname
-      integer ipars(2)
+      integer *8 ipars(2)
 
       real *8, allocatable :: targs(:,:),uvs_targ(:,:)
-      integer, allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
 
-      integer, allocatable :: ifds(:)
+      integer *8, allocatable :: ifds(:)
       real *8, allocatable :: rfds(:)
       complex *16, allocatable :: zfds(:)
 
@@ -18,22 +19,26 @@
       complex *16 zid
       real *8, allocatable :: errs(:)
       complex * 16 zpars(3)
-      integer, allocatable :: irand(:),isort(:),isum(:)
+      integer *8, allocatable :: irand(:),isort(:),isum(:)
       real *8, allocatable :: rrand(:)
       complex *16, allocatable :: xmat(:,:)
-      integer, allocatable :: itarg(:),jsrc(:)
-      integer, allocatable :: col_ptr(:),row_ind(:)
+      integer *8, allocatable :: itarg(:),jsrc(:)
+      integer *8, allocatable :: col_ptr(:),row_ind(:)
       complex *16, allocatable :: zent(:)
-      integer numit,niter
       real *8 c0(3)
+      integer *8 numit,niter
 
       complex *16 pot,potex,ztmp,ima
+      integer *8 int8_0,int8_1,int8_3
 
       data ima/(0.0d0,1.0d0)/
 
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
       done = 1
       pi = atan(done)*4
 
@@ -105,8 +110,8 @@ c
 
 
       do i=1,npts
-        call h3d_slp(xyz_out,3,srcvals(1,i),0,dpars,1,zpars,0,ipars,
-     1     rhs(i))
+        call h3d_slp(xyz_out,int8_3,srcvals(1,i),int8_0,dpars,
+     1     int8_1,zpars,int8_0,ipars,rhs(i))
       enddo
 
       
@@ -250,11 +255,12 @@ cc        call prinf('col_ptr=*',col_ptr,npts+1)
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zpars,0,ipars,potex)
+      call h3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_1,
+     1             zpars,int8_0,ipars,potex)
       pot = 0
       do i=1,npts
-        call h3d_comb(srcvals(1,i),3,xyz_in,0,dpars,3,zpars,0,ipars,
-     1     ztmp)
+        call h3d_comb(srcvals(1,i),int8_3,xyz_in,int8_0,dpars,
+     1     int8_3,zpars,int8_0,ipars,ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 

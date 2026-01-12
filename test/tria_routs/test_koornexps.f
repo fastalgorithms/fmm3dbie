@@ -1,12 +1,13 @@
 
       subroutine test_koornf_ders(ipass)
       implicit real *8 (a-h,o-z)
-      integer ntest
+      implicit integer *8 (i-n)
+      integer *8 ntest
       real *8, allocatable :: pols(:),ders(:,:)
       real *8, allocatable :: polsex(:),dersex(:,:),ders2ex(:,:)
       real *8, allocatable :: rat1(:,:),rat2(:,:,:),rsc1(:,:)
       real *8 uv(2)
-      integer nordert(5)
+      integer *8 nordert(5)
 
       call prini(6,13)
 

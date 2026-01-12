@@ -29,20 +29,20 @@ subroutine open_gidmsh2_geometry(filename,npatches,norders,ixyzs, &
 !  Input arguments:
 !    - filename: character(len=*)
 !         file name of gmshv2 file
-!    - npatches: integer
+!    - npatches: integer *8
 !         number of relevant triangles in gmsh file. Should be computed
 !         using a call to open_gmshv2_geometry_mem
-!    - npts: integer
+!    - npts: integer *8
 !         total number of discretization points. Should be computed
 !         using a call to open_gmshv2_geometry_mem
 !
 !  Output arguments:
 !    
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of the patches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -55,9 +55,9 @@ subroutine open_gidmsh2_geometry(filename,npatches,norders,ixyzs, &
 
   implicit none
   character (len=*), intent(in) :: filename
-  integer ( kind = 4 ), intent(in) :: npts,npatches
-  integer ( kind = 4 ), intent(out) :: norders(npatches),ixyzs(npatches+1)
-  integer ( kind = 4 ), intent(out) :: iptype(npatches)
+  integer ( kind = 8 ), intent(in) :: npts,npatches
+  integer ( kind = 8 ), intent(out) :: norders(npatches),ixyzs(npatches+1)
+  integer ( kind = 8 ), intent(out) :: iptype(npatches)
   real ( kind = 8 ), intent(out) :: srcvals(12,npts),srccoefs(9,npts)
   real ( kind = 8 ), intent(out) :: wts(npts)
 
@@ -69,9 +69,9 @@ subroutine open_gidmsh2_geometry(filename,npatches,norders,ixyzs, &
   real ( kind = 8 ), allocatable :: pmatall(:,:,:),dmatall(:,:,:,:)
 
   real ( kind = 8 ), allocatable :: xyzs(:,:)
-  integer ( kind = 4 ), allocatable :: element(:)
-  integer n,nomax,i,ind,info,inode,ipt,istart,itri,j,l,m
-  integer norder,npoints,iunit,nmax,npt,ntri,npols,ierror
+  integer ( kind = 8 ), allocatable :: element(:)
+  integer *8 n,nomax,i,ind,info,inode,ipt,istart,itri,j,l,m
+  integer *8 norder,npoints,iunit,nmax,npt,ntri,npols,ierror
   real *8 rr
 
  
@@ -241,10 +241,10 @@ subroutine open_gidmsh2_geometry_mem(filename,ntri,npoints)
 
   !List of calling arguments
   character (len=*), intent(in) :: filename
-  integer ( kind = 4 ), intent(out) :: npoints,ntri
+  integer ( kind = 8 ), intent(out) :: npoints,ntri
 
     ! List of local variable
-  integer ( kind = 4 ) :: io,iunit,i,nel,ind,ielem,ntag,ierror
+  integer ( kind = 8 ) :: io,iunit,i,nel,ind,ielem,ntag,ierror
   character ( len = 1000) :: cline
 
   iunit = 18

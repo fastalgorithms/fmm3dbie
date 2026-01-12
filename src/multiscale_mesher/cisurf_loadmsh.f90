@@ -12,10 +12,10 @@ subroutine readgeometry(Geometry1, filename, ifiletype, norder_skel, &
     norder_smooth, ier)
   use ModType_Smooth_Surface
   implicit none
-  integer ifiletype, ier
+  integer *8 ifiletype, ier
   type (Geometry) :: Geometry1
   character(len=*) :: filename
-  integer :: n_order_sf, norder_skel, norder_smooth
+  integer *8 :: n_order_sf, norder_skel, norder_smooth
 
 !
 ! This subroutine open a msh file and load the information in a
@@ -24,7 +24,7 @@ subroutine readgeometry(Geometry1, filename, ifiletype, norder_skel, &
 !  Input arguments:
 !    - filename: string
 !         file name
-!    - ifiletype: integer
+!    - ifiletype: integer *8
 !        * ifiletype = 1, for .msh
 !        * ifiletype = 2, for .tri
 !        * ifiletype = 3, for .gidmsh
@@ -103,12 +103,12 @@ subroutine readmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   !List of calling arguments
   type (Geometry), intent(inout) :: Geometry1     !! where the geometry will be loaded
   character(len=*), intent(in) :: filename         !! name of the msh file
-  integer :: n_order_sf, nsk, nsf
-  integer  :: norder_skel, norder_smooth
+  integer *8 :: n_order_sf, nsk, nsf
+  integer *8  :: norder_skel, norder_smooth
   
-  integer umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-  integer :: ierror, ierror1, ierror2
-  integer :: ier
+  integer *8 umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+  integer *8 :: ierror, ierror1, ierror2
+  integer *8 :: ier
 
 
   Geometry1%ifflat = 0
@@ -220,18 +220,18 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   type (Geometry), intent(inout) :: Geometry1     !! where the geometry will be loaded
   character(len=*), intent(in) :: filename         !! name of the msh file
   character(len=1000) :: tmp1
-  integer :: n_order_sf, nsk, nsf
-  integer  :: norder_skel, norder_smooth
+  integer *8 :: n_order_sf, nsk, nsf
+  integer *8  :: norder_skel, norder_smooth
   
-  integer :: umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-  integer :: node, nnodes, maxnodes
-  integer, allocatable :: elems(:,:)
-  integer :: ielem, nelems, maxelems
+  integer *8 :: umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+  integer *8 :: node, nnodes, maxnodes
+  integer *8, allocatable :: elems(:,:)
+  integer *8 :: ielem, nelems, maxelems
   double precision :: x, y, z, d, dmin
   double precision, allocatable :: xs(:), ys(:), zs(:)
-  integer :: ierror, iflag
-  integer :: ierror1, ierror2
-  integer :: ier
+  integer *8 :: ierror, iflag
+  integer *8 :: ierror1, ierror2
+  integer *8 :: ier
 
 
   Geometry1%ifflat = 0
@@ -385,11 +385,11 @@ subroutine readtri(Geometry1,filename, norder_skel, norder_smooth, ier)
 
   type (Geometry), intent(inout) :: Geometry1     !! where the geometry will be loaded
   character(len=*), intent(in) :: filename         !! name of the msh file
-  integer :: norder_smooth, norder_skel
+  integer *8 :: norder_smooth, norder_skel
 
-  integer umio,i,m,N,j,aux1,aux2,aux3,ipointer
-  integer :: ierror, nsk,nsf, ierror1, ierror2 
-  integer :: ier
+  integer *8 umio,i,m,N,j,aux1,aux2,aux3,ipointer
+  integer *8 :: ierror, nsk,nsf, ierror1, ierror2 
+  integer *8 :: ier
 
   ! set the flag for flat vs quadratic
   Geometry1%ifflat = 1
@@ -503,23 +503,23 @@ subroutine read_gmsh_v2(Geometry1, filename, norder_skel, norder_smooth, ier)
   character(len=*), intent(in) :: filename         !! name of the msh file
   character(len=1000) :: tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7
   character(len=1000) :: cline
-  integer :: n_order_sf, nsk, nsf
-  integer  :: norder_skel, norder_smooth
+  integer *8 :: n_order_sf, nsk, nsf
+  integer *8  :: norder_skel, norder_smooth
   
-  integer :: umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-  integer :: node, nnodes, maxnodes
-  integer, allocatable :: elements(:,:), element(:)
-  integer :: ielem, nelems, maxelems
+  integer *8 :: umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+  integer *8 :: node, nnodes, maxnodes
+  integer *8, allocatable :: elements(:,:), element(:)
+  integer *8 :: ielem, nelems, maxelems
   double precision :: x, y, z, d, dmin
   double precision, allocatable :: xs(:), ys(:), zs(:)
-  integer :: ierror,iunit,korder,kpols,itype
-  integer :: io,numnodes,ind,numelem,nel,ntri,ntag,lll
-  integer :: itype_tri3, itype_quad4
-  integer :: itype_tri6, itype_quad8, itype_quad9
-  integer :: inode1, inode2, inode3, inode4, npts, npts_use
-  integer :: inode8(8) 
-  integer :: nel_quad4, nel_quad9, nel_quad8, nel_tri3, nel_tri6
-  integer :: ier
+  integer *8 :: ierror,iunit,korder,kpols,itype
+  integer *8 :: io,numnodes,ind,numelem,nel,ntri,ntag,lll
+  integer *8 :: itype_tri3, itype_quad4
+  integer *8 :: itype_tri6, itype_quad8, itype_quad9
+  integer *8 :: inode1, inode2, inode3, inode4, npts, npts_use
+  integer *8 :: inode8(8) 
+  integer *8 :: nel_quad4, nel_quad9, nel_quad8, nel_tri3, nel_tri6
+  integer *8 :: ier
 
   ier = 0
   Geometry1%ifflat = 0
@@ -864,27 +864,27 @@ subroutine read_gmsh_v4(Geometry1, filename, norder_skel, norder_smooth, ier)
   character(len=*), intent(in) :: filename         !! name of the msh file
   character(len=1000) :: tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7
   character(len=1000) :: cline
-  integer :: n_order_sf, nsk, nsf
-  integer  :: norder_skel, norder_smooth
+  integer *8 :: n_order_sf, nsk, nsf
+  integer *8  :: norder_skel, norder_smooth
   
-  integer :: umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-  integer :: node, nnodes, maxnodes
-  integer, allocatable :: elements(:,:), element(:)
-  integer :: ielem, nelems, maxelems
+  integer *8 :: umio,i,m,N,j,aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+  integer *8 :: node, nnodes, maxnodes
+  integer *8, allocatable :: elements(:,:), element(:)
+  integer *8 :: ielem, nelems, maxelems
   double precision :: x, y, z, d, dmin
   double precision, allocatable :: xs(:), ys(:), zs(:)
-  integer :: ierror,iunit,korder,kpols,itype
-  integer :: io,numnodes,ind,numelem,nel,ntri,ntag,lll
-  integer :: itype_tri3, itype_quad4
-  integer :: itype_tri6, itype_quad8, itype_quad9
-  integer :: inode1, inode2, inode3, inode4, npts, npts_use
-  integer :: inode8(8) 
-  integer :: nel_quad4, nel_quad9, nel_quad8, nel_tri3, nel_tri6
-  integer :: num_entity_blocks, mintag, maxtag
-  integer :: ient, ienttag, iparam, iind, l, nelem, ielemtype
-  integer, allocatable :: iindvec(:)
+  integer *8 :: ierror,iunit,korder,kpols,itype
+  integer *8 :: io,numnodes,ind,numelem,nel,ntri,ntag,lll
+  integer *8 :: itype_tri3, itype_quad4
+  integer *8 :: itype_tri6, itype_quad8, itype_quad9
+  integer *8 :: inode1, inode2, inode3, inode4, npts, npts_use
+  integer *8 :: inode8(8) 
+  integer *8 :: nel_quad4, nel_quad9, nel_quad8, nel_tri3, nel_tri6
+  integer *8 :: num_entity_blocks, mintag, maxtag
+  integer *8 :: ient, ienttag, iparam, iind, l, nelem, ielemtype
+  integer *8, allocatable :: iindvec(:)
 
-  integer ier
+  integer *8 ier
 
 
   Geometry1%ifflat = 0
@@ -1221,8 +1221,8 @@ subroutine record_Geometry(Geometry1,filename)
   character (len=*) filename
 
   !List of local variables
-  integer umio,count1,count2,flag,norder_smooth
-  integer :: ierror
+  integer *8 umio,count1,count2,flag,norder_smooth
+  integer *8 :: ierror
 
   open(8, FILE=trim(filename),STATUS='REPLACE')
   norder_smooth = Geometry1%norder_smooth
@@ -1290,20 +1290,20 @@ subroutine get_filetype(filename, ifiletype, ier)
 !    - filename: string
 !         file name
 !  Output arguments
-!    - ifiletype: integer
+!    - ifiletype: integer *8
 !        * ifiletype = 1, for .msh
 !        * ifiletype = 2, for .tri
 !        * ifiletype = 3, for .gidmsh
 !        * ifiletype = 4, for .msh gmsh v2
 !        * ifiletype = 5, for .msh gmsh v4
-!    - ier: integer
+!    - ier: integer *8
 !        Error code
 !        * ier = 0, successful execution
 !        * ier = 8, file format not recognized
 !
 !
   implicit real *8 (a-h,o-z)
-  integer i1,i2, io
+  integer *8 i1,i2, io
   character (len=*) filename
   character (len=100) fstr
   character *100, fstr_gid_tritest, fstr_gmshtest
