@@ -403,6 +403,63 @@ C$OMP END PARALLEL DO
 
 
 
+      subroutine get_iuni2(n,a,b,nuni,iuni,iuniind)
+c
+c        given an array (a,b), find unique set of indices
+c        in the array and a mapping from where the indices
+c        are contained in the shorter array
+c
+      integer n, a(n),b(n),nuni,iuni(2,n),iuniind(n)
+      integer, allocatable :: iind(:),asort(:),iunisort(:)
+      integer, allocatable :: bsort(:)
+
+      allocate(iind(n),asort(n),iunisort(n),bsort(n))
+      call sorti(n,b,iind)
+
+      do i=1,n
+        asort(i) = a(iind(i))
+        bsort(i) = b(iind(i))
+      enddo
+
+      nuni = 1
+      iuni(1,1) = asort(1)
+      iuni(2,1) = bsort(1)
+      iunisort(1) = 1
+ 
+      nuni0 = 1
+      do i=2,n
+        if(bsort(i).gt.iuni(2,nuni)) then
+          nuni = nuni + 1
+          iuni(1,nuni) = asort(i)
+          iuni(2,nuni) = bsort(i)
+          iunisort(i) = nuni
+          nuni0 = nuni
+        else
+          do j=nuni,nuni0,-1
+            if(asort(i).eq.iuni(1,j)) then 
+              iunisort(i) = j
+              goto 1111
+            endif
+          enddo
+
+          nuni = nuni + 1
+          iuni(1,nuni) = asort(i)
+          iuni(2,nuni) = bsort(i)
+          iunisort(i) = nuni
+        endif
+ 1111 continue
+      enddo
+
+      do i=1,n
+        iuniind(iind(i)) = iunisort(i)
+      enddo
+
+      return
+      end
+
+
+
+
 
       subroutine get_iuni3(n,a,b,c,nuni,iuni,iuniind)
 c

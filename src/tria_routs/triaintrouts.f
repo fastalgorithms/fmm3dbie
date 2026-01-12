@@ -85,9 +85,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -198,7 +199,7 @@ c
       allocate(sigvals(nppols,nqpts),rsigvals(npols,nqpts))
       
       nds = 12
-      if(isd.ne.0) nds = 24
+      if(isd.ne.0) nds = 30
       allocate(srcvals(nds,nqpts),qwts(nqpts))
 
       do i=1,nqpts
@@ -304,9 +305,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -575,7 +577,7 @@ cc      call prinf('nqpols=*',nqpols,1)
       npmax = ntri*nqpols
       allocate(sigvals(npols,npmax))
       nds = 12
-      if(isd.ne.0) nds = 24
+      if(isd.ne.0) nds = 30
       allocate(srcvals(nds,npmax),qwts(npmax))
       
       allocate(sigmatmp(nppols,npmax),fkervals(npmax))
@@ -695,9 +697,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -908,7 +911,7 @@ c
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
       nds = 12
-      if(isd.ne.0) nds = 24
+      if(isd.ne.0) nds = 30
       allocate(srcvals(nds,npmax),qwts(npmax))
        
 c
@@ -1081,9 +1084,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -1097,7 +1101,7 @@ c        max number of points = ntmax*kpols
 c    - nds: integer
 c        leading dimension of srcvals array, if isd = 0,
 c        then nds must be 12, and if isd = 1, then
-c        nds must be 24
+c        nds must be 30
 c    - srcvals: real *8(nds,npmax)
 c        geometry info on heirarchy of meshes
 c    - qwts: real *8(npmax)
@@ -1497,9 +1501,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -1794,7 +1799,7 @@ cc      call prinf('nqpols=*',nqpols,1)
       allocate(qwts(npmax))
 
       nds = 12
-      if(isd.gt.0) nds = 24
+      if(isd.gt.0) nds = 30
       allocate(srcvals(nds,npmax))
 
       
@@ -1934,9 +1939,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -2050,7 +2056,7 @@ c
       allocate(sigvals(nppols,nqpts),rsigvals(npols,nqpts))
 
       nds = 12
-      if(isd.ne.0) nds = 24
+      if(isd.ne.0) nds = 30
       allocate(srcvals(nds,nqpts),qwts(nqpts))
 
       do i=1,nqpts
@@ -2171,9 +2177,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -2444,7 +2451,7 @@ cc      call prinf('nqpols=*',nqpols,1)
       npmax = ntri*nqpols
       allocate(sigvals(npols,npmax))
       nds = 12
-      if(isd.ne.0) nds = 24
+      if(isd.ne.0) nds = 30
       allocate(srcvals(nds,npmax),qwts(npmax))
 
       allocate(sigmatmp(nppols,npmax),fkervals(nd,npmax))
@@ -2575,9 +2582,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -2790,7 +2798,7 @@ c
       npmax = ntrimax*nqpols
       allocate(sigvals(npols,npmax),sigvalsdens(nppols,npmax))
       nds = 12
-      if(isd.ne.0) nds = 24
+      if(isd.ne.0) nds = 30
       allocate(srcvals(nds,npmax),qwts(npmax))
 
 
@@ -2963,9 +2971,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -3403,9 +3412,10 @@ c        flag for computing and passing second derivative
 c        information in srcvals.
 c        if isd = 0, leading dim of srcvals = 12, with 
 c        xyz, dxyz/du, dxyz/dv, and normals passed
-c        else, leading dim of srcvals = 24, with
+c        else, leading dim of srcvals = 30, with
 c        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
-c        d2xyz/dv2, det(g), kap1, kap2 where kap1, kap2
+c        d2xyz/dv2, det(g), (11,12,22) entries of I, (11,12,22)
+c        entries of II, kap1, kap2 where kap1, kap2
 c        are principal curvatures, det(g) is the determinant
 c        of the metric tensor
 c    - ndsc: integer
@@ -3702,7 +3712,7 @@ cc      call prinf('nqpols=*',nqpols,1)
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
       nds = 12
-      if(isd.eq.0) nds = 24
+      if(isd.eq.0) nds = 30
       allocate(srcvals(nds,npmax),qwts(npmax))
 
       allocate(xkernvals(nd,npmax))

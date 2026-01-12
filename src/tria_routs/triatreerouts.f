@@ -518,6 +518,10 @@ c
           srcvals(11,i) = srcvals(11,i)/rr
           srcvals(12,i) = srcvals(12,i)/rr
           if(isd.ne.0) then
+            re = srcvals(4,i)**2 + srcvals(5,i)**2 + srcvals(6,i)**2
+            rf = srcvals(4,i)*srcvals(7,i) + srcvals(5,i)*srcvals(8,i) + 
+     1         srcvals(6,i)*srcvals(9,i)
+            rg = srcvals(7,i)**2 + srcvals(8,i)**2 + srcvals(9,i)**2
             rl = srcvals(13,i)*srcvals(10,i) + 
      1           srcvals(14,i)*srcvals(11,i) + 
      1           srcvals(15,i)*srcvals(12,i)  
@@ -528,11 +532,19 @@ c
      1           srcvals(20,i)*srcvals(11,i) + 
      1           srcvals(21,i)*srcvals(12,i)  
             srcvals(22,i) = rr
-            tra = rl + rn
-            deta = rl*rn - rm*rm
+            srcvals(23,i) = re
+            srcvals(24,i) = rf
+            srcvals(25,i) = rg
+            srcvals(26,i) = rl
+            srcvals(27,i) = rm
+            srcvals(28,i) = rn
+            
+            tra = rg*rl - 2*rf*rm + re*rn 
+            deta = (rg*rl - rf*rm)*(re*rn - rf*rm) - 
+     1          (rg*rm - rf*rn)*(re*rm - rf*rl)   
             dfac = sqrt(tra*tra - 4*deta)
-            srcvals(23,i) = 0.5d0*(tra + dfac)
-            srcvals(24,i) = 0.5d0*(tra - dfac)
+            srcvals(29,i) = 0.5d0*(tra + dfac)/(re*rg - rf*rf)
+            srcvals(30,i) = 0.5d0*(tra - dfac)/(re*rg - rf*rf)
           endif
         enddo
 
