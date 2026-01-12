@@ -69,8 +69,10 @@ MDYNAMICLIB = $(MLIBNAME).so
 MLIMPLIB = $(MDYNAMICLIB)
 
 LFMMLINKLIB = -lfmm3d
+LFMMLINKLIB += -Wl,-rpath,$(FMM_INSTALL_DIR)
 LFMMSTATICLIB = $(FMM_INSTALL_DIR)/libfmm3d.a
 LLINKLIB = $(subst lib, -l, $(LIBNAME))
+LLINKLIB += -Wl,-rpath,$(FMMBIE_INSTALL_DIR)
 MLLINKLIB = $(subst lib, -l, $(MLIBNAME))
 
 WLDL = -Wl,--whole-archive
@@ -316,6 +318,11 @@ install: $(STATICLIB) $(DYNAMICLIB)
 	cp -f lib/$(DYNAMICLIB) $(FMMBIE_INSTALL_DIR)/
 	cp -f lib-static/$(STATICLIB) $(FMMBIE_INSTALL_DIR)/
 	[ ! -f lib/$(LIMPLIB) ] || cp lib/$(LIMPLIB) $(FMMBIE_INSTALL_DIR)/
+	# if on macosx call install_name_tool
+	@if [ "$$(uname -s)" = "Darwin" ]; then \
+		echo "Doing macOS-specific install"; \
+		install_name_tool -id @rpath/$(DYNAMICLIB) $(FMMBIE_INSTALL_DIR)/$(DYNAMICLIB); \
+	fi
 	@echo "Make sure to include " $(FMMBIE_INSTALL_DIR) " in the appropriate path variable"
 	@echo "    LD_LIBRARY_PATH on Linux"
 	@echo "    PATH on windows"
@@ -361,7 +368,7 @@ mex-dyn: $(MDYNAMICLIB)
 #
 # testing routines
 #
-test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad 
+test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
@@ -372,7 +379,7 @@ test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadr
 	cat print_testres.txt
 	rm print_testres.txt
 
-test-dyn: $(DYNAMICLIB) test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn test/quadrature-dyn test/quad-dyn
+test-dyn: $(DYNAMICLIB) install test/com-dyn test/hwrap-dyn test/tria-dyn test/lwrap-dyn test/surf-dyn test/quadrature-dyn test/quad-dyn
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
@@ -437,7 +444,7 @@ test/quadrature: $(QQOBJS)
 
 
 test/com-dyn:
-	$(FC) $(FFLAGS) test/common/test_common.f -o test/common/int2-com -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) $(LFMMLINKLIB) 
+	$(FC) $(FFLAGS) test/common/test_common.f -o test/common/int2-com -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 test/hwrap-dyn:
 	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)

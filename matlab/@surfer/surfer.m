@@ -40,6 +40,7 @@ classdef surfer
 %  obj.uvs_targ    - (u,v) param coords of nodes within own patch (2,npts)
 %  obj.mean_curv   - mean curvatures at nodes (npts*1)
 %  obj.ffform      - cell array of first fundamental forms at nodes (2,2,n)
+%  obj.sfform      - cell array of second fundamental forms at nodes (2,2,n)
 %  obj.ffforminv   - cell array of inverses of ffforms at nodes (2,2,n)
 %
 %
@@ -91,6 +92,7 @@ classdef surfer
         uvs_targ      % (u,v) param coords of nodes within own patch (2,npts)
         mean_curv     % mean curvatures at nodes (npts*1)
         ffform        % cell array of first fundamental forms at nodes (2,2,npts)
+        sfform        % cell array of second fundamental forms at nodes (2,2,npts)
         ffforminv     % cell array of inverses of ffforms at nodes (2,2,npts)
         aspect_ratio  % measure of local aspect ratio of patch, (npts,1);
         patch_distortion % integral of aspect ratio
@@ -228,6 +230,7 @@ classdef surfer
             
             ffforminv_cell = cell(npatches,1);
             ffform_cell = cell(npatches,1);
+            sfform_cell = cell(npatches,1);
             obj.aspect_ratio = zeros(obj.npts,1);
             obj.patch_distortion = zeros(obj.npatches,1);
             obj.cms = zeros(3,obj.npatches);
@@ -287,6 +290,7 @@ classdef surfer
                 sfform(1,2,iind) = M;
                 sfform(2,1,iind) = M;
                 sfform(2,2,iind) = N;
+                sfform_cell{i} = sfform(:,:,iind);
 
                 % Mean curvature (LG-2MF+NE)/2(EG-F^2):
                 obj.mean_curv(iind) = -0.5*(L.*dvnormsq - ...
@@ -328,6 +332,7 @@ classdef surfer
             obj.end_pt_verts = end_pt_verts_cell;
             obj.ffforminv = ffforminv_cell;
             obj.ffform = ffform_cell;
+            obj.sfform = sfform_cell;
         end
         
         

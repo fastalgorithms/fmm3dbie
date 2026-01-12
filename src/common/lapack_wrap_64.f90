@@ -448,6 +448,7 @@ subroutine dgausselim_vec(n, a, k, rhs, info, sol, dcond)
   
   integer *8, allocatable :: ipiv(:), iwork(:)
   double precision, allocatable :: af(:,:), rscales(:), cscales(:), work(:)
+  double precision, allocatable :: ferr(:), berr(:)
   integer *8 n1,lda,ldaf,nrhs,ldb,ldx,info1
   character *1 :: fact, trans, equed
   !
@@ -456,16 +457,19 @@ subroutine dgausselim_vec(n, a, k, rhs, info, sol, dcond)
   ! 
   !
   
+  nrhs = k
+
   allocate(ipiv(n))
   allocate(af(n,n))
   allocate(rscales(n))
   allocate(cscales(n))
   allocate(work(5*n))
   allocate(iwork(n))
+  allocate(ferr(nrhs))
+  allocate(berr(nrhs))
   
   fact = 'N'
   trans = 'N'
-  nrhs = k
   lda = n
   ldaf = n
   equed = 'N'
