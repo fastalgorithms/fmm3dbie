@@ -13,21 +13,21 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
 !  Input arguments:
 !    * fnamein: string
 !        Input File name
-!    * ifiletype: integer
+!    * ifiletype: integer *8
 !        * ifiletype = 1, for .msh
 !        * ifiletype = 2, for .tri
 !        * ifiletype = 3, for .gidmsh
 !        * ifiletype = 4, for .msh gmsh v2
 !        * ifiletype = 5, for .msh gmsh v4
-!    * norder_skel: integer
+!    * norder_skel: integer *8
 !        Order of discretization on skeleton mesh for 
 !        computing integrals for the level-set
-!    * norder_smooth: integer
+!    * norder_smooth: integer *8
 !        order of discretization of the surface
 !        on output
-!    * nrefine: integer
+!    * nrefine: integer *8
 !        number of refinements of the skeleton mesh
-!    * adapt_sigma: integer
+!    * adapt_sigma: integer *8
 !        flag for choosing uniform or adaptive mollifier
 !        adapt_sigma = 0, use uniform mollifier
 !        adapt_sigma = 1, use multiscale mollifier
@@ -67,11 +67,11 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
   type ( Geometry ), pointer :: Geometry1 => null ()
   type ( Feval_stuff ), pointer :: Feval_stuff_1 => null ()
 
-  integer :: N, count,nrefine, ifplot
-  integer :: adapt_sigma, ifflatten
-  integer :: interp_flag
-  integer :: norder_skel, norder_smooth
-  integer :: ifiletype
+  integer *8 :: N, count,nrefine, ifplot
+  integer *8 :: adapt_sigma, ifflatten
+  integer *8 :: interp_flag
+  integer *8 :: norder_skel, norder_smooth
+  integer *8 :: ifiletype
 
   character (len=*) :: fnamein, fnameout_root
 
@@ -83,9 +83,9 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
   double precision, allocatable :: time_report(:), error_report(:)
   double precision :: err_skel,rlam,t1,t2,omp_get_wtime
 
-  integer i, ll, len1
+  integer *8 i, ll, len1
 
-  integer ier
+  integer *8 ier
 
   
 
@@ -242,21 +242,21 @@ subroutine multiscale_mesher_unif_refine_cfname(fnamein, ifiletype, norder_skel,
 !  Input arguments:
 !    * fnamein: cstring 
 !        Input File name
-!    * ifiletype: integer
+!    * ifiletype: integer *8
 !        * ifiletype = 1, for .msh
 !        * ifiletype = 2, for .tri
 !        * ifiletype = 3, for .gidmsh
 !        * ifiletype = 4, for .msh gmsh v2
 !        * ifiletype = 5, for .msh gmsh v4
-!    * norder_skel: integer
+!    * norder_skel: integer *8
 !        Order of discretization on skeleton mesh for 
 !        computing integrals for the level-set
-!    * norder_smooth: integer
+!    * norder_smooth: integer *8
 !        order of discretization of the surface
 !        on output
-!    * nrefine: integer
+!    * nrefine: integer *8
 !        number of refinements of the skeleton mesh
-!    * adapt_sigma: integer
+!    * adapt_sigma: integer *8
 !        flag for choosing uniform or adaptive mollifier
 !        adapt_sigma = 0, use uniform mollifier
 !        adapt_sigma = 1, use multiscale mollifier
@@ -289,19 +289,19 @@ subroutine multiscale_mesher_unif_refine_cfname(fnamein, ifiletype, norder_skel,
   implicit none
 
 
-  integer :: N, count,nrefine, ifplot
-  integer :: adapt_sigma, ifflatten
-  integer :: interp_flag
-  integer :: norder_skel, norder_smooth
-  integer :: ifiletype
+  integer *8 :: N, count,nrefine, ifplot
+  integer *8 :: adapt_sigma, ifflatten
+  integer *8 :: interp_flag
+  integer *8 :: norder_skel, norder_smooth
+  integer *8 :: ifiletype
 
   character (kind=c_char), dimension(*) :: fnamein, fnameout_root
   character (len=:), allocatable :: fortran_fnamein, fortran_fnameout
   real *8 :: rlam
-  integer :: ier
+  integer *8 :: ier
 
 
-  integer ilen, i
+  integer *8 ilen, i
 
   ilen = 0
   do 
@@ -338,8 +338,8 @@ subroutine get_filetype_cfname(fnamein, ifiletype, ier)
   implicit none
   character (kind=c_char), dimension(*) :: fnamein 
   character (len=:), allocatable :: fortran_fnamein
-  integer ilen, i
-  integer ifiletype, ier
+  integer *8 ilen, i
+  integer *8 ifiletype, ier
 
   ilen = 0
   do 

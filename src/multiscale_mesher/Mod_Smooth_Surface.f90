@@ -30,12 +30,12 @@ contains
     implicit none
 
     !List of calling arguments
-    integer, intent(in) :: n_Normals
+    integer *8, intent(in) :: n_Normals
     double precision, intent(out) :: coef
     double precision, intent(in) :: All_Normals(3,n_Normals), v(3)
 
     !List of local variables
-    integer count
+    integer *8 count
     double precision n_times, tol, my_dot, norm1, norm2
     n_times=0
     tol=1.0d-10
@@ -60,12 +60,12 @@ contains
 
     !List of calling arguments
     type (Geometry), intent(inout) :: Geometry1
-    integer , intent(in) :: n_order_sf
+    integer *8 , intent(in) :: n_order_sf
 
     !List of local variables
-    integer count,contador_indices
+    integer *8 count,contador_indices
     double precision, allocatable :: Points(:,:), Normal_Vert(:,:)
-    integer, allocatable :: Tri(:,:)
+    integer *8, allocatable :: Tri(:,:)
     double precision P1(3),P2(3),P3(3),P4(3),P5(3),P6(3)
     double precision Pa(3),Pb(3),Pc(3),Pd(3),Pe(3),Pf(3),Pg(3),Ph(3),Pi(3)
     double precision Nor1(3),Nor2(3),Nor3(3),Nor4(3),Nor5(3),Nor6(3)
@@ -74,7 +74,7 @@ contains
     double precision F_x(9),F_y(9),F_z(9),dS(9)
     double precision nP_x(9),nP_y(9),nP_z(9)
     double precision U_x(9),U_y(9),U_z(9),V_x(9),V_y(9),V_z(9)
-    integer m,N,n_order_aux
+    integer *8 m,N,n_order_aux
 
     allocate(Points(3,Geometry1%ntri*15))
     allocate(Normal_Vert(3,Geometry1%ntri*15))
@@ -201,7 +201,7 @@ contains
     double precision U_x(Geometry1%n_order_sf),U_y(Geometry1%n_order_sf),U_z(Geometry1%n_order_sf)
     double precision V_x(Geometry1%n_order_sf),V_y(Geometry1%n_order_sf),V_z(Geometry1%n_order_sf)
 
-    integer :: count,n_order_sf, itype, npols, norder_smooth,npol_smooth
+    integer *8 :: count,n_order_sf, itype, npols, norder_smooth,npol_smooth
     double precision, allocatable :: umatr(:,:),vmatr(:,:)
 
 
@@ -296,17 +296,17 @@ subroutine find_smooth_surface(Geometry1, Feval_stuff_1, adapt_flag, ier)
   !List of calling arguments
   type (Geometry), intent(inout) :: Geometry1
   type ( Feval_stuff ), pointer :: Feval_stuff_1
-  integer, intent(in) :: adapt_flag
+  integer *8, intent(in) :: adapt_flag
 
   !List of local variables
-  integer :: flag,maxiter,ipoint,count,n_order_sf,itri
+  integer *8 :: flag,maxiter,ipoint,count,n_order_sf,itri
   double precision :: h(Geometry1%n_Sf_points),tol
   !double precision :: Norm_N
   double precision :: r_t(3,Geometry1%n_Sf_points)
   double precision :: F(Geometry1%n_Sf_points)
   double precision :: grad_F(3,Geometry1%n_Sf_points)
   double precision :: dVdu(3),dVdv(3),dhdu,dhdv,h_var
-  integer ier
+  integer *8 ier
 
   ier = 0
 
@@ -474,12 +474,12 @@ subroutine My_Newton(x,tol,maxiter,Geometry1,flag, &
 
   !List of calling arguments
   type (Geometry), intent(in) :: Geometry1
-  integer, intent(in) :: maxiter
+  integer *8, intent(in) :: maxiter
   double precision, intent(inout) :: x(Geometry1%n_Sf_points)
   double precision, intent(in) :: tol
-  integer, intent(out) :: flag
+  integer *8, intent(out) :: flag
   type ( Feval_stuff ), pointer :: Feval_stuff_1      !! data type that
-  integer, intent(in) :: adapt_flag
+  integer *8, intent(in) :: adapt_flag
   double precision, intent(inout) :: r_t(3,Geometry1%n_Sf_points)
   double precision, intent(inout) :: grad_F(3,Geometry1%n_Sf_points)
 
@@ -503,10 +503,10 @@ subroutine My_Newton(x,tol,maxiter,Geometry1,flag, &
   !   
   
   !List of local variables
-  integer count,count2
+  integer *8 count,count2
   double precision F(Geometry1%n_Sf_points)
   double precision :: dF(Geometry1%n_Sf_points), err(Geometry1%n_Sf_points)
-  integer  flag_con(Geometry1%n_Sf_points)
+  integer *8  flag_con(Geometry1%n_Sf_points)
 
   ! initialize the errors and convergence flags
   do count2 = 1,Geometry1%n_Sf_points
@@ -592,7 +592,7 @@ end subroutine My_Newton
     double precision, intent(out) :: err_rel
 
     !List of local variables
-    integer umio,count1,count2,flag,n_order_sf
+    integer *8 umio,count1,count2,flag,n_order_sf
     double precision  F,Ex,Ey,Ez,R,x,y,z,pi,w,nx,ny,nz
 
     pi=3.141592653589793238462643383d0
@@ -635,8 +635,8 @@ end subroutine My_Newton
         dF(Geometry1%n_Sf_points)
     type ( Feval_stuff ), pointer :: Feval_stuff_1
     
-    integer, intent(in) :: adapt_flag
-    integer, intent(in) :: flag_con(Geometry1%n_Sf_points)
+    integer *8, intent(in) :: adapt_flag
+    integer *8, intent(in) :: flag_con(Geometry1%n_Sf_points)
     double precision, intent(inout) :: r_t(3,Geometry1%n_Sf_points), &
         grad_F(3,Geometry1%n_Sf_points)
 
@@ -644,7 +644,7 @@ end subroutine My_Newton
 
     !List of local variables
     !double precision Norm_N
-    integer :: count, ipointer, ntarg
+    integer *8 :: count, ipointer, ntarg
     double precision, allocatable :: r_t2(:,:),v_norm(:,:),grad_F2(:,:),F2(:)
 
     allocate(r_t2(3,Geometry1%n_Sf_points-sum(flag_con)))
@@ -715,9 +715,9 @@ end subroutine My_Newton
 
     !List of local variables
     character ( len=100 ) plot_name
-    integer count,contador_indices
+    integer *8 count,contador_indices
     double precision, allocatable :: Points(:,:), Normal_Vert(:,:)
-    integer, allocatable :: Tri(:,:)
+    integer *8, allocatable :: Tri(:,:)
     double precision, allocatable :: h_new(:),h_tri(:),h_1(:),h_2(:),h_3(:)
     double precision, allocatable :: h_4(:)
 
@@ -730,8 +730,8 @@ end subroutine My_Newton
     double precision nP_x(9),nP_y(9),nP_z(9)
     double precision U_x(9),U_y(9),U_z(9),V_x(9),V_y(9),V_z(9)
     double precision, allocatable :: ximat(:,:)
-    integer m,N,n_order_aux,n_order_sf,istart
-    integer nover,norder, itmp
+    integer *8 m,N,n_order_aux,n_order_sf,istart
+    integer *8 nover,norder, itmp
 
     n_order_sf=Geometry1%n_order_sf
 

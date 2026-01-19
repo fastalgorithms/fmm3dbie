@@ -65,8 +65,8 @@ type, public :: TreeLRD
                                                             !! of the tree in the usual contiguous order
     real ( kind = 8 ), pointer :: W_sgmas_mem(:) => null () !! Pointer to a big array that contains all the values of sigma
                                                             !! associated to each centroid
-    integer  :: ntot_W_Pts_mem                  !! Total number of points (centroids) on the tree
-    integer :: ntot_W_sgmas_mem                !! Total number of sigmas (same as centroids...)
+    integer *8  :: ntot_W_Pts_mem                  !! Total number of points (centroids) on the tree
+    integer *8 :: ntot_W_sgmas_mem                !! Total number of sigmas (same as centroids...)
 
 end type TreeLRD
 
@@ -81,12 +81,12 @@ type, public :: Box
     real ( kind = 8 ) Box_size                            !! Size of the box (x_max-x_min)
     real ( kind = 8 ), pointer :: Points(:,:) => null ()  !! Array to points inside the box, size will be (3,n_points)
     real ( kind = 8 ), pointer :: sgmas(:) => null ()     !! Values of sigma associated to each point
-    integer , allocatable :: triangles_box(:),triangles_box2(:)!! Triangles on a given cube (notice that a triangle can be contained in several cubes)
-    integer , allocatable :: contour(:)       !! this is the contour of triangles_box2
+    integer *8 , allocatable :: triangles_box(:),triangles_box2(:)!! Triangles on a given cube (notice that a triangle can be contained in several cubes)
+    integer *8 , allocatable :: contour(:)       !! this is the contour of triangles_box2
     logical :: is_leaf                                    !! This flag indicates if the box is a leaf node
     logical :: primary_violator                           !! This flag is used to build a level restricted tree
     logical :: secondary_violator                         !! This flag is used to build a level restricted tree
-    integer n_points                         !! This number indicates the number of points inside the box
+    integer *8 n_points                         !! This number indicates the number of points inside the box
     type ( Box_array ) Children(8)                        !! This concains pointers to child boxes
     type ( Box_array ) Colleague(27)                      !! This contains pointers to Colleague boxes
     type ( Box_array ) Nearest(56)                        !! This contains pointers to Colleague boxes
@@ -149,8 +149,8 @@ implicit none
 
     !List of calling arguments
     type ( TreeLRD ), pointer :: TreeLRD_1          !! pointer to null where the tree will be allocated
-    integer , intent(in) :: n           !! number of points to allocate in the tree
-    integer , intent(in) :: n_max_leaf  !! maximum number of points allowed in a box to stop splitting
+    integer *8 , intent(in) :: n           !! number of points to allocate in the tree
+    integer *8 , intent(in) :: n_max_leaf  !! maximum number of points allowed in a box to stop splitting
     real ( kind = 8 ), intent(in) :: Pts(3,n)       !! real matrix with the points that will be allocated in the tree
     real ( kind = 8 ), intent(in) :: sgmas(n)       !! real matrix with the values of sigma associated to each source
 
@@ -204,10 +204,10 @@ implicit none
 
     !List of calling arguments
     type ( Box ), pointer :: Current_box              !! pointer to the box that we want to split
-    integer , intent(in) :: n_max_leaf    !! maximum number of points allowed in a box to stop splitting
+    integer *8 , intent(in) :: n_max_leaf    !! maximum number of points allowed in a box to stop splitting
 
     !List of local variables
-    integer  count1
+    integer *8  count1
 
         if (Current_box%n_points>n_max_leaf) then
             call subdivide_box_once(Current_box)
@@ -230,7 +230,7 @@ implicit none
     type ( Box ), pointer :: Current_box          !! Pointer to the subtree that we want to set up
 
     !List of local variables
-    integer  count1,count2,ipointer,num_col
+    integer *8  count1,count2,ipointer,num_col
     logical answer
 
         ipointer=1
@@ -273,7 +273,7 @@ implicit none
     type ( Box ), pointer :: Current_box          !! Pointer to the subtree that we want to set up
 
     !List of local variables
-    integer  count1
+    integer *8  count1
 
         if (Current_box%is_leaf) then
             call setup_nearest_leaf(Current_box)
@@ -297,7 +297,7 @@ implicit none
     type ( Box ), pointer :: Current_box          !! Pointer to the subtree that we want to set up
 
     !List of local variables
-    integer  count1,count2,ipointer
+    integer *8  count1,count2,ipointer
     type ( Box ), pointer :: aux_box
     logical answer
 
@@ -379,8 +379,8 @@ implicit none
     type ( Box ), pointer :: Current_box  !! pointer to the box that we want to split
 
     !List of local variables
-    integer  count1,count2,count3,count_aux
-    integer  n_part_array(2,2,2)    !! This will contain the number of points on each child
+    integer *8  count1,count2,count3,count_aux
+    integer *8  n_part_array(2,2,2)    !! This will contain the number of points on each child
     real ( kind = 8 ) r_aux(3),d_aux
 
         Current_box%is_leaf=(.false.)       !! Declare the current box as not leaf node
@@ -552,7 +552,7 @@ implicit none
     type ( Box ), pointer :: Current_box    !! Pointer to the current box
 
     !List of local variables
-    integer  count1
+    integer *8  count1
 
         Current_box%primary_violator=.false.
         Current_box%secondary_violator=.false.
@@ -575,7 +575,7 @@ implicit none
     type ( Box ), pointer :: Current_box    !! Pointer to the current box
 
     !List of local variables
-    integer  count1,count2
+    integer *8  count1,count2
 
         if (Current_box%is_leaf) then
             do count1=1,27
@@ -603,7 +603,7 @@ implicit none
     type ( Box ), pointer :: Box_1,Box_2
 
     !List of local variables
-    integer count1
+    integer *8 count1
 
         if (is_touching(Box_1,Box_2)) then
             if (is_primary_violating(Box_1,Box_2)) then
@@ -652,7 +652,7 @@ implicit none
     type (Box), pointer :: Current_box
 
     !List of local variables
-    integer  count1,count2
+    integer *8  count1,count2
 
         if (Current_box%primary_violator) then      !! First check if there is something to fix in the current box.
                                                     !! if not it will call the recurson to all children
@@ -686,7 +686,7 @@ implicit none
     type ( Box ), pointer :: Current_box
 
     !List of local variables
-    integer count1,count2
+    integer *8 count1,count2
 
         if ((Current_box%is_leaf).and.(.not.(Current_box%primary_violator))) then
             do count1=1,27
@@ -716,7 +716,7 @@ implicit none
     type ( Box ), pointer :: Box_1,Box_2
 
     !List of local variables
-    integer  count1
+    integer *8  count1
 
         if (is_touching(Box_1,Box_2)) then
             if (is_secondary_violating(Box_1,Box_2)) then
@@ -762,7 +762,7 @@ implicit none
     type (Box), pointer :: Current_box
 
     !List of local variables
-    integer  count1,count2
+    integer *8  count1,count2
 
         if (Current_box%secondary_violator) then
             Current_box%secondary_violator=.false.
@@ -796,7 +796,7 @@ implicit none
     type (Box), pointer :: Current_box
 
     !List of local variables
-    integer  count1
+    integer *8  count1
 
         if (Current_box%is_leaf) then
             call flag_primary_violators(Current_box)
@@ -821,10 +821,10 @@ implicit none
 
     !List of calling arguments
     type (Box), pointer :: Box_1,Box_2
-    integer  number_colleague
+    integer *8  number_colleague
 
     !List of local variables
-    integer  num_points,count1,count2,ipointer
+    integer *8  num_points,count1,count2,ipointer
     real ( kind = 8 ) size_aux
 
 
@@ -939,7 +939,7 @@ implicit none
     type ( TreeLRD ), pointer :: TreeLRD_1
 
     !List of local variables
-    integer  num_points,count1,count2,ipointer
+    integer *8  num_points,count1,count2,ipointer
 
         num_points=total_number_Points(TreeLRD_1%Main_box)
         TreeLRD_1%ntot_W_Pts_mem=num_points
@@ -968,10 +968,10 @@ implicit none
     !List of calling arguments
     type ( TreeLRD ), pointer :: TreeLRD_1
     type (Box), pointer :: Current_box
-    integer , intent(inout) :: ipointer
+    integer *8 , intent(inout) :: ipointer
 
     !List of local variables
-    integer  count1,count2
+    integer *8  count1,count2
 
         if (.not.(Current_box%is_leaf)) then
             do count1=1,8
@@ -1009,7 +1009,7 @@ implicit none
     type (Box), pointer :: Current_box
 
     !List of local variables
-    integer  count1,num_box_aux
+    integer *8  count1,num_box_aux
 
         if (Current_box%is_leaf) then
             num_box_aux=Current_box%n_points
@@ -1034,7 +1034,7 @@ implicit none
     type (Box), pointer :: Current_box
 
     !List of local variables
-    integer  count1,max_depth,max_depth_vect(8)
+    integer *8  count1,max_depth,max_depth_vect(8)
 
         if (Current_box%is_leaf) then
             max_depth=1
@@ -1057,10 +1057,10 @@ implicit none
 
     !List of calling arguments
     type (Box), pointer :: Current_box
-    integer , intent(in) :: n_level
+    integer *8 , intent(in) :: n_level
 
     !List of local variables
-    integer  count1,num_box_aux
+    integer *8  count1,num_box_aux
         
 	 if (n_level.eq.1) then
             num_box_aux=1
@@ -1086,7 +1086,7 @@ implicit none
     type (Box), pointer :: Current_box
 
     !List of local variables
-    integer  count1,num_box_aux
+    integer *8  count1,num_box_aux
         
         if (Current_box%is_leaf) then
             num_box_aux=1
@@ -1111,7 +1111,7 @@ implicit none
     type (Box), pointer :: Current_box
 
     !List of local variables
-    integer  count1,num_box_aux
+    integer *8  count1,num_box_aux
         if (Current_box%is_leaf) then
             num_box_aux=1
         else
@@ -1160,7 +1160,7 @@ implicit none
     type (Box), pointer :: Current_box
 
     !List of local variables
-    integer  count1
+    integer *8  count1
 
     if (.not.(Current_box%is_leaf)) then
         do count1=1,8
@@ -1187,11 +1187,11 @@ implicit none
 
     !List of calling arguments
     type ( TreeLRD ), pointer :: TreeLRD_1
-    integer , intent(in) :: n_boxes
+    integer *8 , intent(in) :: n_boxes
     real ( kind = 8 ), intent(inout) :: centers(3,n_boxes),sgmas_2(n_boxes)
 
     !List of local variables
-    integer  ipointer
+    integer *8  ipointer
 
     ipointer=1
     call all_centers_sgmas_box(TreeLRD_1%Main_box,centers,sgmas_2,n_boxes,ipointer)
@@ -1205,12 +1205,12 @@ implicit none
 
     !List of calling arguments
     type ( Box ), pointer :: Current_box
-    integer , intent(in) :: n_boxes
+    integer *8 , intent(in) :: n_boxes
     real ( kind = 8 ), intent(inout) :: centers(3,n_boxes),sgmas_2(n_boxes)
-    integer , intent(inout) :: ipointer
+    integer *8 , intent(inout) :: ipointer
 
     !List of local variables
-    integer  count1
+    integer *8  count1
 
     if (Current_box%is_leaf) then
         centers(:,ipointer)=Current_box%Box_center
@@ -1237,7 +1237,7 @@ implicit none
     type (Box), pointer :: Current_box
 
     !List of local variables
-    integer count1,count2
+    integer *8 count1,count2
 
 
     write (*,*) 'Box size:', Current_box%Box_size
@@ -1286,7 +1286,7 @@ function CBS(p_box,num) result(bool_aux)
 implicit none
 
     type ( Box ), pointer :: p_box              !! pointer to the box that we want to split
-    integer , intent(in) :: num
+    integer *8 , intent(in) :: num
     logical bool_aux, bool_aux1
 
 
@@ -1456,7 +1456,7 @@ implicit none
 
     !List of local variables
     real ( kind = 8 ) P_vect(3,3,3)
-    integer count1,count2,count3
+    integer *8 count1,count2,count3
     logical bool_aux
 
         if (Current_box%is_leaf) then
@@ -2057,80 +2057,80 @@ implicit none
 
             endif
 
-            if ( ((CBS(Current_box,2)).and.(CBS(Current_box,5)).and.(CBS(Current_box,11)))) then
+            if ( ((CBS(Current_box,2_8)).and.(CBS(Current_box,5_8)).and.(CBS(Current_box,11_8)))) then
                 P_vect(2,1,1)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,5)).and.(CBS(Current_box,8)).and.(CBS(Current_box,17)))) then
+            if ( ((CBS(Current_box,5_8)).and.(CBS(Current_box,8_8)).and.(CBS(Current_box,17_8)))) then
                 P_vect(2,3,1)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,5)).and.(CBS(Current_box,4)).and.(CBS(Current_box,13)))) then
+            if ( ((CBS(Current_box,5_8)).and.(CBS(Current_box,4_8)).and.(CBS(Current_box,13_8)))) then
                 P_vect(1,2,1)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,5)).and.(CBS(Current_box,6)).and.(CBS(Current_box,15)))) then
+            if ( ((CBS(Current_box,5_8)).and.(CBS(Current_box,6_8)).and.(CBS(Current_box,15_8)))) then
                 P_vect(3,2,1)=-1.0d0
             endif
 
 
 
 
-            if ( ((CBS(Current_box,20)).and.(CBS(Current_box,23)).and.(CBS(Current_box,11)))) then
+            if ( ((CBS(Current_box,20_8)).and.(CBS(Current_box,23_8)).and.(CBS(Current_box,11_8)))) then
                 P_vect(2,1,3)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,23)).and.(CBS(Current_box,26)).and.(CBS(Current_box,17)))) then
+            if ( ((CBS(Current_box,23_8)).and.(CBS(Current_box,26_8)).and.(CBS(Current_box,17_8)))) then
                 P_vect(2,3,3)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,22)).and.(CBS(Current_box,23)).and.(CBS(Current_box,13)))) then
+            if ( ((CBS(Current_box,22_8)).and.(CBS(Current_box,23_8)).and.(CBS(Current_box,13_8)))) then
                 P_vect(1,2,3)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,23)).and.(CBS(Current_box,24)).and.(CBS(Current_box,15)))) then
+            if ( ((CBS(Current_box,23_8)).and.(CBS(Current_box,24_8)).and.(CBS(Current_box,15_8)))) then
                 P_vect(3,2,3)=-1.0d0
             endif
 
 
-            if ( ((CBS(Current_box,10)).and.(CBS(Current_box,11)).and.(CBS(Current_box,13)))) then
+            if ( ((CBS(Current_box,10_8)).and.(CBS(Current_box,11_8)).and.(CBS(Current_box,13_8)))) then
                 P_vect(1,1,2)=-1.0d0
             endif
 
 
-            if ( ((CBS(Current_box,13)).and.(CBS(Current_box,16)).and.(CBS(Current_box,17)))) then
+            if ( ((CBS(Current_box,13_8)).and.(CBS(Current_box,16_8)).and.(CBS(Current_box,17_8)))) then
                 P_vect(1,3,2)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,11)).and.(CBS(Current_box,12)).and.(CBS(Current_box,15)))) then
+            if ( ((CBS(Current_box,11_8)).and.(CBS(Current_box,12_8)).and.(CBS(Current_box,15_8)))) then
                 P_vect(3,1,2)=-1.0d0
             endif
 
-            if ( ((CBS(Current_box,17)).and.(CBS(Current_box,18)).and.(CBS(Current_box,15)))) then
+            if ( ((CBS(Current_box,17_8)).and.(CBS(Current_box,18_8)).and.(CBS(Current_box,15_8)))) then
                 P_vect(3,3,2)=-1.0d0
             endif
 
-            if (CBS(Current_box,5)) then
+            if (CBS(Current_box,5_8)) then
                 P_vect(2,2,1)=-1.0d0
             endif
 
-            if (CBS(Current_box,23)) then
+            if (CBS(Current_box,23_8)) then
                 P_vect(2,2,3)=-1.0d0
             endif
 
-            if (CBS(Current_box,11)) then
+            if (CBS(Current_box,11_8)) then
                 P_vect(2,1,2)=-1.0d0
             endif
 
-            if (CBS(Current_box,17)) then
+            if (CBS(Current_box,17_8)) then
                 P_vect(2,3,2)=-1.0d0
             endif
 
-            if (CBS(Current_box,13)) then
+            if (CBS(Current_box,13_8)) then
                 P_vect(1,2,2)=-1.0d0
             endif
 
-            if (CBS(Current_box,15)) then
+            if (CBS(Current_box,15_8)) then
                 P_vect(3,2,2)=-1.0d0
             endif
 
@@ -2228,9 +2228,9 @@ end
 Recursive Subroutine MergeSort(temp, Begin, Finish, list)
 implicit none
 
-    integer,intent(inout) :: Begin,list(:),temp(:)
-    integer,intent(in) :: Finish
-    integer :: Middle
+    integer *8,intent(inout) :: Begin,list(:),temp(:)
+    integer *8,intent(in) :: Finish
+    integer *8 :: Middle
         if (Finish-Begin<2) then    !if run size =1
            return                   !it is sorted
         else
@@ -2248,10 +2248,10 @@ end
 Subroutine Merge(list, Begin, Middle, Finish, temp)
 implicit none
 
-    integer, intent(inout) :: list(:),temp(:)
-    integer, intent(in) ::Begin,Middle,Finish
+    integer *8, intent(inout) :: list(:),temp(:)
+    integer *8, intent(in) ::Begin,Middle,Finish
 
-    integer kx,ky,kz
+    integer *8 kx,ky,kz
         ky=Begin
         kz=Middle
         !! While there are elements in the left or right runs...
@@ -2271,9 +2271,9 @@ end
 function Unique(list)
 implicit none
 
-    integer :: strt,fin,N
-    integer, intent(inout) :: list(:)
-    integer, allocatable  :: unique(:),work(:)
+    integer *8 :: strt,fin,N
+    integer *8, intent(inout) :: list(:)
+    integer *8, allocatable  :: unique(:),work(:)
     logical,allocatable :: mask(:)
         ! sort
         work=list;strt=1;N=size(list);fin=N+1
@@ -2293,8 +2293,8 @@ recursive subroutine fix_triangles_box(Current_box)
 implicit none
 
     type (Box), pointer :: Current_box
-    integer, allocatable :: tri_redundant(:)
-    integer count1,n_aux,icount,n_aux2
+    integer *8, allocatable :: tri_redundant(:)
+    integer *8 count1,n_aux,icount,n_aux2
 
 
         if (Current_box%is_leaf) then
@@ -2341,10 +2341,10 @@ recursive subroutine fix_triangles_box2(Current_box,Boundary,nt)
 implicit none
 
     type (Box), pointer :: Current_box
-    integer, allocatable :: tri_redundant(:)
-    integer count1,n_aux,icount,n_aux2
-    integer, intent(in) :: nt
-    integer , intent(in) :: Boundary(3,nt)      !! data type that
+    integer *8, allocatable :: tri_redundant(:)
+    integer *8 count1,n_aux,icount,n_aux2
+    integer *8, intent(in) :: nt
+    integer *8 , intent(in) :: Boundary(3,nt)      !! data type that
 
         if (.not.(Current_box%is_leaf)) then
             do count1=1,8
@@ -2385,14 +2385,14 @@ subroutine set_contour(Current_box,Boundary,nt)
 implicit none
 
     !List of calling arguments
-    integer, intent(in) :: nt
+    integer *8, intent(in) :: nt
     type (Box), pointer :: Current_box
-    integer , intent(in) :: Boundary(3,nt)      !! data type that contains all the information about the geometry
+    integer *8 , intent(in) :: Boundary(3,nt)      !! data type that contains all the information about the geometry
 
     !List of local variables
-    integer n_aux1,n_aux2,count1,count2,icount,icount2
-    integer, allocatable :: contour_aux(:),contour_aux2(:),contour_aux3(:)
-    integer, allocatable :: contour(:)
+    integer *8 n_aux1,n_aux2,count1,count2,icount,icount2
+    integer *8, allocatable :: contour_aux(:),contour_aux2(:),contour_aux3(:)
+    integer *8, allocatable :: contour(:)
 
 !    pointer_out%triangles_box2 !Esta es la lista de triángulos locales
     n_aux1=size(Current_box%triangles_box2)

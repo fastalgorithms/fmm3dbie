@@ -70,7 +70,7 @@ c
 c     return the number of polynomials of a given type
 c     up to degree ndeg
 c      
-      integer n, npol, ndeg
+      integer *8 n, npol, ndeg
       character type
 
       n = ndeg + 1
@@ -93,7 +93,7 @@ c
 c     return the number of polynomials of a given type
 c     up to degree ndeg
 c      
-      integer n, npol, ndeg
+      integer *8 n, npol, ndeg
       character type
 
       n = ndeg + 1
@@ -113,10 +113,10 @@ c
 
 
       subroutine polytens_pow2ind_3d(ndeg,type,ip2ind)
-      integer ndeg, ip2ind(ndeg+1,ndeg+1,ndeg+1)
+      integer *8 ndeg, ip2ind(ndeg+1,ndeg+1,ndeg+1)
       character type
 
-      integer i, j, k, ipol
+      integer *8 i, j, k, ipol
 
       do i = 1,ndeg+1
          do j = 1,ndeg+1
@@ -155,10 +155,10 @@ c
 c
 c
       subroutine polytens_ind2pow(ndim,ndeg,type,iind2p)
-      integer ndeg, iind2p(ndim,*)
+      integer *8 ndim, ndeg, iind2p(ndim,*)
       character type
 
-      integer i
+      integer *8 i
 
       if (ndim.eq.1) then
          do i=1,ndeg+1
@@ -177,10 +177,10 @@ c
 c
 c
       subroutine polytens_ind2pow_3d(ndeg,type,iind2p)
-      integer ndeg, iind2p(3,*)
+      integer *8 ndeg, iind2p(3,*)
       character type
 
-      integer i, j, k, ipol
+      integer *8 i, j, k, ipol
 
 
       if (type .eq. 'f' .or. type .eq. 'F') then
@@ -216,10 +216,10 @@ c
 c
 c
       subroutine polytens_pow2ind_2d(ndeg,type,ip2ind)
-      integer ndeg, ip2ind(ndeg+1,ndeg+1)
+      integer *8 ndeg, ip2ind(ndeg+1,ndeg+1)
       character type
 
-      integer i, j, ipol
+      integer *8 i, j, ipol
 
       do i = 1,ndeg+1
          do j = 1,ndeg+1
@@ -253,10 +253,10 @@ c
 c
 c
       subroutine polytens_ind2pow_2d(ndeg,type,iind2p)
-      integer ndeg, iind2p(2,*)
+      integer *8 ndeg, iind2p(2,*)
       character type
 
-      integer i, j, ipol
+      integer *8 i, j, ipol
 
 
       if (type .eq. 'f' .or. type .eq. 'F') then
@@ -298,7 +298,7 @@ c          itype=3 only construct u
 c          itype=4 only construct v
       
       implicit none
-      integer ndim,ipoly, itype, n, ldu, ldv
+      integer *8 ndim,ipoly, itype, n, ldu, ldv
       character type
       real *8 x(ndim,*),w(*)
       real *8 u(ldu,*), v(ldv,*)
@@ -333,12 +333,12 @@ c          itype=3 only construct u
 c          itype=4 only construct v
       
       implicit none
-      integer ipoly, itype, n, ldu, ldv
+      integer *8 ipoly, itype, n, ldu, ldv
       character type
       real *8 x(2,*),w(*)
       real *8 u(ldu,*), v(ldv,*)
       real *8 x1d(n), w1d(n), u1d(n,n), v1d(n,n)
-      integer i,j,ipt,itype1d,ii, jo,ipol
+      integer *8 i,j,ipt,itype1d,ii, jo,ipol
       
       itype1d = 0
       if (itype .ge. 1) then
@@ -461,12 +461,12 @@ c          itype=3 only construct x,w, and u
 c          itype=4 only construct x,w, and v
       
       implicit none
-      integer ipoly, itype, n, ldu, ldv
+      integer *8 ipoly, itype, n, ldu, ldv
       character type
       real *8 x(3,*),w(*)
       real *8 u(ldu,*), v(ldv,*)
       real *8 x1d(n), w1d(n), u1d(n,n), v1d(n,n)
-      integer i,j,ipt,itype1d, k, io, jo, ko, ipol
+      integer *8 i,j,ipt,itype1d, k, io, jo, ko, ipol
       
       itype1d = 0
       if (itype .ge. 1) then
@@ -601,9 +601,9 @@ c     type = 'F' full degree polynomials ((ndeg+1)**3)
 c     type = 'T' total degree polynomials ((ndeg+1)*(ndeg+2)*(ndeg+3)/6)
 c      
       implicit none
-      integer ipoly,ndeg,npols
+      integer *8 ipoly,ndeg,npols
       real *8 x(2),pols(*),px(ndeg+1),py(ndeg+1)
-      integer i,j,ipol,n
+      integer *8 i,j,ipol,n
       character type
 
       n = ndeg + 1
@@ -643,9 +643,9 @@ c     type = 'F' full degree polynomials ((ndeg+1)**3)
 c     type = 'T' total degree polynomials ((ndeg+1)*(ndeg+2)*(ndeg+3)/6)
 c      
       implicit none
-      integer ipoly,ndeg,npols
+      integer *8 ipoly,ndeg,npols
       real *8 x(3),pols(*),px(ndeg+1),py(ndeg+1),pz(ndeg+1)
-      integer i,j,ipol, k, n
+      integer *8 i,j,ipol, k, n
       character type
 
       n = ndeg + 1
@@ -692,10 +692,10 @@ c     type = 'F' full degree polynomials ((ndeg+1)**3)
 c     type = 'T' total degree polynomials ((ndeg+1)*(ndeg+2)*(ndeg+3)/6)
 c      
       implicit none
-      integer ipoly,ndeg,npols,idim
+      integer *8 ipoly,ndeg,npols,idim
       real *8 x(2),ders(2,*),px(ndeg+1),py(ndeg+1),tmp(ndeg+1)
       real *8 pxder(ndeg+1),pyder(ndeg+1),pols(*)
-      integer i,j,ipol, k, n
+      integer *8 i,j,ipol, k, n
       character type
 
       n = ndeg + 1
@@ -740,11 +740,11 @@ c
 c      
 
       implicit none
-      integer ipoly, ndeg, lddmat
+      integer *8 ipoly, ndeg, lddmat
       real *8 dmat(lddmat,ndeg+1)
 c     local
       real *8 polin(ndeg+1), polout(ndeg+1)
-      integer i, j
+      integer *8 i, j
 
       do i = 1,ndeg+1
          do j = 1,ndeg+1
@@ -767,11 +767,11 @@ c     local
 
       subroutine polycoeff_d2mat(ipoly,ndeg,dmat,lddmat)
       implicit none
-      integer ipoly, ndeg, lddmat
+      integer *8 ipoly, ndeg, lddmat
       real *8 dmat(lddmat,ndeg+1)
 c     local
       real *8 polin(ndeg+1), polout(ndeg+1)
-      integer i, j
+      integer *8 i, j
 
       do i = 1,ndeg+1
          do j = 1,ndeg+1
@@ -799,12 +799,12 @@ c     local
       subroutine polytens_lapmat_2d(ipoly,ndegin,ndegout,type,
      1     lapmat,ldlapmat)
       implicit none
-      integer ipoly, ndegin, ndegout, ldlapmat
+      integer *8 ipoly, ndegin, ndegout, ldlapmat
       character type
       real *8 lapmat(ldlapmat,*)
 c     local
       real *8 lap1d(ndegout+1,ndegin+1)
-      integer ldlap1d, io, ii, jo, ji, iopol, iipol
+      integer *8 ldlap1d, io, ii, jo, ji, iopol, iipol
 
       do ii = 1,ndegin+1
          do io = 1,ndegout+1
@@ -870,12 +870,12 @@ c     local
       subroutine polytens_lapmat_3d(ipoly,ndegin,ndegout,type,
      1     lapmat,ldlapmat)
       implicit none
-      integer ipoly, ndegin, ndegout, ldlapmat
+      integer *8 ipoly, ndegin, ndegout, ldlapmat
       character type
       real *8 lapmat(ldlapmat,*)
 c     local
       real *8 lap1d(ndegout+1,ndegin+1)
-      integer ldlap1d, io, ii, jo, ji, ko, ki, iopol, iipol
+      integer *8 ldlap1d, io, ii, jo, ji, ko, ki, iopol, iipol
 
       ldlap1d = ndegout+1
 
@@ -957,11 +957,11 @@ c     local
       subroutine polytens_eyemat_2d(ndegin,ndegout,type,
      1     eyemat,ldeyemat)
       implicit none
-      integer ndegin, ndegout, ldeyemat
+      integer *8 ndegin, ndegout, ldeyemat
       character type
       real *8 eyemat(ldeyemat,*)
 c     local
-      integer io, ii, jo, ji, iopol, iipol
+      integer *8 io, ii, jo, ji, iopol, iipol
 
       if (type .eq. 'f' .or. type .eq. 'F') then
          iipol = 0
@@ -1005,11 +1005,11 @@ c     local
       subroutine polytens_eyemat_3d(ndegin,ndegout,type,
      1     eyemat,ldeyemat)
       implicit none
-      integer ndegin, ndegout, ldeyemat
+      integer *8 ndegin, ndegout, ldeyemat
       character type
       real *8 eyemat(ldeyemat,*)
 c     local
-      integer io, ii, jo, ji, ko, ki, iopol, iipol
+      integer *8 io, ii, jo, ji, ko, ki, iopol, iipol
 
       if (type .eq. 'f' .or. type .eq. 'F') then
          iipol = 0
@@ -1071,13 +1071,13 @@ c     cin, get the 2d coefficients of the slice of that polynomial
 c     where x_idim = val
 c     
       implicit none
-      integer ipoly,ndeg, idim, ldcin, nfun, ldcout, ifdiff, lddcout
+      integer *8 ipoly,ndeg, idim, ldcin, nfun, ldcout, ifdiff, lddcout
       character type
       real *8 val
       complex *16 cin(ldcin,*), cout(ldcout,*), dcout(lddcout,*)
 c     local
-      integer iipol, iopol, ii, ji, ki, io, jo, ko, n, npol2, jpol
-      integer ilist(ndeg+1,ndeg+1), ifun
+      integer *8 iipol, iopol, ii, ji, ki, io, jo, ko, n, npol2, jpol
+      integer *8 ilist(ndeg+1,ndeg+1), ifun
       real *8 pols(ndeg+1), ders(ndeg+1)
       complex *16 cv, zero, dv
       data zero / (0.0d0,0.0d0) /
@@ -1214,7 +1214,7 @@ c
 c     nd - dimensionality of the coefficients
 c     polin(nd,*) - real *8 array. nd sets of tensor Legendre
 c       coefficients in the legetens ordering
-c     ndeg - integer, degree of polynomial basis
+c     ndeg - integer *8, degree of polynomial basis
 c     type - character, 'T' gives total degree polynomials
 c       'F' gives full degree
 c
@@ -1226,15 +1226,15 @@ c       Laplacian of the input coefficients (of same degree)
 c      
 
       implicit none
-      integer :: ipoly, nd, ndeg
+      integer *8 :: ipoly, nd, ndeg
       character :: type
       real *8 :: polin(nd,*), polout(nd,*)
 c     local
       real *8 :: dp, d2i, d2j, d2k
       real *8, allocatable :: dxxmat(:,:)
-      integer :: n, i, j, npol, iii, ip, jp, kp, id, jd, kd, ind
-      integer :: jjj
-      integer, allocatable :: ip2ind(:,:,:), ind2p(:,:)
+      integer *8 :: n, i, j, npol, iii, ip, jp, kp, id, jd, kd, ind
+      integer *8 :: jjj
+      integer *8, allocatable :: ip2ind(:,:,:), ind2p(:,:)
 
       n = ndeg+1
       allocate(dxxmat(0:ndeg,0:ndeg))
@@ -1327,7 +1327,7 @@ c
 c     dmat - real *8 (ndeg+1,ndeg+1)
 c       differentiation martix in 1d
 c
-c     idir - integer
+c     idir - integer *8
 c       whether to compute x,y,or z derivative of expansion
 c       idir = 1, compute x derivative
 c       idir = 2, compute y derivative
@@ -1336,9 +1336,10 @@ c
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 dmat(ndeg+1,ndeg+1),polin(*),polout(*)
       real *8 coef1(ndeg+1,ndeg+1,ndeg+1),coef2(ndeg+1,ndeg+1,ndeg+1)
-      integer iind2pow(3,(ndeg+1)**3)
+      integer *8 iind2pow(3,(ndeg+1)**3)
       character ttype
 
 
@@ -1415,6 +1416,7 @@ c
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 fvals(nd,norder**ndim)
       real *8 fcoefs(nd,norder**ndim),umat(norder,norder)
 
@@ -1438,6 +1440,7 @@ c     1D tensor product transformation
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 fvals(nd,norder)
       real *8 fcoefs(nd,norder),umat(norder,norder)
       
@@ -1463,6 +1466,7 @@ c     2D tensor product transformation
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 fvals(nd,norder,norder)
       real *8 fcoefs(nd,norder,norder),umat(norder,norder)
       real *8, allocatable:: fcv(:,:,:)
@@ -1506,6 +1510,7 @@ c
 c
 c
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 fvals(nd,norder,norder,norder)
       real *8 fcoefs(nd,norder,norder,norder),umat(norder,norder)
       real *8, allocatable:: fcvv(:,:,:,:),fccv(:,:,:,:)
@@ -1569,7 +1574,8 @@ c
 c
 c
       implicit real *8 (a-h,o-z)
-      integer iind2p(ndim,npols)
+      implicit integer *8 (i-n)
+      integer *8 iind2p(ndim,npols)
       real *8 rmask(npols)
 
       call polytens_ind2pow(ndim,norder-1,'f',iind2p)

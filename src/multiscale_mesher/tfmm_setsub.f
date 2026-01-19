@@ -24,7 +24,7 @@ c
 c  Input arguments:
 c    - eps: real *8
 c        tolerance requested
-c    - ns: integer
+c    - ns: integer *8
 c        number of sources
 c    - src: real *8 (3,ns)
 c        discretization points on the surface
@@ -32,7 +32,7 @@ c    - srcnorm: real *8 (3,ns)
 c        normal vectors at the discretization points
 c    - wts: real *8 (ns)
 c        quadrature rule for integrating smooth functions
-c    - nt: integer
+c    - nt: integer *8
 c        number of targets
 c    - targs: real *8 (3,nt)
 c        target locations
@@ -51,7 +51,7 @@ c
 c               
 c
       implicit none
-      integer ns, npols, nt, ndtarg
+      integer *8 ns, npols, nt, ndtarg
       real *8 src(3,ns), srcnorm(3,ns), wts(ns)
       real *8 targs(3,nt), sigma(nt), sigma_grad(3,nt)
       real *8 pottarg(nt), gradtarg(3,nt)
@@ -59,33 +59,34 @@ c
       real *8 eps
 
       real *8, allocatable :: charges(:), dipvec(:,:)
-      integer, allocatable :: iboxtarg(:),iboxsrc(:)
-      integer ifcharge,ifdipole
-      integer ifpgh,ifpghtarg
+      integer *8, allocatable :: iboxtarg(:),iboxsrc(:)
+      integer *8 ifcharge,ifdipole
+      integer *8 ifpgh,ifpghtarg
       real *8 tmp(10),val,vgrad(3)
 
-      integer i,j,jpatch,jquadstart,jstart
-      integer ifaddsub
+      integer *8 i,j,jpatch,jquadstart,jstart
+      integer *8 ifaddsub
 
       integer *8 ltree,ipointer(8)
-      integer, allocatable :: itree(:)
-      integer, allocatable :: il1(:),il2(:),ilint(:),il1m2(:),il2m1(:)
+      integer *8, allocatable :: itree(:)
+      integer *8, allocatable :: il1(:),il2(:),ilint(:),il1m2(:)
+      integer *8, allocatable :: il2m1(:)
       real *8, allocatable :: boxsize(:),centers(:,:)
-      integer, allocatable :: isrcse(:,:),isrcper(:)
-      integer, allocatable :: itargse(:,:),itargper(:)
+      integer *8, allocatable :: isrcse(:,:),isrcper(:)
+      integer *8, allocatable :: itargse(:,:),itargper(:)
 
       real *8 expc(3)
-      integer ibox,nexpc,idivflag,iert,ifnear,ii,isend,isep,isource
-      integer isstart,itarg,itend,itstart,itt,jbox,jpt,mhung,mnbors
-      integer iss,l,lpt,mnlist1,mnlist2,mnlist3,mnlist4
-      integer n1m2,n2m1,nadd,nbmax,nboxes,nchild,ndiv,nl2,nlevels
-      integer nlmax,npover,nl1,ntj
-      integer ier,nlmin,iper,ifunif
+      integer *8 ibox,nexpc,idivflag,iert,ifnear,ii,isend,isep,isource
+      integer *8 isstart,itarg,itend,itstart,itt,jbox,jpt,mhung,mnbors
+      integer *8 iss,l,lpt,mnlist1,mnlist2,mnlist3,mnlist4
+      integer *8 n1m2,n2m1,nadd,nbmax,nboxes,nchild,ndiv,nl2,nlevels
+      integer *8 nlmax,npover,nl1,ntj
+      integer *8 ier,nlmin,iper,ifunif
 
-      integer, allocatable :: nlist1(:),list1(:,:)
-      integer, allocatable :: nlist2(:),list2(:,:)
-      integer, allocatable :: nlist3(:),list3(:,:)
-      integer, allocatable :: nlist4(:),list4(:,:)
+      integer *8, allocatable :: nlist1(:),list1(:,:)
+      integer *8, allocatable :: nlist2(:),list2(:,:)
+      integer *8, allocatable :: nlist3(:),list3(:,:)
+      integer *8, allocatable :: nlist4(:),list4(:,:)
       
       complex *16 zdotu
       real *8 pottmp
@@ -93,7 +94,7 @@ c
      1   dtmp2(:,:)
       real *8 radexp,epsfmm
 
-      integer ipars
+      integer *8 ipars
       real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
       real *8 timeinfo_fmm(6)
 
@@ -101,16 +102,20 @@ c
       real *8, allocatable :: srctmp1(:,:),srctmp2(:,:)
       real *8 thresh,ra
       real *8 over4pi
-      integer nss
+      integer *8 nss
 
-      integer nd,ntarg0
+      integer *8 nd,ntarg0
 
       real *8 ttot,done,pi
       real *8 distest, rr, xdis, ydis, zdis, rtest
-      integer ilev, ilevup, jlev, isrc, lbox, llev, n1, ncoll
+      integer *8 ilev, ilevup, jlev, isrc, lbox, llev, n1, ncoll
+      integer *8 int8_1, int8_3
       data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
+
+      int8_1 = 1
+      int8_3 = 3
 
       done = 1
       pi = atan(done)*4
@@ -235,8 +240,8 @@ c    work with sorted potentials and unsort them again later
 c
       allocate(potsort(nt))
       allocate(gradsort(3,nt))
-      call dreorderf(1,nt,pottarg,potsort,itargper)
-      call dreorderf(3,nt,gradtarg,gradsort,itargper)
+      call dreorderf(int8_1,nt,pottarg,potsort,itargper)
+      call dreorderf(int8_3,nt,gradtarg,gradsort,itargper)
 
 
       thresh = 1.0d-14
@@ -470,8 +475,8 @@ C$OMP END PARALLEL DO
 C$      t2 = omp_get_wtime()      
       timeinfo(2) = t2-t1
 
-      call dreorderi(1,nt,potsort,pottarg,itargper)
-      call dreorderi(3,nt,gradsort,gradtarg,itargper)
+      call dreorderi(int8_1,nt,potsort,pottarg,itargper)
+      call dreorderi(int8_3,nt,gradsort,gradtarg,itargper)
 
       
       ttot = timeinfo(1) + timeinfo(2)

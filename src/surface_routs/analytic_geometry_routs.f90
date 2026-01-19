@@ -44,14 +44,14 @@
 !  Input arugments:
 !    - abc: real *8(3)
 !        semi major axes (a,b,c) along the x,y, and z directions
-!    - nabc: integer(3)
+!    - nabc: integer *8(3)
 !        number of patches along the coordinate directions of the
 !        cube (na, nb, nc)
 !    - c0: real *8(3)
 !        center of ellipsoid (x0, y0, z0)
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
@@ -59,17 +59,17 @@
 !                       nodes
 !
 !  Output arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
       implicit none
       real *8, intent(in) :: abc(3), c0(3)
-      integer, intent(in) :: iptype0, nabc(3)
-      integer, intent(in) :: norder
+      integer *8, intent(in) :: iptype0, nabc(3)
+      integer *8, intent(in) :: norder
       
-      integer, intent(out) :: npatches, npts
+      integer *8, intent(out) :: npatches, npts
 
       npatches = 0
       if (iptype0.eq.1) then
@@ -111,32 +111,32 @@
 !  Input arugments:
 !    - abc: real *8(3)
 !        semi major axes (a,b,c) along the x,y, and z directions
-!    - nabc: integer(3)
+!    - nabc: integer *8(3)
 !        number of patches along the coordinate directions of the
 !        cube (na, nb, nc)
 !    - c0: real *8(3)
 !        center of ellipsoid (x0, y0, z0)
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
 !                       nodes
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !  Output arguments:
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch
 !        norders(i) = norder, for all i=1,2,...,npatches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
@@ -159,10 +159,10 @@
 !
       implicit none
       real *8, intent(in) :: abc(3), c0(3)
-      integer, intent(in) :: iptype0, nabc(3), norder, npatches, npts
+      integer *8, intent(in) :: iptype0, nabc(3), norder, npatches, npts
 
-      integer, intent(out) :: norders(npatches), iptype(npatches)
-      integer, intent(out) :: ixyzs(npatches+1)
+      integer *8, intent(out) :: norders(npatches), iptype(npatches)
+      integer *8, intent(out) :: ixyzs(npatches+1)
       real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
 
       real *8, allocatable, target :: skel(:,:,:)
@@ -171,12 +171,12 @@
       real *8 abcuse(3)
       real *8 ause, buse, cuse
       real *8, target :: p2(3), p3(3), p4(1)
-      integer na, nb, nc
+      integer *8 na, nb, nc
 
       procedure (), pointer :: patchpnt
-      integer i
+      integer *8 i
 
-      integer npols
+      integer *8 npols
       
       external xtri_ellipsoid_eval, xquad_ellipsoid_eval
 
@@ -249,13 +249,13 @@
 !  Input arugments:
 !    - a: real *8
 !        radius of the sphere  
-!    - na: integer
+!    - na: integer *8
 !        number of patches along the coordinate directions of the cube
 !    - c0: real *8(3)
 !        center of ellipsoid (x0, y0, z0)
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
@@ -263,19 +263,19 @@
 !                       nodes
 !
 !  Output arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
       implicit none
       real *8, intent(in) :: a, c0(3)
-      integer, intent(in) :: iptype0, na
-      integer, intent(in) :: norder
+      integer *8, intent(in) :: iptype0, na
+      integer *8, intent(in) :: norder
       
-      integer, intent(out) :: npatches, npts
+      integer *8, intent(out) :: npatches, npts
 
-      integer nabc(3)
+      integer *8 nabc(3)
       real *8 abc(3)
 
       abc(1) = a
@@ -310,31 +310,31 @@
 !  Input arugments:
 !    - a: real *8
 !        radius of the sphere  
-!    - na: integer
+!    - na: integer *8
 !        number of patches along the coordinate directions of the cube
 !    - c0: real *8(3)
 !        center of ellipsoid (x0, y0, z0)
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
 !                       nodes
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !  Output arguments:
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch
 !        norders(i) = norder, for all i=1,2,...,npatches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
@@ -357,13 +357,13 @@
 !
       implicit none
       real *8, intent(in) :: a, c0(3)
-      integer, intent(in) :: iptype0, na, norder, npatches, npts
+      integer *8, intent(in) :: iptype0, na, norder, npatches, npts
 
-      integer, intent(out) :: norders(npatches), iptype(npatches)
-      integer, intent(out) :: ixyzs(npatches+1)
+      integer *8, intent(out) :: norders(npatches), iptype(npatches)
+      integer *8, intent(out) :: ixyzs(npatches+1)
       real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
       
-      integer nabc(3)
+      integer *8 nabc(3)
       real *8 abc(3)
 
       nabc(1) = na
@@ -410,23 +410,23 @@
 !        \hat(x) = coefs(2*m+1,2*m+1, 1)
 !        \hat(y) = coefs(2*m+1,2*m+1, 2)
 !        \hat(z) = coefs(2*m+1,2*m+1, 3)
-!    - m: integer
+!    - m: integer *8
 !        max fourier content of \hat(x), \hat(y), and \hat(z)
-!    - nfp: integer
+!    - nfp: integer *8
 !        number of field periods
 !    - scales: real *8(3)
 !        scaling parameter for the coordinates of the surface
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then parameter space is [0,2\pi)^2
 !        if iort = -1, then parameter space is [2\pi,0) \times [0,2\pi)
-!    - nuv: integer(2)
+!    - nuv: integer *8(2)
 !        number of quadrilateral patches in the u, and v direction
 !        respectively, if iptype is 1, then each quadrilateral
 !        patch is subdivided into two triangular patches
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
@@ -434,19 +434,19 @@
 !                       nodes
 !
 !  Output arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
 !                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !
 !
       implicit none
-      integer, intent(in) :: m, nuv(2), iptype0, norder, iort
-      integer, intent(in) :: nfp
+      integer *8, intent(in) :: m, nuv(2), iptype0, norder, iort
+      integer *8, intent(in) :: nfp
       real *8, intent(in) :: coefs(2*m+1,2*m+1,3), scales(3)
-      integer, intent(out) :: npatches, npts
+      integer *8, intent(out) :: npatches, npts
       
       npatches = 0
       if (iptype0.eq.1) then
@@ -491,42 +491,42 @@
 !        \hat(x) = coefs(2*m+1,2*m+1, 1)
 !        \hat(y) = coefs(2*m+1,2*m+1, 2)
 !        \hat(z) = coefs(2*m+1,2*m+1, 3)
-!    - m: integer
+!    - m: integer *8
 !        max fourier content of \hat(x), \hat(y), and \hat(z)
-!    - nfp: integer
+!    - nfp: integer *8
 !        number of field periods
 !    - scales: real *8(3)
 !        scaling parameter for the coordinates of the surface
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then parameter space is [0,2\pi)^2
 !        if iort = -1, then parameter space is [2\pi,0) \times [0,2\pi)
-!    - nuv: integer(2)
+!    - nuv: integer *8(2)
 !        number of quadrilateral patches in the u, and v direction
 !        respectively, if iptype is 1, then each quadrilateral
 !        patch is subdivided into two triangular patches
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
 !                       nodes
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
 !                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !  Output arguments:
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch
 !        norders(i) = norder, for all i=1,2,...,npatches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
@@ -549,30 +549,30 @@
 !
 !
       implicit none
-      integer, intent(in) :: m, nuv(2), iptype0, norder
-      integer, intent(in) :: nfp
+      integer *8, intent(in) :: m, nuv(2), iptype0, norder
+      integer *8, intent(in) :: nfp
       real *8, intent(in) :: coefs(2*m+1,2*m+1,3), scales(3)
-      integer, intent(in) :: npatches, npts, iort
+      integer *8, intent(in) :: npatches, npts, iort
       
-      integer, intent(out) :: norders(npatches), iptype(npatches)
-      integer, intent(out) :: ixyzs(npatches+1)
+      integer *8, intent(out) :: norders(npatches), iptype(npatches)
+      integer *8, intent(out) :: ixyzs(npatches+1)
       real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
       
-      integer npols
+      integer *8 npols
       real *8, allocatable :: uvs(:,:), wts(:), umatr(:,:), vmatr(:,:)
       real *8, allocatable, target :: skel(:,:,:)
       real *8, allocatable, target :: pcoefs(:,:,:)
       real *8, target :: p3(1), p4(3)
       real *8, pointer :: ptr1, ptr2, ptr3, ptr4
-      integer, pointer :: iptr3
-      integer, target :: ipars(2)
+      integer *8, pointer :: iptr3
+      integer *8, target :: ipars(2)
 
 
       real *8 done, pi
       procedure (), pointer :: patchpnt
-      integer i, j, k
+      integer *8 i, j, k
       real *8 umin, umax, vmin, vmax
-      integer nover, npatches0
+      integer *8 nover, npatches0
 
       external xtri_xyz_tensor_fourier_eval
       external xquad_xyz_tensor_fourier_eval
@@ -683,17 +683,17 @@
 !         * radii(1) = rmajor
 !         * radii(2) = rminor
 !         * radii(3) = rwave
-!    - nosc: integer
+!    - nosc: integer *8
 !         number of oscillations in the star-shaped torus
 !    - scales: real *8(3)
 !        scaling parameter for the coordinates of the surface
-!    - nuv: integer(2)
+!    - nuv: integer *8(2)
 !        number of quadrilateral patches in the u, and v direction
 !        respectively, if iptype is 1, then each quadrilateral
 !        patch is subdivided into two triangular patches
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
@@ -701,18 +701,18 @@
 !                       nodes
 !
 !  Output arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
 !                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !
 !
       implicit none
-      integer, intent(in) :: nosc, nuv(2), iptype0, norder
+      integer *8, intent(in) :: nosc, nuv(2), iptype0, norder
       real *8, intent(in) :: radii(3), scales(3)
-      integer, intent(out) :: npatches, npts
+      integer *8, intent(out) :: npatches, npts
       
       npatches = 0
       if (iptype0.eq.1) then
@@ -755,36 +755,36 @@
 !         * radii(1) = rmajor
 !         * radii(2) = rminor
 !         * radii(3) = rwave
-!    - nosc: integer
+!    - nosc: integer *8
 !         number of oscillations in the star-shaped torus
 !    - scales: real *8(3)
 !        scaling parameter for the coordinates of the surface
-!    - nuv: integer(2)
+!    - nuv: integer *8(2)
 !        number of quadrilateral patches in the u, and v direction
 !        respectively, if iptype is 1, then each quadrilateral
 !        patch is subdivided into two triangular patches
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
 !                       nodes
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
 !                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !  Output arguments:
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch
 !        norders(i) = norder, for all i=1,2,...,npatches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
@@ -807,16 +807,16 @@
 !
 !
       implicit none
-      integer, intent(in) :: nosc, nuv(2), iptype0, norder
+      integer *8, intent(in) :: nosc, nuv(2), iptype0, norder
       real *8, intent(in) :: radii(3), scales(3)
-      integer, intent(in) :: npatches, npts
+      integer *8, intent(in) :: npatches, npts
       
-      integer, intent(out) :: norders(npatches), iptype(npatches)
-      integer, intent(out) :: ixyzs(npatches+1)
+      integer *8, intent(out) :: norders(npatches), iptype(npatches)
+      integer *8, intent(out) :: ixyzs(npatches+1)
       real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
 
       real *8, allocatable :: coefs(:,:,:)
-      integer i, j, k, m, iort, nfp
+      integer *8 i, j, k, m, iort, nfp
 
       m = nosc + 1
 
@@ -888,13 +888,13 @@
 !  z_{2,4} = 0.07 + (-0.45) 
 !
 !  Input arugments:
-!    - nuv: integer(2)
+!    - nuv: integer *8(2)
 !        number of quadrilateral patches in the u, and v direction
 !        respectively, if iptype is 1, then each quadrilateral
 !        patch is subdivided into two triangular patches
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
@@ -902,17 +902,17 @@
 !                       nodes
 !
 !  Output arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
 !                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !
 !
       implicit none
-      integer, intent(in) :: nuv(2), iptype0, norder
-      integer, intent(out) :: npatches, npts
+      integer *8, intent(in) :: nuv(2), iptype0, norder
+      integer *8, intent(out) :: npatches, npts
       
       npatches = 0
       if (iptype0.eq.1) then
@@ -965,32 +965,32 @@
 !  z_{2,4} = 0.07 + (-0.45) 
 !
 !  Input arugments:
-!    - nuv: integer(2)
+!    - nuv: integer *8(2)
 !        number of quadrilateral patches in the u, and v direction
 !        respectively, if iptype is 1, then each quadrilateral
 !        patch is subdivided into two triangular patches
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
 !                       nodes
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches = 2*nuv(1)*nuv(2) if iptype0 = 1
 !                          = nuv(1)*nuv(2) if iptype0 = 11, or 12
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !  Output arguments:
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch
 !        norders(i) = norder, for all i=1,2,...,npatches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
@@ -1013,16 +1013,16 @@
 !
 !
       implicit none
-      integer, intent(in) :: nuv(2), iptype0, norder
-      integer, intent(in) :: npatches, npts
+      integer *8, intent(in) :: nuv(2), iptype0, norder
+      integer *8, intent(in) :: npatches, npts
       
-      integer, intent(out) :: norders(npatches), iptype(npatches)
-      integer, intent(out) :: ixyzs(npatches+1)
+      integer *8, intent(out) :: norders(npatches), iptype(npatches)
+      integer *8, intent(out) :: ixyzs(npatches+1)
       real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
 
       real *8, allocatable :: coefs(:,:,:)
       real *8 scales(3)
-      integer i, j, k, m, iort, nfp
+      integer *8 i, j, k, m, iort, nfp
 
       m = 2
 
@@ -1097,7 +1097,7 @@
 !  square is discretized using nmid \times nmid patches
 !  
 !  Input arguments:
-!    - nch2d: integer
+!    - nch2d: integer *8
 !        number of chunks describing the generating curve
 !    - tchse: real *8 (nch2d+1)
 !        starting and ending location of in parameter space
@@ -1106,7 +1106,7 @@
 !        function handle for corresponding to generating curve.
 !        Should have calling sequence
 !        fcurve(s, np, pars, r, z, drds, dzds, d2rds2, d2zds2)
-!    - np: integer
+!    - np: integer *8
 !        number of parameters in fcurve
 !    - pars: real *8 (np)
 !        parameters of fcurve
@@ -1118,39 +1118,39 @@
 !    - rmid: real *8
 !        radius of the inner square on the unit circle mesh
 !        at the polar caps, should be between 0 and 1/sqrt(2)
-!    - nmid: integer
+!    - nmid: integer *8
 !        * number of intervals in the middle square on the
 !          unit circl mesh at the polar caps
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then parameter space is [a,b] \times [0,2\pi)
 !        if iort = -1, then parameter space is [a,b] \times [2\pi,0)
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
 !
 !  Output arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
       implicit none
-      integer, intent(in) :: nch2d
+      integer *8, intent(in) :: nch2d
       real *8, intent(in) :: tchse(nch2d+1)
-      integer, intent(in) :: nrts(2,nch2d), nmid
-      integer, intent(in) :: iptype0, norder
-      integer, intent(in) :: np
+      integer *8, intent(in) :: nrts(2,nch2d), nmid
+      integer *8, intent(in) :: iptype0, norder
+      integer *8, intent(in) :: np
       real *8, intent(in) :: pars(np)
       real *8, intent(in) :: rmid
-      integer, intent(in) :: iort
-      integer, intent(out) :: npatches, npts
+      integer *8, intent(in) :: iort
+      integer *8, intent(out) :: npatches, npts
 
-      integer i, npat0
+      integer *8 i, npat0
 
       external fcurve
       
@@ -1210,7 +1210,7 @@
 !  square is discretized using nmid \times nmid patches
 !  
 !  Input arguments:
-!    - nch2d: integer
+!    - nch2d: integer *8
 !        number of chunks describing the generating curve
 !    - tchse: real *8 (nch2d+1)
 !        starting and ending location of in parameter space
@@ -1219,7 +1219,7 @@
 !        function handle for corresponding to generating curve.
 !        Should have calling sequence
 !        fcurve(s, np, pars, r, z, drds, dzds, d2rds2, d2zds2)
-!    - np: integer
+!    - np: integer *8
 !        number of parameters in fcurve
 !    - pars: real *8 (np)
 !        parameters of fcurve
@@ -1231,33 +1231,33 @@
 !    - rmid: real *8
 !        radius of the inner square on the unit circle mesh
 !        at the polar caps, should be between 0 and 1/sqrt(2)
-!    - nmid: integer
+!    - nmid: integer *8
 !        * number of intervals in the middle square on the
 !          unit circle mesh at the polar caps
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then parameter space is [a,b] \times [0,2\pi)
 !        if iort = -1, then parameter space is [a,b] \times [2\pi,0)
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !  Output arguments:
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch
 !        norders(i) = norder, for all i=1,2,...,npatches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
@@ -1280,21 +1280,21 @@
 !
 !
       implicit none
-      integer, intent(in) :: nch2d
+      integer *8, intent(in) :: nch2d
       real *8, intent(in) :: tchse(nch2d+1)
-      integer, intent(in) :: nrts(2,nch2d), nmid
-      integer, intent(in) :: iptype0, norder
-      integer, intent(in), target :: np
-      integer, intent(in) :: iort
+      integer *8, intent(in) :: nrts(2,nch2d), nmid
+      integer *8, intent(in) :: iptype0, norder
+      integer *8, intent(in), target :: np
+      integer *8, intent(in) :: iort
       real *8, intent(in), target :: pars(np)
       real *8, intent(in) :: rmid
-      integer, intent(in) :: npatches, npts
+      integer *8, intent(in) :: npatches, npts
 
-      integer, intent(out) :: norders(npatches), iptype(npatches)
-      integer, intent(out) :: ixyzs(npatches+1)
+      integer *8, intent(out) :: norders(npatches), iptype(npatches)
+      integer *8, intent(out) :: ixyzs(npatches+1)
       real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
 
-      integer i, npat0
+      integer *8 i, npat0
 
       external fcurve
       external xtri_axissym_fun_eval, xtri_axissym_fun_circ_eval
@@ -1303,26 +1303,27 @@
       procedure (), pointer :: patchpnt, patchpnt_circ
 
       real *8 done, pi
-      integer npols
+      integer *8 npols
       real *8, allocatable, target :: pars1(:), pars_end(:)
       real *8, allocatable, target :: skel(:,:,:)
-      integer, allocatable, target :: ipars1(:), ipars_end(:)
-      integer, allocatable :: ixys1(:), ixys_end(:)
+      integer *8, allocatable, target :: ipars1(:), ipars_end(:)
+      integer *8, allocatable :: ixys1(:), ixys_end(:)
       real *8, allocatable :: ptinfo1(:,:), ptinfo_end(:,:)
       real *8, allocatable, target :: ptcoefs1(:,:), ptcoefs_end(:,:)
-      integer, allocatable :: iptype1(:), iptype_end(:)
-      integer, allocatable :: norders1(:), norders_end(:)
+      integer *8, allocatable :: iptype1(:), iptype_end(:)
+      integer *8, allocatable :: norders1(:), norders_end(:)
 
 
       real *8, allocatable :: uvs(:,:), wts(:), umatr(:,:), vmatr(:,:)
-      integer npts1, npts_end
-      integer npatches1, npatches_end
+      integer *8 npts1, npts_end
+      integer *8 npatches1, npatches_end
       real *8, pointer :: ptr1, ptr2, ptr3, ptr4
-      integer, pointer :: iptr1, iptr2, iptr3, iptr4
+      integer *8, pointer :: iptr1, iptr2, iptr3, iptr4
       real *8 umin, umax, vmin, vmax
-      integer npatches0, istart, npars(3)
-      integer nover
-      integer ich, iort_use
+      integer *8 npatches0, istart, npars(3)
+      integer *8 nover
+      integer *8 ich, iort_use
+      integer *8 int8_6
       real *8 dh
 
 
@@ -1410,8 +1411,8 @@
 
 
        
-      call surf_vals_to_coefs(6, npatches1, norders1, ixys1, iptype1, &
-        npts1, ptinfo1, ptcoefs1)
+      call surf_vals_to_coefs(int8_6, npatches1, norders1, ixys1, &
+        iptype1, npts1, ptinfo1, ptcoefs1)
 
       npars(1) = nmid
       npars(2) = nrts(1,nch2d)
@@ -1424,15 +1425,15 @@
       allocate(ptcoefs_end(6,npts_end), iptype_end(npatches_end))
       allocate(norders_end(npatches_end))
 
-      call mesh_circle_pts(rmid, npars, iort_use, norder, iptype0, & 
+      call mesh_circle_pts(rmid, npars, iort_use, norder, iptype0, &
         npatches_end, npts_end, ixys_end, ptinfo_end)
 
       do i=1,npatches_end
         iptype_end(i) = iptype0
         norders_end(i) = norder
       enddo
-      call surf_vals_to_coefs(6, npatches_end, norders_end, ixys_end, &
-        iptype_end, npts_end, ptinfo_end, ptcoefs_end)
+      call surf_vals_to_coefs(int8_6, npatches_end, norders_end, &
+        ixys_end, iptype_end, npts_end, ptinfo_end, ptcoefs_end)
 
 !
 !  Let the discretrization begin
@@ -1537,13 +1538,13 @@
 !  square is discretized using nmid \times nmid patches
 !  
 !  Input arguments:
-!    - nch2d: integer
+!    - nch2d: integer *8
 !        number of chunks describing the generating curve
-!    - npts2d: integer
+!    - npts2d: integer *8
 !        number of points on the generating curve
-!    - ixys2d: integer(nch2d+1)
+!    - ixys2d: integer *8(nch2d+1)
 !        starting location of points on chunk i
-!    - iptype2d: integer(nch2d)
+!    - iptype2d: integer *8(nch2d)
 !        type of chunk
 !        iptype = 1, gauss-legendre chunk with reference domain [-1,1]
 !    - srcvals2d: real *8 (8,npts2d)
@@ -1558,39 +1559,39 @@
 !    - rmid: real *8
 !        radius of the inner square on the unit circle mesh
 !        at the polar caps, should be between 0 and 1/sqrt(2)
-!    - nmid: integer
+!    - nmid: integer *8
 !        * number of intervals in the middle square on the
 !          unit circl mesh at the polar caps
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then parameter space is [a,b] \times [0,2\pi)
 !        if iort = -1, then parameter space is [a,b] \times [2\pi,0)
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
 !
 !  Output arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
       implicit none
-      integer, intent(in) :: nch2d, npts2d
-      integer, intent(in) :: ixys2d(nch2d+1),iptype2d(nch2d)
+      integer *8, intent(in) :: nch2d, npts2d
+      integer *8, intent(in) :: ixys2d(nch2d+1),iptype2d(nch2d)
       real *8, intent(in) :: srccoefs2d(6,npts2d)
       real *8, intent(in) :: srcvals2d(6,npts2d)
-      integer, intent(in) :: nrts(2,nch2d), nmid
-      integer, intent(in) :: iptype0, norder
+      integer *8, intent(in) :: nrts(2,nch2d), nmid
+      integer *8, intent(in) :: iptype0, norder
       real *8, intent(in) :: rmid
-      integer, intent(in) :: iort
-      integer, intent(out) :: npatches, npts
+      integer *8, intent(in) :: iort
+      integer *8, intent(out) :: npatches, npts
 
-      integer i, npat0
+      integer *8 i, npat0
       
       npat0 = 2*nmid*nmid
       do i=2,nch2d-1
@@ -1650,13 +1651,13 @@
 !  square is discretized using nmid \times nmid patches
 !  
 !  Input arguments:
-!    - nch2d: integer
+!    - nch2d: integer *8
 !        number of chunks describing the generating curve
-!    - npts2d: integer
+!    - npts2d: integer *8
 !        number of points on the generating curve
-!    - ixys2d: integer(nch2d+1)
+!    - ixys2d: integer *8(nch2d+1)
 !        starting location of points on chunk i
-!    - iptype2d: integer(nch2d)
+!    - iptype2d: integer *8(nch2d)
 !        type of chunk
 !        iptype = 1, gauss-legendre chunk with reference domain [-1,1]
 !    - srcvals2d: real *8 (8,npts2d)
@@ -1671,33 +1672,33 @@
 !    - rmid: real *8
 !        radius of the inner square on the unit circle mesh
 !        at the polar caps, should be between 0 and 1/sqrt(2)
-!    - nmid: integer
+!    - nmid: integer *8
 !        * number of intervals in the middle square on the
 !          unit circle mesh at the polar caps
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then parameter space is [a,b] \times [0,2\pi)
 !        if iort = -1, then parameter space is [a,b] \times [2\pi,0)
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !  Output arguments:
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch
 !        norders(i) = norder, for all i=1,2,...,npatches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
@@ -1720,22 +1721,22 @@
 !
 !
       implicit none
-      integer, intent(in) :: nch2d, npts2d
-      integer, intent(in), target :: ixys2d(nch2d+1)
-      integer, intent(in) :: iptype2d(nch2d)
+      integer *8, intent(in) :: nch2d, npts2d
+      integer *8, intent(in), target :: ixys2d(nch2d+1)
+      integer *8, intent(in) :: iptype2d(nch2d)
       real *8, intent(in) :: srcvals2d(8,npts2d)
       real *8, target, intent(in) :: srccoefs2d(6,npts2d)
-      integer, intent(in) :: nrts(2,nch2d), nmid
-      integer, intent(in) :: iptype0, norder
-      integer, intent(in) :: iort
+      integer *8, intent(in) :: nrts(2,nch2d), nmid
+      integer *8, intent(in) :: iptype0, norder
+      integer *8, intent(in) :: iort
       real *8, intent(in) :: rmid
-      integer, intent(in) :: npatches, npts
+      integer *8, intent(in) :: npatches, npts
 
-      integer, intent(out) :: norders(npatches), iptype(npatches)
-      integer, intent(out) :: ixyzs(npatches+1)
+      integer *8, intent(out) :: norders(npatches), iptype(npatches)
+      integer *8, intent(out) :: ixyzs(npatches+1)
       real *8, intent(out) :: srccoefs(9,npts), srcvals(12,npts)
 
-      integer i, npat0
+      integer *8 i, npat0
 
       external xtri_axissym_eval, xtri_axissym_circ_eval
       external xquad_axissym_eval, xquad_axissym_circ_eval
@@ -1743,30 +1744,32 @@
       procedure (), pointer :: patchpnt, patchpnt_circ
 
       real *8 done, pi
-      integer npols
+      integer *8 npols
       real *8, allocatable, target :: skel(:,:,:)
-      integer, allocatable, target :: ipars1(:), ipars_end(:)
-      integer, allocatable :: ixys1(:), ixys_end(:)
+      integer *8, allocatable, target :: ipars1(:), ipars_end(:)
+      integer *8, allocatable :: ixys1(:), ixys_end(:)
       real *8, allocatable :: ptinfo1(:,:), ptinfo_end(:,:)
       real *8, allocatable, target :: ptcoefs1(:,:), ptcoefs_end(:,:)
-      integer, allocatable :: iptype1(:), iptype_end(:)
-      integer, allocatable :: norders1(:), norders_end(:)
-      integer, allocatable, target :: ichuse(:)
+      integer *8, allocatable :: iptype1(:), iptype_end(:)
+      integer *8, allocatable :: norders1(:), norders_end(:)
+      integer *8, allocatable, target :: ichuse(:)
       real *8, target :: pars1(2), pars_end(2)
 
 
       real *8, allocatable :: uvs(:,:), wts(:), umatr(:,:), vmatr(:,:)
-      integer npts1, npts_end
-      integer npatches1, npatches_end
+      integer *8 npts1, npts_end
+      integer *8 npatches1, npatches_end
       real *8, pointer :: ptr1, ptr2, ptr3, ptr4
-      integer, pointer :: iptr1, iptr2, iptr3, iptr4
+      integer *8, pointer :: iptr1, iptr2, iptr3, iptr4
       real *8 umin, umax, vmin, vmax
-      integer npatches0, istart, npars(3)
-      integer nover
-      integer ich, iort_use, j
+      integer *8 npatches0, istart, npars(3)
+      integer *8 nover
+      integer *8 ich, iort_use, j
+      integer *8 int8_6
       real *8 dh
 
 
+      int8_6 = 6
       done = 1.0d0
       pi = atan(done)*4
       
@@ -1849,8 +1852,8 @@
       enddo
 
        
-      call surf_vals_to_coefs(6, npatches1, norders1, ixys1, iptype1, &
-        npts1, ptinfo1, ptcoefs1)
+      call surf_vals_to_coefs(int8_6, npatches1, norders1, ixys1, &
+        iptype1, npts1, ptinfo1, ptcoefs1)
 
       npars(1) = nmid
       npars(2) = nrts(1,nch2d)
@@ -1863,15 +1866,15 @@
       allocate(ptcoefs_end(6,npts_end), iptype_end(npatches_end))
       allocate(norders_end(npatches_end))
 
-      call mesh_circle_pts(rmid, npars, iort_use, norder, iptype0, & 
+      call mesh_circle_pts(rmid, npars, iort_use, norder, iptype0, &
         npatches_end, npts_end, ixys_end, ptinfo_end)
 
       do i=1,npatches_end
         iptype_end(i) = iptype0
         norders_end(i) = norder
       enddo
-      call surf_vals_to_coefs(6, npatches_end, norders_end, ixys_end, &
-        iptype_end, npts_end, ptinfo_end, ptcoefs_end)
+      call surf_vals_to_coefs(int8_6, npatches_end, norders_end, &
+        ixys_end, iptype_end, npts_end, ptinfo_end, ptcoefs_end)
 
 !
 !  Let the discretrization begin

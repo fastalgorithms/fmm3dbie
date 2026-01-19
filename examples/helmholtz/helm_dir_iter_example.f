@@ -1,10 +1,11 @@
       implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       real *8, allocatable :: wts(:)
       character *100 fname
-      integer ipars(2)
+      integer *8 ipars(2)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
 
       real *8 xyz_out(3), xyz_in(3)
       real *8 xyz_src(3), xyz_targ(3)
@@ -13,17 +14,17 @@
       real *8, allocatable :: errs(:)
       real *8 eps_gmres
       complex * 16 zpars(3)
-      integer numit,niter
+      integer *8 numit,niter
 
-      integer ipatch_id
+      integer *8 ipatch_id
       real *8 uvs_targ(2)
 
       logical isout0,isout1
 
       complex *16 pot,potex,ztmp,ima
       real *8 c0(3)
-      integer nuv(2)
-
+      integer *8 int8_0,int8_1,int8_3
+      integer *8 nuv(2)
       character *100, igeom
 
       data ima/(0.0d0,1.0d0)/
@@ -31,6 +32,9 @@
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
       done = 1
       pi = atan(done)*4
 
@@ -129,8 +133,8 @@ c
       allocate(sigma(npts),rhs(npts))
 
       do i=1,npts
-        call h3d_slp(xyz_src,3,srcvals(1,i),0,dpars,1,zpars,0,
-     1     ipars,rhs(i))
+        call h3d_slp(xyz_src,int8_3,srcvals(1,i),int8_0,dpars,
+     1     int8_1,zpars,int8_0,ipars,rhs(i))
         sigma(i) = 0 
       enddo
 
@@ -157,11 +161,12 @@ c
 c
 c       test solution at interior point
 c
-      call h3d_slp(xyz_src,3,xyz_targ,0,dpars,1,zpars,0,ipars,potex)
+      call h3d_slp(xyz_src,int8_3,xyz_targ,int8_0,dpars,int8_1,
+     1             zpars,int8_0,ipars,potex)
       pot = 0
       do i=1,npts
-        call h3d_comb(srcvals(1,i),3,xyz_targ,0,dpars,3,zpars,0,ipars,
-     1     ztmp)
+        call h3d_comb(srcvals(1,i),int8_3,xyz_targ,int8_0,dpars,
+     1     int8_3,zpars,int8_0,ipars,ztmp)
         pot = pot + sigma(i)*wts(i)*ztmp
       enddo
 
@@ -204,11 +209,11 @@ c  identity for the flux due to a point charge
 c
 c
 c  input:
-c    npatches - integer
+c    npatches - integer *8
 c       number of patches
-c    norder - integer
+c    norder - integer *8
 c       order of discretization
-c    npts - integer
+c    npts - integer *8
 c       total number of discretization points on the surface
 c    srccoefs - real *8 (9,npts)
 c       koornwinder expansion coefficients of geometry info
@@ -221,16 +226,16 @@ c      whether the target is in the interior or not
 c
 
       implicit none
-      integer npatches,norder,npts,npols
+      integer *8 npatches,norder,npts,npols
       real *8 srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
       real *8 tmp(3)
       real *8 dpars,done,pi
       real *8, allocatable :: rsurf(:),err_p(:,:) 
-      integer ipars,norderhead,nd
+      integer *8 ipars,norderhead,nd
       complex *16, allocatable :: sigma_coefs(:,:), sigma_vals(:,:)
       complex *16 zk,val
 
-      integer ipatch,j,i
+      integer *8 ipatch,j,i
       real *8 ra,ds
       logical isout
 

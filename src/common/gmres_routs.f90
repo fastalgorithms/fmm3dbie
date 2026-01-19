@@ -31,19 +31,19 @@
 !       ndim, x, y)
 !
 !  Input arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch 
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
 !        iptype = 12, quadrangular patch discretized with Chebyshev nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        basis expansion coefficients of xyz, dxyz/du,
@@ -63,62 +63,62 @@
 !        quadrature weights for integrating smooth functions     
 !    - eps: real *8
 !        precision requested
-!    - ndd: integer
+!    - ndd: integer *8
 !        number of real parameters defining the kernel/
 !        integral representation
 !    - dpars: real *8(ndd)
 !        real parameters defining the kernel/
 !        integral representation
-!    - ndz: integer
+!    - ndz: integer *8
 !        number of complex parameters defining the kernel/
 !        integral representation
 !    - zpars: complex *16(ndz)
 !        complex parameters defining the kernel/
 !        integral representation.
-!    - ndi: integer
+!    - ndi: integer *8
 !        number of integer parameters defining the kernel/
 !        integral representation
-!    - ipars: integer(ndi)
+!    - ipars: integer *8(ndi)
 !        integer parameters defining the kernel/
 !        integral representation
-!    - nnz: integer
+!    - nnz: integer *8
 !        number of source patch-> target interactions in the near field
-!    - row_ptr: integer(npts+1)
+!    - row_ptr: integer *8(npts+1)
 !        row_ptr(i) is the pointer
 !        to col_ind array where list of relevant source patches
 !        for target i start
-!    - col_ind: integer (nnz)
+!    - col_ind: integer *8 (nnz)
 !        list of source patches relevant for all targets, sorted
 !        by the target number
-!    - iquad: integer(nnz+1)
+!    - iquad: integer *8(nnz+1)
 !        location in wnear_ij array where quadrature for col_ind(i)
 !        starts for a single kernel. In this case the different kernels
 !        are matrix entries are located at (m-1)*nquad+iquad(i), where
 !        m is the kernel number
-!    - nquad: integer
+!    - nquad: integer *8
 !        number of near field entries corresponding to each source target
 !        pair
-!    - nker: integer
+!    - nker: integer *8
 !        number of kernels in quadrature correction
 !    - wnear: complex *16(nker, nquad)
 !        precomputed quadrature corrections            
-!    - novers: integer(npatches)
+!    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
-!    - ixyzso: integer(npatches+1)
+!    - ixyzso: integer *8(npatches+1)
 !        ixyzso(i) denotes the starting location in srcover,
 !        corresponding to patch i
-!    - nptso: integer
+!    - nptso: integer *8
 !        total number of oversampled points
 !    - srcover: real *8 (12,nptso)
 !        oversampled set of source information
 !    - whtsover: real *8 (nptso)
 !        smooth quadrature weights at oversampled nodes
-!    - lwork: integer
+!    - lwork: integer *8
 !        size of work array 
 !    - work: real *8(lwork)
 !        work array 
-!    - ndim: integer
+!    - ndim: integer *8
 !        number of densities
 !    - fker: procedure pointer
 !        function handle for evaluating the kernel K
@@ -128,13 +128,13 @@
 !        data y, in case of vector densities at a point,
 !        ndim > 1, then different densities at the same
 !        point are continuous in memory
-!    - numit: integer
+!    - numit: integer *8
 !        max number of gmres iterations
 !    - eps_gmres: real *8
 !        gmres tolerance requested         
 !            
 !  output
-!    - niter: integer
+!    - niter: integer *8
 !        number of gmres iterations required for relative residual
 !        to converge to eps_gmres
 !    - errs:  real *8 (numit+1)
@@ -146,42 +146,42 @@
 !        solution of linear system
 
       implicit none
-      integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
-      integer, intent(in) :: iptype(npatches)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
       real *8, intent(in) :: wts(npts)
       real *8, intent(in) :: eps
-      integer, intent(in) :: ndd, ndi, ndz
+      integer *8, intent(in) :: ndd, ndi, ndz
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
-      integer, intent(in) :: ipars(ndi)
-      integer, intent(in) :: nnz,nquad
-      integer, intent(in) :: row_ptr(npts+1),col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: nnz,nquad
+      integer *8, intent(in) :: row_ptr(npts+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       
-      integer, intent(in) :: ndim
+      integer *8, intent(in) :: ndim
       
       
-      integer, intent(in) :: nptso
-      integer, intent(in) :: novers(npatches+1)
-      integer, intent(in) :: ixyzso(npatches+1)
+      integer *8, intent(in) :: nptso
+      integer *8, intent(in) :: novers(npatches+1)
+      integer *8, intent(in) :: ixyzso(npatches+1)
       real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
       
-      integer, intent(in) :: nker
+      integer *8, intent(in) :: nker
       complex *16 wnear(nker, nquad)
 
-      integer, intent(in) :: lwork
+      integer *8, intent(in) :: lwork
       real *8, intent(in) :: work(lwork)
 
       external fker
 
       complex *16, intent(in) :: zid
       complex *16, intent(in) :: rhs(ndim,npts)
-      integer, intent(in) :: numit
+      integer *8, intent(in) :: numit
       real *8, intent(in) :: eps_gmres
 
-      integer, intent(out) :: niter
+      integer *8, intent(out) :: niter
       real *8, intent(out) :: errs(numit+1)
       real *8, intent(out) :: rres
 
@@ -196,7 +196,7 @@
       complex *16, allocatable :: cs(:), sn(:)
       complex *16, allocatable :: svec(:), yvec(:), wtmp(:,:)
       
-      integer i, j, k, l, it, it1, idim, iind 
+      integer *8 i, j, k, l, it, it1, idim, iind 
 
       allocate(vmat(ndim,npts,numit+1), hmat(numit,numit))
       allocate(cs(numit), sn(numit))
@@ -393,19 +393,19 @@
 !       ndim, x, y)
 !
 !  Input arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization on each patch 
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
 !        iptype = 12, quadrangular patch discretized with Chebyshev nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        basis expansion coefficients of xyz, dxyz/du,
@@ -425,62 +425,62 @@
 !        quadrature weights for integrating smooth functions                
 !    - eps: real *8
 !        precision requested
-!    - ndd: integer
+!    - ndd: integer *8
 !        number of real parameters defining the kernel/
 !        integral representation
 !    - dpars: real *8(ndd)
 !        real parameters defining the kernel/
 !        integral representation
-!    - ndz: integer
+!    - ndz: integer *8
 !        number of complex parameters defining the kernel/
 !        integral representation
 !    - zpars: complex *16(ndz)
 !        complex parameters defining the kernel/
 !        integral representation.
-!    - ndi: integer
+!    - ndi: integer *8
 !        number of integer parameters defining the kernel/
 !        integral representation
-!    - ipars: integer(ndi)
+!    - ipars: integer *8(ndi)
 !        integer parameters defining the kernel/
 !        integral representation
-!    - nnz: integer
+!    - nnz: integer *8
 !        number of source patch-> target interactions in the near field
-!    - row_ptr: integer(npts+1)
+!    - row_ptr: integer *8(npts+1)
 !        row_ptr(i) is the pointer
 !        to col_ind array where list of relevant source patches
 !        for target i start
-!    - col_ind: integer (nnz)
+!    - col_ind: integer *8 (nnz)
 !        list of source patches relevant for all targets, sorted
 !        by the target number
-!    - iquad: integer(nnz+1)
+!    - iquad: integer *8(nnz+1)
 !        location in wnear_ij array where quadrature for col_ind(i)
 !        starts for a single kernel. In this case the different kernels
 !        are matrix entries are located at (m-1)*nquad+iquad(i), where
 !        m is the kernel number
-!    - nquad: integer
+!    - nquad: integer *8
 !        number of near field entries corresponding to each source target
 !        pair
-!    - nker: integer
+!    - nker: integer *8
 !        number of kernels in quadrature correction
 !    - wnear: real *8(nker, nquad)
 !        precomputed quadrature corrections            
-!    - novers: integer(npatches)
+!    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
-!    - ixyzso: integer(npatches+1)
+!    - ixyzso: integer *8(npatches+1)
 !        ixyzso(i) denotes the starting location in srcover,
 !        corresponding to patch i
-!    - nptso: integer
+!    - nptso: integer *8
 !        total number of oversampled points
 !    - srcover: real *8 (12,nptso)
 !        oversampled set of source information
 !    - whtsover: real *8 (nptso)
 !        smooth quadrature weights at oversampled nodes
-!    - lwork: integer
+!    - lwork: integer *8
 !        size of work array 
 !    - work: real *8(lwork)
 !        work array
-!    - ndim: integer
+!    - ndim: integer *8
 !        number of densities
 !    - fker: procedure pointer
 !        function handle for evaluating the kernel K
@@ -490,13 +490,13 @@
 !        data y, in case of vector densities at a point,
 !        ndim > 1, then different densities at the same
 !        point are continuous in memory
-!    - numit: integer
+!    - numit: integer *8
 !        max number of gmres iterations
 !    - eps_gmres: real *8
 !        gmres tolerance requested
 !            
 !  output
-!    - niter: integer
+!    - niter: integer *8
 !        number of gmres iterations required for relative residual
 !        to converge to eps_gmres
 !    - errs:  real *8 (numit+1)
@@ -508,32 +508,32 @@
 !        solution of linear system
 
   implicit none
-  integer, intent(in) :: npatches, npts
-  integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
-  integer, intent(in) :: iptype(npatches)
+  integer *8, intent(in) :: npatches, npts
+  integer *8, intent(in) :: norders(npatches),ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
   real *8, intent(in) :: wts(npts)
   real *8, intent(in) :: eps
-  integer, intent(in) :: ndd, ndi, ndz
+  integer *8, intent(in) :: ndd, ndi, ndz
   real *8, intent(in) :: dpars(ndd)
   complex *16, intent(in) :: zpars(ndz)
-  integer, intent(in) :: ipars(ndi)
-  integer, intent(in) :: nnz,nquad
-  integer, intent(in) :: row_ptr(npts+1),col_ind(nnz)
-  integer, intent(in) :: iquad(nnz+1)
+  integer *8, intent(in) :: ipars(ndi)
+  integer *8, intent(in) :: nnz,nquad
+  integer *8, intent(in) :: row_ptr(npts+1),col_ind(nnz)
+  integer *8, intent(in) :: iquad(nnz+1)
   
-  integer, intent(in) :: ndim
+  integer *8, intent(in) :: ndim
   
   
-  integer, intent(in) :: nptso
-  integer, intent(in) :: novers(npatches+1)
-  integer, intent(in) :: ixyzso(npatches+1)
+  integer *8, intent(in) :: nptso
+  integer *8, intent(in) :: novers(npatches+1)
+  integer *8, intent(in) :: ixyzso(npatches+1)
   real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
   
-  integer, intent(in) :: nker
+  integer *8, intent(in) :: nker
   real *8 wnear(nker, nquad)
 
-  integer, intent(in) :: lwork
+  integer *8, intent(in) :: lwork
   real *8, intent(in) :: work(lwork)
 
   
@@ -541,10 +541,10 @@
 
   real *8, intent(in) :: did
   real *8, intent(in) :: rhs(ndim,npts)
-  integer, intent(in) :: numit
+  integer *8, intent(in) :: numit
   real *8, intent(in) :: eps_gmres
 
-  integer, intent(out) :: niter
+  integer *8, intent(out) :: niter
   real *8, intent(out) :: errs(numit+1)
   real *8, intent(out) :: rres
 
@@ -559,7 +559,7 @@
   real *8, allocatable :: cs(:), sn(:)
   real *8, allocatable :: svec(:), yvec(:), wtmp(:,:)
   
-  integer i, j, k, l, it, it1, idim, iind 
+  integer *8 i, j, k, l, it, it1, idim, iind 
 
   allocate(vmat(ndim,npts,numit+1), hmat(numit,numit))
   allocate(cs(numit), sn(numit))

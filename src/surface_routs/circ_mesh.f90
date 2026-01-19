@@ -18,19 +18,19 @@
 !  Input Arguments:
 !    - rmid: real *8
 !        radius of the inner square, should be between 0 and 1/sqrt(2)
-!    - npars: integer(3)
+!    - npars: integer *8(3)
 !        * npars(1) = nmid, number of intervals in the middle square
 !        * npars(2) = nr, number of intervals in the radial direction
 !                     in each of the sectors
 !        * npars(3) = nt, number of intervals in the angular direction
 !                     in each of the sectors
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then mesh has normals pointed in +z direction
 !        if iort = -1, then mesh has normals pointed in -z direction 
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
@@ -38,16 +38,16 @@
 !                       nodes
 !
 !  Output arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches 
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !
       implicit none
       real *8, intent(in) :: rmid
-      integer, intent(in) :: npars(3), norder, iptype0, iort
-      integer, intent(out) :: npatches, npts
+      integer *8, intent(in) :: npars(3), norder, iptype0, iort
+      integer *8, intent(out) :: npatches, npts
 
       if (iptype0.eq.1) then
         npatches = 2*(npars(1)*npars(1) + 4*npars(2)*npars(3))
@@ -87,31 +87,31 @@
 !  Input Arguments:
 !    - rmid: real *8
 !        radius of the inner square, should be between 0 and 1/sqrt(2)
-!    - npars: integer(3)
+!    - npars: integer *8(3)
 !        * npars(1) = nmid, number of intervals in the middle square
 !        * npars(2) = nr, number of intervals in the radial direction
 !                     in each of the sectors
 !        * npars(3) = nt, number of intervals in the angular direction
 !                     in each of the sectors
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then mesh has normals pointed in +z direction
 !        if iort = -1, then mesh has normals pointed in -z direction 
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization on each patch
-!    - iptype0: integer
+!    - iptype0: integer *8
 !        type of patch to be used in the discretization
 !        * iptype = 1, triangular patch discretized using RV nodes
 !        * iptype = 11, quadrangular patch discretized with GL nodes
 !        * iptype = 12, quadrangular patch discretized with Chebyshev 
 !                       nodes
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches 
-!    - npts: integer
+!    - npts: integer *8
 !        Number of points on the discretized surface
 !
 !  Output arguments:
-!    - ixys: integer(npatches+1)
+!    - ixys: integer *8(npatches+1)
 !        ixys(i) denotes the starting location in ptinfo
 !        corresponding to patch i
 !    - ptinfo: real *8 (6,npts)
@@ -122,18 +122,18 @@
 !
       implicit none
       real *8, intent(in) :: rmid
-      integer, intent(in) :: npars(3), norder, iptype0, iort
-      integer, intent(in) :: npatches, npts
+      integer *8, intent(in) :: npars(3), norder, iptype0, iort
+      integer *8, intent(in) :: npatches, npts
 
-      integer, intent(out) :: ixys(npatches+1)
+      integer *8, intent(out) :: ixys(npatches+1)
       real *8, intent(out) :: ptinfo(6,npts)
 
       real *8, allocatable :: skel(:,:,:)
-      integer nskel, inds(6), ntmp, npols
-      integer nmid, nr, nt
+      integer *8 nskel, inds(6), ntmp, npols
+      integer *8 nmid, nr, nt
       real *8, allocatable :: uvs(:,:)
-      integer i, j
-      integer ipatch, ipt
+      integer *8 i, j
+      integer *8 ipatch, ipt
       real *8 par4, dxyduv(2,2)
 
       procedure (), pointer :: patchpnt
@@ -207,17 +207,17 @@
 !  Input Arguments:
 !    - rmid: real *8
 !        radius of the inner square, should be between 0 and 1/sqrt(2)
-!    - npars: integer(3)
+!    - npars: integer *8(3)
 !        * npars(1) = nmid, number of intervals in the middle square
 !        * npars(2) = nr, number of intervals in the radial direction
 !                     in each of the sectors
 !        * npars(3) = nt, number of intervals in the angular direction
 !                     in each of the sectors
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then mesh has normals pointed in +z direction
 !        if iort = -1, then mesh has normals pointed in -z direction 
-!   - nskel: integer
+!   - nskel: integer *8
 !       number of points in skeleton mesh, should be 
 !       (npars(1)*npars(1) + 4*npars(2)*npars(3))
 !
@@ -234,7 +234,7 @@
 !        the vertices as always are ordered as
 !             3  *
 !             1  2
-!    - inds: integer(6)
+!    - inds: integer *8(6)
 !        inds(1): starting location of patches in the middle square
 !        inds(2): starting location of patches in the first sector 
 !                 (-pi/4,pi/4)
@@ -248,18 +248,18 @@
 
       implicit none
       real *8, intent(in) :: rmid
-      integer, intent(in) :: npars(3), nskel
-      integer, intent(in) :: iort
+      integer *8, intent(in) :: npars(3), nskel
+      integer *8, intent(in) :: iort
       real *8, intent(out) :: skel(3,3,nskel)
-      integer, intent(out) :: inds(6)
+      integer *8, intent(out) :: inds(6)
 
       real *8 done, pi
-      integer ibox, nmid, nr, nt, na, nb
+      integer *8 ibox, nmid, nr, nt, na, nb
       real *8 amat(2,2), vec(2)
-      integer ii, nn, nout
+      integer *8 ii, nn, nout
 
       real *8 umin, umax, vmin, vmax
-      integer nover, j
+      integer *8 nover, j
         
       done = 1
       pi   = atan(done)*4
@@ -325,17 +325,17 @@
 !  Input Arguments:
 !    - rmid: real *8
 !        radius of the inner square, should be between 0 and 1/sqrt(2)
-!    - npars: integer(3)
+!    - npars: integer *8(3)
 !        * npars(1) = nmid, number of intervals in the middle square
 !        * npars(2) = nr, number of intervals in the radial direction
 !                     in each of the sectors
 !        * npars(3) = nt, number of intervals in the angular direction
 !                     in each of the sectors
-!    - iort: integer
+!    - iort: integer *8
 !        orientiation flag
 !        if iort = 1, then mesh has normals pointed in +z direction
 !        if iort = -1, then mesh has normals pointed in -z direction 
-!   - nskel: integer
+!   - nskel: integer *8
 !       number of points in skeleton mesh, should be 
 !       (npars(1)*npars(1) + 4*npars(2)*npars(3))
 !
@@ -352,7 +352,7 @@
 !        the vertices as always are ordered as
 !             3  *
 !             1  2
-!    - inds: integer(6)
+!    - inds: integer *8(6)
 !        inds(1): starting location of patches in the middle square
 !        inds(2): starting location of patches in the first sector 
 !                 (-pi/4,pi/4)
@@ -366,14 +366,14 @@
 
       implicit none
       real *8, intent(in) :: rmid
-      integer, intent(in) :: npars(3), nskel, iort
+      integer *8, intent(in) :: npars(3), nskel, iort
       real *8, intent(out) :: skel(3,3,nskel)
-      integer, intent(out) :: inds(6)
+      integer *8, intent(out) :: inds(6)
 
       real *8 done, pi
-      integer ibox, nmid, nr, nt, na, nb
+      integer *8 ibox, nmid, nr, nt, na, nb
       real *8 amat(2,2), vec(2)
-      integer ii, nn, nout, j, nover
+      integer *8 ii, nn, nout, j, nover
 
       real *8 umin, umax, vmin, vmax
         
@@ -424,10 +424,11 @@
 
       subroutine circ_split_quads_to_tri_minasp(n, skel)
       implicit real *8 (a-h,o-z)
-      integer n
+      implicit integer *8 (i-n)
+      integer *8 n
       real *8 skel(3,3,2*n), v1(2), v2(2), v3(2), v4(2)
       real *8, allocatable :: skeltmp(:,:,:)
-      integer i, j, k
+      integer *8 i, j, k
 
      
       
@@ -493,6 +494,7 @@
 !  ang_range = (t0,t1)
 !
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8, intent(in) :: s, t, rmid, ang_range(2)
       real *8, intent(out) :: xy(2), dxydst(2,2)
       real *8 dxy1(2,2), dxy2(2,2)
@@ -570,14 +572,14 @@
 !  ipars(1:6) = inds(1:6)
 !
       implicit none
-      integer, intent(in) :: itri
+      integer *8, intent(in) :: itri
       real *8, intent(in) :: u, v, skel(3,3,*)
-      integer, intent(in) :: ipars(6)
+      integer *8, intent(in) :: ipars(6)
       real *8, intent(in) :: rmid
       real *8 par4
       real *8, intent(out) :: xy(2), dxyduv(2,2)
 
-      integer iface
+      integer *8 iface
       real *8 x0, y0, x1, y1, x2, y2
       real *8 dsdu, dtdu, dsdv, dtdv, s, t, dxydst(2,2)
       real *8 ang_range(2)
@@ -655,14 +657,14 @@
 !  ipars(1:6) = inds(1:6)
 !
       implicit none
-      integer, intent(in) :: iquad
+      integer *8, intent(in) :: iquad
       real *8, intent(in) :: u, v, skel(3,3,*)
-      integer, intent(in) :: ipars(6)
+      integer *8, intent(in) :: ipars(6)
       real *8, intent(in) :: rmid
       real *8 par4
       real *8, intent(out) :: xy(2), dxyduv(2,2)
 
-      integer iface
+      integer *8 iface
       real *8 x0, y0, x1, y1, x2, y2
       real *8 dsdu, dtdu, dsdv, dtdv, s, t, dxydst(2,2)
       real *8 ang_range(2)

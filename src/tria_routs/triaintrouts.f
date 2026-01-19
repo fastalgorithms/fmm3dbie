@@ -73,32 +73,32 @@ c  Compute the integrals in (1) defined at the top of the file
 c  using a prescribed set of nodes and weights.
 c
 c  Input arguments:
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg, ntarg)
 c        target information
-c    - itargptr: integer(npatches)
+c    - itargptr: integer *8(npatches)
 c        Pointer array for determining which targets are relevant
 c        for patch i. 
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(npatches)
+c    - ntargptr: integer *8(npatches)
 c        number of targets relevant for patch i
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
 c    - fker: function handle
@@ -108,19 +108,19 @@ c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        scalar
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqpts: integer
+c    - nqpts: integer *8
 c        number of quadrature points
 c    - qnodes: real *8 (2,nqpts)
 c        u,v location of the quadrature nodes
@@ -133,16 +133,16 @@ c        the computed integrals
 c 
 
       implicit none
-      integer, intent(in) :: npatches, norder, npols, ndtarg
-      integer, intent(in) :: nporder, nppols
+      integer *8, intent(in) :: npatches, norder, npols, ndtarg
+      integer *8, intent(in) :: nporder, nppols
       real *8, intent(in) :: srccoefs(9,npols,npatches)
       real *8, intent(in) :: xyztarg(ndtarg,ntarg)
-      integer, intent(in) :: ntarg
-      integer, intent(in) :: itargptr(npatches), ntargptr(npatches)
-      integer, intent(in) :: ndd, ndz, ndi
+      integer *8, intent(in) :: ntarg
+      integer *8, intent(in) :: itargptr(npatches), ntargptr(npatches)
+      integer *8, intent(in) :: ndd, ndz, ndi
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
-      integer, intent(in) :: ipars(ndi),nqpts
+      integer *8, intent(in) :: ipars(ndi),nqpts
       real *8, intent(in) :: qnodes(2,nqpts),wts(nqpts)
 
       complex *16, intent(out) :: cintvals(nppols,ntarg)
@@ -154,7 +154,7 @@ c
       complex *16, allocatable :: sigvals(:,:)
       complex *16, allocatable :: xkernvals(:,:)
 
-      integer i,ipatch,j,lda,ldb,itarg,ldc,ntarg0,ii
+      integer *8 i,ipatch,j,lda,ldb,itarg,ldc,ntarg0,ii
 
       complex *16 fval
       real *8 da,ra
@@ -162,9 +162,11 @@ c
       character *1 transa,transb
       real *8 alpha,beta
       complex *16 alpha_c,beta_c
+      integer *8 int8_9
 
       external fker
 
+      int8_9 = 9
 c
 c       initialize koornwinder polynomials
 c
@@ -211,7 +213,7 @@ c
 
         da = 1
 
-        call dgemm_guru(transa,transb,9,nqpts,npols,alpha,
+        call dgemm_guru(transa,transb,int8_9,nqpts,npols,alpha,
      1     srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
 
    
@@ -272,27 +274,27 @@ c  Input arguments:
 c    - eps: real *8
 c        requested tolerance. Currently unsued, nqorder and rfac,
 c        should be set based on eps.
-c    - intype: integer
+c    - intype: integer *8
 c        node type
 c        * intype = 1, rokhlin vioreanu nodes
 c        * intype = 2, xiao gimbutas nodes
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg, ntarg)
 c        target information
-c    - ifp: integer
+c    - ifp: integer *8
 c        flag for using proxy points for refining based 
 c        on distance criterion
 c    - xyzproxy: real *8 (3,*)
@@ -300,19 +302,19 @@ c        Proxy target points for refining triangles based
 c        distance criterion, distance to proxy
 c        point will be used instead of distance to target
 c        should be of size (3,ntarg), if ifp=1
-c    - itargptr: integer(npatches)
+c    - itargptr: integer *8(npatches)
 c        Pointer array for determining which targets are relevant
 c        for patch i. 
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(npatches)
+c    - ntargptr: integer *8(npatches)
 c        number of targets relevant for patch i
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
-c    - ntrimax: integer
+c    - ntrimax: integer *8
 c        maximum number of triangles allowed in heirarchy
 c        of triangles. Routine will return without
 c        computing anything and an error code, if ntrimax
@@ -342,19 +344,19 @@ c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        scalar
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqorder: integer
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used on each triangle
 c    - rfac: real *8
 c        scaling factor for determining when a triangle 
@@ -363,7 +365,7 @@ c
 c  Output arguments:
 c    - cintvals: complex *16 (nppols, ntarg)
 c        the computed integrals
-c    - ier: integer
+c    - ier: integer *8
 c        error code, ier = 0 means successful execution
 c        ier = 2, means that too few triangles, code should be run
 c        with a larger value of ntrimax
@@ -375,24 +377,24 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer intype,ifp
-      integer npatches,norder,npols
-      integer nporder,nppols
+      integer *8 intype,ifp
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
       real *8 xyzproxy(3,*)
-      integer itargptr(npatches)
-      integer ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer nqorder
+      integer *8 nqorder
       real *8 rfac
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -408,35 +410,36 @@ cc      temporary variables
 c
       real *8, allocatable :: tricm(:,:,:)
       real *8, allocatable :: trirad(:,:)
-      integer, allocatable :: itrireltmp(:,:)
-      integer, allocatable :: itrirel(:,:)
-      integer, allocatable :: itrirelall(:)
+      integer *8, allocatable :: itrireltmp(:,:)
+      integer *8, allocatable :: itrirel(:,:)
+      integer *8, allocatable :: itrirelall(:)
       real *8, allocatable :: tverts(:,:,:)
-      integer, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
 
-      integer ntri,ntrimax,nlev,itri,istart,i,j
-      integer ier,itarg,jj,jstart,nlmax,npts
-      integer iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqtri,ii
 
-      integer npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: xyztargtmp(:,:)
       complex *16, allocatable :: fkervals(:),sigmatmp(:,:)
       real *8, allocatable :: rsigtmp(:,:)
       real *8 xyztmp(3)
-      integer itmp
+      integer *8 itmp
       complex *16 ima
       complex *16 alpha_c, beta_c
 
       character *1 transa,transb
       double precision :: alpha,beta
-      integer lda,ldb,ldc
+      integer *8 lda,ldb,ldc
+      integer *8 int8_9,int8_1
       
 
       data ima/(0.0d0,1.0d0)/
@@ -445,6 +448,8 @@ c
 
 
 
+      int8_9 = 9
+      int8_1 = 1
 cc      max number of levels
 c
       nlmax = 20
@@ -579,7 +584,9 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa, transb, 9, npmax, npols, alpha,
+        call dgemm_guru(transa, transb, int8_9, npmax, npols, alpha,
+     1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals, ldc)
+        call dgemm_guru(transa, transb, int8_9, npmax, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals,
      2     ldc)
 
@@ -621,7 +628,8 @@ c
 c          TODO:  fix this to call mkl blas with single thread
 c
           call zgemv_guru('n', nppols, npts, alpha_c, sigmatmp,
-     1      nppols, fkervals, 1, beta_c, cintvals(1,itarg), 1)
+     1      nppols, fkervals, int8_1, beta_c, cintvals(1,itarg),
+     2      int8_1)
         enddo
       enddo
 
@@ -651,39 +659,39 @@ c  Input arguments:
 c    - eps: real *8
 c        requested tolerance. Currently unsued, nqorder and rfac,
 c        should be set based on eps.
-c    - intype: integer
+c    - intype: integer *8
 c        node type
 c        * intype = 1, rokhlin vioreanu nodes
 c        * intype = 2, xiao gimbutas nodes
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg, ntarg)
 c        target information
-c    - itargptr: integer(npatches)
+c    - itargptr: integer *8(npatches)
 c        Pointer array for determining which targets are relevant
 c        for patch i. 
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(npatches)
+c    - ntargptr: integer *8(npatches)
 c        number of targets relevant for patch i
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
-c    - ntrimax: integer
+c    - ntrimax: integer *8
 c        Initial guess for maximum number of triangles 
 c        allowed in heirarchy of triangles. 
 c        Recommended value 3000.
@@ -712,19 +720,19 @@ c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        scalar
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqorder: integer
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used on each triangle
 c 
 c  Output arguments:
@@ -738,21 +746,21 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer intype
-      integer npatches,norder,npols
-      integer nporder,nppols
+      integer *8 intype
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
-      integer itargptr(npatches)
-      integer ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
 
       real *8 rat1(2,0:norder)
       real *8 rat2(3,0:norder,0:norder)
@@ -762,41 +770,44 @@ c
       real *8 rat2p(3,0:nporder,0:nporder)
       real *8 rsc1p(0:nporder,0:nporder)
 
-      integer nqorder
+      integer *8 nqorder
 
       complex *16 cintvals(nppols,ntarg)
 
 c
 c       tree variables
 c
-      integer nlmax,ltree
+      integer *8 nlmax,ltree
       real *8, allocatable :: tvs(:,:,:),da(:)
-      integer, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
       real *8, allocatable :: tvs2(:,:,:),da2(:)
-      integer, allocatable :: ichild_start2(:)
+      integer *8, allocatable :: ichild_start2(:)
 
-      integer ntri,ntrimax,nlev,itri,istart,i,j,k
-      integer ier,itarg,jj,jstart,npts
-      integer iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j,k
+      integer *8 ier,itarg,jj,jstart,npts
+      integer *8 iqtri,ii
 
 
-      integer npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
-      integer nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:),sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
       real *8, allocatable :: srcvals2(:,:),qwts2(:)
-      integer itmp
+      integer *8 itmp
 
       character *1 transa,transb
       real *8 alpha,beta
-      integer lda,ldb,ldc
-      integer nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 lda,ldb,ldc
+      integer *8 nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 int8_9, int8_1
       
       
+      int8_9 = 9
+      int8_1 = 1
 c
 c      get the tree
 c
@@ -896,9 +907,8 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa, transb, 9, nqpols, npols, alpha,
-     1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals,
-     2     ldc)
+        call dgemm_guru(transa, transb, int8_9, nqpols, npols, alpha,
+     1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals, ldc)
         call get_norms_qwts_tri(nqpols, wts, srcvals, da, qwts)
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
@@ -925,15 +935,16 @@ c
              nn2 = nppols*npmax
              nn3 = 12*npmax
              nn4 = ntri*6
-             call dcopy_guru(nn1, sigvals, 1, sigvals2, 1)
-             call dcopy_guru(nn2, sigvalsdens, 1, sigvalsdens2, 1)
-             call dcopy_guru(nn3, srcvals, 1, srcvals2, 1)
-             call dcopy_guru(npmax, qwts, 1, qwts2, 1)
+             call dcopy_guru(nn1, sigvals, int8_1, sigvals2, int8_1)
+             call dcopy_guru(nn2, sigvalsdens, int8_1, sigvalsdens2,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals, int8_1, srcvals2, int8_1)
+             call dcopy_guru(npmax, qwts, int8_1, qwts2, int8_1)
              do ii=1,ntri
                ichild_start2(ii) = ichild_start(ii)
              enddo
-             call dcopy_guru(nn4,tvs,1,tvs2,1)
-             call dcopy_guru(ntri,da,1,da2,1)
+             call dcopy_guru(nn4,tvs,int8_1,tvs2,int8_1)
+             call dcopy_guru(ntri,da,int8_1,da2,int8_1)
 
 
              deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
@@ -950,15 +961,16 @@ c
                ichild_start(ii) = -1
              enddo
 
-             call dcopy_guru(nn1, sigvals2, 1, sigvals, 1)
-             call dcopy_guru(nn2, sigvalsdens2, 1, sigvalsdens, 1)
-             call dcopy_guru(nn3, srcvals2, 1, srcvals, 1)
-             call dcopy_guru(npmax, qwts2, 1, qwts, 1)
+             call dcopy_guru(nn1, sigvals2, int8_1, sigvals, int8_1)
+             call dcopy_guru(nn2, sigvalsdens2, int8_1, sigvalsdens,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals2, int8_1, srcvals, int8_1)
+             call dcopy_guru(npmax, qwts2, int8_1, qwts, int8_1)
              do ii=1,ntri
                ichild_start(ii) = ichild_start2(ii)
              enddo
-             call dcopy_guru(nn4, tvs2, 1, tvs, 1)
-             call dcopy_guru(ntri, da2, 1, da, 1)
+             call dcopy_guru(nn4, tvs2, int8_1, tvs, int8_1)
+             call dcopy_guru(ntri, da2, int8_1, da, int8_1)
 
              npmax = npmax0
              ntmaxuse = ntmaxuse0
@@ -1005,17 +1017,17 @@ c  Input arguments:
 c    - eps: real *8
 c        requested tolerance. Currently unsued, nqorder and rfac,
 c        should be set based on eps.
-c    - m: integer
+c    - m: integer *8
 c        order for quadrature nodes 
-c    - kpols: integer
+c    - kpols: integer *8
 c        number of quadrature nodes 
-c    - nlmax: integer
+c    - nlmax: integer *8
 c        max number of levels
-c    - ntmax: integer
+c    - ntmax: integer *8
 c        max number of triangles
-c    - ntri: integer
+c    - ntri: integer *8
 c        current number of triangles in adaptive integration
-c    - ichild_start: integer(ntmax)
+c    - ichild_start: integer *8(ntmax)
 c        ichild_start(i) is the first child of traingle i
 c    - tvs: real *8(2,3,ntmax)
 c        vertices of hierarchy of triangles
@@ -1025,15 +1037,15 @@ c    - uvsq: real *8(kpols)
 c        integration nodes on standard triangle
 c    - wts: real *8(kpols)
 c        integration weights on standard triangle
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - npmax: integer
+c    - npmax: integer *8
 c        max number of points = ntmax*kpols
 c    - srcvals: real *8(12,npmax)
 c        geometry info on heirarchy of meshes
@@ -1042,15 +1054,15 @@ c        quadrature weights
 c    - sigvals: real *8(npols,npmax) - 
 c        koornwinder polynomials computed along the adaptive grid
 c        of order = norder
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
 c    - sigvalsdens: real *8(nppols,npmax) - 
 c        koornwinder polynomials computed along the adaptive grid
 c        of order = nporder
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
 c    - xt: real *8 (ndtarg)
 c        target information
@@ -1079,37 +1091,38 @@ c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        scalar
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqorder: integer
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used on each triangle
 c 
 c  Output arguments:
 c    - cintall: complex *16 (nppols)
 c        the computed integrals
-c    - ier: integer
+c    - ier: integer *8
 c        error code
 c        * ier = 0, successful execution
 c        * ier = 4, too few triangles, try with more triangles
 c         
 
       implicit real *8 (a-h,o-z)
-      integer, allocatable :: istack(:)
-      integer ichild_start(ntmax)
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: istack(:)
+      integer *8 ichild_start(ntmax)
       real *8 da(ntmax)
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
-      integer nproclist0, nproclist
-      integer idone
+      integer *8 nproclist0, nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -1120,11 +1133,11 @@ c
       complex *16, allocatable :: ctmp(:)
       complex *16, allocatable :: cvals(:,:)
 
-      integer ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
-      integer ier
+      integer *8 ipars(ndi)
+      integer *8 ier
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -1201,13 +1214,14 @@ c
       
 
       implicit real *8 (a-h,o-z)
-      integer istack(*),nproclist0
-      integer ichild_start(ntmax)
-      integer nporder,nppols
+      implicit integer *8 (i-n)
+      integer *8 istack(*),nproclist0
+      integer *8 ichild_start(ntmax)
+      integer *8 nporder,nppols
       real *8 da(ntmax)
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
-      integer  nproclist
-      integer idone
+      integer *8  nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -1218,10 +1232,10 @@ c
       complex *16 cintall(nppols),fval,ctmp(nppols)
       complex *16 cvals(nppols,ntmax)
 
-      integer ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -1232,9 +1246,11 @@ c
 
       real *8, allocatable :: uvtmp(:,:)
       character *1 transa,transb
-      integer lda,ldb,ldc
+      integer *8 lda,ldb,ldc
       external fker
+      integer *8 int8_9
       
+      int8_9 = 9
       allocate(uvtmp(2,kpols))
 
 c
@@ -1297,8 +1313,8 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm_guru(transa, transb, 9, kpols, npols, alpha,
-     1           srccoefs, lda, sigvals(1,istart), ldb, beta,
+              call dgemm_guru(transa, transb, int8_9, kpols, npols,
+     1           alpha, srccoefs, lda, sigvals(1,istart), ldb, beta,
      2           srcvals(1,istart), ldc)
               call get_norms_qwts_tri(kpols, wts, srcvals(1,istart),
      1           rr, qwts(istart))
@@ -1417,27 +1433,27 @@ c  Input arguments:
 c    - eps: real *8
 c        requested tolerance. Currently unsued, nqorder and rfac,
 c        should be set based on eps.
-c    - intype: integer
+c    - intype: integer *8
 c        node type
 c        * intype = 1, rokhlin vioreanu nodes
 c        * intype = 2, xiao gimbutas nodes
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg, ntarg)
 c        target information
-c    - ifp: integer
+c    - ifp: integer *8
 c        flag for using proxy points for refining based 
 c        on distance criterion
 c    - xyzproxy: real *8 (3,*)
@@ -1445,19 +1461,19 @@ c        Proxy target points for refining triangles based
 c        distance criterion, distance to proxy
 c        point will be used instead of distance to target
 c        should be of size (3,ntarg), if ifp=1
-c    - itargptr: integer(npatches)
+c    - itargptr: integer *8(npatches)
 c        Pointer array for determining which targets are relevant
 c        for patch i. 
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(npatches)
+c    - ntargptr: integer *8(npatches)
 c        number of targets relevant for patch i
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
-c    - ntrimax: integer
+c    - ntrimax: integer *8
 c        Initial guess for maximum number of triangles 
 c        allowed in heirarchy of triangles. 
 c        Recommended value 3000.
@@ -1486,19 +1502,19 @@ c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        scalar
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqorder: integer
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used on each triangle
 c    - rfac: real *8
 c        scaling factor for determining when a triangle 
@@ -1514,24 +1530,24 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer intype,ifp
-      integer npatches,norder,npols
-      integer nporder,nppols
+      integer *8 intype,ifp
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
       real *8 xyzproxy(3,*)
-      integer itargptr(npatches)
-      integer ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer nqorder
+      integer *8 nqorder
       real *8 rfac
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
@@ -1548,23 +1564,23 @@ cc      temporary variables
 c
       real *8, allocatable :: tricm(:,:,:)
       real *8, allocatable :: trirad(:,:)
-      integer, allocatable :: itrireltmp(:,:)
-      integer, allocatable :: itrirel(:,:)
-      integer, allocatable :: itrirelall(:)
+      integer *8, allocatable :: itrireltmp(:,:)
+      integer *8, allocatable :: itrirel(:,:)
+      integer *8, allocatable :: itrirelall(:)
       real *8, allocatable :: tverts(:,:,:)
-      integer, allocatable :: ichild_start(:)
-      integer, allocatable :: ichild_start0(:)
+      integer *8, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start0(:)
 
-      integer ntri,ntrimax,nlev,itri,istart,i,j
-      integer ier,itarg,jj,jstart,nlmax,npts
-      integer iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqtri,ii
 
-      integer npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:)
@@ -1572,14 +1588,14 @@ c
       complex *16, allocatable :: sigmatmp(:,:)
       real *8, allocatable :: xyztargtmp(:,:)
       real *8 xyztmp(3)
-      integer itmp
+      integer *8 itmp
 
       complex *16, allocatable :: xkernvals(:)
-      integer, allocatable :: istack(:)
+      integer *8, allocatable :: istack(:)
 
       complex *16, allocatable :: cvals(:,:)
       
-      integer nproclist0,nproclist,ntri0,npts0
+      integer *8 nproclist0,nproclist,ntri0,npts0
       complex *16 zz
 
       
@@ -1588,10 +1604,12 @@ c
       character *1 transa,transb
       
       real *8 alpha,beta
-      integer lda,ldb,ldc
+      integer *8 lda,ldb,ldc
+      integer *8 int8_9
 
       data ima/(0.0d0,1.0d0)/
 
+      int8_9 = 9
       allocate(cvals(nppols,ntrimax))
       allocate(istack(2*ntrimax))
 
@@ -1747,7 +1765,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa, transb, 9, npts0, npols, alpha,
+        call dgemm_guru(transa, transb, int8_9, npts0, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals, ldc)
 
 
@@ -1838,32 +1856,32 @@ c  Compute the integrals in (1) defined at the top of the file
 c  using a prescribed set of nodes and weights.
 c
 c  Input arguments:
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg, ntarg)
 c        target information
-c    - itargptr: integer(npatches)
+c    - itargptr: integer *8(npatches)
 c        Pointer array for determining which targets are relevant
 c        for patch i. 
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(npatches)
+c    - ntargptr: integer *8(npatches)
 c        number of targets relevant for patch i
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
 c    - fker: function handle
@@ -1873,21 +1891,21 @@ c            fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
-c    - nd: integer
+c    - nd: integer *8
 c        number of kernels
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqpts: integer
+c    - nqpts: integer *8
 c        number of quadrature points
 c    - qnodes: real *8 (2,nqpts)
 c        u,v location of the quadrature nodes
@@ -1900,16 +1918,16 @@ c        the computed integrals
 c 
 
       implicit none
-      integer, intent(in) :: npatches, norder, npols, ndtarg
-      integer, intent(in) :: nporder, nppols
+      integer *8, intent(in) :: npatches, norder, npols, ndtarg
+      integer *8, intent(in) :: nporder, nppols
       real *8, intent(in) :: srccoefs(9,npols,npatches)
       real *8, intent(in) :: xyztarg(ndtarg,ntarg)
-      integer, intent(in) :: ntarg
-      integer, intent(in) :: itargptr(npatches), ntargptr(npatches)
-      integer, intent(in) :: nd, ndd, ndz, ndi
+      integer *8, intent(in) :: ntarg
+      integer *8, intent(in) :: itargptr(npatches), ntargptr(npatches)
+      integer *8, intent(in) :: nd, ndd, ndz, ndi
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
-      integer, intent(in) :: ipars(ndi),nqpts
+      integer *8, intent(in) :: ipars(ndi),nqpts
       real *8, intent(in) :: qnodes(2,nqpts),wts(nqpts)
 
       complex *16, intent(out) :: cintvals(nd,nppols,ntarg)
@@ -1922,7 +1940,8 @@ c
       complex *16, allocatable :: xkernvals(:,:,:)
       complex *16, allocatable :: cinttmp(:,:,:)
 
-      integer i,ipatch,j,lda,ldb,itarg,ldc,ntarg0,ii, idim
+      integer *8 i,ipatch,j,lda,ldb,itarg,ldc,ntarg0,ii, idim
+      integer *8 int8_9
 
       complex *16 fval(nd)
       real *8 da,ra
@@ -1938,6 +1957,7 @@ c       initialize koornwinder polynomials
 c
 
       
+      int8_9 = 9
       allocate(rat1(2,0:norder),rat2(3,0:norder,0:norder))
       allocate(rsc1(0:norder,0:norder))
       call koornf_init(norder,rat1,rat2,rsc1) 
@@ -1979,7 +1999,7 @@ c
 
         da = 1
 
-        call dgemm_guru(transa, transb, 9, nqpts, npols, alpha,
+        call dgemm_guru(transa, transb, int8_9, nqpts, npols, alpha,
      1     srccoefs(1,1,ipatch), lda, rsigvals, ldb, beta,
      2     srcvals, ldc)
 
@@ -2054,27 +2074,27 @@ c  Input arguments:
 c    - eps: real *8
 c        requested tolerance. Currently unsued, nqorder and rfac,
 c        should be set based on eps.
-c    - intype: integer
+c    - intype: integer *8
 c        node type
 c        * intype = 1, rokhlin vioreanu nodes
 c        * intype = 2, xiao gimbutas nodes
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg, ntarg)
 c        target information
-c    - ifp: integer
+c    - ifp: integer *8
 c        flag for using proxy points for refining based 
 c        on distance criterion
 c    - xyzproxy: real *8 (3,*)
@@ -2082,19 +2102,19 @@ c        Proxy target points for refining triangles based
 c        distance criterion, distance to proxy
 c        point will be used instead of distance to target
 c        should be of size (3,ntarg), if ifp=1
-c    - itargptr: integer(npatches)
+c    - itargptr: integer *8(npatches)
 c        Pointer array for determining which targets are relevant
 c        for patch i. 
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(npatches)
+c    - ntargptr: integer *8(npatches)
 c        number of targets relevant for patch i
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
-c    - ntrimax: integer
+c    - ntrimax: integer *8
 c        maximum number of triangles allowed in heirarchy
 c        of triangles. Routine will return without
 c        computing anything and an error code, if ntrimax
@@ -2124,21 +2144,21 @@ c            fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
-c    - nd: integer
+c    - nd: integer *8
 c        number of kernels
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqorder: integer
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used on each triangle
 c    - rfac: real *8
 c        scaling factor for determining when a triangle 
@@ -2153,24 +2173,24 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer intype,ifp,nd
-      integer npatches,norder,npols
-      integer nporder,nppols
+      integer *8 intype,ifp,nd
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
       real *8 xyzproxy(3,*)
-      integer itargptr(npatches)
-      integer ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer ndd,ndi,ndz
+      integer *8 ndd,ndi,ndz
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer nqorder
+      integer *8 nqorder
       real *8 rfac
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -2186,35 +2206,36 @@ cc      temporary variables
 c
       real *8, allocatable :: tricm(:,:,:)
       real *8, allocatable :: trirad(:,:)
-      integer, allocatable :: itrireltmp(:,:)
-      integer, allocatable :: itrirel(:,:)
-      integer, allocatable :: itrirelall(:)
+      integer *8, allocatable :: itrireltmp(:,:)
+      integer *8, allocatable :: itrirel(:,:)
+      integer *8, allocatable :: itrirelall(:)
       real *8, allocatable :: tverts(:,:,:)
-      integer, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
 
-      integer ntri,ntrimax,nlev,itri,istart,i,j
-      integer ier,itarg,jj,jstart,nlmax,npts
-      integer iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqtri,ii
 
-      integer npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: xyztargtmp(:,:)
       complex *16, allocatable :: fkervals(:,:),sigmatmp(:,:)
       real *8, allocatable :: rsigtmp(:,:)
       real *8 xyztmp(3)
-      integer itmp,idim
+      integer *8 itmp,idim
       complex *16 ima
 
       character *1 transa,transb
       double precision :: alpha,beta
       complex *16 alpha_c, beta_c
-      integer lda,ldb,ldc
+      integer *8 lda,ldb,ldc
+      integer *8 int8_9
       
 
       data ima/(0.0d0,1.0d0)/
@@ -2223,6 +2244,7 @@ c
 
 
 
+      int8_9 = 9
 cc      max number of levels
 c
       nlmax = 20
@@ -2362,7 +2384,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa, transb, 9, npmax, npols, alpha,
+        call dgemm_guru(transa, transb, int8_9, npmax, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals, ldc)
 
 
@@ -2442,39 +2464,39 @@ c  Input arguments:
 c    - eps: real *8
 c        requested tolerance. Currently unsued, nqorder and rfac,
 c        should be set based on eps.
-c    - intype: integer
+c    - intype: integer *8
 c        node type
 c        * intype = 1, rokhlin vioreanu nodes
 c        * intype = 2, xiao gimbutas nodes
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg, ntarg)
 c        target information
-c    - itargptr: integer(npatches)
+c    - itargptr: integer *8(npatches)
 c        Pointer array for determining which targets are relevant
 c        for patch i. 
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(npatches)
+c    - ntargptr: integer *8(npatches)
 c        number of targets relevant for patch i
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
-c    - ntrimax: integer
+c    - ntrimax: integer *8
 c        Initial guess for maximum number of triangles 
 c        allowed in heirarchy of triangles. 
 c        Recommended value 3000.
@@ -2503,21 +2525,21 @@ c            fker(nd, x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
-c    - nd: integer
+c    - nd: integer *8
 c        number of kernels
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqorder: integer
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used on each triangle
 c 
 c  Output arguments:
@@ -2531,21 +2553,21 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer intype,nd
-      integer npatches,norder,npols
-      integer nporder,nppols
+      integer *8 intype,nd
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
-      integer itargptr(npatches)
-      integer ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer ndd,ndi,ndz
+      integer *8 ndd,ndi,ndz
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
 
       real *8 rat1(2,0:norder)
       real *8 rat2(3,0:norder,0:norder)
@@ -2555,41 +2577,44 @@ c
       real *8 rat2p(3,0:norder,0:norder)
       real *8 rsc1p(0:norder,0:norder)
 
-      integer nqorder
+      integer *8 nqorder
 
       complex *16 cintvals(nd,nppols,ntarg)
 
 c
 c       tree variables
 c
-      integer nlmax,ltree
+      integer *8 nlmax,ltree
       real *8, allocatable :: tvs(:,:,:),da(:)
-      integer, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
       real *8, allocatable :: tvs2(:,:,:),da2(:)
-      integer, allocatable :: ichild_start2(:)
+      integer *8, allocatable :: ichild_start2(:)
 
-      integer ntri,ntrimax,nlev,itri,istart,i,j,k
-      integer ier,itarg,jj,jstart,npts
-      integer iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j,k
+      integer *8 ier,itarg,jj,jstart,npts
+      integer *8 iqtri,ii
 
 
-      integer npmax
+      integer *8 npmax
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
-      integer nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:),sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:)
       real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
       real *8, allocatable :: srcvals2(:,:),qwts2(:)
-      integer itmp
+      integer *8 itmp
 
       character *1 transa,transb
       real *8 alpha,beta
-      integer lda,ldb,ldc
-      integer nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 lda,ldb,ldc
+      integer *8 nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 int8_9, int8_1
       
       
+      int8_9 = 9
+      int8_1 = 1
 c
 c      get the tree
 c
@@ -2691,9 +2716,8 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa, transb, 9, nqpols, npols, alpha,
-     1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals,
-     2     ldc)
+        call dgemm_guru(transa, transb, int8_9, nqpols, npols, alpha,
+     1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals, ldc)
         call get_norms_qwts_tri(nqpols, wts, srcvals, da, qwts)
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
@@ -2719,15 +2743,16 @@ c
              nn2 = nppols*npmax
              nn3 = 12*npmax
              nn4 = ntri*6
-             call dcopy_guru(nn1, sigvals, 1, sigvals2, 1)
-             call dcopy_guru(nn2, sigvalsdens, 1, sigvalsdens2, 1)
-             call dcopy_guru(nn3, srcvals, 1, srcvals2, 1)
-             call dcopy_guru(npmax, qwts, 1, qwts2, 1)
+             call dcopy_guru(nn1, sigvals, int8_1, sigvals2, int8_1)
+             call dcopy_guru(nn2, sigvalsdens, int8_1, sigvalsdens2,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals, int8_1, srcvals2, int8_1)
+             call dcopy_guru(npmax, qwts, int8_1, qwts2, int8_1)
              do ii=1,ntri
                ichild_start2(ii) = ichild_start(ii)
              enddo
-             call dcopy_guru(nn4, tvs, 1, tvs2, 1)
-             call dcopy_guru(ntri, da, 1, da2, 1)
+             call dcopy_guru(nn4, tvs, int8_1, tvs2, int8_1)
+             call dcopy_guru(ntri, da, int8_1, da2, int8_1)
 
 
              deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
@@ -2744,15 +2769,16 @@ c
                ichild_start(ii) = -1
              enddo
 
-             call dcopy_guru(nn1, sigvals2, 1, sigvals, 1)
-             call dcopy_guru(nn2, sigvalsdens2, 1, sigvalsdens, 1)
-             call dcopy_guru(nn3, srcvals2, 1, srcvals, 1)
-             call dcopy_guru(npmax, qwts2, 1, qwts, 1)
+             call dcopy_guru(nn1, sigvals2, int8_1, sigvals, int8_1)
+             call dcopy_guru(nn2, sigvalsdens2, int8_1, sigvalsdens,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals2, int8_1, srcvals, int8_1)
+             call dcopy_guru(npmax, qwts2, int8_1, qwts, int8_1)
              do ii=1,ntri
                ichild_start(ii) = ichild_start2(ii)
              enddo
-             call dcopy_guru(nn4, tvs2, 1, tvs, 1)
-             call dcopy_guru(ntri, da2, 1, da, 1)
+             call dcopy_guru(nn4, tvs2, int8_1, tvs, int8_1)
+             call dcopy_guru(ntri, da2, int8_1, da, int8_1)
 
              npmax = npmax0
              ntmaxuse = ntmaxuse0
@@ -2799,17 +2825,17 @@ c  Input arguments:
 c    - eps: real *8
 c        requested tolerance. Currently unsued, nqorder and rfac,
 c        should be set based on eps.
-c    - m: integer
+c    - m: integer *8
 c        order for quadrature nodes 
-c    - kpols: integer
+c    - kpols: integer *8
 c        number of quadrature nodes 
-c    - nlmax: integer
+c    - nlmax: integer *8
 c        max number of levels
-c    - ntmax: integer
+c    - ntmax: integer *8
 c        max number of triangles
-c    - ntri: integer
+c    - ntri: integer *8
 c        current number of triangles in adaptive integration
-c    - ichild_start: integer(ntmax)
+c    - ichild_start: integer *8(ntmax)
 c        ichild_start(i) is the first child of traingle i
 c    - tvs: real *8(2,3,ntmax)
 c        vertices of hierarchy of triangles
@@ -2819,15 +2845,15 @@ c    - uvsq: real *8(kpols)
 c        integration nodes on standard triangle
 c    - wts: real *8(kpols)
 c        integration weights on standard triangle
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - npmax: integer
+c    - npmax: integer *8
 c        max number of points = ntmax*kpols
 c    - srcvals: real *8(12,npmax)
 c        geometry info on heirarchy of meshes
@@ -2836,15 +2862,15 @@ c        quadrature weights
 c    - sigvals: real *8(npols,npmax) - 
 c        koornwinder polynomials computed along the adaptive grid
 c        of order = norder
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
 c    - sigvalsdens: real *8(nppols,npmax) - 
 c        koornwinder polynomials computed along the adaptive grid
 c        of order = nporder
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
 c    - xt: real *8 (ndtarg)
 c        target information
@@ -2873,40 +2899,41 @@ c            fker(nd, x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
-c    - nd: integer
+c    - nd: integer *8
 c        number of kernels
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqorder: integer
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used on each triangle
 c 
 c  Output arguments:
 c    - cintall: complex *16 (nd,nppols)
 c        the computed integrals
-c    - ier: integer
+c    - ier: integer *8
 c        error code
 c        * ier = 0, successful execution
 c        * ier = 4, too few triangles, try with more triangles
 
 
       implicit real *8 (a-h,o-z)
-      integer, allocatable :: istack(:)
-      integer ichild_start(ntmax),nd
-      integer nporder,nppols
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: istack(:)
+      integer *8 ichild_start(ntmax),nd
+      integer *8 nporder,nppols
       real *8 da(ntmax)
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
-      integer nproclist0, nproclist
-      integer idone
+      integer *8 nproclist0, nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -2916,10 +2943,10 @@ c        * ier = 4, too few triangles, try with more triangles
       complex *16 cintall(nd,npols),fval(nd)
       complex *16, allocatable :: cvals(:,:,:)
 
-      integer ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi),idim
+      integer *8 ipars(ndi),idim
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -3001,13 +3028,14 @@ c
       
 
       implicit real *8 (a-h,o-z)
-      integer istack(*),nproclist0,nd
-      integer ichild_start(ntmax)
-      integer nporder,nppols
+      implicit integer *8 (i-n)
+      integer *8 istack(*),nproclist0,nd
+      integer *8 ichild_start(ntmax)
+      integer *8 nporder,nppols
       real *8 da(ntmax)
       real *8 tvs(2,3,ntmax), uvsq(2,kpols),wts(kpols)
-      integer  nproclist
-      integer idone
+      integer *8  nproclist
+      integer *8 idone
       real *8 srccoefs(9,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
@@ -3018,10 +3046,10 @@ c
       complex *16 cintall(nd,nppols),fval(nd),ctmp(nd,nppols)
       complex *16 cvals(nd,nppols,ntmax)
 
-      integer ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
       real *8 rsc1(0:norder,0:norder)
@@ -3031,9 +3059,11 @@ c
 
       real *8, allocatable :: uvtmp(:,:)
       character *1 transa,transb
-      integer lda,ldb,ldc
+      integer *8 lda,ldb,ldc
       external fker
+      integer *8 int8_9
       
+      int8_9 = 9
       allocate(uvtmp(2,kpols))
 
 
@@ -3096,8 +3126,8 @@ c               print *, "Exiting without computing anything"
               ldb = npols
               ldc = 12
 
-              call dgemm_guru(transa, transb, 9, kpols, npols, alpha,
-     1           srccoefs, lda, sigvals(1,istart), ldb, beta,
+              call dgemm_guru(transa, transb, int8_9, kpols, npols,
+     1           alpha, srccoefs, lda, sigvals(1,istart), ldb, beta,
      2           srcvals(1,istart), ldc)
               call get_norms_qwts_tri(kpols, wts, srcvals(1,istart),
      1           rr, qwts(istart))
@@ -3236,27 +3266,27 @@ c  Input arguments:
 c    - eps: real *8
 c        requested tolerance. Currently unsued, nqorder and rfac,
 c        should be set based on eps.
-c    - intype: integer
+c    - intype: integer *8
 c        node type
 c        * intype = 1, rokhlin vioreanu nodes
 c        * intype = 2, xiao gimbutas nodes
-c    - npatches: integer
+c    - npatches: integer *8
 c        number of patches
-c    - norder: integer
+c    - norder: integer *8
 c        order of discretization on patches
-c    - npols: integer
+c    - npols: integer *8
 c        number of points/basis functions on the 
 c        patch = (norder+1)*(norded+2)/2
 c    - srccoefs: real *8 (9, npols, npatches)
 c        Koornwinder expansion coefficients of xyz, d/du (xyz), 
 c        d/dv (xyz)
-c    - ndtarg: integer
+c    - ndtarg: integer *8
 c        leading dimension of target information
-c    - ntarg: integer
+c    - ntarg: integer *8
 c        number of targets
 c    - xyztarg: real *8 (ndtarg, ntarg)
 c        target information
-c    - ifp: integer
+c    - ifp: integer *8
 c        flag for using proxy points for refining based 
 c        on distance criterion
 c    - xyzproxy: real *8 (3,*)
@@ -3264,19 +3294,19 @@ c        Proxy target points for refining triangles based
 c        distance criterion, distance to proxy
 c        point will be used instead of distance to target
 c        should be of size (3,ntarg), if ifp=1
-c    - itargptr: integer(npatches)
+c    - itargptr: integer *8(npatches)
 c        Pointer array for determining which targets are relevant
 c        for patch i. 
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer(npatches)
+c    - ntargptr: integer *8(npatches)
 c        number of targets relevant for patch i
-c    - nporder: integer
+c    - nporder: integer *8
 c        order of Koornwinder polynomials to be integrated
-c    - nppols: integer
+c    - nppols: integer *8
 c        number of polynomials corresponding to 
 c        nporder = (nporder+1)*(nporder+2)/2
-c    - ntrimax: integer
+c    - ntrimax: integer *8
 c        Initial guess for maximum number of triangles 
 c        allowed in heirarchy of triangles. 
 c        Recommended value 3000.
@@ -3305,21 +3335,21 @@ c            fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
-c    - nd: integer
+c    - nd: integer *8
 c        number of kernels
-c    - ndd: integer
+c    - ndd: integer *8
 c        number of real *8/double precision parameters
 c    - dpars: real *8 (ndd)
 c         real *8/ double precision paramters
-c    - ndz: integer
+c    - ndz: integer *8
 c        number of complex *16 parameters
 c    - zpars: complex *16(ndz)
 c        complex *16 parameters
-c    - ndi: integer
+c    - ndi: integer *8
 c        number of integer parameters
-c    - ipars: integer(ndi)
+c    - ipars: integer *8(ndi)
 c        integer parameters
-c    - nqorder: integer
+c    - nqorder: integer *8
 c        order of quadrature nodes to be used on each triangle
 c    - rfac: real *8
 c        scaling factor for determining when a triangle 
@@ -3335,24 +3365,24 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer intype,ifp,nd
-      integer npatches,norder,npols
-      integer nporder,nppols
+      integer *8 intype,ifp,nd
+      integer *8 npatches,norder,npols
+      integer *8 nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer ntarg,ndtarg
+      integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
       real *8 xyzproxy(3,*)
-      integer itargptr(npatches)
-      integer ntargptr(npatches)
+      integer *8 itargptr(npatches)
+      integer *8 ntargptr(npatches)
       
       external fker
-      integer ndd,ndz,ndi
+      integer *8 ndd,ndz,ndi
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
 
-      integer nqorder
+      integer *8 nqorder
       real *8 rfac
 
       real *8 rat1(2,0:norder),rat2(3,0:norder,0:norder)
@@ -3369,40 +3399,40 @@ cc      temporary variables
 c
       real *8, allocatable :: tricm(:,:,:)
       real *8, allocatable :: trirad(:,:)
-      integer, allocatable :: itrireltmp(:,:)
-      integer, allocatable :: itrirel(:,:)
-      integer, allocatable :: itrirelall(:)
+      integer *8, allocatable :: itrireltmp(:,:)
+      integer *8, allocatable :: itrirel(:,:)
+      integer *8, allocatable :: itrirelall(:)
       real *8, allocatable :: tverts(:,:,:)
-      integer, allocatable :: ichild_start(:)
-      integer, allocatable :: ichild_start0(:)
+      integer *8, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start0(:)
 
       real *8, allocatable :: xyztargtmp(:,:)
 
-      integer ntri,ntrimax,nlev,itri,istart,i,j
-      integer ier,itarg,jj,jstart,nlmax,npts
-      integer iqtri,ii
+      integer *8 ntri,ntrimax,nlev,itri,istart,i,j
+      integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 iqtri,ii
 
-      integer npmax
-      integer idim
+      integer *8 npmax
+      integer *8 idim
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
       real *8, allocatable :: da(:)
-      integer nqpols
+      integer *8 nqpols
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: sigvalsdens(:,:)
       real *8, allocatable :: srcvals(:,:)
       real *8, allocatable :: qwts(:)
       complex *16, allocatable :: sigmatmp(:,:)
       real *8 xyztmp(3)
-      integer itmp
+      integer *8 itmp
 
       complex *16, allocatable :: xkernvals(:,:)
-      integer, allocatable :: istack(:)
+      integer *8, allocatable :: istack(:)
 
       complex *16, allocatable :: cvals(:,:,:)
       
-      integer nproclist0,nproclist,ntri0,npts0
+      integer *8 nproclist0,nproclist,ntri0,npts0
       complex *16 zz
 
       
@@ -3411,10 +3441,12 @@ c
       character *1 transa,transb
       
       real *8 alpha,beta
-      integer lda,ldb,ldc
+      integer *8 lda,ldb,ldc
+      integer *8 int8_9
 
       data ima/(0.0d0,1.0d0)/
 
+      int8_9 = 9
       allocate(cvals(nd,nppols,ntrimax))
       allocate(istack(2*ntrimax))
 
@@ -3570,7 +3602,7 @@ c
         ldb = npols
         ldc = 12
 
-        call dgemm_guru(transa, transb, 9, npts0, npols, alpha,
+        call dgemm_guru(transa, transb, int8_9, npts0, npols, alpha,
      1     srccoefs(1,1,itri), lda, sigvals, ldb, beta, srcvals, ldc)
 
 

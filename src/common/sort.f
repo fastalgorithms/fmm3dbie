@@ -17,7 +17,7 @@ C of equal input values is not necessarily preserved.
 C
 C===================================================================
       implicit none
-      integer i,n,index(n)
+      integer *8 i,n,index(n)
       real *8 data(n)
 
       do i=1,n
@@ -36,7 +36,7 @@ C
 C
 C===================================================================
       implicit none
-      integer n,m,n_thresh,p,i,j,pivot_index,index(n)
+      integer *8 n,m,n_thresh,p,i,j,pivot_index,index(n)
       real *8 pivot,data(m)
       parameter (n_thresh = 16)
       if (n<=n_thresh) then
@@ -102,7 +102,7 @@ C
 C
 C===================================================================
       implicit none
-      integer n,m,i,j,key_index,index(n)
+      integer *8 n,m,i,j,key_index,index(n)
       real *8 key,data(m)
 
       do i = 2,n
@@ -126,13 +126,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine sortr_para(n,data,index)
 C===================================================================
 C
-C     sortr_para -- sort, integer input, index output
+C     sortr_para -- sort, integer *8 input, index output
 C
 C
-C     Input:  n     integer
+C     Input:  n     integer *8
 C             data  real *8
 C
-C     Output: index integer (dimension n)
+C     Output: index integer *8 (dimension n)
 C
 C This openmp threaded routine performs an sort of the first n elements
 C of array data, returning into array index the indices of elements of
@@ -146,13 +146,13 @@ C of equal input values is not necessarily preserved.
 C===================================================================
 
       implicit none
-      integer n,index(n)
-      integer nthreads,nelems,ielems,istart,iend,i,j,swap
+      integer *8 n,index(n)
+      integer *8 nthreads,nelems,ielems,istart,iend,i,j,swap
       integer *8 ithread
-      integer istart2,iend2,nelems2
+      integer *8 istart2,iend2,nelems2
       real *8 data(n)
-      integer, allocatable :: split(:)
-      integer, allocatable :: index2(:)
+      integer *8, allocatable :: split(:)
+      integer *8, allocatable :: index2(:)
       integer, external :: OMP_GET_THREAD_NUM, OMP_GET_NUM_THREADS
       integer, external :: OMP_GET_MAX_THREADS
 
@@ -273,14 +273,14 @@ C rearranged.
 C
 C===================================================================
       implicit none
-      integer n1,n2,nthreads,i,j,k,ns,indx,first,split1,split2
+      integer *8 n1,n2,nthreads,i,j,k,ns,indx,first,split1,split2
       integer *8 tmpk
-      integer split_size1,split_size2,n1tmp,n2tmp
-      integer istart1,istart2,istart3
+      integer *8 split_size1,split_size2,n1tmp,n2tmp
+      integer *8 istart1,istart2,istart3
       real *8 data(*), val
-      integer ind1(n1),ind2(n2),indout(n1+n2)
-      integer, allocatable :: split(:), split_size(:)
-      integer, allocatable :: split_ind1(:), split_ind2(:),indtmp(:)
+      integer *8 ind1(n1),ind2(n2),indout(n1+n2)
+      integer *8, allocatable :: split(:), split_size(:)
+      integer *8, allocatable :: split_ind1(:), split_ind2(:),indtmp(:)
       if(n1==0 .and. n2==0) return
       if(n1==0) then
 C$OMP PARALLEL DO DEFAULT(SHARED)
@@ -392,9 +392,9 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine merge_arr_r(data,ind1,ind2,n1,n2,indout,nthreads)
       implicit none
-      integer n1,n2,nthreads,i,j,k
+      integer *8 n1,n2,nthreads,i,j,k
       real *8 data(*)
-      integer ind1(n1),ind2(n2),indout(n1+n2)
+      integer *8 ind1(n1),ind2(n2),indout(n1+n2)
 
       i=1
       j=1
@@ -430,10 +430,10 @@ c
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine lower_bound_r(data,ind,n,val,first)
-        integer ind(*),n
+        integer *8 ind(*),n
         real *8 val,data(*)
-        integer it,first
-        integer cnt,step
+        integer *8 it,first
+        integer *8 cnt,step
 
         first=1
         cnt=n
@@ -470,8 +470,8 @@ C of equal input values is not necessarily preserved.
 C
 C===================================================================
       implicit none
-      integer i,n,index(n)
-      integer data(n)
+      integer *8 i,n,index(n)
+      integer *8 data(n)
 
       do i=1,n
         index(i) = i
@@ -489,8 +489,8 @@ C
 C
 C===================================================================
       implicit none
-      integer n,m,n_thresh,p,i,j,pivot_index,index(n)
-      integer pivot,data(m)
+      integer *8 n,m,n_thresh,p,i,j,pivot_index,index(n)
+      integer *8 pivot,data(m)
       parameter (n_thresh = 16)
       if (n<=n_thresh) then
           call insertion_sorti(m,n,data,index)
@@ -555,8 +555,8 @@ C
 C
 C===================================================================
       implicit none
-      integer n,m,i,j,key_index,index(n)
-      integer key,data(m)
+      integer *8 n,m,i,j,key_index,index(n)
+      integer *8 key,data(m)
 
       do i = 2,n
         if(data(index(i-1)) > data(index(i))) then
@@ -579,13 +579,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine sorti_para(n,data,index)
 C===================================================================
 C
-C     sorti_para -- sort, integer input, index output
+C     sorti_para -- sort, integer *8 input, index output
 C
 C
-C     Input:  n     integer
-C             data  integer
+C     Input:  n     integer *8
+C             data  integer *8
 C
-C     Output: index integer (dimension n)
+C     Output: index integer *8 (dimension n)
 C
 C This openmp threaded routine performs an sort of the first n elements
 C of array data, returning into array index the indices of elements of
@@ -599,12 +599,12 @@ C of equal input values is not necessarily preserved.
 C===================================================================
 
       implicit none
-      integer n,data(n),index(n)
-      integer nthreads,nelems,ielems,istart,iend,i,j,swap
+      integer *8 n,data(n),index(n)
+      integer *8 nthreads,nelems,ielems,istart,iend,i,j,swap
       integer *8 ithread
-      integer istart2,iend2,nelems2
-      integer, allocatable :: split(:)
-      integer, allocatable :: index2(:)
+      integer *8 istart2,iend2,nelems2
+      integer *8, allocatable :: split(:)
+      integer *8, allocatable :: index2(:)
       integer, external :: OMP_GET_THREAD_NUM, OMP_GET_NUM_THREADS
       integer, external :: OMP_GET_MAX_THREADS
 
@@ -725,14 +725,14 @@ C rearranged.
 C
 C===================================================================
       implicit none
-      integer n1,n2,nthreads,i,j,k,ns,indx,first,val,split1,split2
+      integer *8 n1,n2,nthreads,i,j,k,ns,indx,first,val,split1,split2
       integer *8 tmpk
-      integer split_size1,split_size2,n1tmp,n2tmp
-      integer istart1,istart2,istart3
-      integer data(*)
-      integer ind1(n1),ind2(n2),indout(n1+n2)
-      integer, allocatable :: split(:), split_size(:)
-      integer, allocatable :: split_ind1(:), split_ind2(:),indtmp(:)
+      integer *8 split_size1,split_size2,n1tmp,n2tmp
+      integer *8 istart1,istart2,istart3
+      integer *8 data(*)
+      integer *8 ind1(n1),ind2(n2),indout(n1+n2)
+      integer *8, allocatable :: split(:), split_size(:)
+      integer *8, allocatable :: split_ind1(:), split_ind2(:),indtmp(:)
       if(n1==0 .and. n2==0) return
       if(n1==0) then
 C$OMP PARALLEL DO DEFAULT(SHARED)
@@ -844,9 +844,9 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine merge_arr(data,ind1,ind2,n1,n2,indout,nthreads)
       implicit none
-      integer n1,n2,nthreads,i,j,k
-      integer data(*)
-      integer ind1(n1),ind2(n2),indout(n1+n2)
+      integer *8 n1,n2,nthreads,i,j,k
+      integer *8 data(*)
+      integer *8 ind1(n1),ind2(n2),indout(n1+n2)
 
       i=1
       j=1
@@ -882,10 +882,10 @@ c
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine lower_bound(data,ind,n,val,first)
-        integer data(*),ind(*),n
-        integer val
-        integer it,first
-        integer cnt,step
+        integer *8 data(*),ind(*),n
+        integer *8 val
+        integer *8 it,first
+        integer *8 cnt,step
 
         first=1
         cnt=n

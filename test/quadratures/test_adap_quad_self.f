@@ -1,22 +1,28 @@
       subroutine test_adap_quad_self(nsuccess)
       implicit real *8 (a-h,o-z)
-      
+      implicit integer *8 (i-n)
+      integer *8 int8_1, int8_11, int8_12
+
+      int8_1 = 1
+      int8_11 = 11
+      int8_12 = 12
+
       na = 1
       norder = 6
 
       print *, "================"
       print *, "starting triangle test"
-      call zcompute_errors(1, na, norder, erra_abs_tri1)
+      call zcompute_errors(int8_1, na, norder, erra_abs_tri1)
       print *, ""
       print *, ""
       print *, "================"
       print *, "starting quadrangle test with Legendre points"
-      call zcompute_errors(11, na, norder, erra_abs_lege_poly1)
+      call zcompute_errors(int8_11, na, norder, erra_abs_lege_poly1)
       print *, ""
       print *, ""
       print *, "================"
       print *, "starting quadrangle test with Chebyshev points"
-      call zcompute_errors(12, na, norder, erra_abs_cheb_poly1)
+      call zcompute_errors(int8_12, na, norder, erra_abs_cheb_poly1)
       print *, ""
       print *, ""
 
@@ -24,17 +30,17 @@
       na = 2
       print *, "================"
       print *, "starting triangle test"
-      call zcompute_errors(1, na, norder, erra_abs_tri2)
+      call zcompute_errors(int8_1, na, norder, erra_abs_tri2)
       print *, ""
       print *, ""
       print *, "================"
       print *, "starting quadrangle test with Legendre points"
-      call zcompute_errors(11, na, norder, erra_abs_lege_poly2)
+      call zcompute_errors(int8_11, na, norder, erra_abs_lege_poly2)
       print *, ""
       print *, ""
       print *, "================"
       print *, "starting quadrangle test with Chebyshev points"
-      call zcompute_errors(12, na, norder, erra_abs_cheb_poly2)
+      call zcompute_errors(int8_12, na, norder, erra_abs_cheb_poly2)
       print *, ""
       print *, ""
       print *, "================"
@@ -46,18 +52,18 @@
       na = 1
       print *, "================"
       print *, "starting dtriangle test"
-      call dcompute_errors(1, na, norder, erra_abs_tri1)
+      call dcompute_errors(int8_1, na, norder, erra_abs_tri1)
 
       print *, ""
       print *, ""
       print *, "================"
       print *, "starting dquadrangle test with Legendre points"
-      call dcompute_errors(11, na, norder, erra_abs_lege_poly1)
+      call dcompute_errors(int8_11, na, norder, erra_abs_lege_poly1)
       print *, ""
       print *, ""
       print *, "================"
       print *, "starting dquadrangle test with Chebyshev points"
-      call dcompute_errors(12, na, norder, erra_abs_cheb_poly1)
+      call dcompute_errors(int8_12, na, norder, erra_abs_cheb_poly1)
       print *, ""
       print *, ""
 
@@ -65,17 +71,17 @@
       na = 2
       print *, "================"
       print *, "starting dtriangle test"
-      call dcompute_errors(1, na, norder, erra_abs_tri2)
+      call dcompute_errors(int8_1, na, norder, erra_abs_tri2)
       print *, ""
       print *, ""
       print *, "================"
       print *, "starting dquadrangle test with Legendre points"
-      call dcompute_errors(11, na, norder, erra_abs_lege_poly2)
+      call dcompute_errors(int8_11, na, norder, erra_abs_lege_poly2)
       print *, ""
       print *, ""
       print *, "================"
       print *, "starting dquadrangle test with Chebyshev points"
-      call dcompute_errors(12, na, norder, erra_abs_cheb_poly2)
+      call dcompute_errors(int8_12, na, norder, erra_abs_cheb_poly2)
       print *, ""
       print *, ""
       print *, "================"
@@ -110,19 +116,20 @@
 
       subroutine zcompute_errors(iptype0, na, norder, erra_abs) 
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 c0(3)
-      integer, allocatable :: norders(:), iptype(:), ixyzs(:)
+      integer *8, allocatable :: norders(:), iptype(:), ixyzs(:)
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
       complex *16 zk
       complex *16, allocatable :: znear_ggq(:), znear_adap(:)
 
-      integer, allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_src(:,:)
       real *8, allocatable :: pols(:,:)
       complex *16, allocatable :: fints(:), fints_ex(:)
 
-      integer row_ptr(2), col_ind(1), iquad(1)
-      integer, allocatable :: iind2p(:,:)
+      integer *8 row_ptr(2), col_ind(1), iquad(1)
+      integer *8, allocatable :: iind2p(:,:)
 
       procedure (), pointer :: fker
 
@@ -242,19 +249,20 @@
 
       subroutine dcompute_errors(iptype0, na, norder, erra_abs) 
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 c0(3)
-      integer, allocatable :: norders(:), iptype(:), ixyzs(:)
+      integer *8, allocatable :: norders(:), iptype(:), ixyzs(:)
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
       complex *16 zk
       real *8, allocatable :: dnear_ggq(:), dnear_adap(:)
 
-      integer, allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_src(:,:)
       real *8, allocatable :: pols(:,:)
       real *8, allocatable :: fints(:), fints_ex(:)
 
-      integer row_ptr(2), col_ind(1), iquad(1)
-      integer, allocatable :: iind2p(:,:)
+      integer *8 row_ptr(2), col_ind(1), iquad(1)
+      integer *8, allocatable :: iind2p(:,:)
 
       procedure (), pointer :: fker
       character *100 fname

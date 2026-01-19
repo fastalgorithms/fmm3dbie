@@ -28,8 +28,9 @@ c   This subroutine determines the number of Xiao-gimbutas quadratre
 c   nodes as a function of order
 c
         implicit real *8 (a-h,o-z)
-        integer, intent(in) :: n
-        integer, intent(out) :: nq
+        implicit integer *8 (i-n)
+        integer *8, intent(in) :: n
+        integer *8, intent(out) :: nq
         if(n.eq.1) nq = 1
         if(n.eq.2) nq = 3
         if(n.eq.3) nq = 4
@@ -68,6 +69,7 @@ c
 
         subroutine squarearbq(n,rnodes,weights,numnodes)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         real *8 rnodes(2,*),weights(*)
 c       
 c       Quadratures for smooth functions on the unit square [-1,1]^2
@@ -4283,6 +4285,7 @@ c
 c
         subroutine squarearbq_arrmove(x,y,n)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         real *8 x(*),y(*)
 c
         do 1200 i=1,n

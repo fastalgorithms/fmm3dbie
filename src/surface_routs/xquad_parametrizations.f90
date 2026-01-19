@@ -6,6 +6,7 @@
 subroutine xquad_wtorus_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
     radii, scales, p4)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), scales(3)
   real *8 :: radii(3), dxyzdst(3,2)
 
@@ -76,6 +77,7 @@ end subroutine xquad_wtorus_eval
 subroutine xquad_stell_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
     deltas, m, n)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), deltas(-1:m,-1:n)
   real *8 :: dxyzds(3),dxyzdt(3)
 
@@ -179,7 +181,8 @@ end subroutine xquad_stell_eval
 subroutine xquad_xyz_tensor_fourier_eval(iquad, u, v, xyz, dxyzduv, &
     quadinfo, coefs, ipars, scales)
   implicit real *8 (a-h,o-z)
-  integer ipars(2)
+  implicit integer *8 (i-n)
+  integer *8 ipars(2)
   real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), coefs(*)
   real *8 :: dxyzdst(3,2), scales(3)
 
@@ -335,6 +338,7 @@ end subroutine xquad_ellipsoid_eval
 subroutine xquad_sphere_eval(iquad, u, v, xyz, dxyzduv, quadinfo, &
     p2, p3, p4)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*)
 
   !
@@ -440,9 +444,10 @@ subroutine xquad_axissym_eval(iquad, u, v, xyz, dxyzduv, &
 !
 !
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*)
   real *8 :: pols(100), srccoefs2d(6,*)
-  integer :: ichuse(*), ixys2d(*) 
+  integer *8 :: ichuse(*), ixys2d(*) 
       
 
   x0=quadinfo(1,1,iquad)
@@ -536,10 +541,11 @@ subroutine xquad_axissym_circ_eval(iquad, u, v, xyz, dxyzduv, &
 !
 !
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), ptcoefs(6,*), srccoefs2d(6,*)
   real *8 :: pols(500), pars(*)
-  integer :: ipars(*)
-  integer :: norder, iptype, istart
+  integer *8 :: ipars(*)
+  integer *8 :: norder, iptype, istart
   real *8 :: uv(2)
   real *8 a0, b0
 
@@ -661,9 +667,10 @@ subroutine xquad_axissym_fun_eval(iquad, u, v, xyz, dxyzduv, &
 !
 !
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*)
   real *8 :: pols(100),pars(np)
-  integer :: np
+  integer *8 :: np
   external fcurve
       
 
@@ -744,10 +751,11 @@ subroutine xquad_axissym_fun_circ_eval(iquad, u, v, xyz, dxyzduv, &
 !
 !
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), ptcoefs(6,*)
   real *8 :: pols(500), pars(*)
-  integer :: ipars(*)
-  integer :: np, norder, iptype, istart
+  integer *8 :: ipars(*)
+  integer *8 :: np, norder, iptype, istart
   real *8 :: uv(2)
   external fcurve
 
@@ -842,6 +850,7 @@ end subroutine xquad_axissym_fun_circ_eval
 subroutine xquad_rectmesh_ani(umin, umax, vmin, vmax, nu, nv, &
     nover, maxquad, nquad, quadskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: quadskel(3,3,maxquad)
 
   real *8 :: verts(3,100), ifaces(3,100), verts1(3,3)
@@ -932,6 +941,7 @@ end subroutine xquad_rectmesh_ani
 subroutine xquad_rectmesh(umin, umax, vmin, vmax, nover, maxquad, &
     nquad, quadskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: quadskel(3,3,maxquad)
 
   real *8 :: verts(3,100), ifaces(3,100), verts1(3,3)
@@ -1037,6 +1047,7 @@ end subroutine xquad_rectmesh
 !
 subroutine xquad_rectmesh0(umin, umax, vmin, vmax, quadskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: quadskel(3,3)
 
   !
@@ -1285,7 +1296,8 @@ end
 subroutine xquad_platonic(itype, nover, maxquad, &
     nquads, quadinfo, isides)
   implicit real *8 (a-h,o-z)
-  integer :: isides(*)
+  implicit integer *8 (i-n)
+  integer *8 :: isides(*)
   real *8 :: quadinfo(3,3,maxquad)
 
   real *8 :: verts(3,100), ifaces(3,100), verts1(3,3)
@@ -1366,6 +1378,7 @@ end subroutine xquad_platonic
 
 subroutine xquad_rsolid(itype, verts, nverts, ifaces, nfaces)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   dimension verts(3,*),ifaces(3,*)
   !
   ! This subroutine returns the vertices and faces of regular (and
@@ -1480,6 +1493,7 @@ end subroutine xquad_rsolid
 
 subroutine xquad_genquadinfo(verts,nverts,ifaces,nfaces,quadinfo)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   dimension verts(3,1),ifaces(3,1),quadinfo(3,3,1)
 
   call prinf('ifaces=*',ifaces,3*nfaces)
@@ -1509,6 +1523,7 @@ end subroutine xquad_genquadinfo
 
 subroutine xquad_refine4_flat(verts, verts1, verts2, verts3, verts4)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: verts(3,3), verts1(3,3), verts2(3,3), verts3(3,3)
   real *8 :: verts4(3,3)
 

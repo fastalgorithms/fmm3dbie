@@ -57,9 +57,9 @@ Module Mod_Feval
      type (  Fast_Sigma_stuff ), pointer :: FSS_1 => null ()
      type ( TreeLRD ), pointer :: Tree_local => null ()
      !!All the stuff for Manas' tree
-     integer ltree,norder,nlevels,nboxes,nt2
-     integer, allocatable :: itree(:)
-     integer, allocatable :: iptr(:)
+     integer *8 ltree,norder,nlevels,nboxes,nt2
+     integer *8, allocatable :: itree(:)
+     integer *8, allocatable :: iptr(:)
      real ( kind = 8 ) eps
      real ( kind = 8 ), allocatable :: treecenters(:,:)
      real ( kind = 8 ), allocatable :: boxsize(:)
@@ -109,7 +109,7 @@ contains
     type ( Geometry ), intent(inout)  :: Geometry1      !! data type that contains all the information about the geometry
 
     !List of local variables
-    integer count1,count,n_targets
+    integer *8 count1,count,n_targets
 
     real *8 rlam
 
@@ -136,9 +136,9 @@ contains
     !
     ! This function evaluates the F function (and gradient) using the FMM and the sgma evaluator
     !! Flags to select the different versions of F
-    !integer, intent(in) :: adapt_flag,n_targets
-    integer  :: adapt_flag
-    integer  :: n_targets
+    !integer *8, intent(in) :: adapt_flag,n_targets
+    integer *8  :: adapt_flag
+    integer *8  :: n_targets
 
     !List of calling arguments
     type ( Geometry ), intent(in) :: Geometry1
@@ -152,14 +152,14 @@ contains
 
     !List of local variables
     !! Different flags to run appropriately the FMM
-    integer ier, iprec,ifcharge,ifdipole,ifpottarg,iffldtarg   
-    integer count,count2,count1
-    integer n_sources
+    integer *8 ier, iprec,ifcharge,ifdipole,ifpottarg,iffldtarg   
+    integer *8 count,count2,count1
+    integer *8 n_sources
     real ( kind = 8 ) tfmm
     real ( kind = 8 ), allocatable :: sgma(:),sgma_grad(:,:)
-    integer , allocatable :: flag_error(:)
+    integer *8 , allocatable :: flag_error(:)
     real ( kind = 8 ), allocatable :: missed_Points(:,:)
-    integer ipointer
+    integer *8 ipointer
     character (len=100) plot_name
     double precision :: t0, t1, telap, sgma_max, eps
     
@@ -241,12 +241,12 @@ contains
     !List of calling arguments
     type ( Geometry ), intent(inout) :: Geometry1                   !! data type that contains all the information about the geometry
     type ( Feval_stuff ), pointer :: Fev_stf_1      !! data type that contains all the information to evaluate F
-    integer, intent(in) :: adapt_flag
+    integer *8, intent(in) :: adapt_flag
 
     !List of local variables
     real ( kind = 8 ), allocatable :: dummy_t_1(:,:),dummy_t_2(:,:)
     real ( kind = 8 ), allocatable :: sgma(:), sgma_grad(:,:)
-    integer count1,count2,ipcount,n_order,n_tri_dummy,n_ref
+    integer *8 count1,count2,ipcount,n_order,n_tri_dummy,n_ref
     character (len=100) plot_name
     real ( kind = 8 ) hhh
 
@@ -388,12 +388,12 @@ contains
     implicit none
 
     !List of calling arguments
-    integer, intent(in) :: n_order,n_tri
+    integer *8, intent(in) :: n_order,n_tri
     real ( kind = 8 ), intent(in) :: Points_in(3,n_tri*n_order)
     real ( kind = 8 ), intent(out) :: Points_out(3,n_tri*n_order*4)
 
     !List of local variables
-    integer count,count1,count2,ipcount
+    integer *8 count,count1,count2,ipcount
     !    real ( kind = 8 ) sgma_tri(n_order)
     real ( kind = 8 ) x_tri(n_order),y_tri(n_order),z_tri(n_order)
     real ( kind = 8 ) x_tri_1(n_order),y_tri_1(n_order),z_tri_1(n_order)
@@ -445,9 +445,9 @@ contains
     type ( Geometry ), intent(inout)  :: Geometry1
 
     !List of local variables
-    integer, allocatable :: Edges_aux(:,:),Boundary_aux(:,:)
-    integer icount, count1,count2,n_nodes_l
-    integer, allocatable :: flags(:)
+    integer *8, allocatable :: Edges_aux(:,:),Boundary_aux(:,:)
+    integer *8 icount, count1,count2,n_nodes_l
+    integer *8, allocatable :: flags(:)
     real ( kind = 8 ) coef_x(3),coef_y(3),coef_z(3),P1(3),P2(3),P3(3),t(32),w(32)
 
     allocate(flags(Geometry1%npoints))
@@ -600,7 +600,7 @@ contains
 
     !List of local variables
     real ( kind = 8 ) v_aux(3),v_aux2(3),normv,normv2,factor,normp,pi
-    integer  count1, count2
+    integer *8  count1, count2
 
 
     pi=3.1415926535897932384626433d0

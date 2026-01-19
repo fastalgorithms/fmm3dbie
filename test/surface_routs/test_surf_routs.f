@@ -1,4 +1,5 @@
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
 
       ntests = 3
       nsuccess = 0
@@ -19,11 +20,12 @@ c
 c
       subroutine test_surf_lap(nsuccess)
       implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       real *8, allocatable :: wts(:),rsigma(:)
-      integer ipars(2)
+      integer *8 ipars(2)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
 
       real *8 xyz_out(3),xyz_in(3)
       real *8, allocatable :: ffform(:,:,:),ffformex(:,:,:)
@@ -37,23 +39,26 @@ c
       real *8, allocatable :: errs(:)
       real *8 thet,phi,eps_gmres
       complex * 16 zpars(3)
-      integer numit,niter
+      integer *8 numit,niter
       character *100 title,dirname
       character *300 fname
 
-      integer ipatch_id
+      integer *8 ipatch_id
       real *8 uvs_targ(2)
       real *8, allocatable :: w(:,:)
 
       logical isout0,isout1
 
       complex *16 pot,potex,ztmp,ima
+      integer *8 int8_2,int8_12
 
       data ima/(0.0d0,1.0d0)/
 
 
       call prini(6,13)
 
+      int8_2 = 2
+      int8_12 = 12
       done = 1
       pi = atan(done)*4
 
@@ -127,11 +132,11 @@ c
       mm = 1
       nmax = nn
       allocate(w(0:nmax,0:nmax))
-      call l3getsph(nmax,mm,nn,12,srcvals,rhs,npts,w)
+      call l3getsph(nmax,mm,nn,int8_12,srcvals,rhs,npts,w)
 
       allocate(drhs(2,npts),drhs_cart(3,npts),drhs_cart_ex(3,npts))
 
-      call get_surf_grad(2,npatches,norders,ixyzs,iptype,npts,
+      call get_surf_grad(int8_2,npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,rhs,drhs)
        
 c
@@ -166,7 +171,7 @@ c
       print *, "error in surface gradient=",erra
       if(erra.lt.1.0d-8) nsuccess=nsuccess+1
 
-      call get_surf_div(2,npatches,norders,ixyzs,iptype,npts,
+      call get_surf_div(int8_2,npatches,norders,ixyzs,iptype,npts,
      1  srccoefs,srcvals,drhs,rhs2)
 
       erra = 0
@@ -187,18 +192,19 @@ c
       subroutine setup_geom(igeomtype,norder,npatches,ipars, 
      1    srcvals,srccoefs,ifplot,fname)
       implicit real *8 (a-h,o-z)
-      integer igeomtype,norder,npatches,ipars(*),ifplot
+      implicit integer *8 (i-n)
+      integer *8 igeomtype,norder,npatches,ipars(*),ifplot
       character (len=*) fname
       real *8 srcvals(12,*), srccoefs(9,*)
       real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
 
       real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer, pointer :: iptr1,iptr2,iptr3,iptr4
+      integer *8, pointer :: iptr1,iptr2,iptr3,iptr4
       real *8, target :: p1(10),p2(10),p3(10),p4(10)
       real *8, allocatable, target :: triaskel(:,:,:)
       real *8, allocatable, target :: deltas(:,:)
-      integer, allocatable :: isides(:)
-      integer, target :: nmax,mmax
+      integer *8, allocatable :: isides(:)
+      integer *8, target :: nmax,mmax
 
       procedure (), pointer :: xtri_geometry
 
@@ -301,11 +307,11 @@ c  identity for the flux due to a point charge
 c
 c
 c  input:
-c    npatches - integer
+c    npatches - integer *8
 c       number of patches
-c    norder - integer
+c    norder - integer *8
 c       order of discretization
-c    npts - integer
+c    npts - integer *8
 c       total number of discretization points on the surface
 c    srccoefs - real *8 (9,npts)
 c       koornwinder expansion coefficients of geometry info
@@ -318,16 +324,16 @@ c      whether the target is in the interior or not
 c
 
       implicit none
-      integer npatches,norder,npts,npols
+      integer *8 npatches,norder,npts,npols
       real *8 srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
       real *8 tmp(3)
       real *8 dpars,done,pi
       real *8, allocatable :: rsurf(:),err_p(:,:) 
-      integer ipars,norderhead,nd
+      integer *8 ipars,norderhead,nd
       complex *16, allocatable :: sigma_coefs(:,:), sigma_vals(:,:)
       complex *16 zk,val
 
-      integer ipatch,j,i
+      integer *8 ipatch,j,i
       real *8 ra,ds
       logical isout
 
@@ -365,6 +371,7 @@ c
 
       subroutine l3getsph(nmax,mm,nn,ndx,xyzs,ynms,npts,ynm)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 :: xyzs(ndx,npts)
       complex *16 ynms(npts),ima
       real *8 rat1(10000),rat2(10000)

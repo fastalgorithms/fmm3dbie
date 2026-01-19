@@ -1,8 +1,9 @@
       implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
-      integer, allocatable :: norders(:), ixyzs(:), iptype(:)
+      integer *8, allocatable :: norders(:), ixyzs(:), iptype(:)
       real *8, allocatable :: wts(:), rsigma(:)
-      integer ipars(2)
+      integer *8 ipars(2)
 
 
       real *8 xyz_out(3), xyz_in(3)
@@ -17,10 +18,10 @@
       real *8, allocatable :: errs(:)
       real *8 thet,phi
       complex * 16 zpars(3)
-      integer numit,niter
+      integer *8 numit,niter
       character *200 title, fname, fname1, fname2
 
-      integer ipatch_id
+      integer *8 ipatch_id
       real *8 uvs_targ(2)
 
       logical isout0, isout1
@@ -30,7 +31,7 @@
       real *8 ptinfo_out(12)
       real *8 c0(3)
 
-      integer count1
+      integer *8 count1
 
       data ima/(0.0d0,1.0d0)/
 

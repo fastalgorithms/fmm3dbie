@@ -6,16 +6,16 @@ subroutine rwg2vr(srcvals,ns,norder,ntri,npoints,points,triang,rwg,nrwg,coefrwg,
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: ntri,npoints,ns,nrwg,norder
-  integer, intent(in) :: triang(3,ntri)
+  integer *8, intent(in) :: ntri,npoints,ns,nrwg,norder
+  integer *8, intent(in) :: triang(3,ntri)
   real ( kind = 8 ), intent(in) :: points(3,npoints),srcvals(12,ns)
-  integer, intent(in) :: rwg(4,nrwg)
+  integer *8, intent(in) :: rwg(4,nrwg)
   complex ( kind = 8 ), intent(in) :: coefrwg(nrwg)
   complex ( kind = 8 ), intent(out) :: coefvr(3*ns)
 
   !List of local variables
-  integer count1,count2,count3,count4,flag,nspace,icount,sol,t1,t2,caux
-  integer npols,i1,i2,v1i,v2i,v3i
+  integer *8 count1,count2,count3,count4,flag,nspace,icount,sol,t1,t2,caux
+  integer *8 npols,i1,i2,v1i,v2i,v3i
   real ( kind = 8 ) P1(3),P2(3),P3(3),r_aux,A_t,ln,n_vect(3)
   real ( kind = 8 ) Pa(3),Pb(3),Pc(3)
   real ( kind = 8 ), allocatable :: rx(:),ry(:),rz(:)
@@ -142,16 +142,16 @@ subroutine vr2rwg_vector(srcvals, wts, ns, norder, ntri, npoints, &
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: ntri,npoints,ns,nrwg,norder
-  integer, intent(in) :: triang(3,ntri)
+  integer *8, intent(in) :: ntri,npoints,ns,nrwg,norder
+  integer *8, intent(in) :: triang(3,ntri)
   real ( kind = 8 ), intent(in) :: points(3,npoints),srcvals(12,ns),wts(ns)
-  integer, intent(in) :: rwg(4,nrwg)
+  integer *8, intent(in) :: rwg(4,nrwg)
   complex ( kind = 8 ), intent(out) :: coefrwg(nrwg)
   complex ( kind = 8 ), intent(in) :: coefvr(2*ns)
 
   !List of local variables
-  integer count1,count2,count3,count4,flag,nspace,icount,sol,t1,t2,caux
-  integer npols,i1,i2,v1i,v2i,v3i
+  integer *8 count1,count2,count3,count4,flag,nspace,icount,sol,t1,t2,caux
+  integer *8 npols,i1,i2,v1i,v2i,v3i
   real ( kind = 8 ) P1(3),P2(3),P3(3),r_aux,A_t,ln,n_vect(3)
   real ( kind = 8 ) Pa(3),Pb(3),Pc(3)
   real ( kind = 8 ), allocatable :: rx(:),ry(:),rz(:)
@@ -274,16 +274,16 @@ subroutine vr2rwg_scalar(srcvals,wts,ns,norder,ntri,npoints,points,triang, &
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: ntri,npoints,ns,nrwg,norder
-  integer, intent(in) :: triang(3,ntri)
+  integer *8, intent(in) :: ntri,npoints,ns,nrwg,norder
+  integer *8, intent(in) :: triang(3,ntri)
   real ( kind = 8 ), intent(in) :: points(3,npoints),srcvals(12,ns),wts(ns)
-  integer, intent(in) :: rwg(4,nrwg)
+  integer *8, intent(in) :: rwg(4,nrwg)
   complex ( kind = 8 ), intent(out) :: coefrwg(nrwg)
   complex ( kind = 8 ), intent(in) :: coefvr(ns)
 
   !List of local variables
-  integer count1,count2,count3,count4,flag,nspace,icount,sol,t1,t2,caux
-  integer npols,i1,i2,v1i,v2i,v3i
+  integer *8 count1,count2,count3,count4,flag,nspace,icount,sol,t1,t2,caux
+  integer *8 npols,i1,i2,v1i,v2i,v3i
   real ( kind = 8 ) P1(3),P2(3),P3(3),r_aux,A_t,ln,n_vect(3)
   real ( kind = 8 ) Pa(3),Pb(3),Pc(3)
   real ( kind = 8 ), allocatable :: rx(:),ry(:),rz(:)
@@ -398,15 +398,15 @@ subroutine rwg_basis(ntri,npoints,points,triang,rwg,nrwg)
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: ntri,npoints
-  integer, intent(in) :: triang(3,ntri)
+  integer *8, intent(in) :: ntri,npoints
+  integer *8, intent(in) :: triang(3,ntri)
   real ( kind = 8 ), intent(in) :: points(3,npoints)
-  integer, intent(out) :: nrwg,rwg(4,3*ntri)
+  integer *8, intent(out) :: nrwg,rwg(4,3*ntri)
 
   !List of local variables
-  integer count1,count2,count3,count4,flag,nspace,icount,sol,t1,t2,caux
-  integer, allocatable :: tri_map(:,:)
-  integer, allocatable :: rwg_aux(:,:),flags(:,:)
+  integer *8 count1,count2,count3,count4,flag,nspace,icount,sol,t1,t2,caux
+  integer *8, allocatable :: tri_map(:,:)
+  integer *8, allocatable :: rwg_aux(:,:),flags(:,:)
   real ( kind = 8 ) eps
 
     allocate(rwg_aux(3,ntri),flags(3,ntri))
@@ -541,11 +541,11 @@ subroutine add_rwg(t1,t2,rwg,ntri)
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: ntri,t1,t2
-  integer, intent(inout) :: rwg(3,ntri)
+  integer *8, intent(in) :: ntri,t1,t2
+  integer *8, intent(inout) :: rwg(3,ntri)
   
   !List of local variables
-  integer count1,count2,icount
+  integer *8 count1,count2,icount
 
   do count1=1,3
     if (rwg(count1,t1).eq.t2) then
@@ -583,12 +583,12 @@ subroutine share_wedge(t1,t2,triang,ntri,sol)
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: ntri,t1,t2
-  integer, intent(in) :: triang(3,ntri)
-  integer, intent(out) :: sol
+  integer *8, intent(in) :: ntri,t1,t2
+  integer *8, intent(in) :: triang(3,ntri)
+  integer *8, intent(out) :: sol
   
   !List of local variables
-  integer count1,count2,icount
+  integer *8 count1,count2,icount
 
     icount=0
     do count1=1,3
@@ -623,16 +623,16 @@ subroutine fix_tri_geom(ntri,npoints,points,triang,npoints_out,points_out,triang
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: ntri,npoints
-  integer, intent(out) :: triang(3,ntri),npoints_out
+  integer *8, intent(in) :: ntri,npoints
+  integer *8, intent(out) :: triang(3,ntri),npoints_out
   real ( kind = 8 ), intent(in) :: points(3,npoints)
   real ( kind = 8 ), intent(out) :: points_out(3,npoints)
-  integer, intent(out) :: triang_out(3,ntri)
+  integer *8, intent(out) :: triang_out(3,ntri)
 
 
   !List of local variables
-  integer count1,count2,count3,flag,nspace,icount,n_aux
-  integer, allocatable :: flags(:),tri_map(:,:)
+  integer *8 count1,count2,count3,flag,nspace,icount,n_aux
+  integer *8, allocatable :: flags(:),tri_map(:,:)
   real ( kind = 8 ), allocatable :: diam_tri(:)
   real ( kind = 8 ) eps,Pa(3),Pb(3),Pc(3),d_vect(3),d,tol
   real ( kind = 8 ) Pa1(3),Pb1(3),Pc1(3),Pa2(3),Pb2(3),Pc2(3),n1(3),n2(3)
@@ -772,11 +772,11 @@ subroutine collapse_tri(point_num1,point_num2,tri_map,nspace,npoints)
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: point_num1,point_num2,nspace,npoints
-  integer, intent(inout) :: tri_map(nspace,npoints)
+  integer *8, intent(in) :: point_num1,point_num2,nspace,npoints
+  integer *8, intent(inout) :: tri_map(nspace,npoints)
 
   !List of local variables
-  integer count1,count2
+  integer *8 count1,count2
 
   do count1=1,nspace
     if (tri_map(count1,point_num2).eq.0) then
@@ -798,11 +798,11 @@ subroutine add_tri(tri_num,point_num,tri_map,nspace,npoints)
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: tri_num,point_num,nspace,npoints
-  integer, intent(inout) :: tri_map(nspace,npoints)
+  integer *8, intent(in) :: tri_num,point_num,nspace,npoints
+  integer *8, intent(inout) :: tri_map(nspace,npoints)
 
   !List of local variables
-  integer count1
+  integer *8 count1
 
   do count1=1,nspace
     if (tri_map(count1,point_num).eq.0) then
@@ -830,11 +830,11 @@ implicit none
 
   !List of calling arguments
   character (len=*), intent(in) :: filename
-  integer, intent(out) :: npoints,ntri
+  integer *8, intent(out) :: npoints,ntri
 	
   !List of local variables
-  integer umio,count1,count2,flag,aux
-  integer :: ierror,norder
+  integer *8 umio,count1,count2,flag,aux
+  integer *8 :: ierror,norder
 
     open(UNIT=18, FILE=filename, STATUS='OLD', ACTION='READ', IOSTAT=ierror)
 
@@ -851,15 +851,15 @@ subroutine tri2go3(triang,points,ntri,npoints,srcvals,srccoefs,norder,ns,wts)
 implicit none
 
   !List of calling arguments
-  integer, intent(in) :: ntri,npoints,ns,norder
-  integer, intent(in) :: triang(3,ntri)
+  integer *8, intent(in) :: ntri,npoints,ns,norder
+  integer *8, intent(in) :: triang(3,ntri)
   real ( kind = 8 ), intent(in) :: points(3,npoints)
   real ( kind = 8 ), intent(out) :: srcvals(12,ns),wts(ns)
   real ( kind = 8 ), intent(out) :: srccoefs(9,ns)
 
   !List of local variables
-  integer count1,count2,count3,count4,t1,t2,caux,icount
-  integer npols,i1,i2,v1i,v2i,v3i
+  integer *8 count1,count2,count3,count4,t1,t2,caux,icount
+  integer *8 npols,i1,i2,v1i,v2i,v3i
   real ( kind = 8 ) Pa(3),Pb(3),Pc(3),n_vect(3),aux_real,aux_vect(3)
   real ( kind = 8 ), allocatable :: rx(:),ry(:),rz(:)
   real ( kind = 8 ), allocatable :: uv(:,:),umatr(:,:),vmatr(:,:),w(:)
@@ -962,13 +962,13 @@ subroutine orthonormalize_all_v2(du,normal,ru,rv,ns)
 implicit none
 
     !List of calling arguments
-	integer, intent(in) :: ns
+	integer *8, intent(in) :: ns
 	real ( kind = 8 ), intent(in) :: du(3,ns), normal(3,ns)
 	real ( kind = 8 ), intent(out) :: ru(3,ns), rv(3,ns)
 
 	!List of local variables
 	real ( kind = 8 ) aux
-	integer count1
+	integer *8 count1
 
 	do count1=1,ns
 		call orthonormalize_v2(du(:,count1),normal(:,count1),ru(:,count1),rv(:,count1))
@@ -1010,20 +1010,20 @@ implicit none
 
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: srcvals(12,ns),wts(ns),srccoefs(9,ns)
-  integer, intent(in) :: ns,norder,N,npoints_est
-  integer, intent(out) :: npoints
-  integer, intent(in) :: ntri
-  integer, intent(out) :: triang(3,ntri)
+  integer *8, intent(in) :: ns,norder,N,npoints_est
+  integer *8, intent(out) :: npoints
+  integer *8, intent(in) :: ntri
+  integer *8, intent(out) :: triang(3,ntri)
   real ( kind = 8 ), intent(out) :: points(3,npoints_est)
 
   !List of local variables
-  integer ntri_srcvals,npols
-  integer n_vert_flat,n_tri_flat	!number of vertices and triangles of the resulting flat surface
+  integer *8 ntri_srcvals,npols
+  integer *8 n_vert_flat,n_tri_flat	!number of vertices and triangles of the resulting flat surface
   real ( kind = 8 ), allocatable :: vert_flat(:,:),u_array(:,:),v_array(:,:),srccoefs_aux(:)
-  integer, allocatable :: tri_flat(:,:)
+  integer *8, allocatable :: tri_flat(:,:)
   real ( kind = 8 ), allocatable :: Px(:,:),Py(:,:),Pz(:,:)
   real ( kind = 8 ) uv(2),du,dv
-  integer count0,count1,count2,icount1,icount2,icount3,n_aux
+  integer *8 count0,count1,count2,icount1,icount2,icount3,n_aux
 
   npols = (norder+1)*(norder+2)/2
 
@@ -1157,25 +1157,25 @@ subroutine open_go3_4_rwg(fname, npts_aux, npatches_aux, norder, npatches, &
   
   ! variables in calling sequence
   character (len=*), intent(in) :: fname
-  integer, intent(in) :: npts_aux,npatches_aux,norder,npatches
-  integer, intent(out) :: norders(npatches)
-  integer, intent(out) :: ixyzs(npatches+1)
-  integer, intent(out) :: iptype(npatches)
-  integer, intent(in) :: npts
+  integer *8, intent(in) :: npts_aux,npatches_aux,norder,npatches
+  integer *8, intent(out) :: norders(npatches)
+  integer *8, intent(out) :: ixyzs(npatches+1)
+  integer *8, intent(out) :: iptype(npatches)
+  integer *8, intent(in) :: npts
   double precision, intent(out) :: srcvals(12,npts)
   double precision, intent(out) :: srccoefs(9,npts)
   double precision, intent(out) :: wts(npts)
-  integer, intent(in) :: N,npoints_est
-  integer, intent(out) :: nrwg
-  integer, intent(out) :: rwg(4,3*npatches)
+  integer *8, intent(in) :: N,npoints_est
+  integer *8, intent(out) :: nrwg
+  integer *8, intent(out) :: rwg(4,3*npatches)
   double precision, intent(out) :: vert_flat(3,npoints_est)
-  integer, intent(out) :: tri_flat(3,npatches)
-  integer, intent(out) :: n_vert_flat,n_tri_flat
+  integer *8, intent(out) :: tri_flat(3,npatches)
+  integer *8, intent(out) :: n_vert_flat,n_tri_flat
 
   !List of local variables
-  integer, allocatable :: norders_aux(:),ixyzs_aux(:),iptype_aux(:)
+  integer *8, allocatable :: norders_aux(:),ixyzs_aux(:),iptype_aux(:)
   double precision, allocatable :: srcvals_aux(:,:),srccoefs_aux(:,:),wts_aux(:)
-  integer :: npols,norder_aux,i
+  integer *8 :: npols,norder_aux,i
 
   allocate(srcvals_aux(12,npts_aux),srccoefs_aux(9,npts_aux))
   allocate(ixyzs_aux(npatches_aux+1),iptype_aux(npatches_aux),norders_aux(npatches_aux))
@@ -1220,16 +1220,16 @@ subroutine open_go3_4_rwg_v2(srcvals_aux,srccoefs_aux,wts_aux,ixyzs_aux,iptype_a
 implicit none
 
     !List of calling arguments
-    integer, intent(in) :: npts_aux,npatches_aux,norder,npatches
-    integer, intent(out) :: norders(npatches)
-    integer, intent(out) :: ixyzs(npatches+1)
-    integer, intent(out) :: iptype(npatches)
+    integer *8, intent(in) :: npts_aux,npatches_aux,norder,npatches
+    integer *8, intent(out) :: norders(npatches)
+    integer *8, intent(out) :: ixyzs(npatches+1)
+    integer *8, intent(out) :: iptype(npatches)
 
-    integer, intent(in) :: norders_aux(npatches_aux)
-    integer, intent(in) :: iptype_aux(npatches_aux)
-    integer, intent(in) :: ixyzs_aux(npatches_aux+1)
+    integer *8, intent(in) :: norders_aux(npatches_aux)
+    integer *8, intent(in) :: iptype_aux(npatches_aux)
+    integer *8, intent(in) :: ixyzs_aux(npatches_aux+1)
     
-    integer, intent(in) :: npts
+    integer *8, intent(in) :: npts
 
     real ( kind = 8 ), intent(out) :: srcvals(12,npts)
     real ( kind = 8 ), intent(out) :: srccoefs(9,npts)
@@ -1240,15 +1240,15 @@ implicit none
     real ( kind = 8 ), intent(in) :: wts_aux(npts_aux)
 
 
-    integer, intent(in) :: N,npoints_est
-    integer, intent(out) :: nrwg
-    integer, intent(out) :: rwg(4,3*npatches)
+    integer *8, intent(in) :: N,npoints_est
+    integer *8, intent(out) :: nrwg
+    integer *8, intent(out) :: rwg(4,3*npatches)
     real ( kind = 8 ), intent(out) :: vert_flat(3,npoints_est)
-    integer, intent(out) :: tri_flat(3,npatches)
-    integer, intent(out) :: n_vert_flat,n_tri_flat
+    integer *8, intent(out) :: tri_flat(3,npatches)
+    integer *8, intent(out) :: n_vert_flat,n_tri_flat
 
     !List of local variables
-    integer npols,norder_aux,i
+    integer *8 npols,norder_aux,i
 
 !      allocate(srcvals_aux(12,npts_aux),srccoefs_aux(9,npts_aux))
 !      allocate(ixyzs_aux(npatches_aux+1),iptype_aux(npatches_aux),norders_aux(npatches_aux))

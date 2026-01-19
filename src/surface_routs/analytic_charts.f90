@@ -21,8 +21,9 @@
 !
 !
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 s, t, radii(3), scales(3)
-      integer nosc
+      integer *8 nosc
       real *8 xyz(3), dxyzdst(3,2)
       
       real *8 rr, drrds, drrdt
@@ -63,12 +64,13 @@
 !  z(s,t) = \hat(z)*scales(3)
 
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 :: xyz(3), dxyzdst(3,2), coefs(2*m+1,2*m+1,3)
       real *8 :: hatxyz(3), dhatxyzds(3), dhatxyzdt(3)
       real *8 :: bis(2*m+1), bjs(2*m+1), bdis(2*m+1), bdjs(2*m+1)
       real *8 :: scales(3)
       complex *16 zmuls, zmult, ima, zfacs, zfact
-      integer nfp
+      integer *8 nfp
       data ima/(0.0d0,1.0d0)/
 
       xyz(1) = 0

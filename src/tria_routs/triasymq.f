@@ -27,6 +27,7 @@ c
 c
 c            number of quadrature nodes corresponding to norder
 c
+        integer *8 norder,n
         if(norder.eq.1) n=1
         if(norder.eq.2) n=3
         if(norder.eq.3) n=6
@@ -88,7 +89,7 @@ c
         subroutine triasymq(n,vert1,vert2,vert3,rnodes,
      1      weights,numnodes)
         implicit none
-        integer n,numnodes,ier,itype
+        integer *8 n,numnodes,ier,itype
         real *8 vert1(2),vert2(2),vert3(2)
         real *8 rnodes(2,*),weights(*)
 c
@@ -159,7 +160,7 @@ c
 c
         subroutine trianmap(numnodes,vert1,vert2,vert3,rnodes,whts)
         implicit none
-        integer n,numnodes,ier,itype,i
+        integer *8 n,numnodes,ier,itype,i
         real *8 vert1(2),vert2(2),vert3(2)
         real *8 rnodes(2,numnodes),whts(numnodes)
         real *8 area,scale,u,v,x,y
@@ -228,7 +229,7 @@ c
 c        
         subroutine quaequad(ier,itype,mmax,zs,whts,nptsout)
         implicit none
-        integer ier,itype,mmax,nptsout,kk
+        integer *8 ier,itype,mmax,nptsout,kk
         real *8 zs(2,nptsout),whts(nptsout)
         real *8 xnew(300),ynew(300)
         real *8 xsout(3000),ysout(3000),wsout(3000)
@@ -334,8 +335,8 @@ c
 c
         subroutine quaequad0(ier,mmax,xnew,ynew,w,nptsoutout)
         implicit none
-        integer ier,mmax,nptsoutout
-        integer i,iitype,kk,nbool0,nbool1,nbool2
+        integer *8 ier,mmax,nptsoutout
+        integer *8 i,iitype,kk,nbool0,nbool1,nbool2
         real *8 w(*),xnew(*),ynew(*)
         real *8 x0,x1,y0,y1
 c       
@@ -395,7 +396,7 @@ c
         real *8 xs50(84),ys50(84),ws50(84)
 c       
 c       
-        integer nnodes(60)
+        integer *8 nnodes(60)
 c
         Data nnodes/
      1     1,1,2,2,3,
@@ -6557,7 +6558,7 @@ c
 c       
         subroutine quaeinside(iitype,xsout,ysout,nbool)
         implicit none
-        integer iitype,nbool
+        integer *8 iitype,nbool
         real *8 xsout,ysout
 c       
 c                          Input Parameters:
@@ -6657,7 +6658,7 @@ c
 c       
         subroutine quaecopy2(xs,ys,ws,xnew,ynew,w,kk)
         implicit none
-        integer kk,i
+        integer *8 kk,i
         real *8 xnew(kk),ynew(kk),w(kk),xs(kk),ys(kk),ws(kk)
         
         do 2000 i=1,kk
@@ -6677,7 +6678,7 @@ c
 c       
         subroutine quaecopy(xs,ys,ws,z,w,kk)
         implicit none
-        integer kk,i
+        integer *8 kk,i
         real *8 z(2,kk),w(kk),xs(kk),ys(kk),ws(kk)
         
         do 2000 i=1,kk
@@ -6700,8 +6701,8 @@ c
         subroutine quaenodes2(nptsout,xsout,ysout,wsout,nptsoutout,
      1     xs2,ys2,ws2)
         implicit none
-        integer nptsout,nptsoutout
-        integer i,ntot
+        integer *8 nptsout,nptsoutout
+        integer *8 i,ntot
         real *8 xsout(nptsout),ysout(nptsout),wsout(nptsout)
         real *8 xs2(*),ys2(*),ws2(*)
 c       
@@ -6757,7 +6758,7 @@ c
         subroutine quaenodes(nptsout,xsout,ysout,wsout,nptsoutout,
      1     xs2,ys2,ws2)
         implicit none
-        integer nptsout,nptsoutout,i,ntot
+        integer *8 nptsout,nptsoutout,i,ntot
         real *8 xsout(nptsout),ysout(nptsout),wsout(nptsout)
         real *8 xs2(*),ys2(*),ws2(*)
         real *8 eps,w0,x0,x1,x2,y0,y1,y2
@@ -6859,7 +6860,7 @@ c
 c
         subroutine quaerotate(xin,yin,xout,yout)
         implicit none
-        integer ifcalled
+        integer *8 ifcalled
         real *8 xin,yin,xout,yout
         real *8 a11,a22,a12,a21,done,pi,theta
 ccc        data ifcalled/0/

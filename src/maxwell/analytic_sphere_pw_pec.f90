@@ -4,7 +4,7 @@
 
 
 subroutine  driver_analytic_sphere_pw_pec
-  integer m,n,count1,count2,mn,nmax
+  integer *8 m,n,count1,count2,mn,nmax
   real ( kind = 8 ) xval,x_pt,y_pt,z_pt,r0
   complex ( kind = 8 ) zk,E(3),H(3)
   real ( kind = 8 ), allocatable :: v(:,:),x(:)
@@ -77,22 +77,24 @@ implicit none
 
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: x,y,z,r0
-  integer, intent(in) :: nmax
+  integer *8, intent(in) :: nmax
   complex ( kind = 8 ), intent(in) :: zk
   complex ( kind = 8 ), intent(out) :: E(3),H(3)
 
   !List of local variables
   real ( kind = 8 ) th_t,phi_t,r_t
-  integer count
+  integer *8 count
   complex ( kind = 8 ) ima,an,bn,cn
   real ( kind = 8 ) zr,zr0
   complex ( kind = 8 ) h_val0(nmax),hp_val0(nmax),hpp_val0(nmax),j_val0(nmax),jp_val0(nmax)
   complex ( kind = 8 ) h_val(nmax),hp_val(nmax),hpp_val(nmax)
   real ( kind = 8 ) pol_leg(1,nmax), polp_leg(1,nmax)
   complex ( kind = 8 ) er,etheta,ephi,hr,htheta,hphi
+  integer *8 int8_1
 
   data ima/(0.0d0,1.0d0)/
 
+  int8_1 = 1
   r_t=sqrt(x**2+y**2+z**2)
   th_t=atan2(sqrt(x**2+y**2),z)
   phi_t=atan2(y,x)
@@ -117,7 +119,7 @@ implicit none
   call riccati_jp(nmax,zr0,j_val0,jp_val0)
   call riccati_hpp(nmax,zr0,h_val0,hp_val0,hpp_val0)
 
-  call legasfuno1(1,nmax,cos(th_t),pol_leg,polp_leg)
+  call legasfuno1(int8_1,nmax,cos(th_t),pol_leg,polp_leg)
 
   !    do count=1,nmax
   !      polp_leg(1,count)=-polp_leg(1,count)/sin(th_t)
@@ -164,11 +166,11 @@ implicit none
 
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: x
-  integer, intent(in) :: n
+  integer *8, intent(in) :: n
   complex ( kind = 8 ), intent(out) :: val(n),valp(n),valpp(n)
 
   !List of local variables
-  integer mn,count1
+  integer *8 mn,count1
   real ( kind = 8 ) pi
   complex ( kind = 8 ) val_aux(0:n+1),valp_aux(0:n+1),val_aux0(0:n+1),valp_aux0(0:n+1)
 
@@ -223,11 +225,11 @@ implicit none
 
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: x
-  integer, intent(in) :: n
+  integer *8, intent(in) :: n
   complex ( kind = 8 ), intent(out) :: val(0:n),valp(0:n)
 
   !List of local variables
-  integer mn,count1
+  integer *8 mn,count1
   real ( kind = 8 ) pi
   complex ( kind = 8 ) h(0:n),hp(0:n)
 
@@ -254,11 +256,11 @@ implicit none
 
   !List of calling arguments
   real ( kind = 8 ), intent(in) :: x
-  integer, intent(in) :: n
+  integer *8, intent(in) :: n
   complex ( kind = 8 ), intent(out) :: val(n),valp(n)
 
   !List of local variables
-  integer mn,count1
+  integer *8 mn,count1
   real ( kind = 8 ) pi
   real ( kind = 8 ) h(0:n),hp(0:n)
 
@@ -292,12 +294,13 @@ SUBROUTINE SPHH(N,X,NM,SH,DH)
 !       ======================================================
 
     IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+    IMPLICIT INTEGER(8) (I-N)
     complex ( kind = 8 ), intent(out) :: SH(0:N),DH(0:N)
 
     DIMENSION SJ(0:N),DJ(0:N)
     DIMENSION SY(0:N),DY(0:N)
     complex ( kind = 8 ) ima
-    integer count1
+    integer *8 count1
     data ima/(0.0d0,1.0d0)/
 
     call SPHJ(N,X,NM,SJ,DJ)
@@ -327,6 +330,7 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
 !      =======================================================
 
         IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+        IMPLICIT INTEGER(8) (I-N)
         DIMENSION SJ(0:N),DJ(0:N)
         NM=N
         IF (DABS(X).EQ.1.0D-100) THEN
@@ -342,11 +346,11 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
         IF (N.GE.2) THEN
            SA=SJ(0)
            SB=SJ(1)
-           M=MSTA1(X,200)
+           M=MSTA1(X,INT(200,8))
            IF (M.LT.N) THEN
               NM=M
            ELSE
-              M=MSTA2(X,N,15)
+              M=MSTA2(X,N,INT(15,8))
            ENDIF
            F0=0.0D0
            F1=1.0D0-100
@@ -371,7 +375,7 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
 
 
         
-        INTEGER FUNCTION MSTA1(X,MP)
+        INTEGER(8) FUNCTION MSTA1(X,MP)
 
 !      ===================================================
 !      Purpose: Determine the starting point for backward  
@@ -383,8 +387,9 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
 !      ===================================================
 
         IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+        IMPLICIT INTEGER(8) (I-N)
         A0=DABS(X)
-        N0=INT(1.1*A0)+1
+        N0=INT(1.1*A0,8)+INT(1,8)
         F0=ENVJ(N0,A0)-MP
         N1=N0+5
         F1=ENVJ(N1,A0)-MP
@@ -406,7 +411,7 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
 
 
         
-        INTEGER FUNCTION MSTA2(X,N,MP)
+        INTEGER(8) FUNCTION MSTA2(X,N,MP)
 
 !      ===================================================
 !      Purpose: Determine the starting point for backward
@@ -419,12 +424,13 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
 !      ===================================================
 
         IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+        IMPLICIT INTEGER(8) (I-N)
         A0=DABS(X)
         HMP=0.5D0*MP
         EJN=ENVJ(N,A0)
         IF (EJN.LE.HMP) THEN
            OBJ=MP
-           N0=INT(1.1*A0)
+           N0=INT(1.1*A0,8)
         ELSE
            OBJ=HMP+EJN
            N0=N
@@ -445,6 +451,8 @@ SUBROUTINE SPHJ(N,X,NM,SJ,DJ)
         END
 
         REAL*8 FUNCTION ENVJ(N,X)
+        IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+        IMPLICIT INTEGER(8) (I-N)
         DOUBLE PRECISION X
         ENVJ=0.5D0*DLOG10(6.28D0*N)-N*DLOG10(1.36D0*X/N)
         RETURN
@@ -513,6 +521,7 @@ SUBROUTINE SPHY(N,X,NM,SY,DY)
 !       ======================================================
 
         IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+        IMPLICIT INTEGER(8) (I-N)
         DIMENSION SY(0:N),DY(0:N)
         NM=N
         IF (X.LT.1.0D-60) THEN
@@ -547,12 +556,12 @@ subroutine legasfuno1(m,n,x,v,vp)
 !this function computes the associate legendre function of order 1 and degree 1 to n
 
   !List of calling arguments
-  integer, intent(in) :: n,m
+  integer *8, intent(in) :: n,m
   real ( kind = 8 ), intent(in) :: x(m)
   real ( kind = 8 ), intent(out) :: v(m,n),vp(m,n)
 
   !List of local variables  
-  integer count,count1,count2
+  integer *8 count,count1,count2
 
   if (n.ge.1) then 
     do count=1,m
@@ -667,9 +676,9 @@ subroutine p_polynomial_value ( m, n, x, v )
 !
 !  Parameters:
 !
-!    Input, integer ( kind = 4 ) M, the number of evaluation points.
+!    Input, integer ( kind = 8 ) M, the number of evaluation points.
 !
-!    Input, integer ( kind = 4 ) N, the highest order polynomial to evaluate.
+!    Input, integer ( kind = 8 ) N, the highest order polynomial to evaluate.
 !    Note that polynomials 0 through N will be evaluated.
 !
 !    Input, real ( kind = 8 ) X(M), the evaluation points.
@@ -679,10 +688,10 @@ subroutine p_polynomial_value ( m, n, x, v )
 !
   implicit none
 
-  integer ( kind = 4 ) m
-  integer ( kind = 4 ) n
+  integer ( kind = 8 ) m
+  integer ( kind = 8 ) n
 
-  integer ( kind = 4 ) i
+  integer ( kind = 8 ) i
   real ( kind = 8 ) v(m,0:n)
   real ( kind = 8 ) x(m)
 
@@ -813,11 +822,11 @@ end
 !c
       implicit none
 
-      integer m
-      integer n
+      integer *8 m
+      integer *8 n
 
-      integer i
-      integer j
+      integer *8 i
+      integer *8 j
       double precision v(m,0:n)
       double precision vp(m,0:n)
       double precision x(m)

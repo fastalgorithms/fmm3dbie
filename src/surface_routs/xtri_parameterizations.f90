@@ -4,6 +4,7 @@
 subroutine xtri_wtorus_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     radii, scales, p4)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), scales(3)
   real *8 :: radii(3), dxyzdst(3,2)
 
@@ -17,7 +18,7 @@ subroutine xtri_wtorus_eval(itri, u, v, xyz, dxyzduv, triainfo, &
   ! radii - the two radii defining the torus, the third
   !     radius is the radius of osciallation
   ! scales - scaling for x,y,z components from the standard torus
-  ! p4 - number of oscillations (must be an integer currently recast
+  ! p4 - number of oscillations (must be an integer *8 currently recast
   !   as a double precision number)
   !
   !    Output:
@@ -67,6 +68,7 @@ end subroutine xtri_wtorus_eval
 subroutine xtri_stell_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     deltas, m, n)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), deltas(-1:m,-1:n)
   real *8 :: dxyzds(3),dxyzdt(3)
 
@@ -168,7 +170,8 @@ end subroutine xtri_stell_eval
 subroutine xtri_xyz_tensor_fourier_eval(itri, u, v, xyz, dxyzduv, &
     triainfo, coefs, ipars, scales)
   implicit real *8 (a-h,o-z)
-  integer ipars(2)
+  implicit integer *8 (i-n)
+  integer *8 ipars(2)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), coefs(*)
   real *8 :: dxyzdst(3,2), scales(3)
 
@@ -262,6 +265,7 @@ subroutine xtri_ellipsoid_eval(itri, u, v, xyz, dxyzduv, &
 !
 
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), p2(3), p3(3)
 
   x0=triainfo(1,1,itri)
@@ -356,9 +360,10 @@ subroutine xtri_axissym_eval(itri, u, v, xyz, dxyzduv, &
 !
 !
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
   real *8 :: pols(100), srccoefs2d(6,*)
-  integer :: ichuse(*), ixys2d(*) 
+  integer *8 :: ichuse(*), ixys2d(*) 
       
 
   x0=triainfo(1,1,itri)
@@ -452,10 +457,11 @@ subroutine xtri_axissym_circ_eval(itri, u, v, xyz, dxyzduv, &
 !
 !
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), ptcoefs(6,*), srccoefs2d(6,*)
   real *8 :: pols(500), pars(*)
-  integer :: ipars(*)
-  integer :: norder, iptype, istart
+  integer *8 :: ipars(*)
+  integer *8 :: norder, iptype, istart
   real *8 :: uv(2)
   real *8 a0, b0
 
@@ -579,9 +585,10 @@ subroutine xtri_axissym_fun_eval(itri, u, v, xyz, dxyzduv, &
 !
 !
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  integer *8 :: np
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
   real *8 :: pols(100),pars(np)
-  integer :: np
   external fcurve
       
 
@@ -663,10 +670,11 @@ subroutine xtri_axissym_fun_circ_eval(itri, u, v, xyz, dxyzduv, &
 !
 !
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), ptcoefs(6,*)
   real *8 :: pols(500), pars(*)
-  integer :: ipars(*)
-  integer :: np, norder, iptype, istart
+  integer *8 :: ipars(*)
+  integer *8 :: np, norder, iptype, istart
   real *8 :: uv(2)
   real *8 a0, b0
   external fcurve
@@ -766,6 +774,7 @@ end subroutine xtri_axissym_fun_circ_eval
 subroutine xtri_rectmesh_ani(umin, umax, vmin, vmax, nu, nv, &
     nover, maxtri, ntri, triaskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: triaskel(3,3,maxtri)
 
   real *8 :: verts(3,100), ifaces(3,100), verts1(3,3)
@@ -856,6 +865,7 @@ end subroutine xtri_rectmesh_ani
 subroutine xtri_rectmesh(umin, umax, vmin, vmax, nover, maxtri, &
     ntri, triaskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: triaskel(3,3,maxtri)
 
   real *8 :: verts(3,100), ifaces(3,100), verts1(3,3)
@@ -961,6 +971,7 @@ end subroutine xtri_rectmesh
 !
 subroutine xtri_rectmesh0(umin, umax, vmin, vmax, triaskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: triaskel(3,3,2)
 
   !
@@ -1008,6 +1019,7 @@ end subroutine xtri_rectmesh0
 !
 subroutine xtri_rectmesh_3d(v1, v2, v3, v4, nu, nv, npatches, triaskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 triaskel(3,3,npatches), v1(3), v2(3), v3(3), v4(3)
   real *8 vl(3), vr(3), vb(3), vt(3)
   real *8 uvw1(3), uvw2(3), uvw3(3), uvw4(3)
@@ -1046,6 +1058,7 @@ end subroutine xtri_rectmesh_3d
 !
 subroutine xtri_rectmesh0_3d(v1, v2, v3, v4, triaskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 v1(3), v2(3), v3(3), v4(3), triaskel(3,3,2)
 
   do i=1,3
@@ -1067,6 +1080,7 @@ subroutine xtri_get_rectparapiped(a, b, c, na, nb, nc, &
   npatches, triaskel)
 
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 triaskel(3,3,npatches),vs(3,4)
   real *8 vcube(3,8),xnorm(3)
 
@@ -1204,6 +1218,7 @@ end
 
 subroutine get_norm_triaskel(tria, xnorm)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 tria(3,3), xnorm(3), xu(3), xv(3)
       
 
@@ -1223,6 +1238,7 @@ end
 subroutine xtri_sphere_eval(itri, u, v, xyz, dxyzduv, triainfo, &
     p2, p3, p4)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*)
 
   !
@@ -1319,7 +1335,8 @@ end subroutine xtri_sphere_eval
 subroutine xtri_platonic(itype, nover, maxtri, &
     npatches, triainfo, isides)
   implicit real *8 (a-h,o-z)
-  integer :: isides(*)
+  implicit integer *8 (i-n)
+  integer *8 :: isides(*)
   real *8 :: triainfo(3,3,maxtri)
 
   real *8 :: verts(3,100), ifaces(3,100), verts1(3,3)
@@ -1401,6 +1418,7 @@ end subroutine xtri_platonic
 
 subroutine xtri_rsolid(itype, verts, nverts, ifaces, nfaces)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   dimension verts(3,*),ifaces(3,*)
   !
   ! This subroutine returns the vertices and faces of regular (and
@@ -1817,6 +1835,7 @@ end subroutine xtri_rsolid
 
 subroutine xtri_gentriainfo(verts,nverts,ifaces,nfaces,triainfo)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   dimension verts(3,1),ifaces(3,1),triainfo(3,3,1)
 
   do i=1,nfaces
@@ -1844,6 +1863,7 @@ end subroutine xtri_gentriainfo
 
 subroutine xtri_refine4_flat(verts, verts1, verts2, verts3, verts4)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: verts(3,3), verts1(3,3), verts2(3,3), verts3(3,3)
   real *8 :: verts4(3,3)
 

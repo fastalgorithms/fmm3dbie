@@ -1,6 +1,7 @@
       subroutine test_dtriarouts(nsuccess)
       
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 uvs(2,10000),wts(10000)
       real *8, allocatable :: umatr(:,:),vmatr(:,:)
       real *8, allocatable :: xyzvals(:,:,:)
@@ -10,10 +11,10 @@
       real *8 xyztarg(3,1000)
       real *8, allocatable :: cintvals(:,:)
       real *8, allocatable :: cintex(:,:)
-      integer itargptr(1000)
-      integer ntargptr(1000)
-      integer ipars(10)
-      integer, allocatable :: iprint(:,:)
+      integer *8 itargptr(1000)
+      integer *8 ntargptr(1000)
+      integer *8 ipars(10)
+      integer *8, allocatable :: iprint(:,:)
 
       real *8 dpars(5)
 
@@ -23,6 +24,7 @@
 
       done = 1
       pi = atan(done)*4
+      ndim = 3
 
 
       call prini(6,13)
@@ -192,7 +194,7 @@ c
       
 
       call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dlslp,ndd,dpars,ndz,zpars,ndi,ipars,
      3      nqorder,
      3      ntrimax,rfac,cintvals,ifmetric,rn1,n2)
@@ -227,7 +229,7 @@ c
       
 
       call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dlslp,ndd,dpars,ndz,zpars,ndi,ipars,
      3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -263,7 +265,7 @@ c
 
 
       call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dlslp,ndd,dpars,ndz,zpars,ndi,ipars,
      3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -300,7 +302,7 @@ c
 
 
       call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dlslp,ndd,dpars,ndz,zpars,ndi,ipars,
      3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -344,7 +346,7 @@ c
 
 
       call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,
      3      dlslp,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,ntrimax,
      3      rfac,cintvals,ifmetric,rn1,n2)
@@ -384,7 +386,7 @@ c
 
 
       call dtriaints(eps,istrat,intype,npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,
      3      dlslp,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,ntrimax,rfac,
      3      cintvals,ifmetric,rn1,n2)
@@ -432,7 +434,7 @@ c
 
 
       call dtriaints_wnodes(npatches,norder,npols,srccoefs,
-     1      3,ntarg,xyztarg,itargptr,
+     1      ndim,ntarg,xyztarg,itargptr,
      2      ntargptr,nporder,nppols,
      3      dlslp,ndd,dpars,ndz,zpars,ndi,ipars,npts,qnodes,
      3      qwts,cintvals)
@@ -463,6 +465,7 @@ c
 c
       subroutine test_dtriarouts_vec(nsuccess)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 uvs(2,10000),wts(10000)
       real *8, allocatable :: umatr(:,:),vmatr(:,:)
       real *8, allocatable :: xyzvals(:,:,:)
@@ -471,10 +474,10 @@ c
       real *8 xyztarg(3,1000)
       real *8, allocatable :: cintvals(:,:,:)
       real *8, allocatable :: cintex(:,:,:)
-      integer itargptr(1000)
-      integer ntargptr(1000)
-      integer ipars(10)
-      integer, allocatable :: iprint(:,:)
+      integer *8 itargptr(1000)
+      integer *8 ntargptr(1000)
+      integer *8 ipars(10)
+      integer *8, allocatable :: iprint(:,:)
 
       real *8 dpars(5)
 
@@ -484,6 +487,7 @@ c
 
       done = 1
       pi = atan(done)*4
+      ndim = 3
 
 
       call prini(6,13)
@@ -670,7 +674,7 @@ c
       
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      srccoefs,ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -707,7 +711,7 @@ c
       
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      srccoefs,ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,
      3      ifmetric,rn1,n2)
@@ -752,7 +756,7 @@ c
 
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      srccoefs,ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,
      3      ntrimax,rfac,cintvals,
@@ -791,7 +795,7 @@ c
 
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      srccoefs,ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -833,7 +837,7 @@ c
       ifmetric = 0
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      srccoefs,ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -873,7 +877,7 @@ c
 
 
       call dtriaints_vec(eps,istrat,intype,npatches,norder,npols,
-     1      srccoefs,3,ntarg,xyztarg,ifp,tmp,itargptr,
+     1      srccoefs,ndim,ntarg,xyztarg,ifp,tmp,itargptr,
      2      ntargptr,nporder,nppols,dvslp,nd,ndd,dpars,ndz,zpars,ndi,
      3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
 
@@ -903,10 +907,11 @@ c
 
       subroutine dvslp(nd,x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 x(*),y(ndt),dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
-      integer ndd,ndi,ndz
+      integer *8 ipars(ndi)
+      integer *8 ndd,ndi,ndz
       real *8 f(2)
       
       rr = (x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2
@@ -926,9 +931,10 @@ c
 
       subroutine dlslp(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 x(*),y(ndt),dpars(ndd)
       complex *16 zpars(ndz)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
       real *8 f
       
       rr = (x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2

@@ -1,10 +1,11 @@
       implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       real *8, allocatable :: wts(:)
       character *100 fname
-      integer ipars(2)
+      integer *8 ipars(2)
 
-      integer, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
 
       real *8 xyz_out(3),xyz_in(3),xyz_src(3),xyz_targ(3),xyz_all(3,2)
       complex *16, allocatable :: sigma(:,:),rhs(:,:)
@@ -14,21 +15,26 @@
       complex *16 omega,ep0,ep1,mu0,mu1,zk0,zk1,ztmp,ztmp2
       complex *16 u0,dudn0,u1,dudn1
       complex *16 alpha0,alpha1,beta0,beta1
-      integer numit,niter
+      integer *8 numit,niter
 
-      integer ipatch_id(2)
+      integer *8 ipatch_id(2)
       real *8 uvs_targ(2,2)
       complex *16 potall(2)
 
       logical isout0,isout1
 
       complex *16 pot,potex,ima
+      integer *8 int8_0,int8_1,int8_3,int8_12
 
       data ima/(0.0d0,1.0d0)/
 
 
       call prini(6,13)
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_3 = 3
+      int8_12 = 12
       done = 1
       pi = atan(done)*4
 
@@ -98,14 +104,14 @@ c
 c  get boundary data
 c
       do i=1,npts
-        call h3d_slp(xyz_in,12,srcvals(1,i),0,dpars,1,zk0,0,
-     1     ipars,u0)
-        call h3d_sprime(xyz_in,12,srcvals(1,i),0,dpars,1,zk0,0,
-     1     ipars,dudn0)
-        call h3d_slp(xyz_out,12,srcvals(1,i),0,dpars,1,zk1,0,
-     1     ipars,u1)
-        call h3d_sprime(xyz_out,12,srcvals(1,i),0,dpars,1,zk1,0,
-     1     ipars,dudn1)
+        call h3d_slp(xyz_in,int8_12,srcvals(1,i),int8_0,dpars,
+     1     int8_1,zk0,int8_0,ipars,u0)
+        call h3d_sprime(xyz_in,int8_12,srcvals(1,i),int8_0,dpars,
+     1     int8_1,zk0,int8_0,ipars,dudn0)
+        call h3d_slp(xyz_out,int8_12,srcvals(1,i),int8_0,dpars,
+     1     int8_1,zk1,int8_0,ipars,u1)
+        call h3d_sprime(xyz_out,int8_12,srcvals(1,i),int8_0,dpars,
+     1     int8_1,zk1,int8_0,ipars,dudn1)
         rhs(1,i) = alpha0*u0 - alpha1*u1
         rhs(2,i) = beta0*dudn0 - beta1*dudn1
       enddo
@@ -147,7 +153,8 @@ c
 c       test solution at interior point
 c
       pot = potall(1)
-      call h3d_slp(xyz_out,3,xyz_in,0,dpars,1,zk1,0,ipars,potex)
+      call h3d_slp(xyz_out,int8_3,xyz_in,int8_0,dpars,int8_1,zk1,
+     1             int8_0,ipars,potex)
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)
       erra = abs(pot-potex)/abs(potex)
@@ -156,7 +163,8 @@ c
 c       test solution at exterior point
 c
       pot = potall(2)
-      call h3d_slp(xyz_in,3,xyz_out,0,dpars,1,zk0,0,ipars,potex)
+      call h3d_slp(xyz_in,int8_3,xyz_out,int8_0,dpars,int8_1,zk0,
+     1             int8_0,ipars,potex)
       call prin2('potex=*',potex,2)
       call prin2('pot=*',pot,2)
       erra = abs(pot-potex)/abs(potex)
@@ -171,18 +179,19 @@ c
       subroutine setup_geom(igeomtype,norder,npatches,ipars, 
      1    srcvals,srccoefs,ifplot,fname)
       implicit real *8 (a-h,o-z)
-      integer igeomtype,norder,npatches,ipars(*),ifplot
+      implicit integer *8 (i-n)
+      integer *8 igeomtype,norder,npatches,ipars(*),ifplot
       character (len=*) fname
       real *8 srcvals(12,*), srccoefs(9,*)
       real *8, allocatable :: uvs(:,:),umatr(:,:),vmatr(:,:),wts(:)
 
       real *8, pointer :: ptr1,ptr2,ptr3,ptr4
-      integer, pointer :: iptr1,iptr2,iptr3,iptr4
+      integer *8, pointer :: iptr1,iptr2,iptr3,iptr4
       real *8, target :: p1(10),p2(10),p3(10),p4(10)
       real *8, allocatable, target :: triaskel(:,:,:)
       real *8, allocatable, target :: deltas(:,:)
-      integer, allocatable :: isides(:)
-      integer, target :: nmax,mmax
+      integer *8, allocatable :: isides(:)
+      integer *8, target :: nmax,mmax
 
       procedure (), pointer :: xtri_geometry
 
@@ -285,11 +294,11 @@ c  identity for the flux due to a point charge
 c
 c
 c  input:
-c    npatches - integer
+c    npatches - integer *8
 c       number of patches
-c    norder - integer
+c    norder - integer *8
 c       order of discretization
-c    npts - integer
+c    npts - integer *8
 c       total number of discretization points on the surface
 c    srccoefs - real *8 (9,npts)
 c       koornwinder expansion coefficients of geometry info
@@ -302,19 +311,23 @@ c      whether the target is in the interior or not
 c
 
       implicit none
-      integer npatches,norder,npts,npols
+      integer *8 npatches,norder,npts,npols
       real *8 srccoefs(9,npts),srcvals(12,npts),xyzout(3),wts(npts)
       real *8 tmp(3)
       real *8 dpars,done,pi
       real *8, allocatable :: rsurf(:),err_p(:,:) 
-      integer ipars,norderhead,nd
+      integer *8 ipars,norderhead,nd
       complex *16, allocatable :: sigma_coefs(:,:), sigma_vals(:,:)
       complex *16 zk,val
 
-      integer ipatch,j,i
+      integer *8 ipatch,j,i
       real *8 ra,ds
+      integer *8 int8_0,int8_1,int8_12
       logical isout
 
+      int8_0 = 0
+      int8_1 = 1
+      int8_12 = 12
       done = 1
       pi = atan(done)*4
 
@@ -330,8 +343,8 @@ c
       do ipatch=1,npatches
         do j=1,npols
           i = (ipatch-1)*npols + j
-          call h3d_sprime(xyzout,12,srcvals(1,i),0,dpars,1,zk,0,ipars,
-     1       val)
+          call h3d_sprime(xyzout,int8_12,srcvals(1,i),int8_0,dpars,
+     1       int8_1,zk,0,ipars,val)
 
           call cross_prod3d(srcvals(4,i),srcvals(7,i),tmp)
           ds = sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)

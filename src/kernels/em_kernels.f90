@@ -50,7 +50,7 @@ subroutine em3d_nrccie_kers(nd, src, ndt, targ, ndd, dpars, ndz, &
 !
 !  returns all the relevant kernels for nrccie
 !  Input arguments:
-!    - nd: integer
+!    - nd: integer *8
 !        number of kernels, should be 9
 !    - src: real *8 (12)
 !        source info
@@ -58,7 +58,7 @@ subroutine em3d_nrccie_kers(nd, src, ndt, targ, ndd, dpars, ndz, &
 !          * src(4:6)   - dxyz/du
 !          * src(7:9)   - dxyz/dv
 !          * src(10:12) - normals
-!    - ndt: integer
+!    - ndt: integer *8
 !        size of targ array, must be atleast 12, and only
 !        first 12 components used
 !    - targ: real *8 (ndt)
@@ -67,18 +67,18 @@ subroutine em3d_nrccie_kers(nd, src, ndt, targ, ndd, dpars, ndz, &
 !          * targ(4:6)   - dxyz/du
 !          * targ(7:9)   - dxyz/dv
 !          * targ(10:12) - normals
-!    - ndd: integer
+!    - ndd: integer *8
 !        number of double precision parameters (unused for this routine)
 !    - dpars: real *8 (ndd)
 !        real precision parameters (unused for this routine)
-!    - ndz: integer
+!    - ndz: integer *8
 !        number of complex parameters, only first 2 components used 
 !    - zpars: complex *16 (ndz)
 !        zpars(1) - Maxwell wavenumber
 !        zpars(2) - scaling parameter alpha above
-!    - ndi: integer
+!    - ndi: integer *8
 !        number of integer parameters, unused for this routine
-!    - ipars: integer (ndi)
+!    - ipars: integer *8 (ndi)
 !        integer parameters, unused for this routine
 !
 !  Output arguments:
@@ -108,10 +108,11 @@ subroutine em3d_nrccie_kers(nd, src, ndt, targ, ndd, dpars, ndz, &
 
 !
       implicit real *8 (a-h,o-z)
-      integer, intent(in) :: nd
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: nd
       real *8 :: src(12), targ(ndt), dpars(ndd)
       real *8 :: over4pi, ru_s(3), rv_s(3), rr, ru_t(3), rv_t(3)
-      integer ipars(ndi)
+      integer *8 ipars(ndi)
       complex *16 :: zpars(ndz), val(nd), zk, alpha, zexp, zgrad(3)
       complex *16 :: zfac, zjvec_u(3), zjvec_v(3), ztmp
       complex *16 :: zcurljvec_u(3), zcurljvec_v(3)

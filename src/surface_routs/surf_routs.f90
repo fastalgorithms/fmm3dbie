@@ -102,12 +102,13 @@ subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
 !
 
   implicit real *8 (a-h,o-z)
-  integer norders(npatches),ixyzs(npatches+1)
-  integer iptype(npatches)
+  implicit integer *8 (i-n)
+  integer *8 norders(npatches),ixyzs(npatches+1)
+  integer *8 iptype(npatches)
   real *8 dvals(nd,npts),errp(npatches),errm
   real *8 wts(npts)
   real *8, allocatable :: dcoefs(:,:),dtail(:,:),uvs(:,:),pols(:)
-  integer, allocatable :: itailcoefs(:)
+  integer *8, allocatable :: itailcoefs(:)
   real *8 rl2s,rl2tails
 
   allocate(dcoefs(nd,npts),dtail(nd,npts))
@@ -194,21 +195,21 @@ subroutine get_centroid_rads(npatches,norders,ixyzs,iptype,npts, &
 !   of the bounding sphere centered at the centroid
 !
 !   Input:
-!      npatches - integer
+!      npatches - integer *8
 !         number of patches
-!      norders - integer
+!      norders - integer *8
 !         order of discretization of each patches
-!      ixyzs - integer(npatches+1)
+!      ixyzs - integer *8(npatches+1)
 !            ixyzs(i) denotes the starting location in srccoefs,
 !             and srcvals array corresponding to patch i
 !   
-!      iptype - integer(npatches)
+!      iptype - integer *8(npatches)
 !         type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
 !
-!     npts - integer
+!     npts - integer *8
 !         total number of discretization points
 !      srccoefs - real *8 (9,npts)
 !         basis expansions of the geometry info
@@ -217,11 +218,11 @@ subroutine get_centroid_rads(npatches,norders,ixyzs,iptype,npts, &
 !
 
   implicit none
-  integer npatches,norders(npatches),npols,npts,ixyzs(npatches+1)
-  integer iptype(npatches)
+  integer *8 npatches,norders(npatches),npols,npts,ixyzs(npatches+1)
+  integer *8 iptype(npatches)
   real *8 srccoefs(9,npts),cms(3,npatches),rads(npatches)
 
-  integer i,istart
+  integer *8 i,istart
 
 
   do i=1,npatches
@@ -238,13 +239,13 @@ end subroutine get_centroid_rads
 
 subroutine get_centroid_rads_guru(norder,npols,iptype,srccoefs,cms,rads) 
   implicit none
-  integer norder,npols,iptype
+  integer *8 norder,npols,iptype
   real *8 srccoefs(9,npols),cms(3),rads
   real *8 uv(2,4)
   real *8 xyz(3,4),rad
   real *8, allocatable :: pols(:,:)
 
-  integer i,j,l,m,lpt,np,nv
+  integer *8 i,j,l,m,lpt,np,nv
 
   call get_boundary_vertices(iptype, uv, nv)
   
@@ -311,28 +312,28 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
 !
 !  Input arguments:
 !
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        discretization order of patches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
 !    - srcvals: double precision (12,npts)
 !        xyz, dxyz/du,dxyz/dv, normals at all nodes
-!    - nfars: integer(npatches)
+!    - nfars: integer *8(npatches)
 !        oversampled order of patch i
-!    - ixyzso: integer(npatches+1)
+!    - ixyzso: integer *8(npatches+1)
 !        starting location of oversampled points on patch i
-!    - nptso: integer
+!    - nptso: integer *8
 !        total number of oversampled points
 !
 !  Output arguments:   
@@ -344,13 +345,13 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
 !
 
   implicit none
-  integer, intent(in) :: npatches,norders(npatches),ixyzs(npatches+1)
-  integer, intent(in) :: iptype(npatches),ixyzso(npatches+1)
-  integer, intent(in) :: nfars(npatches)
-  integer, intent(in) :: npts,nptso
+  integer *8, intent(in) :: npatches,norders(npatches),ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches),ixyzso(npatches+1)
+  integer *8, intent(in) :: nfars(npatches)
+  integer *8, intent(in) :: npts,nptso
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
   real *8, intent(out) :: srcover(12,nptso)
-  integer nfar,norder
+  integer *8 nfar,norder
   real *8 tmp(3),rr
   
 
@@ -359,12 +360,15 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
   character *1 transa,transb
   real *8 alpha, beta
 
-  integer i,istart,istartover,nfar_pols,j,jpt,npols,l
-  integer n1,n2,ipt,i1,i2
-  integer ic,nclash,nmax,npmax
-  integer, allocatable :: iclash(:),iclashfar(:)
+  integer *8 i,istart,istartover,nfar_pols,j,jpt,npols,l
+  integer *8 n1,n2,ipt,i1,i2
+  integer *8 ic,nclash,nmax,npmax
+  integer *8, allocatable :: iclash(:),iclashfar(:)
+  integer *8 int8_9, int8_12
 
 
+  int8_9 = 9
+  int8_12 = 12
   transa = 'n'
   transb = 'n'
   alpha = 1
@@ -394,8 +398,9 @@ subroutine oversample_geom(npatches,norders,ixyzs,iptype, &
 
       istart = ixyzs(i)
       istartover = ixyzso(i)
-      call dgemm_guru(transa,transb,9,nfar_pols,npols,alpha, &
-          srccoefs(1,istart),9,pmat,npols,beta,srcover(1,istartover),12)
+      call dgemm_guru(transa,transb,int8_9,nfar_pols,npols,alpha, &
+          srccoefs(1,istart),int8_9,pmat,npols,beta, &
+          srcover(1,istartover),int8_12)
       do j=1,nfar_pols
         jpt = istartover+j-1
         call cross_prod3d(srcover(4,jpt),srcover(7,jpt),tmp)
@@ -445,28 +450,28 @@ subroutine oversample_fun_surf(nd,npatches,norders,ixyzs,iptype,npts, &
 !  This subroutine oversamples a function defined on a surface
 !
 !  input
-!    nd - integer
+!    nd - integer *8
 !      number of functions
-!    npatches - integer
+!    npatches - integer *8
 !      number of patches on the surface
-!    norders - integer(npatches)
+!    norders - integer *8(npatches)
 !      order of discretization of patch i
-!    ixyzs - integer(npatches+1)
+!    ixyzs - integer *8(npatches+1)
 !      starting location of points on patch i
-!    iptype - integer(npatches)
+!    iptype - integer *8(npatches)
 !      type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    npts - integer
+!    npts - integer *8
 !      total number of points on the surface
 !    u - real *8 (nd,npts)
 !      functions at the discretization points on the surface
-!    nfars - integer(npatches)
+!    nfars - integer *8(npatches)
 !      oversampled order of patch i
-!    ixyzso - integer(npatches+1)
+!    ixyzso - integer *8(npatches+1)
 !      starting location of oversampled points on patch i
-!    nptso - integer
+!    nptso - integer *8
 !      total number of oversampled points
 !  
 !
@@ -477,12 +482,12 @@ subroutine oversample_fun_surf(nd,npatches,norders,ixyzs,iptype,npts, &
    
 
   implicit none
-  integer nd,npatches,norders(npatches),ixyzs(npatches+1)
-  integer iptype(npatches),npts
+  integer *8 nd,npatches,norders(npatches),ixyzs(npatches+1)
+  integer *8 iptype(npatches),npts
   real *8 u(nd,npts)
-  integer nfars(npatches),ixyzso(npatches+1),nptso
+  integer *8 nfars(npatches),ixyzso(npatches+1),nptso
   real *8 uover(nd,nptso)
-  integer i,istart,istarto,npols,npolso
+  integer *8 i,istart,istarto,npols,npolso
 
   do i=1,npatches
     
@@ -505,22 +510,22 @@ subroutine oversample_fun_guru(nd,norder,npols,iptype,u,nfar,nfar_pols, &
 !  This subroutine oversample a function on the standard triangle
 !
 !  input
-!    nd - integer
+!    nd - integer *8
 !       number of functions
-!    norder - integer
+!    norder - integer *8
 !       order of original discretization
-!    npols - integer
+!    npols - integer *8
 !       number of discretization points corresponding to norder
-!    iptype - integer
+!    iptype - integer *8
 !       type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
 !    u - real *8 (nd,npols)
 !       function values tabulated at original grid
-!    nfar - integer
+!    nfar - integer *8
 !       oversampled order of discretization
-!    nfar_pols - integer
+!    nfar_pols - integer *8
 !       number of discretization nodes corresponding to oversampled
 !         order
 !    
@@ -531,16 +536,16 @@ subroutine oversample_fun_guru(nd,norder,npols,iptype,u,nfar,nfar_pols, &
 
 
   implicit none
-  integer norder,npover,nd,npols,nfar
+  integer *8 norder,npover,nd,npols,nfar
   real *8 u(nd,npols),uover(nd,nfar_pols)
   real *8, allocatable :: ucoefs(:,:)
   real *8, allocatable :: pmat(:,:),pols(:)
   real *8, allocatable :: uvs(:,:),umat(:,:),vmat(:,:),wts(:)
   real *8, allocatable :: umat0(:,:),uvs0(:,:),vmat0(:,:),wts0(:)
   character *1 transa,transb
-  integer iptype
+  integer *8 iptype
   real *8 alpha, beta
-  integer i,nfar_pols
+  integer *8 i,nfar_pols
 
 
   allocate(uvs(2,nfar_pols))
@@ -589,26 +594,26 @@ subroutine fun_surf_interp_coefs(nd, npatches, norders, ixyzs, iptype, &
 !  This subroutine oversamples a function defined on a surface
 !
 !  input
-!    nd - integer
+!    nd - integer *8
 !      number of functions
-!    npatches - integer
+!    npatches - integer *8
 !      number of patches on the surface
-!    norders - integer(npatches)
+!    norders - integer *8(npatches)
 !      order of discretization of patch i
-!    ixyzs - integer(npatches+1)
+!    ixyzs - integer *8(npatches+1)
 !      starting location of points on patch i
-!    iptype - integer(npatches)
+!    iptype - integer *8(npatches)
 !      type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    npts - integer
+!    npts - integer *8
 !      total number of points on the surface
 !    ucoefs - real *8 (nd, npts)
 !      basis function expansions of functions 
-!    ntarg - integer
+!    ntarg - integer *8
 !      number of targets
-!    ipatches - integer(ntarg)
+!    ipatches - integer *8(ntarg)
 !      ipatches(i) is the patch on which target i belongs
 !    uvs_targ - real *8 (2,ntarg)
 !      local uv coordinates of targets 
@@ -621,15 +626,15 @@ subroutine fun_surf_interp_coefs(nd, npatches, norders, ixyzs, iptype, &
    
 
   implicit none
-  integer nd,npatches,norders(npatches),ixyzs(npatches+1)
-  integer iptype(npatches),npts
+  integer *8 nd,npatches,norders(npatches),ixyzs(npatches+1)
+  integer *8 iptype(npatches),npts
   real *8 ucoefs(nd,npts)
-  integer ntarg, ipatches(ntarg)
+  integer *8 ntarg, ipatches(ntarg)
   real *8 uvs_targ(2,ntarg)
   real *8 uover(nd,ntarg)
-  integer i,istart,istarto,npols,npolso
+  integer *8 i,istart,istarto,npols,npolso
   real *8 pols(500)
-  integer ipat,l,idim
+  integer *8 ipat,l,idim
 
   do i=1,ntarg
     ipat = ipatches(i)
@@ -675,23 +680,23 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 !  the end of the list
 !
 !  Input arguments:
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches describing the discretized surface
-!    - npatmax: integer
+!    - npatmax: integer *8
 !        maximum number of patches and size of norders, ixyzs (-1),
 !        iptype on input
-!    - norders: integer(npatmax)
+!    - norders: integer *8(npatmax)
 !        norders(1:npatches) is the discretization order of patches
-!    - ixyzs: integer(npatmax+1)
+!    - ixyzs: integer *8(npatmax+1)
 !        ixyzs(1:npatches+1) is starting location of points on patch i
-!    - iptype: integer(npatmax)
+!    - iptype: integer *8(npatmax)
 !        iptype(1:npatches) type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points describing the discretized surface
-!    - nptmax: integer
+!    - nptmax: integer *8
 !        maximum number of points, and size of second dimension of
 !        srccoefs, and srcvals arrays
 !    - srccoefs: double precision (9,nptmax)
@@ -700,24 +705,24 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 !    - srcvals: double precision (12,nptmax)
 !        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
 !        all nodes
-!    - nlist: integer
+!    - nlist: integer *8
 !        number of patches of to be refined
-!    - ilist: integer(nlist)
+!    - ilist: integer *8(nlist)
 !        list of patches to be refined
 !
 !  Output arguments
-!    - npatches_out: integer
+!    - npatches_out: integer *8
 !        number of patches on the refined surface 
-!    - norders: integer(npatmax)
+!    - norders: integer *8(npatmax)
 !        norders(1:npatches_out) is the discretization order of patches
-!    - ixyzs: integer(npatmax+1)
+!    - ixyzs: integer *8(npatmax+1)
 !        ixyzs(1:npatches_out+1) is starting location of points on patch i
-!    - iptype: integer(npatmax)
+!    - iptype: integer *8(npatmax)
 !        iptype(1:npatches_out) type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts_out: integer
+!    - npts_out: integer *8
 !        total number of points describing the refined surface
 !    - srccoefs: double precision (9,nptmax)
 !        srccoefs(1:9,1:npts_out) are the koornwinder expansion coefs 
@@ -725,26 +730,26 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 !    - srcvals: double precision (12,nptmax)
 !        srcvals(1:12,1:npts_out) are xyz, dxyz/du,dxyz/dv, normals at 
 !        all nodes
-!    - ier: integer
+!    - ier: integer *8
 !        error code, 
 !        * ier = 0, implies successful refinement,
 !        * ier = 4, implies that either nptmax or npatmax is too small
 !     
   implicit none
-  integer, intent(in) :: npatches, npatmax, npts, nptmax
-  integer, intent(inout) :: norders(npatmax), ixyzs(npatmax+1)
-  integer, intent(inout) :: iptype(npatmax)
+  integer *8, intent(in) :: npatches, npatmax, npts, nptmax
+  integer *8, intent(inout) :: norders(npatmax), ixyzs(npatmax+1)
+  integer *8, intent(inout) :: iptype(npatmax)
   real *8, intent(inout) :: srccoefs(9,nptmax), srcvals(12,nptmax)
-  integer, intent(in) :: nlist, ilist(nlist)
-  integer, intent(out) :: npatches_out, npts_out, ier
+  integer *8, intent(in) :: nlist, ilist(nlist)
+  integer *8, intent(out) :: npatches_out, npts_out, ier
 
 !   temporary variables
-  integer, allocatable :: ipat_starts(:), ipt_starts(:), npol_ilist(:)
-  integer ntest, i, i1, ipat_start, ipt_start, j, k, l, m
+  integer *8, allocatable :: ipat_starts(:), ipt_starts(:), npol_ilist(:)
+  integer *8 ntest, i, i1, ipat_start, ipt_start, j, k, l, m
   real *8, allocatable :: uvs_refine(:,:), umatr(:,:), uvs_base(:,:)
   real *8, allocatable :: vmatr(:,:), wts(:), pols(:)
-  integer nordermax, npolmax, ipat, npols, jj, ll, ipats(4), jpat, kk
-  integer iptype0, norder0, istart, jstart, j1, j2
+  integer *8 nordermax, npolmax, ipat, npols, jj, ll, ipats(4), jpat, kk
+  integer *8 iptype0, norder0, istart, jstart, j1, j2
   real *8 v0(2,3), vcs(2,3,4), tmp(3), rr
   real *8 rjac(2,2), srctmp(9)
 
@@ -1001,20 +1006,20 @@ subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
 !  This subroutine oversamples a function defined on a surface
 !
 !  input
-!    nd - integer
+!    nd - integer *8
 !      number of functions
-!    npatches - integer
+!    npatches - integer *8
 !      number of patches on the surface
-!    norders - integer(npatches)
+!    norders - integer *8(npatches)
 !      order of discretization of patch i
-!    ixyzs - integer(npatches+1)
+!    ixyzs - integer *8(npatches+1)
 !      starting location of points on patch i
-!    iptype - integer(npatches)
+!    iptype - integer *8(npatches)
 !      type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    npts - integer
+!    npts - integer *8
 !      total number of points on the surface
 !    u - real *8 (nd,npts)
 !      functions at the discretization points on the surface
@@ -1026,10 +1031,10 @@ subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
    
 
   implicit none
-  integer nd,npatches,norders(npatches),ixyzs(npatches+1)
-  integer iptype(npatches),npts
+  integer *8 nd,npatches,norders(npatches),ixyzs(npatches+1)
+  integer *8 iptype(npatches),npts
   real *8 u(nd,npts),ucoefs(nd,npts)
-  integer i,istart,npols
+  integer *8 i,istart,npols
 
   do i=1,npatches
     istart = ixyzs(i)
@@ -1048,13 +1053,13 @@ subroutine vals_to_coefs_guru(nd,norder,npols,iptype,u,ucoefs)
 !  coefs
 !
 !  input
-!    nd - integer
+!    nd - integer *8
 !       number of functions
-!    norder - integer
+!    norder - integer *8
 !       order of original discretization
-!    npols - integer
+!    npols - integer *8
 !       number of discretization points corresponding to norder
-!    iptype - integer
+!    iptype - integer *8
 !       type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
@@ -1069,12 +1074,12 @@ subroutine vals_to_coefs_guru(nd,norder,npols,iptype,u,ucoefs)
 
 
   implicit none
-  integer norder,nd,npols,iptype
+  integer *8 norder,nd,npols,iptype
   real *8 u(nd,npols),ucoefs(nd,npols)
   real *8, allocatable :: umat0(:,:),uvs0(:,:),vmat0(:,:),wts0(:)
   character *1 transa,transb
   real *8 alpha, beta
-  integer i
+  integer *8 i
 
 
 
@@ -1129,12 +1134,12 @@ subroutine get_qwts(npatches,norders,ixyzs,iptype,npts,srcvals,qwts)
 !    qwts - smooth quadrature weights at the discretization nodes
 !
   implicit none
-  integer norders(npatches),npatches,npts,npols,i,j,ipt
-  integer ixyzs(npatches+1),iptype(npatches)
+  integer *8 norders(npatches),npatches,npts,npols,i,j,ipt
+  integer *8 ixyzs(npatches+1),iptype(npatches)
   real *8 srcvals(12,npts),qwts(npts),tmp(3)
-  integer istart
+  integer *8 istart
   real *8, allocatable :: wts0(:)
-  integer nmax,npmax
+  integer *8 nmax,npmax
   
   nmax = maxval(norders(1:npatches))
   npmax = (nmax+1)*(nmax+1)
@@ -1171,10 +1176,10 @@ subroutine get_near_far_split_pt(nd,n,xyz,r,xyz0,nf,nn,xyz_f,xyz_n, &
 !   
 !
 !   input
-!     nd - integer
+!     nd - integer *8
 !        dimension of target array (must at least be 3, with the
 !        first three components being the coordinates)
-!     n - integer 
+!     n - integer *8 
 !       number of targets
 !     xyz - real *8 (nd,n)
 !       location of targets
@@ -1184,9 +1189,9 @@ subroutine get_near_far_split_pt(nd,n,xyz,r,xyz0,nf,nn,xyz_f,xyz_n, &
 !        reference point
 !     
 !     output
-!      nf - integer
+!      nf - integer *8
 !        number of far targets
-!      nn - integer
+!      nn - integer *8
 !        number of near targets
 !      xyz_f - real *8 (nd,n)
 !        Collection of far targets. Note that
@@ -1196,22 +1201,22 @@ subroutine get_near_far_split_pt(nd,n,xyz,r,xyz0,nf,nn,xyz_f,xyz_n, &
 !        Collection of near targets. Note that
 !        only the first (nd,nn) block will
 !        be filled out
-!      iind_f - integer (n)
+!      iind_f - integer *8 (n)
 !         iind_f(i) denotes the location in xyz array
 !         of the ith target in xyz_f.
 !         Note that the first nf entries are filled out
-!      iind_n - integer (n)
+!      iind_n - integer *8 (n)
 !         iind_n(i) denotes the location in xyz array
 !         of the ith target in xyz_n.
 !         Note that the first nn entries are filled out
 !      
   implicit none
-  integer nd
-  integer n,nf,nn,iind_f(n),iind_n(n)
+  integer *8 nd
+  integer *8 n,nf,nn,iind_f(n),iind_n(n)
   real *8 xyz(nd,n),xyz0(3),r,rtmp,r2
   real *8 xyz_f(nd,n),xyz_n(nd,n)
 
-  integer i,j
+  integer *8 i,j
 
   r2 = r**2
   nf = 0
@@ -1248,11 +1253,11 @@ subroutine get_patch_id_uvs(npatches,norders,ixyzs,iptype,npts, &
 !f2py intent(out) ipatch_id,uvs_pts
 !
   implicit none
-  integer npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
-  integer npts,ipatch_id(npts)
+  integer *8 npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
+  integer *8 npts,ipatch_id(npts)
   real *8 uvs_pts(2,npts)
   
-  integer i,ip,j,npols
+  integer *8 i,ip,j,npols
 
 
   do ip=1,npatches
@@ -1313,11 +1318,11 @@ subroutine get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
 !
     
   implicit none
-  integer npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
-  integer npts
+  integer *8 npatches,norders(npatches),ixyzs(npatches+1),iptype(npatches)
+  integer *8 npts
   real *8 srccoefs(9,npts),srcvals(12,npts),qwts(npts),pdis(npatches)
   real *8 rtmp,srat,vtmp(3)
-  integer i,istart,j,ipt,npols
+  integer *8 i,istart,j,ipt,npols
 
   
   
@@ -1387,7 +1392,7 @@ end subroutine get_local_asprat
 
 subroutine get_nximat(npatches,ixyzs,ixyzso,nximat)
   implicit none
-  integer npatches,ixyzs(npatches+1),ixyzso(npatches+1),nximat,i
+  integer *8 npatches,ixyzs(npatches+1),ixyzso(npatches+1),nximat,i
 
   nximat = 0
 !$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:nximat) 
@@ -1405,10 +1410,10 @@ subroutine get_ximats(npatches,iptype,norders,ixyzs,novers,ixyzso, &
   nximat,ximats,iximat)
   
   implicit none
-  integer npatches,iptype(npatches),norders(npatches),ixyzs(npatches+1)
-  integer novers(npatches),ixyzso(npatches+1),iximat(npatches),nximat
-  integer, allocatable :: nximats(:)
-  integer i,j,k,l,npols,kpols
+  integer *8 npatches,iptype(npatches),norders(npatches),ixyzs(npatches+1)
+  integer *8 novers(npatches),ixyzso(npatches+1),iximat(npatches),nximat
+  integer *8, allocatable :: nximats(:)
+  integer *8 i,j,k,l,npols,kpols
   
   real *8 ximats(nximat)
 
@@ -1461,18 +1466,18 @@ subroutine get_first_fundamental_form(npatches,norders,ixyzs,iptype, &
 !
 !  Input arguments:
 !
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -1487,12 +1492,12 @@ subroutine get_first_fundamental_form(npatches,norders,ixyzs,iptype, &
 !
   
   implicit none
-  integer, intent(in) :: npatches,norders(npatches)
-  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
-  integer, intent(in) :: npts
+  integer *8, intent(in) :: npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer *8, intent(in) :: npts
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
   real *8, intent(out) :: ffform(2,2,npts)
-  integer i
+  integer *8 i
   real *8 xuu,xvv,xuv
 
   do i=1,npts
@@ -1529,18 +1534,18 @@ subroutine get_inv_first_fundamental_form(npatches,norders,ixyzs,iptype, &
 !
 !  Input arguments:
 !
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -1554,11 +1559,11 @@ subroutine get_inv_first_fundamental_form(npatches,norders,ixyzs,iptype, &
 !--------------------------
   
   implicit none
-  integer, intent(in) :: npatches,norders(npatches)
-  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches),npts
+  integer *8, intent(in) :: npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches),npts
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
   real *8, intent(out) :: ffforminv(2,2,npts)
-  integer i
+  integer *8 i
   real *8 xuu,xvv,xuv,d
 
   do i=1,npts
@@ -1588,20 +1593,20 @@ subroutine get_surf_grad(nd,npatches,norders,ixyzs,iptype,npts, &
 !
 !  Input arguments:
 !
-!    - nd: integer
+!    - nd: integer *8
 !        number of functions
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -1619,9 +1624,9 @@ subroutine get_surf_grad(nd,npatches,norders,ixyzs,iptype,npts, &
 !
 
   implicit none
-  integer, intent(in) :: npatches,norders(npatches)
-  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
-  integer, intent(in) :: npts,nd
+  integer *8, intent(in) :: npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer *8, intent(in) :: npts,nd
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),f(nd,npts)
   real *8, intent(out) :: df(nd,2,npts)
   real *8, allocatable :: ffforminv(:,:,:)
@@ -1652,20 +1657,20 @@ subroutine get_surf_grad_fast(nd,npatches,norders,ixyzs,iptype,npts, &
 !
 !  Input arguments:
 !
-!    - nd: integer
+!    - nd: integer *8
 !        number of functions
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - ffforminv: double precision(2,2,npts)
 !        inverse of first fundamental form at the discretization nodes
@@ -1680,13 +1685,13 @@ subroutine get_surf_grad_fast(nd,npatches,norders,ixyzs,iptype,npts, &
 !
 !
   implicit none
-  integer, intent(in) :: npatches,norders(npatches)
-  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
-  integer, intent(in) :: npts,nd
+  integer *8, intent(in) :: npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer *8, intent(in) :: npts,nd
   real *8, intent(in) :: ffforminv(2,2,npts),f(nd,npts)
   real *8, intent(out) :: df(nd,2,npts)
   real *8, allocatable :: fcoefs(:,:),dfuv(:,:,:)
-  integer i,idim
+  integer *8 i,idim
 
   allocate(dfuv(nd,2,npts))
   call get_surf_uv_grad(nd,npatches,norders,ixyzs,iptype,npts,f,dfuv)
@@ -1717,20 +1722,20 @@ subroutine get_surf_uv_grad(nd,npatches,norders,ixyzs,iptype,npts,f, &
 !
 !  Input arguments:
 !
-!    - nd: integer
+!    - nd: integer *8
 !        number of functions
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - f: double precision (nd,npts)
 !        function values at the discretization points
@@ -1742,13 +1747,13 @@ subroutine get_surf_uv_grad(nd,npatches,norders,ixyzs,iptype,npts,f, &
 !-----------------------------
 !
   implicit none
-  integer, intent(in) :: nd,npatches,norders(npatches)
-  integer, intent(in) :: ixyzs(npatches+1)
-  integer, intent(in) :: iptype(npatches),npts
+  integer *8, intent(in) :: nd,npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches),npts
   real *8, intent(in) :: f(nd,npts)
   real *8, intent(out) :: dfuv(nd,2,npts)
 
-  integer i,istart,npols
+  integer *8 i,istart,npols
 
 
 
@@ -1772,11 +1777,11 @@ subroutine get_surf_uv_grad_guru(nd,norder,npols,iptype,f,dfuv)
 !
 !  Input arguments:
 !
-!    - nd: integer
+!    - nd: integer *8
 !        number of functions
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization
-!    - npols: integer
+!    - npols: integer *8
 !        total number of points on the patch
 !    - f: double precision (nd,npols)
 !        function values at the discretization points
@@ -1788,12 +1793,12 @@ subroutine get_surf_uv_grad_guru(nd,norder,npols,iptype,f,dfuv)
 !-----------------------------
 !
   implicit none
-  integer, intent(in) :: nd,norder,npols,iptype
+  integer *8, intent(in) :: nd,norder,npols,iptype
   real *8, intent(in) :: f(nd,npols)
   real *8, intent(out) :: dfuv(nd,2,npols)
   real *8 fcoefs(nd,npols),pols(npols),ders(2,npols)
   real *8 uv(2,npols)
-  integer i,idim,j
+  integer *8 i,idim,j
 
   call vals_to_coefs_guru(nd,norder,npols,iptype,f,fcoefs)
   call get_disc_nodes(norder,npols,iptype,uv)
@@ -1831,20 +1836,20 @@ subroutine get_surf_div(nd,npatches,norders,ixyzs,iptype,npts, &
 !
 !  Input arguments:
 !
-!    - nd: integer
+!    - nd: integer *8
 !        number of vector fields
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -1860,9 +1865,9 @@ subroutine get_surf_div(nd,npatches,norders,ixyzs,iptype,npts, &
 !-----------------------------
 !
   implicit none
-  integer, intent(in) :: npatches,norders(npatches)
-  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
-  integer, intent(in) :: npts,nd
+  integer *8, intent(in) :: npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer *8, intent(in) :: npts,nd
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
   real *8, intent(in) :: f(nd,2,npts)
   real *8, intent(out) :: df(nd,npts)
@@ -1895,20 +1900,20 @@ subroutine get_surf_div_fast(nd,npatches,norders,ixyzs,iptype,npts, &
 !
 !  Input arguments:
 !
-!    - nd: integer
+!    - nd: integer *8
 !        number of vector fields
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - f: double precision (nd,2,npts)
 !        vector field values at the discretization points
@@ -1920,12 +1925,12 @@ subroutine get_surf_div_fast(nd,npatches,norders,ixyzs,iptype,npts, &
 !-----------------------------
 !
   implicit none
-  integer, intent(in) :: npatches,norders(npatches)
-  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
-  integer, intent(in) :: npts,nd
+  integer *8, intent(in) :: npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer *8, intent(in) :: npts,nd
   real *8, intent(in) :: ffform(2,2,npts),f(nd,2,npts)
   real *8, intent(out) :: df(nd,npts)
-  integer i,istart,npols
+  integer *8 i,istart,npols
 
   do i=1,npatches
     istart = ixyzs(i)
@@ -1952,11 +1957,11 @@ subroutine get_surf_div_guru(nd,norder,npols,iptype,ff,f,df)
 !
 !  Input arguments:
 !
-!    - nd: integer
+!    - nd: integer *8
 !        number of functions
-!    - norder: integer
+!    - norder: integer *8
 !        order of discretization
-!    - npols: integer
+!    - npols: integer *8
 !        total number of points on the patch
 !    - ff: double precision(2,2,npols)
 !        first fundamental form at discretization nodes
@@ -1970,13 +1975,13 @@ subroutine get_surf_div_guru(nd,norder,npols,iptype,ff,f,df)
 !-----------------------------
 !
   implicit none
-  integer, intent(in) :: nd,norder,npols,iptype
+  integer *8, intent(in) :: nd,norder,npols,iptype
   real *8, intent(in) :: f(nd,2,npols),ff(2,2,npols)
   real *8, intent(out) :: df(nd,npols)
   real *8 fcoefs(nd,2,npols),pols(npols),ders(2,npols)
   real *8 ftmp(nd,2,npols)
   real *8 uv(2,npols),gg(npols)
-  integer i,idim,j
+  integer *8 i,idim,j
 
   do i=1,npols
     gg(i) = sqrt(ff(1,1,i)*ff(2,2,i) - ff(1,2,i)*ff(2,1,i))
@@ -2021,11 +2026,11 @@ subroutine col_ind_to_patch_node_ind(npatches,ixyzs,ncol,col_ind, &
   patch_ind,node_ind)
 
   implicit none
-  integer, intent(in) :: npatches,ixyzs(npatches+1),ncol
-  integer, intent(in) :: col_ind(ncol)
-  integer, intent(out) :: patch_ind(ncol),node_ind(ncol)
+  integer *8, intent(in) :: npatches,ixyzs(npatches+1),ncol
+  integer *8, intent(in) :: col_ind(ncol)
+  integer *8, intent(out) :: patch_ind(ncol),node_ind(ncol)
 
-  integer i,j,j0,npols
+  integer *8 i,j,j0,npols
 
   npols = ixyzs(2)-ixyzs(1)
   do i=1,ncol
@@ -2057,20 +2062,20 @@ subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
 !  Input arguments:
 !    - dlam: real *8
 !        wavelength
-!    - nd: integer
+!    - nd: integer *8
 !        number of functions
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -2081,8 +2086,8 @@ subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
 !
    implicit none 
    real *8, intent(in) :: dlam
-   integer, intent(in) :: npatches,norders(npatches),ixyzs(npatches+1)
-   integer, intent(in) :: iptype(npatches),npts
+   integer *8, intent(in) :: npatches,norders(npatches),ixyzs(npatches+1)
+   integer *8, intent(in) :: iptype(npatches),npts
    real *8, intent(in) :: srcvals(12,npts),srccoefs(9,npts)
    character (len=*) :: fname,title
 
@@ -2090,10 +2095,12 @@ subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
    real *8, allocatable :: sigma(:,:),cms(:,:),rads(:),qwts(:)
    character (len=10), dimension(3) :: scalar_names
 
-   integer nsc,nd,ip,j,i
+   integer *8 nsc,nd,ip,j,i
+   integer *8 int8_9
    real *8 errm
    
 
+   int8_9 = 9
    nsc = 10
 
    scalar_names(1) = 'ppw'
@@ -2116,7 +2123,7 @@ subroutine plot_surface_info_all(dlam,npatches,norders,ixyzs,iptype, &
    call get_patch_distortion(npatches,norders,ixyzs,iptype,npts,&
     srccoefs,srcvals,qwts,pdis)
 
-   call surf_fun_error(9,npatches,norders,ixyzs,iptype, &
+   call surf_fun_error(int8_9,npatches,norders,ixyzs,iptype, &
      npts,srcvals(1:9,1:npts),qwts,errp,errm)
 
    nd = 3
@@ -2145,6 +2152,7 @@ end subroutine plot_surface_info_all
 subroutine getpatchinfo(npatches, patchpnt, par1, par2, par3, par4, &
     npols, uvs, umatr, srcvals, srccoefs)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: uvs(2,npols), srcvals(12,*)
   real *8 :: umatr(npols,npols),srccoefs(9,*)
   external patchpnt
@@ -2158,12 +2166,12 @@ subroutine getpatchinfo(npatches, patchpnt, par1, par2, par3, par4, &
   !
   !       Input parameters:
   !
-  !         npatches: integer: the number of patches
+  !         npatches: integer *8: the number of patches
   !         patchpnt: external: subroutine evaluating points along
   !               the surface, given patch by patch, must be of the form
   !                     patchpnt(ipatch,u,v,xyz,dxyzduv,par1,par2,par3,par4)
   !         par1,par2,par3,par4: extra parameters
-  !         npols: integer: the total number of polynomials for each patch
+  !         npols: integer *8: the total number of polynomials for each patch
   !         uvs: real *8(2,npols): local u-discretization points for each patch
   !         umatr: real *8(npols,npols): values to coeffs mapatchx on standard patch 
   !
@@ -2178,7 +2186,7 @@ subroutine getpatchinfo(npatches, patchpnt, par1, par2, par3, par4, &
   !         srccoefs: real *8 (9,npts): geometry info as koornwinder expansion
   !                     coefficients
   !                    
-  !         npts: integer: the total number of points in discretization
+  !         npts: integer *8: the total number of points in discretization
   !
 
 
@@ -2234,27 +2242,27 @@ subroutine get_surf_interp_mat_targ_mem(npatches,ixyzs,ntarg, &
 !
 !  Input arguments:
 !
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - ntarg: integer
+!    - ntarg: integer *8
 !        number of targets
-!    - ipatchtarg: integer(ntarg)
+!    - ipatchtarg: integer *8(ntarg)
 !        patch id of target i
 !
 !  Output arguments:
-!    - lmem: integer
+!    - lmem: integer *8
 !        memory required for storing the interpolation matrix
 
   implicit none
-  integer, intent(in) :: npatches,ixyzs(npatches+1),ntarg
-  integer, intent(in) :: ipatchtarg(ntarg)
-  integer, intent(out) :: lmem
+  integer *8, intent(in) :: npatches,ixyzs(npatches+1),ntarg
+  integer *8, intent(in) :: ipatchtarg(ntarg)
+  integer *8, intent(out) :: lmem
 
 !  Temporary variables
 
-  integer i,ipatch,itarg
+  integer *8 i,ipatch,itarg
 
   lmem = 0
 !$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:lmem) private(i) 
@@ -2281,52 +2289,52 @@ subroutine get_surf_interp_mat_targ(npatches,norders,ixyzs,iptype,npts,ntarg, &
 !
 !  Input arguments:
 !
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        discretization order of patches
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        number of points on surface
-!    - ntarg: integer
+!    - ntarg: integer *8
 !        number of targets
-!    - ipatchtarg: integer(ntarg)
+!    - ipatchtarg: integer *8(ntarg)
 !        patch id of target i
 !    - uvs_targ: real *8 (2,ntarg)
 !        local uv coordinates of targets on surface
-!    - lmem: integer
+!    - lmem: integer *8
 !        memory required to store the interpolation matrix
 !
 !  Output arguments:
 !    - xmattarg: real *8 (lmem)
 !        the interpolation matrix
-!    - ixmattarg: integer(ntarg+1)
+!    - ixmattarg: integer *8(ntarg+1)
 !        location where interpolation matrix for target i begins
   implicit none
-  integer, intent(in) :: npatches,npts
-  integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
-  integer, intent(in) :: iptype(npatches)
-  integer, intent(in) :: ntarg
-  integer, intent(in) :: ipatchtarg(ntarg)
+  integer *8, intent(in) :: npatches,npts
+  integer *8, intent(in) :: norders(npatches),ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
+  integer *8, intent(in) :: ntarg
+  integer *8, intent(in) :: ipatchtarg(ntarg)
   real *8, intent(in) :: uvs_targ(2,ntarg)
-  integer, intent(in) :: lmem
+  integer *8, intent(in) :: lmem
   real *8, intent(out) :: xmattarg(lmem)
-  integer, intent(out) :: ixmattarg(ntarg+1)
+  integer *8, intent(out) :: ixmattarg(ntarg+1)
 
 !  Temporary variables
 
-  integer i,ipatch,itarg,lmem0
-  integer, allocatable :: nxmattarg(:)
+  integer *8 i,ipatch,itarg,lmem0
+  integer *8, allocatable :: nxmattarg(:)
 
   real *8, allocatable :: umat(:,:,:),pols(:),uvs(:,:)
-  integer, allocatable :: iuni(:),iuniind(:),nordertarg(:)
-  integer incx,incy,iind,norder,npmax,npols,nuni
+  integer *8, allocatable :: iuni(:),iuniind(:),nordertarg(:)
+  integer *8 incx,incy,iind,norder,npmax,npols,nuni
   real *8 alpha,beta
 
   allocate(nxmattarg(ntarg))
@@ -2409,18 +2417,18 @@ subroutine get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
 !
 !  Input arguments:
 !
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -2435,17 +2443,19 @@ subroutine get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
 !
   
   implicit none
-  integer, intent(in) :: npatches,norders(npatches)
-  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
-  integer, intent(in) :: npts
+  integer *8, intent(in) :: npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer *8, intent(in) :: npts
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
   real *8, intent(out) :: sfform(2,2,npts)
-  integer i
+  integer *8 i
   real *8 L,M,N
   real *8, allocatable :: dxuv(:,:)
   real *8, allocatable :: dxuv2(:,:,:)
+  integer *8 int8_6
 
 
+  int8_6 = 6
   allocate(dxuv(6,npts))
 ! Calculating x_{uu}, x_{uv}, x_{uv} stored in dxuv2 
  
@@ -2460,7 +2470,7 @@ subroutine get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
 
   allocate(dxuv2(6,2,npts))
 
-  call get_surf_uv_grad(6,npatches,norders,ixyzs,iptype,npts,dxuv,dxuv2)
+  call get_surf_uv_grad(int8_6,npatches,norders,ixyzs,iptype,npts,dxuv,dxuv2)
 
 
 
@@ -2498,18 +2508,18 @@ subroutine get_mean_curvature(npatches,norders,ixyzs,iptype, &
 !
 !  Input arguments:
 !
-!    - npatches: integer
+!    - npatches: integer *8
 !        number of patches
-!    - norders: integer(npatches)
+!    - norders: integer *8(npatches)
 !        order of discretization of each patch
-!    - ixyzs: integer(npatches+1)
+!    - ixyzs: integer *8(npatches+1)
 !        starting location of points on patch i
-!    - iptype: integer(npatches)
+!    - iptype: integer *8(npatches)
 !        type of patch
 !       * iptype = 1, triangular patch with RV nodes
 !       * iptype = 11, quad patch with GL nodes
 !       * iptype = 12, quad patch with Cheb nodes
-!    - npts: integer
+!    - npts: integer *8
 !        total number of points on the surface
 !    - srccoefs: double precision (9,npts)
 !        koornwinder expansion coefs of geometry info
@@ -2524,12 +2534,12 @@ subroutine get_mean_curvature(npatches,norders,ixyzs,iptype, &
 !
   
   implicit none
-  integer, intent(in) :: npatches,norders(npatches)
-  integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
-  integer, intent(in) :: npts
+  integer *8, intent(in) :: npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer *8, intent(in) :: npts
   real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
   real *8, intent(out) :: mean_curv(npts)
-  integer i
+  integer *8 i
   real *8, allocatable :: ffform(:,:,:),ffforminv(:,:,:)
   real *8, allocatable :: sfform(:,:,:)
 
@@ -2570,6 +2580,7 @@ end subroutine get_mean_curvature
 subroutine getgeominfo(npatches, patchpnt, par1, par2, par3, par4, &
     npols, uvs, umatr, srcvals, srccoefs)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: uvs(2,npols), srcvals(12,*)
   real *8 :: umatr(npols,npols),srccoefs(9,*)
   external patchpnt
@@ -2583,12 +2594,12 @@ subroutine getgeominfo(npatches, patchpnt, par1, par2, par3, par4, &
   !
   !       Input parameters:
   !
-  !         npatches: integer: the number of patches
+  !         npatches: integer *8: the number of patches
   !         patchpnt: external: subroutine evaluating points along
   !               the surface, given patch by patch, must be of the form
   !                     patchpnt(ipatch,u,v,xyz,dxyzduv,par1,par2,par3,par4)
   !         par1,par2,par3,par4: extra parameters
-  !         npols: integer: the total number of polynomials for each patch
+  !         npols: integer *8: the total number of polynomials for each patch
   !         uvs: real *8(2,npols): local u-discretization points for each patch
   !         umatr: real *8(npols,npols): values to coeffs matrix on standard patch 
   !
@@ -2603,7 +2614,7 @@ subroutine getgeominfo(npatches, patchpnt, par1, par2, par3, par4, &
   !         srccoefs: real *8 (9,npts): geometry info as koornwinder expansion
   !                     coefficients
   !                    
-  !         npts: integer: the total number of points in discretization
+  !         npts: integer *8: the total number of points in discretization
   !
 
 

@@ -5,10 +5,10 @@ subroutine plotskeletonvtk(Geometry1, filename)
   type (Geometry) :: Geometry1
   character (len=*) filename
 
-  integer :: umio,count1,count2,flag,n_order_sf, norder_smooth
-  integer :: ierror, id, norder, nover, nsub, k, ntri, i, j, ictr
-  integer :: ntot, ltot, npols7, info, iii, n, l, nnn, iw
-  integer :: ifflat, is(10)
+  integer *8 :: umio,count1,count2,flag,n_order_sf, norder_smooth
+  integer *8 :: ierror, id, norder, nover, nsub, k, ntri, i, j, ictr
+  integer *8 :: ntot, ltot, npols7, info, iii, n, l, nnn, iw
+  integer *8 :: ifflat, is(10)
 !  real (kind = 8) :: us(100000), vs(100000), ws(100000), dcond
 !  real (kind = 8) :: uv1(10), uv2(10), uv3(10), uv(10), pols(100000)
 !  real (kind = 8) :: xcoefs(10000), xrhs(10000)
@@ -20,8 +20,8 @@ subroutine plotskeletonvtk(Geometry1, filename)
   real (kind = 8), allocatable :: pmat(:,:), triout(:,:,:)
 
 !  double precision :: umatr(100000), vmatr(100000)
-  integer :: itype, npols
-  integer ipatch,iunit1
+  integer *8 :: itype, npols
+  integer *8 ipatch,iunit1
   real *8 rr
   
   !
@@ -124,9 +124,9 @@ subroutine plotsmoothgeometryvtk(Geometry1, filename)
   type (Geometry) :: Geometry1
   character (len=*) filename
 
-  integer :: umio,count1,count2,flag,n_order_sf, norder_smooth
-  integer :: ierror, id, norder, nover, nsub, k, ntri, i, j, ictr
-  integer :: ntot, ltot, npols7, info, iii, n, l, nnn, iw
+  integer *8 :: umio,count1,count2,flag,n_order_sf, norder_smooth
+  integer *8 :: ierror, id, norder, nover, nsub, k, ntri, i, j, ictr
+  integer *8 :: ntot, ltot, npols7, info, iii, n, l, nnn, iw
   real (kind = 8) :: dcond
   real (kind = 8) :: uv1(10), uv2(10), uv3(10), uv(10) 
   real (kind = 8), allocatable :: us(:),vs(:),ws(:),umatr(:,:),vmatr(:,:)
@@ -139,7 +139,7 @@ subroutine plotsmoothgeometryvtk(Geometry1, filename)
   real (kind = 8), allocatable :: xyzs(:,:,:), uvs(:,:,:)
   real (kind = 8), allocatable :: pmat(:,:), triout(:,:,:)
 
-  integer :: itype, npols
+  integer *8 :: itype, npols
   
   !
   ! This routien dumps out smoothed geometry into a vtk file,
@@ -550,13 +550,13 @@ implicit none
 
 !List of calling arguments
 character (len=100), intent(in) :: nombre
-integer, intent(in) :: N
+integer *8, intent(in) :: N
 real ( kind = 8 ), intent(in) :: x(N),y(N)
 
 !List of local variables
 !character (len=100) nombre
-integer umio,count,flag
-integer :: ierror
+integer *8 umio,count,flag
+integer *8 :: ierror
 !    nombre='fortran_plot'
     open(8, FILE=trim(nombre),STATUS='REPLACE')
 
@@ -583,13 +583,13 @@ implicit none
 
 !List of calling arguments
 character (len=100), intent(in) :: nombre
-integer, intent(in) :: N
+integer *8, intent(in) :: N
 real ( kind = 8 ), intent(in) :: x(N),y(N),z(N)
 
 !List of local variables
 !character (len=100) nombre
-integer umio,count,flag
-integer :: ierror
+integer *8 umio,count,flag
+integer *8 :: ierror
 !    nombre='fortran_plot'
     open(8, FILE=trim(nombre),STATUS='REPLACE')
 
@@ -618,13 +618,13 @@ implicit none
 
 !List of calling arguments
 character (len=100), intent(in) :: nombre
-integer, intent(in) :: N,M
+integer *8, intent(in) :: N,M
 real ( kind = 8 ), intent(in) :: x(M,N),y(M,N),F(M,N)
 
 !List of local variables
 !character (len=100) nombre
-integer umio,count1,count2,flag
-integer :: ierror
+integer *8 umio,count1,count2,flag
+integer *8 :: ierror
 !    nombre='fortran_plot'
     open(8, FILE=trim(nombre),STATUS='REPLACE')
     flag=2
@@ -659,13 +659,13 @@ implicit none
 
 !List of calling arguments
 character (len=100), intent(in) :: nombre
-integer, intent(in) :: N,M
+integer *8, intent(in) :: N,M
 real ( kind = 8 ), intent(in) :: F(M,N)
 
 !List of local variables
 !character (len=100) nombre
-integer umio,count1,count2,flag
-integer :: ierror
+integer *8 umio,count1,count2,flag
+integer *8 :: ierror
 !    nombre='fortran_plot'
     open(8, FILE=trim(nombre),STATUS='REPLACE')
     flag=4
@@ -689,12 +689,12 @@ implicit none
 
 !List of calling arguments
 character (len=100), intent(in) :: nombre
-integer, intent(in) :: N,M
+integer *8, intent(in) :: N,M
 real ( kind = 8 ), intent(in) :: x(M,N),y(M,N),z(M,N),F(M,N)
 
 !List of local variables
-integer umio,count1,count2,flag
-integer :: ierror
+integer *8 umio,count1,count2,flag
+integer *8 :: ierror
 !    nombre='fortran_plot'
     open(8, FILE=trim(nombre),STATUS='REPLACE')
     flag=5
@@ -734,12 +734,12 @@ implicit none
 
 !List of calling arguments
 character (len=100), intent(in) :: nombre
-integer, intent(in) :: num_box,n_pts
+integer *8, intent(in) :: num_box,n_pts
 real ( kind = 8 ), intent(in) :: W_boxes(num_box*4),Pts(3,n_pts)
 
 !List of local variables
-integer umio,count1,count2,flag
-integer :: ierror
+integer *8 umio,count1,count2,flag
+integer *8 :: ierror
 !    nombre='fortran_plot'
     open(8, FILE=nombre,STATUS='REPLACE')
     flag=6
