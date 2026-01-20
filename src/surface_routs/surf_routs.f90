@@ -993,7 +993,67 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 
   return
 end subroutine refine_patches_list
+!
+!
+!
+!
+subroutine get_surf_moments(npatches, norders, ixyzs, &
+    iptype, npts, srcvals, wts, area, centroid, rmoi)
+!
+!  This subroutine returns the 0th, 1st and 2nd moments
+!  of a surface. The 0th moment is just the surface area, 
+!  the first moment is the centroid, and the second moment
+!  is given by
+!
+!  II_{ij} = 
+!   \int_{\Gamma} (|x-c|^2  \delta_{ij} - (x_{i} - c_{i})(x_{j}-c_{j}))dS
+!  
+!  Input arguments:
+!    - npatches: integer *8
+!        number of patches
+!    - norders: integer *8(npatches)
+!        discretization order of patches
+!    - ixyzs: integer *8(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer *8(npatches)
+!        type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts: integer *8
+!        total number of points on the surface
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!    - wts: double precision(npts)
+!        quadrature weights for integrating smooth 
+!        functions
+!
+!  Output arguments:   
+!    - area: double precision
+!        the 0th moment of the surface, i.e. surface area
+!    - centroid: double precision(3)
+!        the first moment of the surface, i.e. the centroid
+!    - rmoi: double precision(3,3)
+!        the second moment of inertia of the surface, defined
+!        above
+!
+!----------------------------------------------
+!
 
+  implicit none
+  integer *8, intent(in) :: npatches, norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
+!
+! CONTINUE FROM HERE
+!
+
+  integer *8, intent(in) :: nfars(npatches)
+  integer *8, intent(in) :: npts,nptso
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+  real *8, intent(out) :: srcover(12,nptso)
+  integer *8 nfar,norder
+  real *8 tmp(3),rr
 
 subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
    u,ucoefs)
