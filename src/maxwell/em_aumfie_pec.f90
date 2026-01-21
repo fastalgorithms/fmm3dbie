@@ -1171,7 +1171,7 @@ implicit none
        call hfmm3d_t_c_g(eps,zk,ns,source,rho,nt,targets,divE,E,ier)
     endif
     do count1=1,nt
-       E(:,count1)=E(:,count1)/(4.0d0*pi)
+       !E(:,count1)=E(:,count1)/(4.0d0*pi)
     enddo
 
     do count1=1,nt
@@ -1417,8 +1417,8 @@ implicit none
     call hfmm3d_t_c_g(eps,zk,ns,source,rho,nt,targ,divE,gradpot,ier)
 
 	do count1=1,nt
-		gradpot(:,count1)=gradpot(:,count1)/(4.0d0*pi)
-		divE(count1)=divE(count1)/(4.0d0*pi)
+		!gradpot(:,count1)=gradpot(:,count1)/(4.0d0*pi)
+		!divE(count1)=divE(count1)/(4.0d0*pi)
 	enddo
 	
 	do count1=1,nt

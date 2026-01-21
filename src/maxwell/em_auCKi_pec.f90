@@ -2193,9 +2193,9 @@ implicit none
 			
 
     do count1=1,nt
-      H_aux(1,count1)=H_aux(1,count1)/(4.0d0*pi)
-      H_aux(2,count1)=H_aux(2,count1)/(4.0d0*pi)
-      H_aux(3,count1)=H_aux(3,count1)/(4.0d0*pi)
+      H_aux(1,count1)=H_aux(1,count1)
+      H_aux(2,count1)=H_aux(2,count1)
+      H_aux(3,count1)=H_aux(3,count1)
     enddo
     do count1=1,nt
       H(1,count1)=H(1,count1)+H_aux(1,count1)

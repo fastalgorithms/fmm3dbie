@@ -514,7 +514,7 @@
       complex *16 zpars
       integer *8 ipars
 
-      real *8 ttot, done, pi
+      real *8 ttot, done
       real *8 rfac, rfac0
       integer *8 iptype_avg, norder_avg
       integer *8 ikerorder, iquadtype, npts_over
@@ -991,7 +991,6 @@
       integer *8 ifcharge, ifdipole
       integer *8 ifpgh, ifpghtarg
       real *8 tmp(10), val
-      real *8 over4pi
 
       integer *8 i, j, jpatch, jquadstart, jstart
 
@@ -1011,14 +1010,12 @@
 
       integer *8 ndtmp
 
-      real *8 ttot, done, pi
+      real *8 ttot, done
 
       parameter (nd=1,ntarg0=1)
-      data over4pi/0.07957747154594767d0/
 
       ns = nptso
       done = 1
-      pi = atan(done)*4
 
 !
 !    estimate max number of sources in neear field of 
@@ -1050,8 +1047,8 @@
 !      set relevant parameters for the fmm
 !
  
-      alpha = dpars(1)*over4pi
-      beta = dpars(2)*over4pi
+      alpha = dpars(1)
+      beta = dpars(2)
 
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
@@ -1313,7 +1310,7 @@
       real *8 timeinfo(10), t1, t2, omp_get_wtime
 
 
-      real *8 ttot, done, pi
+      real *8 ttot, done
       real *8 rfac, rfac0
       integer *8 iptype_avg, norder_avg
       integer *8 ikerorder, iquadtype, npts_over
@@ -1328,7 +1325,6 @@
 
 
       done = 1
-      pi = atan(done)*4
 !
 !
 !        setup targets as on surface discretization points
@@ -1825,21 +1821,18 @@
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp1(:,:),srctmp2(:,:)
       real *8 thresh,ra
-      real *8 over4pi
       integer *8 nss
 
       integer *8 nd,ntarg0
       integer *8 int8_1
 
-      real *8 ttot,done,pi
+      real *8 ttot,done
 
       parameter (nd=1,ntarg0=1)
-      data over4pi/0.07957747154594767d0/
 
       int8_1 = 1
       ns = nptso
       done = 1
-      pi = atan(done)*4
 
            
       ifpgh = 0
@@ -1857,8 +1850,8 @@
 !
 !      set relevatn parameters for the fmm
 !
-      alpha = dpars(1)*over4pi
-      beta = dpars(2)*over4pi
+      alpha = dpars(1)
+      beta = dpars(2)
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
       do i=1,ns
         sources(1,i) = srcover(1,i)

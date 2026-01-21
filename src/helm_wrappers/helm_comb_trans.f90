@@ -510,16 +510,14 @@
       complex *16, allocatable :: ctmp1(:),dtmp1(:,:)
       real *8 thresh,ra
       real *8 rr,rmin
-      real *8 over4pi
       integer *8 nss,ii,l,npover,ier
       complex *16 ima,ztmp
 
       integer *8 nd,ntarg0,nmax
       integer *8 int8_4,int8_12
 
-      real *8 ttot,done,pi,work
+      real *8 ttot,done,work
       data ima/(0.0d0,1.0d0)/
-      data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
@@ -528,7 +526,6 @@
       ns = nptso
       ntarg = npts
       done = 1
-      pi = atan(done)*4
 
 !
 !  compute interior and exteiror wave numbers
@@ -576,21 +573,21 @@
         sources(1,i) = srcover(1,i)
         sources(2,i) = srcover(2,i)
         sources(3,i) = srcover(3,i)
-        charges0(i) = sigmaover(2,i)*whtsover(i)*over4pi*z*zslp0
-        charges1(i) = sigmaover(2,i)*whtsover(i)*over4pi*z*zslp1
+        charges0(i) = sigmaover(2,i)*whtsover(i)*z*zslp0
+        charges1(i) = sigmaover(2,i)*whtsover(i)*z*zslp1
 
-        dipvec0(1,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
+        dipvec0(1,i) = sigmaover(1,i)*whtsover(i)* &
            z*zdlp0*srcover(10,i)
-        dipvec0(2,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
+        dipvec0(2,i) = sigmaover(1,i)*whtsover(i)* &
            z*zdlp0*srcover(11,i)
-        dipvec0(3,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
+        dipvec0(3,i) = sigmaover(1,i)*whtsover(i)* &
            z*zdlp0*srcover(12,i)
 
-        dipvec1(1,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
+        dipvec1(1,i) = sigmaover(1,i)*whtsover(i)* &
            z*zdlp1*srcover(10,i)
-        dipvec1(2,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
+        dipvec1(2,i) = sigmaover(1,i)*whtsover(i)* &
            z*zdlp1*srcover(11,i)
-        dipvec1(3,i) = sigmaover(1,i)*whtsover(i)*over4pi* &
+        dipvec1(3,i) = sigmaover(1,i)*whtsover(i)* &
            z*zdlp1*srcover(12,i)
       enddo
 !$OMP END PARALLEL DO

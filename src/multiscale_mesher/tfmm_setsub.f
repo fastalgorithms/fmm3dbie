@@ -101,7 +101,6 @@ c
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp1(:,:),srctmp2(:,:)
       real *8 thresh,ra
-      real *8 over4pi
       integer *8 nss
 
       integer *8 nd,ntarg0
@@ -110,7 +109,6 @@ c
       real *8 distest, rr, xdis, ydis, zdis, rtest
       integer *8 ilev, ilevup, jlev, isrc, lbox, llev, n1, ncoll
       integer *8 int8_1, int8_3
-      data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
@@ -129,9 +127,9 @@ c
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
       do i=1,ns
         charges(i) = 0 
-        dipvec(1,i) = -srcnorm(1,i)*wts(i)*over4pi
-        dipvec(2,i) = -srcnorm(2,i)*wts(i)*over4pi
-        dipvec(3,i) = -srcnorm(3,i)*wts(i)*over4pi
+        dipvec(1,i) = -srcnorm(1,i)*wts(i)
+        dipvec(2,i) = -srcnorm(2,i)*wts(i)
+        dipvec(3,i) = -srcnorm(3,i)*wts(i)
       enddo
 C$OMP END PARALLEL DO      
 
@@ -499,6 +497,9 @@ c
 
       real *8 r, h, hh, hhh, prod
       real *8 dxyz(3)
+      real *8 over4pi
+
+      data over4pi/0.07957747154594767d0/
 
       dxyz(1) = src(1) - targ(1)
       dxyz(2) = src(2) - targ(2)
@@ -506,11 +507,12 @@ c
       r = sqrt(dxyz(1)*dxyz(1) + dxyz(2)*dxyz(2) + dxyz(3)*dxyz(3))
       call surf_smooth_ker(r, sigma, h, hh, hhh)
       prod = dxyz(1)*dipvec(1) + dxyz(2)*dipvec(2) + dxyz(3)*dipvec(3)
+      prod = prod*over4pi
       pot = -h*prod
 
       
       grad(1:3) = -prod*(-hh*dxyz(1:3) + hhh*grad_sigma(1:3)) + 
-     1    h*dipvec(1:3)
+     1    h*over4pi*dipvec(1:3)
 
       return
       end

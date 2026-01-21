@@ -238,7 +238,6 @@
       complex *16, allocatable :: e_charge2(:,:)
       real *8 thresh
 
-      real *8 over4pi
       integer *8 nss, l, ier
       complex *16 ima, ztmp, ztmp2, ztmp3
 
@@ -254,7 +253,6 @@
       integer *8 int8_12
       complex *16 zpars2(2)
       data ima/(0.0d0,1.0d0)/
-      data over4pi/0.07957747154594767d0/
 
       parameter (ntarg0=1)
 
@@ -316,7 +314,7 @@
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(rtmp, ztmp, ztmp2, ztmp3, idim)
       do i=1,ns
         idim = 1
-        rtmp = whtsover(i)*over4pi
+        rtmp = whtsover(i)
         ztmp = rtmp*zpars(2)
         ztmp2 = rtmp*zpars(3)
         ztmp3 = rtmp*zpars(4)

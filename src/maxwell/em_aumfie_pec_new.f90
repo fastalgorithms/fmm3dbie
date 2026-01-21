@@ -359,14 +359,13 @@
       complex *16, allocatable :: pottmp(:),gradtmp(:,:),ctmp0(:,:)
       real *8, allocatable :: srctmp2(:,:)
 
-      real *8 done,pi,over4pi
+      real *8 done,pi
       complex *16 ima
       complex *16 w0,w1,w2,w3,w4,ztmp(3)
       integer *8 int8_12
       
 
 
-      data over4pi/0.07957747154594767d0/
       data ima/(0.0d0,1.0d0)/
 
       int8_12 = 12
@@ -437,7 +436,7 @@
 !
 !$OMP PARALLEL DO DEFAULT(SHARED) 
       do i=1,ns
-        charges0(1:4,i) = sigmaover(1:4,i)*whtsover(i)*over4pi
+        charges0(1:4,i) = sigmaover(1:4,i)*whtsover(i)
       enddo
 !$OMP END PARALLEL DO      
 

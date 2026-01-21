@@ -540,14 +540,12 @@ c
       real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime,work
 
 
-      real *8 ttot,done,pi
+      real *8 ttot,done
       real *8 rfac,rfac0
-      real *8 over4pi
       integer *8 iptype_avg,norder_avg
       integer *8 ikerorder, iquadtype,npts_over
       integer *8 ndd,ndz,ndi,nker,lwork,ndim
       integer *8 idensflag,ipotflag,ndim_p
-      data over4pi/0.07957747154594767d0/
 
 
 c
@@ -834,7 +832,7 @@ c
       integer *8 idensflag,ipotflag,ndim_p
 
 
-      real *8 ttot,done,pi
+      real *8 ttot,done
 
 
       ndtarg = 12
@@ -1035,16 +1033,14 @@ c
       complex *16, allocatable :: ctmp2(:),dtmp2(:,:)
       real *8 thresh,ra
       real *8 rr,rmin
-      real *8 over4pi
       integer *8 nss,ii,l,npover
       integer *8 nmax,ier,iper
 
       integer *8 nd,ntarg0
       integer *8 idensflag, ipotflag, ndim_p
 
-      real *8 ttot,done,pi
+      real *8 ttot,done
       integer *8 int8_2,int8_3
-      data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
@@ -1052,7 +1048,6 @@ c
       int8_3 = 3
       ns = nptso
       done = 1
-      pi = atan(done)*4
 
 c
 c    estimate max number of sources in neear field of
@@ -1083,8 +1078,8 @@ c
 c
 c       set relevatn parameters for the fmm
 c
-      alpha = zpars(2)*over4pi
-      beta = zpars(3)*over4pi
+      alpha = zpars(2)
+      beta = zpars(3)
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
       do i=1,ns
         sources(1,i) = srcover(1,i)
@@ -1399,21 +1394,18 @@ c
       real *8, allocatable :: radsrc(:)
       real *8, allocatable :: srctmp1(:,:),srctmp2(:,:)
       real *8 thresh,ra
-      real *8 over4pi
       integer *8 nss
 
       integer *8 nd,ntarg0
 
-      real *8 ttot,done,pi
+      real *8 ttot,done
       integer *8 int8_2
-      data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
       int8_2 = 2
       ns = nptso
       done = 1
-      pi = atan(done)*4
 
 
       ifpgh = 0
@@ -1434,8 +1426,8 @@ c
 c
 c       set relevatn parameters for the fmm
 c
-      alpha = zpars(2)*over4pi
-      beta = zpars(3)*over4pi
+      alpha = zpars(2)
+      beta = zpars(3)
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
       do i=1,ns
         sources(1,i) = srcover(1,i)
@@ -1919,7 +1911,7 @@ c
       real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
 
 
-      real *8 ttot,done,pi
+      real *8 ttot,done
       real *8 rfac,rfac0
       integer *8 iptype_avg,norder_avg
       integer *8 ikerorder, iquadtype, npts_over
@@ -1945,7 +1937,6 @@ c
 
 
       done = 1
-      pi = atan(done)*4
 
 
 c
@@ -2350,7 +2341,7 @@ c
       real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
 
 
-      real *8 ttot,done,pi
+      real *8 ttot,done
       real *8 rfac,rfac0
       integer *8 iptype_avg,norder_avg
       integer *8 ikerorder, iquadtype,npts_over,iper
@@ -2373,7 +2364,6 @@ c
 
 
       done = 1
-      pi = atan(done)*4
 
 
 c
@@ -2914,12 +2904,10 @@ c
       integer *8 nuni,nximat
       integer *8, allocatable :: iaintbb(:)
       integer *8 ifcharge,ifdipole
-      real *8 over4pi
       integer *8 int8_3
 
       procedure (), pointer :: fker
       external h3d_slp, h3d_dlp, h3d_comb
-      data over4pi/0.07957747154594767d0/
 
 c
 c
@@ -3445,14 +3433,12 @@ c
       integer *8, allocatable :: naintb(:),naintbc(:)
 
       integer *8 icol_ptr,iiper,irow_ind
-      real *8 over4pi
 
       procedure (), pointer :: fker
       complex *16 alpha,beta
       integer *8 int8_1
       external h3d_slp, h3d_dlp, h3d_comb
       character *100 fname
-      data over4pi/0.07957747154594767d0/
 
 
 c
@@ -3507,7 +3493,7 @@ C$OMP END PARALLEL DO
       if(ifcharge.eq.1) then
 C$OMP PARALLEL DO
         do i=1,ncol
-          zcharge(i) = wts(col_ind(i))*alpha*over4pi
+          zcharge(i) = wts(col_ind(i))*alpha
         enddo
 C$OMP END PARALLEL DO
       endif
@@ -3515,12 +3501,9 @@ C$OMP END PARALLEL DO
       if(ifdipole.eq.1) then
 C$OMP PARALLEL DO
         do i=1,ncol
-          zdipvec(1,i) = srcvals(10,col_ind(i))*wts(col_ind(i))*beta*
-     1       over4pi
-          zdipvec(2,i) = srcvals(11,col_ind(i))*wts(col_ind(i))*beta*
-     1       over4pi
-          zdipvec(3,i) = srcvals(12,col_ind(i))*wts(col_ind(i))*beta*
-     1       over4pi
+          zdipvec(1,i) = srcvals(10,col_ind(i))*wts(col_ind(i))*beta
+          zdipvec(2,i) = srcvals(11,col_ind(i))*wts(col_ind(i))*beta
+          zdipvec(3,i) = srcvals(12,col_ind(i))*wts(col_ind(i))*beta
         enddo
 C$OMP END PARALLEL DO
       endif

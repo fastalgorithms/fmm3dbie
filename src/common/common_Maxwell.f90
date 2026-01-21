@@ -178,9 +178,7 @@ implicit none
     integer *8 count1,count2,nd
     integer *8 ier
     integer *8 ifcharge,ifdipole,ifpot,ifgrad
-	real ( kind = 8 ) pi
 	
-	pi=3.141592653589793238462643383d0
 
     !!Initialize sources
     allocate(sigma_vect(3,ns))
@@ -299,12 +297,12 @@ implicit none
     if (ifdivE.eq.1) then
         do count1=1,nt
 			 divE(count1)=gradE_vect(1,1,count1)+gradE_vect(2,2,count1)+gradE_vect(3,3,count1)			
-			 divE(count1)=divE(count1)/(4.0d0*pi)
+			 divE(count1)=divE(count1)
         enddo
     endif
 	if (ifE.eq.1) then
         do count1=1,nt
-			 E(:,count1)=E(:,count1)/(4.0d0*pi)
+			 E(:,count1)=E(:,count1)
         enddo
     endif
 
@@ -313,7 +311,7 @@ implicit none
 		     curlE(1,count1)=gradE_vect(3,2,count1)-gradE_vect(2,3,count1)
 		     curlE(2,count1)=gradE_vect(1,3,count1)-gradE_vect(3,1,count1)
 		     curlE(3,count1)=gradE_vect(2,1,count1)-gradE_vect(1,2,count1)			 
-			 curlE(:,count1)=curlE(:,count1)/(4.0d0*pi)
+			 curlE(:,count1)=curlE(:,count1)
         enddo
     endif
 
@@ -498,9 +496,7 @@ implicit none
   integer *8 count1,count2,nd
   integer *8 ier
   integer *8 ifcharge,ifdipole,ifpot,ifgrad
-  real ( kind = 8 ) pi
 
-  pi=3.141592653589793238462643383d0
 
   !!Initialize sources
   allocate(sigma_vect(3,ns))
@@ -666,12 +662,12 @@ implicit none
     do count1=1,nt
       divE(count1)=gradE_vect(1,1,count1)+gradE_vect(2,2,count1)+&
       &gradE_vect(3,3,count1)
-      divE(count1)=divE(count1)/(4.0d0*pi)
+      divE(count1)=divE(count1)
     enddo
   endif
   if (ifE.eq.1) then
     do count1=1,nt
-      E(:,count1)=E(:,count1)/(4.0d0*pi)
+      E(:,count1)=E(:,count1)
     enddo
   endif
 
@@ -680,7 +676,7 @@ implicit none
       curlE(1,count1)=gradE_vect(3,2,count1)-gradE_vect(2,3,count1)
       curlE(2,count1)=gradE_vect(1,3,count1)-gradE_vect(3,1,count1)
       curlE(3,count1)=gradE_vect(2,1,count1)-gradE_vect(1,2,count1) 
-      curlE(:,count1)=curlE(:,count1)/(4.0d0*pi)
+      curlE(:,count1)=curlE(:,count1)
     enddo
   endif
 
@@ -814,9 +810,7 @@ implicit none
   integer *8 count1,count2,nd_hfmm3d
   integer *8 ier,j
   integer *8 ifcharge,ifdipole,ifpot,ifgrad
-  real ( kind = 8 ) pi
 	
-  pi=3.141592653589793238462643383d0
 
   !!Initialize sources
   allocate(sigma_vect(nd,3,ns))
@@ -1019,7 +1013,7 @@ implicit none
     do count2=1,nd
       divE(count2,count1)=gradE_vect(count2,1,1,count1)+gradE_vect(count2,2,2,count1)+&
       &gradE_vect(count2,3,3,count1)
-      divE(count2,count1)=divE(count2,count1)/(4.0d0*pi)
+      divE(count2,count1)=divE(count2,count1)
     enddo
     enddo
 !$OMP END PARALLEL DO    
@@ -1029,7 +1023,7 @@ implicit none
     do count1=1,nt
     do j=1,3
     do count2=1,nd
-      E(count2,j,count1)=E(count2,j,count1)/(4.0d0*pi)
+      E(count2,j,count1)=E(count2,j,count1)
     enddo
     enddo
     enddo
@@ -1046,7 +1040,7 @@ implicit none
     enddo
     do j=1,3
     do count2=1,nd
-      curlE(count2,j,count1)=curlE(count2,j,count1)/(4.0d0*pi)
+      curlE(count2,j,count1)=curlE(count2,j,count1)
     enddo
     enddo
     enddo

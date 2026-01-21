@@ -388,14 +388,13 @@
       real *8, allocatable :: ctmp2(:)
       real *8 thresh, ra
       real *8 rr, rmin
-      real *8 over4pi, rint
+      real *8 rint
       integer *8 nss, ii, l, npover, ier
 
       integer *8 nd, ntarg0, nmax
       integer *8 int8_12
 
-      real *8 ttot, done, pi
-      data over4pi/0.07957747154594767d0/
+      real *8 ttot, done
 
       parameter (nd=1, ntarg0=1)
 
@@ -404,7 +403,6 @@
       ntarg = npts
 
       done = 1
-      pi = atan(done)*4
 
       ifpgh = 0
       ifpghtarg = 2
@@ -433,7 +431,7 @@
         sources(1,i) = srcover(1,i)
         sources(2,i) = srcover(2,i)
         sources(3,i) = srcover(3,i)
-        charges(i) = sigmaover(i)*whtsover(i)*over4pi
+        charges(i) = sigmaover(i)*whtsover(i)
       enddo
 !$OMP END PARALLEL DO      
 
@@ -657,7 +655,7 @@
       real *8 timeinfo(10), t1, t2, omp_get_wtime
 
 
-      real *8 ttot, done, pi
+      real *8 ttot, done
       real *8 rfac, rfac0
       integer *8 iptype_avg, norder_avg
       integer *8 ikerorder, iquadtype, npts_over
@@ -672,7 +670,6 @@
 
 
       done = 1
-      pi = atan(done)*4
 !
 !
 !        setup targets as on surface discretization points
