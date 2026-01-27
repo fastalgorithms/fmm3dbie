@@ -1044,16 +1044,46 @@ subroutine get_surf_moments(npatches, norders, ixyzs, &
   integer *8, intent(in) :: npatches, norders(npatches)
   integer *8, intent(in) :: ixyzs(npatches+1)
   integer *8, intent(in) :: iptype(npatches)
-!
-! CONTINUE FROM HERE
-!
+  integer *8, intent(in) :: npts
 
-  integer *8, intent(in) :: nfars(npatches)
-  integer *8, intent(in) :: npts,nptso
-  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
-  real *8, intent(out) :: srcover(12,nptso)
-  integer *8 nfar,norder
-  real *8 tmp(3),rr
+  real *8, intent(in) :: srcvals(12,npts), wts(npts)
+
+  real *8, intent(out) :: area, centroid(3), rmoi(3,3)
+
+  integer *8 i
+  real *8 xdiff(3)
+
+  area = 0
+  centroid(1:3) = 0
+  rmoi(1:3,1:3) = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i) &
+!$OMP REDUCTION(+:area,centroid)
+  do i=1,npts
+    area = area + wts(i)
+    centroid(1:3) = centroid(1:3) + srcvals(1:3,i)*wts(i)
+  enddo
+!$OMP END PARALLEL DO
+  centroid(1:3) = centroid(1:3)/area
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,xdiff) REDUCTION(+:rmoi)
+  do i=1,npts
+    xdiff(1:3) = srcvals(1:3,i) - centroid(1:3)
+    rmoi(1,1) = rmoi(1,1) + (xdiff(2)**2 + xdiff(3)**2)*wts(i)
+    rmoi(2,2) = rmoi(2,2) + (xdiff(1)**2 + xdiff(3)**2)*wts(i)
+    rmoi(3,3) = rmoi(3,3) + (xdiff(1)**2 + xdiff(2)**2)*wts(i)
+
+    rmoi(1,2) = rmoi(1,2) - xdiff(1)*xdiff(2)*wts(i)
+    rmoi(1,3) = rmoi(1,3) - xdiff(1)*xdiff(3)*wts(i)
+    rmoi(2,3) = rmoi(2,3) - xdiff(2)*xdiff(3)*wts(i)
+  enddo
+!$OMP END PARALLEL DO
+  
+  rmoi(2,1) = rmoi(1,2)
+  rmoi(3,1) = rmoi(1,3)
+  rmoi(3,2) = rmoi(2,3)
+
+  return
+  end
 
 subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
    u,ucoefs)
