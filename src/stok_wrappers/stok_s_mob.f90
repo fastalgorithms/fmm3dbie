@@ -855,15 +855,16 @@
 !
 !
 !        
-      subroutine stok_comb_vel_solver(npatches, norders, ixyzs, &
-        iptype, npts, srccoefs, srcvals, eps, dpars, numit, ifinout, &
-        rhs, eps_gmres, niter, errs, rres, soln)
+      subroutine stok_s_mob_solver(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ncomp, icomps, eps, numit, &
+        forces, torques, eps_gmres, niter, errs, rres, soln, &
+        trans_vels, rot_vels)
 
 !
 !
-!  This subroutine solves the Stokes velocity problem
-!  on the exterior/interior of an object where the potential
-!  is represented using a combined field integral representation.
+!  This subroutine solves the Stokes mobility problem
+!  where the potential is represented using a 
+!  single layer representation.
 !
 !  This subroutine is the simple interface as opposed to the
 !  _solver_guru routine which is called after initialization
@@ -871,10 +872,33 @@
 !
 !
 !  Representation:
-!    u = \alpha S_{stok}[\sigma]+\beta*D_{stok}[\sigma]
+!    u = S_{stok}[\sigma] + S_{stok}[\sigma_{0}] 
+!  
+!  where \sigma_{0} = F_{i}/|\Gamma_{i}| + 
+!     \tau_{i}^{-1} T_{i} \times (x - x_{c,i})
 !
-!  Boundary condition:
-!    u = f
+!  with \tau_{i} is the moment of inertia tensor. In addition, 
+!
+!  \sigma satisfies
+!    \int_{\Gamma_{i}} \sigma = 0, 
+!    \int_{\Gamma_{i}} (x-x_{c,i}) \times \sigma = 0
+!
+!  Integral equations obtained by imposing:
+!    f^{-} = 0 \,,
+!
+!  where f^{-} is the interior surface traction
+!
+!  and is given by:
+!    1/2 \sigma + S_{stok}'[\sigma] = -S_{stok}'[\sigma_{0}]
+!
+!  along with the constraints above. 
+!
+!  Instead, we use the generalized 1's matrix trick to solve for
+!  sigma as
+!    1/2 \sigma + S_{stok}'[\sigma] + L[\sigma] = -S_{stok}'[\sigma_{0}]
+!
+!  where L[\sigma] is given by
+!     = 1/|\Gamma_{i}|\int_{\Gamma_{i}} \sigma dS + 
 !
 !  The linear system is solved iteratively using GMRES
 !  until a relative residual of eps_gmres is reached
@@ -909,20 +933,23 @@
 !          * srcvals(4:6,i) - dxyz/du info
 !          * srcvals(7:9,i) - dxyz/dv info
 !          * srcvals(10:12,i) - normals info
+!    - ncomp: integer *8
+!        number of components
+!    - icomps: integer *8(ncomp)
+!        icomps(i) = starting patch index for patches on component
+!          i (note that the patches must be ordered by component)
 !    - eps: real *8
 !        precision requested for computing quadrature and fmm
 !        tolerance
-!    - dpars: real *8(2)
-!        kernel parameters (Referring to formula (1))
-!          * dpars(1) = \alpha 
-!          * dpars(2) = \beta
 !    - numit: integer *8
 !        max number of gmres iterations
 !    - ifinout: integer *8
 !        ifinout = 0, interior problem
 !        ifinout = 1, exterior problem
-!    - rhs: real *8(3,npts)
-!        velocity data
+!    - forces: real *8(3,ncomp)
+!        prescribed force on the components
+!    - torques: real *8(3,ncomp)
+!        prescribed torque on the components
 !    - eps_gmres: real *8
 !        gmres tolerance requested
 !      
@@ -937,19 +964,24 @@
 !    - rres: real *8
 !        relative residual for computed solution
 !    - soln: real *8(3,npts)
-!        density which solves the velocity problem \sigma
-!				 
+!        density which solves the mobility problem \sigma
+!    - trans_vels: real *8(3,ncomp)
+!        translational velocity of the components
+!    - rot_vels: real *8(3,ncomp)
+!        rotational velocity of the components
+!
       implicit none
       integer *8, intent(in) :: npatches, npts
       integer *8, intent(in) :: ifinout
       integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
       integer *8, intent(in) :: iptype(npatches)
+      integer *8, intent(in) :: ncomp, icomps(ncomp)
       real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
       real *8, intent(in) :: eps, eps_gmres
-      real *8, intent(in) :: dpars(2)
-      real *8, intent(in) :: rhs(3,npts)
+      real *8, intent(in) :: forces(3,ncomp), torques(3,ncomp) 
       integer *8, intent(in) :: numit
       real *8, intent(out) :: soln(3,npts)
+      real *8, intent(out) :: trans_vels(3,ncomp), rot_vels(3,ncmp)
       real *8, intent(out) :: errs(numit+1)
       real *8, intent(out) :: rres
       integer *8, intent(out) :: niter
@@ -965,25 +997,31 @@
       integer *8 nover, npolso, nptso
       integer *8 nnz,nquad
       integer *8, allocatable :: row_ptr(:), col_ind(:), iquad(:)
-      real *8, allocatable :: wnear(:,:)
+      real *8, allocatable :: wnear(:,:), wnear_s(:,:)
 
       real *8, allocatable :: srcover(:,:), wover(:)
       integer *8, allocatable :: ixyzso(:), novers(:)
 
       real *8, allocatable :: cms(:,:), rads(:), rad_near(:) 
+      real *8, allocatable :: rhs(:,:), sigma0(:,:), uvel(:,:)
 
       integer *8 i, j, jpatch, jquadstart, jstart
 
-      integer *8 ipars
+      integer *8, allocatable :: ipars(:)
       complex *16 zpars
+      real *8 dpars(2)
       real *8 timeinfo(10), t1, t2, omp_get_wtime
-
 
       real *8 ttot, done, pi
       real *8 rfac, rfac0
       integer *8 iptype_avg, norder_avg
       integer *8 ikerorder, iquadtype, npts_over
 
+      real *8 xdiff(3), rtmp(3), rtuse(3), ftuse(3), rtmp2(3)
+      real *8 rmoi(3,3), rmoi_inv(3,3), centroid(3)
+      integer *8, allocatable :: ixyzsloc(:)
+      real *8, allocatable :: wts(:)
+ 
 !
 !
 !       gmres variables
@@ -1089,7 +1127,7 @@
 !
       nquad = iquad(nnz+1) - 1
       nker = 6
-      allocate(wnear(nker,nquad))
+      allocate(wnear(nker,nquad), wnear_s(nker,nquad))
       
 !$OMP PARALLEL DO DEFAULT(SHARED)      
       do i=1,nquad
@@ -1099,6 +1137,13 @@
         wnear(4,i) = 0
         wnear(5,i) = 0
         wnear(6,i) = 0
+
+        wnear_s(1,i) = 0
+        wnear_s(2,i) = 0
+        wnear_s(3,i) = 0
+        wnear_s(4,i) = 0
+        wnear_s(5,i) = 0
+        wnear_s(6,i) = 0
       enddo
 !$OMP END PARALLEL DO    
 
@@ -1107,21 +1152,163 @@
 
       print *, "starting to generate near quadrature"
       call cpu_time(t1)
-!$      t1 = omp_get_wtime()      
+!$      t1 = omp_get_wtime()     
 
+!
+!  quadrature for S'
+!
+      call getnearquad_stok_s_mob(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, eps, &
+        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+!
+!  quadrature for S
+!
+      dpars(1) = 1.0d0
+      dpars(2) = 0
       call getnearquad_stok_comb_vel(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, eps, dpars, iquadtype, &
-        nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+        nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear_s)
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()     
 
-      print *, "done generating near quadrature, now starting gmres"
+
+!
+!  Compute S[\sigma_{0}]
+!
+      allocate(wts(npts))
+      call get_qwts(npatches, novers, ixyzs, iptype, npts, &
+        srcvals, wts)
+      allocate(sigma0(3,npts), rhs(3,npts), uvel(3,npts))
+      allocate(ixyzsloc(npatches+1))
+      ndd = 2
+      ndz = 0
+      ndi = 0
+      nker = 6
+      lwork = 0
+      ndim_s = 3
+      idensflag = 0
+      ipotflag = 0
+      ndim_p = 0
+
+      allocate(ipars(ncomp+1))
+      do icomp = 1,ncomp
+        ipstart = ipars(icomp+1)
+        ipend = npatches
+        if (icomp.ne.ncomp) ipend = ipars(icomp+2)-1
+
+        istart = ixyzs(ipstart)
+        iend = ixyzs(ipend)
+        nploc = ipend - ipstart + 1
+        nptsloc = iend - istart + 1
+
+        do i=1,nploc+1
+          ixyzsloc(i) = ixyzs(i+istart-1) - ixyzs(istart)+1
+        enddo
+        rmoi(1:3,1:3) = 0
+        rmoi_inv(1:3,1:3) = 0
+        area = 0
+        centroid(1:3) = 0
+        call get_surf_moments(nploc, norders(ipstart), ixyzsloc, &
+          iptype(ipstart), nptsloc, srcvals(1,istart), wts(istart), &
+          area, centroid, rmoi)
+        info = 0
+        call dinverse(3, rmoi, info, rmoi_inv) 
+        rtuse(1:3) = rtuse(1:3)
+        rtuse(1) = rtuse(1) = rmoi_inv(1,1)*torques(1,icomp) + &
+           rmoi_inv(1,2)*torques(2,icomp) + &
+           rmoi_inv(1,3)*torques(3,icomp)
+        rtuse(2) = rtuse(2) = rmoi_inv(2,1)*torques(1,icomp) + &
+           rmoi_inv(2,2)*torques(2,icomp) + &
+           rmoi_inv(2,3)*torques(3,icomp)
+        rtuse(3) = rtuse(3) = rmoi_inv(3,1)*torques(1,icomp) + &
+           rmoi_inv(3,2)*torques(2,icomp) + &
+           rmoi_inv(3,3)*torques(3,icomp)
+        ftuse(1:3) = forces(1:3,icomp)/area
+        do i = istart,iend
+          xdiff(1:3) = srcvals(1:3,i) - centroid(1:3)
+          call cross_prod3d(rtuse, xdiff, rtmp)
+          sigma0(1:3,i) = ftuse(1:3) + rtmp(1:3)
+        enddo
+      enddo
+
+      call stok_comb_vel_eval_addsub(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, &
+        col_ind, iquad, nquad, nker, wnear_s, novers, npts_over, &
+        ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, &
+        sigma0, ipotflag, ndim_p, rhs)
+!$OMP PARALLEL DO PRIVATE(i)
+      do i=1,npts
+        rhs(1:3,i) = -rhs(1:3,i)
+      enddo
+!$OMP END PARALLEL DO 
+
       
-      call stok_comb_vel_solver_guru(npatches, norders, ixyzs, &
-        iptype, npts, srccoefs, srcvals, eps, dpars, numit, ifinout, &
+      print *, "done generating near quadrature, now starting gmres"
+      ndi = ncomp+1
+      call stok_s_mob_solver_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndi, ipars, numit, &
         rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
         npts_over, ixyzso, srcover, wover, eps_gmres, niter, &
         errs, rres, soln)
+
+      call stok_comb_vel_eval_addsub(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, &
+        col_ind, iquad, nquad, nker, wnear_s, novers, npts_over, &
+        ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, &
+        soln, ipotflag, ndim_p, uvel)
+!
+!  Compute translational and rotational velocities on each component
+!
+!  Note the sign flip in rhs as it was -S[\sigma_{0}]
+      do i=1,npts
+        uvel(1:3,i) = uvel(1:3,i) - rhs(1:3,i)
+      enddo
+
+      do icomp = 1,ncomp
+        trans_vels(1:3,icomp) = 0
+        rot_vels(1:3,icomp) = 0
+
+        ipstart = ipars(icomp+1)
+        ipend = npatches
+        if (icomp.ne.ncomp) ipend = ipars(icomp+2)-1
+
+        istart = ixyzs(ipstart)
+        iend = ixyzs(ipend)
+        nploc = ipend - ipstart + 1
+        nptsloc = iend - istart + 1
+
+        do i=1,nploc+1
+          ixyzsloc(i) = ixyzs(i+istart-1) - ixyzs(istart)+1
+        enddo
+        rmoi(1:3,1:3) = 0
+        rmoi_inv(1:3,1:3) = 0
+        area = 0
+        centroid(1:3) = 0
+        call get_surf_moments(nploc, norders(ipstart), ixyzsloc, &
+          iptype(ipstart), nptsloc, srcvals(1,istart), wts(istart), &
+          area, centroid, rmoi)
+        info = 0
+        call dinverse(3, rmoi, info, rmoi_inv) 
+        do i = istart,iend
+          trans_vels(1:3,icomp) = trans_vels(1:3,icomp) + uvel(1:3,i)*wts(i)
+        enddo
+        trans_vels(1:3,icomp) = trans_vels(1:3,icomp)/area
+        
+        rtmp(1:3) = 0
+        do i=1,istart,iend
+          xdiff(1:3) = srcvals(1:3,i) - centroid(1:3)
+          rtuse(1:3) = uvel(1:3,i) - trans_vels(1:3,icomp)
+          rtmp2(1:3) = 0
+          call cross_prod3d(xdiff, rtuse, rtmp2)
+          rtmp(1:3) = rtmp(1:3) + rtmp2(1:3)*wts(i)
+        enddo
+        rot_vels(1:3,icomp) = rmoi_inv(1:3,1)*rtmp(1) + 
+          rmoi_inv(1:3,2)*rtmp(2) + rmoi_inv(1:3,3)*rtmp(3)
+      enddo
+
+      
       
       return
       end
@@ -1131,23 +1318,50 @@
 !
 !
 
-      subroutine stok_comb_vel_solver_guru(npatches, norders, ixyzs, &
-        iptype, npts, srccoefs, srcvals, eps, dpars, numit, ifinout, &
+      subroutine stok_s_mob_solver_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndi, ipars, numit, &
         rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
         nptso, ixyzso, srcover, whtsover, eps_gmres, niter, &
         errs, rres, soln)
 !
 !
-!  This subroutine solves the Stokes velocity problem
-!  on the exterior of an object where the potential
-!  is represented using the combined field integral representation.
+!  This subroutine solves the Stokes mobility problem
+!  where the potential is represented using a 
+!  single layer representation.
+!
+!  This subroutine is the simple interface as opposed to the
+!  _solver_guru routine which is called after initialization
+!  in this routine.
 !
 !
 !  Representation:
-!    u = \alpha S_{stok}[\sigma] + \beta*D_{stok}[\sigma]
+!    u = S_{stok}[\sigma] + S_{stok}[\sigma_{0}] 
+!  
+!  where \sigma_{0} = F_{i}/|\Gamma_{i}| + 
+!     \tau_{i}^{-1} T_{i} \times (x - x_{c,i})
 !
-!  Boundary condition:
-!    u = f
+!  with \tau_{i} is the moment of inertia tensor. In addition, 
+!
+!  \sigma satisfies
+!    \int_{\Gamma_{i}} \sigma = 0, 
+!    \int_{\Gamma_{i}} (x-x_{c,i}) \times \sigma = 0
+!
+!  Integral equations obtained by imposing:
+!    f^{-} = 0 \,,
+!
+!  where f^{-} is the interior surface traction
+!
+!  and is given by:
+!    1/2 \sigma + S_{stok}'[\sigma] = -S_{stok}'[\sigma_{0}]
+!
+!  along with the constraints above. 
+!
+!  Instead, we use the generalized 1's matrix trick to solve for
+!  sigma as
+!    1/2 \sigma + S_{stok}'[\sigma] + L[\sigma] = -S_{stok}'[\sigma_{0}]
+!
+!  where L[\sigma] is given by
+!     = 1/|\Gamma_{i}|\int_{\Gamma_{i}} \sigma dS + 
 !
 !  The linear system is solved iteratively using GMRES
 !  until a relative residual of eps_gmres is reached
@@ -1185,10 +1399,13 @@
 !    - eps: real *8
 !        precision requested for computing quadrature and fmm
 !        tolerance
-!    - dpars: real *8(2)
-!        kernel parameters (Referring to formula (1))
-!          * dpars(1) = \alpha 
-!          * dpars(2) = \beta 
+!    - ndi: integer *8
+!        number of ipars, must be atleast ncomp+1, where ncomp
+!        is the number of components
+!    - ipars: integer *8(ndi)
+!        ipars(1) = ncomp
+!        ipars(i+1) = starting patch index for patches on component
+!          i (note that the patches must be ordered by component)
 !    - numit: integer *8
 !        max number of gmres iterations
 !    - ifinout: integer *8
@@ -1251,8 +1468,8 @@
       integer *8, intent(in) :: iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
       real *8, intent(in) :: eps, eps_gmres
-      integer *8, intent(in) :: ifinout
-      real *8, intent(in) :: dpars(2)
+      integer *8, intent(in) :: ndi
+      integer *8, intent(in) :: ipars(ndi)
       real *8, intent(in) :: rhs(3,npts)
       integer *8, intent(in) :: numit
 
@@ -1275,15 +1492,14 @@
       real *8, intent(out) :: soln(3,npts)
 
       real *8 did
-      real *8 dpars_use(3), pi, done, rsurf
+      real *8 dpars
       integer *8 ndd_use
 
       procedure (), pointer :: fker
       external lpcomp_stok_comb_vel_addsub
 
       integer *8 ndd, ndi, ndz, lwork, ndim
-      real *8 work
-      integer *8 ipars, nkertmp
+      integer *8 nkertmp
       complex *16 zpars
 
       integer *8 ndtarg
@@ -1291,40 +1507,24 @@
       data ima/(0.0d0,1.0d0)/
       real *8, allocatable :: wts(:)
 
-      complex *16 zpars_use(3)
       integer *8 i
 
-      did = -(-1)**(ifinout)*dpars(2)/2
+      did = 0.5d0 
       fker => lpcomp_stok_comb_vel_addsub
 
-      ndd_use = 3
-      dpars_use(1) = dpars(1)
-      dpars_use(2) = dpars(2)
-      dpars_use(3) = 0
-      
-      ndi = 0
+      ndd = 0
       ndz = 0
 
-      lwork = 0
+      lwork = npts
       ndim = 3
       allocate(wts(npts))
 
       call get_qwts(npatches, norders, ixyzs, iptype, npts, &
         srcvals, wts)
-      rsurf = 0
-!$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rsurf)      
-      do i=1,npts
-        rsurf = rsurf + wts(i)
-      enddo
-!$OMP END PARALLEL DO      
-      done = 1.0d0
-      pi = atan(done)*4.0d0
-      if(ifinout.eq.0) dpars_use(3) = -2*pi/rsurf
-! 
 
       call dgmres_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, wts, &
-        eps, ndd_use, dpars_use, ndz, zpars, ndi, ipars, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, &
         nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
         nptso, ixyzso, srcover, whtsover, npts, wts, &
         ndim, fker, did, rhs, numit, eps_gmres, niter, errs, &
@@ -1333,282 +1533,4 @@
       return
       end
 
-!
-!
-!
-!        
-      subroutine stok_comb_vel_matgen(npatches, norders, ixyzs, &
-        iptype, npts, srccoefs, srcvals, eps, dpars, ifinout, &
-        xmat)
-!
-!f2py  intent(in) npatches,norders,ixyzs,iptype
-!f2py  intent(in) npts,srccoefs,srcvals,eps,dpars
-!f2py  intent(in) ifinout
-!f2py  intent(out) xmat
-!
-!     this subroutine returns the discretization matrix
-!     for the on-surface discretization of the stokes combined
-!     field layer potential. The unknowns are ordered as:
-!
-!     \sigma_{1}(x_{1}), \sigma_{2}(x_{1}), \sigma_{3}(x_{1})...
-!      \sigma_{1}(x_{2}), \sigma_{2}(x_{2})l \sigma_{3}(x_{2})..
-!                           .
-!                           .
-!                           .
-!                           .
-!      \sigma_{1}(x_{n}), \sigma_{2}(x_{n}), \sigma_{3}(x_{n})
-!
-!     And the same ordering for the velocity components as well
-!
-!
-!     Representation:
-!        u = alpha S \sigma + beta D \sigma
-!     
-!
-!       input:
-!         npatches - integer *8
-!            number of patches
-!
-!         norders- integer *8(npatches)
-!            order of discretization on each patch 
-!
-!         ixyzs - integer *8(npatches+1)
-!            ixyzs(i) denotes the starting location in srccoefs,
-!               and srcvals array corresponding to patch i
-!   
-!         iptype - integer *8(npatches)
-!            type of patch
-!             iptype = 1, triangular patch discretized using RV nodes
-!
-!         npts - integer *8
-!            total number of discretization points on the boundary
-! 
-!         srccoefs - real *8 (9,npts)
-!            koornwinder expansion coefficients of xyz, dxyz/du,
-!            and dxyz/dv on each patch. 
-!            For each point srccoefs(1:3,i) is xyz info
-!                           srccoefs(4:6,i) is dxyz/du info
-!                           srccoefs(7:9,i) is dxyz/dv info
-!
-!         srcvals - real *8 (12,npts)
-!             xyz(u,v) and derivative info sampled at the 
-!             discretization nodes on the surface
-!             srcvals(1:3,i) - xyz info
-!             srcvals(4:6,i) - dxyz/du info
-!             srcvals(7:9,i) - dxyz/dv info
-! 
-!          eps - real *8
-!             precision requested for computing quadrature and fmm
-!             tolerance
-!
-!          dpars - real *8 (2)
-!             alpha = dpars(1), beta = dpars(2) in the layer potential
-!             representation
-!      
-!          ifinout - integer *8
-!              flag for interior or exterior problems (normals assumed to 
-!                be pointing in exterior of region)
-!              ifinout = 0, interior problem
-!              ifinout = 1, exterior problem
-!
-!         output
-!           xmat - real *8(3*npts,3*npts)
-!              discretization matrix for the stokes boundary value
-!              problem
-!
-!
-      implicit none
-      integer *8 npatches,norder,npols,npts
-      integer *8 ifinout
-      integer *8 norders(npatches),ixyzs(npatches+1)
-      integer *8 iptype(npatches)
-      real *8 srccoefs(9,npts), srcvals(12,npts), eps, eps_gmres
-      real *8 dpars(2)
-      real *8 xmat(3*npts,3*npts)
-
-      real *8 uint
-
-      real *8, allocatable :: targs(:,:)
-      integer *8, allocatable :: ipatch_id(:)
-      real *8, allocatable :: uvs_targ(:,:)
-      integer *8 ndtarg,ntarg
-
-      real *8 rres,eps2
-      integer *8 niter
-
-
-      integer *8 nover,npolso,nptso
-      integer *8 nnz,nquad
-      integer *8, allocatable :: row_ptr(:), col_ind(:), iquad(:)
-      real *8, allocatable :: wnear(:,:), wts(:)
-
-      real *8, allocatable :: srcover(:,:), wover(:)
-      integer *8, allocatable :: ixyzso(:), novers(:)
-
-      real *8, allocatable :: cms(:,:), rads(:), rad_near(:) 
-
-      integer *8 i, j, jpatch, jquadstart, jstart
-
-      integer *8 ipars
-      complex *16 zpars
-      real *8 timeinfo(10), t1, t2, omp_get_wtime
-
-
-      real *8 ttot, done, pi, rsurf
-      real *8 rfac, rfac0, alpha, beta
-      integer *8 iptype_avg, norder_avg
-      integer *8 ikerorder, iquadtype, npts_over
-
-      real *8 did, ra
-      integer *8 jj, l, nmat
-      real *8 w11, w12, w13, w21, w22, w23, w31, w32, w33
-      
-
-      alpha = dpars(1)
-      beta = dpars(2)
-      
-      nmat = 3*npts
-      done = 1
-      pi = atan(done)*4
-
-
-!
-!
-!        this might need fixing
-!
-      iptype_avg = floor(sum(iptype)/(npatches+0.0d0))
-      norder_avg = floor(sum(norders)/(npatches+0.0d0))
-
-      call get_rfacs(norder_avg, iptype_avg, rfac, rfac0)
-
-      nnz = npts*npatches
-      allocate(row_ptr(npts+1), col_ind(nnz))
-
-      do i=1,npts + 1
-        row_ptr(i) = (i-1)*npatches + 1
-      enddo
-
-
-      do i=1,npts
-        do j=1,npatches
-          col_ind((i-1)*npatches + j) = j
-        enddo
-      enddo
-
-      allocate(iquad(nnz+1)) 
-      call get_iquad_rsc(npatches, ixyzs, npts, nnz, row_ptr, col_ind, &
-        iquad)
-
-      ikerorder = -1
-      if(abs(dpars(2)).gt.1.0d-16) ikerorder = 0
-      
-!
-!   compute near quadrature correction
-!
-      nquad = iquad(nnz+1)-1
-      allocate(wnear(6,nquad))
-      
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(j)
-      do i=1,nquad
-        do j = 1,6
-          wnear(j,i) = 0
-        enddo
-      enddo
-!$OMP END PARALLEL DO    
-
-
-      iquadtype = 1
-
-      print *, "starting to generate near quadrature"
-      call cpu_time(t1)
-!$      t1 = omp_get_wtime()      
-
-      call getnearquad_stok_comb_vel(npatches, norders, &
-        ixyzs, iptype, npts, srccoefs, srcvals, &
-        eps, dpars, iquadtype, nnz, row_ptr, col_ind, &
-        iquad, rfac0, nquad, wnear)
-      call cpu_time(t2)
-!$      t2 = omp_get_wtime()     
-
-      call prin2('quadrature generation time=*',t2-t1,1)
-
-      allocate(wts(npts))
-      call get_qwts(npatches, norders, ixyzs, iptype, npts, &
-        srcvals, wts)
-
-
-!
-!  compute scaling for one's matrix correction for interior problem
-!
-
-      rsurf = 0
-      do i=1,npts
-        rsurf = rsurf + wts(i)
-      enddo
-      
-      ra = 0
-      if(ifinout.eq.0) ra = -2*pi/rsurf
-      
-
-      call cpu_time(t1)
-!$      t1 = omp_get_wtime()
-
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, j, jpatch, jquadstart) &
-!$OMP PRIVATE(jstart, npols, l, jj, w11, w12, w13) &
-!$OMP PRIVATE(w21, w22, w23, w31, w32, w33)
-      do i = 1,npts
-        do j = row_ptr(i), row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          npols = ixyzs(jpatch+1)-ixyzs(jpatch)
-          jquadstart = iquad(j)
-          jstart = ixyzs(jpatch) 
-          do l=1,npols
-             jj = jstart + l-1
-             w11 = wnear(1,jquadstart+l-1)
-             w12 = wnear(2,jquadstart+l-1)
-             w13 = wnear(3,jquadstart+l-1)
-             w21 = w12
-             w22 = wnear(4,jquadstart+l-1)
-             w23 = wnear(5,jquadstart+l-1)
-             w31 = w13
-             w32 = w23
-             w33 = wnear(6,jquadstart+l-1)
-             xmat(3*(i-1)+1,3*(jj-1)+1) = w11 + & 
-               srcvals(10,i)*srcvals(10,jj)*ra*wts(jj)
-             xmat(3*(i-1)+1,3*(jj-1)+2) = w12 + &
-                srcvals(10,i)*srcvals(11,jj)*ra*wts(jj)
-             xmat(3*(i-1)+1,3*(jj-1)+3) = w13 + &
-                srcvals(10,i)*srcvals(12,jj)*ra*wts(jj)
-
-             xmat(3*(i-1)+2,3*(jj-1)+1) = w21 + &
-               srcvals(11,i)*srcvals(10,jj)*ra*wts(jj)
-             xmat(3*(i-1)+2,3*(jj-1)+2) = w22 + &
-               srcvals(11,i)*srcvals(11,jj)*ra*wts(jj)
-             xmat(3*(i-1)+2,3*(jj-1)+3) = w23 + &
-               srcvals(11,i)*srcvals(12,jj)*ra*wts(jj)
-
-             xmat(3*(i-1)+3,3*(jj-1)+1) = w31 + &
-               srcvals(12,i)*srcvals(10,jj)*ra*wts(jj)
-             xmat(3*(i-1)+3,3*(jj-1)+2) = w32 + & 
-               srcvals(12,i)*srcvals(11,jj)*ra*wts(jj)
-             xmat(3*(i-1)+3,3*(jj-1)+3) = w33 + &
-               srcvals(12,i)*srcvals(12,jj)*ra*wts(jj)
-
-          enddo
-        enddo
-      enddo
-!$OMP END PARALLEL DO
-     
-
-      did = -(-1)**(ifinout)*beta/2
-      do i=1,3*npts
-         xmat(i,i) = xmat(i,i) + did
-      enddo
-
-     
-!     
-      return
-      end
-!     
-!
 !
