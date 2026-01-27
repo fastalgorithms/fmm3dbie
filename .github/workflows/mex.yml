@@ -43,7 +43,7 @@ jobs:
       - name: Run Matlab test
         uses: matlab-actions/run-command@v2
         with:
-          command: cd('matlab/test'), helm3d_transmission_routsTest
+          command: cd('matlab/test'), runtests;
       - name: Upload mex files
         uses: actions/upload-artifact@v4
         with:
