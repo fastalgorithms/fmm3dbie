@@ -512,7 +512,6 @@
       real *8 timeinfo(10),t1,t2
 !$    real *8 omp_get_wtime      
 
-      real *8 over4pi
       integer *8 nss,ii,l,npover, m, n, iind, ier
 
       integer *8 nd,ntarg0
@@ -521,7 +520,6 @@
       integer *8 int8_6, int8_12
 
       parameter (nd=1,ntarg0=1)
-      data over4pi/0.07957747154594767d0/
 
 
       int8_6 = 6
@@ -568,8 +566,8 @@
          sources(1:3,i) = srcover(1:3,i)
          zjvec(1:3,i) = sigmaover(1,i)*ruover(1:3,i) + &
               sigmaover(2,i)*rvover(1:3,i)
-         charges(1:3,i) = zjvec(1:3,i)*whtsover(i)*over4pi
-         charges(4,i) = sigmaover(3,i)*whtsover(i)*over4pi
+         charges(1:3,i) = zjvec(1:3,i)*whtsover(i)
+         charges(4,i) = sigmaover(3,i)*whtsover(i)
       enddo
 !$OMP END PARALLEL DO
 
@@ -2281,8 +2279,8 @@ implicit none
 	endif		
 	
 	do count1=1,nt
-     E(:,count1)=E(:,count1)/(4.0d0*pi)
-     divE(count1)=divE(count1)/(4.0d0*pi)
+     !E(:,count1)=E(:,count1)/(4.0d0*pi)
+     !divE(count1)=divE(count1)/(4.0d0*pi)
 	enddo
 
     do count1=1,nt
@@ -2560,8 +2558,8 @@ implicit none
 
 
     do count1=1,nt
-     gradpot(:,count1)=gradpot(:,count1)/(4.0d0*pi)
-     divE(count1)=divE(count1)/(4.0d0*pi)
+     !gradpot(:,count1)=gradpot(:,count1)/(4.0d0*pi)
+     !divE(count1)=divE(count1)/(4.0d0*pi)
     enddo
 
     do count1=1,nt
@@ -2772,8 +2770,8 @@ implicit none
 
 
     do count1=1,nt
-       gradpot(:,count1)=gradpot(:,count1)/(4.0d0*pi)
-       divE(count1)=divE(count1)/(4.0d0*pi)
+       !gradpot(:,count1)=gradpot(:,count1)/(4.0d0*pi)
+       !divE(count1)=divE(count1)/(4.0d0*pi)
     enddo
 
     do count1=1,nt

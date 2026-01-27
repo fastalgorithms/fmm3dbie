@@ -511,18 +511,16 @@
       complex *16, allocatable :: ctmp2(:), dtmp2(:,:)
       real *8 thresh
   
-      real *8 over4pi
       integer *8 nss, l, ier
       complex *16 ima, ztmp
 
       integer *8 nd, ntarg0, nmax
 
-      real *8 done, pi, rr
+      real *8 done, rr
       integer *8 nddtmp, nditmp, ndztmp
       complex *16 zpars2(2)
       integer *8 int8_2,int8_12
       data ima/(0.0d0,1.0d0)/
-      data over4pi/0.07957747154594767d0/
 
       parameter (nd=1,ntarg0=1)
 
@@ -531,7 +529,6 @@
       ns = nptso
       ntarg = npts
       done = 1
-      pi = atan(done)*4
 
       ifpgh = 0
       ifpghtarg = 2
@@ -565,7 +562,7 @@
         sources(1,i) = srcover(1,i)
         sources(2,i) = srcover(2,i)
         sources(3,i) = srcover(3,i)
-        charges(i) = sigmaover(i)*whtsover(i)*over4pi
+        charges(i) = sigmaover(i)*whtsover(i)
       enddo
 !$OMP END PARALLEL DO      
 
@@ -739,7 +736,7 @@
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ns
-        charges(i) = sigmaover(i)*whtsover(i)*over4pi 
+        charges(i) = sigmaover(i)*whtsover(i)
       enddo
 !$OMP END PARALLEL DO
 
@@ -826,9 +823,9 @@
 
 !$OMP PARALLEL DO DEFAULT(SHARED)
       do i=1,ns
-        dipvec(1,i) = sigmaover(i)*whtsover(i)*srcover(10,i)*over4pi 
-        dipvec(2,i) = sigmaover(i)*whtsover(i)*srcover(11,i)*over4pi 
-        dipvec(3,i) = sigmaover(i)*whtsover(i)*srcover(12,i)*over4pi 
+        dipvec(1,i) = sigmaover(i)*whtsover(i)*srcover(10,i)
+        dipvec(2,i) = sigmaover(i)*whtsover(i)*srcover(11,i)
+        dipvec(3,i) = sigmaover(i)*whtsover(i)*srcover(12,i)
       enddo
 !$OMP END PARALLEL DO
 
@@ -2082,7 +2079,7 @@
       real *8 dpars,timeinfo(10),t1,t2,omp_get_wtime
 
 
-      real *8 ttot,done,pi
+      real *8 ttot,done
       real *8 rfac,rfac0
       integer *8 iptype_avg,norder_avg
       integer *8 ikerorder, iquadtype,npts_over,iper
@@ -2106,7 +2103,6 @@
 
 
       done = 1
-      pi = atan(done)*4
 
 !
 !

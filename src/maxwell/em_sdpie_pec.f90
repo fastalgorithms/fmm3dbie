@@ -1156,9 +1156,9 @@ implicit none
     endif
 
 	  do count1=1,nt
-      PHI(count1)=PHI(count1)/(4.0d0*pi)
+      !PHI(count1)=PHI(count1)/(4.0d0*pi)
       nGRAD(count1)=(targvals(10,count1)*gradpot(1,count1)+targvals(11,count1)&
-      &*gradpot(2,count1)+targvals(12,count1)*gradpot(3,count1))/(4.0d0*pi)
+      &*gradpot(2,count1)+targvals(12,count1)*gradpot(3,count1))
 	  enddo
 	
 	  zk=1.0d-15
@@ -1180,7 +1180,7 @@ implicit none
 
 	  do count1=1,nt
 		 nGRAD(count1)=nGRAD(count1)-(targvals(10,count1)*gradpot(1,count1)+targvals(11,count1)&
-		 &*gradpot(2,count1)+targvals(12,count1)*gradpot(3,count1))/(4.0d0*pi)
+		 &*gradpot(2,count1)+targvals(12,count1)*gradpot(3,count1))
 	  enddo
 
 	deallocate(rho)
@@ -1384,7 +1384,7 @@ implicit none
   call hfmm3d_t_cd_p_vec(int8_1,eps,zk,ns,source,rho,dipvec&
 	 &,nt,targ,pot,ier)
 	do count1=1,nt
-	  pot(count1)=pot(count1)/(4.0d0*pi)
+	  !pot(count1)=pot(count1)/(4.0d0*pi)
   enddo
 	deallocate(dipvec)
 	deallocate(rho)
@@ -1451,10 +1451,10 @@ implicit none
 	  &,nt,targ,pot,gradpot,ier)
 
 	do count1=1,nt
-	  pot(count1)=pot(count1)/(4.0d0*pi)
-    gradpot(1,count1)=gradpot(1,count1)/(4.0d0*pi)
-    gradpot(2,count1)=gradpot(2,count1)/(4.0d0*pi)
-    gradpot(3,count1)=gradpot(3,count1)/(4.0d0*pi)
+	  !pot(count1)=pot(count1)/(4.0d0*pi)
+    !gradpot(1,count1)=gradpot(1,count1)/(4.0d0*pi)
+    !gradpot(2,count1)=gradpot(2,count1)/(4.0d0*pi)
+    !gradpot(3,count1)=gradpot(3,count1)/(4.0d0*pi)
   enddo
 
 	deallocate(dipvec)

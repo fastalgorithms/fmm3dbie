@@ -1303,7 +1303,7 @@ implicit none
     endif
 	
 	  do count1=1,nt
-	    PHI(count1)=pot(count1)/(4.0d0*pi)*beta/(ima*zk)
+	    PHI(count1)=pot(count1)*beta/(ima*zk)
 	  enddo
 
 	deallocate(a_vect)
@@ -1462,9 +1462,9 @@ implicit none
      call hfmm3d_t_c_g_vec(nd,eps,zk,ns,source,charge,nt,targ,pot,gradpot,ier)
 
 	  do count1=1,nt
-	    E(1,count1)=ima*zk*E(1,count1)+(1.0d0/(-ima*zk))*gradpot(1,count1)/(4.0d0*pi)
-      E(2,count1)=ima*zk*E(2,count1)+(1.0d0/(-ima*zk))*gradpot(2,count1)/(4.0d0*pi)
-	    E(3,count1)=ima*zk*E(3,count1)+(1.0d0/(-ima*zk))*gradpot(3,count1)/(4.0d0*pi)
+	    E(1,count1)=ima*zk*E(1,count1)+(1.0d0/(-ima*zk))*gradpot(1,count1)
+      E(2,count1)=ima*zk*E(2,count1)+(1.0d0/(-ima*zk))*gradpot(2,count1)
+	    E(3,count1)=ima*zk*E(3,count1)+(1.0d0/(-ima*zk))*gradpot(3,count1)
 	  enddo
 
 !
