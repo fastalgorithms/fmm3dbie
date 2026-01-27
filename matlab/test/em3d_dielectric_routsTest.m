@@ -2,6 +2,7 @@
 % This file tests the Maxwell pec 
 %
 %
+run ../startup.m
 S = geometries.sphere(1, 2, [0;0;0]);
 
 tic, [srcvals,~,~,~,~,wts] = extract_arrays(S); toc;
