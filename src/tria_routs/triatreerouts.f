@@ -2,7 +2,7 @@ c
 cc
 cc
 c
-      subroutine gettritree(npatches,norder,npols,srccoefs,ntarg,
+      subroutine gettritree(npatches,norder,npols,ndsc,srccoefs,ntarg,
      1     xyztarg,itargptr,ntargptr,ntrimax,nlmax,rfac,ntri,nlev,
      2     ichild_start,da,tricm,trirad,tverts,itrirel,ier)
 c
@@ -18,7 +18,9 @@ c        npatches: number of patches
 c        norder  : order of discretization
 c        npols   : number of discretization 
 c                   nodes on each patch
-c        srccoefs(9,npols,npatches): coefficients
+c        ndsc    : integer *8
+c                  leading dim of srccoefs array
+c        srccoefs(ndsc,npols,npatches): coefficients
 c                 of koornwinder expansion of xyz coordinates
 c                 and derivative info
 c        ntarg - total number of target points
@@ -66,8 +68,8 @@ c
 c
 c        
       implicit none
-      integer *8 npatches,npols,norder
-      real *8 srccoefs(9,npols,npatches)
+      integer *8 npatches,npols,norder,ndsc
+      real *8 srccoefs(ndsc,npols,npatches)
       integer *8 ntarg
       
       real *8 xyztarg(3,ntarg)
@@ -120,7 +122,7 @@ c
       tverts(2,3,1) = 1
 
 
-      call gettricms(npatches,norder,npols,srccoefs,tverts(1,1,1),
+      call gettricms(npatches,norder,npols,ndsc,srccoefs,tverts(1,1,1),
      1      tricm(1,1,1),trirad(1,1))
 
 
@@ -185,7 +187,7 @@ c               get cms of children triangle
 c
                 rr = da(itri)*0.25d0
                 do i=1,4
-                  call gettricms(npatches,norder,npols,srccoefs,
+                  call gettricms(npatches,norder,npols,ndsc,srccoefs,
      1             tverts(1,1,ntri+i),tricm(1,1,ntri+i),
      2             trirad(1,ntri+i))
                   irefinetri(ntri+i) = 0
@@ -238,16 +240,16 @@ c
 c
 c
 c
-      subroutine gettricms(npatches,norder,npols,srccoefs,tverts,tricm,
-     1   trirad)
+      subroutine gettricms(npatches,norder,npols,ndsc,srccoefs,
+     1   tverts,tricm,trirad)
 c
 cc     this subroutine computes the centroid and radius of enclosing
 c      sphere of the mapped triangle with vertices tverts
 c      through the koornwinder expansion srccoefs
 c
       implicit none
-      integer *8 npatches,npols,norder
-      real *8 srccoefs(9,npols,npatches)
+      integer *8 npatches,npols,norder,ndsc
+      real *8 srccoefs(ndsc,npols,npatches)
       real *8 tverts(2,3)
       real *8 tricm(3,npatches)
       real *8 trirad(npatches)
@@ -498,15 +500,20 @@ c-------------------------------------------------------------------------------
       return
       end
 c-----------------------------------------      
-        subroutine get_norms_qwts_tri(kpols,whts,srcvals,da,
-     1       qwts)
+        subroutine get_srcvals_auxinfo_tri(kpols,whts,isd,nds,srcvals,
+     1    da,qwts)
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        real *8 srcvals(12,kpols),qwts(kpols),whts(kpols)
-        real *8 tmp(3),da
+        integer *8 isd, nds
+        real *8 srcvals(nds,kpols),qwts(kpols),whts(kpols)
+        real *8 tmp(3),da, rl, rm, rn, tra, deta, dfac
 
 
         do i=1,kpols
+c
+c  move srcvals stuff if needed first
+c 
+          if(isd.ne.0) srcvals(13:21,i) = srcvals(10:18,i)
           call cross_prod3d(srcvals(4,i),srcvals(7,i),srcvals(10,i))
           rr = sqrt(srcvals(10,i)**2 + srcvals(11,i)**2 + 
      1        srcvals(12,i)**2)
@@ -514,6 +521,35 @@ c-----------------------------------------
           srcvals(10,i) = srcvals(10,i)/rr
           srcvals(11,i) = srcvals(11,i)/rr
           srcvals(12,i) = srcvals(12,i)/rr
+          if(isd.ne.0) then
+            re = srcvals(4,i)**2 + srcvals(5,i)**2 + srcvals(6,i)**2
+            rf = srcvals(4,i)*srcvals(7,i) + srcvals(5,i)*srcvals(8,i) + 
+     1         srcvals(6,i)*srcvals(9,i)
+            rg = srcvals(7,i)**2 + srcvals(8,i)**2 + srcvals(9,i)**2
+            rl = srcvals(13,i)*srcvals(10,i) + 
+     1           srcvals(14,i)*srcvals(11,i) + 
+     1           srcvals(15,i)*srcvals(12,i)  
+            rm = srcvals(16,i)*srcvals(10,i) + 
+     1           srcvals(17,i)*srcvals(11,i) + 
+     1           srcvals(18,i)*srcvals(12,i)  
+            rn = srcvals(19,i)*srcvals(10,i) + 
+     1           srcvals(20,i)*srcvals(11,i) + 
+     1           srcvals(21,i)*srcvals(12,i)  
+            srcvals(22,i) = rr
+            srcvals(23,i) = re
+            srcvals(24,i) = rf
+            srcvals(25,i) = rg
+            srcvals(26,i) = rl
+            srcvals(27,i) = rm
+            srcvals(28,i) = rn
+            
+            tra = rg*rl - 2*rf*rm + re*rn 
+            deta = (rg*rl - rf*rm)*(re*rn - rf*rm) - 
+     1          (rg*rm - rf*rn)*(re*rm - rf*rl)   
+            dfac = sqrt(tra*tra - 4*deta)
+            srcvals(29,i) = 0.5d0*(tra + dfac)/(re*rg - rf*rf)
+            srcvals(30,i) = 0.5d0*(tra - dfac)/(re*rg - rf*rf)
+          endif
         enddo
 
         return
