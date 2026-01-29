@@ -399,5 +399,82 @@ subroutine l3d_spp_sum_dp(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   val = val*over4pi
 
 end subroutine l3d_spp_sum_dp
+!
+!
+!
+!
+!
+subroutine l3d_sintprime(srcinfo, ndt, targinfo, ndd, dpars, ndz, & 
+   zk, ndi, ipars, val)
+!
+!  
+!  This subroutine returns the Neumann data corresponding
+!  to using S + (kap1 + kap2)/2 \phi_a + (kap1 - kap2) \psi_a
+!
+!  where \phi is obtained by the indefinite integral of the
+!  Green's function, and \psi is the harmonic function
+!  obtained by integrating the greens function twice
+!  and taking two derivatives in the tangent plane
+!
+!  The functions are defined as follows:
+!    \phi = log(\sqrt(x^2 + y^2 + z^2) + z) 
+!    \psi = (x^2 - y^2)/(\sqrt(x^2 + y^2 + z^2) + z)^2
+!
+!    \phi_t = \phi(x,y,z) - \sum_{j=0}^{2} c_{j} \phi(x,y,z-z_{j})
+!    \psi_t = \psi(x,y,z) - \sum_{j=0}^{2} c_{j} \psi(x,y,z-z_{j})
+!
+!  where c_{j} = -\prod_{\ell \neq j} z_{\ell}/(\prod_{\ell\neq j} (z_{j} - z_{\ell}))
+!  and z_{j}'s are provided through the target info
+!
+!  Finally, 
+!  \phi_a(x,y,z) = \phi_t(u,v,q)
+!  \psi_a(x,y,z) = \psi_t(u,v,q) where
+!
+!  u,v,q are the coordinates relative with the origin at the target
+!  with the frame formed by the tangent vectors and the normal
+!  at the target.
+!
+!  In particular, if u_{r}, v_{r}, are orthogonal unit vectors in the 
+!  tangent plane (obtained by srcvals(4:6,:), 
+!  srcvals(4:6,:) \times srcvals(10:12,:))
+!
+!  Q: Are the principal curvatures kap1 and kap2 in the source
+!  variable or the target variable? From a representation perspective
+!  they have to be in the source variable because the definition 
+!  does not extend to the target variable right? 
+!  
+!
+!
+
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: srcinfo(*), targinfo(12), dpars(ndd)
+  integer *8 :: ipars(ndi)
+  real *8 :: val
+  real *8 :: over4pi
+  complex *16 :: zk
+
+  data over4pi/0.07957747154594767d0/
+!
+!
+! TODO: FIX THIS ROUTINE
+!
+
+  !
+  ! returns the normal derivative of the single layer kernel
+  !
+
+  dx = targinfo(1) - srcinfo(1)
+  dy = targinfo(2) - srcinfo(2)
+  dz = targinfo(3) - srcinfo(3)
+
+  d = dx*targinfo(10) + dy*targinfo(11) + dz*targinfo(12)
+  r = sqrt(dx**2 + dy**2 + dz**2)
+
+  val =  -d/(r**3)*over4pi
+
+  return
+end subroutine l3d_sintprime
+
 
 
