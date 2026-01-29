@@ -71,6 +71,10 @@
 !      getgeominfo - given a function handle for the surface, and a skeleton
 !         mesh, discretize the surface
 !      
+!      get_second_derivative_coefs - given srccoefs, return
+!        coefs of second derivatives, and return as
+!        srccoefs of size (18,npts)
+!      
 !
 !         
 
@@ -2401,6 +2405,139 @@ end subroutine get_surf_interp_mat_targ
 !
 !
 !
+subroutine get_second_derivative_surfinfo(npatches, norders, ixyzs, & 
+  iptype, npts, srccoefs, srcvals, srccoefs2, srcvals2)
+!
+!  Given surface information with basis coefficients of
+!  xyz, dxyz/du, dxyz/dv, and values of xyz, dxyz/du, dxyz/dv, normals
+!
+!  this subroutine returns the basis coefficients of
+!  xyz, dxyz/du, dxyz/dv, d2xyz/du2, d2xyz/duv, d2xyz/dv2
+!  and values of
+!  xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv, d2xyz/dv2,
+!  |dxyz/du \times dxyz/dv|, (11,12,22) entries of I, 
+!  (11,12,22) entries of II, prinicipal curvature 1, 
+!  principal curvature 2
+!  
+!  Input arguments:
+!    - npatches: integer *8
+!        number of patches
+!    - norders: integer *8(npatches)
+!        discretization order of patches
+!    - ixyzs: integer *8(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer *8(npatches)
+!        type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts: integer *8
+!        total number of points on the surface
+!    - srccoefs: double precision (9,npts)
+!        basis expansion coefs of xyz, dxyz/du, dxyz/dv 
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!
+!  Output arguments:
+!    - srccoefs2: double precision (18,npts)
+!       basis expansion coefs of xyz, dxyz/du, dxyz/dv, 
+!       d2xyz/du2, d2xyz/duv, d2xyz/dv2
+!    - srcvals2: double precision (30,npts)
+!        xyz, dxyz/du, dxyz/dv, normals, d2xyz/du2, d2xyz/duv,
+!        d2xyz/dv2, |dxyz/du \times dxyz/dv|, (11,12,22) entries
+!        of the first fundamental form, (11,12,22) entries
+!        of the second fundamental form, principal curvature 1,
+!        principal curvature 2
+
+  implicit none
+  integer *8, intent(in) :: npatches,norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+  integer *8, intent(in) :: npts
+  real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+
+  real *8, intent(out) :: srccoefs2(18,npts), srcvals2(30,npts)
+  real *8, allocatable :: dxuv(:,:)
+  real *8, allocatable :: dxuv2(:,:,:), dxuv2coefs(:,:,:)
+  integer *8 i
+  real *8 rtmp(3), rr, rl, rm, rn, tra, deta, dfac
+  real *8 re, rf, rg
+  integer *8 int8_6, int8_12
+
+  int8_6 = 6
+  int8_12 = 12
+
+  allocate(dxuv(6,npts))
+! Calculating x_{uu}, x_{uv}, x_{uv} stored in dxuv2 
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+  do i=1,npts
+    dxuv(1,i) = srcvals(4,i)  
+    dxuv(2,i) = srcvals(5,i)  
+    dxuv(3,i) = srcvals(6,i)  
+    dxuv(4,i) = srcvals(7,i)  
+    dxuv(5,i) = srcvals(8,i)  
+    dxuv(6,i) = srcvals(9,i) 
+    
+    srccoefs2(1:9,i) = srccoefs(1:9,i)
+    srcvals2(1:12,i) = srcvals(1:12,i)
+  enddo
+!$OMP END PARALLEL DO  
+
+  allocate(dxuv2(6,2,npts), dxuv2coefs(6,2,npts))
+
+  call get_surf_uv_grad(int8_6, npatches, norders, ixyzs, iptype, &
+    npts, dxuv, dxuv2)
+
+  call surf_vals_to_coefs(int8_12, npatches, norders, ixyzs, iptype, &
+    npts, dxuv2, dxuv2coefs)
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, rtmp, rl, rm, rn, tra) &
+!$OMP PRIVATE(deta, dfac, re, rf, rg)
+  do i=1,npts
+    srccoefs2(10:12,i) = dxuv2coefs(1:3,1,i)
+    srccoefs2(13:15,i) = dxuv2coefs(1:3,2,i)
+    srccoefs2(16:18,i) = dxuv2coefs(4:6,2,i)
+
+    srcvals2(13:15,i) = dxuv2(1:3,1,i)
+    srcvals2(16:18,i) = dxuv2(1:3,2,i)
+    srcvals2(19:21,i) = dxuv2(4:6,2,i)
+
+
+    call cross_prod3d(srcvals2(4,i), srcvals2(7,i), rtmp)
+    srcvals2(22,i) = sqrt(rtmp(1)**2 + rtmp(2)**2 + rtmp(3)**2)
+    
+    re = srcvals2(4,i)**2 + srcvals2(5,i)**2 + srcvals2(6,i)**2
+    rf = srcvals2(4,i)*srcvals2(7,i) + srcvals2(5,i)*srcvals2(8,i) + &
+         srcvals2(6,i)*srcvals2(9,i)
+    rg = srcvals2(7,i)**2 + srcvals2(8,i)**2 + srcvals2(9,i)**2
+    srcvals2(23,i) = re
+    srcvals2(24,i) = rf
+    srcvals2(25,i) = rg
+    rl = srcvals2(13,i)*srcvals2(10,i) + & 
+         srcvals2(14,i)*srcvals2(11,i) + &
+         srcvals2(15,i)*srcvals2(12,i)  
+    rm = srcvals2(16,i)*srcvals2(10,i) + &
+         srcvals2(17,i)*srcvals2(11,i) + &
+         srcvals2(18,i)*srcvals2(12,i)  
+    rn = srcvals2(19,i)*srcvals2(10,i) + &
+         srcvals2(20,i)*srcvals2(11,i) + &
+         srcvals2(21,i)*srcvals2(12,i)  
+    srcvals2(26,i) = rl
+    srcvals2(27,i) = rm
+    srcvals2(28,i) = rn
+    tra = rg*rl - 2*rf*rm + re*rn 
+    deta = (rg*rl - rf*rm)*(re*rn - rf*rm) - &
+            (rg*rm - rf*rn)*(re*rm - rf*rl)   
+    dfac = sqrt(tra*tra - 4*deta)
+    srcvals2(29,i) = 0.5d0*(tra + dfac)/(re*rg - rf*rf)
+    srcvals2(30,i) = 0.5d0*(tra - dfac)/(re*rg - rf*rf)
+  enddo
+!$OMP END PARALLEL DO  
+
+end subroutine get_second_derivative_surfinfo
+
+
+
 subroutine get_second_fundamental_form(npatches,norders,ixyzs,iptype, &
   npts,srccoefs,srcvals,sfform)
 !
