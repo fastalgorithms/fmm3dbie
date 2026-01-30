@@ -16,13 +16,13 @@
       real *8, allocatable :: rhs(:,:), soln(:,:), soln2(:,:), errs(:)
       real *8, allocatable :: uvs(:,:), umat(:,:), vmat(:,:), wtmp(:)
       real *8, allocatable :: rtmp(:,:)
-      real *8 strengths(3), pot(3,100), pot_ex(3,100)
+      real *8 strengths(3), pot(3,1000), pot_ex(3,1000)
       real *8, allocatable :: bmat(:,:), rhsb(:), solnb(:), resb(:)
 
       procedure (), pointer :: fker
 
 
-      real *8 c0(3), abc(3), verts(2,4), xyz_out(12), xyz_in(3,100)
+      real *8 c0(3), abc(3), verts(2,4), xyz_out(12), xyz_in(3,1000)
       integer *8 nabc(3)
 
       complex *16 zpars
@@ -47,34 +47,37 @@
       abc(2) = 1.0d0
       abc(3) = 1.0d0
 
-      abc(1:3) = abc(1:3)*1.1d0
+      abc(1:3) = abc(1:3)
 
       nabc(1) = 5
       nabc(2) = 3
       nabc(3) = 10
 
-      nabc(1) = 2
-      nabc(2) = 2
-      nabc(3) = 2
+      na = 4
+      huse = 1.0d0
+
+      nabc(1) = na 
+      nabc(2) = na
+      nabc(3) = na
       
       c0(1) = 0
       c0(2) = 0
       c0(3) = 0
 
       xyz_out(1) = 3.1d0
-      xyz_out(2) = 1.19d0
-      xyz_out(3) = -4.5d0
+      xyz_out(2) = 3.19d0
+      xyz_out(3) = -3.5d0
 
       xyz_out(4:9) = 0
-      xyz_out(10) = 1/sqrt(3.0d0)
-      xyz_out(11) = 1/sqrt(3.0d0)
-      xyz_out(12) = -1/sqrt(3.0d0)
+      xyz_out(10) = 1.0d0/sqrt(3.0d0)
+      xyz_out(11) = 1.0d0/sqrt(3.0d0)
+      xyz_out(12) = -1.0d0/sqrt(3.0d0)
 
 
       nin = 100
       do i=1,nin
         rr = hkrand(0)*0.5d0
-        thet = hkrand(0)*pi*0
+        thet = hkrand(0)*pi
         phi = hkrand(0)*2*pi
         xyz_in(1,i) = rr*sin(thet)*cos(phi) 
         xyz_in(2,i) = rr*sin(thet)*sin(phi) 
@@ -83,7 +86,7 @@
 
       allocate(bmat(3*nin,6), rhsb(3*nin), solnb(6), resb(3*nin))
 
-      norder = 8
+      norder = 9
       iptype0 = 1
 
       
@@ -97,6 +100,9 @@
       
       call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, &
         npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+ 
+      call prin2('srcvals=*',srcvals(1:3,1:10),30)
+      call prin2('srcnorms=*',srcvals(10:12,1:10),30)
       
       
       call get_qwts(npatches, norders, ixyzs, iptype, npts, & 
@@ -110,11 +116,12 @@
       
       nv = 0
       call get_boundary_vertices(iptype0, verts, nv)
+      call prin2('verts=*',verts,2*nv)
 
-      istrat = 2
+      istrat = 1
       intype = 1
       npatches0 = 1
-      eps = 0.51d-7
+      eps = 0.51d-12
 
       isd = 0
       ndsc = 9
@@ -149,13 +156,14 @@
       ndz = 0
 
       nqorder = 8
-      call get_quadparams_adap(eps, 1, nqorder, eps_adap, nlev, &
+      call get_quadparams_adap(eps, iptype0, nqorder, eps_adap, nlev, &
         nqorder_f)
+      call prin2('eps_adap=*',eps_adap, 1)
       rfac = 2.0d0
       
       ifmetric = 0
       
-      nmax = 20000
+      nmax = 50000
       allocate(xs(nmax), ys(nmax), ws(nmax))
       allocate(srctmp(12,nmax), qwts(nmax))
       allocate(sigvals(npols,nmax))
@@ -165,16 +173,21 @@
       allocate(rhs(ndim,npts), soln(ndim,npts), soln2(ndim,npts))
       allocate(rtmp(ndim,ndim))
 
-      strengths(1) = 1.1d2
-      strengths(2) = 2.1d2
-      strengths(3) = 0.3d2
+      strengths(1) = 1.1d0
+      strengths(2) = 2.1d0
+      strengths(3) = 0.3d0
 
-      hout = 1.0d0
+      hout = huse 
       dpars(3) = hout
+
+      ndim3 = 3
+      ndd = 3
+      ndz = 0
+      ndi = 0
       
       do i=1,npts
-        call el3d_elastlet_string_mindlin_vec(nd, xyz_out, 3, srcvals(1,i), 3, &
-          dpars, 1, zpars, 0, ipars, rtmp)
+        call el3d_elastlet_string_mindlin_vec(nd, xyz_out, ndim3, &
+          srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
         rhs(1,i) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
                    rtmp(1,3)*strengths(3)
         rhs(2,i) = rtmp(2,1)*strengths(1) + rtmp(2,2)*strengths(2) + &
@@ -206,7 +219,7 @@
 !
 !  For now set h to be constant
 !
-        h = 0.4d0
+        h = huse 
         dpars(1) = dlam 
         dpars(2) = dmu 
         dpars(3) = h
@@ -314,7 +327,7 @@
             amat(3*j-0,3*isrc-1) = dintvals(3,2,l,j)
             amat(3*j-0,3*isrc-0) = dintvals(3,3,l,j)
 
-            if(1.eq.0) then
+            if(1.eq.1) then
 
 !
 !  fix null space issue, forces
@@ -335,7 +348,7 @@
             
             amat(3*j-1,3*isrc-2) = amat(3*j-1,3*isrc-2) - &
                         (srcvals(1,j)*srcvals(2,isrc))*wts(isrc) 
-            amat(3*j-1,3*isrc-2) = amat(3*j-1,3*isrc-2) + &
+            amat(3*j-1,3*isrc-1) = amat(3*j-1,3*isrc-1) + &
                         (srcvals(1,j)*srcvals(1,isrc) + &
                         srcvals(3,j)*srcvals(3,isrc))*wts(isrc) 
             amat(3*j-1,3*isrc-0) = amat(3*j-1,3*isrc-0) - &
@@ -357,14 +370,9 @@
       call prin2('amat=*', amat, 24)
       call prinf('ndim=*', ndim, 1)
       do i=1,ndim*npts
-         amat(i,i) = amat(i,i) + 1.0d0
+         amat(i,i) = amat(i,i) - 1.0d0
       enddo
 
-      do j=1,ndim*npts
-        do i=1,ndim*npts
-          write(34,*) amat(i,j)
-        enddo
-      enddo
       ipt = 15
       jpt = 455
 
@@ -373,7 +381,7 @@
       
       i = 3*(ipt-1) + i1
       j = 3*(jpt-1) + j1
-      h = 0.4d0
+      h = huse 
       dpars(1) = dlam
       dpars(2) = dmu
       dpars(3) = h
@@ -387,11 +395,15 @@
 
       print *, "dcond=", dcond
       print *, "info=", info
-      dpars(3) = hout
+
+      call prin2('dpars=*',dpars,3)
+      call prin2('xyz_out=*',xyz_out,12)
 
       do j=1,nin
-        call el3d_elastlet_string_mindlin_vec(nd, xyz_out, 3, xyz_in(1,j), 3, &
-            dpars, 1, zpars, 0, ipars, rtmp)
+        dpars(3) = hout
+        rtmp(1:3,1:3) = 0
+        call el3d_elastlet_string_mindlin_vec(nd, xyz_out, ndim3, &
+            xyz_in(1,j), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
       
         pot_ex(1,j) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
                   rtmp(1,3)*strengths(3)
@@ -401,11 +413,12 @@
                   rtmp(3,3)*strengths(3)
 
         pot(1:3,j) = 0
-        h = 0.4d0
+        h = huse 
+        dpars(3) = h
         do i=1,npts
-          dpars(3) = h
-          call el3d_elastlet_string_mindlin_vec(nd, srcvals(1,i), 3, &
-            xyz_in(1,j), 3, dpars, 1, zpars, 0, ipars, rtmp)
+          rtmp(1:3,1:3) = 0 
+          call el3d_elastlet_string_mindlin_vec(nd, srcvals(1,i), ndim3, &
+            xyz_in(1,j), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
          
           pot(1,j) = pot(1,j) + (rtmp(1,1)*soln(1,i) + rtmp(1,2)*soln(2,i) + &
                     rtmp(1,3)*soln(3,i))*wts(i)
@@ -418,6 +431,26 @@
 
       call prin2('pot=*',pot,12)
       call prin2('pot_ex=*',pot_ex,12)
+
+      rarhs = 0
+      rasoln = 0
+      do i=1,npts
+        rarhs = rarhs + abs(rhs(1,i))**2*wts(i)
+        rarhs = rarhs + abs(rhs(2,i))**2*wts(i)
+        rarhs = rarhs + abs(rhs(3,i))**2*wts(i)
+
+        rasoln = rasoln + abs(soln(1,i))**2*wts(i)
+        rasoln = rasoln + abs(soln(2,i))**2*wts(i)
+        rasoln = rasoln + abs(soln(3,i))**2*wts(i)
+      enddo
+
+      rarhs = sqrt(rarhs)
+      rasoln = sqrt(rasoln)
+
+      call prin2('rarhs=*',rarhs,1)
+      call prin2('rasoln=*',rasoln,1)
+
+
 
       erra = 0.0d0
 
@@ -436,7 +469,8 @@
 
         bmat(3*i-0,4) = xyz_in(2,i)
         bmat(3*i-0,5) = -xyz_in(1,i)
-        bmat(3*i-0,6) = 0 
+        bmat(3*i-0,6) = 0
+
         rhsb(3*i-2) = pot_ex(1,i) - pot(1,i)
         rhsb(3*i-1) = pot_ex(2,i) - pot(2,i)
         rhsb(3*i-0) = pot_ex(3,i) - pot(3,i)

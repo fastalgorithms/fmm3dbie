@@ -516,12 +516,12 @@
       ns(2) = src(11)
       ns(3) = src(12)
 
-      r  = sqrt(rs(1)**2+rs(2)**2+rs(3)**2)
+      r  = sqrt(rs(1)**2 + rs(2)**2 + rs(3)**2)
       r2 = r**2
       r3 = r**3 
       r5 = r**5 
       r7 = r**7
-      rdn = ns(1)*rs(1)+ns(2)*rs(2)+ns(3)*rs(3)
+      rdn = ns(1)*rs(1) + ns(2)*rs(2) + ns(3)*rs(3)
 
       rfac = over4pi 
       bfac = (1-da)/da*rfac
