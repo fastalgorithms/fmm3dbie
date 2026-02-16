@@ -16,8 +16,9 @@
       real *8, allocatable :: rhs(:,:), soln(:,:), soln2(:,:), errs(:)
       real *8, allocatable :: uvs(:,:), umat(:,:), vmat(:,:), wtmp(:)
       real *8, allocatable :: rtmp(:,:)
-      real *8 strengths(3), pot(3,1000), pot_ex(3,1000)
+      real *8 strengths(3), pot(3,1000), pot_ex(3,1000), pot2(3,1000)
       real *8, allocatable :: bmat(:,:), rhsb(:), solnb(:), resb(:)
+      real *8, allocatable :: bmat2(:,:), rhsb2(:), solnb2(:)
 
       procedure (), pointer :: fker
 
@@ -55,7 +56,7 @@
       nabc(2) = 3
       nabc(3) = 10
 
-      na = 3
+      na = 2
       huse = 0.5d0
 
       nabc(1) = na 
@@ -78,7 +79,7 @@
 
       nin = 10
       do i=1,nin
-        rr = hkrand(0)*0.25d0
+        rr = hkrand(0)*0.5d0
         thet = hkrand(0)*pi
         phi = hkrand(0)*2*pi
         xyz_in(1,i) = rr*sin(thet)*cos(phi) 
@@ -95,6 +96,7 @@
 
       call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, &
         npatches, npts)
+      call prinf('npts=*',npts,1)
 
       allocate(srcvals(12,npts), srccoefs(9,npts))
       allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
@@ -120,7 +122,7 @@
       call get_boundary_vertices(iptype0, verts, nv)
       call prin2('verts=*',verts,2*nv)
 
-      istrat = 1
+      istrat = 2
       intype = 1
       npatches0 = 1
       eps = 0.51d-12
@@ -151,7 +153,7 @@
       itargptr = 1
       ntargptr = ntarguse
 
-      ntrimax = 3000
+      ntrimax = 8000
 
       ndd = 3
       ndi = 0
@@ -161,7 +163,7 @@
       call get_quadparams_adap(eps, iptype0, nqorder, eps_adap, nlev, &
         nqorder_f)
       call prin2('eps_adap=*',eps_adap, 1)
-      call prinf('nlev=*', nlev, 2)
+      call prinf('nlev=*', nlev, 1)
       if(nqorder.gt.20) nqorder = 20
       if(nqorder_f.gt.20) nqorder_f = 20
       print *, "nqorder=",nqorder
@@ -397,7 +399,16 @@
       print *, "ftmp=", ftmp*wts(jpt)
       print *, "amat=",amat(i,j)
       info = 0
-      call dgausselim(npts*ndim, amat, rhs, info, soln, dcond)
+
+      nn = npts*3
+      call dgausselim(nn, amat, rhs, info, soln, dcond)
+      ifwrite = 0
+
+      if(ifwrite.eq.1)  then
+        open(unit=32,file='fort.32',access='stream')
+        write(32) amat
+        close(32)
+      endif
 
       print *, "dcond=", dcond
       print *, "info=", info
@@ -460,7 +471,8 @@
 
 
       erra = 0.0d0
-
+      call prin2('xyz_in=*',xyz_in,3*nin)
+      bmat = 0
       do i=1,nin
         bmat(3*i-2,1) = 1.0d0
         bmat(3*i-1,2) = 1.0d0
@@ -483,7 +495,7 @@
         rhsb(3*i-0) = pot_ex(3,i) - pot(3,i)
       enddo
       call prin2('bmat=*',bmat,3*nin*6)
-      call prin2('rhs=*',rhs,3*nin)
+      call prin2('rhs=*',rhsb,3*nin)
 
       m = 3*nin
       n = 6
@@ -497,8 +509,46 @@
       call prinf('m=*',m,1)
       call prinf('n=*',n,1)
       call prin2('solnb=*',solnb,6)
+
+      allocate(bmat2(6,6), rhsb2(6), solnb2(6))
+      
+      do i=1,6
+        do j=1,6
+          bmat2(i,j) = 0
+          do l=1,3*nin
+            bmat2(i,j) = bmat2(i,j) + bmat(l,i)*bmat(l,j)
+          enddo
+        enddo
+
+        rhsb2(i) = 0
+        do l=1,3*nin
+          rhsb2(i) = rhsb2(i) + bmat(l,i)*rhsb(l)
+        enddo
+      enddo
+      info = 0
+      dcond = 0
+      call dgausselim(6, bmat2, rhsb2, info, solnb2, dcond)
+      call prinf('info=*',info,1)
+      call prin2('solnb=*',solnb,6)
+      call prin2('solnb2=*',solnb2,6)
+      call prin2('dcond=*',dcond,1)
+
+      do i=1,nin
+        pot2(1,i) = pot(1,i) + solnb2(1) + solnb2(5)*xyz_in(3,i) - &
+                                           solnb2(6)*xyz_in(2,i)
+        pot2(2,i) = pot(2,i) + solnb2(2) - solnb2(4)*xyz_in(3,i) + &
+                                           solnb2(6)*xyz_in(1,i)
+        pot2(3,i) = pot(3,i) + solnb2(3) + solnb2(4)*xyz_in(2,i) - &
+                                           solnb2(5)*xyz_in(1,i)
+      enddo
+
+      call prin2('pot2=*',pot2,12)
+      call prin2('pot_ex=*',pot_ex,12)
+      call prin2('pot=*',pot,12)
+
       
       erra = 0
+      erra2 = 0
       do i=1,3*nin
         resb(i) = -rhsb(i)
         do j = 1,6
@@ -507,10 +557,18 @@
 
         erra = erra + resb(i)**2
       enddo
+
+      do i=1,nin
+        erra2 = erra2 + (pot2(1,i) - pot_ex(1,i))**2
+        erra2 = erra2 + (pot2(2,i) - pot_ex(2,i))**2
+        erra2 = erra2 + (pot2(3,i) - pot_ex(3,i))**2
+      enddo
       erra = sqrt(erra)
       call prin2('resb=*',resb,12)
       call prin2('soln=*',solnb,6)
       print *, "Error in solution=", erra
+      erra2 = sqrt(erra2)
+      print *, "error in solution2=", erra2
       
 
       stop
