@@ -4,7 +4,7 @@
       real *8 src_grid(12, -2:2,-2:2,-2:2), uval(3,-2:2,-2:2,-2:2)
       real *8 str(3), uxx(3), uyy(3), uzz(3), uxy(3), uxz(3), uyx(3)
       real *8 uyz(3), uzx(3), uzy(3), dpars(3), ux(3), uy(3), uz(3)
-      real *8 ucomp(3), utest(3), utest2(3)
+      real *8 ucomp(3), utest(3), utest2(3), ustr(3,3)
       real *8 amat(3,3)
       complex *16 zpars
       integer *8 ipars, ndd, ndz, ndi
@@ -55,8 +55,8 @@
       str(2) = hkrand(0)
       str(3) = hkrand(0)
 
-      str(1:3) = 0
-      str(2) = 1
+!      str(1:3) = 0
+!      str(2) = 1
 
       hh = 1.0d-3
 
@@ -146,10 +146,13 @@
          tar(12)*amat(1:3,3)
       call el3d_elastlet_string_mindlin_normalstress_vec(nd, &
               src, ndt, tar, ndd, dpars, ndz, &
-              zpars, ndi, ipars, ucomp)
+              zpars, ndi, ipars, ustr)
+      ucomp(1:3) = ustr(1:3,1)*str(1) + ustr(1:3,2)*str(2) + &
+         ustr(1:3,3)*str(3)
       call prin2('utest=*',utest,3)
       call prin2('utest2=*',utest2,3)
       call prin2('ucomp=*',ucomp,3)
+      
       
 
 
