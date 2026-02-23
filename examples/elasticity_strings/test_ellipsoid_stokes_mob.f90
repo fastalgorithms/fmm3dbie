@@ -2,9 +2,11 @@
       implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:), wts(:)
       integer *8 ipars(2)
-      real *8 dpars(3), dpars_solver(2)
+      real *8 dpars(3), dpars_solver(2), dpars_mob(2)
       
       integer *8, allocatable :: norders(:), ixyzs(:), iptype(:)
+      integer *8, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_targ(:,:)
 
       real *8, allocatable :: dintvals(:,:,:,:)
       real *8, allocatable :: dintcoefs(:,:,:,:)
@@ -21,6 +23,7 @@
       real *8, allocatable :: bmat2(:,:), rhsb2(:), solnb2(:)
       real *8, allocatable :: pot_tmp(:,:)
       real *8, allocatable :: amatt(:,:)
+      real *8, allocatable :: sig_in(:,:), ssig_in(:,:)
 
       procedure (), pointer :: fker
 
@@ -136,7 +139,6 @@
       ifp = 0
      
       fker => st3d_strac_vec
-!      fker => st3d_dlp_vec
       ndim = 3
       nd = ndim*ndim
       
@@ -198,7 +200,7 @@
       ndi = 0
       
       do i=1,npts
-        call st3d_strac_vec(nd, xyz_out, ndim3, &
+        call st3d_slp_vec(nd, xyz_out, ndim3, &
           srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
         rhs(1,i) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
                    rtmp(1,3)*strengths(3)
@@ -341,11 +343,61 @@
             amat(3*j-0,3*isrc-1) = dintvals(3,2,l,j)
             amat(3*j-0,3*isrc-0) = dintvals(3,3,l,j)
 
-            if(1.eq.1) then
+          enddo
+        enddo
+      enddo
+!$OMP END PARALLEL DO
+
+      call prin2('amat=*', amat, 24)
+      call prinf('ndim=*', ndim, 1)
+      do i=1,ndim*npts
+         amat(i,i) = amat(i,i) + 0.5d0
+      enddo
+!
+!
+!  done generating matrix, now get the right hand side for the mobility problem
+!
+      rsurf = 0
+      do i=1,npts
+        rsurf = rsurf + wts(i)
+      enddo
+      call prin2('rsurf=*',rsurf,1)
+      call prin2('error in area=*',rsurf-4*pi,1)
+      
+      allocate(sig_in(3,npts), ssig_in(3,npts))
+      do i=1,npts
+        sig_in(1,i) = 1.0d0/rsurf
+        sig_in(2,i) = 0
+        sig_in(3,i) = 0
+      enddo
+      call prin2('sig_in=*',sig_in,24)
+      do i=1,npts
+        ssig_in(1:3,i) = 0
+        do j=1,npts
+          ssig_in(1,i) = ssig_in(1,i) + amat(3*i-2,3*j-2)*sig_in(1,j)
+          ssig_in(1,i) = ssig_in(1,i) + amat(3*i-2,3*j-1)*sig_in(2,j)
+          ssig_in(1,i) = ssig_in(1,i) + amat(3*i-2,3*j-0)*sig_in(3,j)
+
+          ssig_in(2,i) = ssig_in(2,i) + amat(3*i-1,3*j-2)*sig_in(1,j)
+          ssig_in(2,i) = ssig_in(2,i) + amat(3*i-1,3*j-1)*sig_in(2,j)
+          ssig_in(2,i) = ssig_in(2,i) + amat(3*i-1,3*j-0)*sig_in(3,j)
+
+          ssig_in(3,i) = ssig_in(3,i) + amat(3*i-0,3*j-2)*sig_in(1,j)
+          ssig_in(3,i) = ssig_in(3,i) + amat(3*i-0,3*j-1)*sig_in(2,j)
+          ssig_in(3,i) = ssig_in(3,i) + amat(3*i-0,3*j-0)*sig_in(3,j)
+        enddo
+        ssig_in(1:3,i) = -ssig_in(1:3,i)
+      enddo
+      call prin2('ssig_in=*',ssig_in,24)
+
 
 !
 !  fix null space issue, forces
 !
+      do isrc=1,npts
+        do j=1,npts
+          if(1.eq.1) then
+
             amat(3*j-2,3*isrc-2) = amat(3*j-2,3*isrc-2) + wts(isrc)
             amat(3*j-1,3*isrc-1) = amat(3*j-1,3*isrc-1) + wts(isrc)
             amat(3*j-0,3*isrc-0) = amat(3*j-0,3*isrc-0) + wts(isrc)
@@ -375,246 +427,69 @@
             amat(3*j-0,3*isrc-0) = amat(3*j-0,3*isrc-0) + &
                         (srcvals(1,j)*srcvals(1,isrc) + &
                         srcvals(2,j)*srcvals(2,isrc))*wts(isrc)
-            endif
-          enddo
-        enddo
-      enddo
-!$OMP END PARALLEL DO
-
-      call prin2('amat=*', amat, 24)
-      call prinf('ndim=*', ndim, 1)
-      do i=1,ndim*npts
-         amat(i,i) = amat(i,i) + 0.5d0
-      enddo
-
-      do i=1,npts
-        do j=1,npts
-          amatt(3*j-2,3*i-2) = amat(3*i-2,3*j-2)/wts(j)*wts(i)
-          amatt(3*j-2,3*i-1) = amat(3*i-1,3*j-2)/wts(j)*wts(i)
-          amatt(3*j-2,3*i-0) = amat(3*i-0,3*j-2)/wts(j)*wts(i)
-
-          amatt(3*j-1,3*i-2) = amat(3*i-2,3*j-1)/wts(j)*wts(i)
-          amatt(3*j-1,3*i-1) = amat(3*i-1,3*j-1)/wts(j)*wts(i)
-          amatt(3*j-1,3*i-0) = amat(3*i-0,3*j-1)/wts(j)*wts(i)
-
-          amatt(3*j-0,3*i-2) = amat(3*i-2,3*j-0)/wts(j)*wts(i)
-          amatt(3*j-0,3*i-1) = amat(3*i-1,3*j-0)/wts(j)*wts(i)
-          amatt(3*j-0,3*i-0) = amat(3*i-0,3*j-0)/wts(j)*wts(i)
+          endif
         enddo
       enddo
 !
+!  now solve (I+K+L)sig = -(I+K)sig_in
 !
-!
-      ra = 0
-      allocate(pot_tmp(3,npts))
-      
-      do i=1,npts
-        pot_tmp(1:3,i) = 0
-        do j=1,npts
-          pot_tmp(1,i) = pot_tmp(1,i) + amat(3*i-2,3*j-2)*srcvals(3,j) - &
-                                        amat(3*i-2,3*j-0)*srcvals(1,j) 
-          pot_tmp(2,i) = pot_tmp(2,i) + amat(3*i-1,3*j-2)*srcvals(3,j) - &
-                                        amat(3*i-1,3*j-0)*srcvals(1,j)
-          pot_tmp(3,i) = pot_tmp(3,i) + amat(3*i-0,3*j-2)*srcvals(3,j) - &
-                                        amat(3*i-0,3*j-0)*srcvals(1,j)
-        enddo
-        ra = ra + (pot_tmp(1,i)**2 + pot_tmp(2,i)**2 + pot_tmp(3,i)**2)*wts(i)
-      enddo
 
-      call prin2('pot_tmp=*',pot_tmp,12)
-      ra = sqrt(ra)
-      call prin2('ra=*',ra,1)
-
-      ipt = 15
-      jpt = 455
-
-      i1 = 1
-      j1 = 3
-      
-      i = 3*(ipt-1) + i1
-      j = 3*(jpt-1) + j1
-      h = huse 
-      dpars(1) = dlam
-      dpars(2) = dmu
-      dpars(3) = h
-      call fker(nd, srcvals(1,jpt), ndtarg, srcvals(1,ipt), &
-         ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
-      ftmp = rtmp(i1,j1) 
-      print *, "ftmp=", ftmp*wts(jpt)
-      print *, "amat=",amat(i,j)
       info = 0
-
       nn = npts*3
-      call dgausselim(nn, amat, rhs, info, soln, dcond)
-      ifwrite = 0
+      call dgausselim(nn, amat, ssig_in, info, soln, dcond)
 
-      if(ifwrite.eq.1)  then
-        open(unit=32,file='fort.32',access='stream')
-        write(32) amat
-        close(32)
-      endif
-
-      print *, "dcond=", dcond
-      print *, "info=", info
-
-      call prin2('dpars=*',dpars,3)
-      call prin2('xyz_out=*',xyz_out,12)
-      call prinf('nin=*',nin,1)
-
-      do j=1,nin
-        dpars(3) = hout
-        rtmp(1:3,1:3) = 0
-        call st3d_slp_vec(nd, xyz_out, ndim3, &
-            xyz_in(1,j), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
-      
-        pot_ex(1,j) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
-                  rtmp(1,3)*strengths(3)
-        pot_ex(2,j) = rtmp(2,1)*strengths(1) + rtmp(2,2)*strengths(2) + &
-                  rtmp(2,3)*strengths(3)
-        pot_ex(3,j) = rtmp(3,1)*strengths(1) + rtmp(3,2)*strengths(2) + &
-                  rtmp(3,3)*strengths(3)
-
-        pot(1:3,j) = 0
-        h = huse 
-        dpars(3) = h
-        do i=1,npts
-          rtmp(1:3,1:3) = 0 
-          call st3d_slp_vec(nd, srcvals(1,i), ndim3, &
-            xyz_in(1,j), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
-         
-          pot(1,j) = pot(1,j) + (rtmp(1,1)*soln(1,i) + rtmp(1,2)*soln(2,i) + &
-                    rtmp(1,3)*soln(3,i))*wts(i)
-          pot(2,j) = pot(2,j) + (rtmp(2,1)*soln(1,i) + rtmp(2,2)*soln(2,i) + &
-                    rtmp(2,3)*soln(3,i))*wts(i)
-          pot(3,j) = pot(3,j) + (rtmp(3,1)*soln(1,i) + rtmp(3,2)*soln(2,i) + &
-                    rtmp(3,3)*soln(3,i))*wts(i)
-        enddo
-      enddo
-      pot(1:3,1:nin) = pot(1:3,1:nin)
-
-      call prin2('pot=*',pot,12)
-      call prin2('pot_ex=*',pot_ex,12)
-
-      rarhs = 0
-      rasoln = 0
+!
+!  test if int soln = 0
+!
+      ra1 = 0
+      ra2 = 0
+      ra3 = 0
       do i=1,npts
-        rarhs = rarhs + abs(rhs(1,i))**2*wts(i)
-        rarhs = rarhs + abs(rhs(2,i))**2*wts(i)
-        rarhs = rarhs + abs(rhs(3,i))**2*wts(i)
-
-        rasoln = rasoln + abs(soln(1,i))**2*wts(i)
-        rasoln = rasoln + abs(soln(2,i))**2*wts(i)
-        rasoln = rasoln + abs(soln(3,i))**2*wts(i)
+        ra1 = ra1 + soln(1,i)*wts(i)
+        ra2 = ra2 + soln(2,i)*wts(i)
+        ra3 = ra3 + soln(3,i)*wts(i)
       enddo
-
-      rarhs = sqrt(rarhs)
-      rasoln = sqrt(rasoln)
-
-      call prin2('rarhs=*',rarhs,1)
-      call prin2('rasoln=*',rasoln,1)
-
-
-
-      erra = 0.0d0
-      call prin2('xyz_in=*',xyz_in,3*nin)
-      bmat = 0
-      do i=1,nin
-        bmat(3*i-2,1) = 1.0d0
-        bmat(3*i-1,2) = 1.0d0
-        bmat(3*i-0,3) = 1.0d0
-
-        bmat(3*i-2,4) = 0
-        bmat(3*i-2,5) = xyz_in(3,i)
-        bmat(3*i-2,6) = -xyz_in(2,i)
-
-        bmat(3*i-1,4) = -xyz_in(3,i)
-        bmat(3*i-1,5) = 0 
-        bmat(3*i-1,6) = xyz_in(1,i)
-
-        bmat(3*i-0,4) = xyz_in(2,i)
-        bmat(3*i-0,5) = -xyz_in(1,i)
-        bmat(3*i-0,6) = 0
-
-        rhsb(3*i-2) = pot_ex(1,i) - pot(1,i)
-        rhsb(3*i-1) = pot_ex(2,i) - pot(2,i)
-        rhsb(3*i-0) = pot_ex(3,i) - pot(3,i)
+      call prin2('ra1=*',ra1,1)
+      call prin2('ra2=*',ra2,1)
+      call prin2('ra3=*',ra3,1)
+!
+!  Fix soln to add sig_in
+!
+      do i=1,npts
+        soln(1:3,i) = soln(1:3,i) + sig_in(1:3,i)
       enddo
-      call prin2('bmat=*',bmat,3*nin*6)
-      call prin2('rhs=*',rhsb,3*nin)
-
-      m = 3*nin
-      n = 6
-      nrhs = 1
-      eps = 1.0d-12
-      info = 0
-      irank = 0
-      call dleastsq(m, n, bmat, nrhs, rhsb, eps, info, solnb, irank)
-      call prinf('irank=*', irank, 1)
-      call prinf('info=*', info, 1)
-      call prinf('m=*',m,1)
-      call prinf('n=*',n,1)
-      call prin2('solnb=*',solnb,6)
-
-      allocate(bmat2(6,6), rhsb2(6), solnb2(6))
-      
-      do i=1,6
-        do j=1,6
-          bmat2(i,j) = 0
-          do l=1,3*nin
-            bmat2(i,j) = bmat2(i,j) + bmat(l,i)*bmat(l,j)
-          enddo
-        enddo
-
-        rhsb2(i) = 0
-        do l=1,3*nin
-          rhsb2(i) = rhsb2(i) + bmat(l,i)*rhsb(l)
-        enddo
-      enddo
-      info = 0
-      dcond = 0
-      call dgausselim(6, bmat2, rhsb2, info, solnb2, dcond)
-      call prinf('info=*',info,1)
-      call prin2('solnb=*',solnb,6)
-      call prin2('solnb2=*',solnb2,6)
-      call prin2('dcond=*',dcond,1)
-
-      do i=1,nin
-        pot2(1,i) = pot(1,i) + solnb2(1) + solnb2(5)*xyz_in(3,i) - &
-                                           solnb2(6)*xyz_in(2,i)
-        pot2(2,i) = pot(2,i) + solnb2(2) - solnb2(4)*xyz_in(3,i) + &
-                                           solnb2(6)*xyz_in(1,i)
-        pot2(3,i) = pot(3,i) + solnb2(3) + solnb2(4)*xyz_in(2,i) - &
-                                           solnb2(5)*xyz_in(1,i)
-      enddo
-
-      call prin2('pot2=*',pot2,12)
-      call prin2('pot_ex=*',pot_ex,12)
-      call prin2('pot=*',pot,12)
 
       
-      erra = 0
-      erra2 = 0
-      do i=1,3*nin
-        resb(i) = -rhsb(i)
-        do j = 1,6
-          resb(i) = resb(i) + bmat(i,j)*solnb(j)
-        enddo
-
-        erra = erra + resb(i)**2
+      allocate(ipatch_id(npts), uvs_targ(2,npts))
+      call get_patch_id_uvs(npatches, norders, ixyzs, iptype, npts, &
+             ipatch_id, uvs_targ)
+      nd12 = 12
+      dpars_mob(1) = 1.0d0
+      dpars_mob(2) = 0.0d0
+      allocate(pot_tmp(3,npts))
+      pot_tmp(1:3,1:npts) = 0
+      call stok_comb_vel_eval(npatches, norders, ixyzs, iptype, &
+        npts, srccoefs, srcvals, nd12, npts, srcvals, ipatch_id, &
+        uvs_targ, eps, dpars_mob, soln, pot_tmp)
+      ux = 0
+      uy = 0
+      uz = 0
+      do i=1,npts
+        ux = ux + pot_tmp(1,i)*wts(i)
+        uy = uy + pot_tmp(2,i)*wts(i)
+        uz = uz + pot_tmp(3,i)*wts(i)
       enddo
+      ux = ux/rsurf
+      uy = uy/rsurf
+      uz = uz/rsurf
 
-      do i=1,nin
-        erra2 = erra2 + (pot2(1,i) - pot_ex(1,i))**2
-        erra2 = erra2 + (pot2(2,i) - pot_ex(2,i))**2
-        erra2 = erra2 + (pot2(3,i) - pot_ex(3,i))**2
-      enddo
-      erra = sqrt(erra)
-      call prin2('resb=*',resb,12)
-      call prin2('soln=*',solnb,6)
-      print *, "Error in solution=", erra
-      erra2 = sqrt(erra2)
-      print *, "error in solution2=", erra2
+      call prin2('ux=*',ux,1)
+      call prin2('uy=*',uy,1)
+      call prin2('uz=*',uz,1)
       
+      call prin2('exact mobility matrix=*',1.0d0/6/pi,1)
+      erra = abs(ux - 1.0d0/6/pi)
+      call prin2('error in mobility matrix=*',erra,1) 
 
       stop
       end
