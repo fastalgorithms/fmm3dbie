@@ -12,19 +12,13 @@
       real *8, allocatable :: srcover(:,:),wover(:)
 
       integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
-      integer *8, allocatable :: ixyzso(:),nfars(:)
 
       integer *8, allocatable :: ipatch_id(:),inode_id(:)
       real *8, allocatable :: uvs_targ(:,:)
-      real *8 xyz_out(3),xyz_in(3),stracmat(3,3),smat(3,3), dmat(3,3)
-      real *8 xyz_src(3),xyz_targ(3)
-      real *8 velgrad(3,3), vel(3), pre, tractemp(3)
-      real *8 sigout(3), uin(3), uintest(3), dpars(2), st1(3), du1(3)
-      real *8 udir(3), uneu(3,10), uavecomp(3), uavetest(3)
-      real *8 st2(3), du2(3), uconst(3)
-      real *8 v(3), omega(3), r0(3), udiff(3,10), udiff2(3,10)     
       real *8 c0(3)
       real *8 area, centroid(3), rmoi(3,3)
+      real *8 forces1(3), torques1(3)
+      real *8 trans_vels1(3), rot_vels1(3)
       real *8, allocatable :: uval(:,:), tracval(:,:), soln(:,:)
       complex * 16 zpars
       integer *8 int8_0,int8_3,int8_9
@@ -71,6 +65,22 @@
 
       err_moi = rmoi(1,1) - 4.0d0/3.0d0*2*pi*(a**4)
       call prin2('err_moi=*', err_moi,1)
+
+      forces1(1) = 1.0d0
+      forces1(2) = 0.0d0
+      forces1(3) = 0.0d0
+      
+      torques1(1) = 0.0d0
+      torques1(2) = 0.0d0
+      torques1(3) = 0.0d0
+
+      numit = 100
+      allocate(errs(numit+1))
+      allocate(soln(3,npts))
+      
+      
+      
+
 
       
       stop

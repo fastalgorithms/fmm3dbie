@@ -647,9 +647,9 @@
         sources(2,i) = srcover(2,i)
         sources(3,i) = srcover(3,i)
 
-        stoklet(1,i) = sigmaover(1,i)*whtsover(i)*over4pi
-        stoklet(2,i) = sigmaover(2,i)*whtsover(i)*over4pi
-        stoklet(3,i) = sigmaover(3,i)*whtsover(i)*over4pi
+        stoklet(1,i) = sigmaover(1,i)*whtsover(i)
+        stoklet(2,i) = sigmaover(2,i)*whtsover(i)
+        stoklet(3,i) = sigmaover(3,i)*whtsover(i)
       enddo
 !$OMP END PARALLEL DO      
       
@@ -801,8 +801,7 @@
         rint(1:3) = 0
         rint_torque(1:3) = 0
         ipstart = ipars(icomp+1)
-        ipend = npatches
-        if (icomp.ne.ncomp) ipend = ipars(icomp+2)-1
+        ipend = ipars(icomp+2)-1
 
         istart = ixyzs(ipstart)
         iend = ixyzs(ipend)
@@ -935,7 +934,7 @@
 !          * srcvals(10:12,i) - normals info
 !    - ncomp: integer *8
 !        number of components
-!    - icomps: integer *8(ncomp)
+!    - icomps: integer *8(ncomp+1)
 !        icomps(i) = starting patch index for patches on component
 !          i (note that the patches must be ordered by component)
 !    - eps: real *8
@@ -975,7 +974,7 @@
       integer *8, intent(in) :: ifinout
       integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
       integer *8, intent(in) :: iptype(npatches)
-      integer *8, intent(in) :: ncomp, icomps(ncomp)
+      integer *8, intent(in) :: ncomp, icomps(ncomp+1)
       real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
       real *8, intent(in) :: eps, eps_gmres
       real *8, intent(in) :: forces(3,ncomp), torques(3,ncomp) 
@@ -1190,11 +1189,15 @@
       ipotflag = 0
       ndim_p = 0
 
-      allocate(ipars(ncomp+1))
+      allocate(ipars(ncomp+2))
+      ipars(1) = ncomp
+      do icomp = 1,ncomp+1
+        ipars(icomp+1) = icomps(icomp)
+      enddo
+      
       do icomp = 1,ncomp
-        ipstart = ipars(icomp+1)
-        ipend = npatches
-        if (icomp.ne.ncomp) ipend = ipars(icomp+2)-1
+        ipstart = icomps(icomp)
+        ipend = icomps(icomp+1)-1
 
         istart = ixyzs(ipstart)
         iend = ixyzs(ipend)
@@ -1245,7 +1248,8 @@
 
       
       print *, "done generating near quadrature, now starting gmres"
-      ndi = ncomp+1
+      ndi = ncomp+2
+      
       call stok_s_mob_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, ndi, ipars, numit, &
         rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
@@ -1400,7 +1404,7 @@
 !        precision requested for computing quadrature and fmm
 !        tolerance
 !    - ndi: integer *8
-!        number of ipars, must be atleast ncomp+1, where ncomp
+!        number of ipars, must be atleast ncomp+2, where ncomp
 !        is the number of components
 !    - ipars: integer *8(ndi)
 !        ipars(1) = ncomp
