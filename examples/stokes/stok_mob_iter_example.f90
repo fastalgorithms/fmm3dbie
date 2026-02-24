@@ -1,0 +1,79 @@
+      implicit real *8 (a-h,o-z) 
+      implicit integer *8 (i-n)
+      real *8, allocatable :: srcvals(:,:),srccoefs(:,:),targs(:,:)
+      real *8, allocatable :: wts(:)
+      
+      real *8 ts(2), rres
+      real *8, allocatable :: rfacs(:,:), errs(:)
+      character *100 fname
+      integer *8 ipars(2)
+      integer *8, allocatable :: row_ptr(:),col_ind(:)
+      integer *8, allocatable :: iquad(:)
+      real *8, allocatable :: srcover(:,:),wover(:)
+
+      integer *8, allocatable :: norders(:),ixyzs(:),iptype(:)
+      integer *8, allocatable :: ixyzso(:),nfars(:)
+
+      integer *8, allocatable :: ipatch_id(:),inode_id(:)
+      real *8, allocatable :: uvs_targ(:,:)
+      real *8 xyz_out(3),xyz_in(3),stracmat(3,3),smat(3,3), dmat(3,3)
+      real *8 xyz_src(3),xyz_targ(3)
+      real *8 velgrad(3,3), vel(3), pre, tractemp(3)
+      real *8 sigout(3), uin(3), uintest(3), dpars(2), st1(3), du1(3)
+      real *8 udir(3), uneu(3,10), uavecomp(3), uavetest(3)
+      real *8 st2(3), du2(3), uconst(3)
+      real *8 v(3), omega(3), r0(3), udiff(3,10), udiff2(3,10)     
+      real *8 c0(3)
+      real *8 area, centroid(3), rmoi(3,3)
+      real *8, allocatable :: uval(:,:), tracval(:,:), soln(:,:)
+      complex * 16 zpars
+      integer *8 int8_0,int8_3,int8_9
+
+      call prini(6,13)
+
+      int8_0 = 0
+      int8_3 = 3
+      int8_9 = 9
+      done = 1
+      pi = atan(done)*4
+
+      a = 1.0d0
+      na = 4
+      c0(1) = 1.1d0
+      c0(2) = 0.3d0
+      c0(3) = 0.2d0
+
+      iptype0 = 1
+
+      norder = 4
+      npols = (norder+1)*(norder+2)/2
+
+      call get_sphere_npat_mem(a, na, c0, norder, iptype0, npatches, &
+        npts)
+      call prinf('npatches=*',npatches,1)
+      call prinf('npts=*',npts,1)
+      
+      allocate(srcvals(12,npts), srccoefs(9,npts), ixyzs(npatches+1), &
+        iptype(npatches), norders(npatches))
+      allocate(wts(npts))
+      call get_sphere_npat(a, na, c0, norder, iptype0, npatches, &
+        npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+      call get_qwts(npatches, norders, ixyzs, iptype, npts, srcvals, &
+        wts)
+
+      call get_surf_moments(npatches, norders, ixyzs, iptype, npts, &
+        srcvals, wts, area, centroid, rmoi)
+      
+      call prin2('area=*',area,1)
+      call prin2('centroid=*',centroid,3)
+      call prin2('rmoi=*',rmoi,9)
+
+      err_moi = rmoi(1,1) - 4.0d0/3.0d0*2*pi*(a**4)
+      call prin2('err_moi=*', err_moi,1)
+
+      
+      stop
+      end
+
+
