@@ -92,6 +92,7 @@ c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
+c        * ipv = 2, for hypersingular operators
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
@@ -546,6 +547,7 @@ c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
+c        * ipv = 2, for hypersingular operators
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
@@ -947,6 +949,7 @@ c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
+c        * ipv = 2, for hypersingular operators
 c    - norder: integer *8
 c        order of patch discretization
 c    - npols: integer *8
@@ -1143,6 +1146,7 @@ c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
+c        * ipv = 2, for hypersingular operators
 c    - norder: integer *8
 c        order of patch discretization
 c    - npols: integer *8
@@ -1406,6 +1410,7 @@ c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
+c        * ipv = 2, for hypersingular operators
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
@@ -1871,6 +1876,7 @@ c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
+c        * ipv = 2, for hypersingular operators
 c    - fker: procedure pointer
 c        function handle for the kernel. Calling sequence 
 c        * fker(srcinfo,ndtarg,targinfo,ndd,dpars,ndz,zpars,ndi,ipars,val)
@@ -2273,6 +2279,7 @@ c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
+c        * ipv = 2, for hypersingular operators
 c    - norder: integer *8
 c        order of patch discretization
 c    - npols: integer *8
@@ -2499,6 +2506,7 @@ c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
 c        * ipv = 0, for compact/weakly singular operators
 c        * ipv = 1, for singular operators
+c        * ipv = 2, for hypersingular operators
 c    - norder: integer *8
 c        order of patch discretization
 c    - npols: integer *8
