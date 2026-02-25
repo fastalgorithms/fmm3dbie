@@ -27,7 +27,7 @@
 !       K(x,y) = 1/|x-y| smooth + p.v. 1/|x-y|^2*smooth
 !  If ipv = 2
 !       K(x,y) = 1/|x-y| smooth + p.v. 1/|x-y|^2*smooth + 
-!         f.p. 1/|x-y|^3*smooth (under construction)
+!         f.p. 1/|x-y|^3*smooth
 !
 !  Here S is a convex polygon in R^2 whose boundary is defined
 !  by an ordered set of vertices
@@ -210,7 +210,6 @@
       enddo
 
 
-      ier = 0
       return
       end subroutine
 
@@ -303,7 +302,7 @@
 !       K(x,y) = 1/|x-y| smooth + p.v. 1/|x-y|^2*smooth
 !  If ipv = 2
 !       K(x,y) = 1/|x-y| smooth + p.v. 1/|x-y|^2*smooth + 
-!         f.p. 1/|x-y|^3*smooth (under construction)
+!         f.p. 1/|x-y|^3*smooth
 !
 !  Here T is a triangle with vertices (0,0), v0, v1.
 !
@@ -565,16 +564,15 @@
 ! 
       real *8 rs(29), delta
       integer *8 i, n
+      data rs / &
+        1.0d-20, 1.0d-19, 1.0d-18, 1.0d-17, 1.0d-16, &
+        1.0d-15, 1.0d-14, 1.0d-13, 1.0d-12, 1.0d-11, &
+        1.0d-10, 1.0d-09, 1.0d-08, 1.0d-07, 1.0d-06, &
+        1.0d-05, 1.0d-04, 1.0d-03, 1.0d-02, 1.0d-01, &
+        2.0d-01, 3.0d-01, 4.0d-01, 5.0d-01, 6.0d-01, &
+        7.0d-01, 8.0d-01, 9.0d-01, 1.0d+00/
 
       delta = a/b
-
-      do i=1,20
-        rs(i) = 10**(-20+i-1)
-      enddo
-
-      do i=21,29
-        rs(i) = (i-19)*0.1d0
-      enddo
 
       n = 0
       do i = 1,28
@@ -657,14 +655,15 @@
 !        theta region number
 !
       implicit none
-      integer *8, intent(in) :: irad,ipv,ier
+      integer *8, intent(in) :: irad,ipv
       real *8, intent(in) :: r,t
-      integer *8, intent(out) :: n,ir,it
+      integer *8, intent(out) :: n,ir,it,ier
 
       real *8 rs(2,25),ts(2,25),eps
       integer *8 nn(25,25),nrs,nts
       integer *8 i
 
+      ier = 0
       eps = 1.0d-14
 
       if(irad.lt.1.or.irad.gt.9) then
@@ -677,12 +676,18 @@
         if (rs(1,ir) .le. r .AND. r .le. rs(2,ir)+eps) goto 1100
       enddo
       call prinf('r in invalid range in radfetch0*',i,0)
+      ier = 32
+      n = 0
+      return
  1100 continue
 
       do it=1,nts
         if (ts(1,it) .le. t .AND. t .le. ts(2,it)+eps) goto 1200
       enddo
       call prinf('t in invalid range in radfetch0*',i,0)
+      ier = 64
+      n = 0
+      return
  1200 continue
 
       n = nn(it,ir)
