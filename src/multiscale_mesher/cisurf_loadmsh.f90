@@ -1303,6 +1303,7 @@ subroutine get_filetype(filename, ifiletype, ier)
 !
 !
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   integer *8 i1,i2, io
   character (len=*) filename
   character (len=100) fstr
