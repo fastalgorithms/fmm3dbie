@@ -17,6 +17,10 @@
       procedure (), pointer :: fker
 
       real *8 c0(3), abc(3), verts(2,4), xyz_out(12), xyz_in(3,1000)
+      real *8 radii(3), scales(3), rf(3), rtorque(3)
+      real *8, allocatable :: coefs(:,:,:)
+      integer *8 nosc, iort, nfp
+      integer *8 nuv(2)
       integer *8 nabc(3)
       
       real *8, allocatable :: cms(:,:), rads(:), rad_near(:)
@@ -28,6 +32,7 @@
       complex *16 zpars
       real *8 uv(2)
       character *1 transa, transb
+      character *100 igeom
       external l3d_slp, st3d_slp_vec, st3d_comb_vec
       external el3d_elastlet_string_mindlin_normalstress_vec
       external el3d_elastlet_mindlin_normalstress_vec
@@ -46,80 +51,176 @@
       npatches = 0
       npts = 0
 
-      abc(1) = 2.1d0
-      abc(2) = 1.0d0
-      abc(3) = 4.0d0
+      igeom = 'wtorus'
+      nin = 100
 
-      abc(1) = 1.0d0
-      abc(2) = 1.0d0
-      abc(3) = 1.0d0
-
-      abc(1:3) = abc(1:3)
-
-      nabc(1) = 5
-      nabc(2) = 3
-      nabc(3) = 10
-
-      na = 4
-      huse = 0.5d0
-
-      nabc(1) = na 
-      nabc(2) = na
-      nabc(3) = na
-      
-      c0(1) = 0
-      c0(2) = 0
-      c0(3) = 0
-
+!
+!  set exterior target
+!
       xyz_out(1) = 3.1d0
       xyz_out(2) = 3.19d0
-      xyz_out(3) = -3.19d0
+      xyz_out(3) = -5.19d0
 
       xyz_out(4:9) = 0
       xyz_out(10) = 1.0d0/sqrt(3.0d0)
       xyz_out(11) = 1.0d0/sqrt(3.0d0)
       xyz_out(12) = -1.0d0/sqrt(3.0d0)
+      huse = 0.3d0
+      norder = 9
+      iptype0 = 1
+      rfac_sc = 1.0d0
 
+      if (trim(igeom).eq.'wtorus') then
 
-      nin = 100
-      do i=1,nin
-        rr = hkrand(0)*0.25d0
-        thet = hkrand(0)*pi
-        phi = hkrand(0)*2*pi
-        xyz_in(1,i) = rr*sin(thet)*cos(phi) 
-        xyz_in(2,i) = rr*sin(thet)*sin(phi) 
-        xyz_in(3,i) = rr*cos(thet)
-      enddo
+!        rfac_sc = 1.5d0
+        rfac_sc = 1.0d0
+
+        radii(1) = 4.0d0
+        radii(2) = 1.5d0
+        radii(3) = 0.25d0
+        
+        nuv(1) = ceiling(4*rfac_sc)
+        nuv(2) = ceiling(16*rfac_sc)
+        nuv(1) = 6
+        nuv(2) = 24 
+
+        print *, "nuv=",nuv(1), nuv(2)
+
+        scales(1) = 1.0d0
+        scales(2) = 1.0d0
+        scales(3) = 1.0d0
+
+        nosc = 1
+
+        m = nosc + 1
+        nfp = 1
+        iort = -1
+        allocate(coefs(2*m+1,2*m+1,3))
+        coefs(1,1,1) = radii(1)
+        coefs(2,1,1) = radii(2)
+        coefs(1,nosc+1,1) = radii(3)/2
+        coefs(m+2,1,3) = radii(2)
+
+        call get_xyz_tensor_fourier_npat_mem(coefs, m, nfp, &
+          scales, iort, nuv, norder, iptype0, npatches, npts)
+        
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+        
+        call get_xyz_tensor_fourier_npat(coefs, m, nfp, scales, iort, &
+          nuv, norder, iptype0, npatches, npts, norders, ixyzs, iptype, &
+          srccoefs, srcvals)
+
+        do i=1,nin
+          vv = hkrand(0)*2*pi
+          rc = radii(1) + radii(3)*cos(nosc*vv)
+          xc = rc*cos(vv)
+          yc = rc*sin(vv)
+
+          rr = hkrand(0)*0.25d0*radii(2)
+          uu = hkrand(0)*2*pi
+          xyz_in(1,i) = xc + rr*cos(uu)*cos(vv) 
+          xyz_in(2,i) = yc + rr*cos(uu)*sin(vv)
+          xyz_in(3,i) = rr*sin(uu)
+        enddo
+        call surf_vtk_plot(npatches, norders, ixyzs, iptype, npts, &
+          srccoefs, srcvals, 'wtorus.vtk', 'a')
+
+      elseif (trim(igeom).eq.'ellipsoid') then
+        abc(1) = 2.1d0
+        abc(2) = 1.0d0
+        abc(3) = 2.0d0
+            
+        nabc(1) = 5
+        nabc(2) = 3
+        nabc(3) = 5
+
+        c0(1) = 0
+        c0(2) = 0
+        c0(3) = 0
+        
+        do i=1,nin
+          rr = hkrand(0)*0.25d0
+          thet = hkrand(0)*pi
+          phi = hkrand(0)*2*pi
+          xyz_in(1,i) = abc(1)*rr*sin(thet)*cos(phi) 
+          xyz_in(2,i) = abc(2)*rr*sin(thet)*sin(phi) 
+          xyz_in(3,i) = abc(3)*rr*cos(thet)
+        enddo
+        call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, &
+          npatches, npts)
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+      
+        call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, &
+          npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+
+      elseif (trim(igeom).eq.'sphere') then
+
+        abc(1) = 1.0d0
+        abc(2) = 1.0d0
+        abc(3) = 1.0d0
+
+        na = 4
+
+        nabc(1) = na 
+        nabc(2) = na
+        nabc(3) = na
+      
+        c0(1) = 0
+        c0(2) = 0
+        c0(3) = 0
+        
+        do i=1,nin
+          rr = hkrand(0)*0.25d0
+          thet = hkrand(0)*pi
+          phi = hkrand(0)*2*pi
+          xyz_in(1,i) = rr*sin(thet)*cos(phi) 
+          xyz_in(2,i) = rr*sin(thet)*sin(phi) 
+          xyz_in(3,i) = rr*cos(thet)
+        enddo
+        call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, &
+          npatches, npts)
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+      
+        call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, &
+          npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+      endif
 
       allocate(bmat(3*nin,6), rhsb(3*nin), solnb(6), resb(3*nin))
 
-      norder = 9
-      iptype0 = 1
 
-      call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, &
-        npatches, npts)
-
-      allocate(srcvals(12,npts), srccoefs(9,npts))
-      allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
-      allocate(wts(npts))
-      
-      call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, &
-        npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
  
       call prin2('srcvals=*',srcvals(1:3,1:10),30)
       call prin2('srcnorms=*',srcvals(10:12,1:10),30)
       
+      allocate(wts(npts))
       
       call get_qwts(npatches, norders, ixyzs, iptype, npts, & 
         srcvals, wts)
+      do i=1,nin
+        rin = 0
+        do j=1,npts
+          call l3d_sprime(xyz_in(1,i), 12, srcvals(1,j), ndd, dpars, &
+            ndz, zpars, ndi, ipars, val)
+          rin = rin + val*wts(j)
+        enddo
+        if (abs(rin+1).ge.1.0d-6) then
+           print *, "target i=",i, "is outside"
+           stop
+        endif
+      enddo
 
       ndim = 3
       allocate(rhs(ndim,npts), soln(ndim,npts))
       allocate(rtmp(ndim,ndim))
 
-      strengths(1) = 1.1d0
-      strengths(2) = 2.1d0
-      strengths(3) = 0.3d0
+      strengths(1) = 1.1d3
+      strengths(2) = 2.1d3
+      strengths(3) = 0.3d3
 
       hout = huse 
       dpars(3) = hout
@@ -128,7 +229,7 @@
       ndd = 3
       ndz = 0
       ndi = 0
-      
+      rf(1:3) = 0 
       do i=1,npts
         call el3d_elastlet_string_mindlin_normalstress_vec(nd, xyz_out, ndim3, &
           srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
@@ -138,8 +239,10 @@
                    rtmp(2,3)*strengths(3)
         rhs(3,i) = rtmp(3,1)*strengths(1) + rtmp(3,2)*strengths(2) + &
                    rtmp(3,3)*strengths(3)
+        rf(1:3) = rf(1:3) + rhs(1:3,i)*wts(i)
         soln(1:ndim,i) = 0
       enddo
+      call prin2('rf=*', rf, 3)
 !
 !  find near
 !
@@ -159,9 +262,11 @@
       dpars_quad(1) = dlam
       dpars_quad(2) = dmu
       do i=1,npatches
-        dhs(i) = rads(i)*2 
+        dhs(i) = rads(i)*rfac_sc*1.5d0
+        dhs(i) = 0.25d0 
         dpars_quad(2+i) = dhs(i)
       enddo
+      call prin2('dhs=*',dhs,24)
       
 !
 !    find near quadrature correction interactions
@@ -195,7 +300,7 @@
         iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear)
       
       eps_gmres = eps
-      numit = 100
+      numit = 500
       allocate(errs(numit+1))
       did = 1.0d0
       call dgmres_strings(npts, srcvals, wts, ipatch_id, uvs_targ, &
