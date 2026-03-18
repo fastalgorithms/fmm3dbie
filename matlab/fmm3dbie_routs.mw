@@ -814,6 +814,7 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
     iquad = Q.iquad;
     wnear = Q.wnear;
 
+
     p = zeros(ntarg,1);
 
     ndd = 2;
@@ -828,9 +829,10 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
     idensflag = 0;
     ipotflag = 0;
     ndim_p = 1;
-
+%    wnear = reshape(wnear, [nquad,nker]);   % for nker=1 -> 1-by-nquad
+    
 % Call the layer potential evaluator
-    # FORTRAN lap_comb_dir_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker, double[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, double[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout double[ntarg] p);   
+#FORTRAN lap_comb_dir_eval_addsub(int64_t[1] npatches,int64_t[npatches] norders, int64_t[npatp1] ixyzs,int64_t[npatches] iptype, int64_t[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int64_t[1] ndd, double[ndd] dpars, int64_t[1] ndz, dcomplex[ndz] zpars, int64_t[1] ndi, int64_t[ndi] ipars, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, int64_t[1] nquad,int64_t[1] nker, double[nquad] wnear,  int64_t[npatches] novers, int64_t[1] nptso, int64_t[npatp1] ixyzso,double[n12,nptso] srcover, double[nptso] wover, int64_t[1] lwork, double[lwork] work, int64_t[1] idensflag, int64_t[1] ndim, double[npts] sigma, int64_t[1] ipotflag, int64_t[1] ndim_p, inout double[ntarg] p);
 end    
 %
 %
@@ -5434,11 +5436,222 @@ function [rsc] = getnear(S, targinfo, rfac)
     % get location in wnear_ij array where quadrature for col_ind(i) starts for a single kernel. 
     iquad = zeros(nnz+1,1);
     npp1 = npatches+1;
+    
     # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
     
     rsc = [];
     rsc.row_ptr = row_ptr;
     rsc.col_ind = col_ind;
     rsc.iquad = iquad;
+
+end
+
+
+%
+%
+%
+@ src/surf_mesh_gen_adap.m
+function [S,nlevels,nboxes,ltree,rintlin,nboxesleaf] = surf_mesh_gen_adap(dpars, zpars, ipars, iort, nuv, norder, iptype, tol, lptype, eta)
+% surf_tree_mem, get toroidal double fourier surface given by
+%
+% hat(x) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} x_{ij} b_{i} (u) b_{j} (nfp*v)
+% hat(y) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} y_{ij} b_{i} (u) b_{j} (nfp*v)
+% hat(z) = \sum_{i=1}^{2m+1} \sum_{j=0}^{2m+1} z_{ij} b_{i} (u) b_{j} (nfp*v)
+%
+% x(u,v) = (hat(x) \cos(v) - hat(y) sin(v))*scales(1)
+% y(u,v) = (hat(x) \sin(v) + hat(y) cos(v))*scales(2)
+% z(u,v) = hat(z)*scales(3)
+%
+% u,v \in [0, 2\pi)^2, and
+%
+% b_{i}(u) = \{ 1, cos(u), \ldots cos(m u), sin(u), \ldots sin(m u) \}
+%
+%
+%  Syntax
+%   S = geometries.xyz_tensor_fourier(coefs)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort, nuv)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort, nuv, norder)
+%   S = geometries.xyz_tensor_fourier(coefs, nfp, scales, iort, nuv, norder,
+%   iptype, tol, eta)
+%   If arguments scales, iort, nuv, norder, and/or iptype are empty, defaults are used 
+%
+%  Input arguments:
+%    * dpars(*): reals
+%         parameters for evaluation of global chart
+%    * zpars(*): complex
+%         parameters for evaluation of global chart
+%    * ipars(*): integers
+%         parameters for evaluation of global chart
+%    * nfp: integer
+%         number of field periods
+%    * scales(3): (optional, [1,1,1])
+%        scaling parameters for the coordinates of the surface
+%    * iort: integer (optional, 1)
+%        orientation flag
+%        if iort = 1, then parameter space is [0, 2\pi)^2
+%        if iort = -1, then parameter space is [2\pi, 0) \times [0, 2\pi)
+%    * nuv(2): integer (optional, [5,5])
+%        number of quad patches in u, and v direction. if iptype is 1,
+%        then each quad patch is further divided into two triangular
+%        patches
+%    * norder: (optional, 4)
+%        order of discretization
+%    * iptype: (optional, 1)
+%        type of patch to be used in the discretization
+%        * iptype = 1, triangular patch discretized using
+%                      Rokhlin-Vioreanu nodes
+%        * iptype = 11, quadrangular patch discretized using tensor
+%                       product Gauss-Legendre nodes
+%        * iptype = 12, quadrangular patch discretized using tensor
+%                       product Chebyshev
+%    * tol: (optional, 1)
+%        desired precision in resolving the surface. Patches are
+%        subdivided until both nuv and tol are satisfied   
+%    * lptype - (optional, 0)
+%           error estimation lp-norm
+%           lptype = 0 - linf
+%           lptype = 1 - l1
+%           lptype = 2 - l2 
+%    * eta: (optional 1)
+%        sets scaling parameter h^eta for error estimation, where
+%        h is the length of the box. 
+%
+ 
+  if nargin < 3 || isempty(iort)
+    iort = 1; 
+  end
+
+  if nargin < 4 || isempty(nuv)
+    nuv = [5;5];
+  end
+
+  if nargin < 5 || isempty(norder)
+    norder = 4;
+  end
+
+  if nargin < 6 || isempty(iptype)
+    iptype = 1;
+  end
+
+  if nargin < 7 || isempty(tol)
+    tol = 1;
+  end
+
+  if nargin < 8 || isempty(lptype)
+    lptype = 0;
+  end
+
+  if nargin < 9 || isempty(eta)
+    eta = 0;
+  end
+
+
+%  standard settings
+  npatches = 0;
+  npts = 0;
+
+  zk = complex(0.0);
+  boxlen = 1.0;
+
+  ifun_dummy = 1;
+  
+  nd = ipars(2);
+  nosc = ipars(3);
+
+% output
+  nlevels = 0;
+  nboxes = 0;
+  ltree = 0;
+  rintlin = zeros(201,1);
+  nboxesleaf = 0;
+
+# FORTRAN surf_tree_mem(int64_t[2] nuv, double[1] tol, dcomplex[1] zk, double[1] boxlen, int64_t[1] norder, int64_t[1] lptype, double[1] eta, int64_t[1] ifun_dummy, int64_t[1] nd, double[1000] dpars, dcomplex[1] zpars, int64_t[100] ipars, inout int64_t[1] nlevels, inout int64_t[1] nboxes, inout int64_t[1] ltree, inout double[201] rintlin, inout int64_t[1] nboxesleaf);
+
+
+nfvals = nd*norder^2*nboxes;
+nlevelsp1 = nlevels + 1;
+
+itree = zeros(ltree,1);
+iptr = zeros(8,1);
+fvals = zeros(nfvals,1);
+centers = zeros(2,nboxes);
+boxsizein = zeros(2,nlevelsp1);
+
+% triangles: split leaf box into 2 triangles
+if iptype == 1
+   npols = (norder + 1) * (norder + 2) / 2;
+   npatches = nboxesleaf * 2;
+   npts = npols * npatches;
+end
+
+% quads
+if (iptype == 11)||(iptype == 12)
+   npols = norder^2;
+   npatches = nboxesleaf;
+   npts = npols * npatches;	
+end
+
+
+
+# FORTRAN surf_tree_build(int64_t[2] nuv, double[1] tol, dcomplex[1] zk, double[1] boxlen, int64_t[1] norder, int64_t[1] lptype, double[1] eta, int64_t[1] ifun_dummy, int64_t[1] nd, double[1000] dpars, dcomplex[1] zpars, int64_t[100] ipars, inout int64_t[1] nlevels, inout int64_t[1] nboxes, inout int64_t[1] ltree, inout double[201] rintlin, inout int64_t[ltree] itree, inout int64_t[8] iptr, inout double[nfvals] fvals, inout double[2,nboxes] centers, inout double[2,nlevelsp1] boxsizein);
+
+npatp1 = npatches + 1;
+
+srcvals = zeros(12,npts);
+srccoefs = zeros(9,npts);
+norders = zeros(npatches,1);
+ixyzs = zeros(npatp1,1);
+iptype_all = zeros(npatches,1);
+
+# FORTRAN surf_mesh_build(int64_t[1] norder, int64_t[1] iptype, int64_t[1] nd, double[1000] dpars, dcomplex[1] zpars, int64_t[100] ipars, int64_t[1] nlevels, int64_t[1] nboxes, int64_t[1] ltree, int64_t[ltree] itree, int64_t[8] iptr, double[2,nboxes] centers,  double[2,nlevelsp1] boxsizein, int64_t[1] npatches, int64_t[1] npts, inout double[12,npts] srcvals, inout double[9,npts] srccoefs, inout int64_t[npatches] norders, inout int64_t[npatp1] ixyzs, inout int64_t[npatches] iptype_all);
+
+S = surfer(npatches, norders, srcvals, iptype_all);
+     
+end
+
+
+%
+%
+%
+@ src/find_nearest_surf_point.m
+function [nearest_pnts, nearest_uvs,dists,flags] = find_nearest_surf_point(S,targs,idx_init,tol,maxiter)
+
+    [srcvals,srccoefs,norders,ixyzs,~,~] = extract_arrays(S);
+        
+    npts = S.npts;
+
+    
+    ndtarg = size(targs,1); 
+    ntarg = size(targs,2);
+
+    n2 = 2;
+    n9 = size(srccoefs,1);
+    n12 = size(srcvals,1);
+
+%   assume the same order for all patches
+    norder = S.norders(1);
+%   assume triangular patch with VR-nodes    
+    npols = (norder+1)*(norder+2)/2;
+
+% redo with ixyzs
+%    idx_init_patch_pnt = mod(idx_init + (npols-1),npols) + 1
+    %idx_init_patch_idx = idx_init - idx_init_patch_pnt + 1;
+    idx_init_patch_pnt = mod(idx_init-1,npols) + 1;
+    idx_init_patch_idx = ixyzs(S.patch_id(idx_init));
+
+% itvec = ixyzs, lpatchidxvec = index on that patch
+
+% output
+  nearest_pnts = zeros(ndtarg,ntarg);
+  nearest_uvs = zeros(2,ntarg);
+  dists = zeros(ntarg,1);
+  flags = zeros(ntarg,1);
+
+  # FORTRAN findnearsrfcpnt(int64_t[1] ntarg, double[ndtarg,ntarg] targs, int64_t[1] npts, int64_t[1] norder, int64_t[1] npols, int64_t[1] maxiter, double[n12,npts] srcvals, double[n9,npts] srccoefs, double[1] tol, int64_t[ntarg] idx_init_patch_pnt, int64_t[ntarg] idx_init_patch_idx, inout double[ndtarg,ntarg] nearest_pnts, inout double[n2,ntarg] nearest_uvs, inout double[ntarg] dists, inout int64_t[ntarg] flags);
+
+return
 
 end

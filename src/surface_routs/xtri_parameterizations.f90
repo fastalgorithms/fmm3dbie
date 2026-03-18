@@ -1950,3 +1950,90 @@ end subroutine xtri_refine4_flat
 
 
 
+      subroutine xtri_geo_fun(itri, u, v, xyz, dxyzduv, triainfo, &
+      dpars, dzpars, ipars)
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      complex *16 :: zpars
+      integer *8 :: ipars(100)
+      real *8 :: xyz(3), dxyzduv(3,2), triainfo(3,3,*), scales(3)
+      real *8 :: dpars(1000), dxyzdst(3,2), nosc, st(2), f(9)
+
+!     
+!     project the triangle itri in triainfo onto a torus
+!     
+!     Input:
+!     itri - triangle number to map
+!     u,v - local uv coordinates on triangle itri
+!     triainfo - flat skeleton triangle info
+!     dpars - double precision
+!     real parameters for function evaluation
+!     zpars - double complex
+!     complex parameters for function evaluation
+!     ipars - integer *8
+!     integer *8 parameters for function evaluation. ipars(1) is
+!     reserved for function selection in fungeo
+!     
+!     Output:
+!     xyz - point on the sphere
+!     dxyzduv - first and second derivative information
+!     
+!     
+
+      x0=triainfo(1,1,itri)
+      y0=triainfo(2,1,itri)
+      z0=triainfo(3,1,itri)
+
+      x1=triainfo(1,2,itri)
+      y1=triainfo(2,2,itri)
+      z1=triainfo(3,2,itri)
+
+      x2=triainfo(1,3,itri)
+      y2=triainfo(2,3,itri)
+      z2=triainfo(3,3,itri)
+
+
+      pi = 4*datan(1.0d0)
+      s = x0+u*(x1-x0)+v*(x2-x0)
+      t = y0+u*(y1-y0)+v*(y2-y0)
+!     fungeo expects st in [-1/2,1/2]^2.
+      st(1) = s/2.0d0/pi - 0.5d0
+      st(2) = t/2.0d0/pi - 0.5d0
+
+      
+      st(1) = s/2.0d0/pi - 0.5d0
+      st(2) = t/2.0d0/pi - 0.5d0
+      
+      nd = 9
+
+      call fungeo(nd,st,dpars,zpars,ipars,f)
+
+      xyz(1) = f(1)
+      xyz(2) = f(2)
+      xyz(3) = f(3)
+
+      dxyzdst(1,1) = f(4)
+      dxyzdst(2,1) = f(5)
+      dxyzdst(3,1) = f(6)
+
+      dxyzdst(1,2) = f(7)
+      dxyzdst(2,2) = f(8)
+      dxyzdst(3,2) = f(9)
+      
+      
+      dsdu = (x1-x0)
+      dsdv = (x2-x0)
+      dtdu = (y1-y0)
+      dtdv = (y2-y0)
+
+      dxyzduv(1,1) = dxyzdst(1,1)*dsdu + dxyzdst(1,2)*dtdu
+      dxyzduv(2,1) = dxyzdst(2,1)*dsdu + dxyzdst(2,2)*dtdu
+      dxyzduv(3,1) = dxyzdst(3,1)*dsdu + dxyzdst(3,2)*dtdu
+
+      dxyzduv(1,2) = dxyzdst(1,1)*dsdv + dxyzdst(1,2)*dtdv
+      dxyzduv(2,2) = dxyzdst(2,1)*dsdv + dxyzdst(2,2)*dtdv
+      dxyzduv(3,2) = dxyzdst(3,1)*dsdv + dxyzdst(3,2)*dtdv
+
+      return
+      
+      end subroutine xtri_geo_fun

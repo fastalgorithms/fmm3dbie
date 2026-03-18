@@ -167,4 +167,290 @@
 
 
 
+      subroutine torus_curve_tube_eval(s,t,dpars,xyz,dxyzdst)
+!
+!  This subroutine parametrizes a tubular surface around a torus curve.
+!
+!  The center curve is
+!
+!      gamma(s) = ((rmaj + rmin*cos(polfq*s))*cos(torfq*s),
+!                  (rmaj + rmin*cos(polfq*s))*sin(torfq*s),
+!                   rmin*sin(polfq*s))
+!
+!  which lies on a torus with major radius rmaj and minor radius rmin.
+!  The parameters polfq and torfq control how the curve winds in the
+!  poloidal and toroidal directions, respectively.
+!
+!  Note: polfq/torfq must be rational for a closed center curve.
+!
+!  The surface is obtained by attaching a circular cross-section of
+!  radius rcross along the curve:
+!
+!      x(s,t) = (rho(s) + rcross*cos(polfq*s)*cos(t))*cos(torfq*s)
+!               + rcross*a1(s)*sin(t)
+!
+!      y(s,t) = (rho(s) + rcross*cos(polfq*s)*cos(t))*sin(torfq*s)
+!               + rcross*b1(s)*sin(t)
+!
+!      z(s,t) =  rmin*sin(polfq*s) + rcross*sin(polfq*s)*cos(t)
+!               - rcross*g1(s)*sin(t)
+!
+!  where
+!
+!      rho(s) = rmaj + rmin*cos(polfq*s)
+!
+!      a1(s) = ( torfq*rho(s)*sin(polfq*s)*cos(torfq*s)
+!                - rmin*polfq*sin(torfq*s) ) / l(s)
+!
+!      b1(s) = ( rmin*polfq*cos(torfq*s)
+!                + torfq*rho(s)*sin(polfq*s)*sin(torfq*s) ) / l(s)
+!
+!      g1(s) = ( torfq*rho(s)*cos(polfq*s) ) / l(s)
+!
+!      l(s)  = sqrt(rmin^2*polfq^2 + torfq^2*rho(s)^2)
+!
+!  The parameter s runs along the torus curve and t is the angular
+!  coordinate around the tubular cross-section.
+!
+!  input:
+!    s,t       - surface parameters
+!    dpars(*)  - shape parameters, stored as
+!                dpars(1) = rmaj
+!                dpars(2) = rmin
+!                dpars(3) = rcross      
+!                dpars(4) = polfq
+!                dpars(5) = torfq
+!
+!  output:
+!    xyz(1:3)      - position vector
+!    dxyzdst(:,1)  - derivative with respect to s
+!    dxyzdst(:,2)  - derivative with respect to t
+!
 
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+
+      real *8 :: s,t
+      real *8 :: xyz(3), dxyzdst(3,2), dpars(*)
+
+      real *8 :: rmaj,rmin,polfq,torfq,rcross
+      real *8 :: rho,rhos,l,ls
+      real *8 :: cc,sc,cd,sd,ct,st
+      real *8 :: na,nb,ng
+      real *8 :: nas,nbs,ngs
+      real *8 :: aa,bb,gg
+      real *8 :: aas,bbs,ggs
+
+      rmaj   = dpars(1)
+      rmin   = dpars(2)
+      rcross = dpars(3)
+      polfq  = dpars(4)
+      torfq  = dpars(5)
+
+
+      cc = cos(polfq*s)
+      sc = sin(polfq*s)
+      cd = cos(torfq*s)
+      sd = sin(torfq*s)
+      ct = cos(t)
+      st = sin(t)
+
+      rho  = rmaj + rmin*cc
+      rhos = -rmin*polfq*sc
+
+      l  = sqrt(rmin*rmin*polfq*polfq + torfq*torfq*rho*rho)
+      ls = torfq*torfq*rho*rhos/l
+
+      na = torfq*rho*sc*cd - rmin*polfq*sd
+      nb = rmin*polfq*cd + torfq*rho*sc*sd
+      ng = torfq*rho*cc
+
+      aa = na/l
+      bb = nb/l
+      gg = ng/l
+
+      nas = torfq*(rhos*sc + rho*polfq*cc)*cd &
+           - torfq*torfq*rho*sc*sd &
+           - rmin*polfq*torfq*cd
+
+      nbs = -rmin*polfq*torfq*sd &
+           + torfq*(rhos*sc + rho*polfq*cc)*sd &
+           + torfq*torfq*rho*sc*cd
+
+      ngs = torfq*(rhos*cc - rho*polfq*sc)
+
+      aas = (nas*l - na*ls)/(l*l)
+      bbs = (nbs*l - nb*ls)/(l*l)
+      ggs = (ngs*l - ng*ls)/(l*l)
+
+      xyz(1) = (rho + rcross*cc*ct)*cd + rcross*aa*st
+      xyz(2) = (rho + rcross*cc*ct)*sd + rcross*bb*st
+      xyz(3) = rmin*sc + rcross*sc*ct - rcross*gg*st
+
+      dxyzdst(1,1) = (rhos - rcross*polfq*sc*ct)*cd &
+                   - torfq*(rho + rcross*cc*ct)*sd &
+                   + rcross*aas*st
+
+      dxyzdst(2,1) = (rhos - rcross*polfq*sc*ct)*sd &
+                   + torfq*(rho + rcross*cc*ct)*cd &
+                   + rcross*bbs*st
+
+      dxyzdst(3,1) = rmin*polfq*cc &
+                   + rcross*polfq*cc*ct &
+                   - rcross*ggs*st
+
+      dxyzdst(1,2) = -rcross*cc*cd*st + rcross*aa*ct
+      dxyzdst(2,2) = -rcross*cc*sd*st + rcross*bb*ct
+      dxyzdst(3,2) = -rcross*sc*st - rcross*gg*ct
+
+      return
+      
+      end
+
+
+      subroutine fourier_curve_tube_eval(s,t,dpars,xyz,dxyzdst)
+!
+!  This subroutine parametrizes the surface
+!
+!      x(s,t) = r*sin(3*s) / (alpha + cos(t))
+!
+!      y(s,t) = r*(sin(s) + 2*sin(2*s))
+!     &         / (alpha + cos(t + phi))
+!
+!      z(s,t) = (r/8)*(cos(s) - 2*cos(2*s))
+!     &         * (c0 + cos(t))
+!     &         * (alpha + cos(t + phi))
+!
+!  The original example corresponds to
+!
+!      r     = 5
+!      alpha = 1.9
+!      phi   = 2*pi/3
+!      c0    = 2
+!
+!  input:
+!    s,t       - surface parameters
+!    dpars(*)  - shape parameters, stored as
+!                dpars(1) = r
+!                dpars(2) = alpha
+!                dpars(3) = phi
+!                dpars(4) = c0
+!
+!  output:
+!    xyz(1:3)      - position vector
+!    dxyzdst(:,1)  - derivative with respect to s
+!    dxyzdst(:,2)  - derivative with respect to t
+!
+
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+
+      real *8 :: s,t
+      real *8 :: xyz(3), dxyzdst(3,2), dpars(*)
+
+      real *8 :: r,alpha,phi,c0
+      real *8 :: d1,d2,tp
+      real *8 :: s1,s2,s3,c1,c2,c3
+      real *8 :: ct,st,ctp,stp
+      real *8 :: q,qs
+
+      r     = dpars(1)
+      alpha = dpars(2)
+      phi   = dpars(3)
+      c0    = dpars(4)
+
+      s1  = sin(s)
+      s2  = sin(2.0d0*s)
+      s3  = sin(3.0d0*s)
+      c1  = cos(s)
+      c2  = cos(2.0d0*s)
+      c3  = cos(3.0d0*s)
+
+      ct  = cos(t)
+      st  = sin(t)
+
+      tp  = t + phi
+      ctp = cos(tp)
+      stp = sin(tp)
+
+      d1 = alpha + ct
+      d2 = alpha + ctp
+
+      q  = c1 - 2.0d0*c2
+      qs = -s1 + 4.0d0*s2
+
+      xyz(1) = r*s3/d1
+      xyz(2) = r*(s1 + 2.0d0*s2)/d2
+      xyz(3) = (r/8.0d0)*q*(c0 + ct)*d2
+
+      dxyzdst(1,1) = 3.0d0*r*c3/d1
+      dxyzdst(2,1) = r*(c1 + 4.0d0*c2)/d2
+      dxyzdst(3,1) = (r/8.0d0)*qs*(c0 + ct)*d2
+
+      dxyzdst(1,2) = r*s3*st/(d1*d1)
+      dxyzdst(2,2) = r*(s1 + 2.0d0*s2)*stp/(d2*d2)
+      dxyzdst(3,2) = -(r/8.0d0)*q*(st*d2 + (c0 + ct)*stp)
+
+      return
+      end
+
+      subroutine cruller_eval(s,t,radii,scales,xyz,dxyzdst)
+!
+!  This subroutine returns the chart info for a cruller-like torus
+!  whose parametrization is given by
+!
+!    h(s,t) = rmean + ramp*cos(freqs*s + freqt*t)
+!
+!    x(s,t) = sx*(rmaj + h(s,t)*cos(t))*cos(s)
+!    y(s,t) = sy*(rmaj + h(s,t)*cos(t))*sin(s)
+!    z(s,t) = sz*h(s,t)*sin(t)
+!
+!  radii  = (rmaj, rmean, ramp, freqs, freqt)
+!  scales = (sx, sy, sz)
+!
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+
+      real *8 s, t, radii(5), scales(3)
+      real *8 xyz(3), dxyzdst(3,2)
+
+      real *8 rmaj, rmean, ramp, freqs, freqt
+      real *8 h, dhds, dhdt
+      real *8 ct, st, cs, ss
+      real *8 rr, drrds, drrdt
+
+      rmaj  = radii(1)
+      rmean = radii(2)
+      ramp  = radii(3)
+      freqs = radii(4)
+      freqt = radii(5)
+
+      cs = cos(s)
+      ss = sin(s)
+      ct = cos(t)
+      st = sin(t)
+
+      h = rmean + ramp*cos(freqs*s + freqt*t)
+
+      rr = rmaj + h*ct
+
+      xyz(1) = scales(1)*rr*cs
+      xyz(2) = scales(2)*rr*ss
+      xyz(3) = scales(3)*h*st
+
+      dhds = -ramp*freqs*sin(freqs*s + freqt*t)
+      dhdt = -ramp*freqt*sin(freqs*s + freqt*t)
+
+      drrds = dhds*ct
+      drrdt = dhdt*ct - h*st
+
+      dxyzdst(1,1) = scales(1)*(drrds*cs - rr*ss)
+      dxyzdst(2,1) = scales(2)*(drrds*ss + rr*cs)
+      dxyzdst(3,1) = scales(3)*dhds*st
+
+      dxyzdst(1,2) = scales(1)*drrdt*cs
+      dxyzdst(2,2) = scales(2)*drrdt*ss
+      dxyzdst(3,2) = scales(3)*(dhdt*st + h*ct)
+
+      return
+      end
