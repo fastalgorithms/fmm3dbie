@@ -687,3 +687,80 @@
 !
 !
 !
+      subroutine el3d_elastlet_mindlin_normalstress_vec(nd, src, ndt, & 
+        tar, ndd, dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the normal stress of the greens function tensor 
+!  corresponding to the mindlin solution in the normal source direction.
+!
+!  Let G^{M,3} denote the Green's function with the Mindlin correction
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 9.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 12
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 3
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!        dpars(3) - h (see definition above)
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3)
+!        the normal stress of the string of Mindlin Greens function 
+!
+!
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      real *8, intent(out) :: vals(3,3)
+
+      real *8 dlam, dmu
+      real *8 over4pi
+      real *8 v1(3,3,3), v2(3,3,3), v3(3,3,3), v4(3,3,3)
+      real *8 srctmp(12)
+      data over4pi/0.07957747154594767d0/
+
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+
+      h = dpars(3)
+
+      srctmp(1:12) = src(1:12)
+
+      call el3d_elastlet_mindlin_stress_vec(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, v1)
+
+      vals(1:3,1:3) = 0
+      do jj =1,3
+        do ii = 1,3
+          do kk = 1,3
+            vals(ii,jj) = vals(ii,jj) + v1(kk,ii,jj)*tar(9+kk)
+          enddo
+        enddo
+      enddo
+
+      
+      return
+      end
+!
+!
+!
+!
