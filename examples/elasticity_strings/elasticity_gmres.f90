@@ -17,7 +17,7 @@
       procedure (), pointer :: fker
 
       real *8 c0(3), abc(3), verts(2,4), xyz_out(12), xyz_in(3,1000)
-      real *8 radii(3), scales(3), rf(3), rtorque(3)
+      real *8 radii(3), scales(3), rf(3), rtorque(3), dtmp(3)
       real *8, allocatable :: coefs(:,:,:)
       integer *8 nosc, iort, nfp
       integer *8 nuv(2)
@@ -81,8 +81,8 @@
         
         nuv(1) = ceiling(4*rfac_sc)
         nuv(2) = ceiling(16*rfac_sc)
-        nuv(1) = 6
-        nuv(2) = 24 
+        nuv(1) = 4
+        nuv(2) = 16 
 
         print *, "nuv=",nuv(1), nuv(2)
 
@@ -229,7 +229,9 @@
       ndd = 3
       ndz = 0
       ndi = 0
-      rf(1:3) = 0 
+      rf(1:3) = 0
+      rtorque(1:3) = 0
+
       do i=1,npts
         call el3d_elastlet_string_mindlin_normalstress_vec(nd, xyz_out, ndim3, &
           srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
@@ -239,10 +241,37 @@
                    rtmp(2,3)*strengths(3)
         rhs(3,i) = rtmp(3,1)*strengths(1) + rtmp(3,2)*strengths(2) + &
                    rtmp(3,3)*strengths(3)
+        call cross_prod3d(srcvals(1,i), rhs(1,i), dtmp)
         rf(1:3) = rf(1:3) + rhs(1:3,i)*wts(i)
+        rtorque(1:3) = rtorque(1:3) + dtmp(1:3)*wts(i)
+        write(77,*) rhs(1,i),rhs(2,i),rhs(3,i)
         soln(1:ndim,i) = 0
       enddo
       call prin2('rf=*', rf, 3)
+      call prin2('rtorque=*', rtorque, 3)
+      call write_go3('torus.go3', norders(1), npatches, npts, srcvals)
+
+!
+!  write kernel of 1 column of a matrix
+!
+      ipt = 100
+      do i=1,npts
+        call el3d_elastlet_string_mindlin_normalstress_vec(nd, srcvals(1,ipt), ndim3, &
+          srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+        rf(1) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
+                   rtmp(1,3)*strengths(3)
+        rf(2) = rtmp(2,1)*strengths(1) + rtmp(2,2)*strengths(2) + &
+                   rtmp(2,3)*strengths(3)
+        rf(3) = rtmp(3,1)*strengths(1) + rtmp(3,2)*strengths(2) + &
+                   rtmp(3,3)*strengths(3)
+        if(i.ne.ipt) then      
+          write(78,*) rf(1), rf(2), rf(3)
+        else
+          write(78,*) 0,0,0
+        endif
+      enddo
+      close(77)
+      close(78)
 !
 !  find near
 !
@@ -250,7 +279,7 @@
       call get_centroid_rads(npatches, norders, ixyzs, iptype, npts, &
         srccoefs, cms, rads)
       
-      rfac = 1.25d0
+      rfac = 3.0d0
 !$OMP PARALLEL DO DEFAULT(SHARED) 
       do i=1,npatches
         rad_near(i) = rads(i)*rfac
@@ -546,8 +575,8 @@
         nqorder_f)
       if(nqorder.gt.20) nqorder = 20
       if(nqorder_f.gt.20) nqorder_f = 20
-      rfac = 2.0d0
-      ntrimax = 3000
+      rfac = 3.0d0
+      ntrimax = 8000
       
       ifmetric = 0
       
