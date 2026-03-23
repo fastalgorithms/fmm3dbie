@@ -81,8 +81,8 @@
         
         nuv(1) = ceiling(4*rfac_sc)
         nuv(2) = ceiling(16*rfac_sc)
-        nuv(1) = 4
-        nuv(2) = 16 
+        nuv(1) = 6
+        nuv(2) = 24 
 
         print *, "nuv=",nuv(1), nuv(2)
 
@@ -336,6 +336,9 @@
         dpars_quad, ixyzs, row_ptr, col_ind, iquad, wnear, & 
         did, rhs, numit, eps_gmres, niter, errs, &
         rres, soln)
+      do i=1,npts
+        write(79,*) soln(1,i), soln(2,i), soln(3,i)
+      enddo
 
       do j=1,nin
         dpars(3) = hout
