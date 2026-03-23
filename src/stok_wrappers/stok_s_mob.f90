@@ -65,7 +65,7 @@
 !        representation with user-provided near-information prescribed
 !        in row-sparse compressed format
 !
-!    - lpcomp_stok_s_mob_addsub: apply the principal value part
+!    - stok_s_mob_addsub: apply the principal value part
 !        of the integeral equation on surface. On input, user provides
 !        precomputed near quadrature in row-sparse compressed format,
 !        and oversampling information for handling the far part of the
@@ -373,7 +373,7 @@
 !  
 !
 !
-      subroutine lpcomp_stok_s_mob_addsub(npatches, norders, ixyzs, &
+      subroutine stok_s_mob_addsub(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
         ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
         novers, nptso, ixyzso, srcover, whtsover, lwork, work, ndim, &
@@ -385,12 +385,14 @@
 !  
 !  u = S_{stok}[\sigma]
 !
-!  pot = S_{stok}'[\sigma] + L[\sigma]
+!  pot = S_{stok}'[\sigma] + c L[\sigma]
 !
 !  where L[\sigma] is given by
 !     = 1/|\Gamma_{i}|\int_{\Gamma_{i}} \sigma dS + 
 !       tau_{i}^{-1}(\int_{{\Gamma_{i}}} (y-x_{c,i}) \times \sigma dS) \times (x-x_{c,i})
 !  on \Gamma_{i}
+!   
+!  We refer to L as the generlized ones matrix
 !
 !  The near field is precomputed and stored
 !  in the row sparse compressed format.
@@ -438,10 +440,7 @@
 !    - dpars: real *8(ndd)
 !        real parameters defining the kernel/
 !        integral representation 
-!        * dpars(1) = alpha (single layer strength) 
-!        * dpars(2) = beta (double layer strength)
-!        * dpars(3) = strength of 1s matrix of 
-!            n \int \sigma \cdot n
+!        * dpars(1) = c*(multiple of generalized 1s matrix) 
 !    - ndz: integer *8
 !        number of complex parameters defining the kernel/
 !        integral representation (unused in this routine)
@@ -562,11 +561,14 @@
       real *8, allocatable :: sources(:,:), targvals(:,:)
       real *8, allocatable :: sigmaover(:,:)
       real *8, allocatable :: stoklet(:,:)
+      real *8, allocatable :: strslet(:,:), strsvec(:,:)
+      real *8, allocatable :: rotlet(:,:), rotvec(:,:)
+      real *8, allocatable :: doublet(:,:), doubvec(:,:)
       real *8, allocatable :: pottarg(:,:), gradtarg(:,:,:)
       real *8, allocatable :: pretarg(:)
       integer *8 ns, nt
       real *8 alpha, beta
-      integer *8 ifstoklet, ifstrslet
+      integer *8 ifstoklet, ifstrslet, ifrotlet, ifdoublet
       integer *8 ifppreg, ifppregtarg
       real *8 tmp(10), val
       real *8 over4pi
@@ -598,7 +600,6 @@
       real *8 ttot, done, pi
 
       real *8 potv(3), pv, gradv(3,3)
-      real *8 strslet(3), strsvec(3)
 
       real *8 rint(3), rint_torque(3), xyzc(3), xdiff(3), rtmp(3)
       real *8 centroid(3), rmoi(3,3), rmoi_inv(3,3), area
@@ -606,6 +607,7 @@
       integer *8 ipstart, ipend, istart
       integer *8 nploc, nptsloc
       integer *8, allocatable :: ixyzsloc(:)
+      integer *8 int8_3
 
       parameter (nd=1,ntarg0=1)
       data over4pi/0.07957747154594767d0/
@@ -631,6 +633,9 @@
       ifppregtarg = 3
       allocate(sources(3,ns), targvals(3,ntarg))
       allocate(stoklet(3,ns))
+      allocate(strslet(3,ns), strsvec(3,ns))
+      allocate(rotlet(3,ns), rotvec(3,ns))
+      allocate(doublet(3,ns), doubvec(3,ns))
       allocate(sigmaover(3,ns))
       allocate(pottarg(3,ntarg), pretarg(ntarg))
       allocate(gradtarg(3,3,ntarg))
@@ -654,6 +659,15 @@
         stoklet(1,i) = sigmaover(1,i)*whtsover(i)
         stoklet(2,i) = sigmaover(2,i)*whtsover(i)
         stoklet(3,i) = sigmaover(3,i)*whtsover(i)
+
+        strslet(1:3,i) = 0
+        strsvec(1:3,i) = 0
+        
+        rotlet(1:3,i) = 0
+        rotvec(1:3,i) = 0
+
+        doublet(1:3,i) = 0
+        doubvec(1:3,i) = 0
       enddo
 !$OMP END PARALLEL DO      
       
@@ -668,20 +682,24 @@
 
       ifstoklet = 1
       ifstrslet = 0
+      ifdoublet = 0
+      ifrotlet = 0
 
       iper = 0
       ier = 0
+
 !
 !       call the fmm
 !
       call cpu_time(t1)
 !$      t1 = omp_get_wtime()      
       call stfmm3d(nd, eps, ns, sources, ifstoklet, stoklet, &
-        ifstrslet, strslet, strsvec, ifppreg, tmp, tmp, tmp, ntarg, &
+        ifstrslet, strslet, strsvec, ifrotlet, rotlet, rotvec, &
+        ifdoublet, doublet, doubvec, ifppreg, tmp, tmp, tmp, ntarg, &
         targvals, ifppregtarg, pottarg, pretarg, gradtarg, ier)
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()
-
+      
       timeinfo(1) = t2-t1
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
       do i = 1,ntarg
@@ -792,15 +810,18 @@
         pot(3,i) = pot(3,i) - potv(3)
 
       enddo
+
       
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()     
 
       allocate(ixyzsloc(npatches+1))
 !
-!  Now add in contribution of L[\sigma]
+!  Now add in contribution of c L[\sigma]
 !
+      
       ncomp = ipars(1)
+      int8_3 = 3
       do icomp = 1,ncomp
         rint(1:3) = 0
         rint_torque(1:3) = 0
@@ -808,13 +829,14 @@
         ipend = ipars(icomp+2)-1
 
         istart = ixyzs(ipstart)
-        iend = ixyzs(ipend)
+        iend = ixyzs(ipend+1)-1
         nploc = ipend - ipstart + 1
         nptsloc = iend - istart + 1
 
         do i=1,nploc+1
-          ixyzsloc(i) = ixyzs(i+istart-1) - ixyzs(istart)+1
+          ixyzsloc(i) = ixyzs(i+ipstart-1) - ixyzs(ipstart)+1
         enddo
+
         rmoi(1:3,1:3) = 0
         rmoi_inv(1:3,1:3) = 0
         area = 0
@@ -823,7 +845,7 @@
           iptype(ipstart), nptsloc, srcvals(1,istart), work(istart), &
           area, centroid, rmoi)
         info = 0
-        call dinverse(3, rmoi, info, rmoi_inv) 
+        call dinverse(int8_3, rmoi, info, rmoi_inv) 
         
         do i = istart,iend
           rint(1:3) = rint(1:3) + sigma(1:3,i)*work(i)
@@ -834,16 +856,16 @@
         enddo
 
         do i = istart,iend
-          pot(1:3,i) = pot(1:3,i) + rint(1:3)/area
+          pot(1:3,i) = pot(1:3,i) + dpars(1)*rint(1:3)/area
           xdiff(1:3) = srcvals(1:3,i) - centroid(1:3)
           rtmp(1:3) = 0
           call cross_prod3d(rint_torque, xdiff, rtmp)
-          pot(1,i) = pot(1,i) + rmoi_inv(1,1)*rtmp(1) + &
-            rmoi_inv(1,2)*rtmp(2) + rmoi_inv(1,3)*rtmp(3)
-          pot(2,i) = pot(2,i) + rmoi_inv(2,1)*rtmp(1) + &
-            rmoi_inv(2,2)*rtmp(2) + rmoi_inv(2,3)*rtmp(3)
-          pot(3,i) = pot(3,i) + rmoi_inv(3,1)*rtmp(1) + &
-            rmoi_inv(3,2)*rtmp(2) + rmoi_inv(3,3)*rtmp(3)
+          pot(1,i) = pot(1,i) + dpars(1)*(rmoi_inv(1,1)*rtmp(1) + &
+            rmoi_inv(1,2)*rtmp(2) + rmoi_inv(1,3)*rtmp(3))
+          pot(2,i) = pot(2,i) + dpars(1)*(rmoi_inv(2,1)*rtmp(1) + &
+            rmoi_inv(2,2)*rtmp(2) + rmoi_inv(2,3)*rtmp(3))
+          pot(3,i) = pot(3,i) + dpars(1)*(rmoi_inv(3,1)*rtmp(1) + &
+            rmoi_inv(3,2)*rtmp(2) + rmoi_inv(3,3)*rtmp(3))
         enddo
       enddo
 
@@ -1026,6 +1048,8 @@
       real *8 work(1)
       integer *8, allocatable :: ixyzsloc(:)
       real *8, allocatable :: wts(:)
+      real *8 ra
+      integer *8 int8_3
  
 !
 !
@@ -1165,6 +1189,7 @@
       call getnearquad_stok_s_mob(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, eps, &
         iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+
 !
 !  quadrature for S
 !
@@ -1176,12 +1201,11 @@
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()     
 
-
 !
 !  Compute S[\sigma_{0}]
 !
       allocate(wts(npts))
-      call get_qwts(npatches, novers, ixyzs, iptype, npts, &
+      call get_qwts(npatches, norders, ixyzs, iptype, npts, &
         srcvals, wts)
       allocate(sigma0(3,npts), rhs(3,npts), uvel(3,npts))
       allocate(ixyzsloc(npatches+1))
@@ -1193,43 +1217,46 @@
       ndim_s = 3
       idensflag = 0
       ipotflag = 0
-      ndim_p = 0
+      ndim_p = 3
 
       allocate(ipars(ncomp+2))
       ipars(1) = ncomp
       do icomp = 1,ncomp+1
         ipars(icomp+1) = icomps(icomp)
       enddo
+
+      int8_3 = 3
+
       
       do icomp = 1,ncomp
         ipstart = icomps(icomp)
         ipend = icomps(icomp+1)-1
 
         istart = ixyzs(ipstart)
-        iend = ixyzs(ipend)
+        iend = ixyzs(ipend+1) - 1
         nploc = ipend - ipstart + 1
         nptsloc = iend - istart + 1
 
         do i=1,nploc+1
-          ixyzsloc(i) = ixyzs(i+istart-1) - ixyzs(istart)+1
+          ixyzsloc(i) = ixyzs(i+ipstart-1) - ixyzs(ipstart) + 1
         enddo
         rmoi(1:3,1:3) = 0
         rmoi_inv(1:3,1:3) = 0
         area = 0
         centroid(1:3) = 0
+
         call get_surf_moments(nploc, norders(ipstart), ixyzsloc, &
           iptype(ipstart), nptsloc, srcvals(1,istart), wts(istart), &
           area, centroid, rmoi)
         info = 0
-        call dinverse(3, rmoi, info, rmoi_inv) 
-        rtuse(1:3) = rtuse(1:3)
-        rtuse(1) = rtuse(1) + rmoi_inv(1,1)*torques(1,icomp) + &
+        call dinverse(int8_3, rmoi, info, rmoi_inv)
+        rtuse(1) = rmoi_inv(1,1)*torques(1,icomp) + &
            rmoi_inv(1,2)*torques(2,icomp) + &
            rmoi_inv(1,3)*torques(3,icomp)
-        rtuse(2) = rtuse(2) + rmoi_inv(2,1)*torques(1,icomp) + &
+        rtuse(2) = rmoi_inv(2,1)*torques(1,icomp) + &
            rmoi_inv(2,2)*torques(2,icomp) + &
            rmoi_inv(2,3)*torques(3,icomp)
-        rtuse(3) = rtuse(3) + rmoi_inv(3,1)*torques(1,icomp) + &
+        rtuse(3) = rmoi_inv(3,1)*torques(1,icomp) + &
            rmoi_inv(3,2)*torques(2,icomp) + &
            rmoi_inv(3,3)*torques(3,icomp)
         ftuse(1:3) = forces(1:3,icomp)/area
@@ -1240,18 +1267,20 @@
         enddo
       enddo
 
-      call stok_comb_vel_eval_addsub(npatches, norders, ixyzs, &
-        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, &
-        col_ind, iquad, nquad, nker, wnear_s, novers, npts_over, &
-        ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, &
-        sigma0, ipotflag, ndim_p, rhs)
+      dpars(1) = 0.0d0
+
+      call stok_s_mob_addsub(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        novers, npts_over, ixyzso, srcover, wover, npts, wts, ndim_s, &
+        sigma0, rhs)
+
 !$OMP PARALLEL DO PRIVATE(i)
       do i=1,npts
-        rhs(1:3,i) = -rhs(1:3,i)
+        rhs(1:3,i) = -(0.5d0*sigma0(1:3,i) + rhs(1:3,i))
       enddo
 !$OMP END PARALLEL DO 
-
+      call prin2('rhs=*',rhs,12)
       
       print *, "done generating near quadrature, now starting gmres"
       ndi = ncomp+2
@@ -1261,6 +1290,14 @@
         rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
         npts_over, ixyzso, srcover, wover, eps_gmres, niter, &
         errs, rres, soln)
+      
+      do i=1,npts
+        soln(1:3,i) = soln(1:3,i) + sigma0(1:3,i)
+      enddo
+
+      ndd = 2
+      dpars(1) = 1.0d0
+      dpars(2) = 0.0d0
 
       call stok_comb_vel_eval_addsub(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
@@ -1271,26 +1308,20 @@
 !
 !  Compute translational and rotational velocities on each component
 !
-!  Note the sign flip in rhs as it was -S[\sigma_{0}]
-      do i=1,npts
-        uvel(1:3,i) = uvel(1:3,i) - rhs(1:3,i)
-      enddo
-
       do icomp = 1,ncomp
-        trans_vels(1:3,icomp) = 0
-        rot_vels(1:3,icomp) = 0
-
-        ipstart = ipars(icomp+1)
-        ipend = npatches
-        if (icomp.ne.ncomp) ipend = ipars(icomp+2)-1
+        ipstart = icomps(icomp)
+        ipend = icomps(icomp+1)-1
 
         istart = ixyzs(ipstart)
-        iend = ixyzs(ipend)
+        iend = ixyzs(ipend+1) - 1
         nploc = ipend - ipstart + 1
         nptsloc = iend - istart + 1
 
+        trans_vels(1:3,icomp) = 0
+        rot_vels(1:3,icomp) = 0
+
         do i=1,nploc+1
-          ixyzsloc(i) = ixyzs(i+istart-1) - ixyzs(istart)+1
+          ixyzsloc(i) = ixyzs(i+ipstart-1) - ixyzs(ipstart)+1
         enddo
         rmoi(1:3,1:3) = 0
         rmoi_inv(1:3,1:3) = 0
@@ -1300,22 +1331,22 @@
           iptype(ipstart), nptsloc, srcvals(1,istart), wts(istart), &
           area, centroid, rmoi)
         info = 0
-        call dinverse(3, rmoi, info, rmoi_inv) 
+        call dinverse(int8_3, rmoi, info, rmoi_inv) 
         do i = istart,iend
           trans_vels(1:3,icomp) = trans_vels(1:3,icomp) + uvel(1:3,i)*wts(i)
         enddo
         trans_vels(1:3,icomp) = trans_vels(1:3,icomp)/area
         
         rtmp(1:3) = 0
-        do i=1,istart,iend
+        do i=istart,iend
           xdiff(1:3) = srcvals(1:3,i) - centroid(1:3)
           rtuse(1:3) = uvel(1:3,i) - trans_vels(1:3,icomp)
           rtmp2(1:3) = 0
           call cross_prod3d(xdiff, rtuse, rtmp2)
           rtmp(1:3) = rtmp(1:3) + rtmp2(1:3)*wts(i)
         enddo
-        rot_vels(1:3,icomp) = rmoi_inv(1:3,1)*rtmp(1) + & 
-          rmoi_inv(1:3,2)*rtmp(2) + rmoi_inv(1:3,3)*rtmp(3)
+        rot_vels(1:3,icomp) = -(rmoi_inv(1:3,1)*rtmp(1) + & 
+          rmoi_inv(1:3,2)*rtmp(2) + rmoi_inv(1:3,3)*rtmp(3))
       enddo
 
       
@@ -1506,7 +1537,7 @@
       integer *8 ndd_use
 
       procedure (), pointer :: fker
-      external lpcomp_stok_comb_vel_addsub
+      external stok_s_mob_addsub
 
       integer *8 ndd, ndz, lwork, ndim
       integer *8 nkertmp
@@ -1520,9 +1551,10 @@
       integer *8 i
 
       did = 0.5d0 
-      fker => lpcomp_stok_comb_vel_addsub
+      fker => stok_s_mob_addsub
 
-      ndd = 0
+      ndd = 1
+      dpars = 1.0d0
       ndz = 0
 
       lwork = npts
