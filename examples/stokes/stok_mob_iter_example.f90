@@ -22,6 +22,8 @@
       real *8, allocatable :: uval(:,:), tracval(:,:), soln(:,:)
       complex * 16 zpars
       integer *8 int8_0,int8_3,int8_9
+      integer *8 ncomp
+      integer *8, allocatable :: icomps(:)
 
       call prini(6,13)
 
@@ -77,6 +79,23 @@
       numit = 100
       allocate(errs(numit+1))
       allocate(soln(3,npts))
+      ncomp = 1
+      allocate(icomps(ncomp+1))
+      icomps(1) = 1
+      icomps(2) = npatches+1
+
+      eps = 1.0d-8
+
+
+      call stok_s_mob_solver(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ncomp, icomps, eps, numit, forces1, &
+        torques1, eps, niter, errs, rres, soln, trans_vels1, rot_vels1)
+      
+      call prin2('trans_vels1=*',trans_vels1,3)
+      call prin2('rot_vels1=*',rot_vels1,3)
+
+      erra = abs(trans_vels1(1) - 1.0d0/6/pi)
+      call prin2('error in mobility matrix=*',erra,1)
       
       
       

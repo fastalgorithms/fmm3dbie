@@ -198,6 +198,7 @@
       real *8 alpha, beta
       real *8, allocatable :: wneartmp(:)
       integer *8 ndd, ndi, ndz
+      real *8 dpars(1)
       complex *16 zpars(1)
       integer *8 ipars(2)
 
@@ -254,7 +255,7 @@
 
         do i = 1,6   
           call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
-            iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+            iptype, npts, srccoefs, srcvals, ndtarg, npts, srcvals, &
             ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
             zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, iquad, &
             rfac0, nquad, wneartmp)
@@ -553,8 +554,7 @@
     
       real *8, intent(out) :: pot(ndim,npts)
 
-      integer *8 ndtarg, idensflag, ipotflag, ndim_p, i
-      real *8 rint
+      integer *8 ndtarg, idensflag, ipotflag, ndim_p
 
       integer *8 norder,npols,nover,npolso
       real *8, allocatable :: potsort(:)
@@ -598,10 +598,14 @@
       real *8 ttot, done, pi
 
       real *8 potv(3), pv, gradv(3,3)
-      real *8 strslet(3), strvec(3)
+      real *8 strslet(3), strsvec(3)
 
       real *8 rint(3), rint_torque(3), xyzc(3), xdiff(3), rtmp(3)
-      integer *8 ncomp, icomp
+      real *8 centroid(3), rmoi(3,3), rmoi_inv(3,3), area
+      integer *8 ncomp, icomp, iend, info
+      integer *8 ipstart, ipend, istart
+      integer *8 nploc, nptsloc
+      integer *8, allocatable :: ixyzsloc(:)
 
       parameter (nd=1,ntarg0=1)
       data over4pi/0.07957747154594767d0/
@@ -626,7 +630,7 @@
       ifppreg = 0
       ifppregtarg = 3
       allocate(sources(3,ns), targvals(3,ntarg))
-      allocate(stoklet(3,ns), strslet(3,ns), strsvec(3,ns))
+      allocate(stoklet(3,ns))
       allocate(sigmaover(3,ns))
       allocate(pottarg(3,ntarg), pretarg(ntarg))
       allocate(gradtarg(3,3,ntarg))
@@ -792,7 +796,7 @@
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()     
 
-
+      allocate(ixyzsloc(npatches+1))
 !
 !  Now add in contribution of L[\sigma]
 !
@@ -942,9 +946,6 @@
 !        tolerance
 !    - numit: integer *8
 !        max number of gmres iterations
-!    - ifinout: integer *8
-!        ifinout = 0, interior problem
-!        ifinout = 1, exterior problem
 !    - forces: real *8(3,ncomp)
 !        prescribed force on the components
 !    - torques: real *8(3,ncomp)
@@ -971,7 +972,6 @@
 !
       implicit none
       integer *8, intent(in) :: npatches, npts
-      integer *8, intent(in) :: ifinout
       integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
       integer *8, intent(in) :: iptype(npatches)
       integer *8, intent(in) :: ncomp, icomps(ncomp+1)
@@ -980,7 +980,7 @@
       real *8, intent(in) :: forces(3,ncomp), torques(3,ncomp) 
       integer *8, intent(in) :: numit
       real *8, intent(out) :: soln(3,npts)
-      real *8, intent(out) :: trans_vels(3,ncomp), rot_vels(3,ncmp)
+      real *8, intent(out) :: trans_vels(3,ncomp), rot_vels(3,ncomp)
       real *8, intent(out) :: errs(numit+1)
       real *8, intent(out) :: rres
       integer *8, intent(out) :: niter
@@ -1017,7 +1017,13 @@
       integer *8 ikerorder, iquadtype, npts_over
 
       real *8 xdiff(3), rtmp(3), rtuse(3), ftuse(3), rtmp2(3)
-      real *8 rmoi(3,3), rmoi_inv(3,3), centroid(3)
+      real *8 rmoi(3,3), rmoi_inv(3,3), centroid(3), area
+      integer *8 icomp, idensflag, iend, info
+      integer *8 ipstart, ipend, ipotflag, istart, lwork
+      integer *8 ndd, ndi, ndz
+      integer *8 ndim_p, ndim_s
+      integer *8 nploc, nptsloc
+      real *8 work(1)
       integer *8, allocatable :: ixyzsloc(:)
       real *8, allocatable :: wts(:)
  
@@ -1217,13 +1223,13 @@
         info = 0
         call dinverse(3, rmoi, info, rmoi_inv) 
         rtuse(1:3) = rtuse(1:3)
-        rtuse(1) = rtuse(1) = rmoi_inv(1,1)*torques(1,icomp) + &
+        rtuse(1) = rtuse(1) + rmoi_inv(1,1)*torques(1,icomp) + &
            rmoi_inv(1,2)*torques(2,icomp) + &
            rmoi_inv(1,3)*torques(3,icomp)
-        rtuse(2) = rtuse(2) = rmoi_inv(2,1)*torques(1,icomp) + &
+        rtuse(2) = rtuse(2) + rmoi_inv(2,1)*torques(1,icomp) + &
            rmoi_inv(2,2)*torques(2,icomp) + &
            rmoi_inv(2,3)*torques(3,icomp)
-        rtuse(3) = rtuse(3) = rmoi_inv(3,1)*torques(1,icomp) + &
+        rtuse(3) = rtuse(3) + rmoi_inv(3,1)*torques(1,icomp) + &
            rmoi_inv(3,2)*torques(2,icomp) + &
            rmoi_inv(3,3)*torques(3,icomp)
         ftuse(1:3) = forces(1:3,icomp)/area
@@ -1308,7 +1314,7 @@
           call cross_prod3d(xdiff, rtuse, rtmp2)
           rtmp(1:3) = rtmp(1:3) + rtmp2(1:3)*wts(i)
         enddo
-        rot_vels(1:3,icomp) = rmoi_inv(1:3,1)*rtmp(1) + 
+        rot_vels(1:3,icomp) = rmoi_inv(1:3,1)*rtmp(1) + & 
           rmoi_inv(1:3,2)*rtmp(2) + rmoi_inv(1:3,3)*rtmp(3)
       enddo
 
@@ -1502,7 +1508,7 @@
       procedure (), pointer :: fker
       external lpcomp_stok_comb_vel_addsub
 
-      integer *8 ndd, ndi, ndz, lwork, ndim
+      integer *8 ndd, ndz, lwork, ndim
       integer *8 nkertmp
       complex *16 zpars
 
