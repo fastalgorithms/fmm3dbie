@@ -1072,12 +1072,14 @@
       real *8, allocatable :: sigmaover(:,:)
       real *8, allocatable :: stoklet(:,:), strslet(:,:)
       real *8, allocatable :: pottarg(:,:), strsvec(:,:)
+      real *8, allocatable :: rotlet(:,:), rotvec(:,:)
+      real *8, allocatable :: doublet(:,:), doubvec(:,:)
       integer *8 ns, nt
       real *8 alpha, beta
       integer *8 ifstoklet, ifstrslet
+      integer *8 ifrotlet, ifdoublet
       integer *8 ifppreg, ifppregtarg
       real *8 tmp(10), val
-      real *8 over4pi
 
       real *8 w11, w12, w13, w21, w22, w23, w31, w32, w33
       real *8 sig1, sig2, sig3
@@ -1107,7 +1109,6 @@
       real *8 potv(3), pv, gradv(3,3)
 
       parameter (nd=1,ntarg0=1)
-      data over4pi/0.07957747154594767d0/
 
       ns = nptso
       done = 1
@@ -1146,8 +1147,8 @@
 !      set relevant parameters for the fmm
 !
  
-      alpha = dpars(1)*over4pi
-      beta = dpars(2)*over4pi
+      alpha = dpars(1)
+      beta = dpars(2)
 
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)      
@@ -1163,9 +1164,9 @@
 !  Stokes double layer is negative of a stresslet with orienatation
 !  given by surface normal
 !
-        strslet(1,i) = -sigmaover(1,i)*whtsover(i)*beta 
-        strslet(2,i) = -sigmaover(2,i)*whtsover(i)*beta 
-        strslet(3,i) = -sigmaover(3,i)*whtsover(i)*beta
+        strslet(1,i) = sigmaover(1,i)*whtsover(i)*beta 
+        strslet(2,i) = sigmaover(2,i)*whtsover(i)*beta 
+        strslet(3,i) = sigmaover(3,i)*whtsover(i)*beta
 
         strsvec(1,i) = srcover(10,i)
         strsvec(2,i) = srcover(11,i)
@@ -1186,6 +1187,9 @@
       ifstoklet = 1
       ifstrslet = 1
 
+      ifrotlet = 0
+      ifdoublet = 0
+
       if(alpha.eq.0) ifstoklet = 0
       if(beta.eq.0) ifstrslet = 0
 
@@ -1200,7 +1204,8 @@
       call cpu_time(t1)
 !$      t1 = omp_get_wtime()      
       call stfmm3d(nd, eps, ns, sources, ifstoklet, stoklet, &
-        ifstrslet, strslet, strsvec, ifppreg, tmp, tmp, tmp, ntarg, &
+        ifstrslet, strslet, strsvec, ifrotlet, rotlet, rotvec, &
+        ifdoublet, doublet, doubvec, ifppreg, tmp, tmp, tmp, ntarg, &
         targvals, ifppregtarg, pottarg, tmp, tmp, ier)
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()
