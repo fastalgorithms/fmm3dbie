@@ -32,10 +32,11 @@
       complex *16 zpars
       real *8 uv(2)
       character *1 transa, transb
-      character *100 igeom
+      character *100 igeom, fname_geom, fname_rhs, fname_soln, dir_name
       external l3d_slp, st3d_slp_vec, st3d_comb_vec
       external el3d_elastlet_string_mindlin_normalstress_vec
       external el3d_elastlet_mindlin_normalstress_vec
+      
 
       
       call prini(6,13)
@@ -51,7 +52,7 @@
       npatches = 0
       npts = 0
 
-      igeom = 'wtorus'
+      igeom = 'torus'
       nin = 100
 
 !
@@ -59,7 +60,7 @@
 !
       xyz_out(1) = 3.1d0
       xyz_out(2) = 3.19d0
-      xyz_out(3) = -5.19d0
+      xyz_out(3) = -10.19d0
 
       xyz_out(4:9) = 0
       xyz_out(10) = 1.0d0/sqrt(3.0d0)
@@ -70,7 +71,46 @@
       iptype0 = 1
       rfac_sc = 1.0d0
 
-      if (trim(igeom).eq.'wtorus') then
+      dir_name = 'data/'
+
+      if (trim(igeom).eq.'torus') then
+        radii(1) = 4.0d0
+        radii(2) = 1.5d0
+        radii(3) = 0.0d0
+        nosc = 0
+        scales(1) = 1.0d0
+        scales(2) = 1.0d0
+        scales(3) = 1.0d0
+        
+        nuv(1) = 8
+        nuv(2) = 32
+
+        
+        
+        call get_startorus_npat_mem(radii, nosc, scales, nuv, norder, &
+          iptype0, npatches, npts)
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_startorus_npat(radii, nosc, scales, nuv, norder, &
+          iptype0, npatches, npts, norders, ixyzs, iptype, srccoefs, &
+          srcvals)
+
+        do i=1,nin
+          vv = hkrand(0)*2*pi
+          rc = radii(1) 
+          xc = rc*cos(vv)
+          yc = rc*sin(vv)
+
+          rr = hkrand(0)*0.25d0*radii(2)
+          uu = hkrand(0)*2*pi
+          xyz_in(1,i) = xc + rr*cos(uu)*cos(vv) 
+          xyz_in(2,i) = yc + rr*cos(uu)*sin(vv)
+          xyz_in(3,i) = rr*sin(uu)
+        enddo
+
+      elseif (trim(igeom).eq.'wtorus') then
 
 !        rfac_sc = 1.5d0
         rfac_sc = 1.0d0
@@ -81,8 +121,8 @@
         
         nuv(1) = ceiling(4*rfac_sc)
         nuv(2) = ceiling(16*rfac_sc)
-        nuv(1) = 6
-        nuv(2) = 24 
+        nuv(1) = 4
+        nuv(2) = 16 
 
         print *, "nuv=",nuv(1), nuv(2)
 
@@ -123,8 +163,6 @@
           xyz_in(2,i) = yc + rr*cos(uu)*sin(vv)
           xyz_in(3,i) = rr*sin(uu)
         enddo
-        call surf_vtk_plot(npatches, norders, ixyzs, iptype, npts, &
-          srccoefs, srcvals, 'wtorus.vtk', 'a')
 
       elseif (trim(igeom).eq.'ellipsoid') then
         abc(1) = 2.1d0
@@ -231,6 +269,13 @@
       ndi = 0
       rf(1:3) = 0
       rtorque(1:3) = 0
+      write(fname_rhs,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
+           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_rhs.dat'
+      write(fname_geom,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
+           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'.go3'
+      print *, trim(fname_rhs)
+      print *, trim(fname_geom)
+      open(unit=77,file=trim(fname_rhs))
 
       do i=1,npts
         call el3d_elastlet_string_mindlin_normalstress_vec(nd, xyz_out, ndim3, &
@@ -247,14 +292,15 @@
         write(77,*) rhs(1,i),rhs(2,i),rhs(3,i)
         soln(1:ndim,i) = 0
       enddo
+      close(77)
       call prin2('rf=*', rf, 3)
       call prin2('rtorque=*', rtorque, 3)
-      call write_go3('torus.go3', norders(1), npatches, npts, srcvals)
+      call write_go3(trim(fname_geom), norders(1), npatches, npts, srcvals)
 
 !
 !  write kernel of 1 column of a matrix
 !
-      ipt = 100
+      ipt = 2635
       do i=1,npts
         call el3d_elastlet_string_mindlin_normalstress_vec(nd, srcvals(1,ipt), ndim3, &
           srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
@@ -272,6 +318,7 @@
       enddo
       close(77)
       close(78)
+      stop
 !
 !  find near
 !
