@@ -33,6 +33,7 @@
       real *8 uv(2)
       character *1 transa, transb
       character *100 igeom, fname_geom, fname_rhs, fname_soln, dir_name
+      character *100 fname_res
       external l3d_slp, st3d_slp_vec, st3d_comb_vec
       external el3d_elastlet_string_mindlin_normalstress_vec
       external el3d_elastlet_mindlin_normalstress_vec
@@ -109,6 +110,7 @@
           xyz_in(2,i) = yc + rr*cos(uu)*sin(vv)
           xyz_in(3,i) = rr*sin(uu)
         enddo
+        call prin2('xyz_in=*',xyz_in,24)
 
       elseif (trim(igeom).eq.'wtorus') then
 
@@ -269,13 +271,18 @@
       ndi = 0
       rf(1:3) = 0
       rtorque(1:3) = 0
+      write(fname_res,'(a,a)') trim(dir_name), 'results_summary.dat'
       write(fname_rhs,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
            trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_rhs.dat'
+      write(fname_soln,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
+           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_soln.dat'
       write(fname_geom,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
            trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'.go3'
       print *, trim(fname_rhs)
       print *, trim(fname_geom)
       open(unit=77,file=trim(fname_rhs))
+      open(unit=79,file=trim(fname_soln))
+      open(unit=80,file=trim(fname_res),access='append')
 
       do i=1,npts
         call el3d_elastlet_string_mindlin_normalstress_vec(nd, xyz_out, ndim3, &
@@ -300,25 +307,24 @@
 !
 !  write kernel of 1 column of a matrix
 !
-      ipt = 2635
-      do i=1,npts
-        call el3d_elastlet_string_mindlin_normalstress_vec(nd, srcvals(1,ipt), ndim3, &
-          srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
-        rf(1) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
-                   rtmp(1,3)*strengths(3)
-        rf(2) = rtmp(2,1)*strengths(1) + rtmp(2,2)*strengths(2) + &
-                   rtmp(2,3)*strengths(3)
-        rf(3) = rtmp(3,1)*strengths(1) + rtmp(3,2)*strengths(2) + &
-                   rtmp(3,3)*strengths(3)
-        if(i.ne.ipt) then      
-          write(78,*) rf(1), rf(2), rf(3)
-        else
-          write(78,*) 0,0,0
-        endif
-      enddo
-      close(77)
-      close(78)
-      stop
+!      ipt = 2635
+!      do i=1,npts
+!        call el3d_elastlet_string_mindlin_normalstress_vec(nd, srcvals(1,ipt), ndim3, &
+!          srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+!        rf(1) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
+!                   rtmp(1,3)*strengths(3)
+!        rf(2) = rtmp(2,1)*strengths(1) + rtmp(2,2)*strengths(2) + &
+!                   rtmp(2,3)*strengths(3)
+!        rf(3) = rtmp(3,1)*strengths(1) + rtmp(3,2)*strengths(2) + &
+!                   rtmp(3,3)*strengths(3)
+!        if(i.ne.ipt) then      
+!          write(78,*) rf(1), rf(2), rf(3)
+!        else
+!          write(78,*) 0,0,0
+!        endif
+!      enddo
+!      close(77)
+!      close(78)
 !
 !  find near
 !
@@ -337,6 +343,7 @@
       allocate(dpars_quad(npatches+2))
       dpars_quad(1) = dlam
       dpars_quad(2) = dmu
+      dh0 = 0.25d0
       do i=1,npatches
         dhs(i) = rads(i)*rfac_sc*1.5d0
         dhs(i) = 0.25d0 
@@ -386,6 +393,7 @@
       do i=1,npts
         write(79,*) soln(1,i), soln(2,i), soln(3,i)
       enddo
+      close(79)
 
       do j=1,nin
         dpars(3) = hout
@@ -491,6 +499,10 @@
       call prin2('resb=*',resb,12)
       call prin2('soln=*',solnb,6)
       print *, "Error in solution=", erra
+
+      write(80,'(a,2x,i4,2x,i2,2x,i4,2x,e11.5,2x,e11.5)') &
+         trim(igeom(1:3)),npatches,norder,niter,dh0,erra
+      close(80)
 
       stop
       end
