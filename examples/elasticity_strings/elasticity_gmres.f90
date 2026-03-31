@@ -19,7 +19,7 @@
       real *8 c0(3), abc(3), verts(2,4), xyz_out(12), xyz_in(3,1000)
       real *8 radii(3), scales(3), rf(3), rtorque(3), dtmp(3)
       real *8, allocatable :: coefs(:,:,:)
-      integer *8 nosc, iort, nfp
+      integer *8 nosc, iort, nfp, ibc
       integer *8 nuv(2)
       integer *8 nabc(3)
       
@@ -53,7 +53,7 @@
       npatches = 0
       npts = 0
 
-      igeom = 'torus'
+      igeom = 'ellipsoid'
       nin = 100
 
 !
@@ -64,9 +64,19 @@
       xyz_out(3) = -10.19d0
 
       xyz_out(4:9) = 0
-      xyz_out(10) = 1.0d0/sqrt(3.0d0)
-      xyz_out(11) = 1.0d0/sqrt(3.0d0)
-      xyz_out(12) = -1.0d0/sqrt(3.0d0)
+
+      ibc = 2
+
+      if(ibc.eq.1.or.ibc.eq.3) then
+        xyz_out(10) = 1.0d0/sqrt(3.0d0)
+        xyz_out(11) = 1.0d0/sqrt(3.0d0)
+        xyz_out(12) = -1.0d0/sqrt(3.0d0)
+      elseif (ibc.eq.2) then
+        print *, "in ibc2"
+        xyz_out(10) = 1.0d0/sqrt(3.0d0)
+        xyz_out(11) = 1.0d0/sqrt(3.0d0)
+        xyz_out(12) = 1.0d0/sqrt(3.0d0)
+      endif
       huse = 0.3d0
       norder = 9
       iptype0 = 1
@@ -83,8 +93,8 @@
         scales(2) = 1.0d0
         scales(3) = 1.0d0
         
-        nuv(1) = 8
-        nuv(2) = 32
+        nuv(1) = 12
+        nuv(2) = 48
 
         
         
@@ -167,11 +177,11 @@
         enddo
 
       elseif (trim(igeom).eq.'ellipsoid') then
-        abc(1) = 2.1d0
+        abc(1) = 5.1d0
         abc(2) = 1.0d0
         abc(3) = 2.0d0
             
-        nabc(1) = 5
+        nabc(1) = 8
         nabc(2) = 3
         nabc(3) = 5
 
@@ -272,10 +282,10 @@
       rf(1:3) = 0
       rtorque(1:3) = 0
       write(fname_res,'(a,a)') trim(dir_name), 'results_summary.dat'
-      write(fname_rhs,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
-           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_rhs.dat'
-      write(fname_soln,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
-           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_soln.dat'
+      write(fname_rhs,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
+           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder, '_ibc',ibc,'_rhs.dat'
+      write(fname_soln,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
+           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_ibc',ibc,'_soln.dat'
       write(fname_geom,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
            trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'.go3'
       print *, trim(fname_rhs)
@@ -285,8 +295,11 @@
       open(unit=80,file=trim(fname_res),access='append')
 
       do i=1,npts
-        call el3d_elastlet_string_mindlin_normalstress_vec(nd, xyz_out, ndim3, &
+
+        if(ibc.eq.1.or.ibc.eq.2) then  
+          call el3d_elastlet_string_mindlin_normalstress_vec(nd, xyz_out, ndim3, &
           srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+        endif
         rhs(1,i) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
                    rtmp(1,3)*strengths(3)
         rhs(2,i) = rtmp(2,1)*strengths(1) + rtmp(2,2)*strengths(2) + &
@@ -500,8 +513,8 @@
       call prin2('soln=*',solnb,6)
       print *, "Error in solution=", erra
 
-      write(80,'(a,2x,i4,2x,i2,2x,i4,2x,e11.5,2x,e11.5)') &
-         trim(igeom(1:3)),npatches,norder,niter,dh0,erra
+      write(80,'(a,2x,i4,2x,i2,2x,i4,2x,e11.5,2x,e11.5,2x,i1)') &
+         trim(igeom(1:3)),npatches,norder,niter,dh0,erra,ibc
       close(80)
 
       stop

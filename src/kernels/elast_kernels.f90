@@ -1,4 +1,240 @@
+      subroutine el3d_elastlet_vec(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the greens function tensor for 
+!  elastostatics
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 9.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 3
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 2
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3)
+!        the Greens function 
+!
+!
+      implicit none
+      integer *8, intent(in) :: nd, ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+      real *8, intent(out) :: vals(3,3)
 
+      real *8 dlam, dmu
+      real *8 rx, ry, rz, r, rinv, r3inv, da, rfac
+      real *8 over4pi
+      data over4pi/0.07957747154594767d0/
+
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      
+      rx = tar(1)-src(1)
+      ry = tar(2)-src(2)
+      rz = tar(3)-src(3)
+        
+
+      rfac = over4pi/dmu/2
+
+      r  = sqrt(rx**2+ry**2+rz**2)
+      rinv = 1.0d0/r
+      r3inv = rinv**3
+
+      vals(1,1) = rfac*((2-da)*rinv + da*rx*rx*r3inv)
+      vals(2,1) = rfac*(da*ry*rx*r3inv)
+      vals(3,1) = rfac*(da*rz*rx*r3inv)
+
+      vals(1,2) = rfac*(da*ry*rx*r3inv)
+      vals(2,2) = rfac*((2-da)*rinv + da*ry*ry*r3inv)
+      vals(3,2) = rfac*(da*rz*ry*r3inv)
+
+      vals(1,3) = rfac*(da*rz*rx*r3inv)
+      vals(2,3) = rfac*(da*rz*ry*r3inv)
+      vals(3,3) = rfac*((2-da)*rinv + da*rz*rz*r3inv)
+
+      return
+      end
+!
+!
+!
+!
+      subroutine el3d_elastlet_stress_vec(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the stress tensor associated with the 
+!  greens function tensor for  elastostatics
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 9.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 3
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 2
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3,3)
+!        stress tensor associated with the green's function 
+!
+!
+      implicit none
+      integer *8, intent(in) :: nd, ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+      real *8, intent(out) :: vals(3,3,3)
+
+      real *8 dlam, dmu
+      real *8 rx, ry, rz, r, rinv, r3inv, da, rfac, r5inv
+      real *8 rfac1, rfac2, rfac3, dgam, dbeta
+      real *8 dx(3)
+      real *8 over4pi, deye(3,3)
+      integer *8 i,j,k
+      data over4pi/0.07957747154594767d0/
+
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      
+      dx(1) = tar(1)-src(1)
+      dx(2) = tar(2)-src(2)
+      dx(3) = tar(3)-src(3)
+
+      dbeta = (2-da)*over4pi/dmu/2
+      dgam = da*over4pi/dmu/2
+
+      rfac1 = dmu*(dgam - dbeta)
+      rfac2 = -dlam*(dbeta + dgam) + 2*dmu*dgam
+      rfac3 = -6*dmu*dgam
+      
+
+      r  = sqrt(rx**2+ry**2+rz**2)
+      rinv = 1.0d0/r
+      r3inv = rinv**3
+      r5inv = r3inv*rinv*rinv
+
+      deye(1:3,1:3) = 0
+      deye(1,1) = 1
+      deye(2,2) = 1
+      deye(3,3) = 1
+      
+      vals(1:3,1:3,1:3) = 0
+      do i=1,3
+        do j=1,3
+          do k=1,3
+            vals(i,j,k) = deye(i,j)*dx(k)*r3inv*rfac2
+            vals(i,j,k) = vals(i,j,k) + deye(j,k)*dx(i)*r3inv*rfac1 
+            vals(i,j,k) = vals(i,j,k) + deye(i,k)*dx(j)*r3inv*rfac1
+            vals(i,j,k) = vals(i,j,k) + dx(i)*dx(j)*dx(k)*r5inv*rfac3
+          enddo
+        enddo
+      enddo
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine el3d_elastlet_normalstress_vec(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the normal stress tensor associated with the 
+!  greens function tensor for  elastostatics
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 9.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 3
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 2
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3)
+!        the Greens function 
+!
+!
+      implicit none
+      integer *8, intent(in) :: nd, ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+      real *8, intent(out) :: vals(3,3)
+
+      real *8 vals_tmp(3,3,3)
+      integer *8 i
+      call el3d_elastlet_stress_vec(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, vals_tmp)
+
+      vals(1:3,1:3) = 0
+      do i=1,3
+        vals(1:3,1:3) = vals(1:3,1:3) + tar(10)*vals_tmp(1:3,1:3,1)
+        vals(1:3,1:3) = vals(1:3,1:3) + tar(10)*vals_tmp(1:3,1:3,2)
+        vals(1:3,1:3) = vals(1:3,1:3) + tar(10)*vals_tmp(1:3,1:3,3)
+      enddo
+
+      return
+      end
+!
+!
+!
+!
+!
+!
 
       subroutine el3d_elastlet_mindlin_vec(nd, src, ndt, tar, ndd, &
         dpars, ndz, zpars, ndi, ipars, vals)
