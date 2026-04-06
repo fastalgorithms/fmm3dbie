@@ -5565,10 +5565,10 @@ function [S,nlevels,nboxes,ltree,rintlin,nboxesleaf] = surf_mesh_gen_adap(dpars,
   nlevels = 0;
   nboxes = 0;
   ltree = 0;
-  rintlin = zeros(201,1);
+  rintlin = zeros(nd,201);
   nboxesleaf = 0;
 
-# FORTRAN surf_tree_mem(int64_t[2] nuv, double[1] tol, dcomplex[1] zk, double[1] boxlen, int64_t[1] norder, int64_t[1] lptype, double[1] eta, int64_t[1] ifun_dummy, int64_t[1] nd, double[1000] dpars, dcomplex[1] zpars, int64_t[100] ipars, inout int64_t[1] nlevels, inout int64_t[1] nboxes, inout int64_t[1] ltree, inout double[201] rintlin, inout int64_t[1] nboxesleaf);
+# FORTRAN surf_tree_mem(int64_t[2] nuv, double[1] tol, dcomplex[1] zk, double[1] boxlen, int64_t[1] norder, int64_t[1] lptype, double[1] eta, int64_t[1] ifun_dummy, int64_t[1] nd, double[1000] dpars, dcomplex[1] zpars, int64_t[100] ipars, inout int64_t[1] nlevels, inout int64_t[1] nboxes, inout int64_t[1] ltree, inout double[nd,201] rintlin, inout int64_t[1] nboxesleaf);
 
 
 nfvals = nd*norder^2*nboxes;
@@ -5596,7 +5596,7 @@ end
 
 
 
-# FORTRAN surf_tree_build(int64_t[2] nuv, double[1] tol, dcomplex[1] zk, double[1] boxlen, int64_t[1] norder, int64_t[1] lptype, double[1] eta, int64_t[1] ifun_dummy, int64_t[1] nd, double[1000] dpars, dcomplex[1] zpars, int64_t[100] ipars, inout int64_t[1] nlevels, inout int64_t[1] nboxes, inout int64_t[1] ltree, inout double[201] rintlin, inout int64_t[ltree] itree, inout int64_t[8] iptr, inout double[nfvals] fvals, inout double[2,nboxes] centers, inout double[2,nlevelsp1] boxsizein);
+# FORTRAN surf_tree_build(int64_t[2] nuv, double[1] tol, dcomplex[1] zk, double[1] boxlen, int64_t[1] norder, int64_t[1] lptype, double[1] eta, int64_t[1] ifun_dummy, int64_t[1] nd, double[1000] dpars, dcomplex[1] zpars, int64_t[100] ipars, inout int64_t[1] nlevels, inout int64_t[1] nboxes, inout int64_t[1] ltree, inout double[nd,201] rintlin, inout int64_t[ltree] itree, inout int64_t[8] iptr, inout double[nfvals] fvals, inout double[2,nboxes] centers, inout double[2,nlevelsp1] boxsizein);
 
 npatp1 = npatches + 1;
 
