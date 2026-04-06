@@ -102,9 +102,9 @@ c           nboxes - integer *8
 c             number of boxes
 c           ltree - integer *8
 c             length of tree
-c           rintlin(1:nlevels+1) - real *8
-c             lp norm to scale the functions by
-c             (on input rintl should be of size(1:201)
+c           rintlin(nd,1:nlevels+1) - real *8
+c             lp norm to scale the nd functions by
+c             (on input rintl should be of size(nd,1:201)
 c           nboxesleaf - integer *8
 c             number of leaf boxes      
 c
@@ -118,8 +118,8 @@ c
       integer *8 nd,ipars(*),iptype,nuv(2),nroot,fun_dummyint,nbtot
       integer *8 nlevels,nboxes,ltree,norder,nboxesleaf
 
-      real *8 eps,boxlen,eta,dpars(*),delta,xy(2),rint
-      real *8 rintl(0:200),rintlin(201),rsc,ra
+      real *8 eps,boxlen,eta,dpars(*),delta,xy(2),rint(nd)
+      real *8 rintl(nd,0:200),rintlin(nd,201),rsc(nd),ra,rscbs
 
       complex *16 zpars(*),zk
       
@@ -135,7 +135,7 @@ c
       real *8, allocatable :: centers2(:,:),fvals2(:,:,:)
       real *8, allocatable :: grid(:,:),qwts(:)
       real *8, allocatable :: xq(:),wts(:),umat(:,:),vmat(:,:)
-      real *8, allocatable :: rintbs(:),rintbs2(:)
+      real *8, allocatable :: rintbs(:,:),rintbs2(:,:)
       real *8, allocatable :: fvals(:,:,:)
       real *8, allocatable :: wts2(:),xref2(:,:),umat2(:,:),vmat2(:,:)
       real *8, allocatable :: boxsize(:,:)
@@ -150,7 +150,7 @@ c
 
       allocate(fvals(nd,norder**2,nbmax),centers(2,nbmax))
 
-      allocate(rintbs(nbmax))
+      allocate(rintbs(nd,nbmax))
 
 c
 c      set tree info for level 0
@@ -163,7 +163,9 @@ c
          ilevel(j) = 0
          iparent(j) = -1
          nchild(j) = 0
-         rintbs(j) = 0
+         do idim=1,nd
+            rintbs(idim,j) = 0
+         enddo
          do i=1,4
             ichild(i,j) = -1
          enddo
@@ -237,48 +239,65 @@ c
 c       compute fvals at the grid
 c
 
-      rint = 0
+      do idim=1,nd
+         rint(idim) = 0
+      enddo
 
 c
 c   note extra factor of 4 since wts2 are on [-1,1]^2 
 c   as opposed to [-1/2,1/2]^2
 c
-c      rsc = boxlen**2/4
-      rsc = boxsize(1,0)*boxsize(2,0)/(4.0)
+c     rsc = boxlen**2/4
+      rscbs = boxsize(1,0)*boxsize(2,0)/(4.0)
       do k=1,nroot
-
          do i=1,npbox            
             xy(1) = centers(1,k) + grid(1,i)*boxsize(1,0)
             xy(2) = centers(2,k) + grid(2,i)*boxsize(2,0)
             call fun(nd,xy,dpars,zpars,ipars,fvals(1,i,k))
             if(iptype.eq.0) then
                do idim=1,nd
-                  if(abs(fvals(idim,i,k)).gt.rintbs(1)) rintbs(1) = 
-     1                 abs(fvals(idim,i,k))
+                  if(abs(fvals(idim,i,k)).gt.rintbs(idim,1)) then
+                     rintbs(idim,1) = abs(fvals(idim,i,k))
+                  endif
                enddo
             endif
 
             if(iptype.eq.1) then
                do idim=1,nd
-                  rintbs(1) = rintbs(1)+abs(fvals(idim,i,k))*wts2(i)*rsc
+                  rintbs(idim,1) = rintbs(idim,1) 
+     1                 + abs(fvals(idim,i,k))*wts2(i)*rscbs
                enddo
             endif
 
             if(iptype.eq.2) then
                do idim=1,nd
-                  rintbs(1) = rintbs(1) + fvals(idim,i,k)**2*wts2(i)*rsc
+                  rintbs(idim,1) = rintbs(idim,1)
+     1                 + fvals(idim,i,k)**2*wts2(i)*rscbs
                enddo
             endif
          enddo
       enddo
 
-      if(iptype.eq.0.or.iptype.eq.1) rint = rintbs(1)
-      if(iptype.eq.2) rint = sqrt(rintbs(1))
+      if(iptype.eq.0.or.iptype.eq.1) then
+         do idim=1,nd
+            rint(idim) = rintbs(idim,1)
+         enddo
+      endif
+      if(iptype.eq.2) then
+c         rint = sqrt(rintbs(1))
+         do idim=1,nd
+            rint(idim) = sqrt(rintbs(idim,1))
+         enddo
+      endif
 
-      rintl(0) = rint
-      rintlin(1) = rint
+      do idim=1,nd
+         rintl(idim,0) = rint(idim)
+         rintlin(idim,1) = rint(idim)
+      enddo
 
       nbctr = nroot
+
+        
      
       
       do ilev=0,nlmax-1
@@ -291,12 +310,15 @@ c      rsc = boxlen**2/4
 
         allocate(irefinebox(nbloc))
 
-        
-        if(iptype.eq.2) rsc = sqrt(1.0d0/boxlen**2)
-        if(iptype.eq.1) rsc = (1.0d0/boxlen**2)
-        if(iptype.eq.0) rsc = 1.0d0
 
-        rsc = rsc*rint
+        if(iptype.eq.2) rscbs = sqrt(1.0d0/boxlen**2)
+        if(iptype.eq.1) rscbs = (1.0d0/boxlen**2)
+        if(iptype.eq.0) rscbs = 1.0d0
+
+        
+        do idim=1,nd
+           rsc(idim) = rscbs*rint(idim)
+        enddo
 
         print *, ilev, rint, rsc
         
@@ -322,24 +344,24 @@ c
           print *, "Reallocating"
           allocate(centers2(2,nbmax),ilevel2(nbmax),iparent2(nbmax))
           allocate(nchild2(nbmax),ichild2(4,nbmax))
-          allocate(fvals2(nd,npbox,nbmax),rintbs2(nbmax))
+          allocate(fvals2(nd,npbox,nbmax),rintbs2(nd,nbmax))
 
           call surf_tree_copy(nd,nbctr,npbox,centers,ilevel,iparent,
      1            nchild,ichild,fvals,centers2,ilevel2,iparent2,nchild2,
      2            ichild2,fvals2)
-          call dcopy(nbctr,rintbs,1,rintbs2,1)
+          call dcopy_guru(nd*nbctr,rintbs,1_8,rintbs2,1_8)
 
           deallocate(centers,ilevel,iparent,nchild,ichild,fvals,rintbs)
 
           nbmax = nbtot
           allocate(centers(2,nbmax),ilevel(nbmax),iparent(nbmax))
           allocate(nchild(nbmax),ichild(4,nbmax),fvals(nd,npbox,nbmax))
-          allocate(rintbs(nbmax))
+          allocate(rintbs(nd,nbmax))
 
           call surf_tree_copy(nd,nbctr,npbox,centers2,ilevel2,iparent2,
      1            nchild2,ichild2,fvals2,centers,ilevel,iparent,nchild,
      2            ichild,fvals)
-          call dcopy(nbctr,rintbs2,1,rintbs,1)
+          call dcopy_guru(nd*nbctr,rintbs2,1_8,rintbs,1_8)
 
           deallocate(centers2,ilevel2,iparent2,nchild2,ichild2,fvals2)
           deallocate(rintbs2)
@@ -354,15 +376,16 @@ c
      1      fun,dpars,zpars,ipars,grid,nbmax,ifirstbox,nbloc,centers,
      2      boxsize(1,ilev+1),nbctr,ilev+1,ilevel,iparent,nchild,ichild)
           
-           rsc = boxsize(1,ilev+1)*boxsize(2,ilev+1)/4
+           rscbs = boxsize(1,ilev+1)*boxsize(2,ilev+1)/4
 
-          call update_rints(nd,npbox,nbmax,fvals,ifirstbox,nbloc,
-     1       iptype,nchild,ichild,wts2,rsc,rintbs,rint)
+           call update_rints(nd,npbox,nbmax,fvals,ifirstbox,nbloc,
+     1          iptype,nchild,ichild,wts2,rscbs,rintbs,rint)
 
-          rintl(ilev+1) = rint
-          
-          rintlin(ilev+2) = rint
-          
+           do idim =1,nd              
+              rintl(idim,ilev+1) = rint(idim)              
+              rintlin(idim,ilev+2) = rint(idim)
+           enddo
+       
           laddr(2,ilev+1) = nbctr
         else
           exit
@@ -380,24 +403,24 @@ c
           print *, "Reallocating"
           allocate(centers2(2,nbmax),ilevel2(nbmax),iparent2(nbmax))
           allocate(nchild2(nbmax),ichild2(4,nbmax))
-          allocate(fvals2(nd,npbox,nbmax),rintbs2(nbmax))
+          allocate(fvals2(nd,npbox,nbmax),rintbs2(nd,nbmax))
 
           call surf_tree_copy(nd,nboxes,npbox,centers,ilevel,iparent,
      1       nchild,ichild,fvals,centers2,ilevel2,iparent2,nchild2,
      2       ichild2,fvals2)
-          call dcopy(nboxes,rintbs,1,rintbs2,1)
+          call dcopy_guru(nd*nboxes,rintbs,1_8,rintbs2,1_8)
 
           deallocate(centers,ilevel,iparent,nchild,ichild,fvals,rintbs)
 
           nbmax = nbtot
           allocate(centers(2,nbmax),ilevel(nbmax),iparent(nbmax))
           allocate(nchild(nbmax),ichild(4,nbmax),fvals(nd,npbox,nbmax))
-          allocate(rintbs(nbmax))
+          allocate(rintbs(nd,nbmax))
 
           call surf_tree_copy(nd,nboxes,npbox,centers2,ilevel2,iparent2,
      1          nchild2,ichild2,fvals2,centers,ilevel,iparent,nchild,
      2          ichild,fvals)
-          call dcopy(nboxes,rintbs2,1,rintbs,1)
+          call dcopy_guru(nd*nboxes,rintbs2,1_8,rintbs,1_8)
 
           deallocate(centers2,ilevel2,iparent2,nchild2,ichild2,fvals2)
           deallocate(rintbs2)
@@ -488,9 +511,9 @@ c        nboxes - integer *8
 c          number of boxes
 c        ltree - integer *8
 c          length of tree = 2*(nlevels+1)+17*nboxes
-c        rintl - real *8 (0:nlevels)
+c        rintl - real *8 (nd,0:nlevels)
 c          estimate of lp norm for scaling the errors
-c          at various levels. 
+c          at various levels for the nd functions. 
 c          We require the estimate at each level to make sure
 c          that the memory estimate code is consitent
 c          with the build code else there could be potential
@@ -530,12 +553,12 @@ c
       real *8 boxsizein(2,nlevels+1)
       real *8, allocatable :: xq(:),wts(:),umat(:,:),vmat(:,:)
       real *8, allocatable :: grid(:,:),ximat(:,:),qwts(:)
-      real *8 rintl(0:nlevels), rintlin(nlevels+1)
+      real *8 rintl(nd,0:nlevels), rintlin(nd,nlevels+1)
       real *8 xy(2)
 
       integer *8 i,ilev,irefine,itype,nbmax,nlmax,npbox,npc,ii,k
-      integer *8 ifirstbox,ilastbox,nbctr,nbloc
-      real *8 rsc
+      integer *8 ifirstbox,ilastbox,nbctr,nbloc,idim
+      real *8 rsc(nd),rscbs
 
       real *8 ra
       integer *8 j,nboxes0,nlevels0,npols,iper
@@ -634,12 +657,19 @@ c      call mesh2d(xq,norder,xq,norder,grid)
       enddo
 
       do i=0,nlevels
-         rintl(i) = rintlin(i+1)
+         do idim=1,nd
+            rintl(idim,i) = rintlin(idim,i+1)
+         enddo
       enddo
       
 c
 c       Reset nlevels, nboxes
-c     
+c
+      
+      if(iptype.eq.2) rscbs = sqrt(1.0d0/boxlen**2)
+      if(iptype.eq.1) rscbs = (1.0d0/boxlen**2)
+      if(iptype.eq.0) rscbs = 1.0d0
+      
       nbctr = nroot
 
       do ilev=0,nlevels-1
@@ -652,11 +682,11 @@ c
          
          allocate(irefinebox(nbloc))
 
-         if(iptype.eq.2) rsc = sqrt(1.0d0/boxlen**2)
-         if(iptype.eq.1) rsc = (1.0d0/boxlen**2)
-         if(iptype.eq.0) rsc = 1.0d0
-         rsc = rsc*rintl(ilev)
-ccc custom         
+         
+         do idim=1,nd
+            rsc(idim) = rscbs*rintl(idim,ilev)
+         enddo
+ccc   custom         
 
          nbmax = nboxes
          
@@ -721,10 +751,10 @@ c
      2  boxsize,nboxes,ifirstbox,nbloc,rsc,irefinebox,irefine)
       implicit none
       integer *8 nd,npc,npbox,norder,iptype,npols
-      integer *8 nboxes,nbloc
+      integer *8 nboxes,nbloc,idim
       real *8 eta,eps,fvals(nd,npbox,nboxes)
       real *8 umat(norder,norder)
-      real *8 rsc
+      real *8 rsc(nd)
       real *8, allocatable :: fcoefs(:,:,:),rmask(:)
       integer *8, allocatable :: iind2p(:,:)
       real *8 alpha,beta,boxsize(2),rsum
@@ -735,7 +765,7 @@ c
       integer *8 irefine
 
       integer *8 i,j,k,l,ibox,ifunif,i1
-      real *8 rscale2,err,bs,bs2
+      real *8 rscale2,err(nd),bs,bs2
       data xind/-1,1,-1,1/
       data yind/-1,-1,1,1/
 
@@ -802,11 +832,15 @@ C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,ibox,err)
 
         call fun_err(nd,npols,fcoefs(1,1,i),rmask,
      1       iptype,rscale2,err)
-        err = err/rsum
+        
+        do idim=1,nd
+           err(idim) = err(idim)/rsum
+           if(err(idim).gt.eps*rsc(idim)) then
+              irefinebox(i) = 1
+c              exit
+           endif
+        enddo
 		  
-        if(err.gt.eps*rsc) then
-          irefinebox(i) = 1
-        endif
       enddo
 C$OMP END PARALLEL DO     
 
@@ -929,12 +963,12 @@ c        rscale: double precision
 c          scaling factor
 c
 c       output
-c         err: double precision
+c         err: double precision(nd)
 c           max scaled error in the functions
 c
         implicit none
         integer *8 n,i,iptype,idim,nd,int8_1
-        real *8 rscale,err
+        real *8 rscale,err(nd)
         real *8 fcoefs(nd,n),rmask(n)
         real *8, allocatable :: errtmp(:),ftmp(:,:)
         real *8 alpha, beta
@@ -984,10 +1018,11 @@ c
 
        err = 0
         do idim=1,nd
-          if(errtmp(idim).gt.err) err = errtmp(idim)
+c     if(errtmp(idim).gt.err) err = errtmp(idim)
+           err(idim) = errtmp(idim)*rscale
         enddo
 
-        err = err*rscale
+c        err = err*rscale
 
         return
         
@@ -996,55 +1031,55 @@ c
 c
 c
 c
-c       
-c
+c     
+c     
       subroutine update_rints(nd,npbox,nbmax,fvals,ifirstbox,nbloc,
-     1       iptype,nchild,ichild,wts,rsc,rintbs,rint)
-c
+     1     iptype,nchild,ichild,wts,rsc,rintbs,rint)
+c     
 c------------------------
-c  This subroutine updates the integrals of the function to
-c  be resolved on the computational domain. It subtracts the
-c  integral of the boxes which have been refined and adds
-c  in the integrals corresponding to the function values 
-c  tabulated at the children
-c
-c  Input arguments:
-c  
-c    - nd: integer *8
-c        number of functions
-c    - npbox: integer *8
-c        number of points per box where the function is tabulated
-c    - nbmax: integer *8
-c        max number of boxes
-c    - fvals: real *8 (nd,npbox,nbmax)
-c        tabulated function values
-c    - ifirstbox: integer *8
-c        first box in the list of boxes to be processed
-c    - nbloc: integer *8
-c        number of boxes to be processed
-c    - iptype: integer *8
-c        Lp version of the scheme
-c        * iptype = 0, linf
-c        * iptype = 1, l1
-c        * iptype = 2, l2
-c    - nchild: integer *8(nbmax)
-c        number of children 
-c    - ichild: integer *8(8,nbmax)
-c        list of children
-c    - wts: real *8 (npbox)
-c        quadrature weights for intgegrating functions 
-c    - rsc: real *8
-c        scaling parameter for computing integrals
-c  
-c  Inout arguemnts:
-c
-c     - rintbs: real *8(nbmax)
-c         the integral for the new boxes cretated will be updated
-c     - rint: real *8
-c         the total integral will be updated
-c    
-c  
-c      
+c     This subroutine updates the integrals of the function to
+c     be resolved on the computational domain. It subtracts the
+c     integral of the boxes which have been refined and adds
+c     in the integrals corresponding to the function values 
+c     tabulated at the children
+c     
+c     Input arguments:
+c     
+c     - nd: integer *8
+c     number of functions
+c     - npbox: integer *8
+c     number of points per box where the function is tabulated
+c     - nbmax: integer *8
+c     max number of boxes
+c     - fvals: real *8 (nd,npbox,nbmax)
+c     tabulated function values
+c     - ifirstbox: integer *8
+c     first box in the list of boxes to be processed
+c     - nbloc: integer *8
+c     number of boxes to be processed
+c     - iptype: integer *8
+c     Lp version of the scheme
+c     * iptype = 0, linf
+c     * iptype = 1, l1
+c     * iptype = 2, l2
+c     - nchild: integer *8(nbmax)
+c     number of children 
+c     - ichild: integer *8(4,nbmax)
+c     list of children
+c     - wts: real *8 (npbox)
+c     quadrature weights for intgegrating functions 
+c     - rsc: real *8
+c     scaling parameter for computing integrals
+c     
+c     Inout arguemnts:
+c     
+c     - rintbs: real *8(nd,nbmax)
+c     the integral for the new boxes cretated will be updated
+c     - rint: real *8(nd)
+c     the total integral will be updated
+c     
+c     
+c     
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
       integer *8, intent(in) :: nd,npbox,nbmax
@@ -1052,93 +1087,120 @@ c
       integer *8, intent(in) :: ifirstbox,nbloc,iptype
       integer *8, intent(in) :: nchild(nbmax),ichild(4,nbmax)
       real *8, intent(in) :: wts(npbox),rsc
-      real *8, intent(inout) :: rintbs(nbmax),rint
+      real *8, intent(inout) :: rintbs(nd,nbmax),rint(nd)
 
-c
-c
-c      compute the integrals for the newly formed boxes
-c   and update the overall integral
-c
+      real *8, allocatable :: rintsq(:)
+
+c     
+c     
+c     compute the integrals for the newly formed boxes
+c     and update the overall integral
+c     
       if(iptype.eq.0) then
          do i=1,nbloc  
             ibox = ifirstbox+i-1
             if(nchild(ibox).gt.0) then
                do j=1,4
                   jbox = ichild(j,ibox)
-                  rintbs(jbox) = maxval(fvals(1:nd,1:npbox,jbox))
-                  if(rintbs(jbox).gt.rint) rint = rintbs(jbox)
+                  do idim = 1,nd
+                     rintbs(idim,jbox) =
+     1                    maxval(abs(fvals(idim,1:npbox,jbox)))
+                     if(rintbs(idim,jbox).gt.rint(idim)) then
+                        rint(idim) = rintbs(idim,jbox)
+                     endif
+                  enddo
                enddo
             endif
          enddo
       endif
 
       if(iptype.eq.1) then
-        do i=1,nbloc
-          ibox=ifirstbox+i-1
-          if(nchild(ibox).gt.0) then
+         do i=1,nbloc
+            ibox=ifirstbox+i-1
+            if(nchild(ibox).gt.0) then
 c     subtract contribution of ibox from rint
-            rint = rint - rintbs(ibox) 
-          endif
-        enddo
+               do idim=1,nd
+                  rint(idim) = rint(idim) - rintbs(idim,ibox)
+               enddo
+            endif
+         enddo
 
-c
+c     
 c     add back contribution of children
-c
-        do i=1,nbloc
-          ibox = ifirstbox+i-1
-          if(nchild(ibox).gt.0) then
-            do j=1,4
-              jbox = ichild(j,ibox)
-              rintbs(jbox) = 0
-              do l=1,npbox
-                do idim=1,nd
-                  rintbs(jbox) = rintbs(jbox) + 
-     1               abs(fvals(idim,l,jbox))*wts(l)*rsc
-                enddo
-              enddo
-              rint = rint + rintbs(jbox)
-            enddo
-          endif
-        enddo
+c     
+         do i=1,nbloc
+            ibox = ifirstbox+i-1
+            if(nchild(ibox).gt.0) then
+               do j=1,4
+                  jbox = ichild(j,ibox)
+                  do idim=1,nd
+                     rintbs(idim,jbox) = 0
+                  enddo
+                  do l=1,npbox
+                     do idim=1,nd
+                        rintbs(idim,jbox) = rintbs(idim,jbox) + 
+     1                       abs(fvals(idim,l,jbox))*wts(l)*rsc
+                     enddo
+                  enddo
+                  do idim=1,nd
+                     rint(idim) = rint(idim) + rintbs(idim,jbox)
+                  enddo
+               enddo
+            endif
+         enddo
       endif
 
       if(iptype.eq.2) then
-        rintsq = rint**2
-        do i=1,nbloc
-          ibox=ifirstbox+i-1
-          if(nchild(ibox).gt.0) then
-c
-c    note that if iptype = 2, then rintbs stores squares
-c    of the integral on the box
-c
-             rintsq = rintsq - rintbs(ibox)
-          endif
-        enddo
 
-        do i=1,nbloc
-          ibox = ifirstbox+i-1
-          if(nchild(ibox).gt.0) then
-            do j=1,4
-              jbox = ichild(j,ibox)
-              rintbs(jbox) = 0
-              do l=1,npbox
-                do idim=1,nd
-                  rintbs(jbox) = rintbs(jbox) + 
-     1               fvals(idim,l,jbox)**2*wts(l)*rsc
-                enddo
-              enddo
-              rintsq = rintsq + rintbs(jbox)
-            enddo
-          endif
-        enddo
-        rint = sqrt(rintsq)
+         allocate(rintsq(nd))
+
+         do idim=1,nd
+            rintsq(idim) = rint(idim)**2
+         enddo
+         
+         do i=1,nbloc
+            ibox=ifirstbox+i-1
+            if(nchild(ibox).gt.0) then
+c     
+c     note that if iptype = 2, then rintbs stores squares
+c     of the integral on the box
+c     
+               do idim=1,nd
+                  rintsq(idim) = rintsq(idim) - rintbs(idim,ibox)
+               enddo
+            endif
+         enddo
+
+         do i=1,nbloc
+            ibox = ifirstbox+i-1
+            if(nchild(ibox).gt.0) then
+               do j=1,4
+                  jbox = ichild(j,ibox)
+                  do idim=1,nd
+                     rintbs(idim,jbox) = 0
+                  enddo
+                  do l=1,npbox
+                     do idim=1,nd
+                        rintbs(idim,jbox) = rintbs(idim,jbox) + 
+     1                       fvals(idim,l,jbox)**2*wts(l)*rsc
+                     enddo
+                  enddo
+                  do idim=1,nd
+                     rintsq(idim) = rintsq(idim) + rintbs(idim,jbox)
+                  enddo
+               enddo
+            endif
+         enddo
+         do idim=1,nd
+            rint(idim) = sqrt(rintsq(idim))
+         enddo
       endif
-          
+      
 
       return
       end
-c
-c
+c     
+c     
 c
 c
 c
@@ -1187,7 +1249,7 @@ c
        integer *8 i,j,nel
 
        nel = nd*npb*nb
-       call dcopy(nel,fvals,1,fvals2,1)
+       call dcopy_guru(nel,fvals,1_8,fvals2,1_8)
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j)
        do i=1,nb
@@ -2577,8 +2639,6 @@ c     nosc = dpars(13)
       f(2) = y
       f(3) = z
 
-      print *,"ND = ", nd
-      print *,"ZPARS = ", zpars
       if (nd.gt.3) then
          
          drrds = -nosc*rwave*sin(nosc*s)
@@ -2918,7 +2978,6 @@ c     real *8, allocatable:: bdis(:), bdjs(:)
       nfp = ipars(3) 
 c      m = ipars(4)
 
-      print *,"m = ", ipars(4)
       
 c      allocate(bis(2*m+1), bjs(2*m+1), bdis(2*m+1), bdjs(2*m+1))
 c      allocate(coefs(2*m+1,2*m+1,3))
@@ -2980,9 +3039,6 @@ c     scale to s,t in [0,2\pi]\times[0,2\pi]
       enddo
 !
 !
-      print *,"firstloop done"
-c      print *,"ZPARs = ", zpars
-      print *,"nd = ", nd
       ni = 2*m+1
       nj = 2*m+1
 
@@ -2997,12 +3053,11 @@ c               print *,"coefs(",i,",",j,"k",k,") = ", coefs(i,j,k)
             enddo
          enddo
       enddo
-      print *,"IDX = ", idx
+
       scales(1) = dpars(ni*nj*3+1)
       scales(2) = dpars(ni*nj*3+2)
       scales(3) = dpars(ni*nj*3+3)      
 
-      print *,"SCALES = ", scales
       do j = 1,nj
          do i = 1,ni
             idx = i + (j-1)*ni
@@ -3033,7 +3088,6 @@ c     hatxyz(3) = hatxyz(3) + coefs(i,j,3)*bis(i)*bjs(j)
        f(2) = (hatxyz(1)*st + hatxyz(2)*ct)*scales(2)
        f(3) = hatxyz(3)*scales(3)
 
-       print *,"f(1) f(2) f(3)", f(1),f(2),f(3)
        
        if (nd.gt.3) then
           
