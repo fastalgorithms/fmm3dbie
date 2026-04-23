@@ -30,6 +30,10 @@
       done = 1
       pi = atan(done)*4
 
+      i9_8 = 9
+      i3_8 = 3
+      i0_8 = 0
+      i12_8 = 12
 
 c
 c       select geometry type
@@ -109,10 +113,10 @@ c
       sigout(3) = .31d0
       
       do i=1,npts
-         call st3d_slp_vec(9,xyz_out,3,srcvals(1,i),0,dpars,0,zpars,0,
-     1        ipars,smat)
-         call st3d_strac_vec(9,xyz_out,12,srcvals(1,i),0,dpars,0,zpars,
-     1        0,ipars,stracmat)
+         call st3d_slp_vec(xyz_out,i3_8,srcvals(1,i),i0_8,
+     1        dpars,i0_8,zpars,i0_8,ipars,smat)
+         call st3d_strac_vec(xyz_out,i12_8,srcvals(1,i),i0_8,dpars,
+     1        i0_8,zpars,i0_8,ipars,stracmat)
          uval(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
          uval(2,i) = smat(2,1)*sigout(1) + smat(2,2)*sigout(2)
@@ -133,8 +137,8 @@ c
       nin = 9
       
       do i = 1,nin
-         call st3d_slp_vec(9,xyz_out,3,xyz_in(1,i),0,dpars,0,zpars,0,
-     1        ipars,smat)
+         call st3d_slp_vec(xyz_out,i3_8,xyz_in(1,i),i0_8,dpars,
+     1        i0_8,zpars,i0_8,ipars,smat)
       
          uintest(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
@@ -145,6 +149,51 @@ c
 
       enddo
 
+
+c
+c     basic kernel check: Gauss's i.d. with smooth quad at 1 target
+c     
+
+      uin(1) = 0
+      uin(2) = 0
+      uin(3) = 0
+
+      do i = 1,npts
+         call st3d_dlp_vec(srcvals(1,i),i3_8,xyz_in,i0_8,dpars,
+     1        i0_8,zpars,i0_8,ipars,dmat)
+
+         u1 = -1d0
+         u2 = -2d0
+         u3 = -3d0
+
+         uin(1) = uin(1) + wts(i)*(
+     2        dmat(1,1)*u1+dmat(1,2)*u2+dmat(1,3)*u3)
+         uin(2) = uin(2) + wts(i)*(
+     2        dmat(2,1)*u1+dmat(2,2)*u2+dmat(2,3)*u3)
+         uin(3) = uin(3) + wts(i)*(
+     2        dmat(3,1)*u1+dmat(3,2)*u2+dmat(3,3)*u3)
+
+
+      enddo
+
+      uin(1) = uin(1)
+      uin(2) = uin(2)
+      uin(3) = uin(3)
+
+      sum = 0
+      sumrel = 0
+
+      do i = 1,3
+         sum = sum + (uin(i)-i)**2
+         sumrel = sumrel + i**2
+      enddo
+
+      i1 = 0
+      errl2 = sqrt(sum/sumrel)
+      if (errl2 .lt. 1d-3) i1 = 1
+      
+      call prin2('rel err in Gauss ID --- direct, smooth quad *',
+     1     errl2,1)
 
 c
 c     basic kernel check: green's i.d. with smooth quad at 1 target
@@ -163,10 +212,10 @@ c
       du2(3) = 0
 
       do i = 1,npts
-         call st3d_slp_vec(9,srcvals(1,i),3,xyz_in,0,dpars,0,zpars,0,
-     1        ipars,smat)
-         call st3d_dlp_vec(9,srcvals(1,i),3,xyz_in,0,dpars,0,zpars,
-     1        0,ipars,dmat)
+         call st3d_slp_vec(srcvals(1,i),i3_8,xyz_in,i0_8,dpars,
+     1        i0_8,zpars,i0_8,ipars,smat)
+         call st3d_dlp_vec(srcvals(1,i),i3_8,xyz_in,i0_8,dpars,
+     1        i0_8,zpars,i0_8,ipars,dmat)
 
          u1 = uval(1,i)
          u2 = uval(2,i)
@@ -202,9 +251,9 @@ c
 
       enddo
 
-      uin(1) = uin(1)/(4*pi)
-      uin(2) = uin(2)/(4*pi)
-      uin(3) = uin(3)/(4*pi)      
+      uin(1) = uin(1)
+      uin(2) = uin(2)
+      uin(3) = uin(3)
 
       sum = 0
       sumrel = 0
@@ -218,7 +267,7 @@ c
       errl2 = sqrt(sum/sumrel)
       if (errl2 .lt. 1d-3) i1 = 1
       
-      call prin2('rel err in Gauss ID --- direct, smooth quad *',
+      call prin2('rel err in Greens ID --- direct, smooth quad *',
      1     errl2,1)
 
 c
@@ -243,7 +292,7 @@ c
       st1(1) = 0
       st1(2) = 0
       st1(3) = 0      
-      call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
+      call stok_comb_vel_eval(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
      2     ipatch_id,uvs_targ,eps,dpars,tracval,st1)
 
@@ -252,15 +301,15 @@ c
       du1(1) = 0
       du1(2) = 0
       du1(3) = 0      
-      call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
+      call stok_comb_vel_eval(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
      2     ipatch_id,uvs_targ,eps,dpars,uval,du1)
 
 
 
-      uin(1) = (st1(1)-du1(1))/(4*pi)
-      uin(2) = (st1(2)-du1(2))/(4*pi)
-      uin(3) = (st1(3)-du1(3))/(4*pi)
+      uin(1) = (st1(1)-du1(1))
+      uin(2) = (st1(2)-du1(2))
+      uin(3) = (st1(3)-du1(3))
 
       sum = 0
       sumrel = 0
@@ -271,9 +320,9 @@ c
 
       i2= 0
       errl2 = sqrt(sum/sumrel)
-      if (errl2 .lt. 1d-3) i2 = 2 
+      if (errl2 .lt. 1d-3) i2 = 1
 
-      call prin2('rel err in Gauss ID --- FMM, adaptive quadrature *',
+      call prin2('rel err in Greens ID --- FMM, adaptive quadrature *',
      1     errl2,1)
 
       ntests=2
