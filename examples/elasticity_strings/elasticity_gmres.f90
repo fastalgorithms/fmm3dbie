@@ -22,6 +22,7 @@
       integer *8 nosc, iort, nfp, ibc
       integer *8 nuv(2)
       integer *8 nabc(3)
+      real *8 rsurf, centroid(3), rmoi(3,3), rmoi_inv(3,3)
       
       real *8, allocatable :: cms(:,:), rads(:), rad_near(:)
       integer *8, allocatable :: row_ptr(:), col_ind(:), iquad(:)
@@ -53,11 +54,16 @@
       npatches = 0
       npts = 0
 
-      igeom = 'ellipsoid'
+      igeom = 'storus'
       nin = 100
 
+      ifout = 0
+      ndi = 1
+      ipars(1) = 0
+
+
 !
-!  set exterior target
+!  set "exterior" target
 !
       xyz_out(1) = 3.1d0
       xyz_out(2) = 3.19d0
@@ -65,7 +71,7 @@
 
       xyz_out(4:9) = 0
 
-      ibc = 2
+      ibc = 3
 
       if(ibc.eq.1.or.ibc.eq.3) then
         xyz_out(10) = 1.0d0/sqrt(3.0d0)
@@ -78,7 +84,7 @@
         xyz_out(12) = 1.0d0/sqrt(3.0d0)
       endif
       huse = 0.3d0
-      norder = 9
+      norder = 7
       iptype0 = 1
       rfac_sc = 1.0d0
 
@@ -93,8 +99,8 @@
         scales(2) = 1.0d0
         scales(3) = 1.0d0
         
-        nuv(1) = 12
-        nuv(2) = 48
+        nuv(1) = 16
+        nuv(2) = 64
 
         
         
@@ -119,6 +125,44 @@
           xyz_in(1,i) = xc + rr*cos(uu)*cos(vv) 
           xyz_in(2,i) = yc + rr*cos(uu)*sin(vv)
           xyz_in(3,i) = rr*sin(uu)
+        enddo
+        call prin2('xyz_in=*',xyz_in,24)
+
+      elseif (trim(igeom).eq.'storus') then
+        radii(1) = 4.0d0
+        radii(2) = 1.5d0
+        radii(3) = 0.25d0
+        nosc = 3
+        scales(1) = 1.0d0
+        scales(2) = 1.0d0
+        scales(3) = 1.0d0
+        
+        nuv(1) = 16
+        nuv(2) = 64
+
+        
+        
+        call get_startorus_npat_mem(radii, nosc, scales, nuv, norder, &
+          iptype0, npatches, npts)
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_startorus_npat(radii, nosc, scales, nuv, norder, &
+          iptype0, npatches, npts, norders, ixyzs, iptype, srccoefs, &
+          srcvals)
+
+        do i=1,nin
+          vv = hkrand(0)*2*pi
+          uu = hkrand(0)*2*pi
+
+          rr = (radii(2) + radii(3)*cos(nosc*uu))*0.1d0*hkrand(0)
+          r1 = radii(1) + rr*cos(uu)
+          r2 = rr*sin(uu) 
+
+          xyz_in(1,i) = r1*cos(vv) 
+          xyz_in(2,i) = r1*sin(vv)
+          xyz_in(3,i) = r2 
         enddo
         call prin2('xyz_in=*',xyz_in,24)
 
@@ -212,7 +256,7 @@
         abc(2) = 1.0d0
         abc(3) = 1.0d0
 
-        na = 4
+        na = 2
 
         nabc(1) = na 
         nabc(2) = na
@@ -278,14 +322,21 @@
       ndim3 = 3
       ndd = 3
       ndz = 0
-      ndi = 0
       rf(1:3) = 0
       rtorque(1:3) = 0
+      if(ifout.eq.0) then
       write(fname_res,'(a,a)') trim(dir_name), 'results_summary.dat'
       write(fname_rhs,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
            trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder, '_ibc',ibc,'_rhs.dat'
       write(fname_soln,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
            trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_ibc',ibc,'_soln.dat'
+      else
+      write(fname_res,'(a,a)') trim(dir_name), 'results_summary_ext.dat'
+      write(fname_rhs,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
+           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder, '_ibc',ibc,'_rhs_ext.dat'
+      write(fname_soln,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
+           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_ibc',ibc,'_soln_ext.dat'
+      endif
       write(fname_geom,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
            trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'.go3'
       print *, trim(fname_rhs)
@@ -295,10 +346,29 @@
       open(unit=80,file=trim(fname_res),access='append')
 
       do i=1,npts
-
+        
+        if(ifout.eq.0) then
         if(ibc.eq.1.or.ibc.eq.2) then  
           call el3d_elastlet_string_mindlin_normalstress_vec(nd, xyz_out, ndim3, &
           srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+        endif
+        if(ibc.eq.3) then
+          call el3d_elastlet_normalstress_vec(nd, xyz_out, ndim3, &
+            srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+        endif
+
+        else
+        if(ibc.eq.1.or.ibc.eq.2) then  
+          call el3d_elastlet_string_mindlin_normalstress_vec(nd, &
+          xyz_in(1,1), ndim3, &
+          srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+        endif
+        if(ibc.eq.3) then
+          call el3d_elastlet_normalstress_vec(nd, xyz_in(1,1), ndim3, &
+            srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+        endif
+
+
         endif
         rhs(1,i) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
                    rtmp(1,3)*strengths(3)
@@ -357,9 +427,10 @@
       dpars_quad(1) = dlam
       dpars_quad(2) = dmu
       dh0 = 0.25d0
+      if (ifout.eq.1) dh0 = -0.25d0
       do i=1,npatches
         dhs(i) = rads(i)*rfac_sc*1.5d0
-        dhs(i) = 0.25d0 
+        dhs(i) = dh0 
         dpars_quad(2+i) = dhs(i)
       enddo
       call prin2('dhs=*',dhs,24)
@@ -371,7 +442,6 @@
       ndtarg = 12
       call findnearmem(cms, npatches, rad_near, ndtarg, srcvals, npts, &
          nnz)
-      
 
       allocate(row_ptr(npts+1),col_ind(nnz))
       
@@ -396,23 +466,59 @@
         iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear)
       
       eps_gmres = eps
-      numit = 500
+      numit = 1000
       allocate(errs(numit+1))
       did = 1.0d0
+      inull = 1
+
+      if(ifout.eq.1) did = -1.0d0
+      if(ifout.eq.1) inull = 0
+      
+
+      call get_surf_moments(npatches, norders, ixyzs, iptype, &
+        npts, srcvals, wts, rsurf, centroid, rmoi)
+      
+      int8_3 = 3
+      call dinverse(int8_3, rmoi, info, rmoi_inv)
+      call prin2('rsurf=*',rsurf,1)
+      call prin2('rmoi=*',rmoi,9)
+
       call dgmres_strings(npts, srcvals, wts, ipatch_id, uvs_targ, &
-        dpars_quad, ixyzs, row_ptr, col_ind, iquad, wnear, & 
-        did, rhs, numit, eps_gmres, niter, errs, &
+        dpars_quad, ixyzs, row_ptr, col_ind, iquad, wnear, inull, & 
+        rsurf, rmoi_inv, did, rhs, numit, eps_gmres, niter, errs, &
         rres, soln)
       do i=1,npts
         write(79,*) soln(1,i), soln(2,i), soln(3,i)
       enddo
       close(79)
 
-      do j=1,nin
+      ntargl = nin
+      if(ifout.eq.1) ntargl = 1
+
+      print *, "ntargl=",ntargl
+
+      do j=1,ntargl
         dpars(3) = hout
         rtmp(1:3,1:3) = 0
-        call el3d_elastlet_string_mindlin_vec(nd, xyz_out, ndim3, &
-            xyz_in(1,j), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+
+        if (ifout.eq.0) then
+          if (ibc.eq.1.or.ibc.eq.2) then
+            call el3d_elastlet_string_mindlin_vec(nd, xyz_out, ndim3, &
+              xyz_in(1,j), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+          elseif (ibc.eq.3) then
+            call el3d_elastlet_vec(nd, xyz_out, ndim3, xyz_in(1,j), ndd, &
+            dpars, ndz, zpars, ndi, ipars, rtmp)
+          endif
+        else
+          if (ibc.eq.1.or.ibc.eq.2) then
+            call el3d_elastlet_string_mindlin_vec(nd, xyz_in, ndim3, &
+              xyz_out, ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+          elseif (ibc.eq.3) then
+            call el3d_elastlet_vec(nd, xyz_in, ndim3, xyz_out, ndd, &
+            dpars, ndz, zpars, ndi, ipars, rtmp)
+          endif
+
+        endif
       
         pot_ex(1,j) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
                   rtmp(1,3)*strengths(3)
@@ -426,8 +532,13 @@
           rtmp(1:3,1:3) = 0 
           ipatch = ipatch_id(i)
           dpars(3) = dhs(ipatch)
-          call el3d_elastlet_string_mindlin_vec(nd, srcvals(1,i), ndim3, &
-            xyz_in(1,j), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+          if(ifout.eq.0) then
+            call el3d_elastlet_string_mindlin_vec(nd, srcvals(1,i), ndim3, &
+              xyz_in(1,j), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+          else
+            call el3d_elastlet_string_mindlin_vec(nd, srcvals(1,i), ndim3, &
+              xyz_out, ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+          endif
          
           pot(1,j) = pot(1,j) + (rtmp(1,1)*soln(1,i) + rtmp(1,2)*soln(2,i) + &
                     rtmp(1,3)*soln(3,i))*wts(i)
@@ -437,10 +548,6 @@
                     rtmp(3,3)*soln(3,i))*wts(i)
         enddo
       enddo
-      pot(1:3,1:nin) = pot(1:3,1:nin)
-
-      call prin2('pot=*',pot,12)
-      call prin2('pot_ex=*',pot_ex,12)
 
       rarhs = 0
       rasoln = 0
@@ -463,54 +570,66 @@
 
 
       erra = 0.0d0
-      bmat(1:3*nin,1:6) = 0
 
-      do i=1,nin
-        bmat(3*i-2,1) = 1
-        bmat(3*i-1,2) = 1
-        bmat(3*i-0,3) = 1
+      if(ifout.eq.0) then
+        bmat(1:3*nin,1:6) = 0
 
-        bmat(3*i-2,4) = 0
-        bmat(3*i-2,5) = xyz_in(3,i)
-        bmat(3*i-2,6) = -xyz_in(2,i)
+        do i=1,nin
+          bmat(3*i-2,1) = 1
+          bmat(3*i-1,2) = 1
+          bmat(3*i-0,3) = 1
+  
+          bmat(3*i-2,4) = 0
+          bmat(3*i-2,5) = xyz_in(3,i)
+          bmat(3*i-2,6) = -xyz_in(2,i)
 
-        bmat(3*i-1,4) = -xyz_in(3,i)
-        bmat(3*i-1,5) = 0 
-        bmat(3*i-1,6) = xyz_in(1,i)
+          bmat(3*i-1,4) = -xyz_in(3,i)
+          bmat(3*i-1,5) = 0 
+          bmat(3*i-1,6) = xyz_in(1,i)
 
-        bmat(3*i-0,4) = xyz_in(2,i)
-        bmat(3*i-0,5) = -xyz_in(1,i)
-        bmat(3*i-0,6) = 0
+          bmat(3*i-0,4) = xyz_in(2,i)
+          bmat(3*i-0,5) = -xyz_in(1,i)
+          bmat(3*i-0,6) = 0
 
-        rhsb(3*i-2) = pot_ex(1,i) - pot(1,i)
-        rhsb(3*i-1) = pot_ex(2,i) - pot(2,i)
-        rhsb(3*i-0) = pot_ex(3,i) - pot(3,i)
-      enddo
-
-      m = 3*nin
-      n = 6
-      nrhs = 1
-      eps = 1.0d-12
-      info = 0
-      irank = 0
-      call dleastsq(m, n, bmat, nrhs, rhsb, eps, info, solnb, irank)
-      call prinf('irank=*', irank, 1)
-      call prinf('info=*', info, 1)
-      call prinf('m=*',m,1)
-      call prinf('n=*',n,1)
-      
-      erra = 0
-      do i=1,3*nin
-        resb(i) = -rhsb(i)
-        do j = 1,6
-          resb(i) = resb(i) + bmat(i,j)*solnb(j)
+          rhsb(3*i-2) = pot_ex(1,i) - pot(1,i)
+          rhsb(3*i-1) = pot_ex(2,i) - pot(2,i)
+          rhsb(3*i-0) = pot_ex(3,i) - pot(3,i)
         enddo
 
-        erra = erra + resb(i)**2
-      enddo
-      erra = sqrt(erra)
-      call prin2('resb=*',resb,12)
-      call prin2('soln=*',solnb,6)
+        m = 3*nin
+        n = 6
+        nrhs = 1
+        eps = 1.0d-12
+        info = 0
+        irank = 0
+        call dleastsq(m, n, bmat, nrhs, rhsb, eps, info, solnb, irank)
+
+        ra = 0
+        do i=1,npts
+          ra = ra + rhs(1,i)**2*wts(i)
+          ra = ra + rhs(2,i)**2*wts(i)
+          ra = ra + rhs(3,i)**2*wts(i)
+        enddo
+        erra = 0 
+        do i=1,3*nin
+          resb(i) = -rhsb(i)
+          do j = 1,6
+            resb(i) = resb(i) + bmat(i,j)*solnb(j)
+         enddo
+
+          erra = erra + resb(i)**2
+        enddo
+        erra = sqrt(erra/ra)
+        call prin2('resb=*',resb,12)
+        call prin2('soln=*',solnb,6)
+      else
+         erra = erra + abs(pot_ex(1,1) - pot(1,1))**2
+         erra = erra + abs(pot_ex(2,1) - pot(2,1))**2
+         erra = erra + abs(pot_ex(3,1) - pot(3,1))**2
+         erra = sqrt(erra)/rarhs
+         call prin2('pot_ex=*',pot_ex,3)
+         call prin2('pot=*',pot,3)
+      endif
       print *, "Error in solution=", erra
 
       write(80,'(a,2x,i4,2x,i2,2x,i4,2x,e11.5,2x,e11.5,2x,i1)') &
@@ -659,7 +778,7 @@
       allocate(xs(nmax), ys(nmax), ws(nmax))
       allocate(srctmp(12,nmax), qwts(nmax))
 
-      ipv = 0
+      ipv = 1
 !
 !  transpose row_ptr and col_ind to get col_ptr and row_ind
 !
@@ -691,7 +810,8 @@
       rfac_tri = 2.0d0
       ndd = 3
       ndz = 0
-      ndi = 0
+      ndi = 1
+      ipars = 0
       
       
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ipatch, i,istart,j,targuse) &
@@ -699,7 +819,7 @@
 !$OMP PRIVATE(ws, l, uv, sigvals, transa, transb, alpha, beta) &
 !$OMP PRIVATE(lda, ldb, ldc, srctmp, rr, qwts, fval, k, isrc) &
 !$OMP PRIVATE(dintvals, jtarg, jpatch, ntt, ii, iqstart, iind) &
-!$OMP PRIVATE(umat, vmat, uvs_r, wts_r, npols, verts, nv)
+!$OMP PRIVATE(umat, vmat, uvs_r, wts_r, npols, verts, nv, ipars)
       do ipatch = 1,npatches
         istart = ixyzs(ipatch)
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
@@ -726,12 +846,15 @@
         dpars_use(1) = dpars(1)
         dpars_use(2) = dpars(2) 
         dpars_use(3) = dpars(ipatch+2)
+       
         rn1 = 0
         n2 = 0
 
         allocate(dintcoefs(3,3,npols,ntt+npols))
         allocate(dintvals(3,3,npols,ntt+npols))
         dintcoefs = 0
+
+        ipars = 0
 
         call dtriaints_vec(eps, istrat, intype, npatches0, &
           norders(ipatch), npols, isd, ndsc, srccoefs(1,istart), ndtarg, &
@@ -833,7 +956,7 @@
 
       subroutine matmul(npts, srcvals, wts, ipatch_id, &
         uvs_targ, dhs, dla, dmu, ixyzs, &
-        row_ptr, col_ind, iquad, wnear, x, y)
+        row_ptr, col_ind, iquad, wnear, inull, rsurf, rmoi_inv, x, y)
       implicit real *8 (a-h,o-z)
       implicit integer *8(i-n)
       integer *8, intent(in) :: npts
@@ -844,11 +967,12 @@
       integer *8, intent(in) :: ixyzs(*), row_ptr(*), col_ind(*)
       integer *8, intent(in) :: iquad(*)
       real *8, intent(in) :: wnear(3,3,*)
+      real *8, intent(in) :: rsurf, rmoi_inv(3,3)
       real *8, intent(in) :: x(3,npts)
       real *8, intent(out) :: y(3,npts)
       
       real *8 rtmp(3,3), dpars(3)
-      real *8 rf(3), rtorque(3), dtmp(3)
+      real *8 rf(3), rtorque(3), dtmp(3), dtmp2(3)
       integer *8 ipars
       complex *16 zpars
 
@@ -864,9 +988,10 @@
       y(1:3,1:npts) = 0 
       nd = 9
       ndd = 3
-      ndi = 0
+      ndi = 1
       ndz = 0
       ndtarg = 12
+      ipars = 1
       do i=1,npts
         ipatch = ipatch_id(i)
         dpars(3) = dhs(ipatch)
@@ -912,7 +1037,7 @@
         enddo
       enddo
 !$OMP END PARALLEL DO
-
+      if(inull.eq.1) then
 !
 !  Ones matrix
 !
@@ -923,19 +1048,25 @@
         call cross_prod3d(srcvals(1,i),x(1,i),dtmp)
         rtorque(1:3) = rtorque(1:3) + dtmp(1:3)*wts(i)
       enddo
-
+      
+      rf(1:3) = rf(1:3)/rsurf
       do i=1,npts
          y(1:3,i) = y(1:3,i) + rf(1:3)
          call cross_prod3d(srcvals(1,i), rtorque, dtmp)
-         y(1:3,i) = y(1:3,i) - dtmp(1:3)
+
+         dtmp2(1:3) = rmoi_inv(1:3,1)*dtmp(1) + rmoi_inv(1:3,2)*dtmp(2) +&
+                    rmoi_inv(1:3,3)*dtmp(3)
+         y(1:3,i) = y(1:3,i) - dtmp2(1:3)
       enddo
+
+      endif
 
       return
       end
       
 
       subroutine dgmres_strings(npts, srcvals, wts, ipatch_id, uvs_targ, &
-        dpars, ixyzs, row_ptr, col_ind, iquad, wnear, & 
+        dpars, ixyzs, row_ptr, col_ind, iquad, wnear, inull, rsurf, rmoi_inv, & 
         did, rhs, numit, eps_gmres, niter, errs, &
         rres, soln)
 !  
@@ -982,7 +1113,14 @@
 !        number of near field entries corresponding to each source target
 !        pair
 !    - wnear: real *8(3,3,nquad)
-!        precomputed quadrature corrections            
+!        precomputed quadrature corrections           
+!    - inull: integer *8
+!        flag for including generalized 1's matrix
+!    - rsurf: real *8
+!        surface area (required for generalized 1's matrix)
+!    - rmoi_inv: real *8 (3,3)
+!        inverse of moment of inertia tensor (required for generalized 1's
+!        matrix)
 !    - did: real *8
 !        multiple of identity 'z' to be used
 !    - rhs: real *8(3, npts) or real *8(npts)
@@ -1016,6 +1154,8 @@
   real *8, intent(in) :: dpars(*)
   integer *8, intent(in) :: row_ptr(npts+1),col_ind(*)
   integer *8, intent(in) :: iquad(*)
+  integer *8, intent(in) :: inull
+  real *8, intent(in) :: rsurf, rmoi_inv(3,3)
   
   
   
@@ -1085,7 +1225,8 @@
 
     call matmul(npts, srcvals, wts, ipatch_id, &
         uvs_targ, dpars(3), dpars(1), dpars(2), ixyzs, &
-        row_ptr, col_ind, iquad, wnear, vmat(1,1,it), wtmp)
+        row_ptr, col_ind, iquad, wnear, inull, rsurf, rmoi_inv, &
+        vmat(1,1,it), wtmp)
 
     do k=1,it
       ztmp = 0
@@ -1188,7 +1329,8 @@
 
     call matmul(npts, srcvals, wts, ipatch_id, &
         uvs_targ, dpars(3), dpars(1), dpars(2), ixyzs, &
-        row_ptr, col_ind, iquad, wnear, soln, wtmp)
+        row_ptr, col_ind, iquad, wnear, inull, rsurf, rmoi_inv, &
+        soln, wtmp)
 
 !$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rres) PRIVATE(idim)
       do i=1,npts

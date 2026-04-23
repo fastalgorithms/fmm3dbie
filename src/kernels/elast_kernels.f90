@@ -61,15 +61,15 @@
       r3inv = rinv**3
 
       vals(1,1) = rfac*((2-da)*rinv + da*rx*rx*r3inv)
-      vals(2,1) = rfac*(da*ry*rx*r3inv)
-      vals(3,1) = rfac*(da*rz*rx*r3inv)
+      vals(2,1) = rfac*(da*rx*ry*r3inv)
+      vals(3,1) = rfac*(da*rx*rz*r3inv)
 
-      vals(1,2) = rfac*(da*ry*rx*r3inv)
+      vals(1,2) = rfac*(da*rx*ry*r3inv)
       vals(2,2) = rfac*((2-da)*rinv + da*ry*ry*r3inv)
-      vals(3,2) = rfac*(da*rz*ry*r3inv)
+      vals(3,2) = rfac*(da*ry*rz*r3inv)
 
-      vals(1,3) = rfac*(da*rz*rx*r3inv)
-      vals(2,3) = rfac*(da*rz*ry*r3inv)
+      vals(1,3) = rfac*(da*rx*rz*r3inv)
+      vals(2,3) = rfac*(da*ry*rz*r3inv)
       vals(3,3) = rfac*((2-da)*rinv + da*rz*rz*r3inv)
 
       return
@@ -124,7 +124,7 @@
       real *8 rx, ry, rz, r, rinv, r3inv, da, rfac, r5inv
       real *8 rfac1, rfac2, rfac3, dgam, dbeta
       real *8 dx(3)
-      real *8 over4pi, deye(3,3)
+      real *8 over4pi, deye(3,3), rtmp
       integer *8 i,j,k
       data over4pi/0.07957747154594767d0/
 
@@ -136,15 +136,11 @@
       dx(2) = tar(2)-src(2)
       dx(3) = tar(3)-src(3)
 
-      dbeta = (2-da)*over4pi/dmu/2
-      dgam = da*over4pi/dmu/2
-
-      rfac1 = dmu*(dgam - dbeta)
-      rfac2 = -dlam*(dbeta + dgam) + 2*dmu*dgam
-      rfac3 = -6*dmu*dgam
+      rfac1 = (da-1)*over4pi
+      rfac3 = -3*da*over4pi
       
 
-      r  = sqrt(rx**2+ry**2+rz**2)
+      r  = sqrt(dx(1)**2 + dx(2)**2 + dx(3)**2)
       rinv = 1.0d0/r
       r3inv = rinv**3
       r5inv = r3inv*rinv*rinv
@@ -153,12 +149,12 @@
       deye(1,1) = 1
       deye(2,2) = 1
       deye(3,3) = 1
-      
+
       vals(1:3,1:3,1:3) = 0
       do i=1,3
         do j=1,3
           do k=1,3
-            vals(i,j,k) = deye(i,j)*dx(k)*r3inv*rfac2
+            vals(i,j,k) = vals(i,j,k) - deye(i,j)*dx(k)*r3inv*rfac1
             vals(i,j,k) = vals(i,j,k) + deye(j,k)*dx(i)*r3inv*rfac1 
             vals(i,j,k) = vals(i,j,k) + deye(i,k)*dx(j)*r3inv*rfac1
             vals(i,j,k) = vals(i,j,k) + dx(i)*dx(j)*dx(k)*r5inv*rfac3
@@ -217,15 +213,14 @@
 
       real *8 vals_tmp(3,3,3)
       integer *8 i
+
       call el3d_elastlet_stress_vec(nd, src, ndt, tar, ndd, &
         dpars, ndz, zpars, ndi, ipars, vals_tmp)
 
       vals(1:3,1:3) = 0
-      do i=1,3
-        vals(1:3,1:3) = vals(1:3,1:3) + tar(10)*vals_tmp(1:3,1:3,1)
-        vals(1:3,1:3) = vals(1:3,1:3) + tar(10)*vals_tmp(1:3,1:3,2)
-        vals(1:3,1:3) = vals(1:3,1:3) + tar(10)*vals_tmp(1:3,1:3,3)
-      enddo
+      vals(1:3,1:3) = vals(1:3,1:3) + tar(10)*vals_tmp(1,1:3,1:3)
+      vals(1:3,1:3) = vals(1:3,1:3) + tar(11)*vals_tmp(2,1:3,1:3)
+      vals(1:3,1:3) = vals(1:3,1:3) + tar(12)*vals_tmp(3,1:3,1:3)
 
       return
       end
@@ -531,29 +526,65 @@
       real *8 over4pi
       real *8 v1(3,3), v2(3,3), v3(3,3)
       real *8 srctmp(12)
+      real *8 xq(16), wq(16)
       data over4pi/0.07957747154594767d0/
+      data xq / &
+        0.5299532504175034d-02,  0.2771248846338371d-01, & 
+        0.6718439880608413d-01,  0.1222977958224985d+00, &
+        0.1910618777986781d0,  0.2709916111713863d0, &
+        0.3591982246103705d0,  0.4524937450811813d0, &
+        0.5475062549188187d0,  0.6408017753896295d0, &
+        0.7290083888286137d0,  0.8089381222013219d0, &
+        0.8777022041775015d0,  0.9328156011939159d0, &
+        0.9722875115366163d0,  0.9947004674958250d0/
+
+      data wq / &
+        0.1357622970587705d-01,  0.3112676196932395d-01, &
+        0.4757925584124639d-01,  0.6231448562776694d-01, &
+        0.7479799440828837d-01,  0.8457825969750127d-01, &
+        0.9130170752246179d-01,  0.9472530522753425d-01, &
+        0.9472530522753425d-01,  0.9130170752246179d-01, &
+        0.8457825969750127d-01,  0.7479799440828837d-01, &
+        0.6231448562776694d-01,  0.4757925584124639d-01, &
+        0.3112676196932395d-01,  0.1357622970587705d-01/
+
 
       dlam = dpars(1)
       dmu = dpars(2)
       da = (dlam + dmu)/(dlam + 2*dmu)
-
       h = dpars(3)
+      nq = 16
 
-      srctmp(1:12) = src(1:12)
-      srctmp(1) = srctmp(1) + h*src(10)
-      srctmp(2) = srctmp(2) + h*src(11)
-      srctmp(3) = srctmp(3) + h*src(12)
+      if (ipars.eq.0) then
 
-      call el3d_elastlet_mindlin_vec(nd, src, ndt, tar, ndd, &
-        dpars, ndz, zpars, ndi, ipars, v1)
 
-      call el3d_elastlet_mindlin_vec(nd, srctmp, ndt, tar, ndd, &
-        dpars, ndz, zpars, ndi, ipars, v2)
+        srctmp(1:12) = src(1:12)
+        srctmp(1) = srctmp(1) + h*src(10)
+        srctmp(2) = srctmp(2) + h*src(11)
+        srctmp(3) = srctmp(3) + h*src(12)
+
+        call el3d_elastlet_mindlin_vec(nd, src, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v1)
+
+        call el3d_elastlet_mindlin_vec(nd, srctmp, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v2)
         
-      call el3d_elastlet_dn_mindlin_vec(nd, srctmp, ndt, tar, ndd, &
-        dpars, ndz, zpars, ndi, ipars, v3)
+        call el3d_elastlet_dn_mindlin_vec(nd, srctmp, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v3)
 
-      vals = v1 - v2 - h*v3
+        vals = v1 - v2 - h*v3
+      else
+        srctmp(1:12) = src(1:12)
+        vals  = 0
+        do ii = 1,nq
+          srctmp(1) = src(1) + h*xq(ii)*src(10)
+          srctmp(2) = src(2) + h*xq(ii)*src(11)
+          srctmp(3) = src(3) + h*xq(ii)*src(12)
+          call hkern3d(nd, srctmp, ndt, tar, ndd, dpars, ndz, zpars, &
+            ndi, ipars, v1)
+          vals = vals + wq(ii)*xq(ii)*v1*h*h
+        enddo
+      endif
       
       return
       end
@@ -883,29 +914,66 @@
       real *8 over4pi
       real *8 v1(3,3,3), v2(3,3,3), v3(3,3,3), v4(3,3,3)
       real *8 srctmp(12)
+      real *8 xq(16), wq(16)
       data over4pi/0.07957747154594767d0/
+      data xq / &
+        0.5299532504175034d-02,  0.2771248846338371d-01, & 
+        0.6718439880608413d-01,  0.1222977958224985d+00, &
+        0.1910618777986781d0,  0.2709916111713863d0, &
+        0.3591982246103705d0,  0.4524937450811813d0, &
+        0.5475062549188187d0,  0.6408017753896295d0, &
+        0.7290083888286137d0,  0.8089381222013219d0, &
+        0.8777022041775015d0,  0.9328156011939159d0, &
+        0.9722875115366163d0,  0.9947004674958250d0/
 
+      data wq / &
+        0.1357622970587705d-01,  0.3112676196932395d-01, &
+        0.4757925584124639d-01,  0.6231448562776694d-01, &
+        0.7479799440828837d-01,  0.8457825969750127d-01, &
+        0.9130170752246179d-01,  0.9472530522753425d-01, &
+        0.9472530522753425d-01,  0.9130170752246179d-01, &
+        0.8457825969750127d-01,  0.7479799440828837d-01, &
+        0.6231448562776694d-01,  0.4757925584124639d-01, &
+        0.3112676196932395d-01,  0.1357622970587705d-01/
+
+      nq = 16
       dlam = dpars(1)
       dmu = dpars(2)
       da = (dlam + dmu)/(dlam + 2*dmu)
 
       h = dpars(3)
 
-      srctmp(1:12) = src(1:12)
-      srctmp(1) = srctmp(1) + h*src(10)
-      srctmp(2) = srctmp(2) + h*src(11)
-      srctmp(3) = srctmp(3) + h*src(12)
+      if (ipars.eq.0) then
 
-      call el3d_elastlet_mindlin_stress_vec(nd, src, ndt, tar, ndd, &
-        dpars, ndz, zpars, ndi, ipars, v1)
+        srctmp(1:12) = src(1:12)
+        srctmp(1) = srctmp(1) + h*src(10)
+        srctmp(2) = srctmp(2) + h*src(11)
+        srctmp(3) = srctmp(3) + h*src(12)
 
-      call el3d_elastlet_mindlin_stress_vec(nd, srctmp, ndt, tar, ndd, &
-        dpars, ndz, zpars, ndi, ipars, v2)
+        call el3d_elastlet_mindlin_stress_vec(nd, src, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v1)
+
+        call el3d_elastlet_mindlin_stress_vec(nd, srctmp, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v2)
         
-      call el3d_elastlet_dn_mindlin_stress_vec(nd, srctmp, ndt, tar, ndd, &
-        dpars, ndz, zpars, ndi, ipars, v3)
+        call el3d_elastlet_dn_mindlin_stress_vec(nd, srctmp, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v3)
       
-      v4 = v1 - v2 - h*v3
+        v4 = v1 - v2 - h*v3
+      else
+        srctmp(1:12) = src(1:12)
+        v4(1:3,1:3,1:3)  = 0
+        do ii = 1,nq
+          srctmp(1) = src(1) + h*xq(ii)*src(10)
+          srctmp(2) = src(2) + h*xq(ii)*src(11)
+          srctmp(3) = src(3) + h*xq(ii)*src(12)
+          v1(1:3,1:3,1:3) = 0
+          call hkern3d_stress(nd, srctmp, ndt, tar, ndd, dpars, ndz, zpars, &
+            ndi, ipars, v1)
+          v4 = v4 + wq(ii)*xq(ii)*v1*h*h
+        enddo
+
+      endif
 
       vals(1:3,1:3) = 0
       do jj =1,3
@@ -1000,3 +1068,164 @@
 !
 !
 !
+      subroutine hkern3d(nd, src, ndt, tar, ndd, dpars, ndz, zpars, &
+        ndi, ipars, vals)
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      real *8 src(*),tar(*),vals(3,3),rs(3),ns(3),eye(3,3),dpars(2)
+      complex *16 zpars
+        
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      done = 1
+      pi = atan(done)*4
+
+      eye = 0
+      eye(1,1) = 1
+      eye(2,2) = 1
+      eye(3,3) = 1
+
+      rs(1) = tar(1)-src(1)
+      rs(2) = tar(2)-src(2)
+      rs(3) = tar(3)-src(3)
+        
+      ns(1) = src(10)
+      ns(2) = src(11)
+      ns(3) = src(12)
+
+      rfac = 1/(4*pi*dmu)
+      bfac = (1-da)/da*rfac
+
+      r  = sqrt(rs(1)**2+rs(2)**2+rs(3)**2)
+      r3 = r**3 
+      r5 = r**5
+      r7 = r**7
+      rdn = ns(1)*rs(1)+ns(2)*rs(2)+ns(3)*rs(3)
+        
+      rp = r-rdn
+      rp2= rp**2
+
+      f1 = (2*da-1)/da
+      f2 = 1/da
+
+      do j=1,3
+        do i=1,3
+
+          vals(i,j) = -f1*eye(i,j)/r3-3*f2*rs(i)*rs(j)/r5 &
+           +2*f1*ns(i)*ns(j)/r3-6*f1*rdn*ns(i)*rs(j)/r5 &
+           -6*rdn*rs(i)*ns(j)/r5+3*(rdn)**2*eye(i,j)/r5 &
+           +15*rs(i)*rs(j)*(rdn)**2/r7
+
+
+        enddo
+      enddo
+
+      vals = rfac*vals
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine hkern3d_stress(nd, src, ndt, tar, ndd, dpars, ndz, & 
+        zpars, ndi, ipars, vals)
+      implicit real *8 (a-h,o-z)
+      implicit integer *8(i-n)
+      real *8 src(*),tar(*),vals(3,3,3), &
+           rs(3),ns(3),qmat(3,3),eye(3,3),ts(3),dpars(2)
+      complex *16 zpars
+        
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      done = 1
+      pi = atan(done)*4
+
+      rs(1) = tar(1)-src(1)
+      rs(2) = tar(2)-src(2)
+      rs(3) = tar(3)-src(3)
+
+      ns(1) = src(10)
+      ns(2) = src(11)
+      ns(3) = src(12)
+
+      r  = sqrt(rs(1)**2+rs(2)**2+rs(3)**2)
+      r2 = r**2
+      r3 = r**3 
+      r5 = r**5 
+      r7 = r**7
+      r9 = r**9
+      rdn = ns(1)*rs(1)+ns(2)*rs(2)+ns(3)*rs(3)
+
+      rfac = 1/(4*pi)
+      bfac = (1-da)/da*rfac
+
+      ts(1) = rs(1) - rdn*ns(1)
+      ts(2) = rs(2) - rdn*ns(2)
+      ts(3) = rs(3) - rdn*ns(3)
+
+      qmat = 0
+
+      do i=1,3
+        do j=1,3
+        qmat(i,j) = -ns(i)*ns(j)
+        enddo
+      enddo
+
+      qmat(1,1) = 1+qmat(1,1)
+      qmat(2,2) = 1+qmat(2,2)
+      qmat(3,3) = 1+qmat(3,3)
+
+      eye = 0
+      eye(1,1) = 1
+      eye(2,2) = 1
+      eye(3,3) = 1
+
+      rp = r-rdn
+      rp2= rp**2
+      rp3= rp**3
+      rp4= rp**4
+      rp5= rp**5
+
+      do k=1,3
+        do j=1,3
+          do i=1,3
+
+            rih = ts(i)
+            rjh = ts(j)
+            dni = ns(i)
+            dnj = ns(j)
+            dnk = ns(k)
+            ri = rs(i)
+            rj = rs(j)
+            rk = rs(k)
+            qij = qmat(i,j)
+            qik = qmat(i,k)
+            qjk = qmat(j,k)
+            eij = eye(i,j)
+
+            t1 = 4*rih*rjh*rk/r2/rp3+2*rih*rjh*rk/r3/rp2
+            t2 = -2*qij/r*(1/rp2-1/r2)*rk
+            t3 =  2*qij/rp2*dnk
+            t4 = -4*rih*rjh*dnk/r/rp3
+            t5 = -2*qik*rjh/r/rp2-2*qjk*rih/r/rp2
+
+            s1 = -12*rfac/r5*(dni*dnj*rk+dni*rj*dnk+ri*dnj*dnk) &
+           +60*rfac*(ri*rj*dnk+ri*dnj*rk+dni*rj*rk)*rdn/r7 &
+           +30*rfac*ri*rj*rk/r7-210*rfac*ri*rj*rk*rdn*rdn/r9
+
+            t1 = 30*rih*rjh*rk/r7-6*(qik*rjh+qjk*rih)/r5 &
+            -12*qij*dnk*rdn/r5-12*qij*rk/r5+30*qij*rk*rdn**2/r7
+  
+            vals(i,j,k) = s1 + bfac*t1
+  
+          enddo
+        enddo
+      enddo
+
+
+      return
+      end

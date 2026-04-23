@@ -6,12 +6,18 @@
       real *8 uyz(3), uzx(3), uzy(3), dpars(3), ux(3), uy(3), uz(3)
       real *8 ucomp(3), utest(3), utest2(3), ustr(3,3)
       real *8 amat(3,3)
+      real *8 v1(3,3), v2(3,3)
       complex *16 zpars
       integer *8 ipars, ndd, ndz, ndi
       
       done = 1.0d0
       pi = atan(one)*4
       call prini(6,13)
+
+      ndi = 1
+      ipars = 0
+
+      itype = 2
       
       src(1:12) = 0 
       src(1) = hkrand(0)*2 - 1.0d0
@@ -27,7 +33,10 @@
 
       dmu = 1.3d0
       dla = 1.4d0
-      h = 0.3d0
+
+      dmu = 1.0d0
+      dla = 1.0d0
+      h = 0.1d0
       dpars(1) = dla
       dpars(2) = dmu
       dpars(3) = h
@@ -42,9 +51,9 @@
       tar(11) = hkrand(0)*2 - 1.0d0
       tar(12) = hkrand(0)*2 - 1.0d0
 
-!      tar(10) = 0
-!      tar(11) = 0
-!      tar(12) = 1
+      tar(10) = 1
+      tar(11) = 0
+      tar(12) = 0
 
 
       
@@ -55,8 +64,8 @@
       str(2) = hkrand(0)
       str(3) = hkrand(0)
 
-!      str(1:3) = 0
-!      str(2) = 1
+      str(1:3) = 0
+      str(3) = 1
 
       hh = 1.0d-3
 
@@ -74,9 +83,15 @@
             src_grid(2,ilat,jlat,klat) = src(2) + jlat*hh
             src_grid(3,ilat,jlat,klat) = src(3) + klat*hh
             val_grid(1:3,1:3,ilat,jlat,klat) = 0
-            call el3d_elastlet_string_mindlin_vec(nd, &
-              src_grid(1,ilat,jlat,klat), ndt, tar, ndd, dpars, ndz, &
-              zpars, ndi, ipars, val_grid(1,1,ilat,jlat,klat))
+            if(itype.eq.1) then
+              call el3d_elastlet_string_mindlin_vec(nd, &
+                src_grid(1,ilat,jlat,klat), ndt, tar, ndd, dpars, ndz, &
+                zpars, ndi, ipars, val_grid(1,1,ilat,jlat,klat))
+            elseif(itype.eq.2) then
+              call el3d_elastlet_vec(nd, &
+                src_grid(1,ilat,jlat,klat), ndt, tar, ndd, dpars, ndz, &
+                zpars, ndi, ipars, val_grid(1,1,ilat,jlat,klat))
+            endif
               
               uval(1:3,ilat,jlat,klat) = & 
                   val_grid(1:3,1,ilat,jlat,klat)*str(1) + &      
@@ -144,15 +159,37 @@
          tar(12)*amat(3,1:3)
       utest2(1:3) = tar(10)*amat(1:3,1) + tar(11)*amat(1:3,2) + &
          tar(12)*amat(1:3,3)
-      call el3d_elastlet_string_mindlin_normalstress_vec(nd, &
+      if(itype.eq.1) then
+         call el3d_elastlet_string_mindlin_normalstress_vec(nd, &
               src, ndt, tar, ndd, dpars, ndz, &
               zpars, ndi, ipars, ustr)
+
+      elseif(itype.eq.2) then
+         call el3d_elastlet_normalstress_vec(nd, &
+              src, ndt, tar, ndd, dpars, ndz, &
+              zpars, ndi, ipars, ustr)
+      endif
+
       ucomp(1:3) = ustr(1:3,1)*str(1) + ustr(1:3,2)*str(2) + &
          ustr(1:3,3)*str(3)
       call prin2('utest=*',utest,3)
       call prin2('utest2=*',utest2,3)
       call prin2('ucomp=*',ucomp,3)
+
+      ipars = 0
+      call el3d_elastlet_string_mindlin_normalstress_vec(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, v1) 
+      ipars = 1
+      call el3d_elastlet_string_mindlin_normalstress_vec(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, v2)   
+      call prin2('v1=*',v1,9)
+      call prin2('v2=*',v2,9)
+      print *, v1(1,1)/v2(1,1), v2(1,1)/v1(1,1)
+
       
+      
+
+       
       
 
 

@@ -1,4 +1,4 @@
-     implicit real *8 (a-h,o-z)
+      implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:), wts(:)
       integer *8 ipars(2)
@@ -59,7 +59,7 @@
       npatches = 0
       npts = 0
 
-      igeom = 'wtorus'
+      igeom = 'torus'
       nin = 100
 
       xyz_out(1) = 3.1d0
@@ -75,8 +75,46 @@
       norder = 9
       iptype0 = 1
       rfac_sc = 1.0d0
+      if (trim(igeom).eq.'torus') then
+        radii(1) = 4.0d0
+        radii(2) = 1.5d0
+        radii(3) = 0.0d0
+        nosc = 0
+        scales(1) = 1.0d0
+        scales(2) = 1.0d0
+        scales(3) = 1.0d0
+        
+        nuv(1) = 6
+        nuv(2) = 24
 
-      if (trim(igeom).eq.'wtorus') then
+        
+        
+        call get_startorus_npat_mem(radii, nosc, scales, nuv, norder, &
+          iptype0, npatches, npts)
+
+        allocate(srcvals(12,npts), srccoefs(9,npts))
+        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+
+        call get_startorus_npat(radii, nosc, scales, nuv, norder, &
+          iptype0, npatches, npts, norders, ixyzs, iptype, srccoefs, &
+          srcvals)
+
+        do i=1,nin
+          vv = hkrand(0)*2*pi
+          rc = radii(1) 
+          xc = rc*cos(vv)
+          yc = rc*sin(vv)
+
+          rr = hkrand(0)*0.25d0*radii(2)
+          uu = hkrand(0)*2*pi
+          xyz_in(1,i) = xc + rr*cos(uu)*cos(vv) 
+          xyz_in(2,i) = yc + rr*cos(uu)*sin(vv)
+          xyz_in(3,i) = rr*sin(uu)
+        enddo
+        call prin2('xyz_in=*',xyz_in,24)
+
+
+       elseif (trim(igeom).eq.'wtorus') then
 
 !        rfac_sc = 1.5d0
         rfac_sc = 1.0d0
@@ -168,7 +206,7 @@
         abc(2) = 1.0d0
         abc(3) = 1.0d0
 
-        na = 4
+        na = 2
 
         nabc(1) = na 
         nabc(2) = na
@@ -325,7 +363,8 @@
       dpars_quad(1) = dlam
       dpars_quad(2) = dmu
       do i=1,npatches
-        dhs(i) = rads(i)*2 
+        dhs(i) = rads(i)*2
+        dhs(i) = 0.25d0 
         dpars_quad(2+i) = dhs(i)
       enddo
       
@@ -559,7 +598,7 @@
       enddo
 !$OMP END PARALLEL DO
 
-      if(1.eq.1) then
+      if(1.eq.0) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(isrc,j)
       do isrc = 1,npts
         do j=1,npts
@@ -608,7 +647,7 @@
       ifwrite = 1
 
       if(ifwrite.eq.1)  then
-        open(unit=32,file='fort.32',access='stream')
+        open(unit=32,file='fort.34',access='stream')
         write(32) amat
         close(32)
       endif
