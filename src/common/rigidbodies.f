@@ -197,3 +197,36 @@ c
 
      
       
+      subroutine get_linear_transf_eul(deul, dmat)
+c
+c  compute the 3x3 rotation matrix corresponding to euler angles
+c  in the zxz notation
+c 
+c  Input arguments:
+c    deul: real *(3)
+c      the three Euler angles
+c  Output arguments:
+c    dmat: real *8(3,3)
+c      the corresponding rotation matrix 
+c
+      implicit real *8 (a-h,o-z)
+      real *8 deul(3), dmat(3,3)
+
+      psi = deul(1)
+      thet = deul(2)
+      phi = deul(3)
+
+      dmat(1,1) = cos(phi)*cos(psi) - sin(phi)*cos(thet)*sin(psi)
+      dmat(1,2) = cos(phi)*sin(psi) + sin(phi)*cos(thet)*cos(psi)
+      dmat(1,3) = sin(thet)*sin(phi)
+  
+      dmat(2,1) = -sin(phi)*cos(psi)
+      dmat(2,2) = -sin(phi)*sin(psi) + cos(phi)*cos(thet)*cos(psi)
+      dmat(2,3) = cos(phi)*sin(thet)
+
+      dmat(3,1) = sin(thet)*sin(psi)
+      dmat(3,2) = -sin(thet)*cos(psi)
+      dmat(3,3) = cos(thet)
+
+      return
+      end

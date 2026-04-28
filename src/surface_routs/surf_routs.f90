@@ -947,7 +947,7 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 
          do l=1,npols
             ll = istart+l-1
-            do m=1,9
+do m=1,9
               srctmp(m) = srctmp(m) + srccoefs(m,ll)*pols(l)
             enddo
          enddo
@@ -997,8 +997,491 @@ subroutine refine_patches_list(npatches, npatmax, norders, ixyzs, &
 
   return
 end subroutine refine_patches_list
+!
+!
+!
+!
+subroutine get_surf_moments(npatches, norders, ixyzs, &
+    iptype, npts, srcvals, wts, area, centroid, rmoi)
+!
+!  This subroutine returns the 0th, 1st and 2nd moments
+!  of a surface. The 0th moment is just the surface area, 
+!  the first moment is the centroid, and the second moment
+!  is given by
+!
+!  II_{ij} = 
+!   \int_{\Gamma} (|x-c|^2  \delta_{ij} - (x_{i} - c_{i})(x_{j}-c_{j}))dS
+!  
+!  Input arguments:
+!    - npatches: integer *8
+!        number of patches
+!    - norders: integer *8(npatches)
+!        discretization order of patches
+!    - ixyzs: integer *8(npatches+1)
+!        starting location of points on patch i
+!    - iptype: integer *8(npatches)
+!        type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts: integer *8
+!        total number of points on the surface
+!    - srcvals: double precision (12,npts)
+!        xyz, dxyz/du,dxyz/dv, normals at all nodes
+!    - wts: double precision(npts)
+!        quadrature weights for integrating smooth 
+!        functions
+!
+!  Output arguments:   
+!    - area: double precision
+!        the 0th moment of the surface, i.e. surface area
+!    - centroid: double precision(3)
+!        the first moment of the surface, i.e. the centroid
+!    - rmoi: double precision(3,3)
+!        the second moment of inertia of the surface, defined
+!        above
+!
+!----------------------------------------------
+!
+
+  implicit none
+  integer *8, intent(in) :: npatches, norders(npatches)
+  integer *8, intent(in) :: ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
+  integer *8, intent(in) :: npts
+
+  real *8, intent(in) :: srcvals(12,npts), wts(npts)
+
+  real *8, intent(out) :: area, centroid(3), rmoi(3,3)
+
+  integer *8 i
+  real *8 xdiff(3)
+
+  area = 0
+  centroid(1:3) = 0
+  rmoi(1:3,1:3) = 0
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i) &
+!$OMP REDUCTION(+:area,centroid)
+  do i=1,npts
+    area = area + wts(i)
+    centroid(1:3) = centroid(1:3) + srcvals(1:3,i)*wts(i)
+  enddo
+!$OMP END PARALLEL DO
+  centroid(1:3) = centroid(1:3)/area
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,xdiff) REDUCTION(+:rmoi)
+  do i=1,npts
+    xdiff(1:3) = srcvals(1:3,i) - centroid(1:3)
+    rmoi(1,1) = rmoi(1,1) + (xdiff(2)**2 + xdiff(3)**2)*wts(i)
+    rmoi(2,2) = rmoi(2,2) + (xdiff(1)**2 + xdiff(3)**2)*wts(i)
+    rmoi(3,3) = rmoi(3,3) + (xdiff(1)**2 + xdiff(2)**2)*wts(i)
+
+    rmoi(1,2) = rmoi(1,2) - xdiff(1)*xdiff(2)*wts(i)
+    rmoi(1,3) = rmoi(1,3) - xdiff(1)*xdiff(3)*wts(i)
+    rmoi(2,3) = rmoi(2,3) - xdiff(2)*xdiff(3)*wts(i)
+  enddo
+!$OMP END PARALLEL DO
+  
+  rmoi(2,1) = rmoi(1,2)
+  rmoi(3,1) = rmoi(1,3)
+  rmoi(3,2) = rmoi(2,3)
+
+  return
+  end
+!
+!
+!
+!
+!
+subroutine surf_rotate(npatches, norders, ixyzs, iptype, npts, &
+  srccoefs, srcvals, deul, srccoefs_out, srcvals_out)
+! 
+!  This subroutine rotates the surfer object using Euler angles. 
+!  We use the z-x-z convention
+!
+!  Input arguments:
+!    - npatches: integer *8
+!        number of patches describing the discretized surface
+!    - norders: integer *8(npatches)
+!        norders(1:npatches) is the discretization order of patches
+!    - ixyzs: integer *8(npatches+1)
+!        ixyzs(1:npatches+1) is starting location of points on patch i
+!    - iptype: integer *8(npatches)
+!        iptype(1:npatches) type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts: integer *8
+!        total number of points describing the discretized surface
+!    - srccoefs: double precision (9,npts)
+!        srccoefs(1:9,1:npts) are the koornwinder expansion coefs of 
+!        geometry info. 
+!    - srcvals: double precision (12,npts)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes. 
+!    - deul: real *8(3)
+!        The three euler angles
+!
+!  Output arguments:
+!    - srccoefs_out: double precision (9,npts)
+!        srccoefs_out(1:9,1:npts) are the koornwinder expansion coefs of 
+!        the rotated geometry info. 
+!    - srcvals_out: double precision (12,npts)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes on the rotated geometry. 
+!  
+!
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  integer *8, intent(in) :: npatches, npts
+  integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
+  real *8, intent(in) :: deul(3)
+  real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+  real *8, intent(out) :: srccoefs_out(9,npts), srcvals_out(12,npts)
+
+  real *8 dmat(3,3), dshift(3)
+
+  dshift(1) = 0
+  dshift(2) = 0
+  dshift(3) = 0
+
+  call get_linear_transf_eul(deul, dmat)
+
+!
+!  construct the first rotation matrix
+!
+  call surf_affine_transf(npatches, norders, ixyzs, iptype, npts, &
+    srccoefs, srcvals, dmat, dshift, srccoefs_out, srcvals_out)
 
 
+  return
+  end
+!
+!
+!
+!
+!
+subroutine surf_translate(npatches, norders, ixyzs, iptype, npts, &
+  srccoefs, srcvals, dshift, srccoefs_out, srcvals_out)
+! 
+!  This subroutine translates the surfer object. 
+!
+!  Input arguments:
+!    - npatches: integer *8
+!        number of patches describing the discretized surface
+!    - norders: integer *8(npatches)
+!        norders(1:npatches) is the discretization order of patches
+!    - ixyzs: integer *8(npatches+1)
+!        ixyzs(1:npatches+1) is starting location of points on patch i
+!    - iptype: integer *8(npatches)
+!        iptype(1:npatches) type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts: integer *8
+!        total number of points describing the discretized surface
+!    - srccoefs: double precision (9,npts)
+!        srccoefs(1:9,1:npts) are the koornwinder expansion coefs of 
+!        geometry info. 
+!    - srcvals: double precision (12,npts)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes. 
+!    - dshift: real *8(3)
+!        (x,y,z) coordinates of shift 
+!
+!  Output arguments: 
+!    - srccoefs_out: double precision (9,npts)
+!        srccoefs(1:9,1:npts) are the koornwinder expansion coefs of 
+!        translated geometry info. 
+!    - srcvals_out: double precision (12,npts)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes for the translated geometry. 
+!  
+!
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  integer *8, intent(in) :: npatches, npts
+  integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
+  real *8, intent(in) :: dshift(3)
+  real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+  real *8, intent(out) :: srccoefs_out(9,npts), srcvals_out(12,npts)
+
+  real *8 dmat(3,3)
+
+  dmat(1:3,1:3) = 0
+  dmat(1,1) = 1
+  dmat(2,2) = 1
+  dmat(3,3) = 1
+
+  call surf_affine_transf(npatches, norders, ixyzs, iptype, npts, &
+    srccoefs, srcvals, dmat, dshift, srccoefs_out, srcvals_out)
+
+
+  return
+  end
+
+!
+!
+!
+!
+!
+subroutine surf_scale(npatches, norders, ixyzs, iptype, npts, &
+  srccoefs, srcvals, dscale, srccoefs_out, srcvals_out)
+! 
+!  This subroutine rescales the surfer object 
+!
+!  Input arguments:
+!    - npatches: integer *8
+!        number of patches describing the discretized surface
+!    - norders: integer *8(npatches)
+!        norders(1:npatches) is the discretization order of patches
+!    - ixyzs: integer *8(npatches+1)
+!        ixyzs(1:npatches+1) is starting location of points on patch i
+!    - iptype: integer *8(npatches)
+!        iptype(1:npatches) type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts: integer *8
+!        total number of points describing the discretized surface
+!    - srccoefs: double precision (9,npts)
+!        srccoefs(1:9,1:npts) are the koornwinder expansion coefs of 
+!        geometry info. 
+!    - srcvals: double precision (12,npts)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes. 
+!    - dscale: real *8(3)
+!        rescaling parameter for each of the coordinates 
+!
+!  Output arguments: (All arguments are updated on output)
+!    - srccoefs_out: double precision (9,npts)
+!        srccoefs(1:9,1:npts) are the koornwinder expansion coefs of 
+!        the scaled geometry info. 
+!    - srcvals_out: double precision (12,npts)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes of the scaled geometry. 
+!  
+!
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  integer *8, intent(in) :: npatches, npts
+  integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
+  real *8, intent(in) :: dscale(3)
+  real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+  real *8, intent(out) :: srccoefs_out(9,npts), srcvals_out(12,npts)
+
+  real *8 dmat(3,3), dshift(3)
+  
+  dshift(1:3) = 0
+
+  dmat(1:3,1:3) = 0
+  dmat(1,1) = 1  
+  dmat(2,2) = 1
+  dmat(3,3) = 1
+
+  call surf_affine_transf(npatches, norders, ixyzs, iptype, npts, &
+    srccoefs, srcvals, dmat, dshift, srccoefs_out, srcvals_out)
+
+
+  return
+  end
+!
+!
+!
+!
+!
+subroutine surf_affine_transf(npatches, norders, ixyzs, iptype, npts, &
+  srccoefs, srcvals, dmat, dshift, srccoefs_out, srcvals_out)
+! 
+!  This subroutine applies an affine transformation to the surface.  
+!  x \to Mx + v, where v=dshift, and M=dmat
+!
+!
+!  Input arguments:
+!    - npatches: integer *8
+!        number of patches describing the discretized surface
+!    - norders: integer *8(npatches)
+!        norders(1:npatches) is the discretization order of patches
+!    - ixyzs: integer *8(npatches+1)
+!        ixyzs(1:npatches+1) is starting location of points on patch i
+!    - iptype: integer *8(npatches)
+!        iptype(1:npatches) type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts: integer *8
+!        total number of points describing the discretized surface
+!    - srccoefs: double precision (9,npts)
+!        srccoefs(1:9,1:npts) are the koornwinder expansion coefs of 
+!        geometry info. 
+!    - srcvals: double precision (12,npts)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes. 
+!    - dmat: real *8(3,3)
+!        transformation matrix
+!    - dshift: real *8(3)
+!        translation 
+!
+!  Output arguments: (All arguments are updated on output)
+!    - srccoefs_out: double precision (9,npts)
+!        srccoefs(1:9,1:npts) are the koornwinder expansion coefs of 
+!        the scaled geometry info. 
+!    - srcvals_out: double precision (12,npts)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes of the scaled geometry. 
+!  
+!
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  integer *8, intent(in) :: npatches, npts
+  integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
+  real *8, intent(in) :: dmat(3,3), dshift(3)
+  real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+  real *8, intent(out) :: srccoefs_out(9,npts), srcvals_out(12,npts)
+
+  integer *8 nd9
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ds)
+  do i=1,npts
+    srcvals_out(1:3,i) = dmat(1:3,1)*srcvals(1,i) + &
+                         dmat(1:3,2)*srcvals(2,i) + &
+                         dmat(1:3,3)*srcvals(3,i) + dshift(1:3)
+    srcvals_out(4:6,i) = dmat(1:3,1)*srcvals(4,i) + &
+                         dmat(1:3,2)*srcvals(5,i) + &
+                         dmat(1:3,3)*srcvals(6,i) 
+    srcvals_out(7:9,i) = dmat(1:3,1)*srcvals(7,i) + &
+                         dmat(1:3,2)*srcvals(8,i) + &
+                         dmat(1:3,3)*srcvals(9,i) 
+      call cross_prod3d(srcvals_out(4,i), srcvals_out(7,i), &
+        srcvals_out(10,i))
+
+      ds = sqrt(srcvals_out(10,i)**2 + srcvals_out(11,i)**2 + &
+              srcvals_out(12,i)**2)
+      srcvals_out(10,i) = srcvals_out(10,i)/ds
+      srcvals_out(11,i) = srcvals_out(11,i)/ds
+      srcvals_out(12,i) = srcvals_out(12,i)/ds
+
+  enddo
+!$OMP END PARALLEL DO
+  nd9 = 9
+  call surf_vals_to_coefs(nd9, npatches, norders, ixyzs, iptype, npts, &
+    srcvals_out(1:9,1:npts), srccoefs_out)
+
+  return
+  end
+!
+!
+!
+!
+!
+subroutine surf_append_single_comp(npatches, norders, ixyzs, iptype, &
+  npts, srccoefs, srcvals, ncomp, icomps, npatches_out, norders_out, &
+  ixyzs_out, iptype_out, npts_out, srccoefs_out, srcvals_out)
+!
+!
+!  Given a multicomponent surfer description, append to it a new copoment
+!
+!  Input arguments:
+!    - npatches: integer *8
+!        number of patches describing the discretized surface to be appended 
+!    - norders: integer *8(npatches)
+!        norders(1:npatches) is the discretization order of patches
+!    - ixyzs: integer *8(npatches+1)
+!        ixyzs(1:npatches+1) is starting location of points on patch i
+!    - iptype: integer *8(npatches)
+!        iptype(1:npatches) type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts: integer *8
+!        total number of points describing the discretized surface to be
+!        appended
+!    - srccoefs: double precision (9,npts)
+!        srccoefs(1:9,1:npts) are the koornwinder expansion coefs of 
+!        geometry info of the the surface to be appended 
+!    - srcvals: double precision (12,npts)
+!        srcvals(1:12,1:npts) are xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes of the surface to be appended
+!
+!  Input/Output arguments:
+!    - ncomp: integer *8
+!        On input, number of components in output surfer
+!        On output, ncomp = ncomp + 1
+!    - icomps: integer *8 (*)
+!        Must be atleast of size ncomp+2
+!        On input and output icomps(i) is the id of the patch where
+!        information for component i begins in the output surfer
+!    - npatches_out: integer *8
+!        On input, number of patches describing the discretized surface
+!        On output, npatches_out = npatches_out + npatches
+!    - norders_out: integer *8(*)
+!        Must be at least of size npatches_out + npatches on input
+!        Describes the order of discretization of each patch
+!    - ixyzs: integer *8(*)
+!        Must be at least of size npatches_out + npatches + 1 on input
+!        Describes starting location of points on patch i
+!    - iptype: integer *8(*)
+!        Must be at least of size npatches_out + npatches on input
+!        Describes the type of patch
+!       * iptype = 1, triangular patch with RV nodes
+!       * iptype = 11, quad patch with GL nodes
+!       * iptype = 12, quad patch with Cheb nodes
+!    - npts_out: integer *8
+!        On input, total number of points describing the discretized surface
+!        On output, npts_out = npts_out + npts
+!    - srccoefs_out: double precision (9,*)
+!        Must be atleast of size (9,npts_out + npts)
+!        Describes the koornwinder expansion coefs of 
+!        geometry info of the the surface 
+!    - srcvals_out: double precision (12,*)
+!        Must be atleast of size (12,npts_out + npts)
+!        Describes the xyz, dxyz/du,dxyz/dv, normals at 
+!        all nodes of the surface 
+!
+      implicit real *8(a-h,o-z)
+      implicit integer *8(i-n)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), iptype(npatches)
+      integer *8, intent(in) :: ixyzs(npatches+1)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+
+      integer *8, intent(inout) :: npatches_out, npts_out, ncomp, icomps(*)
+      integer *8, intent(inout) :: norders_out(*), iptype_out(*)
+      integer *8, intent(inout) :: ixyzs_out(*)
+      real *8, intent(inout) :: srccoefs_out(9,*), srcvals_out(12,*)
+
+!$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,npatches
+        ixyzs_out(npatches_out+i+1) = ixyzs_out(npatches+1) + ixyzs(i+1) - 1
+        norders_out(npatches_out+i) = norders(i)
+        iptype_out(npatches_out+i) = iptype(i)
+      enddo
+!$OMP END PARALLEL DO
+
+!$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,npts
+        srccoefs_out(1:9,npts_out+i) = srccoefs(1:9,i)
+        srcvals_out(1:12,npts_out+i) = srcvals(1:12,i)
+      enddo
+!$OMP END PARALLEL DO
+      
+      npatches_out = npatches_out + npatches
+      npts_out = npts_out + npts
+      ncomp = ncomp + 1
+      icomps(ncomp+1) = npatches_out + 1
+
+      return
+      end
+!
+!
+!
+!
+!
+!
 subroutine surf_vals_to_coefs(nd,npatches,norders,ixyzs,iptype,npts, &
    u,ucoefs)
 
