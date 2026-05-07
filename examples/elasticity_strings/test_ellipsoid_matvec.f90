@@ -1,6 +1,7 @@
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:), wts(:)
+      real *8, allocatable :: wts_rep(:)
       integer *8 ipars(2)
       real *8 dpars(3), dpars_solver(2)
       
@@ -8,6 +9,7 @@
 
       real *8, allocatable :: dintvals(:,:,:,:)
       real *8, allocatable :: dintcoefs(:,:,:,:)
+      real *8 rsurf, centroid(3), rmoi(3,3), rmoi_inv(3,3)
       
       real *8, allocatable :: targuse(:,:)
       real *8, allocatable :: amat(:,:), xs(:), ys(:), ws(:)
@@ -20,6 +22,7 @@
       real *8, allocatable :: bmat(:,:), rhsb(:), solnb(:), resb(:)
       real *8, allocatable :: dmul1(:,:), dmul2(:,:)
       real *8, allocatable :: dhs(:), dpars_quad(:)
+      real *8 tmat1(3,3), tmat2(3,3)
 
       procedure (), pointer :: fker
 
@@ -41,14 +44,15 @@
       complex *16 zpars
       real *8 uv(2)
       character *1 transa, transb
-      character *100 igeom
+      character *200 igeom, fname_mat, fname_dir
       external l3d_slp, st3d_slp_vec, st3d_comb_vec
       external el3d_elastlet_string_mindlin_normalstress_vec
       external el3d_elastlet_mindlin_normalstress_vec
       
       call prini(6,13)
 
-      dlam = 1.0d0
+      ilam = -5
+      dlam = 10.0d0**(ilam)
       dmu = 1.0d0
       dpars(1) = dlam
       dpars(2) = dmu
@@ -59,7 +63,7 @@
       npatches = 0
       npts = 0
 
-      igeom = 'torus'
+      igeom = 'ellipsoid'
       nin = 100
 
       xyz_out(1) = 3.1d0
@@ -72,7 +76,7 @@
       xyz_out(12) = -1.0d0/sqrt(3.0d0)
 
       huse = 0.3d0
-      norder = 9
+      norder = 7
       iptype0 = 1
       rfac_sc = 1.0d0
       if (trim(igeom).eq.'torus') then
@@ -245,6 +249,14 @@
       
       call get_qwts(npatches, norders, ixyzs, iptype, npts, & 
         srcvals, wts)
+      allocate(wts_rep(3*npts))
+
+      do i=1,npts
+        wts_rep(3*i-2) = wts(i)
+        wts_rep(3*i-1) = wts(i)
+        wts_rep(3*i-0) = wts(i)
+      enddo
+      call prin2('wts_rep=*',wts_rep,3*npts)
       do i=1,nin
         rin = 0
         do j=1,npts
@@ -283,6 +295,14 @@
       ndim = 3
       nd = ndim*ndim
       
+      call get_surf_moments(npatches, norders, ixyzs, iptype, &
+        npts, srcvals, wts, rsurf, centroid, rmoi)
+      
+      int8_3 = 3
+      call dinverse(int8_3, rmoi, info, rmoi_inv)
+      call prin2('rsurf=*',rsurf,1)
+      call prin2('rmoi=*',rmoi,9)
+
 
       ntarguse = npts - npols
       allocate(amat(ndim*npts, ndim*npts))
@@ -598,42 +618,56 @@
       enddo
 !$OMP END PARALLEL DO
 
-      if(1.eq.0) then
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(isrc,j)
+      call prin2('rmoi_inv=*',rmoi_inv,9)
+      call prin2('rsurf=*',rsurf,1)
+      if(1.eq.1) then
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(isrc,j,tmat1,tmat2,k,l,m)
       do isrc = 1,npts
         do j=1,npts
 !
 !  fix null space issue, forces
 !
-            amat(3*j-2,3*isrc-2) = amat(3*j-2,3*isrc-2) + wts(isrc)
-            amat(3*j-1,3*isrc-1) = amat(3*j-1,3*isrc-1) + wts(isrc)
-            amat(3*j-0,3*isrc-0) = amat(3*j-0,3*isrc-0) + wts(isrc)
+            amat(3*j-2,3*isrc-2) = amat(3*j-2,3*isrc-2) + wts(isrc)/rsurf
+            amat(3*j-1,3*isrc-1) = amat(3*j-1,3*isrc-1) + wts(isrc)/rsurf
+            amat(3*j-0,3*isrc-0) = amat(3*j-0,3*isrc-0) + wts(isrc)/rsurf
+
+            tmat1(1,1) = (srcvals(2,j)*srcvals(2,isrc) + &
+                        srcvals(3,j)*srcvals(3,isrc))*wts(isrc)
+            tmat1(1,2) = -(srcvals(2,j)*srcvals(1,isrc))*wts(isrc) 
+            tmat1(1,3) = -(srcvals(3,j)*srcvals(1,isrc))*wts(isrc)
+
+            tmat1(2,1) = -(srcvals(1,j)*srcvals(2,isrc))*wts(isrc)
+            tmat1(2,2) = (srcvals(1,j)*srcvals(1,isrc) + &
+                        srcvals(3,j)*srcvals(3,isrc))*wts(isrc) 
+            tmat1(2,3) = -(srcvals(3,j)*srcvals(2,isrc))*wts(isrc) 
+
+            tmat1(3,1) = -(srcvals(1,j)*srcvals(3,isrc))*wts(isrc) 
+            tmat1(3,2) = -(srcvals(2,j)*srcvals(3,isrc))*wts(isrc) 
+            tmat1(3,3) = (srcvals(1,j)*srcvals(1,isrc) + &
+                        srcvals(2,j)*srcvals(2,isrc))*wts(isrc)
+            do l=1,3
+              do k=1,3
+                tmat2(k,l) = 0
+                do m=1,3
+                  tmat2(k,l) = tmat2(k,l) + rmoi_inv(k,m)*tmat1(m,l)
+                enddo
+              enddo
+            enddo
+
 !
 !  fix null space issue, torques
 !
-            amat(3*j-2,3*isrc-2) = amat(3*j-2,3*isrc-2) + &
-                        (srcvals(2,j)*srcvals(2,isrc) + &
-                        srcvals(3,j)*srcvals(3,isrc))*wts(isrc) 
-            amat(3*j-2,3*isrc-1) = amat(3*j-2,3*isrc-1) - &
-                        (srcvals(2,j)*srcvals(1,isrc))*wts(isrc) 
-            amat(3*j-2,3*isrc-0) = amat(3*j-2,3*isrc-0) - &
-                        (srcvals(3,j)*srcvals(1,isrc))*wts(isrc) 
-            
-            amat(3*j-1,3*isrc-2) = amat(3*j-1,3*isrc-2) - &
-                        (srcvals(1,j)*srcvals(2,isrc))*wts(isrc) 
-            amat(3*j-1,3*isrc-1) = amat(3*j-1,3*isrc-1) + &
-                        (srcvals(1,j)*srcvals(1,isrc) + &
-                        srcvals(3,j)*srcvals(3,isrc))*wts(isrc) 
-            amat(3*j-1,3*isrc-0) = amat(3*j-1,3*isrc-0) - &
-                        (srcvals(3,j)*srcvals(2,isrc))*wts(isrc) 
-
-            amat(3*j-0,3*isrc-2) = amat(3*j-0,3*isrc-2) - &
-                        (srcvals(1,j)*srcvals(3,isrc))*wts(isrc) 
-            amat(3*j-0,3*isrc-1) = amat(3*j-0,3*isrc-1) - &
-                        (srcvals(2,j)*srcvals(3,isrc))*wts(isrc) 
-            amat(3*j-0,3*isrc-0) = amat(3*j-0,3*isrc-0) + &
-                        (srcvals(1,j)*srcvals(1,isrc) + &
-                        srcvals(2,j)*srcvals(2,isrc))*wts(isrc)
+            amat(3*j-2,3*isrc-2) = amat(3*j-2,3*isrc-2) + tmat2(1,1)
+            amat(3*j-2,3*isrc-1) = amat(3*j-2,3*isrc-1) + tmat2(1,2)
+            amat(3*j-2,3*isrc-0) = amat(3*j-2,3*isrc-0) + tmat2(1,3)
+!            
+            amat(3*j-1,3*isrc-2) = amat(3*j-1,3*isrc-2) + tmat2(2,1)
+            amat(3*j-1,3*isrc-1) = amat(3*j-1,3*isrc-1) + tmat2(2,2)
+            amat(3*j-1,3*isrc-0) = amat(3*j-1,3*isrc-0) + tmat2(2,3)
+!
+            amat(3*j-0,3*isrc-2) = amat(3*j-0,3*isrc-2) + tmat2(3,1)
+            amat(3*j-0,3*isrc-1) = amat(3*j-0,3*isrc-1) + tmat2(3,2)
+            amat(3*j-0,3*isrc-0) = amat(3*j-0,3*isrc-0) + tmat2(3,3)
         enddo
       enddo
 !$OMP END PARALLEL DO
@@ -644,10 +678,25 @@
       do i=1,ndim*npts
          amat(i,i) = amat(i,i) + 1.0d0
       enddo
-      ifwrite = 1
 
+!      call prin2('wts_rep=*',wts_rep,3*npts)
+
+      do i=1,3*npts
+        do j=1,3*npts
+          amat(j,i) = amat(j,i)/sqrt(wts_rep(i))*sqrt(wts_rep(j))
+        enddo
+      enddo
+      ifwrite = 1
+      fname_dir = 'cond_mat_files/'
+      if (ilam.ge.0) then
+        write(fname_mat,'(a,i1,a)') trim(fname_dir)//'matrix_ellipsoid_ilam_', &
+          ilam, '.dat'
+      else
+        write(fname_mat,'(a,i1,a)') trim(fname_dir)//'matrix_ellipsoid_ilam_m', &
+          abs(ilam), '.dat'
+      endif
       if(ifwrite.eq.1)  then
-        open(unit=32,file='fort.34',access='stream')
+        open(unit=32,file=trim(fname_mat),access='stream')
         write(32) amat
         close(32)
       endif
@@ -677,7 +726,8 @@
         ra = ra + abs(dmul1(3,i))**2*wts(i)
       enddo
       errmv = sqrt(erra/ra)
-      read *, i
+
+      print *, "npts*ndim = ",npts*ndim
 
       info = 0
       call dgausselim(npts*ndim, amat, rhs, info, soln, dcond)

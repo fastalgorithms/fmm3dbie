@@ -37,7 +37,9 @@
       character *100 fname_res
       external l3d_slp, st3d_slp_vec, st3d_comb_vec
       external el3d_elastlet_string_mindlin_normalstress_vec
+      external el3d_elastlet_string_mindlin_normalstress_vec_bent
       external el3d_elastlet_mindlin_normalstress_vec
+      external el3d_elastlet_string_mindlin_vec_bent
       
 
       
@@ -47,6 +49,8 @@
       dmu = 1.0d0
       dpars(1) = dlam
       dpars(2) = dmu
+
+      isbent = 1
 
       done = 1.0d0
       pi = atan(done)*4
@@ -90,214 +94,46 @@
 
       dir_name = 'data/'
 
-      if (trim(igeom).eq.'torus') then
-        radii(1) = 4.0d0
-        radii(2) = 1.5d0
-        radii(3) = 0.0d0
-        nosc = 0
-        scales(1) = 1.0d0
-        scales(2) = 1.0d0
-        scales(3) = 1.0d0
+      abc(1) = 2.0d0
+      abc(2) = 1.0d0
+      abc(3) = 2.0d0
+
+!      abc(1) = 1.0d0
+!      abc(2) = 1.0d0
+!      abc(3) = 1.0d0
+
+      nabc(1) = 5
+      nabc(2) = 3
+      nabc(3) = 5
+
+!      nabc(1) = 3
+!      nabc(2) = 3
+!      nabc(3) = 3
+
+      c0(1) = 0
+      c0(2) = 0
+      c0(3) = 0
         
-        nuv(1) = 16
-        nuv(2) = 64
-
-        
-        
-        call get_startorus_npat_mem(radii, nosc, scales, nuv, norder, &
-          iptype0, npatches, npts)
-
-        allocate(srcvals(12,npts), srccoefs(9,npts))
-        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
-
-        call get_startorus_npat(radii, nosc, scales, nuv, norder, &
-          iptype0, npatches, npts, norders, ixyzs, iptype, srccoefs, &
-          srcvals)
-
-        do i=1,nin
-          vv = hkrand(0)*2*pi
-          rc = radii(1) 
-          xc = rc*cos(vv)
-          yc = rc*sin(vv)
-
-          rr = hkrand(0)*0.25d0*radii(2)
-          uu = hkrand(0)*2*pi
-          xyz_in(1,i) = xc + rr*cos(uu)*cos(vv) 
-          xyz_in(2,i) = yc + rr*cos(uu)*sin(vv)
-          xyz_in(3,i) = rr*sin(uu)
-        enddo
-        call prin2('xyz_in=*',xyz_in,24)
-
-      elseif (trim(igeom).eq.'storus') then
-        radii(1) = 4.0d0
-        radii(2) = 1.5d0
-        radii(3) = 0.25d0
-        nosc = 3
-        scales(1) = 1.0d0
-        scales(2) = 1.0d0
-        scales(3) = 1.0d0
-        
-        nuv(1) = 16
-        nuv(2) = 64
-
-        
-        
-        call get_startorus_npat_mem(radii, nosc, scales, nuv, norder, &
-          iptype0, npatches, npts)
-
-        allocate(srcvals(12,npts), srccoefs(9,npts))
-        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
-
-        call get_startorus_npat(radii, nosc, scales, nuv, norder, &
-          iptype0, npatches, npts, norders, ixyzs, iptype, srccoefs, &
-          srcvals)
-
-        do i=1,nin
-          vv = hkrand(0)*2*pi
-          uu = hkrand(0)*2*pi
-
-          rr = (radii(2) + radii(3)*cos(nosc*uu))*0.1d0*hkrand(0)
-          r1 = radii(1) + rr*cos(uu)
-          r2 = rr*sin(uu) 
-
-          xyz_in(1,i) = r1*cos(vv) 
-          xyz_in(2,i) = r1*sin(vv)
-          xyz_in(3,i) = r2 
-        enddo
-        call prin2('xyz_in=*',xyz_in,24)
-
-      elseif (trim(igeom).eq.'wtorus') then
-
-!        rfac_sc = 1.5d0
-        rfac_sc = 1.0d0
-
-        radii(1) = 4.0d0
-        radii(2) = 1.5d0
-        radii(3) = 0.25d0
-        
-        nuv(1) = ceiling(4*rfac_sc)
-        nuv(2) = ceiling(16*rfac_sc)
-        nuv(1) = 12
-        nuv(2) = 48 
-
-        print *, "nuv=",nuv(1), nuv(2)
-
-        scales(1) = 1.0d0
-        scales(2) = 1.0d0
-        scales(3) = 1.0d0
-
-        nosc = 3
-
-        m = nosc + 1
-        nfp = 1
-        iort = -1
-        allocate(coefs(2*m+1,2*m+1,3))
-        coefs(1,1,1) = radii(1)
-        coefs(2,1,1) = radii(2)
-        coefs(1,nosc+1,1) = radii(3)/2
-        coefs(m+2,1,3) = radii(2)
-
-        call get_xyz_tensor_fourier_npat_mem(coefs, m, nfp, &
-          scales, iort, nuv, norder, iptype0, npatches, npts)
-        
-        allocate(srcvals(12,npts), srccoefs(9,npts))
-        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
-        
-        call get_xyz_tensor_fourier_npat(coefs, m, nfp, scales, iort, &
-          nuv, norder, iptype0, npatches, npts, norders, ixyzs, iptype, &
-          srccoefs, srcvals)
-
-        do i=1,nin
-          vv = hkrand(0)*2*pi
-          rc = radii(1) + radii(3)*cos(nosc*vv)
-          xc = rc*cos(vv)
-          yc = rc*sin(vv)
-
-          rr = hkrand(0)*0.25d0*radii(2)
-          uu = hkrand(0)*2*pi
-          xyz_in(1,i) = xc + rr*cos(uu)*cos(vv) 
-          xyz_in(2,i) = yc + rr*cos(uu)*sin(vv)
-          xyz_in(3,i) = rr*sin(uu)
-        enddo
-
-      elseif (trim(igeom).eq.'ellipsoid') then
-        abc(1) = 5.1d0
-        abc(2) = 1.0d0
-        abc(3) = 2.0d0
-        
-!        abc(1) = 2.1d0
-!        abc(2) = 1.0d0
-!        abc(3) = 2.0d0
-
-        iref = 4    
-        nabc(1) = 4*iref
-        nabc(2) = 1*iref
-        nabc(3) = 2*iref
-
-!        nabc(1) = 5
-!        nabc(2) = 3
-!        nabc(3) = 5
-
-        c0(1) = 0
-        c0(2) = 0
-        c0(3) = 0
-        
-        do i=1,nin
-          rr = hkrand(0)*0.25d0
-          thet = hkrand(0)*pi
-          phi = hkrand(0)*2*pi
-          xyz_in(1,i) = abc(1)*rr*sin(thet)*cos(phi) 
-          xyz_in(2,i) = abc(2)*rr*sin(thet)*sin(phi) 
-          xyz_in(3,i) = abc(3)*rr*cos(thet)
-        enddo
-        call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, &
+      do i=1,nin
+        rr = hkrand(0)*0.25d0
+        thet = hkrand(0)*pi
+        phi = hkrand(0)*2*pi
+        xyz_in(1,i) = abc(1)*rr*sin(thet)*cos(phi) 
+        xyz_in(2,i) = abc(2)*rr*sin(thet)*sin(phi) 
+        xyz_in(3,i) = abc(3)*rr*cos(thet)
+      enddo
+      call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, &
           npatches, npts)
 
-        allocate(srcvals(12,npts), srccoefs(9,npts))
-        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+      allocate(srcvals(12,npts), srccoefs(9,npts))
+      allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
       
-        call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, &
-          npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
+      call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, &
+        npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
 
-        print *, "npatches=",npatches
-
-      elseif (trim(igeom).eq.'sphere') then
-
-        abc(1) = 1.0d0
-        abc(2) = 1.0d0
-        abc(3) = 1.0d0
-
-        na = 2
-
-        nabc(1) = na 
-        nabc(2) = na
-        nabc(3) = na
-      
-        c0(1) = 0
-        c0(2) = 0
-        c0(3) = 0
-        
-        do i=1,nin
-          rr = hkrand(0)*0.25d0
-          thet = hkrand(0)*pi
-          phi = hkrand(0)*2*pi
-          xyz_in(1,i) = rr*sin(thet)*cos(phi) 
-          xyz_in(2,i) = rr*sin(thet)*sin(phi) 
-          xyz_in(3,i) = rr*cos(thet)
-        enddo
-        call get_ellipsoid_npat_mem(abc, nabc, c0, norder, iptype0, &
-          npatches, npts)
-
-        allocate(srcvals(12,npts), srccoefs(9,npts))
-        allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
-      
-        call get_ellipsoid_npat(abc, nabc, c0, norder, iptype0, &
-          npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
-      endif
+      print *, "npatches=",npatches
 
       allocate(bmat(3*nin,6), rhsb(3*nin), solnb(6), resb(3*nin))
-
-
  
       call prin2('srcvals=*',srcvals(1:3,1:10),30)
       call prin2('srcnorms=*',srcvals(10:12,1:10),30)
@@ -335,26 +171,18 @@
       ndz = 0
       rf(1:3) = 0
       rtorque(1:3) = 0
-      if(ifout.eq.0) then
-      write(fname_res,'(a,a)') trim(dir_name), 'results_summary.dat'
-      write(fname_rhs,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
-           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder, '_ibc',ibc,'_rhs.dat'
-      write(fname_soln,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
-           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_ibc',ibc,'_soln.dat'
-      else
-      write(fname_res,'(a,a)') trim(dir_name), 'results_summary_ext.dat'
-      write(fname_rhs,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
-           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder, '_ibc',ibc,'_rhs_ext.dat'
-      write(fname_soln,'(a,a,a,i2.2,a,i2.2,a,i1,a,i1,a)') trim(dir_name), &
-           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'_ibc',ibc,'_soln_ext.dat'
-      endif
-      write(fname_geom,'(a,a,a,i2.2,a,i2.2,a,i1,a)') trim(dir_name), &
-           trim(igeom),'_',nuv(1),'_',nuv(2),'_',norder,'.go3'
-      print *, trim(fname_rhs)
-      print *, trim(fname_geom)
-      open(unit=77,file=trim(fname_rhs))
-      open(unit=79,file=trim(fname_soln))
-      open(unit=80,file=trim(fname_res),access='append')
+
+      fker => el3d_elastlet_string_mindlin_vec_bent
+      fker => el3d_elastlet_string_mindlin_normalstress_vec_bent
+      ipt  = 1
+      ipars(1) = 0
+      call fker(nd, xyz_out, ndim3, &
+            srcvals(1,ipt), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+      call prin2('rtmp = *', rtmp, 9)
+      ipars(1) = 1
+      call fker(nd, xyz_out, ndim3, &
+            srcvals(1,ipt), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
+      call prin2('rtmp = *', rtmp, 9)
 
       do i=1,npts
         
@@ -390,35 +218,11 @@
         call cross_prod3d(srcvals(1,i), rhs(1,i), dtmp)
         rf(1:3) = rf(1:3) + rhs(1:3,i)*wts(i)
         rtorque(1:3) = rtorque(1:3) + dtmp(1:3)*wts(i)
-        write(77,*) rhs(1,i),rhs(2,i),rhs(3,i)
         soln(1:ndim,i) = 0
       enddo
-      close(77)
       call prin2('rf=*', rf, 3)
       call prin2('rtorque=*', rtorque, 3)
-      call write_go3(trim(fname_geom), norders(1), npatches, npts, srcvals)
 
-!
-!  write kernel of 1 column of a matrix
-!
-!      ipt = 2635
-!      do i=1,npts
-!        call el3d_elastlet_string_mindlin_normalstress_vec(nd, srcvals(1,ipt), ndim3, &
-!          srcvals(1,i), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
-!        rf(1) = rtmp(1,1)*strengths(1) + rtmp(1,2)*strengths(2) + &
-!                   rtmp(1,3)*strengths(3)
-!        rf(2) = rtmp(2,1)*strengths(1) + rtmp(2,2)*strengths(2) + &
-!                   rtmp(2,3)*strengths(3)
-!        rf(3) = rtmp(3,1)*strengths(1) + rtmp(3,2)*strengths(2) + &
-!                   rtmp(3,3)*strengths(3)
-!        if(i.ne.ipt) then      
-!          write(78,*) rf(1), rf(2), rf(3)
-!        else
-!          write(78,*) 0,0,0
-!        endif
-!      enddo
-!      close(77)
-!      close(78)
 !
 !  find near
 !
@@ -474,7 +278,8 @@
       eps = 1.0d-9
       call getnearquad_el_mstring_trans(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, eps, dpars_quad, &
-        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, &
+        isbent)
       
       eps_gmres = eps
       numit = 1000
@@ -497,17 +302,15 @@
       call dgmres_strings(npts, srcvals, wts, ipatch_id, uvs_targ, &
         dpars_quad, ixyzs, row_ptr, col_ind, iquad, wnear, inull, & 
         rsurf, rmoi_inv, did, rhs, numit, eps_gmres, niter, errs, &
-        rres, soln)
-      do i=1,npts
-        write(79,*) soln(1,i), soln(2,i), soln(3,i)
-      enddo
-      close(79)
+        rres, soln, isbent)
 
       ntargl = nin
       if(ifout.eq.1) ntargl = 1
 
       print *, "ntargl=",ntargl
-
+      
+      if (isbent.eq.0) fker => el3d_elastlet_string_mindlin_vec
+      if (isbent.eq.1) fker => el3d_elastlet_string_mindlin_vec_bent
       do j=1,ntargl
         dpars(3) = hout
         rtmp(1:3,1:3) = 0
@@ -544,10 +347,10 @@
           ipatch = ipatch_id(i)
           dpars(3) = dhs(ipatch)
           if(ifout.eq.0) then
-            call el3d_elastlet_string_mindlin_vec(nd, srcvals(1,i), ndim3, &
+            call fker(nd, srcvals(1,i), ndim3, &
               xyz_in(1,j), ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
           else
-            call el3d_elastlet_string_mindlin_vec(nd, srcvals(1,i), ndim3, &
+            call fker(nd, srcvals(1,i), ndim3, &
               xyz_out, ndd, dpars, ndz, zpars, ndi, ipars, rtmp)
           endif
          
@@ -643,10 +446,6 @@
       endif
       print *, "Error in solution=", erra
 
-      write(80,'(a,2x,i4,2x,i2,2x,i4,2x,e11.5,2x,e11.5,2x,i1)') &
-         trim(igeom(1:3)),npatches,norder,niter,dh0,erra,ibc
-      close(80)
-
       stop
       end
 
@@ -654,7 +453,8 @@
 
       subroutine getnearquad_el_mstring_trans(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, eps, dpars, &
-        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, &
+        isbent)
 !
 !  This subroutine generates the near field quadrature for the
 !  representation:
@@ -767,9 +567,11 @@
       real *8, allocatable :: umat(:,:),vmat(:,:),uvs_r(:,:),wts_r(:)
       procedure (), pointer :: fker
       integer *8 ipars
+      integer *8 isbent
       complex *16 zpars
 
-      external el3d_elastlet_string_mindlin_normalstress_vec 
+      external el3d_elastlet_string_mindlin_normalstress_vec
+      external el3d_elastlet_string_mindlin_normalstress_vec_bent
       
 !
 !  Get adaptive integration parameters
@@ -815,7 +617,8 @@
 
       ifp = 0
       
-      fker => el3d_elastlet_string_mindlin_normalstress_vec 
+      if (isbent.eq.0) fker => el3d_elastlet_string_mindlin_normalstress_vec
+      if (isbent.eq.1) fker => el3d_elastlet_string_mindlin_normalstress_vec_bent
       ndim = 3
       nd = ndim*ndim
       rfac_tri = 2.0d0
@@ -876,7 +679,7 @@
 !  Now start getting stuff for self
 !
         ier = 0
-        ipv = 0
+        ipv = 1
         do j=1,npols
           ier = 0
           ns = 0
@@ -967,7 +770,8 @@
 
       subroutine matmul(npts, srcvals, wts, ipatch_id, &
         uvs_targ, dhs, dla, dmu, ixyzs, &
-        row_ptr, col_ind, iquad, wnear, inull, rsurf, rmoi_inv, x, y)
+        row_ptr, col_ind, iquad, wnear, inull, rsurf, rmoi_inv, x, y, &
+        isbent)
       implicit real *8 (a-h,o-z)
       implicit integer *8(i-n)
       integer *8, intent(in) :: npts
@@ -986,11 +790,14 @@
       real *8 rf(3), rtorque(3), dtmp(3), dtmp2(3)
       integer *8 ipars
       complex *16 zpars
+      integer *8 isbent
 
       procedure (), pointer :: fker
       external el3d_elastlet_string_mindlin_normalstress_vec
+      external el3d_elastlet_string_mindlin_normalstress_vec_bent
 
-      fker => el3d_elastlet_string_mindlin_normalstress_vec 
+      if (isbent.eq.0) fker => el3d_elastlet_string_mindlin_normalstress_vec
+      if (isbent.eq.1) fker => el3d_elastlet_string_mindlin_normalstress_vec_bent
 !
 !  the identity term
 !
@@ -1079,7 +886,7 @@
       subroutine dgmres_strings(npts, srcvals, wts, ipatch_id, uvs_targ, &
         dpars, ixyzs, row_ptr, col_ind, iquad, wnear, inull, rsurf, rmoi_inv, & 
         did, rhs, numit, eps_gmres, niter, errs, &
-        rres, soln)
+        rres, soln, isbent)
 !  
 !  Low-threshold stagnation free gmres for real matrices of the form
 !    (zI + K)x = y, 
@@ -1167,6 +974,7 @@
   integer *8, intent(in) :: iquad(*)
   integer *8, intent(in) :: inull
   real *8, intent(in) :: rsurf, rmoi_inv(3,3)
+  integer *8 isbent
   
   
   
@@ -1237,7 +1045,7 @@
     call matmul(npts, srcvals, wts, ipatch_id, &
         uvs_targ, dpars(3), dpars(1), dpars(2), ixyzs, &
         row_ptr, col_ind, iquad, wnear, inull, rsurf, rmoi_inv, &
-        vmat(1,1,it), wtmp)
+        vmat(1,1,it), wtmp, isbent)
 
     do k=1,it
       ztmp = 0
@@ -1341,7 +1149,7 @@
     call matmul(npts, srcvals, wts, ipatch_id, &
         uvs_targ, dpars(3), dpars(1), dpars(2), ixyzs, &
         row_ptr, col_ind, iquad, wnear, inull, rsurf, rmoi_inv, &
-        soln, wtmp)
+        soln, wtmp, isbent)
 
 !$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rres) PRIVATE(idim)
       do i=1,npts
@@ -1361,4 +1169,1067 @@
   return
   end
 
+!
+!
+!
+!
+!
 
+      subroutine el3d_elastlet_mindlin_vec_bent(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the greens function tensor 
+!  corresponding to the mindlin solution. 
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 9.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 3
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 2
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3)
+!        the Mindlin Greens function 
+!
+!
+      implicit none
+      integer *8, intent(in) :: nd, ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+      real *8, intent(out) :: vals(3,3)
+
+      real *8 dlam, dmu, h
+      real *8 rx, ry, rz, dnx, dny, dnz, rfac, bfac, r
+      real *8 r3, rdn, tx, ty, tz, rp, rp2, da
+      real *8 over4pi, theta, phi, src1(3)
+      data over4pi/0.07957747154594767d0/
+
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      
+      rx = tar(1)-src(1)
+      ry = tar(2)-src(2)
+      rz = tar(3)-src(3)
+
+!      src1(1) = src(1)/2.0d0
+!      src1(3) = src(3)/2.0d0
+!      
+!      call cart2polar(src1(1:3),r,theta,phi)
+!        
+!      dnx = sin(theta)*cos(phi)
+!      dny = sin(theta)*sin(phi) 
+!      dnz = cos(theta) 
+      r = sqrt(src(1)**2 + src(2)**2 + src(3)**2)
+      dnx = src(1)/r
+      dny = src(2)/r
+      dnz = src(3)/r
+
+      rfac = over4pi/dmu
+      bfac = (1-da)/da*rfac
+
+      r  = sqrt(rx**2+ry**2+rz**2)
+      r3 = r**3 
+      rdn = dnx*rx+dny*ry+dnz*rz
+
+      tx = rx - rdn*dnx
+      ty = ry - rdn*dny
+      tz = rz - rdn*dnz
+        
+      rp = r-rdn
+      rp2= rp**2
+
+      vals(1,1) = -tx*tx/rp2/r - (dnx*tx-tx*dnx+rdn*dnx*dnx)/r/rp
+      vals(2,1) = -ty*tx/rp2/r - (dny*tx-ty*dnx+rdn*dny*dnx)/r/rp
+      vals(3,1) = -tz*tx/rp2/r - (dnz*tx-tz*dnx+rdn*dnz*dnx)/r/rp
+      vals(1,2) = -tx*ty/rp2/r - (dnx*ty-tx*dny+rdn*dnx*dny)/r/rp
+      vals(2,2) = -ty*ty/rp2/r - (dny*ty-ty*dny+rdn*dny*dny)/r/rp
+      vals(3,2) = -tz*ty/rp2/r - (dnz*ty-tz*dny+rdn*dnz*dny)/r/rp
+      vals(1,3) = -tx*tz/rp2/r - (dnx*tz-tx*dnz+rdn*dnx*dnz)/r/rp
+      vals(2,3) = -ty*tz/rp2/r - (dny*tz-ty*dnz+rdn*dny*dnz)/r/rp
+      vals(3,3) = -tz*tz/rp2/r - (dnz*tz-tz*dnz+rdn*dnz*dnz)/r/rp
+
+      vals(1,1) = vals(1,1) + 1/rp
+      vals(2,2) = vals(2,2) + 1/rp
+      vals(3,3) = vals(3,3) + 1/rp
+      vals = bfac*vals
+
+      vals(1,1) = vals(1,1) + rfac*rx*rx/r3
+      vals(2,1) = vals(2,1) + rfac*ry*rx/r3
+      vals(3,1) = vals(3,1) + rfac*rz*rx/r3
+      vals(1,2) = vals(1,2) + rfac*rx*ry/r3
+      vals(2,2) = vals(2,2) + rfac*ry*ry/r3
+      vals(3,2) = vals(3,2) + rfac*rz*ry/r3
+      vals(1,3) = vals(1,3) + rfac*rx*rz/r3
+      vals(2,3) = vals(2,3) + rfac*ry*rz/r3
+      vals(3,3) = vals(3,3) + rfac*rz*rz/r3
+
+      vals(1,1) = vals(1,1) + rfac/r
+      vals(2,2) = vals(2,2) + rfac/r
+      vals(3,3) = vals(3,3) + rfac/r
+
+
+      return
+      end
+!
+!
+!
+!
+
+      subroutine el3d_elastlet_dn_mindlin_vec_bent(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the gradient of the greens function tensor 
+!  corresponding to the mindlin solution in the normal source direction 
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 9.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 3
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 2
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3)
+!        the Mindlin Greens function 
+!
+!
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      real *8, intent(out) :: vals(3,3)
+
+      real *8 dlam, dmu, src1(3)
+      real *8 over4pi
+      data over4pi/0.07957747154594767d0/
+
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      
+      rx = tar(1)-src(1)
+      ry = tar(2)-src(2)
+      rz = tar(3)-src(3)
+!      src1(1) = src(1)/2.0d0
+!      src1(3) = src(3)/2.0d0
+        
+!      call cart2polar(src1(1:3),r,theta,phi)
+!        
+!      dnx = sin(theta)*cos(phi)
+!      dny = sin(theta)*sin(phi) 
+!      dnz = cos(theta) 
+
+      r = sqrt(src(1)**2 + src(2)**2 + src(3)**2)
+      dnx = src(1)/r
+      dny = src(2)/r
+      dnz = src(3)/r
+
+      rfac = over4pi/dmu
+      bfac = (1-da)/da*rfac
+
+      r  = sqrt(rx**2+ry**2+rz**2)
+      r3 = r**3 
+      rdn = dnx*rx+dny*ry+dnz*rz
+
+      tx = rx - rdn*dnx
+      ty = ry - rdn*dny
+      tz = rz - rdn*dnz
+      
+      rp = r-rdn
+      rp2= rp**2
+
+      den = 1/r/rp
+      dd1 = (2*r-rdn)/r3/rp2
+      dd2 = 1/r3
+      dd3 = 1/r/rp
+
+      vals(1,1) = -tx*tx*dd1 - (dnx*tx-tx*dnx+rdn*dnx*dnx)*dd2 - &
+                     dnx*dnx*den
+      vals(2,1) = -ty*tx*dd1 - (dny*tx-ty*dnx+rdn*dny*dnx)*dd2 - &
+                     dny*dnx*den
+      vals(3,1) = -tz*tx*dd1 - (dnz*tx-tz*dnx+rdn*dnz*dnx)*dd2 - &
+                     dnz*dnx*den
+      vals(1,2) = -tx*ty*dd1 - (dnx*ty-tx*dny+rdn*dnx*dny)*dd2 - &
+                     dnx*dny*den
+      vals(2,2) = -ty*ty*dd1 - (dny*ty-ty*dny+rdn*dny*dny)*dd2 - &
+                     dny*dny*den
+      vals(3,2) = -tz*ty*dd1 - (dnz*ty-tz*dny+rdn*dnz*dny)*dd2 - &
+                     dnz*dny*den
+      vals(1,3) = -tx*tz*dd1 - (dnx*tz-tx*dnz+rdn*dnx*dnz)*dd2 - &
+                     dnx*dnz*den
+      vals(2,3) = -ty*tz*dd1 - (dny*tz-ty*dnz+rdn*dny*dnz)*dd2 - &
+                     dny*dnz*den
+      vals(3,3) = -tz*tz*dd1 - (dnz*tz-tz*dnz+rdn*dnz*dnz)*dd2 - &
+                     dnz*dnz*den
+
+      vals(1,1) = vals(1,1) + dd3
+      vals(2,2) = vals(2,2) + dd3
+      vals(3,3) = vals(3,3) + dd3
+      vals = bfac*vals
+
+      r5 = r**5
+      vals(1,1) = vals(1,1) -3*rdn*rfac*rx*rx/r5 + &
+                    rfac*(dnx*rx+rx*dnx)/r3 
+      vals(2,1) = vals(2,1) -3*rdn*rfac*ry*rx/r5 + &
+                    rfac*(dny*rx+ry*dnx)/r3  
+      vals(3,1) = vals(3,1) -3*rdn*rfac*rz*rx/r5 + &
+                    rfac*(dnz*rx+rz*dnx)/r3
+      vals(1,2) = vals(1,2) -3*rdn*rfac*rx*ry/r5 + &
+                    rfac*(dnx*ry+rx*dny)/r3
+      vals(2,2) = vals(2,2) -3*rdn*rfac*ry*ry/r5 + &
+                    rfac*(dny*ry+ry*dny)/r3
+      vals(3,2) = vals(3,2) -3*rdn*rfac*rz*ry/r5 + &
+                    rfac*(dnz*ry+rz*dny)/r3
+      vals(1,3) = vals(1,3) -3*rdn*rfac*rx*rz/r5 + &
+                    rfac*(dnx*rz+rx*dnz)/r3
+      vals(2,3) = vals(2,3) -3*rdn*rfac*ry*rz/r5 + &
+                    rfac*(dny*rz+ry*dnz)/r3
+      vals(3,3) = vals(3,3) -3*rdn*rfac*rz*rz/r5 + &
+                    rfac*(dnz*rz+rz*dnz)/r3
+
+      vals(1,1) = vals(1,1) -rdn*rfac/r3 
+      vals(2,2) = vals(2,2) -rdn*rfac/r3
+      vals(3,3) = vals(3,3) -rdn*rfac/r3
+
+
+      return
+      end
+!
+!
+!
+!
+!
+!
+      subroutine el3d_elastlet_string_mindlin_vec_bent(nd, src, ndt, tar, &
+        ndd, dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the greens function tensor 
+!  corresponding to a string of mindlin solution in the normal source direction.
+!
+!  Let G^{M,3} denote the Green's function with the Mindlin correction, then
+!  this subroutine returns G^{M,3}(x,y,n) - G^{M,3}(x,y+hn,n)
+!  + hn \cdot \nabla_{y} G^{M,3}(x, y+hn, n), here n is the normal
+!  at the source point.
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 9.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 3
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 3
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!        dpars(3) - h (see definition above)
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3)
+!        the string of Mindlin Greens function 
+!
+!
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      real *8, intent(out) :: vals(3,3)
+
+      real *8 dlam, dmu
+      real *8 over4pi
+      real *8 v1(3,3), v2(3,3), v3(3,3)
+      real *8 srctmp(12)
+      real *8 xq(16), wq(16), src1(3)
+      data over4pi/0.07957747154594767d0/
+      data xq / &
+        0.5299532504175034d-02,  0.2771248846338371d-01, & 
+        0.6718439880608413d-01,  0.1222977958224985d+00, &
+        0.1910618777986781d0,  0.2709916111713863d0, &
+        0.3591982246103705d0,  0.4524937450811813d0, &
+        0.5475062549188187d0,  0.6408017753896295d0, &
+        0.7290083888286137d0,  0.8089381222013219d0, &
+        0.8777022041775015d0,  0.9328156011939159d0, &
+        0.9722875115366163d0,  0.9947004674958250d0/
+
+      data wq / &
+        0.1357622970587705d-01,  0.3112676196932395d-01, &
+        0.4757925584124639d-01,  0.6231448562776694d-01, &
+        0.7479799440828837d-01,  0.8457825969750127d-01, &
+        0.9130170752246179d-01,  0.9472530522753425d-01, &
+        0.9472530522753425d-01,  0.9130170752246179d-01, &
+        0.8457825969750127d-01,  0.7479799440828837d-01, &
+        0.6231448562776694d-01,  0.4757925584124639d-01, &
+        0.3112676196932395d-01,  0.1357622970587705d-01/
+
+
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      h = dpars(3)
+      nq = 16
+
+!      src1(1) = src(1)/2.0d0
+!      src1(3) = src(3)/2.0d0
+!      call cart2polar(src1(1:3),r,theta,phi)
+        
+!      dnx = sin(theta)*cos(phi)
+!      dny = sin(theta)*sin(phi) 
+!      dnz = cos(theta) 
+      r = sqrt(src(1)**2 + src(2)**2 + src(3)**2)
+      dnx = src(1)/r
+      dny = src(2)/r
+      dnz = src(3)/r
+
+      if (ipars.eq.0) then
+
+
+        srctmp(1:12) = src(1:12)
+        srctmp(1) = srctmp(1) + h*dnx
+        srctmp(2) = srctmp(2) + h*dny
+        srctmp(3) = srctmp(3) + h*dnz
+
+        call el3d_elastlet_mindlin_vec_bent(nd, src, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v1)
+
+        call el3d_elastlet_mindlin_vec_bent(nd, srctmp, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v2)
+        
+        call el3d_elastlet_dn_mindlin_vec_bent(nd, srctmp, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v3)
+
+        vals = v1 - v2 - h*v3
+      else
+        srctmp(1:12) = src(1:12)
+        vals  = 0
+        do ii = 1,nq
+          srctmp(1) = src(1) + h*xq(ii)*dnx
+          srctmp(2) = src(2) + h*xq(ii)*dny
+          srctmp(3) = src(3) + h*xq(ii)*dnz
+          call hkern3d_bent(nd, srctmp, ndt, tar, ndd, dpars, ndz, zpars, &
+            ndi, ipars, v1)
+          vals = vals + wq(ii)*xq(ii)*v1*h*h
+        enddo
+      endif
+      
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine el3d_elastlet_mindlin_stress_vec_bent(nd, src, ndt, tar, &
+        ndd, dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the stress tensor for 
+!  greens function tensor corresponding to the mindlin solution. 
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 27.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 3
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 2
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3,3)
+!        stress tensor associated with mindlin Green's function 
+!
+!
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      real *8, intent(out) :: vals(3,3,3)
+
+      real *8 dlam, dmu
+      real *8 rs(3), ns(3), qmat(3,3), eye(3,3), ts(3) 
+      real *8 over4pi, src1(3)
+      data over4pi/0.07957747154594767d0/
+
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      
+      rs(1) = tar(1)-src(1)
+      rs(2) = tar(2)-src(2)
+      rs(3) = tar(3)-src(3)
+
+!      src1(1) = src(1)/2.0d0
+!      src1(3) = src(3)/2.0d0
+!      call cart2polar(src1(1:3),r,theta,phi)
+!      ns(1) = sin(theta)*cos(phi) 
+!      ns(2) = sin(theta)*sin(phi) 
+!      ns(3) = cos(theta) 
+      r = sqrt(src(1)**2 + src(2)**2 + src(3)**2)
+      ns(1:3) = src(1:3)/r 
+
+      r  = sqrt(rs(1)**2+rs(2)**2+rs(3)**2)
+      r2 = r**2
+      r3 = r**3 
+      r5 = r**5 
+      rdn = ns(1)*rs(1)+ns(2)*rs(2)+ns(3)*rs(3)
+
+      rfac = over4pi 
+      bfac = (1-da)/da*rfac
+
+      ts(1) = rs(1) - rdn*ns(1)
+      ts(2) = rs(2) - rdn*ns(2)
+      ts(3) = rs(3) - rdn*ns(3)
+
+      qmat(1:3,1:3) = 0
+
+      do i=1,3
+        do j=1,3
+          qmat(i,j) = -ns(i)*ns(j)
+        enddo
+      enddo
+
+      qmat(1,1) = 1+qmat(1,1)
+      qmat(2,2) = 1+qmat(2,2)
+      qmat(3,3) = 1+qmat(3,3)
+
+      eye(1:3,1:3) = 0
+      eye(1,1) = 1
+      eye(2,2) = 1
+      eye(3,3) = 1
+
+      rp = r-rdn
+      rp2 = rp**2
+      rp3 = rp**3
+
+      do k=1,3
+        do j=1,3
+          do i=1,3
+
+            rih = ts(i)
+            rjh = ts(j)
+            dni = ns(i)
+            dnj = ns(j)
+            dnk = ns(k)
+            ri = rs(i)
+            rj = rs(j)
+            rk = rs(k)
+            qij = qmat(i,j)
+            qik = qmat(i,k)
+            qjk = qmat(j,k)
+            eij = eye(i,j)
+
+            t1 = 4*rih*rjh*rk/r2/rp3+2*rih*rjh*rk/r3/rp2
+            t2 = -2*qij/r*(1/rp2-1/r2)*rk
+            t3 = 2*qij/rp2*dnk
+            t4 = -4*rih*rjh*dnk/r/rp3
+            t5 = -2*qik*rjh/r/rp2-2*qjk*rih/r/rp2
+
+            s1 = -6*rfac*ri*rj*rk/r5
+
+            vals(i,j,k) = s1 + bfac*(t1 + t2 + t3 + t4 + t5)
+          enddo
+        enddo
+      enddo
+
+      return
+      end
+!
+!
+!
+!
+!
+
+      subroutine el3d_elastlet_dn_mindlin_stress_vec_bent(nd, src, ndt, tar, &
+        ndd, dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the stress tensor for 
+!  gradient of the greens function tensor corresponding to the mindlin solution
+!  in the normal direction.
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 27.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 3
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 2
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3,3)
+!        stress tensor associated with mindlin Green's function 
+!
+!
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      real *8, intent(out) :: vals(3,3,3)
+
+      real *8 dlam, dmu
+      real *8 rs(3), ns(3), qmat(3,3), eye(3,3), ts(3) 
+      real *8 over4pi, src1(3)
+      data over4pi/0.07957747154594767d0/
+
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      
+
+      rs(1) = tar(1)-src(1)
+      rs(2) = tar(2)-src(2)
+      rs(3) = tar(3)-src(3)
+
+!      src1(1) = src(1)/2.0d0
+!      src1(3) = src(3)/2.0d0
+!      call cart2polar(src1(1:3),r,theta,phi)
+!      ns(1) = sin(theta)*cos(phi) 
+!      ns(2) = sin(theta)*sin(phi) 
+!      ns(3) = cos(theta) 
+      r = sqrt(src(1)**2 + src(2)**2 + src(3)**2)
+      ns(1:3) = src(1:3)/r 
+
+      r  = sqrt(rs(1)**2 + rs(2)**2 + rs(3)**2)
+      r2 = r**2
+      r3 = r**3 
+      r5 = r**5 
+      r7 = r**7
+      rdn = ns(1)*rs(1) + ns(2)*rs(2) + ns(3)*rs(3)
+
+      rfac = over4pi 
+      bfac = (1-da)/da*rfac
+
+      ts(1) = rs(1) - rdn*ns(1)
+      ts(2) = rs(2) - rdn*ns(2)
+      ts(3) = rs(3) - rdn*ns(3)
+
+      qmat(1:3,1:3) = 0
+
+      do i=1,3
+        do j=1,3
+          qmat(i,j) = -ns(i)*ns(j)
+        enddo
+      enddo
+
+      qmat(1,1) = 1+qmat(1,1)
+      qmat(2,2) = 1+qmat(2,2)
+      qmat(3,3) = 1+qmat(3,3)
+
+      eye(1:3,1:3) = 0
+      eye(1,1) = 1
+      eye(2,2) = 1
+      eye(3,3) = 1
+
+      rp = r-rdn
+      rp2= rp**2
+      rp3= rp**3
+      rp4= rp**4
+      rp5= rp**5
+
+      do k=1,3
+        do j=1,3
+          do i=1,3
+
+            rih = ts(i)
+            rjh = ts(j)
+            dni = ns(i)
+            dnj = ns(j)
+            dnk = ns(k)
+            ri = rs(i)
+            rj = rs(j)
+            rk = rs(k)
+            qij = qmat(i,j)
+            qik = qmat(i,k)
+            qjk = qmat(j,k)
+            eij = eye(i,j)
+
+            t1 = 4*rih*rjh*rk/r2/rp3+2*rih*rjh*rk/r3/rp2
+            t2 = -2*qij/r*(1/rp2-1/r2)*rk
+            t3 =  2*qij/rp2*dnk
+            t4 = -4*rih*rjh*dnk/r/rp3
+            t5 = -2*qik*rjh/r/rp2-2*qjk*rih/r/rp2
+
+            s1 = -6*rfac*(ri*rj*dnk+ri*dnj*rk+dni*rj*rk)/r5 + &
+                    30*rfac*rdn*ri*rj*rk/r7
+            t14 = -2*rih*rjh*dnk*(rp+2*r)/r3/rp3 + &
+                     2*rih*rjh*rk*(2*r2+3*r*rp+3*rp2)/r5/rp3
+            t235= 2*(qij*dnk)/r/rp2 - &
+                    2*(qik*rjh+qjk*rih+qij*rk)*(rp+r)/r3/rp2 + &
+                    2*qij*dnk/r3-6*qij*rk*rdn/r5
+
+            vals(i,j,k) = s1 + bfac*t14 + bfac*t235 
+
+          enddo
+        enddo
+      enddo
+
+      return
+      end
+!
+!
+!
+!
+      subroutine el3d_elastlet_string_mindlin_normalstress_vec_bent(nd, src, ndt, & 
+        tar, ndd, dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the normal stress of the greens function tensor 
+!  corresponding to a string of mindlin solution in the normal source direction.
+!
+!  Let G^{M,3} denote the Green's function with the Mindlin correction, then
+!  this subroutine returns nt.\Sigma(G^{M,3}(x,y,n) - G^{M,3}(x,y+hn,n)
+!  + hn \cdot \nabla_{y} G^{M,3}(x, y+hn, n)), here n is the normal
+!  at the source point, and nt is the target normal
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 9.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 12
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 3
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!        dpars(3) - h (see definition above)
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3)
+!        the normal stress of the string of Mindlin Greens function 
+!
+!
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      real *8, intent(out) :: vals(3,3)
+
+      real *8 dlam, dmu
+      real *8 over4pi
+      real *8 v1(3,3,3), v2(3,3,3), v3(3,3,3), v4(3,3,3)
+      real *8 srctmp(12)
+      real *8 xq(16), wq(16), src1(3)
+      data over4pi/0.07957747154594767d0/
+      data xq / &
+        0.5299532504175034d-02,  0.2771248846338371d-01, & 
+        0.6718439880608413d-01,  0.1222977958224985d+00, &
+        0.1910618777986781d0,  0.2709916111713863d0, &
+        0.3591982246103705d0,  0.4524937450811813d0, &
+        0.5475062549188187d0,  0.6408017753896295d0, &
+        0.7290083888286137d0,  0.8089381222013219d0, &
+        0.8777022041775015d0,  0.9328156011939159d0, &
+        0.9722875115366163d0,  0.9947004674958250d0/
+
+      data wq / &
+        0.1357622970587705d-01,  0.3112676196932395d-01, &
+        0.4757925584124639d-01,  0.6231448562776694d-01, &
+        0.7479799440828837d-01,  0.8457825969750127d-01, &
+        0.9130170752246179d-01,  0.9472530522753425d-01, &
+        0.9472530522753425d-01,  0.9130170752246179d-01, &
+        0.8457825969750127d-01,  0.7479799440828837d-01, &
+        0.6231448562776694d-01,  0.4757925584124639d-01, &
+        0.3112676196932395d-01,  0.1357622970587705d-01/
+
+      nq = 16
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+
+      h = dpars(3)
+!      src1(1) = src(1)/2.0d0
+!      src1(3) = src(3)/2.0d0
+!      call cart2polar(src1(1:3),r,theta,phi)
+!        
+!      dnx = sin(theta)*cos(phi)
+!      dny = sin(theta)*sin(phi) 
+!      dnz = cos(theta)
+
+      r = sqrt(src(1)**2 + src(2)**2 + src(3)**2)
+      dnx = src(1)/r
+      dny = src(2)/r
+      dnz = src(3)/r
+
+      if (ipars.eq.0) then
+
+        srctmp(1:12) = src(1:12)
+        srctmp(1) = srctmp(1) + h*dnx
+        srctmp(2) = srctmp(2) + h*dny
+        srctmp(3) = srctmp(3) + h*dnz
+
+        call el3d_elastlet_mindlin_stress_vec_bent(nd, src, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v1)
+
+        call el3d_elastlet_mindlin_stress_vec_bent(nd, srctmp, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v2)
+        
+        call el3d_elastlet_dn_mindlin_stress_vec_bent(nd, srctmp, ndt, tar, ndd, &
+          dpars, ndz, zpars, ndi, ipars, v3)
+      
+        v4 = v1 - v2 - h*v3
+      else
+        srctmp(1:12) = src(1:12)
+        v4(1:3,1:3,1:3)  = 0
+        do ii = 1,nq
+          srctmp(1) = src(1) + h*xq(ii)*dnx
+          srctmp(2) = src(2) + h*xq(ii)*dny
+          srctmp(3) = src(3) + h*xq(ii)*dnz
+          v1(1:3,1:3,1:3) = 0
+          call hkern3d_stress_bent(nd, srctmp, ndt, tar, ndd, dpars, ndz, zpars, &
+            ndi, ipars, v1)
+          v4 = v4 + wq(ii)*xq(ii)*v1*h*h
+        enddo
+
+      endif
+
+      vals(1:3,1:3) = 0
+      do jj =1,3
+        do ii = 1,3
+          do kk = 1,3
+            vals(ii,jj) = vals(ii,jj) + v4(kk,ii,jj)*tar(9+kk)
+          enddo
+        enddo
+      enddo
+
+      
+      return
+      end
+!
+!
+!
+!
+      subroutine el3d_elastlet_mindlin_normalstress_vec_bent(nd, src, ndt, & 
+        tar, ndd, dpars, ndz, zpars, ndi, ipars, vals)
+!
+!  This subroutine computes the normal stress of the greens function tensor 
+!  corresponding to the mindlin solution in the normal source direction.
+!
+!  Let G^{M,3} denote the Green's function with the Mindlin correction
+!
+!  Input arguments:
+!    - nd: integer *8
+!        number of kernels returned. Must be atmost 9.
+!    - src: real *8(12)
+!        source information
+!    - ndt: integer *8
+!        must be at least 12
+!    - tar: real *8(ndt)
+!        target information
+!    - ndd: integer *8
+!        number of real parameters, must at least be 3
+!    - dpars: real *8(ndd)
+!        dpars(1) - Lame parameter lambda
+!        dpars(2) - Lame parameter mu
+!        dpars(3) - h (see definition above)
+!    - ndz: integer *8
+!        zpars not used
+!    - zpars: complex *16(ndz)
+!        zpars not used
+!    - ndi: integer *8
+!        ipars not used
+!    - ipars: integer *8(ndi)
+!        ipars not used
+!
+!  Output arguments:
+!    - val: real *8(3,3)
+!        the normal stress of the string of Mindlin Greens function 
+!
+!
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: ndt, ndd, ndz, ndi
+      real *8, intent(in) :: src(*), tar(ndt)
+      real *8, intent(in) :: dpars(ndd)
+      real *8, intent(out) :: vals(3,3)
+
+      real *8 dlam, dmu
+      real *8 over4pi
+      real *8 v1(3,3,3), v2(3,3,3), v3(3,3,3), v4(3,3,3)
+      real *8 srctmp(12)
+      data over4pi/0.07957747154594767d0/
+
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+
+      h = dpars(3)
+
+      srctmp(1:12) = src(1:12)
+
+      call el3d_elastlet_mindlin_stress_vec_bent(nd, src, ndt, tar, ndd, &
+        dpars, ndz, zpars, ndi, ipars, v1)
+
+      vals(1:3,1:3) = 0
+      do jj =1,3
+        do ii = 1,3
+          do kk = 1,3
+            vals(ii,jj) = vals(ii,jj) + v1(kk,ii,jj)*tar(9+kk)
+          enddo
+        enddo
+      enddo
+
+      
+      return
+      end
+!
+!
+!
+!
+      subroutine hkern3d_bent(nd, src, ndt, tar, ndd, dpars, ndz, zpars, &
+        ndi, ipars, vals)
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      real *8 src(*),tar(*),vals(3,3),rs(3),ns(3),eye(3,3),dpars(2)
+      complex *16 zpars
+        
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      done = 1
+      pi = atan(done)*4
+
+      eye = 0
+      eye(1,1) = 1
+      eye(2,2) = 1
+      eye(3,3) = 1
+
+      rs(1) = tar(1)-src(1)
+      rs(2) = tar(2)-src(2)
+      rs(3) = tar(3)-src(3)
+      
+!      src1(1) = src(1)/2.0d0
+!      src1(3) = src(3)/2.0d0 
+!      call cart2polar(src1(1:3),r,theta,phi)
+!      ns(1) = sin(theta)*cos(phi) 
+!      ns(2) = sin(theta)*sin(phi) 
+!      ns(3) = cos(theta) 
+      r = sqrt(src(1)**2 + src(2)**2 + src(3)**2)
+      ns(1:3) = src(1:3)/r
+
+      rfac = 1/(4*pi*dmu)
+      bfac = (1-da)/da*rfac
+
+      r  = sqrt(rs(1)**2+rs(2)**2+rs(3)**2)
+      r3 = r**3 
+      r5 = r**5
+      r7 = r**7
+      rdn = ns(1)*rs(1)+ns(2)*rs(2)+ns(3)*rs(3)
+        
+      rp = r-rdn
+      rp2= rp**2
+
+      f1 = (2*da-1)/da
+      f2 = 1/da
+
+      do j=1,3
+        do i=1,3
+
+          vals(i,j) = -f1*eye(i,j)/r3-3*f2*rs(i)*rs(j)/r5 &
+           +2*f1*ns(i)*ns(j)/r3-6*f1*rdn*ns(i)*rs(j)/r5 &
+           -6*rdn*rs(i)*ns(j)/r5+3*(rdn)**2*eye(i,j)/r5 &
+           +15*rs(i)*rs(j)*(rdn)**2/r7
+
+
+        enddo
+      enddo
+
+      vals = rfac*vals
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine hkern3d_stress_bent(nd, src, ndt, tar, ndd, dpars, ndz, & 
+        zpars, ndi, ipars, vals)
+      implicit real *8 (a-h,o-z)
+      implicit integer *8(i-n)
+      real *8 src(*),tar(*),vals(3,3,3), &
+           rs(3),ns(3),qmat(3,3),eye(3,3),ts(3),dpars(2)
+      complex *16 zpars
+        
+      dlam = dpars(1)
+      dmu = dpars(2)
+      da = (dlam + dmu)/(dlam + 2*dmu)
+      done = 1
+      pi = atan(done)*4
+
+      rs(1) = tar(1)-src(1)
+      rs(2) = tar(2)-src(2)
+      rs(3) = tar(3)-src(3)
+
+!      call cart2polar(src(1:3),r,theta,phi)
+!      ns(1) = sin(theta)*cos(phi) 
+!      ns(2) = sin(theta)*sin(phi) 
+!      ns(3) = cos(theta) 
+      r = sqrt(src(1)**2 + src(2)**2 + src(3)**2)
+      ns(1:3) = src(1:3)/r
+
+      r  = sqrt(rs(1)**2+rs(2)**2+rs(3)**2)
+      r2 = r**2
+      r3 = r**3 
+      r5 = r**5 
+      r7 = r**7
+      r9 = r**9
+      rdn = ns(1)*rs(1)+ns(2)*rs(2)+ns(3)*rs(3)
+
+      rfac = 1/(4*pi)
+      bfac = (1-da)/da*rfac
+
+      ts(1) = rs(1) - rdn*ns(1)
+      ts(2) = rs(2) - rdn*ns(2)
+      ts(3) = rs(3) - rdn*ns(3)
+
+      qmat = 0
+
+      do i=1,3
+        do j=1,3
+        qmat(i,j) = -ns(i)*ns(j)
+        enddo
+      enddo
+
+      qmat(1,1) = 1+qmat(1,1)
+      qmat(2,2) = 1+qmat(2,2)
+      qmat(3,3) = 1+qmat(3,3)
+
+      eye = 0
+      eye(1,1) = 1
+      eye(2,2) = 1
+      eye(3,3) = 1
+
+      rp = r-rdn
+      rp2= rp**2
+      rp3= rp**3
+      rp4= rp**4
+      rp5= rp**5
+
+      do k=1,3
+        do j=1,3
+          do i=1,3
+
+            rih = ts(i)
+            rjh = ts(j)
+            dni = ns(i)
+            dnj = ns(j)
+            dnk = ns(k)
+            ri = rs(i)
+            rj = rs(j)
+            rk = rs(k)
+            qij = qmat(i,j)
+            qik = qmat(i,k)
+            qjk = qmat(j,k)
+            eij = eye(i,j)
+
+            t1 = 4*rih*rjh*rk/r2/rp3+2*rih*rjh*rk/r3/rp2
+            t2 = -2*qij/r*(1/rp2-1/r2)*rk
+            t3 =  2*qij/rp2*dnk
+            t4 = -4*rih*rjh*dnk/r/rp3
+            t5 = -2*qik*rjh/r/rp2-2*qjk*rih/r/rp2
+
+            s1 = -12*rfac/r5*(dni*dnj*rk+dni*rj*dnk+ri*dnj*dnk) &
+           +60*rfac*(ri*rj*dnk+ri*dnj*rk+dni*rj*rk)*rdn/r7 &
+           +30*rfac*ri*rj*rk/r7-210*rfac*ri*rj*rk*rdn*rdn/r9
+
+            t1 = 30*rih*rjh*rk/r7-6*(qik*rjh+qjk*rih)/r5 &
+            -12*qij*dnk*rdn/r5-12*qij*rk/r5+30*qij*rk*rdn**2/r7
+  
+            vals(i,j,k) = s1 + bfac*t1
+  
+          enddo
+        enddo
+      enddo
+
+
+      return
+      end
