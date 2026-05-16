@@ -276,8 +276,6 @@
 
       npts_over = ixyzso(npatches+1)-1
       print *, "npts_over=",npts_over
-      call prinf('novers=*',novers,100)
-	write (*,*) 'inside no collapse'
 
       allocate(srcover(12,npts_over),wover(npts_over))
 

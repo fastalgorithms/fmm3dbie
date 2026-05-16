@@ -547,8 +547,6 @@ subroutine em_adpie_pec_solver(npatches,norders,ixyzs,&
      &nnz,row_ptr,col_ind,rfac,novers,ixyzso)
 
       npts_over = ixyzso(npatches+1)-1
-      print *, "npts_over=",npts_over
-      call prinf('novers=*',novers,100)
 
       allocate(srcover(12,npts_over),wover(npts_over),wts(npts))
 

@@ -1,4 +1,5 @@
-      implicit real *8 (a-h,o-z) 
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
       real *8, allocatable :: wts(:)
       character *100 fname
@@ -19,6 +20,8 @@
       integer *8 ipatch_id
       real *8 uvs_targ(2), dtmp
       integer *8 iptype0
+
+      integer *8 int8_3, int8_1, int8_0
 
       real *8 pot,potex
       character *100, igeom
@@ -48,10 +51,13 @@ c
         c0(3) = 0
         call get_sphere_npat_mem(a, na, c0, norder, iptype0, 
      1    npatches, npts)
+        print *, "npatches=",npatches
+        print *, "npts=",npts
 
         allocate(srcvals(12,npts), srccoefs(9,npts))
         allocate(ixyzs(npatches+1), iptype(npatches))
         allocate(norders(npatches))
+
 
         call get_sphere_npat(a, na, c0, norder, iptype0,
      1    npatches, npts, norders, ixyzs, iptype, srccoefs, srcvals)
@@ -118,9 +124,13 @@ c
 
       allocate(sigma(npts),rhs(npts))
 
+      int8_3 = 3
+      int8_0 = 0
+      int8_1 = 1
+
       do i=1,npts
-        call l3d_sprime(xyz_src, 3, srcvals(1,i), 0, dpars, 1, zpars, 0,
-     1     ipars, rhs(i))
+        call l3d_sprime(xyz_src, int8_3, srcvals(1,i), int8_0, dpars, 
+     1     int8_1, zpars, int8_0, ipars, rhs(i))
         sigma(i) = 0 
       enddo
 
@@ -143,12 +153,12 @@ c
 c
 c       test solution at interior point
 c
-      call l3d_slp(xyz_src, 3, xyz_targ, 0, dpars, 1, zpars, 0,
-     1   ipars,potex)
+      call l3d_slp(xyz_src, int8_3, xyz_targ, int8_0, dpars, int8_1, 
+     1   zpars, int8_0, ipars, potex)
       pot = 0
       do i=1,npts
-        call l3d_slp(srcvals(1,i), 3, xyz_targ, 0, dpars, 3, zpars,
-     1    0, ipars, dtmp)
+        call l3d_slp(srcvals(1,i), int8_3, xyz_targ, int8_0, dpars, 
+     1    int8_3, zpars, int8_0, ipars, dtmp)
         pot = pot + sigma(i)*wts(i)*dtmp
       enddo
 

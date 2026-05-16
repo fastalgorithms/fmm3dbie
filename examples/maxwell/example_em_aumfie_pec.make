@@ -13,8 +13,6 @@ HOST = gcc-openmp
 
 FMMBIE_INSTALL_DIR = $(PREFIX)
 FMM_INSTALL_DIR = $(PREFIX_FMM)
-LFMMLINKLIB = -lfmm3d
-LFMMLINKLIB += -Wl,-rpath,$(FMM_INSTALL_DIR)
 LLINKLIB = -lfmm3dbie
 LLINKLIB += -Wl,-rpath,$(FMMBIE_INSTALL_DIR)
 
@@ -59,7 +57,7 @@ ifeq ($(HOST),intel-openmp)
     FFLAGS= -O3 -fPIC -march=native -qopenmp
 endif
 
-FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) -L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
+FEND = -L${FMMBIE_INSTALL_DIR} $(LLINKLIB) 
 #-L${FMM_INSTALL_DIR} $(LFMMLINKLIB)
 
 .PHONY: all clean 
