@@ -14,6 +14,7 @@ HOST = gcc-openmp
 FMMBIE_INSTALL_DIR = $(PREFIX)
 FMM_INSTALL_DIR = $(PREFIX_FMM)
 LLINKLIB = -lfmm3dbie
+LLINKLIB += -Wl,-rpath,$(FMMBIE_INSTALL_DIR)
 
 ifneq ($(OS),Windows_NT) 
     UNAME_S := $(shell uname -s)
