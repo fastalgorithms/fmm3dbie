@@ -12,9 +12,8 @@ HOST = gcc
 
 
 FMMBIE_INSTALL_DIR = $(PREFIX)
-FMM_INSTALL_DIR = $(PREFIX_FMM)
-LFMMLINKLIB = -lfmm3d
 LLINKLIB = -lfmm3dbie
+LLINKLIB += -Wl,-rpath,$(FMMBIE_INSTALL_DIR)
 
 ifneq ($(OS),Windows_NT) 
     UNAME_S := $(shell uname -s)
@@ -39,12 +38,12 @@ endif
 
 ifeq ($(HOST),gcc)
     FC=gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=x86-64 -std=legacy -g
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -std=legacy 
 endif
 
 ifeq ($(HOST),gcc-openmp)
     FC = gfortran 
-    FFLAGS=-fPIC -O3 -funroll-loops -march=x86-64 -fopenmp -std=legacy -g
+    FFLAGS=-fPIC -O3 -funroll-loops -march=native -fopenmp -std=legacy 
 endif
 
 ifeq ($(HOST),intel)

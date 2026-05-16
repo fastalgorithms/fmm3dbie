@@ -31,7 +31,7 @@
       real *8 ptinfo_out(12)
       real *8 c0(3)
 
-      integer *8 count1
+      integer *8 count1, int8_1
 
       data ima/(0.0d0,1.0d0)/
 
@@ -104,9 +104,11 @@
   
 !
 !   Get fields due to magnetic and electric dipoles
-!     
-      call em_eval_dipoles(zpars(1), 1, xyz_out, zedips, zhdips, &
-        12, npts, srcvals, einc, hinc)
+!    
+      int8_1 = 1
+      int8_12 = 12
+      call em_eval_dipoles(zpars(1), int8_1, xyz_out, zedips, zhdips, &
+        int8_12, npts, srcvals, einc, hinc)
       call prin2('einc=*', einc, 24)
       call prin2('hinc=*', hinc, 24)
             
@@ -141,7 +143,7 @@
       ntarg = 1
       ndtarg = 3
 
-      call em_eval_dipoles(zpars(1), 1, xyz_out, zedips, zhdips, &
+      call em_eval_dipoles(zpars(1), int8_1, xyz_out, zedips, zhdips, &
         ndtarg, ntarg, xyz_in, e_ex, h_ex)
 
       ife = 1
