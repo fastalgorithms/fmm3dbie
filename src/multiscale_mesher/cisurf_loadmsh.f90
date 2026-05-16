@@ -1312,6 +1312,7 @@ subroutine get_filetype(filename, ifiletype, ier)
   ier = 0
   fstr_gid_tritest = 'MESH dimension 3 ElemType Triangle Nnode '
   fstr_gmshtest = '$MeshFormat'
+  
 
 ! 
   open(unit=33, file=trim(filename), status='old', iostat=io)

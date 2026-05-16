@@ -1,5 +1,6 @@
-subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
-   norder_smooth, nrefine, adapt_sigma, rlam, fnameout_root, ier)
+subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, &
+   filename_cad, norder_skel, norder_smooth, nrefine, adapt_sigma, rlam, &
+   fnameout_root, ier)
 !
 !  Given an input flat/second order triangulated mesh 
 !  specified in .gidmsh, .msh, gmsh v2, or .tri formats,
@@ -19,6 +20,11 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
 !        * ifiletype = 3, for .gidmsh
 !        * ifiletype = 4, for .msh gmsh v2
 !        * ifiletype = 5, for .msh gmsh v4
+!    * ifcad: integer *8
+!        flag for whether cadfile is available
+!        cadfile will be used if ifcad.neq.0
+!    * filename_cad: string
+!        Input cad file
 !    * norder_skel: integer *8
 !        Order of discretization on skeleton mesh for 
 !        computing integrals for the level-set
@@ -72,8 +78,9 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
   integer *8 :: interp_flag
   integer *8 :: norder_skel, norder_smooth
   integer *8 :: ifiletype
+  integer *8 :: ifcad
 
-  character (len=*) :: fnamein, fnameout_root
+  character (len=*) :: fnamein, fnameout_root, filename_cad
 
   character(:), allocatable :: fname_aux
   character (len=21) :: plot_name
@@ -86,9 +93,7 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
   integer *8 i, ll, len1
 
   integer *8 ier
-
   
-
   allocate(Geometry1)
   allocate(error_report(nrefine+1))
 
@@ -118,7 +123,11 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
 
 
   ! dump out discretization points on the skeleton mesh
-  call funcion_skeleton(Geometry1)
+  if (ifcad.eq.0) then
+    call funcion_skeleton(Geometry1)
+  else
+    call load_exact_cad_skeleton(Geometry1, filename_cad)
+  endif
   call funcion_normal_vert(Geometry1)
 
 
@@ -223,8 +232,9 @@ end subroutine multiscale_mesher_unif_refine
 !
 !
 !
-subroutine multiscale_mesher_unif_refine_cfname(fnamein, ifiletype, norder_skel, &
-   norder_smooth, nrefine, adapt_sigma, rlam, fnameout_root, ier)
+subroutine multiscale_mesher_unif_refine_cfname(fnamein, ifiletype, &
+   ifcad, filename_cad, norder_skel, norder_smooth, nrefine, &
+   adapt_sigma, rlam, fnameout_root, ier)
 !
 !  Same routine as the above multiscale mesher, the only difference
 !  is that the filename on input are of type cstring which are converted
@@ -248,6 +258,11 @@ subroutine multiscale_mesher_unif_refine_cfname(fnamein, ifiletype, norder_skel,
 !        * ifiletype = 3, for .gidmsh
 !        * ifiletype = 4, for .msh gmsh v2
 !        * ifiletype = 5, for .msh gmsh v4
+!    * ifcad: integer *8
+!        flag for whether cadfile is available
+!        cadfile will be used if ifcad.neq.0
+!    * filename_cad: string
+!        Input cad file
 !    * norder_skel: integer *8
 !        Order of discretization on skeleton mesh for 
 !        computing integrals for the level-set
@@ -296,9 +311,12 @@ subroutine multiscale_mesher_unif_refine_cfname(fnamein, ifiletype, norder_skel,
   integer *8 :: ifiletype
 
   character (kind=c_char), dimension(*) :: fnamein, fnameout_root
+  character (kind=c_char), dimension(*) :: filename_cad
   character (len=:), allocatable :: fortran_fnamein, fortran_fnameout
+  character (len=:), allocatable :: fortran_filename_cad
   real *8 :: rlam
   integer *8 :: ier
+  integer *8 ifcad
 
 
   integer *8 ilen, i
@@ -321,8 +339,19 @@ subroutine multiscale_mesher_unif_refine_cfname(fnamein, ifiletype, norder_skel,
   allocate(character(len=ilen) :: fortran_fnameout)
   fortran_fnameout = transfer(fnameout_root(1:ilen),fortran_fnameout)
 
-  call multiscale_mesher_unif_refine(fortran_fnamein, ifiletype, norder_skel, &
-   norder_smooth, nrefine, adapt_sigma, rlam, fortran_fnameout, ier)
+  ilen = 0
+  do 
+    if (filename_cad(ilen+1) == C_NULL_CHAR) exit
+    ilen = ilen + 1
+  enddo
+
+  allocate(character(len=ilen) :: fortran_filename_cad)
+  fortran_filename_cad = transfer(filename_cad(1:ilen),fortran_filename_cad)
+
+
+  call multiscale_mesher_unif_refine(fortran_fnamein, ifiletype, ifcad, &
+   fortran_filename_cad, norder_skel, norder_smooth, nrefine, &
+   adapt_sigma, rlam, fortran_fnameout, ier)
 
   
   return

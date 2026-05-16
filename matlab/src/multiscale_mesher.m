@@ -84,8 +84,10 @@ function S = multiscale_mesher(fnamein, norder, opts)
         error('MULTISCALE_MESHER: opts.nquad too high, must be less than 20');
     end
     ier = 0;
-    mex_id_ = 'MWF77_multiscale_mesher(c i cstring[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i cstring[x], c io int64_t[x])';
-[ier] = fmm3dbie_routs(mex_id_, fnameuse, ifiletype, norder_skel, norder_smooth, nrefine, adapt_sigma, rlam, fnameoutuse, ier, 1000, 1, 1, 1, 1, 1, 1, 1000, 1);
+    ifcad = 0;
+    fcad = "tmp";
+    mex_id_ = 'MWF77_multiscale_mesher(c i cstring[x], c i int64_t[x], c i int64_t[x], c i cstring[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i cstring[x], c io int64_t[x])';
+[ier] = fmm3dbie_routs(mex_id_, fnameuse, ifiletype, ifcad, fcad, norder_skel, norder_smooth, nrefine, adapt_sigma, rlam, fnameoutuse, ier, 1000, 1, 1, 1000, 1, 1, 1, 1, 1, 1000, 1);
 
     if ier == 3 || ier == 4
         error_message = ['MULTISCALE_MESHER: error in main smoothing routine', ...

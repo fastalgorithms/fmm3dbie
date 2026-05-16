@@ -7,8 +7,9 @@ program smoother
   integer *8 :: adapt_flag, ifflatten
   integer *8 :: interp_flag
   integer *8 :: norder_skel, norder_smooth
+  integer *8 :: ifcad
 
-  character (len=100) :: fnamein, fnameout_root,name_aux
+  character (len=100) :: fnamein, fnameout_root,name_aux, fcad
   character (len=21) :: plot_name
   character (len=8) :: istr1,istr2
   character (len=2) :: arg_comm
@@ -61,14 +62,19 @@ program smoother
 ! specify the msh file to read in
 !
 
-    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
-    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
+    ifcad = 0
+!    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
+!    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
+!    ifiletype = 2    
+    fcad = 'tmp'
 
 !    fnamein='../../geometries/meshes/prism_50.gidmsh'
 !    fnameout_root='../../geometries/prism_50'
+!    ifiletype = 3
 
-!    fnamein='../../geometries/meshes/sphere.msh'
-!    fnameout_root='../../geometries/sphere'
+    fnamein='../../geometries/meshes/sphere.msh'
+    fnameout_root='../../geometries/sphere'
+!    ifiletype = 1
  
 !    fnamein = '../../geometries/meshes/cow_new.msh'
 !    fnameout_root = '../../geometries/cow_new'
@@ -92,15 +98,19 @@ program smoother
 !        * ifiletype = 5, for .msh gmsh v4
     ier = 0
     call get_filetype(fnamein, ifiletype, ier)
+    print *, "ifiletype=",ifiletype
 
     if(ier.ne.0) then
       print *, "File type not recognized"
       stop
     endif
 
+
+
     ier = 0
-    call multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
-       norder_smooth, nrefine, adapt_flag, rlam, fnameout_root, ier)
+    call multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, fcad, &
+       norder_skel, norder_smooth, nrefine, adapt_flag, rlam, &
+       fnameout_root, ier)
 
 end program smoother
 
