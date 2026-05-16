@@ -31,7 +31,11 @@ else
   end
   h = scatter3(S.r(1,:),S.r(2,:), S.r(3,:), 100, v, '.', varargin{:});
 end
-view(3)
+if norm(S.r(3,:)) == 0
+    view(0,90)
+else
+    view(3)
+end
 axis equal
 
 if nargout >=1

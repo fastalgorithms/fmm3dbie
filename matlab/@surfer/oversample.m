@@ -116,6 +116,9 @@ function [objout,varargout] = oversample(obj,nover)
                 xinterpmat{i}(i2,:) = 0;
                 xinterpmat{i}(i2,i1) = 1;
             end   
+            if ntmp_uni(i,1) == ntmp_uni(i,2)
+                xinterpmat{i} = speye(size(vmats{i},1),size(vmats{i},2));
+            end
             [isysmat_all{i},jsysmat_all{i},vsysmat_all{i}] = find(xinterpmat{i});
         end
         isysmat = [];
