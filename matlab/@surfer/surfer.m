@@ -356,6 +356,7 @@ classdef surfer
 
     methods(Static)
         obj = load_from_file(fname,varargin);
+        obj = load_from_msh(fname, opts);
         [obj,varargout] = surfacemesh_to_surfer(dom,varargin);
     end
 end
