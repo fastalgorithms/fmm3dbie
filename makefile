@@ -508,6 +508,9 @@ python-gmsh: $(DYNAMICLIB)
 # housekeeping routines
 #
 clean: objclean
+ifneq ($(wildcard ./FMM3D/src/.*),)
+	$(MAKE) -C FMM3D clean
+endif
 	rm -f lib-static/*.a lib/*.so
 	rm -f .mod/*
 	rm -f test/common/int2-com

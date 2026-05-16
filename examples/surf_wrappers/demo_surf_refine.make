@@ -14,7 +14,9 @@ HOST = gcc
 FMMBIE_INSTALL_DIR = $(PREFIX)
 FMM_INSTALL_DIR = $(PREFIX_FMM)
 LFMMLINKLIB = -lfmm3d
+LFMMLINKLIB += -Wl,-rpath,$(FMM_INSTALL_DIR)
 LLINKLIB = -lfmm3dbie
+LLINKLIB += -Wl,-rpath,$(FMMBIE_INSTALL_DIR)
 
 ifneq ($(OS),Windows_NT) 
     UNAME_S := $(shell uname -s)
