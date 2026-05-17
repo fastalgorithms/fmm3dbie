@@ -400,7 +400,7 @@ mex: $(MSTATICLIB)
 	$(MWRAP) $(MWFLAGS) -mex $(GW) -c $(GW).c $(MWF).mw;\
 	$(MEX) $(GW).c ../lib-static/$(MSTATICLIB) $(MFLAGS) \
 	-output $(GW) $(MEXLIBS) ;
-	$(MWRAP) $(MWFLAGS) -list -mex $(GWK) -mb $(MWFK).mw;\
+	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GWK) -mb $(MWFK).mw;\
 	$(MWRAP) $(MWFLAGS) -mex $(GWK) -c $(GWK).c $(MWFK).mw;\
 	$(MEX) $(GWK).c ../lib-static/$(MSTATICLIB) $(MFLAGS) \
 	-output $(GWK) $(MEXLIBS) ;
