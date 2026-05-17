@@ -1,109 +1,91 @@
-S = geometries.disk([],[],[4 4 4],6);
+%
+%  helm2d_neu
+%
+%  Solves the variable-coefficient Helmholtz equation
+%
+%    -\Delta u - zk^2 u + V(r) u = f    in \Omega
+%
+%  with Neumann boundary conditions du/dn = g on \partial\Omega,
+%  using a coupled volume and boundary integral equation formulation.
+%  The volume domain \Omega is a disk discretized as a surfer object S,
+%  and the boundary \partial\Omega is discretized as a chunkie object chnkr.
+%  The manufactured solution is u = sin(x) sin(y).
+%
 
-% chnkr = chunkerfunc(@(t) starfish(t,5,0,[0,0],0,1));
-nch = 4*4;
-cparams.ta = pi/nch;
-cparams.tb = 2*pi + cparams.ta;
-chnkr = chunkerfuncuni(@(t) ellipse(t),nch,cparams);
-chnkr = sort(chnkr);
+%% Geometry and problem definition
 
-figure(1); clf
-plot(S,rand(S.npatches,1))
-hold on
-plot(chnkr,'x-')
-view(0,90)
-
-V = eval_gauss(S.r);
-%rhs = eval_gauss(xs);
 zk = pi;
 
-%% v2v
+S = geometries.disk([],[],[4 4 4],6);
 
+nch = 4*4;
+cparams = []; cparams.ta = pi/nch; cparams.tb = 2*pi + cparams.ta;
+chnkr = chunkerfuncuni(@(t) ellipse(t), nch, cparams);
+chnkr = sort(chnkr);
 
-% A = helm2d.slp_matgen(S,zk,1e-9);
-% lhs_11 = -eye(S.npts) + V.*A;
+V = eval_gauss(S.r);
 
-tic;
-[v2v_cor,nover] = helm2d.get_quad_cor_sub(S,zk, 1e-8);
-toc;
+eps = 1e-8;
 
-v2v_apply = @(mu) helm2d.apply_v2v(S,zk,mu,v2v_cor,nover,1e-14);
-lhs_11 = @(mu) -mu + V.*v2v_apply(mu);
+%% Quadrature
 
+% Volume to volume
+start = tic;
+A = helm2d.slp_matgen(S, zk, eps);
+l11 = -eye(S.npts) + V.*A;
+fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
 
-%% b2v
+% Boundary to volume
+h2d_s = kernel.helm2d('s', zk);
+start = tic;
+l12 = V.*chunkerkernevalmat(chnkr, h2d_s, S.r(1:2,:));
+fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
+% Volume to boundary
+targinfo = [];
+targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
+targinfo.n = [chnkr.n(:,:); 0*chnkr.n(1,:)];
+start = tic;
+l21 = helm2d.v2b_neu(zk, S, targinfo, eps);
+fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 
-% lhs_12 = V.*chunkerkernevalmat(chnkr,h2d_s,S.r(1:2,:));
+% Boundary to boundary
+h2d_sp = kernel.helm2d('sp', zk);
+start = tic;
+l22 = 0.5*eye(chnkr.npt) + chunkermat(chnkr, h2d_sp);
+fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 
-h2d_s = kernel('h','s',zk);
+%% Right hand side and solve
 
-opts = []; opts.corrections = true;
-Ab2v_cor = chunkerkernevalmat(chnkr,h2d_s,S.r(1:2,:),opts);
+% Manufactured solution: u = sin(x) sin(y)
+lhs = [l11, l12; l21, l22];
 
-apply_b2v = @(mu) helm2d.apply_b2v_neu(S,zk,chnkr,mu,Ab2v_cor,1e-12);
-lhs_12 = @(mu) V.*apply_b2v(mu);
+rhs_vol = (-2 + zk^2 + V(:).').*sin(S.r(1,:)).*sin(S.r(2,:));
+rhs_bc  = cos(chnkr.r(1,:)).*sin(chnkr.r(2,:)).*chnkr.n(1,:) ...
+        + sin(chnkr.r(1,:)).*cos(chnkr.r(2,:)).*chnkr.n(2,:);
 
+rhs = [rhs_vol rhs_bc].';
 
-%% v2b
+start = tic;
+sol = gmres(lhs, rhs, [], 1e-10, 200);
+fprintf('%5.2e s : time for dense gmres\n', toc(start))
 
+% Evaluate solution and compute error
+mu  = sol(1:S.npts);
+rho = sol(S.npts+1:end);
+u = A*mu + chunkerkerneval(chnkr, h2d_s, rho, S.r(1:2,:));
+u = real(u);
 
-targinfo=[];
-targinfo.r = [chnkr.r(:,:);0*chnkr.r(1,:)];
-targinfo.n = [chnkr.n(:,:);0*chnkr.n(1,:)];
-% lhs_21 = helm2d.v2b_neu(S,zk,targinfo,1e-8);
-
-tic;
-[Av2b_cor,nover] = helm2d.get_quad_cor_v2b_neu(S, zk,targinfo, 1e-8);
-toc;
-
-v2b_apply = @(mu) helm2d.apply_v2b_neu(S,zk,targinfo,mu,Av2b_cor,nover,1e-14);
-lhs_21 = @(mu) v2b_apply(mu);
-
-
-%% b2b
-
-
-h2d_sp = kernel.helm2d('sp',zk);
-lhs_22 = 0.5*eye(chnkr.npt)+chunkermat(chnkr,h2d_sp); %0.5*eye(n)... -
-
-%%
-
-% lhs = [lhs_11, lhs_12; lhs_21, lhs_22];
-lhs = @(x) [lhs_11(x(1:S.npts)) + lhs_12(x(S.npts+1:end)); lhs_21(x(1:S.npts)) + lhs_22*x(S.npts+1:end)];
-
-
-% analytic solution : u = sin(x)sin(y)
-rhs_1 = (-2+zk^2+V(:).').*sin(S.r(1,:)).*sin(S.r(2,:)) ; 
-rhs_2 = cos(chnkr.r(1,:)).*sin(chnkr.r(2,:)).*chnkr.n(1,:) ...
-          + sin(chnkr.r(1,:)).*cos(chnkr.r(2,:)).*chnkr.n(2,:) ; % sin(xs(1,:))
-
-
-rhs = [rhs_1 rhs_2].';
-
-% dens = lhs\rhs;
-dens = gmres(lhs,rhs,[],1e-12,2000);
-mu = dens(1:S.npts);
-rho = dens(S.npts+1:end);
-% fkern_d = kernel('l','d');
-% u = A*mu + chunkerkerneval(chnkr,fkern_d,rho,S.r(1:2,:));
-u = v2v_apply(mu) + chunkerkerneval(chnkr,h2d_s,rho,S.r(1:2,:));
-
-ref_u = sin(S.r(1,:)).*sin(S.r(2,:));
+ref_u = (sin(S.r(1,:)).*sin(S.r(2,:))).';
 err = abs(u - ref_u(:)) / max(abs(u));
+fprintf('max relative error: %5.2e\n', max(err))
 
-figure(1); clf
-scatter(S.r(1,:),S.r(2,:),8,log10(err)); colorbar
-
-fprintf('relative L^2/L^2 error: %5.5e\n', vecnorm(err .* S.wts(:)) / vecnorm(u .* S.wts(:)) );
-
-return
-
+figure; clf
+scatter(S.r(1,:), S.r(2,:), 8, log10(err));
+title('log_{10} relative error'); colorbar
 
 %%
 function val = eval_gauss(targ)
-
-val = exp( - 10*targ(1,:).^2 - 10*targ(2,:).^2 );
-val = val(:);
-
+    val = exp(-10*targ(1,:).^2 - 10*targ(2,:).^2);
+    val = val(:);
 end

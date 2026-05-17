@@ -43,53 +43,48 @@ function A = v2v_matgen(S, zk, eps)
     
     if isscalar(zk)
         if abs(zk) < 1e-6
-            A = complex(zeros(npts,npts));
-            mex_id_ = 'getnearquad_bh2d_gv2v(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], i int64_t[x], io double[x])';
+            A = zeros(1, nquad);
+            mex_id_ = 'getnearquad_bh2d_gv2v(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])';
 [A] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
 
-        else 
+        else
 
             zpars = zeros(1,2);
-            zpars(1) = zk; 
-            zpars(2) = zk*1i; 
+            zpars(1) = zk;
+            zpars(2) = zk*1i;
 
-            A = zeros(npts,npts,'like',1i);
-            mex_id_ = 'getnearquad_flex2d_gv2v(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], i int64_t[x], io dcomplex[x])';
+            A = zeros(1,nquad,'like',1i);
+            mex_id_ = 'getnearquad_flex2d_gv2v(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])';
 [A] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
 
-
         end
-
 
     elseif length(zk) == 2
 
         if any(abs(zk) < 1e-6)
             zpars = zeros(1,2);
             zpars(1) = zk(abs(zk) >= 1e-6);
-            zpars(2) = 0; 
+            zpars(2) = 0;
 
-            A = zeros(npts,npts,'like',1i);
-        mex_id_ = 'getnearquad_flex2d_gv2v(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], i int64_t[x], io dcomplex[x])';
+            A = zeros(1,nquad,'like',1i);
+            mex_id_ = 'getnearquad_flex2d_gv2v(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])';
 [A] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
 
-        else 
+        else
 
             zpars = zeros(1,2);
-            zpars(1) = zk(1); 
-            zpars(2) = zk(2); 
+            zpars(1) = zk(1);
+            zpars(2) = zk(2);
 
-            A = zeros(npts,npts,'like',1i);
-        mex_id_ = 'getnearquad_flex2d_gv2v(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], i int64_t[x], io dcomplex[x])';
+            A = zeros(1,nquad,'like',1i);
+            mex_id_ = 'getnearquad_flex2d_gv2v(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])';
 [A] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
 
         end
 
-    end 
+    end
 
-    
-    
-    
-    A = reshape(A,[S.npts,S.npts]).';
+    A = reshape(A, [S.npts, S.npts]).';
 
 end
 %

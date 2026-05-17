@@ -6,7 +6,7 @@ function [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
     rads = zeros(npatches,1);
     npatp1 = npatches+1;
 
-    mex_id_ = 'get_centroid_rads(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], io double[xx], io double[x])';
+    mex_id_ = 'get_centroid_rads(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c io double[xx], c io double[x])';
 [cms, rads] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, cms, rads, 1, npatches, npatp1, npatches, 1, n9, npts, n3, npatches, npatches);
 end
 

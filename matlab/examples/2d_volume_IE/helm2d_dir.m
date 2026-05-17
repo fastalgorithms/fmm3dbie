@@ -1,97 +1,89 @@
-% genpath('/Users/squinn/chunkie/')
-% addpath('/Users/squinn/chunkie/')
-% addpath('/Users/squinn/chunkie/chunkie/')
+%
+%  helm2d_dir
+%
+%  Solves the variable-coefficient Helmholtz equation
+%
+%    -\Delta u - zk^2 u + V(r) u = f    in \Omega
+%
+%  with Dirichlet boundary conditions u = g on \partial\Omega,
+%  using a coupled volume and boundary integral equation formulation.
+%  The volume domain \Omega is a disk discretized as a surfer object S,
+%  and the boundary \partial\Omega is discretized as a chunkie object chnkr.
+%  The manufactured solution is u = sin(x) sin(y).
+%
 
-% run('/Users/yuguan/software/chunkie/startup.m')
-% run('/Users/yuguan/Dropbox/fmm3dbie/matlab/startup.m')
-% addpath '/Users/yuguan/Dropbox/fmm3dbie/src'
+%% Geometry and problem definition
+
+zk = sqrt(2);
 
 S = geometries.disk([],[],[4 4 4],8);
 
-% chnkr = chunkerfunc(@(t) starfish(t,5,0,[0,0],0,1));
 nch = 4*4;
-cparams.ta = pi/nch;
-cparams.tb = 2*pi + cparams.ta;
-chnkr = chunkerfuncuni(@(t) ellipse(t),nch,cparams);
+cparams = []; cparams.ta = pi/nch; cparams.tb = 2*pi + cparams.ta;
+chnkr = chunkerfuncuni(@(t) ellipse(t), nch, cparams);
 chnkr = sort(chnkr);
 
-figure(1); clf
-plot(S,rand(S.npatches,1))
-hold on
-plot(chnkr,'x-')
-view(0,90)
+V = eval_gauss(S.r);
 
-V = 0*eval_gauss(S.r);
-%rhs = eval_gauss(xs);
-zk = pi;
-zk = sqrt(2);
+eps = 1e-9;
 
-%% v2v
+%% Quadrature
 
+% Volume to volume
+start = tic;
+A = helm2d.slp_matgen(S, zk, eps);
+l11 = -eye(S.npts) + V.*A;
+fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
 
-A = helm2d.slp_matgen(S,zk,1e-9);
-lhs_11 = -eye(S.npts) + V.*A;
+% Boundary to volume
+h2d_d = kernel.helm2d('d', zk);
+start = tic;
+l12 = V.*chunkerkernevalmat(chnkr, h2d_d, S.r(1:2,:));
+fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
+% Volume to boundary
+targinfo = [];
+targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
+targinfo.n = [chnkr.n(:,:); 0*chnkr.n(1,:)];
+start = tic;
+l21 = helm2d.v2b_dir(zk, S, targinfo, eps);
+fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 
+% Boundary to boundary
+start = tic;
+l22 = -0.5*eye(chnkr.npt) + chunkermat(chnkr, h2d_d);
+fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 
-%% b2v
+%% Right hand side and solve
 
+% Manufactured solution: u = sin(x) sin(y)
+lhs = [l11, l12; l21, l22];
 
-fkern = @(s,t) chnk.helm2d.kern(zk,s,t,'d');
-lhs_12 = V.*chunkerkernevalmat(chnkr,fkern,S.r(1:2,:));
+rhs_vol = (-2 + zk^2 + V(:).').*sin(S.r(1,:)).*sin(S.r(2,:));
+rhs_bc  = sin(chnkr.r(1,:)).*sin(chnkr.r(2,:));
 
+rhs = [rhs_vol rhs_bc].';
 
+start = tic;
+sol = gmres(lhs, rhs, [], 1e-10, 200);
+fprintf('%5.2e s : time for dense gmres\n', toc(start))
 
-%% v2b
+% Evaluate solution and compute error
+mu  = sol(1:S.npts);
+rho = sol(S.npts+1:end);
+u = A*mu + chunkerkerneval(chnkr, h2d_d, rho, S.r(1:2,:));
+u = real(u);
 
-
-targinfo=[];
-targinfo.r = [chnkr.r(:,:);0*chnkr.r(1,:)];
-targinfo.n = [chnkr.n(:,:);0*chnkr.n(1,:)];
-lhs_21 = helm2d.v2b_dir(zk,S,targinfo,1e-8);
-
-
-
-%% b2b
-
-
-h2d_d = kernel.helm2d('d',zk);lhs_22 = -0.5*eye(chnkr.npt)+chunkermat(chnkr,h2d_d); %0.5*eye(n)... -
-
-%%
-
-lhs = [lhs_11, lhs_12; lhs_21, lhs_22];
-% lhs = @(x) [lhs_11(x(1:S.npts)) + lhs_12(x(S.npts+1:end)); lhs_21(x(1:S.npts)) + lhs_22*x(S.npts+1:end)];
-
-
-% analytic solution : u = sin(x)sin(y)
-rhs_1 = (-2+zk^2+V(:).').*sin(S.r(1,:)).*sin(S.r(2,:)) ; 
-rhs_2 = sin(chnkr.r(1,:)).*sin(chnkr.r(2,:)); % sin(xs(1,:))
-
-rhs = [rhs_1 rhs_2].';
-
-dens = lhs\rhs;
-mu = dens(1:S.npts);
-rho = dens(S.npts+1:end);
-
-% fkern_d = kernel('l','d');
-% u = A*mu + chunkerkerneval(chnkr,fkern_d,rho,S.r(1:2,:));
-u = A*mu + chunkerkerneval(chnkr,h2d_d,rho,S.r(1:2,:));
-
-ref_u = sin(S.r(1,:)).*sin(S.r(2,:));
+ref_u = (sin(S.r(1,:)).*sin(S.r(2,:))).';
 err = abs(u - ref_u(:)) / max(abs(u));
+fprintf('max relative error: %5.2e\n', max(err))
 
-figure(1); clf
-scatter(S.r(1,:),S.r(2,:),8,log10(err)); colorbar
-
-fprintf('relative L^2/L^2 error: %5.5e\n', vecnorm(err .* S.wts(:)) / vecnorm(u .* S.wts(:)) );
-
-return
-
+figure; clf
+scatter(S.r(1,:), S.r(2,:), 8, log10(err));
+title('log_{10} relative error'); colorbar
 
 %%
 function val = eval_gauss(targ)
-
-val = exp( - 10*targ(1,:).^2 - 10*targ(2,:).^2 );
-val = val(:);
-
+    val = exp(-10*targ(1,:).^2 - 10*targ(2,:).^2);
+    val = val(:);
 end

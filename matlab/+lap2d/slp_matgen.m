@@ -39,7 +39,7 @@ function A = slp_matgen(S, eps)
     rfac0 = 1.25;
     nquad = npts*npts;
 
-    mex_id_ = 'getnearquad_lap2d_gv2v(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], i int64_t[x], io double[x])';
+    mex_id_ = 'getnearquad_lap2d_gv2v(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])';
 [A] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
     
     A = reshape(A,[S.npts,S.npts]).';
@@ -108,7 +108,7 @@ rior square in the discretization
   ixys = zeros(npp1,1);
   ptinfo = zeros(6,npts);
 
-  mex_id_ = 'mesh_circle_pts(i double[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], io int64_t[x], io double[xx])';
+  mex_id_ = 'mesh_circle_pts(c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io int64_t[x], c io double[xx])';
 [ixys, ptinfo] = kern_routs(mex_id_, rmid, npars, iort, norder, iptype, npatches, npts, ixys, ptinfo, 1, 3, 1, 1, 1, 1, 1, npp1, 6, npts);
 
   norders = norder*ones(npatches,1);

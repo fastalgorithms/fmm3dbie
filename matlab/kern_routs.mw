@@ -3888,49 +3888,44 @@ function A = v2v_matgen(S, zk, eps)
     
     if isscalar(zk)
         if abs(zk) < 1e-6
-            A = complex(zeros(npts,npts));
-            # FORTRAN getnearquad_bh2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] A);
+            A = zeros(1, nquad);
+            # FORTRAN getnearquad_bh2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
 
-        else 
+        else
 
             zpars = zeros(1,2);
-            zpars(1) = zk; 
-            zpars(2) = zk*1i; 
+            zpars(1) = zk;
+            zpars(2) = zk*1i;
 
-            A = zeros(npts,npts,'like',1i);
-            # FORTRAN getnearquad_flex2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad] A);
-
+            A = zeros(1,nquad,'like',1i);
+            # FORTRAN getnearquad_flex2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
 
         end
-
 
     elseif length(zk) == 2
 
         if any(abs(zk) < 1e-6)
             zpars = zeros(1,2);
             zpars(1) = zk(abs(zk) >= 1e-6);
-            zpars(2) = 0; 
+            zpars(2) = 0;
 
-            A = zeros(npts,npts,'like',1i);
-        # FORTRAN getnearquad_flex2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad] A);
+            A = zeros(1,nquad,'like',1i);
+            # FORTRAN getnearquad_flex2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
 
-        else 
+        else
 
             zpars = zeros(1,2);
-            zpars(1) = zk(1); 
-            zpars(2) = zk(2); 
+            zpars(1) = zk(1);
+            zpars(2) = zk(2);
 
-            A = zeros(npts,npts,'like',1i);
-        # FORTRAN getnearquad_flex2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad] A);
+            A = zeros(1,nquad,'like',1i);
+            # FORTRAN getnearquad_flex2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
 
         end
 
-    end 
+    end
 
-    
-    
-    
-    A = reshape(A,[S.npts,S.npts]).';
+    A = reshape(A, [S.npts, S.npts]).';
 
 end
 %
@@ -4368,6 +4363,10 @@ function A = getnearquad(npatches,norders,ixyzs, ...
     ntargp1 = ntarg+1;
     nnzp1 = nnz+1;
     ndz = length(zpars);
+    if ndz == 1
+        zpars = [zpars, 1i*zpars];
+        ndz = 2;
+    end
 
     A = zeros(1,nquad,'like',1i);
 

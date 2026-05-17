@@ -1,4 +1,29 @@
-function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, norderup)
+function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, opts)
+%
+%  [xmat, norderup] = getnearquad_kern(obj, kern, eps, getnearquad)
+%  [xmat, norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo)
+%  [xmat, norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, opts)
+%
+%  Compute the near-field quadrature correction matrix for the kernel kern
+%  on the surface obj, optionally evaluated at off-surface target points.
+%
+%  Input arguments:
+%    obj          - surfer or chunkie object
+%    kern         - kernel function handle or kernel object
+%    eps          - quadrature accuracy requested
+%    getnearquad  - function handle to the near-field quadrature routine
+%    targinfo     - (optional) struct with target point information.
+%                   Defaults to the self-interaction targets on obj.
+%    opts         - (optional) options struct with fields:
+%        opts.nover    - absolute oversampling order (default obj.norders(1)+2)
+%        opts.subtract - if false, do not subtract the smooth oversampled
+%                        quadrature; just return the raw near correction
+%                        (default true)
+%
+%  Output arguments:
+%    xmat         - sparse near-field correction matrix (opdims(1)*ntarg x
+%                   opdims(2)*npts)
+%    norderup     - increment above obj.norders(1) used for oversampling
 
     try
         kernuse = kern.eval;
@@ -6,11 +31,23 @@ function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinf
         kernuse = kern;
     end
 
-    if nargin < 6
-        norderup = 2;
+    % Parse opts
+    if nargin < 6 || isempty(opts)
+        opts = [];
+    end
+    if ~isfield(opts, 'nover') || isempty(opts.nover)
+        noverup = obj.norders(1) + 2;
+    else
+        noverup = opts.nover;
+    end
+    norderup = noverup - obj.norders(1);
+    if ~isfield(opts, 'subtract') || isempty(opts.subtract)
+        subtract = true;
+    else
+        subtract = opts.subtract;
     end
 
-    if nargin < 5
+    if nargin < 5 || isempty(targinfo)
         targinfo = [];
         targinfo.r = obj.r;
         targinfo.patch_id = obj.patch_id;
@@ -61,9 +98,13 @@ function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinf
     iquadtype = 1;
 
     if nnz > 0
-        wnear = getnearquad(npatches, norders, ixyzs, ...
-            iptype, npts, srccoefs, srcvals, targinfo, patch_id, uvs_targ, eps, ...
-            iquadtype, nnz, rsc.row_ptr, rsc.col_ind, rsc.iquad, nquad);
+        % wnear = getnearquad(npatches, norders, ixyzs, ...
+        %     iptype, npts, srccoefs, srcvals, targinfo, patch_id, uvs_targ, eps, ...
+        %     iquadtype, nnz, rsc.row_ptr, rsc.col_ind, rsc.iquad, nquad);
+        wnear = getnearquad(npatches,norders,ixyzs, ...
+              iptype,npts,srccoefs,srcvals,targinfo,patch_id,uvs_targ,eps,...
+              iquadtype,nnz,rsc.row_ptr,rsc.col_ind,rsc.iquad,rsc.rfac0, ...
+              nquad);
         if size(wnear, 1) == nquad
             wnear = wnear.';
         end
@@ -71,9 +112,10 @@ function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinf
 
     xmat = unpack_wnear(obj, rsc, wnear, opdims);
 
-    Asmth_over = smooth_sparse_quad(kernuse, targinfo, obj, rsc.row_ptr, rsc.col_ind, obj.norders(1)+norderup);
-
-    xmat = xmat - Asmth_over;
+    if subtract
+        Asmth_over = smooth_sparse_quad(kernuse, targinfo, obj, rsc.row_ptr, rsc.col_ind, noverup);
+        xmat = xmat - Asmth_over;
+    end
 
 
 end
