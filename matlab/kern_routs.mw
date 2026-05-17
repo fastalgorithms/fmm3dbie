@@ -147,7 +147,7 @@ end
 %
 %-------------------------------------------------
 
-@ belpde_mex/getnearquad_lap_bel_log.m
+@ +belpde/getnearquad_lap_bel_log.m
 function wnear = getnearquad_lap_bel_log(npatches,norders,ixyzs, ...
           iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
           row_ptr,col_ind,iquad,rfac0,mean_curv,nquad,iktype)
@@ -165,7 +165,7 @@ function wnear = getnearquad_lap_bel_log(npatches,norders,ixyzs, ...
 
 end
 
-@ belpde_mex/getnearquad_helm_bel_hank.m
+@ +belpde/getnearquad_helm_bel_hank.m
 function wnear = getnearquad_helm_bel_hank(npatches,norders,ixyzs, ...
           iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
           row_ptr,col_ind,iquad,rfac0,mean_curv,zk,nquad,iktype)
@@ -4482,8 +4482,8 @@ end
 %
 %
 %
-@ src/self_quadrature_new.m
-function [xs, ys, ws] = self_quadrature_new(irad, verts, x0, y0, dr)
+@ src/self_quadrature.m
+function [xs, ys, ws] = self_quadrature(norder, ipv, verts, x0, y0, dr)
     nmax = 50000;
     xs = zeros(nmax,1);
     ys = zeros(nmax,1);
@@ -4491,8 +4491,9 @@ function [xs, ys, ws] = self_quadrature_new(irad, verts, x0, y0, dr)
     [~, nv] = size(verts);
     druse = reshape(dr, [3,2]);
     nquad = 0;
+    ier = 0;
 
-    # FORTRAN self_quadrature_new(int[1] irad, double[2,nv] verts, int[1] nv, double[1] x0, double[1] y0, double[3,2] dr, inout int[1] nquad, inout double[nmax] xs, inout double[nmax] ys, inout double[nmax] ws);
+    # FORTRAN self_quadrature(int[1] norder, int[1] ipv, double[2,nv] verts, int[1] nv, double[1] x0, double[1] y0, double[3,2] druse, inout int[1] nquad, inout double[nmax] xs, inout double[nmax] ys, inout double[nmax] ws, inout int[1] ier);
 
     xs = xs(1:nquad);
     ys = ys(1:nquad);
