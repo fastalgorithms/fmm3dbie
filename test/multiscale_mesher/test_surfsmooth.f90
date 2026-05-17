@@ -7,8 +7,9 @@ program smoother
   integer *8 :: adapt_flag, ifflatten
   integer *8 :: interp_flag
   integer *8 :: norder_skel, norder_smooth
+  integer *8 :: ifcad
 
-  character (len=100) :: fnamein, fnameout_root,name_aux
+  character (len=100) :: fnamein, fnameout_root,name_aux, fcad
   character (len=21) :: plot_name
   character (len=8) :: istr1,istr2
   character (len=2) :: arg_comm
@@ -23,7 +24,7 @@ program smoother
 
   ! order with which to discretize the skeleton patches (pick
   ! something high-order)
-  norder_skel = 12
+  norder_skel = 16
 
   ! order with which to discretize the smooth patches, choose
   ! something reasonable: 4, 6, 8, 10, etc.
@@ -33,7 +34,7 @@ program smoother
   ! the go3 format
   ! 
   !
-  nrefine = 2
+  nrefine = 1
   ! nrefine=1
 
   ! this is to enable adaptativity (otherwise sigma is constant)
@@ -49,8 +50,8 @@ program smoother
   ! in relation to triangle diameter
   ! \sigma_{j} = D_{j}/rlam
   !
-  rlam = 10.0d0 !(usual value)
-!  rlam = 2.5d0
+!  rlam = 10.0d0 !(usual value)
+  rlam = 5.0d0
 
   !rlam = .5d0
   !rlam = 1
@@ -61,11 +62,14 @@ program smoother
 ! specify the msh file to read in
 !
 
-    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
-    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
+!    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
+!    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
+!    ifiletype = 2    
+    fcad = 'tmp'
 
 !    fnamein='../../geometries/meshes/prism_50.gidmsh'
 !    fnameout_root='../../geometries/prism_50'
+!    ifiletype = 3
 
 !    fnamein='../../geometries/meshes/sphere.msh'
 !    fnameout_root='../../geometries/sphere'
@@ -82,7 +86,10 @@ program smoother
 !    fnamein = '../../geometries/meshes/lens_r00_gmshv4.msh'
 !    fnameout_root = '../../geometries/lens_r00'
 !
-
+     fnamein = '../../geometries/meshes/cylinder.gidmsh'
+     fnameout_root = '../../geometries/cylinder'
+     ifcad = 1
+     fcad = '../../geometries/meshes/cylinder_skeleton.txt'
 
 !    Determine file type
 !        * ifiletype = 1, for .msh
@@ -98,9 +105,12 @@ program smoother
       stop
     endif
 
+
+
     ier = 0
-    call multiscale_mesher_unif_refine(fnamein, ifiletype, norder_skel, &
-       norder_smooth, nrefine, adapt_flag, rlam, fnameout_root, ier)
+    call multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, fcad, &
+       norder_skel, norder_smooth, nrefine, adapt_flag, rlam, &
+       fnameout_root, ier)
 
 end program smoother
 

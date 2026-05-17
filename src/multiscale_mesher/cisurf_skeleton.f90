@@ -128,6 +128,86 @@ end subroutine funcion_skeleton
 
 
 
+  subroutine load_cad_skeleton(Geometry1, filename) 
+  use ModType_Smooth_Surface
+  implicit none
+
+  ! List of calling arguments
+  type (Geometry), intent(inout) :: Geometry1
+  character(len=*), intent(in) :: filename
+
+  ! List of local variables
+  integer *8 :: iunit, ios
+  integer *8 :: count_points, i
+  character(len=512) :: line
+  double precision :: x, y, z, nx, ny, nz, weight
+
+  iunit = 10
+
+  ! Count the valid data lines.
+  open(unit=iunit, file=trim(filename), status='old', action='read', iostat=ios)
+  if (ios /= 0) then
+    print *, "ERROR: Could not open file ", trim(filename)
+    stop
+  end if
+
+  count_points = 0
+  do
+    read(iunit, '(A)', iostat=ios) line
+    if (ios < 0) exit
+
+    if (line(1:1) == '#') cycle
+    if (len_trim(line) == 0) cycle
+
+    count_points = count_points + 1
+  end do
+
+  Geometry1%n_Sk_points = count_points
+  write (*,*) 'Longitud del fichero', count_points
+
+  if (allocated(Geometry1%skeleton_Points)) deallocate(Geometry1%skeleton_Points)
+  if (allocated(Geometry1%skeleton_w)) deallocate(Geometry1%skeleton_w)
+  if (allocated(Geometry1%skeleton_N)) deallocate(Geometry1%skeleton_N)
+
+  allocate(Geometry1%skeleton_Points(3, Geometry1%n_Sk_points))
+  allocate(Geometry1%skeleton_w(Geometry1%n_Sk_points))
+  allocate(Geometry1%skeleton_N(3, Geometry1%n_Sk_points))
+
+  rewind(iunit)
+
+  i = 1
+  do
+    read(iunit, '(A)', iostat=ios) line
+    if (ios<0) exit
+
+    if (line(1:1) == '#') cycle
+    if (len_trim(line) == 0) cycle
+
+    read(line, *) x, y, z, nx, ny, nz, weight
+
+    Geometry1%skeleton_Points(1, i) = x
+    Geometry1%skeleton_Points(2, i) = y
+    Geometry1%skeleton_Points(3, i) = z
+
+    Geometry1%skeleton_N(1, i) = nx
+    Geometry1%skeleton_N(2, i) = ny
+    Geometry1%skeleton_N(3, i) = nz
+
+    Geometry1%skeleton_w(i) = weight
+
+    i = i + 1
+  end do
+
+  close(iunit)
+
+  print *, "Successfully loaded ", Geometry1%n_Sk_points, " exact CAD points for FMM."
+
+  return
+end subroutine 
+
+
+
+
 subroutine eval_quadratic_patch(P1,P2,P3,P4,P5,P6,U,V, &
     F_x, F_y, F_z, nP_x, nP_y, nP_z, dS, n_order)
   implicit none

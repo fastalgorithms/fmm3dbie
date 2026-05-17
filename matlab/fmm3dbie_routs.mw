@@ -13,7 +13,7 @@ $ #define MWF77_multiscale_mesher multiscale_mesher_unif_refine_cfname__
 $ #define MWF77_get_filetype get_filetype_cfname__
 $ #endif
 $
-$ void MWF77_multiscale_mesher(char *, int64_t*, int64_t*, int64_t *, int64_t *, int64_t *, double *, char *, int64_t *);
+$ void MWF77_multiscale_mesher(char *, int64_t*, int64_t*, char *, int64_t*, int64_t *, int64_t *, int64_t *, double *, char *, int64_t *);
 $ void MWF77_get_filetype(char *, int64_t *, int64_t *);
 $
 %
@@ -45,6 +45,8 @@ function S = multiscale_mesher(fnamein, norder, opts)
 %        opts.adapt_sigma (1), adapt_sigma = 0, uses uniform sigma for mollifier
 %                              adapt_sigma = 1, uses adaptive sigma
 %        opts.nrefine (0), number of refinements
+%        opts.fcad (), cad file info to be used for defining surface for 
+%        computing level set
 %        opts.filetype, type of file
 %          filetype = 1, for .msh from gidmsh
 %          filetype = 2, for .tri
@@ -107,7 +109,13 @@ function S = multiscale_mesher(fnamein, norder, opts)
         error('MULTISCALE_MESHER: opts.nquad too high, must be less than 20');
     end
     ier = 0;
-    # MWF77_multiscale_mesher(cstring[1000] fnameuse, int[1] ifiletype, int[1] norder_skel, int[1] norder_smooth, int[1] nrefine, int[1] adapt_sigma, double[1] rlam, cstring[1000] fnameoutuse, inout int[1] ier);
+    ifcad = 0;
+    fcad = "tmp";
+    if isfield(opts, 'fcad')
+      fcad = opts.fcad;
+      ifcad = 1;
+    end
+    # MWF77_multiscale_mesher(cstring[1000] fnameuse, int[1] ifiletype, int[1] ifcad, cstring[1000] fcad, int[1] norder_skel, int[1] norder_smooth, int[1] nrefine, int[1] adapt_sigma, double[1] rlam, cstring[1000] fnameoutuse, inout int[1] ier);
 
     if ier == 3 || ier == 4
         error_message = ['MULTISCALE_MESHER: error in main smoothing routine', ...
