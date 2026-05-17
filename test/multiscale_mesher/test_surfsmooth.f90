@@ -24,7 +24,7 @@ program smoother
 
   ! order with which to discretize the skeleton patches (pick
   ! something high-order)
-  norder_skel = 12
+  norder_skel = 16
 
   ! order with which to discretize the smooth patches, choose
   ! something reasonable: 4, 6, 8, 10, etc.
@@ -34,7 +34,7 @@ program smoother
   ! the go3 format
   ! 
   !
-  nrefine = 2
+  nrefine = 1
   ! nrefine=1
 
   ! this is to enable adaptativity (otherwise sigma is constant)
@@ -50,8 +50,8 @@ program smoother
   ! in relation to triangle diameter
   ! \sigma_{j} = D_{j}/rlam
   !
-  rlam = 10.0d0 !(usual value)
-!  rlam = 2.5d0
+!  rlam = 10.0d0 !(usual value)
+  rlam = 5.0d0
 
   !rlam = .5d0
   !rlam = 1
@@ -62,7 +62,6 @@ program smoother
 ! specify the msh file to read in
 !
 
-    ifcad = 0
 !    fnamein='../../geometries/meshes/cuboid_a1_b2_c1p3.tri'
 !    fnameout_root='../../geometries/cuboid_a1_b2_c1p3'
 !    ifiletype = 2    
@@ -72,9 +71,8 @@ program smoother
 !    fnameout_root='../../geometries/prism_50'
 !    ifiletype = 3
 
-    fnamein='../../geometries/meshes/sphere.msh'
-    fnameout_root='../../geometries/sphere'
-!    ifiletype = 1
+!    fnamein='../../geometries/meshes/sphere.msh'
+!    fnameout_root='../../geometries/sphere'
  
 !    fnamein = '../../geometries/meshes/cow_new.msh'
 !    fnameout_root = '../../geometries/cow_new'
@@ -88,7 +86,10 @@ program smoother
 !    fnamein = '../../geometries/meshes/lens_r00_gmshv4.msh'
 !    fnameout_root = '../../geometries/lens_r00'
 !
-
+     fnamein = '../../geometries/meshes/cylinder.gidmsh'
+     fnameout_root = '../../geometries/cylinder'
+     ifcad = 1
+     fcad = '../../geometries/meshes/cylinder_skeleton.txt'
 
 !    Determine file type
 !        * ifiletype = 1, for .msh
@@ -98,7 +99,6 @@ program smoother
 !        * ifiletype = 5, for .msh gmsh v4
     ier = 0
     call get_filetype(fnamein, ifiletype, ier)
-    print *, "ifiletype=",ifiletype
 
     if(ier.ne.0) then
       print *, "File type not recognized"

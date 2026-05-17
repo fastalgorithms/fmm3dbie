@@ -24,10 +24,13 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, &
 !        flag for whether cadfile is available
 !        cadfile will be used if ifcad.neq.0
 !    * filename_cad: string
-!        Input cad file
+!        Input cad points file. Note that if cad file 
+!        info is provided then norder_skel will not
+!        be used.
 !    * norder_skel: integer *8
 !        Order of discretization on skeleton mesh for 
-!        computing integrals for the level-set
+!        computing integrals for the level-set only used
+!        if ifcad = 0
 !    * norder_smooth: integer *8
 !        order of discretization of the surface
 !        on output
@@ -106,6 +109,8 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, &
   ! load in the msh file
   call readgeometry(Geometry1, trim(fnamein), ifiletype, norder_skel, &
       norder_smooth, ier)
+  print *, trim(fnamein)
+  print *, "ier=",ier
   if(ier.ne.0) then
     print *, "Error reading input mesh file"
     return
@@ -126,7 +131,7 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, &
   if (ifcad.eq.0) then
     call funcion_skeleton(Geometry1)
   else
-    call load_exact_cad_skeleton(Geometry1, filename_cad)
+    call load_cad_skeleton(Geometry1, filename_cad)
   endif
   call funcion_normal_vert(Geometry1)
 
@@ -262,10 +267,13 @@ subroutine multiscale_mesher_unif_refine_cfname(fnamein, ifiletype, &
 !        flag for whether cadfile is available
 !        cadfile will be used if ifcad.neq.0
 !    * filename_cad: string
-!        Input cad file
+!        Input cad points file. Note that if cad file 
+!        info is provided then norder_skel will not
+!        be used.
 !    * norder_skel: integer *8
 !        Order of discretization on skeleton mesh for 
-!        computing integrals for the level-set
+!        computing integrals for the level-set only used
+!        if ifcad = 0
 !    * norder_smooth: integer *8
 !        order of discretization of the surface
 !        on output

@@ -128,16 +128,16 @@ end subroutine funcion_skeleton
 
 
 
-subroutine load_exact_cad_skeleton(Geometry1, filename)
+  subroutine load_cad_skeleton(Geometry1, filename) 
   use ModType_Smooth_Surface
   implicit none
 
   ! List of calling arguments
   type (Geometry), intent(inout) :: Geometry1
-  character(len=*), intent(in)   :: filename
+  character(len=*), intent(in) :: filename
 
   ! List of local variables
-  integer :: iunit, ios
+  integer *8 :: iunit, ios
   integer *8 :: count_points, i
   character(len=512) :: line
   double precision :: x, y, z, nx, ny, nz, weight
@@ -178,7 +178,7 @@ subroutine load_exact_cad_skeleton(Geometry1, filename)
   i = 1
   do
     read(iunit, '(A)', iostat=ios) line
-    if (ios < 0) exit
+    if (ios<0) exit
 
     if (line(1:1) == '#') cycle
     if (len_trim(line) == 0) cycle
@@ -203,7 +203,7 @@ subroutine load_exact_cad_skeleton(Geometry1, filename)
   print *, "Successfully loaded ", Geometry1%n_Sk_points, " exact CAD points for FMM."
 
   return
-end subroutine load_exact_cad_skeleton
+end subroutine 
 
 
 
