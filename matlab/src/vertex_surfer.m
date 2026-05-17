@@ -71,14 +71,14 @@ function [Sout,islice,Sshift] = vertex_surfer(S,vert,idvertpatch,tol)
             epts = [-1,1,1,-1;-1,-1,1,1];
             [~,ivert] = min(dists);
             pt = epts(:,ivert);
-            uvs = polytens.lege_nodes(norder);
+            uvs = polytens.lege.nodes(norder);
             [xintmatu,xintmatv,~] = polytens.lege.int_mat(uvs,norder,nleg,pt);
         elseif iptype == 12
             norder = S.norders(i);
             epts = [-1,1,1,-1;-1,-1,1,1];
             [~,ivert] = min(dists);
             pt = epts(:,ivert);
-            uvs = polytens.cheb_nodes(norder);
+            uvs = polytens.cheb.nodes(norder);
             [xintmatu,xintmatv,~] = polytens.cheb.int_mat(uvs,norder,nleg,pt);
         end
         du = S.du(:,iinds);

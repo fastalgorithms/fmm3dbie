@@ -46,25 +46,25 @@ if iptype == 1
     xinterp{i} = pols.'*amat;
 elseif iptype == 11
     ts = linspace(-1,1,norder+1);
-    [uvs] = polytens.lege_nodes(norder);
+    [uvs] = polytens.lege.nodes(norder);
     uvs1 = [ts; 0*ts-1];
     uvs2 = [1+0*ts;ts];
     uvs3 = [flip(ts); 0*ts+1];
     uvs4 = [-1+0*ts;flip(ts)];
     [uvst] = [uvs1,uvs2,uvs3,uvs4];
-    amat = polytens.lege_vals2coefs(norder,uvs);
-    pols = polytens.lege_pols(norder,uvst);
+    amat = polytens.lege.vals2coefs(norder,uvs);
+    pols = polytens.lege.pols(norder,uvst);
     xinterp{i} = pols.'*amat;
 elseif iptype == 12
     ts = linspace(-1,1,norder+1);
-    [uvs] = polytens.cheb_nodes(norder);
+    [uvs] = polytens.cheb.nodes(norder);
     uvs1 = [ts; 0*ts-1];
     uvs2 = [1+0*ts;ts];
     uvs3 = [flip(ts); 0*ts+1];
     uvs4 = [-1+0*ts;flip(ts)];
     [uvst] = [uvs1,uvs2,uvs3,uvs4];
-    amat = polytens.cheb_vals2coefs(norder,uvs);
-    pols = polytens.cheb_pols(norder,uvst);
+    amat = polytens.cheb.vals2coefs(norder,uvs);
+    pols = polytens.cheb.pols(norder,uvst);
     xinterp{i} = pols.'*amat;
 end
 

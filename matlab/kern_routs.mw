@@ -1,0 +1,4500 @@
+%
+%
+%
+%--------------------------------------------
+@ +lap3d/+neumann/eval_der.m 
+function p = eval_der(S,sigma,targinfo,eps,varargin)
+%
+%  lap3d.neumann.eval_der   
+%    Evaluates derivative of the Laplace neumann layer potential at a collection 
+%    of targets
+%
+%  Syntax
+%   pot = lap3d.neumann.eval_der(S,sigma,targinfo,eps)
+%   pot = lap3d.neumann.eval_der(S,sigma,targinfo,eps,opts)
+%
+%  Integral representation
+%     pot = S'_{0} [\sigma] 
+%
+%  S_{0}: Laplace single layer potential
+%  
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * sigma: layer potential density
+%    * targinfo: target info (optional)
+%       targinfo.r = (3,nt) target locations
+%       targinfo.n = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * opts: options struct
+%    * eps: precision requested
+%        opts.nonsmoothonly - use smooth quadrature rule for evaluating
+%           layer potential (false)
+%        opts.precomp_quadrature: precomputed quadrature corrections 
+%           struct currently only supports quadrature corrections
+%           computed in rsc format 
+%    
+
+    if(nargin < 5) 
+      opts = [];
+    else
+      opts = varargin{1};
+    end
+
+    nonsmoothonly = false;
+    if(isfield(opts,'nonsmoothonly'))
+      nonsmoothonly = opts.nonsmoothonly;
+    end
+
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      isprecompq = true;
+      Q = opts.precomp_quadrature;
+    end
+    
+    if(isprecompq)
+      if ~(strcmpi(Q.format,'rsc'))
+        fprintf('Ignoring quadrature corrections\n');
+        opts_qcorr = [];
+        opts_qcorr.type = 'double';
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
+    end
+
+% Extract arrays
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+
+    ff = 'rsc';
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+% Compute quadrature corrections   
+    if ~isprecompq
+      if ~nonsmoothonly
+        opts_quad = [];
+        opts_quad.format = 'rsc';
+        opts_quad.rep = 'der';
+%
+%  For now Q is going to be a struct with 'quad_format', 
+%  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
+%  and either, 'wnear', 'row_ind', 'col_ptr', or
+%  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
+%  if nkernel is >1
+%
+
+        [Q] = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts_quad);
+      else
+        opts_qcorr = [];
+        opts_qcorr.type = 'double';
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
+      end
+    end
+    nquad = Q.iquad(end)-1;
+    nnz = length(Q.col_ind);
+    nnzp1 = nnz+1; 
+
+    [novers] = get_oversampling_parameters(S,Q,eps);
+    Sover = oversample(S,novers);
+
+
+% Extract oversampled arrays
+
+    [srcover,~,~,ixyzso,~,wover] = extract_arrays(Sover);
+    nptso = Sover.npts; 
+
+% Extract quadrature arrays
+    row_ptr = Q.row_ptr;
+    col_ind = Q.col_ind;
+    iquad = Q.iquad;
+    wnear = Q.wnear;
+
+    p = zeros(ntarg,1);
+
+    ndd = 0;
+    dpars = [];
+    ndz = 0;
+    zpars = [];
+    ndi = 0;
+    ipars = [];
+    nker = 1;
+    lwork = 0;
+    work = [];
+    ndim_s = 1;
+    ndim_p = 1;
+    idensflag = 1;
+    ipotflag = 1;
+% Call the layer potential evaluator
+    # FORTRAN lap_s_neu_eval_addsub_der(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, double[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout double[ntarg] p);   
+end   
+%
+%
+%-------------------------------------------------
+%
+%%
+%%   Helmholtz dirichlet routines
+%
+%
+%-------------------------------------------------
+
+@ belpde_mex/getnearquad_lap_bel_log.m
+function wnear = getnearquad_lap_bel_log(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,mean_curv,nquad,iktype)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    ntarg = npts;
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    zpars = 0i;
+
+    wnear = zeros(nquad,1);
+
+    # FORTRAN getnearquad_lap_bel_log(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,double[1] eps,int[1] iquadtype,int[1] nnz, int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,double[npts] mean_curv,int[1] nquad, dcomplex[1] zpars, int[1] iktype,inout double[nquad] wnear);
+
+end
+
+@ belpde_mex/getnearquad_helm_bel_hank.m
+function wnear = getnearquad_helm_bel_hank(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,mean_curv,zk,nquad,iktype)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    ntarg = npts;
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+
+    wnear = zeros(nquad,1,'like',1i);
+
+    # FORTRAN getnearquad_helm_bel_hank(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,double[1] eps,int[1] iquadtype,int[1] nnz, int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,double[npts] mean_curv,int[1] nquad,dcomplex[1] zk,int[1] iktype,inout dcomplex[nquad] wnear);
+
+end
+%
+%
+%
+%----------------------------------
+%  SURFWAVE routs
+%----------------------------------
+%
+%
+@ +surfwave/+flex/matgen.m
+function A = matgen(S,type, zpars0, eps, ivpp)
+%
+%  surfwave.flex.matgen
+%
+%  Syntax
+%   A = surfwave.flex.matgen(S,zpars,eps)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * zpars: parameters. zpars(1:3) are the roots, zpars(4:6) are the residues
+%    * eps: precision requested
+%
+
+    if strcmp(type,'gs')
+        iker = 1;
+    elseif strcmp(type,'gphi')
+        iker = 2;
+    elseif strcmp(type,'bilapgs')
+        iker = 3;
+    elseif strcmp(type,'bilapgphi')
+        iker = 4;
+    else
+        error('kernel name not recognized') 
+    end 
+
+    if nargin < 5
+        ivpp = 1;
+    end
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*npts+1);
+    col_ind = repmat(1:npatches,[1,npts]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*npts;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+    iquad = 1:npols:(npts*npts+1);
+    A = complex(zeros(npts,npts));
+    rfac0 = 1.25;
+    nquad = npts*npts;
+    
+    if ivpp
+    maxdist = 1.5*sqrt((max(S.r(1,:)) - min(S.r(1,:))).^2 + (max(S.r(2,:)) - min(S.r(2,:))).^2);
+    # FORTRAN getnearquad_flex_all_vpp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[13] zpars0, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, double[1] maxdist, inout dcomplex[nquad] A);
+    else
+    # FORTRAN getnearquad_flex_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[13] zpars0, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] A);
+    end
+
+    A = reshape(A, [S.npts,S.npts]).';
+
+end
+%
+%
+@ +surfwave/+flex/evalmats.m
+function wnear = evalmats(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
+%
+%  surfwave.flex.evalmats
+%
+%  Syntax
+%   A = surfwave.flex.evalmats(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * zpars: parameters. zpars(1:5) are the roots, zpars(6:10) are the residues
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    wnear = zeros(3,nquad);
+
+    # FORTRAN getnearquad_flex_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[3,nquad] wnear);
+
+%    mex_id_ = 'getnearquad_flex_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
+% [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntargp1, nnz, nnzp1, 1, 1, 3, nquad);
+
+    
+end
+%
+%
+@ +surfwave/+flex/v2bmats.m
+function wnear = v2bmats(S,targinfo,zpars,eps)
+%
+%  surfwave.flex.evalmats
+%
+%  Syntax
+%   A = surfwave.flex.evalmats(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * zpars: parameters. zpars(1:5) are the roots, zpars(6:10) are the residues
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    targs = targinfo;
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = ntarg + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    wnear = zeros(2,nquad);
+
+    # FORTRAN getnearquad_flex_bcs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[13] zpars, int[1] iquadtype,       int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[2,nquad] wnear);
+
+    
+end
+%
+%
+%
+%
+@ +surfwave/+capillary/v2bmat.m
+function wnear = v2bmat(S,targinfo,zpars,eps)
+%
+%  surfwave.capillary.v2bmat
+%
+%  Syntax
+%   A = surfwave.capillary.v2bmat(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * zpars: parameters. zpars(1:5) are the roots, zpars(6:10) are the residues
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    targs = targinfo;
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    wnear = zeros(1,nquad);
+
+    # FORTRAN getnearquad_capillary_bcs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs,          int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1]  ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[6]  zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1]      rfac0, int[1] nquad, inout dcomplex[1,nquad] wnear);
+
+    
+end
+%
+%
+@ +surfwave/+capillary/matgen.m
+function A = matgen(S,type, zpars, eps, ivpp)
+%
+%  surfwave.capillary.matgen
+%
+%  Syntax
+%   A = surfwave.capillary.matgen(S,type,zpars0,eps,ivpp)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * zpars: parameters. zpars(1:3) are the roots, zpars(4:6) are the residues
+%    * eps: precision requested
+%
+
+    if strcmp(type,'gs')
+        iker = 0;
+    elseif strcmp(type,'gphi')
+        iker = 1;
+    elseif strcmp(type,'lapgs')
+        iker = 2;
+    elseif strcmp(type,'lapgphi')
+        iker = 3;
+    elseif strcmp(type,'s3dgphi')
+        iker = 5;
+    else
+        error('kernel name not recognized') 
+    end 
+
+    if nargin < 5
+        ivpp = 1;
+    end
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*npts+1);
+    col_ind = repmat(1:npatches,[1,npts]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*npts;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+    iquad = 1:npols:(npts*npts+1);
+    A = complex(zeros(npts,npts));
+    rfac0 = 1.25;
+    nquad = npts*npts;
+
+    if ivpp
+    maxdist = 1.5*sqrt((max(S.r(1,:)) - min(S.r(1,:))).^2 + (max(S.r(2,:)) - min(S.r(2,:))).^2);
+    # FORTRAN getnearquad_capillary_all_vpp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] iquadtype,       int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, double[1] maxdist, inout dcomplex[nquad] A);
+    else
+    # FORTRAN getnearquad_capillary_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] iquadtype,       int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] A);
+    end
+
+    A = reshape(A, [S.npts,S.npts]).';
+    
+end
+%
+%
+%
+%
+%
+@ +surfwave/+capillary/gsevalmat.m
+function wnear = gsevalmat(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
+%
+%  surfwave.capillary.gsevalmat
+%
+%  Syntax
+%   A = surfwave.gsevalmat(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info 
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * zpars: parameters. zpars(1:3) are the roots, zpars(4:6) are the residues
+%    * eps: precision requested
+%
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+        ipatch_id = zeros(ntarg,1);
+        uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    wnear = zeros(3,nquad);
+
+    # FORTRAN getnearquad_capillary_eval_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[3,nquad] wnear);
+    
+end
+%
+%
+%
+%
+@ +surfwave/+capillary/lapgphievalmat.m
+function wnear = lapgphievalmat(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
+%
+%  surfwave.capillary.lapgphievalmat
+%
+%  Syntax
+%   A = surfwave.lapgphievalmat(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * zpars: parameters. zpars(1:3) are the roots, zpars(4:6) are the residues
+%    * eps: precision requested
+%
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+        ipatch_id = zeros(ntarg,1);
+        uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    wnear = zeros(1,nquad);
+
+    # FORTRAN getnearquad_capillary_lapgphi_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind,           int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[1,nquad] wnear);
+    
+end
+%
+%
+%
+%
+%
+%
+@ +surfwave/+capillary/gradgsmat.m
+function wnear = gradgsmat(S,targinfo,zpars,eps)
+%
+%  surfwave.capillary.gradgsmat
+%
+%  Syntax
+%   A = surfwave.gsevalmat(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * zpars: parameters. zpars(1:3) are the roots, zpars(4:6) are the residues
+%    * eps: precision requested
+%
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    wnear = zeros(2,nquad);
+
+    # FORTRAN getnearquad_capillary_gradgs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches]        iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz,    int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[2,nquad] wnear);
+
+    
+end
+%
+%
+%
+%
+%
+@ +surfwave/+capillary/gradgphimat.m
+function wnear = gradgphimat(S,targinfo,zpars,eps)
+%
+%  surfwave.capillary.gradgphimat
+%
+%  Syntax
+%   A = surfwave.gsevalmat(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * zpars: parameters. zpars(1:3) are the roots, zpars(4:6) are the residues
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    wnear = zeros(2,nquad);
+
+    # FORTRAN getnearquad_capillary_gradgphi(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches]         iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz,    int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[2,nquad] wnear);
+
+    
+end
+
+%
+%
+%
+%-------------------------------------------------------------
+@ src/get_closest_pts.m
+function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo)
+%
+%  get_closest_pts
+%    This subroutine takes in a surface (S) and collection of target points
+%    (targinfo) and returns the closest point on the surface (sxyz), the
+%    local uv coordinates of that point (uvsloc), the distance of that
+%    point (dists), and flags which indicate whether Newton method was
+%    successful.
+%
+%  Syntax
+%   [sxyz, uvsloc, dists, flags] = get_closest_pts(S,targinfo)
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%
+%  Output arguments:
+%    * sxyz: closest point
+%    * uvsloc: local (u,v) coordinates of closest point on each patch
+%    * dists: distance between target point and closest point
+%    * flags: whether or not Newton method succeeded
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+
+    cms = zeros(3,npatches);
+    rads = zeros(npatches,1);
+# FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npatp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+
+    targs = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+
+    nnz = 0;
+# FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rads,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+
+    row_ptr = zeros(ntarg+1,1);
+    col_ind = zeros(nnz,1);
+    ntp1 = ntarg+1;
+    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rads,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind);    
+
+    istarts = row_ptr(1:end-1);
+    iends = row_ptr(2:end)-1;
+    isrcinds = cell(npatches,1);
+    for i=1:npatches
+        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
+    end
+
+    patch_inds = zeros(ntarg,1);
+    local_inds = zeros(ntarg,1);
+
+    sxyz = zeros(ndtarg,ntarg);
+    uvsloc = zeros(2,ntarg);
+    dists = inf*ones(ntarg,1);
+    flags = zeros(ntarg,1);
+
+    for i=1:ntarg
+        for j = 1:(iends(i) - istarts(i) + 1)
+            jpatch = col_ind(j + istarts(i) - 1);
+            iinds = isrcinds{jpatch};
+            dr2 = (targinfo.r(1,i) - S.r(1,iinds)).^2 + (targinfo.r(2,i) - S.r(2,iinds)).^2 + (targinfo.r(3,i) - S.r(3,iinds)).^2;
+            [~,mind] = min(dr2);
+            glob_ind = iinds(mind);
+            local_inds(i) = glob_ind - ixyzs(S.patch_id(glob_ind)) + 1;
+
+            porder = S.norders(1);
+            snpols = ixyzs(2) - ixyzs(1);
+            maxiter = 10;
+            tol = 1e-8;
+            lpatchidxvec = local_inds(i);
+            itvec = ixyzs(jpatch);
+
+            sxyz_ij = zeros(ndtarg,1);
+            uvsloc_ij = zeros(2,1);
+            dists_ij = 0;
+            flags_ij = 0;
+
+            ntarg_i = 1;
+            targ_i = targs(:,i);
+
+            # FORTRAN findnearsrfcpnt(int[1] ntarg_i, double[ndtarg,ntarg_i] targ_i, int[1] npts, int[1] porder, int[1] snpols, int[1] maxiter, double[n12,npts] srcvals, double[n9,npts] srccoefs, double[1] tol, int[ntarg_i]  lpatchidxvec, int[ntarg_i] itvec, inout double[ndtarg,ntarg_i] sxyz_ij, inout double[2,ntarg_i] uvsloc_ij, inout double[ntarg_i] dists_ij, inout int[ntarg_i] flags_ij);
+
+%            mex_id_ = 'findnearsrfcpnt(i int[x], i double[xx], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], io double[xx], io double[xx], io double[x], io int[x])';
+%            [sxyz_ij, uvsloc_ij, dists_ij, flags_ij] = fmm3dbie_routs(mex_id_, ntarg_i, targ_i, npts, porder, snpols, maxiter, srcvals, srccoefs, tol, lpatchidxvec, itvec, sxyz_ij, uvsloc_ij, dists_ij, flags_ij, 1, ndtarg, ntarg_i, 1, 1, 1, 1, n12, npts, n9, npts, 1, ntarg_i, ntarg_i, ndtarg, ntarg_i, 2, ntarg_i, ntarg_i, ntarg_i);
+
+            if dists_ij < dists(i)
+                dists(i) = dists_ij;
+                sxyz(:,i) = sxyz_ij;
+                uvsloc(:,i) = uvsloc_ij;
+                flags(i) = flags_ij;
+                patch_inds(i) = jpatch;
+            end
+        end
+    end
+
+
+
+end
+%
+%
+%
+%
+@ +surfwave/+capillary/getnearquad_capillary.m
+function wnear = getnearquad_capillary(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    ntarg = npts;
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+
+    wnear = zeros(nquad,1,'like',1i);
+
+    # FORTRAN getnearquad_capillary_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] iquadtype,       int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] wnear);
+end
+%
+%
+%
+%
+%
+%
+@ +surfwave/+flex/getnearquad_flexural.m
+function wnear = getnearquad_flexural(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    ntarg = npts;
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+
+    if iker < 7
+    wnear = zeros(nquad,1,'like',1i);
+
+    # FORTRAN getnearquad_flex_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs,              int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps,         dcomplex[13] zpars, int[1] iquadtype,       int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] wnear);
+    else
+    wnear1 = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,5);
+    wnear2 = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,6);    
+    wnear = wnear1 + wnear2;
+    end
+end
+%
+%
+%
+%
+%
+@ +surfwave/+flex/get_quad_cor_v2b.m
+function [xmat1,xmat2,wnear] = get_quad_cor_v2b(S, targ, kern, eps, zpars, uv_bndry, patch_id)
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npatches = S.npatches;
+    npp1 = npatches+1;
+    
+    rx = targ.r(1,:); 
+    ry = targ.r(2,:); 
+    
+    nx = targ.n(1,:); 
+    ny = targ.n(2,:);
+    
+    dx = targ.d(1,:);
+    dy = targ.d(2,:);
+    
+    ds = sqrt(dx.*dx+dy.*dy);
+    taux = (dx./ds); % normalization
+    tauy = (dy./ds);
+    
+    targs = zeros(13,length(targ.r(1,:)));
+    targs(1:2,:) = [rx; ry];
+    targs(4:5,:) = [taux; tauy];
+    targs(10:11,:) = [nx; ny];
+    targs(13,:) = targ.kappa(:);
+
+    [ndtarg,ntarg] = size(targs);
+    ntp1 = ntarg+1;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    % 
+    % find near quadrature correction interactions
+    % 
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    targinfo = [];
+    targinfo.r = targs(1:3,:);
+
+    if nargin < 6
+        ipatch_id = zeros(ntarg,1);
+        uvs_targ = zeros(2,ntarg);
+    else
+        ipatch_id = patch_id; 
+        uvs_targ = uv_bndry;
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    wnear = zeros(2,nquad,'like',1i);
+
+    mex_id_ = 'getnearquad_flex_bcs(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntp1, nnz, nnzp1, 1, 1, 2, nquad);
+
+    xmat1 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(1,:).');
+    xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
+
+    nover = S.norders(1) + 4; 
+    S_over = oversample(S,nover);
+    Asmth = cell(2,1);
+
+    rnodes = koorn.rv_nodes(S.norders(1));
+    rnodes_over = koorn.rv_nodes(nover);
+
+    vmat = koorn.coefs2vals(S.norders(1),rnodes_over);
+    umat = koorn.vals2coefs(S.norders(1),rnodes);  
+    Ainterp = vmat*umat;
+
+    fprintf('here\n');
+
+    for k = 1:2
+        fprintf('k=%d\n',k)
+    
+        I = [];
+        J = [];
+        v = [];
+        for ii = 1:ntarg
+            rtarg = [];
+            rtarg.r = targ.r(:,ii);
+            rtarg.n = targ.n(:,ii);
+            rtarg.d = targ.d(:,ii);
+            rtarg.d2 = targ.d2(:,ii);
+            for j = row_ptr(ii):(row_ptr(ii+1)-1)
+                jj = col_ind(j);
+                jds_over = S_over.ixyzs(jj):(S_over.ixyzs(jj+1)-1);
+                jds = S.ixyzs(jj):(S.ixyzs(jj+1)-1);
+                rsrc = [];
+                rsrc.r = S_over.r(:,jds_over);
+                Aloc = kern(k).eval(rsrc,rtarg).*S_over.wts(jds_over).';
+                Aloc = Aloc*Ainterp;
+                I = [I ii*ones(1,length(jds))];
+                J = [J jds];
+                v = [v Aloc(:).'];  
+            end
+        end
+        Asmth{k} = sparse(I,J,v,ntarg,npts);
+
+    end
+
+    xmat1 = xmat1 - Asmth{1};
+    xmat2 = xmat2 - Asmth{2};
+
+    % wnear = cell(length(iker),1);
+    % for i = 1:length(iker)
+    % wnear{i} = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
+    %       iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+    %       row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker(i)) ;
+    % 
+    % end    
+    % prin2('quadrature generation time=*',t2,1)
+    
+    % fprintf('done generating near quad \n')
+    
+    %
+    %           .   .   .   now correct
+        
+    % fprintf('correcting quadrature \n')
+
+   
+end
+%
+%
+%
+%
+%
+%
+%
+%
+%
+@ +surfwave/+flex/get_quad_cor.m
+function xmat = get_quad_cor(S, eps, zpars, iker)
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    npatches = S.npatches;
+    npts = S.npts;
+    ndtarg = 3;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    % 
+    % find near quadrature correction interactions
+    % 
+
+    targs = srcvals(1:3,:);
+    ntarg = npts;
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    wnear = cell(length(iker),1);
+    for i = 1:length(iker)
+    wnear{i} = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker(i)) ;
+
+    end
+    t2 = toc;
+
+    if length(iker) == 1
+        wnear = wnear{1};
+    end
+    
+    % prin2('quadrature generation time=*',t2,1)
+    
+    % fprintf('done generating near quad \n')
+    
+    %
+    %           .   .   .   now correct
+        
+    % fprintf('correcting quadrature \n')
+
+
+   xmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
+   
+end
+%
+%
+%
+@ +surfwave/+flex/get_quad_cor_targ.m
+function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps, zpars,ipatch_id,uvs_targ)
+% returns quadrature corrections for G_S, G_p, S_3d G_p and S3d evaluation / postproc
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npatches = S.npatches;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    % 
+    % find near quadrature correction interactions
+    % 
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    nover = S.norders(1);
+
+    if nargin < 6
+        ipatch_id = zeros(ntarg,1);
+        uvs_targ = zeros(2,ntarg);
+        nover = S.norders(1) + 4; 
+    else
+        targinfo.uvs_targ = uvs_targ;
+        targinfo.patch_id = ipatch_id;
+    end
+
+    wnear = zeros(3,nquad,'like',1i);
+
+    # FORTRAN getnearquad_flex_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[3,nquad] wnear);
+
+    % mex_id_ = 'getnearquad_flex_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
+    % [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntargp1, nnz, nnzp1, 1, 1, 3, nquad);
+
+    opts.rep = 'eval';
+    opts.format = 'sparse';
+    wstruc = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts);
+    xmat4 = wstruc.spmat;
+
+    xmat1 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(1,:).');
+    xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
+    xmat3 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(3,:).');
+
+    S_over = oversample(S,nover);
+    Asmth = cell(3,1);
+
+    rnodes = koorn.rv_nodes(S.norders(1));
+    rnodes_over = koorn.rv_nodes(nover);
+
+    vmat = koorn.coefs2vals(S.norders(1),rnodes_over);
+    umat = koorn.vals2coefs(S.norders(1),rnodes);  
+    Ainterp = vmat*umat;
+
+    for k = 1:4
+    Asmth{k} = sparse(ntarg,npts);
+
+    for ii = 1:ntarg
+        rtarg = [];
+        rtarg.r = targs(:,ii);
+        for j = row_ptr(ii):(row_ptr(ii+1)-1)
+            jj = col_ind(j);
+            jds_over = S_over.ixyzs(jj):(S_over.ixyzs(jj+1)-1);
+            jds = S.ixyzs(jj):(S.ixyzs(jj+1)-1);
+            rsrc = [];
+            rsrc.r = S_over.r(:,jds_over);
+            Aloc = gkerns(k).eval(rsrc,rtarg).*S_over.wts(jds_over).';
+            Aloc = Aloc*Ainterp;
+            Asmth{k}(ii,jds) = Aloc;
+        end
+    end
+
+    end
+
+    xmat1 = xmat1 - Asmth{1};
+    xmat2 = xmat2 - Asmth{2};
+    xmat3 = xmat3 - Asmth{3};
+    xmat4 = xmat4 - Asmth{4};
+
+    % wnear = cell(length(iker),1);
+    % for i = 1:length(iker)
+    % wnear{i} = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
+    %       iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+    %       row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker(i)) ;
+    % 
+    % end    
+    % prin2('quadrature generation time=*',t2,1)
+    
+    % fprintf('done generating near quad \n')
+    
+    %
+    %           .   .   .   now correct
+        
+    % fprintf('correcting quadrature \n')
+
+   
+end
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+@ +surfwave/+flex/get_quad_cor_sub.m
+function xmat = get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
+
+    if strcmp(type,'gs')
+        iker = 1;
+    elseif strcmp(type,'gphi')
+        iker = 2;
+    elseif strcmp(type,'bilapgs')
+        iker = 3;
+    elseif strcmp(type,'bilapgphi')
+        iker = 4;
+    elseif strcmp(type,'s3dgphi')
+        iker = 5;
+    elseif strcmp(type,'s3d')
+        iker = 6;
+    else
+        error('kernel name not recognized') 
+    end 
+
+    if nargin < 6
+        ivpp = 1;
+    end
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    npatches = S.npatches;
+    npp1 = npatches+1;
+    npts = S.npts;
+    ntp1 = npts+1;
+    n9 = 9;
+    n12 = 12;
+    ndtarg = 3;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    % 
+    % find near quadrature correction interactions
+    % 
+
+    targs = srcvals(1:3,:);
+    ntarg = npts;
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    wnear = cell(length(iker),1);
+    for i = 1:length(iker)
+    if iker < 6
+        A = zeros(nquad,1,'like',1i);
+        if ivpp
+            maxdist = 1.5*sqrt((max(S.r(1,:)) - min(S.r(1,:))).^2 + (max(S.r(2,:)) - min(S.r(2,:))).^2);
+            # FORTRAN getnearquad_flex_all_vpp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, double[1] maxdist, inout dcomplex[nquad] A);
+        else
+            # FORTRAN getnearquad_flex_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] A);
+        end
+        wnear{i} = A;
+    elseif iker == 6
+        opts.rep = 'eval';
+        opts.format = 'rsc';
+        wstruc = lap3d.neumann.get_quadrature_correction(S,eps,S,opts);
+        wnear{i} = wstruc.wnear;
+        row_ptr = wstruc.row_ptr;
+        iquad = wstruc.iquad;
+        col_ind = wstruc.col_ind;
+        nnz = length(iquad)-1;
+        nquad = iquad(nnz+1)-1;
+    end
+
+    end
+
+    if length(iker) == 1
+        wnear = wnear{1};
+    end
+
+    npols = ixyzs(2:end)-ixyzs(1:end-1);
+    npts_col = npols(col_ind);
+
+    [nt,~] = size(row_ptr);
+    ntarg = nt-1;
+    nrep = zeros(ntarg,1);
+    istarts = row_ptr(1:end-1);
+    iends = row_ptr(2:end)-1;
+    icol_ind = zeros(sum(npts_col),1);
+    isrcinds = cell(npatches,1);
+    for i=1:npatches
+        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
+    end
+
+    istart = 1;
+    for i=1:ntarg
+        nrep(i) = sum(npts_col(istarts(i):iends(i))); 
+        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
+        nelem = length(iinds);
+        icol_ind(istart:istart+nelem-1) = iinds;
+        istart = istart+nelem;
+    end
+    irow_ind = repelem((1:ntarg)',nrep);    
+
+   nnz = length(irow_ind);
+    lbat = 1e3;
+    nbat = ceil(nnz/lbat);
+    
+    for k = 1:nbat
+        ks = (lbat*(k-1)+1):min(lbat*k,nnz);
+        rsrc = S.r(:,icol_ind(ks));
+        rtarg = S.r(:,irow_ind(ks));
+        rnear = rtarg - rsrc;
+        wnear(ks) = wnear(ks)-gs_kern(struct('r',[0;0;0]),struct('r',rnear)).*S.wts(icol_ind(ks));
+    end
+   xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+
+end
+%
+%
+%%
+@ +surfwave/+flex/getnearquad_flex.m
+function wnear = getnearquad_flex(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker,ivpp)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    %if isfield(targs,'r') || isprop(targs,'r')
+    if ~isfloat(targs)
+        targs = targs.r;
+    end
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    wnear = zeros(1,nquad,'like',1i);
+
+    if iker < 7
+
+    if iker < 6
+    if ivpp
+        max_x = max([max(srcvals(1,:)),max(targs(1,:))]);
+        min_x = min([min(srcvals(1,:)),min(targs(1,:))]);
+
+        max_y = max([max(srcvals(2,:)),max(targs(2,:))]);
+        min_y = min([min(srcvals(2,:)),min(targs(2,:))]);
+
+        maxdist = 1.5*sqrt((max_x - min_x).^2 + (max_y - min_y).^2);
+        # FORTRAN getnearquad_flex_all_vpp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, double[1] maxdist, inout dcomplex[nquad] wnear);
+    else
+        # FORTRAN getnearquad_flex_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] wnear);
+    end
+    else
+        wnear_lap = zeros(1,nquad);    
+        # FORTRAN getnearquad_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear_lap);
+        wnear = wnear_lap;
+    end
+
+
+    else
+    wnear1 = surfwave.flex.getnearquad_flex(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,5,ivpp);
+    wnear2 = surfwave.flex.getnearquad_flex(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,6,ivpp);    
+    wnear = wnear1 + wnear2;
+    end
+    wnear = wnear(:);
+end
+
+@ +surfwave/+flex/getnearquad_v2b_flex.m
+function wnear = getnearquad_v2b_flex(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targ,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    
+    rx = targ.r(1,:); 
+    ry = targ.r(2,:); 
+    
+    nx = targ.n(1,:); 
+    ny = targ.n(2,:);
+    
+    dx = targ.d(1,:);
+    dy = targ.d(2,:);
+    
+    ds = sqrt(dx.*dx+dy.*dy);
+    taux = (dx./ds); % normalization
+    tauy = (dy./ds);
+    
+    targs = zeros(13,length(targ.r(1,:)));
+    targs(1:2,:) = [rx; ry];
+    targs(4:5,:) = [taux; tauy];
+    targs(10:11,:) = [nx; ny];
+    targs(13,:) = targ.kappa(:);
+
+    [ndtarg,ntarg] = size(targs);
+    ntp1 = ntarg+1;
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    wnear = zeros(2,nquad,'like',1i);
+
+    mex_id_ = 'getnearquad_flex_bcs(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntp1, nnz, nnzp1, 1, 1, 2, nquad);
+
+
+end
+
+
+%
+%
+@ +surfwave/+capillary/get_quad_cor_sub.m
+function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, ivpp)
+
+    if strcmp(type,'gs')
+        iker = 0;
+    elseif strcmp(type,'gphi')
+        iker = 1;
+    elseif strcmp(type,'lapgs')
+        iker = 2;
+    elseif strcmp(type,'lapgphi')
+        iker = 3;
+    elseif strcmp(type,'s3dgphi')
+        iker = 5;
+    elseif strcmp(type,'s3d')
+        iker = 6;
+    else
+        error('kernel name not recognized') 
+    end 
+
+    if nargin < 6
+        ivpp = 1;
+    end
+
+    if nargin < 6
+        norderup = 0;
+    end
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    npatches = S.npatches;
+    npp1 = npatches+1;
+    npts = S.npts;
+    ntp1 = npts+1;
+    n9 = 9;
+    n12 = 12;
+    ndtarg = 3;    
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    % 
+    % find near quadrature correction interactions
+    % 
+
+    targs = srcvals(1:3,:);
+    ntarg = npts;
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    wnear = cell(length(iker),1);
+
+    for i = 1:length(iker)    
+    if iker < 6
+        A = zeros(nquad,1,'like',1i);
+        if ivpp
+        maxdist = 1.5*sqrt((max(S.r(1,:)) - min(S.r(1,:))).^2 + (max(S.r(2,:)) - min(S.r(2,:))).^2);
+        mex_id_ = 'getnearquad_capillary_all_vpp(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i double[x], io dcomplex[x])';
+        [A] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, iker, maxdist, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, 1, 1, nquad);
+        else
+        mex_id_ = 'getnearquad_capillary_all(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], io dcomplex[x])';
+        [A] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, iker, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, 1, nquad);
+        end  
+        wnear{i} = A;
+    elseif iker == 6
+            opts.rep = 'eval';
+            opts.format = 'rsc';
+            wstruc = lap3d.neumann.get_quadrature_correction(S,eps,S,opts);
+            wnear{i} = wstruc.wnear;
+    end
+    end
+
+    if length(iker) == 1
+        wnear = wnear{1};
+    end
+
+    npols = ixyzs(2:end)-ixyzs(1:end-1);
+    npts_col = npols(col_ind);
+
+    [nt,~] = size(row_ptr);
+    ntarg = nt-1;
+    nrep = zeros(ntarg,1);
+    istarts = row_ptr(1:end-1);
+    iends = row_ptr(2:end)-1;
+    icol_ind = zeros(sum(npts_col),1);
+    isrcinds = cell(npatches,1);
+    for i=1:npatches
+        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
+    end
+
+    istart = 1;
+    for i=1:ntarg
+        nrep(i) = sum(npts_col(istarts(i):iends(i))); 
+        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
+        nelem = length(iinds);
+        icol_ind(istart:istart+nelem-1) = iinds;
+        istart = istart+nelem;
+    end
+    irow_ind = repelem((1:ntarg)',nrep);    
+
+    nnz = length(irow_ind);
+    lbat = 1e3;
+    nbat = ceil(nnz/lbat);
+    
+    for k = 1:nbat
+        ks = (lbat*(k-1)+1):min(lbat*k,nnz);
+        rsrc = S.r(:,icol_ind(ks));
+        rtarg = S.r(:,irow_ind(ks));
+        rnear = rtarg - rsrc;
+        wnear(ks) = wnear(ks)-gs_kern(struct('r',[0;0;0]),struct('r',rnear)).*S.wts(icol_ind(ks));
+    end
+   xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+
+end
+%
+%
+%
+@ +surfwave/+capillary/get_quad_cor_v2b.m
+function [xmat1,xmat2] = get_quad_cor_v2b(S, targs, kern, eps, zpars, uv_bndry, patch_id, norderup)
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npatches = S.npatches;
+    npp1 = npatches+1;
+
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    % 
+    % find near quadrature correction interactions
+    % 
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    if nargin < 6
+        ipatch_id = zeros(ntarg,1);
+        uvs_targ = zeros(2,ntarg);
+    else
+        if ~isempty(patch_id)
+            ipatch_id = patch_id; 
+            uvs_targ = uv_bndry;
+        else
+            ipatch_id = zeros(ntarg,1);
+            uvs_targ = zeros(2,ntarg);
+        end
+    end
+
+    targinfo = [];
+    targinfo.r = targs(1:3,:);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    wnear = zeros(2,nquad,'like',1i);
+
+    # FORTRAN getnearquad_capillary_bcs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[2,nquad] wnear);
+    xmat1 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(1,:).');
+    xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
+
+    if nargin < 8
+        norderup = 4;
+    end
+    nover = S.norders(1) + norderup; 
+    S_over = oversample(S,nover);
+    Asmth = cell(1,1);
+
+    rnodes = koorn.rv_nodes(S.norders(1));
+    rnodes_over = koorn.rv_nodes(nover);
+
+    vmat = koorn.coefs2vals(S.norders(1),rnodes_over);
+    umat = koorn.vals2coefs(S.norders(1),rnodes);  
+    Ainterp = vmat*umat;
+
+    for k = 1:2
+    Asmth{k} = sparse(ntarg,npts);
+
+    for ii = 1:ntarg
+        rtarg = [];
+        rtarg.r = targs(1:2,ii);
+        rtarg.n = targs(10:11,ii);
+        for j = row_ptr(ii):(row_ptr(ii+1)-1)
+            jj = col_ind(j);
+            jds_over = S_over.ixyzs(jj):(S_over.ixyzs(jj+1)-1);
+            jds = S.ixyzs(jj):(S.ixyzs(jj+1)-1);
+            rsrc = [];
+            rsrc.r = S_over.r(:,jds_over);
+            Aloc = kern(k).eval(rsrc,rtarg).*S_over.wts(jds_over).';
+            Aloc = Aloc*Ainterp;
+            Asmth{k}(ii,jds) = Aloc;
+        end
+    end
+
+    end
+
+    xmat1 = xmat1 - Asmth{1};
+    xmat2 = xmat2 - Asmth{2};
+
+    % wnear = cell(length(iker),1);
+    % for i = 1:length(iker)
+    % wnear{i} = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
+    %       iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+    %       row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker(i)) ;
+    % 
+    % end    
+    % prin2('quadrature generation time=*',t2,1)
+    
+    % fprintf('done generating near quad \n')
+    
+    %
+    %           .   .   .   now correct
+        
+    % fprintf('correcting quadrature \n')
+
+   
+end
+%
+%
+%
+@ +surfwave/+capillary/get_quad_cor_targ_plus_s3d.m
+function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ_plus_s3d(S, targinfo, kern, eps, zpars,ipatch_id,uvs_targ)
+% returns quadrature corrections for G_S, G_p, S_3d G_p and S3d evaluation / postproc
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npatches = S.npatches;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    % 
+    % find near quadrature correction interactions
+    % 
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    nover = S.norders(1);
+
+    if nargin < 6
+        ipatch_id = zeros(ntarg,1);
+        uvs_targ = zeros(2,ntarg);
+        nover = S.norders(1) + 4; 
+    else
+        targinfo.uvs_targ = uvs_targ;
+        targinfo.patch_id = ipatch_id;
+    end
+    wnear = zeros(3,nquad);
+
+    # FORTRAN getnearquad_capillary_eval_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[3,nquad] wnear);
+    xmat1 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(1,:).');
+    xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
+    xmat3 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(3,:).');
+
+    opts.rep = 'eval';
+    opts.format = 'sparse';
+
+    wstruc = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts);
+    xmat4 = wstruc.spmat;
+
+    Asmth = cell(1,1);
+    S_over = oversample(S,nover);
+
+    rnodes = koorn.rv_nodes(S.norders(1));
+    rnodes_over = koorn.rv_nodes(nover);
+
+    vmat = koorn.coefs2vals(S.norders(1),rnodes_over);
+    umat = koorn.vals2coefs(S.norders(1),rnodes);  
+    Ainterp = vmat*umat;
+
+    for k = 1:4
+    Asmth{k} = sparse(ntarg,npts);
+
+    for ii = 1:ntarg
+        rtarg = [];
+        rtarg.r = targs(1:2,ii);
+        for j = row_ptr(ii):(row_ptr(ii+1)-1)
+            jj = col_ind(j);
+            jds_over = S_over.ixyzs(jj):(S_over.ixyzs(jj+1)-1);
+            jds = S.ixyzs(jj):(S.ixyzs(jj+1)-1);
+            rsrc = [];
+            rsrc.r = S_over.r(:,jds_over);
+            Aloc = kern(k).eval(rsrc,rtarg).*S_over.wts(jds_over).';
+            Aloc = Aloc*Ainterp;
+            Asmth{k}(ii,jds) = Aloc;
+        end
+    end
+
+    end
+
+    xmat1 = xmat1 - Asmth{1};
+    xmat2 = xmat2 - Asmth{2};
+    xmat3 = xmat3 - Asmth{3};
+    xmat4 = xmat4 - Asmth{4};
+
+end
+%
+%
+%
+@ +surfwave/+gravity/getnearquad_gravity.m
+function wnear = getnearquad_gravity(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker,ivpp,S3d_scal)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    if isfield(targs,'r') || isprop(targs,'r')
+        targs = targs.r;
+    end
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    wnear = zeros(1,nquad,'like',1i);
+
+    if ivpp
+        max_x = max([max(srcvals(1,:)),max(targs(1,:))]);
+        min_x = min([min(srcvals(1,:)),min(targs(1,:))]);
+
+        max_y = max([max(srcvals(2,:)),max(targs(2,:))]);
+        min_y = min([min(srcvals(2,:)),min(targs(2,:))]);
+
+        maxdist = 1.5*sqrt((max_x - min_x).^2 + (max_y - min_y).^2);
+        # FORTRAN getnearquad_gravity_all_vpp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[ndz] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, double[1] maxdist, inout dcomplex[1,nquad] wnear);
+    else
+        # FORTRAN getnearquad_gravity_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[ndz] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[1,nquad] wnear);
+    end
+    wnear_lap = zeros(1,nquad);
+
+    # FORTRAN getnearquad_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear_lap);
+    wnear = wnear(:) + S3d_scal*wnear_lap(:);
+end
+%
+%
+@ +surfwave/+gravity/get_quad_cor_sub.m
+function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, norderup, ivpp, targinfo)
+
+    if strcmp(type,'gs')
+        iker = 0;
+        S3d_scal = 4;
+    elseif strcmp(type,'gphi')
+        iker = 1;
+        S3d_scal = 2;
+    else
+        error('kernel name not recognized') 
+    end 
+
+    if nargin < 7
+        ivpp = 0;
+    end
+
+    gs_kern = kernel(gs_kern);
+    if nargin < 6
+        norderup = 0;
+    end
+
+    if nargin < 8
+        targinfo = [];
+        targinfo.r = S.r;
+        targinfo.patch_id = S.patch_id;
+        targinfo.uvs_targ = S.uvs_targ;
+    end
+    targs = targinfo.r;
+    [ndtarg,ntarg] = size(targs);
+    
+    if isfield(targinfo,'patch_id')
+      patch_id = targinfo.patch_id;
+    else
+      patch_id = zeros(ntarg,1);
+    end
+
+    if isprop(targinfo,'uvs_targ')
+      uvs_targ = targinfo.uvs_targ;
+    else
+      uvs_targ = zeros(2,ntarg);
+    end
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    npatches = S.npatches;
+    npts = S.npts;
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+    [~, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    [rsc] = getnear(S,targinfo);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nnz = length(rsc.col_ind);
+    nquad = rsc.iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    %wnear = cell(length(iker),1);
+    %for i = 1:length(iker)
+
+        wnear = surfwave.gravity.getnearquad_gravity(npatches,norders,ixyzs, ...
+              iptype,npts,srccoefs,srcvals,targs,patch_id, uvs_targ, eps,...
+              iquadtype,nnz, rsc.row_ptr,rsc.col_ind,rsc.iquad,rfac0, ...
+              zpars,nquad,iker,ivpp,S3d_scal);
+%        wnear = 0;
+%        opts.rep = 'eval';
+%        opts.format = 'rsc';
+%        wstruc = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts);
+%        wnear = wnear + S3d_scal*wstruc.wnear;
+
+    %end
+
+    %if length(iker) == 1
+    %    wnear = wnear{1};
+    %end
+
+    npols = ixyzs(2:end)-ixyzs(1:end-1);
+    npts_col = npols( rsc.col_ind);
+
+    [nt,~] = size( rsc.row_ptr);
+    ntarg = nt-1;
+    nrep = zeros(ntarg,1);
+    istarts =  rsc.row_ptr(1:end-1);
+    iends =  rsc.row_ptr(2:end)-1;
+    icol_ind = zeros(sum(npts_col),1);
+    isrcinds = cell(npatches,1);
+    for i=1:npatches
+        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
+    end
+
+    istart = 1;
+    for i=1:ntarg
+        nrep(i) = sum(npts_col(istarts(i):iends(i))); 
+        iinds = horzcat(isrcinds{ rsc.col_ind(istarts(i):iends(i))});
+        nelem = length(iinds);
+        icol_ind(istart:istart+nelem-1) = iinds;
+        istart = istart+nelem;
+    end
+    irow_ind = repelem((1:ntarg)',nrep);    
+    
+    xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+
+    Asmth_over = smooth_sparse_quad(gs_kern,targs,S, rsc.row_ptr, rsc.col_ind,norderup); 
+
+    xmat = xmat - Asmth_over;
+
+end
+%
+%
+@ src/gettritree.m
+function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
+%
+%  tritree = gettritree(srccoefs, targinfo, rfac, opts)
+%
+%  Syntax: 
+%   [tritree] = gettritree(srccoefs, targinfo) 
+%   [tritree] = gettritree(srccoefs, targinfo, rfac) 
+%   [tritree] = gettritree(srccoefs, targinfo, rfac, opts) 
+%
+%  This subroutine constructs a tree on the standard simplex
+%  T_{0} = {(u,v): 0<u<1, 0<v<1, u+v<1}
+%
+%  such that for the all targets, there exists a sub-partition of
+%  the triangle satisfying T_{0} = \cup_{j=1}^{N_{i}} T_{j,i}
+%
+%  with each d(t_{i},T_{j,i})>=rfac*R_{j,i} where R_{j,i} is the radius
+%  of the bounding sphere centered at the centroid of T_{j,i}
+%
+%  Input arguments:
+%    srccoefs: (9,npols) koornwinder polynomial coefficients of
+%                        [r; du; dv]
+%    * targinfo: target info  
+%       targinfo.r = (3,nt) target locations
+%    * rfac: radius defining the target specific partition (optional)
+%       default, rfac = 3
+%    * opts: options struct
+%        opts.ntrimax - maximum number of triangles in the partition (3000)
+%        opts.nlevmax - maximum depth of tree (6)
+%    
+%
+   
+    if (nargin < 3), rfac = 3; end
+    if (nargin < 4), opts = []; end
+
+    ntrimax = 3000;    if isfield(opts, 'ntrimax'), ntrimax = opts.ntrimax; end
+    nlevmax = 8;       if isfield(opts, 'nlevmax'), nlevmax = opts.nlevmax; end
+
+    npols = size(srccoefs, 2);
+    npatches = 1;
+    norder = (-3 + sqrt(8*npols + 1))/2;
+    
+    if isa(targinfo, 'struct')
+        targs = targinfo.r;
+    else
+        targs = targinfo;
+    end
+
+    ntarg = size(targs, 2);
+    
+    itargptr = 1;
+    ntargptr = ntarg;
+
+    ichild_start = zeros(ntrimax,1);
+    da = zeros(ntrimax,1);
+    tricm = zeros(3,ntrimax);
+    trirad = zeros(ntrimax,1);
+    tverts = zeros(6,ntrimax);
+    itrirel = zeros(ntarg,ntrimax);
+
+    ier = 0;
+    ntri = 0;
+    nlev = 0;
+    # FORTRAN gettritree(int[1] npatches, int[1] norder, int[1] npols, double[9,npols] srccoefs, int[1] ntarg, double[3,ntarg] targs, int[1] itargptr, int[1] ntargptr, int[1] ntrimax, int[1] nlevmax, double[1] rfac, inout int[1] ntri, inout int[1] nlev, inout int[ntrimax] ichild_start, inout double[ntrimax] da, inout double[3,ntrimax] tricm, inout double[ntrimax] trirad, inout double[6,ntrimax] tverts, inout int[ntarg,ntrimax] itrirel, inout int[1] ier);
+   
+    tritree = [];
+    if ier > 0
+       warning('FMM3DBIE.GETTRITREE: too few triangles allocated, tritree not formed');
+       return;
+    else
+      tritree.ichild_start = ichild_start(1:ntri);
+      tritree.da = da(1:ntri);
+      tritree.tricm = tricm(:,1:ntri);
+      tritree.trirad = trirad(1:ntri);
+      tritree.tverts = reshape(tverts(:,1:ntri), [2,3,ntri]);
+      tritree.itrirel = itrirel(:,1:ntri);
+    end
+end
+
+
+%
+%
+%
+@ +lap2d/slp_matgen.m
+function A = slp_matgen(S, eps)
+%
+%  lap2d.slp_matgen
+%
+%  Syntax
+%   A = lap2d.slp_matgen(S,eps)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*npts+1);
+    col_ind = repmat(1:npatches,[1,npts]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*npts;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+    iquad = 1:npols:(npts*npts+1);
+    A = zeros(npts,npts);
+    rfac0 = 1.25;
+    nquad = npts*npts;
+
+    # FORTRAN getnearquad_lap2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] A);
+    
+    A = reshape(A,[S.npts,S.npts]).';
+
+end
+%
+%
+rior square in the discretization
+%    * npars(3): integer (optional, [3,3,3])
+%        number of quad patches in u, and v direction. if iptype is 1,
+%        then each quad patch is further divided into two triangular
+%        patches
+%    * norder: (optional, 4)
+%        order of discretization
+%    * iptype: (optional, 1)
+%        type of patch to be used in the discretization
+%        * iptype = 1, triangular patch discretized using
+%                      Rokhlin-Vioreanu nodes
+%        * iptype = 11, quadrangular patch discretized using tensor
+%                       product Gauss-Legendre nodes
+%        * iptype = 12, quadrangular patch discretized using tensor
+%                       product Chebyshev
+%    * iort: (optional, 1)
+%         orientation vector, normals point in the unbounded region
+%         if iort = 1, and in the interior of the startorus otherwise
+%
+% Example
+%   % create 8th-order GL-quad patch for an ellipse with semi-major
+%   axes (1,0.5):
+%   S = geometries.disk([1,0.5], [], [], [], 8, 11)
+%
+  if nargin < 1 || isempty(scales)
+    scales = [1;1];
+  end
+
+  if nargin < 2 || isempty(rmid)
+    rmid = 0.5;
+  end
+
+  if nargin < 3 || isempty(npars)
+    npars = [3;3;3];
+  end
+
+  if nargin < 4 || isempty(norder)
+    norder = 4;
+  end
+
+  if nargin < 5 || isempty(iptype)
+    iptype = 1;
+  end
+
+  if nargin < 6 || isempty(iort)
+    iort = -1;
+  end
+
+
+  if iptype == 1
+    npatches = 2*(npars(1)*npars(1) + 4*npars(2)*npars(3))
+    npts = npatches*(norder+1)*(norder+2)/2
+  elseif iptype == 11 || iptype == 12
+    npatches = npars(1)*npars(1) + 4*npars(2)*npars(3)
+    npts = npatches*(norder+1)*(norder+1)
+  end
+
+  npp1 = npatches+1;
+  ixys = zeros(npp1,1);
+  ptinfo = zeros(6,npts);
+
+  # FORTRAN mesh_circle_pts(double[1] rmid, int[3] npars, int[1] iort, int[1] norder, int[1] iptype, int[1] npatches, int[1] npts, inout int[npp1] ixys, inout double[6,npts] ptinfo);
+
+  norders = norder*ones(npatches,1);
+  srcvals = zeros(12,npts);
+  srcvals(1,:) = scales(1)*ptinfo(1,:);
+  srcvals(2,:) = scales(2)*ptinfo(2,:);
+  srcvals(4,:) = scales(1)*ptinfo(3,:);
+  srcvals(5,:) = scales(2)*ptinfo(4,:);
+  srcvals(7,:) = scales(1)*ptinfo(5,:);
+  srcvals(8,:) = scales(2)*ptinfo(6,:);
+  srcvals(12,:) = iort/abs(iort);
+
+  iptype_all = iptype*ones(npatches,1);
+
+  S = surfer(npatches, norders, srcvals, iptype_all);
+
+
+
+end
+%
+%
+%
+%
+%
+@ +lap2d/v2b_neu.m
+function A = v2b_neu(S,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  lap2d.v2b_neu
+%
+%  Syntax
+%   A = lap2d.v2b_neu(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    A = zeros(1,nquad);
+    zpars = 0;
+
+    # FORTRAN getnearquad_lap2d_gdn(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+%
+%
+%
+%
+@ +lap2d/v2b_dir.m
+function A = v2b_dir(S,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  lap2d.v2b_dir
+%
+%  Syntax
+%   A = lap2d.v2b_dir(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    A = zeros(1,nquad)+1i*zeros(1,nquad);
+    zpars = 0;
+
+    # FORTRAN getnearquad_lap2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+%
+%
+%
+@ +lap2d/evalmat.m
+function A = evalmat(S,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  lap2d.evalmat
+%
+%  Syntax
+%   A = lap2d.evalmat(S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    A = zeros(1,nquad);
+
+    # FORTRAN getnearquad_lap2d_g(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+%
+%
+%
+@ +lap2d/get_quad_cor_sub.m
+function [xmat,nover] = get_quad_cor_sub(S, eps)
+
+    lap2d_kern = kernel('l','s');
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    npatches = S.npatches;
+    npts = S.npts;
+    ndtarg = 3;
+    npp1 = npatches+1;
+    ntarg = npts;
+    ntp1 = ntarg+1;
+    n9 = 9;
+    n12 = 12;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    %
+    % find near quadrature correction interactions
+    %
+
+    targs = srcvals(1:3,:);
+    ntarg = npts;
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    wnear = zeros(nquad,1,'like',1);
+
+    # FORTRAN getnearquad_lap2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] wnear);
+
+    npols = ixyzs(2:end)-ixyzs(1:end-1);
+    npts_col = npols(col_ind);
+
+    [nt,~] = size(row_ptr);
+    ntarg = nt-1;
+    nrep = zeros(ntarg,1);
+    istarts = row_ptr(1:end-1);
+    iends = row_ptr(2:end)-1;
+    icol_ind = zeros(sum(npts_col),1);
+    isrcinds = cell(npatches,1);
+    for i=1:npatches
+        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
+    end
+
+    istart = 1;
+    for i=1:ntarg
+        nrep(i) = sum(npts_col(istarts(i):iends(i)));
+        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
+        nelem = length(iinds);
+        icol_ind(istart:istart+nelem-1) = iinds;
+        istart = istart+nelem;
+    end
+    irow_ind = repelem((1:ntarg)',nrep);
+    
+    xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+
+    Q = []; Q.targinfo = S; Q.rfac = rfac; Q.wavenumber = 0;
+    Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
+    novers = get_oversampling_parameters(S,Q,1e2*eps);
+    nover = max(novers);
+    norderup = nover - S.norders(1); % assumes that patches are all the same order
+
+    Asmth_over = smooth_sparse_quad(lap2d_kern,targs,S,row_ptr,col_ind,norderup);
+
+    xmat = xmat - Asmth_over;
+
+end
+%
+%
+%
+%
+@ +lap2d/get_quad_cor_v2b_neu.m
+function [xmat,nover] = get_quad_cor_v2b_neu(S, targinfo, eps, uv_bndry, patch_id)
+
+    l2d_sprime = kernel('l','sp');
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npatches = S.npatches;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    %
+    % find near quadrature correction interactions
+    %
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    if nargin < 4
+        ipatch_id = zeros(ntarg,1);
+        uvs_targ = zeros(2,ntarg);
+    else
+        if ~isempty(patch_id)
+            ipatch_id = patch_id;
+            uvs_targ = uv_bndry;
+        else
+            ipatch_id = zeros(ntarg,1);
+            uvs_targ = zeros(2,ntarg);
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    A = zeros(1,nquad,'like',1);
+    zpars = 0;
+
+    # FORTRAN getnearquad_lap2d_gdn(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+
+    xmat = conv_rsc_to_spmat(S,row_ptr,col_ind,A);
+
+    Q = []; Q.targinfo = targinfo; Q.rfac = rfac; Q.wavenumber = 0;
+    Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
+    novers = get_oversampling_parameters(S,Q,1e2*eps);
+    nover = max(novers);
+    norderup = nover - S.norders(1);  % assumes that patches are all the same order
+
+    Asmth_over = smooth_sparse_quad(l2d_sprime,targinfo,S,row_ptr,col_ind,norderup);
+
+    xmat = xmat - Asmth_over;
+end
+%
+%
+%
+%
+%
+@ +helm2d/slp_matgen.m
+function A = slp_matgen(S, zk, eps)
+%
+%  helmd.slp_matgen
+%
+%  Syntax
+%   A = helm2d.slp_matgen(S,zk,eps)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*npts+1);
+    col_ind = repmat(1:npatches,[1,npts]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*npts;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+    iquad = 1:npols:(npts*npts+1);
+    A = zeros(npts,npts)+1i*zeros(npts,npts);
+    rfac0 = 1.25;
+    nquad = npts*npts;
+    zpars = complex(double(real(zk)), double(imag(zk)));
+
+    # FORTRAN getnearquad_helm2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad] A);
+    
+    A = reshape(A,[S.npts,S.npts]).';
+
+end
+%
+%
+%
+%
+%
+%
+@ +helm2d/v2b_neu.m
+function A = v2b_neu(zk,S,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  helm2d.v2b_neu
+%
+%  Syntax
+%   A = helm2d.v2b_neu(zk,S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    A = zeros(1,nquad)+1i*zeros(1,nquad);
+    zpars = complex(real(zk),imag(zk));
+
+    # FORTRAN getnearquad_helm2d_gdn(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+%
+%
+%
+@ +helm2d/v2b_dir.m
+function A = v2b_dir(zk,S,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  helm2d.v2b_dir
+%
+%  Syntax
+%   A = helm2d.v2b_dir(zk,S,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    A = zeros(1,nquad)+1i*zeros(1,nquad);
+    zpars = complex(real(zk),imag(zk));
+
+    # FORTRAN getnearquad_helm2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+@ +helm2d/get_quad_cor_sub.m
+function [xmat,nover] = get_quad_cor_sub(S, zk, eps)
+
+    helm2d_kern = kernel('h','s',zk);
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    npatches = S.npatches;
+    npts = S.npts;
+    ndtarg = 3;
+    npp1 = npatches+1;
+    ntarg = npts;
+    ntp1 = ntarg+1;
+    n9 = 9;
+    n12 = 12;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    %
+    % find near quadrature correction interactions
+    %
+
+    targs = srcvals(1:3,:);
+    ntarg = npts;
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    A = zeros(nquad,1,'like',1);
+
+    zpars = complex(double(real(zk)), double(imag(zk)));
+
+
+    # FORTRAN getnearquad_helm2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad] A);
+
+    npols = ixyzs(2:end)-ixyzs(1:end-1);
+    npts_col = npols(col_ind);
+
+    [nt,~] = size(row_ptr);
+    ntarg = nt-1;
+    nrep = zeros(ntarg,1);
+    istarts = row_ptr(1:end-1);
+    iends = row_ptr(2:end)-1;
+    icol_ind = zeros(sum(npts_col),1);
+    isrcinds = cell(npatches,1);
+    for i=1:npatches
+        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
+    end
+
+    istart = 1;
+    for i=1:ntarg
+        nrep(i) = sum(npts_col(istarts(i):iends(i)));
+        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
+        nelem = length(iinds);
+        icol_ind(istart:istart+nelem-1) = iinds;
+        istart = istart+nelem;
+    end
+    irow_ind = repelem((1:ntarg)',nrep);
+    
+    xmat = sparse(irow_ind,icol_ind, A, ntarg, S.npts);
+
+    Q = []; Q.targinfo = S; Q.rfac = rfac; Q.wavenumber = zk;
+    Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
+    novers = get_oversampling_parameters(S,Q,1e2*eps);
+    nover = max(novers);
+    norderup = nover - S.norders(1); % assumes that patches are all the same order
+    norderup = max(norderup, 1);
+    Asmth_over = smooth_sparse_quad(helm2d_kern,targs,S,row_ptr,col_ind,norderup);
+
+    xmat = xmat - Asmth_over;
+
+end
+
+@ +helm2d/getnearquad.m
+function wnear = getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,type)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+
+    targs = [targs.r;zeros(6,size(targs.r,2));targs.n];
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    wnear = zeros(1,nquad,'like',1i);
+
+    if strcmp(type, 'v2v') || strcmp(type, 'v2bd')
+    %# FORTRAN getnearquad_helm2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[ndz] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[1,nquad] wnear);
+    # FORTRAN getnearquad_helm2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
+    elseif strcmp(type, 'v2bn')
+# FORTRAN getnearquad_helm2d_gdn(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[ndz] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[1,nquad] wnear);
+    end
+
+end
+%
+%
+%
+@ +helm2d/get_quad_cor_v2b_neu.m
+function [xmat,nover] = get_quad_cor_v2b_neu(S, zk, targinfo, eps, uv_bndry, patch_id)
+
+    h2d_sprime = kernel('h','sp',zk);
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npatches = S.npatches;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    %
+    % find near quadrature correction interactions
+    %
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    if nargin < 5
+        ipatch_id = zeros(ntarg,1);
+        uvs_targ = zeros(2,ntarg);
+    else
+        if ~isempty(patch_id)
+            ipatch_id = patch_id;
+            uvs_targ = uv_bndry;
+        else
+            ipatch_id = zeros(ntarg,1);
+            uvs_targ = zeros(2,ntarg);
+        end
+    end
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    A = zeros(1,nquad,'like',1);
+    zpars = complex(double(real(zk)), double(imag(zk)));
+
+%    # FORTRAN getnearquad_helm2d_gdn(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+    A = helm2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+          iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,zk, ...
+          nquad,'v2bn').';
+
+    xmat = conv_rsc_to_spmat(S,row_ptr,col_ind,A);
+
+    Q = []; Q.targinfo = targinfo; Q.rfac = rfac; Q.wavenumber = zk;
+    Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
+    novers = get_oversampling_parameters(S,Q,1e2*eps);
+    nover = max(novers);
+    nover = max(nover, S.norders(1)+1);
+    norderup = nover - S.norders(1);  % assumes that patches are all the same order
+    
+    Asmth_over = smooth_sparse_quad(h2d_sprime,targinfo,S,row_ptr,col_ind,norderup);
+
+    xmat = xmat - Asmth_over;
+end
+%
+%
+%
+%
+%
+@ +helm2d/get_quad_cor_v2b_dir.m
+function [xmat,nover] = get_quad_cor_v2b_dir(S, zk, targinfo, eps, uv_bndry, patch_id)
+
+    h2d_s = kernel('h','s',zk);
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npatches = S.npatches;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    %
+    % find near quadrature correction interactions
+    %
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    if nargin < 5
+        ipatch_id = zeros(ntarg,1);
+        uvs_targ = zeros(2,ntarg);
+    else
+        if ~isempty(patch_id)
+            ipatch_id = patch_id;
+            uvs_targ = uv_bndry;
+        else
+            ipatch_id = zeros(ntarg,1);
+            uvs_targ = zeros(2,ntarg);
+        end
+    end
+
+    targinfo = [];
+    targinfo.r = targs(1:3,:);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    A = zeros(1,nquad,'like',1);
+    zpars = complex(double(real(zk)), double(imag(zk)));
+
+    # FORTRAN getnearquad_helm2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+    xmat = conv_rsc_to_spmat(S,row_ptr,col_ind,A);
+
+    Q = []; Q.targinfo = targinfo; Q.rfac = rfac; Q.wavenumber = zk;
+    Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
+    novers = get_oversampling_parameters(S,Q,1e2*eps);
+    nover = max(novers);
+    norderup = nover - S.norders(1);  % assumes that patches are all the same order
+
+    Asmth_over = smooth_sparse_quad(h2d_s,targs,S,row_ptr,col_ind,norderup);
+
+    xmat = xmat - Asmth_over;
+end
+%
+%
+%
+%
+%
+@ src/get_rfacs.m
+function [rfac, rfac0] = get_rfacs(norder_avg, iptype_avg)
+    rfac = 0;
+    rfac0 = 0;
+    # FORTRAN get_rfacs(int[1] norder_avg, int[1] iptype_avg, inout double[1] rfac, inout double[1] rfac0);
+end
+
+@ src/get_centroid_rads.m
+function [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
+      srccoefs)
+    n3 = 3;
+    [n9,~] = size(srccoefs);
+    cms = zeros(3,npatches);
+    rads = zeros(npatches,1);
+    npatp1 = npatches+1;
+
+    # FORTRAN get_centroid_rads(int[1] npatches,int[npatches] norders,int[npatp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,inout double[n3,npatches] cms,inout double[npatches] rads);
+end
+
+@ src/findnearmem.m
+function nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg)
+    nnz = 0;
+    n3 = 3;
+
+    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+end
+
+@ src/findnear.m
+function [row_ptr, col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz)
+    row_ptr = zeros(ntarg+1,1);
+    col_ind = zeros(nnz,1);
+    n3 = 3;
+
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind);
+end
+
+@ src/get_iquad_rsc.m
+function iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind)
+    iquad = zeros(nnz+1,1);
+    npp1 = npatches+1;
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+end
+
+
+%
+%
+%
+@ +bh2d/v2v_matgen.m
+function A = v2v_matgen(S, zk, eps)
+%
+%  bh2d.v2v_matgen
+%
+%  Syntax
+%   A = bh2d.v2v_matgen(S,zk,eps)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%
+
+    if abs(zk)>1e-8
+        error('No support for flexural problem')
+    end 
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*npts+1);
+    col_ind = repmat(1:npatches,[1,npts]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*npts;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+    iquad = 1:npols:(npts*npts+1);
+    A = zeros(npts,npts);
+    rfac0 = 1.25;
+    nquad = npts*npts;
+
+    
+    if abs(zk)<=1e-8 
+
+    # FORTRAN getnearquad_bh2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] A);
+    
+    end 
+    
+    A = reshape(A,[S.npts,S.npts]).';
+
+end
+%
+%
+%
+%
+@ +bh2d/v2b_matgen_dir.m
+function A = v2b_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  bh2d.v2b_matgen_dir
+%
+%  Syntax
+%   A = bh2d.v2b_matgen_dir(S,zk,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+
+
+    if abs(zk)>1e-8
+        error('No support for flexural problem')
+    end 
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    A = zeros(1,nquad);
+    zpars = 0;
+    
+    if abs(zk)<=1e-8 
+
+    # FORTRAN getnearquad_bh2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+
+    end 
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+%
+%
+%
+@ +bh2d/v2b_matgen_neu.m
+function A = v2b_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  bh2d.v2b_matgen_neu
+%
+%  Syntax
+%   A = bh2d.v2b_matgen_neu(S,zk,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+
+
+    if abs(zk)>1e-8
+        error('No support for flexural problem')
+    end 
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    A = complex(zeros(1,nquad));
+    zpars = 0;
+    
+    if abs(zk)<=1e-8 
+
+    # FORTRAN getnearquad_bh2d_neu(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+
+    end 
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+%
+%
+@ +bh2d/v2b_matgen_supp2.m
+function A = v2b_matgen_supp2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  bh2d.v2b_matgen_supp2
+%
+%  Syntax
+%   A = bh2d.v2b_matgen_supp2(S,zk,nu,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+
+
+    if abs(zk)>1e-8
+        error('No support for flexural problem')
+    end 
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 6
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    A = zeros(1,nquad);
+    zpars = 0;
+    dpars = nu;
+
+    
+    if abs(zk)<=1e-8 
+
+    # FORTRAN getnearquad_bh2d_supp2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+
+    end 
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+%
+%
+%
+@ +bh2d/v2b_matgen_free2.m
+function A = v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  bh2d.v2b_matgen_free2
+%
+%  Syntax
+%   A = bh2d.v2b_matgen_free2(S,zk,nu,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+
+
+    if abs(zk)>1e-8
+        error('No support for flexural problem')
+    end 
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 6
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+
+    
+
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+    A = zeros(1,nquad);
+    zpars = 0;
+    dpars = nu;
+
+    
+    if abs(zk)<=1e-8 
+
+    # FORTRAN getnearquad_bh2d_free2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+
+    end 
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+%
+@ +bh2d/get_quad_cor_sub.m
+function [xmat,nover] = get_quad_cor_sub(S, zk, eps)
+
+    if abs(zk)>1e-8
+        error('No support for flexural problem')
+    end 
+
+    kern = @(s,t) chnk.flex2d.kern(0, s, t, 's');
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    npatches = S.npatches;
+    npts = S.npts;
+    ndtarg = 3;
+    npp1 = npatches+1;
+    ntarg = npts;
+    ntp1 = ntarg+1;
+    n9 = 9;
+    n12 = 12;
+
+    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
+
+    %this might need fixing
+
+    iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
+    norder_avg = floor(sum(norders)/(npatches+0.0d0));
+
+    [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
+    % prin2('rfac = *',rfac,1)
+    % prin2('rfac0 = *',rfac0,1)
+
+        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
+
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
+       srccoefs);
+
+    rad_near = rads*rfac;
+
+    %
+    % find near quadrature correction interactions
+    %
+
+    targs = srcvals(1:3,:);
+    ntarg = npts;
+
+    % prinf('entering find near mem',0,0)
+    nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
+    nnzp1 = nnz+1;
+    % prinf('nnz = *',nnz,1);
+
+    [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
+
+    iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
+     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    wnear = zeros(nquad,1,'like',1);
+
+    if zk <= 1e-8
+    # FORTRAN getnearquad_bh2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] wnear);
+    end
+
+    npols = ixyzs(2:end)-ixyzs(1:end-1);
+    npts_col = npols(col_ind);
+
+    [nt,~] = size(row_ptr);
+    ntarg = nt-1;
+    nrep = zeros(ntarg,1);
+    istarts = row_ptr(1:end-1);
+    iends = row_ptr(2:end)-1;
+    icol_ind = zeros(sum(npts_col),1);
+    isrcinds = cell(npatches,1);
+    for i=1:npatches
+        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
+    end
+
+    istart = 1;
+    for i=1:ntarg
+        nrep(i) = sum(npts_col(istarts(i):iends(i)));
+        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
+        nelem = length(iinds);
+        icol_ind(istart:istart+nelem-1) = iinds;
+        istart = istart+nelem;
+    end
+    irow_ind = repelem((1:ntarg)',nrep);
+    
+    xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+
+    Q = []; Q.targinfo = S; Q.rfac = rfac; Q.wavenumber = 0;
+    Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
+    novers = get_oversampling_parameters(S,Q,1e2*eps);
+    nover = max(novers);
+    norderup = nover - S.norders(1); % assumes that patches are all the same order
+
+    Asmth_over = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,norderup);
+
+    xmat = xmat - Asmth_over;
+
+end
+%
+%
+%
+%
+%
+@ +flex2d/v2v_matgen.m
+function A = v2v_matgen(S, zk, eps)
+%
+%  flex2d.v2v_matgen
+%
+%  Syntax
+%   A = flex2d.v2v_matgen(S,zk,eps)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%
+
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*npts+1);
+    col_ind = repmat(1:npatches,[1,npts]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*npts;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+    iquad = 1:npols:(npts*npts+1);
+    
+    rfac0 = 1.25;
+    nquad = npts*npts;
+
+    
+    if isscalar(zk)
+        if abs(zk) < 1e-6
+            A = complex(zeros(npts,npts));
+            # FORTRAN getnearquad_bh2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] A);
+
+        else 
+
+            zpars = zeros(1,2);
+            zpars(1) = zk; 
+            zpars(2) = zk*1i; 
+
+            A = zeros(npts,npts,'like',1i);
+            # FORTRAN getnearquad_flex2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad] A);
+
+
+        end
+
+
+    elseif length(zk) == 2
+
+        if any(abs(zk) < 1e-6)
+            zpars = zeros(1,2);
+            zpars(1) = zk(abs(zk) >= 1e-6);
+            zpars(2) = 0; 
+
+            A = zeros(npts,npts,'like',1i);
+        # FORTRAN getnearquad_flex2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad] A);
+
+        else 
+
+            zpars = zeros(1,2);
+            zpars(1) = zk(1); 
+            zpars(2) = zk(2); 
+
+            A = zeros(npts,npts,'like',1i);
+        # FORTRAN getnearquad_flex2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad] A);
+
+        end
+
+    end 
+
+    
+    
+    
+    A = reshape(A,[S.npts,S.npts]).';
+
+end
+%
+%
+%
+%
+%
+@ +flex2d/v2b_matgen_dir.m
+function A = v2b_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  flex2d.v2b_matgen_dir
+%
+%  Syntax
+%   A = flex2d.v2b_matgen_dir(S,zk,targinfo,zpars,eps)
+%
+%  Integral representation
+%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%       targinfo.r = (3,nt) target locations
+%       targinfo.patch_id (nt,) patch id of target, = -1, if target
+%          is off-surface (optional)
+%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%          patch if on-surface (optional)
+%    * eps: precision requested
+%
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+
+
+    
+    if isscalar(zk)
+        if abs(zk) < 1e-6
+            zpars = 0;
+            A = complex(zeros(1,nquad));
+            # FORTRAN getnearquad_bh2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+
+        else 
+            zpars = zeros(1,2);
+            zpars(1) = zk; 
+            zpars(2) = zk*1i; 
+
+            A = zeros(1,nquad,'like',1i);
+
+            # FORTRAN getnearquad_flex2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+        end
+
+
+    elseif length(zk) == 2
+
+        if any(abs(zk) < 1e-6)
+
+            zpars = zeros(1,2);
+            zpars(1) = zk(abs(zk) >= 1e-6);
+            zpars(2) = 0;
+
+            A = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_flex2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+        
+
+        else 
+            
+            zpars = zeros(1,2);
+            zpars(1) = zk(1); 
+            zpars(2) = zk(2); 
+
+            A = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_flex2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+        
+
+        end
+
+    end 
+
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+end
+%
+%
+%
+%
+%
+@ +flex2d/v2b_matgen_neu.m
+function A = v2b_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  flex2d.v2b_matgen_neu
+%
+%  Syntax
+%   A = flex2d.v2b_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 5
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+
+
+    
+    if isscalar(zk)
+        if abs(zk) < 1e-6
+            A = complex(zeros(1,nquad));
+            zpars = 0;
+        # FORTRAN getnearquad_bh2d_neu(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        else 
+
+            zpars = zeros(1,2,'like',1i);
+            zpars(1) = zk; 
+            zpars(2) = zk*1i;
+            A = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_flex2d_neu(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+
+        end
+
+
+    elseif length(zk) == 2
+
+        if any(abs(zk) < 1e-6)
+
+            zpars = zeros(1,2,'like',1i);
+            zpars(1) = zk(abs(zk) >= 1e-6);
+            zpars(2) = 0;
+            A = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_flex2d_neu(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+        else 
+
+            zpars = zeros(1,2);
+            zpars(1) = zk(1); 
+            zpars(2) = zk(2);
+            A = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_flex2d_neu(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+        end
+
+    end 
+
+    
+    
+    
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+
+end
+%
+%
+%
+%
+%
+@ +flex2d/v2b_matgen_supp2.m
+function A = v2b_matgen_supp2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  flex2d.v2b_matgen_supp2
+%
+%  Syntax
+%   A = flex2d.v2b_matgen_supp2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 6
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+
+
+    dpars = nu;
+    
+    if isscalar(zk)
+        if abs(zk) < 1e-6
+            A = zeros(1,nquad);
+            zpars = 0;
+        # FORTRAN getnearquad_bh2d_supp2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        
+        else 
+
+            zpars = zeros(1,2);
+            zpars(1) = zk; 
+            zpars(2) = zk*1i; 
+            A = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_flex2d_supp2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+        end
+
+
+    elseif length(zk) == 2
+
+        if any(abs(zk) < 1e-6)
+
+            error('No support for Stokes problem')
+            
+             
+
+        else 
+
+            zpars = zeros(1,2);
+            zpars(1) = zk(1); 
+            zpars(2) = zk(2); 
+            A = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_flex2d_supp2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+
+        end
+
+    end 
+
+    
+    
+    
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+
+end
+%
+%
+%
+%
+function A = v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  flex2d.v2b_matgen_free2
+%
+%  Syntax
+%   A = flex2d.v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*ntarg+1);
+    col_ind = repmat(1:npatches,[1,ntarg]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*ntarg;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+
+    rfac0 = 1.25;
+
+    if nargin < 6
+    ipatch_id = zeros(ntarg,1);
+    uvs_targ = zeros(2,ntarg);
+    end
+
+    iquad = 1:npols:(npts*ntarg+1);
+    nquad = iquad(nnzp1)-1;
+
+
+    dpars = nu;
+       
+    if isscalar(zk)
+        if abs(zk) < 1e-6
+            A = zeros(1,nquad);
+            zpars = 0;
+        # FORTRAN getnearquad_bh2d_free2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        
+        else 
+
+            zpars = zeros(1,2);
+            zpars(1) = zk; 
+            zpars(2) = zk*1i; 
+            A = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_flex2d_free2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+        end
+
+
+    elseif length(zk) == 2
+
+        if any(abs(zk) < 1e-6)
+
+            error('No support for Stokes problem')
+            
+             
+
+        else 
+
+            zpars = zeros(1,2);
+            zpars(1) = zk(1); 
+            zpars(2) = zk(2); 
+            A = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_flex2d_free2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+
+
+        end
+
+    end 
+    
+    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+
+end
+%
+%
+%
+%
+@ +flex2d/getnearquad.m
+function A = getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,type)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    A = zeros(1,nquad,'like',1i);
+
+    if strcmp(type, 'v2v') || strcmp(type, 'v2bd') || strcmp(type, 'dir')
+            # FORTRAN getnearquad_flex2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+    elseif strcmp(type, 'v2bn') || strcmp(type, 'neu')
+            # FORTRAN getnearquad_flex2d_neu(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+    elseif strcmp(type, 'v2bs') || strcmp(type, 'supp2') || strcmp(type, 'free1')
+            # FORTRAN getnearquad_flex2d_supp2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+    elseif strcmp(type, 'v2bf') || strcmp(type, 'free2')
+            # FORTRAN getnearquad_flex2d_free2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+    elseif strcmp(type, 'free2_var')
+            # FORTRAN getnearquad_flex2d_free2_var(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);    
+    elseif strcmp(type,'free')
+        A1 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'free1');
+        A2 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'free2');
+        A = [A1,A2];
+    elseif strcmp(type,'free_var')
+        A1 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'free1');
+        A2 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'free2_var');
+        A = [A1,A2];
+    elseif strcmp(type,'supported')
+        A1 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'dir');
+        A2 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'supp2');
+        A = [A1,A2];
+    elseif strcmp(type,'clamped')
+        A1 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'dir');
+        A2 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'neu');
+        A = [A1,A2];
+    end
+
+end
+%
+%
+@ +flex2d/getnearquad_var.m
+function A = getnearquad_var(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,type)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    A = zeros(1,nquad,'like',1i);
+    wmat = zeros(1,nquad,'like',1i);
+
+    if strcmp(type, 'v2v') 
+        for kernel_id = 1:7
+        # FORTRAN getnearquad_flex2d_var(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] kernel_id, inout dcomplex[nquad] wmat);
+
+            for i = 1:length(row_ptr)-1
+                for k = row_ptr(i):row_ptr(i+1)-1
+                    A(:,iquad(k):iquad(k+1)-1) = A(:,iquad(k):iquad(k+1)-1) + ...
+                        targinfo.icoefs(kernel_id,i).*wmat(iquad(k):iquad(k+1)-1).';
+                end
+            end
+        end
+    end
+end
+%
+%
+@ +flex2d/free_kern.m
+function u = free_kern(src,targ,nu,zk)
+ndt = size(targ,1);
+dpars = nu;
+zpars = zk;
+ndd = 1;
+ndz = 2;
+
+ndi = 0;
+ipars = [];
+
+u1 = zeros(1,1,'like',1i);
+# FORTRAN flex2d_gsupp2(double[3] src , int[1] ndt, double[ndt] targ,int[1] ndd, double[ndd] dpars,int[1] ndz, dcomplex[ndz] zpars,int[1] ndi, int[ndi] ipars, inout dcomplex[1] u1);
+u2 = zeros(1,1,'like',1i);
+# FORTRAN flex2d_gfree2(double[3] src , int[1] ndt, double[ndt] targ,int[1] ndd, double[ndd] dpars,int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, inout dcomplex[1] u2);
+u = [u1;u2];
+end
+%
+%
+%
+%
+%
+%
+@ src/self_quadrature_new.m
+function [xs, ys, ws] = self_quadrature_new(irad, verts, x0, y0, dr)
+    nmax = 50000;
+    xs = zeros(nmax,1);
+    ys = zeros(nmax,1);
+    ws = zeros(nmax,1);
+    [~, nv] = size(verts);
+    druse = reshape(dr, [3,2]);
+    nquad = 0;
+
+    # FORTRAN self_quadrature_new(int[1] irad, double[2,nv] verts, int[1] nv, double[1] x0, double[1] y0, double[3,2] dr, inout int[1] nquad, inout double[nmax] xs, inout double[nmax] ys, inout double[nmax] ws);
+
+    xs = xs(1:nquad);
+    ys = ys(1:nquad);
+    ws = ws(1:nquad);
+end

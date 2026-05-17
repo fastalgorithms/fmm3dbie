@@ -46,29 +46,29 @@ function [uvst,xinterp,pols,dumat,dvmat] = patch_sub(norder, iptype)
 
         [~,deru,derv] = koorn.ders(norder,uvs);
     elseif iptype == 11
-        [uvs] = polytens.lege_nodes(norder);
+        [uvs] = polytens.lege.nodes(norder);
         uvs1 = uvs/2+[-0.5;-0.5];
         uvs2 = uvs/2+[0.5;-0.5];
         uvs3 = uvs/2+[-0.5;0.5];
         uvs4 = uvs/2+[0.5;0.5];
         [uvst] = [uvs1,uvs2,uvs3,uvs4];
-        amat = polytens.lege_vals2coefs(norder,uvs);
-        pols = polytens.lege_pols(norder,uvst);
+        amat = polytens.lege.vals2coefs(norder,uvs);
+        pols = polytens.lege.pols(norder,uvst);
         xinterp = pols.'*amat;
 
-        [~,deru,derv] = polytens.lege_ders(norder,uvs);
+        [~,deru,derv] = polytens.lege.ders(norder,uvs);
     elseif iptype == 12
-        [uvs] = polytens.cheb_nodes(norder);
+        [uvs] = polytens.cheb.nodes(norder);
         uvs1 = uvs/2+[-0.5;-0.5];
         uvs2 = uvs/2+[0.5;-0.5];
         uvs3 = uvs/2+[-0.5;0.5];
         uvs4 = uvs/2 + [0.5;0.5];
         [uvst] = [uvs1,uvs2,uvs3,uvs4];
-        amat = polytens.cheb_vals2coefs(norder,uvs);
-        pols = polytens.cheb_pols(norder,uvst);
+        amat = polytens.cheb.vals2coefs(norder,uvs);
+        pols = polytens.cheb.pols(norder,uvst);
         xinterp = pols.'*amat;
 
-        [~,deru,derv] = polytens.cheb_ders(norder,uvs);
+        [~,deru,derv] = polytens.cheb.ders(norder,uvs);
     end
     pols = pols.';
 dumat = kron(eye(4),deru.'*amat);

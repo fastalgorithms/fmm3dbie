@@ -53,9 +53,9 @@ if any(ifix)
         if iptype == 1
         pols = koorn.pols(S.norders(i),uvsloc(:,i));
         elseif iptype == 11
-        pols = polytens.lege_pols(S.norders(i), uvsloc(:,i));
+        pols = polytens.lege.pols(S.norders(i), uvsloc(:,i));
         elseif iptype == 12
-        pols = polytens.cheb_pols(S.norders(i), uvsloc(:,i));
+        pols = polytens.cheb.pols(S.norders(i), uvsloc(:,i));
         else
         error('unsupported patch type')
         end

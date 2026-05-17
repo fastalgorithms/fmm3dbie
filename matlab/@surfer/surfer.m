@@ -54,6 +54,8 @@ classdef surfer
 %                              srccoefs, norders, ixyzs, iptype, and wts
 %   oversample(obj, novers)  - oversample patch(i) on the surface
 %                              to expansion order novers(i)
+%   split_patches(obj, ids)  - split listed patches into four sub-patches
+%   wireframe(obj, opts)     - plot surface patch edges in current figure
 %   affine_transf(obj,mat,s) - apply affine transformation, and translation
 %   conv_rsc_spmat(obj, ...) - convert row sparse representation of 
 %                              near quadrature to sparse matrix
@@ -340,12 +342,14 @@ classdef surfer
          a = area(obj);
          [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(obj);
          [objout,varargout] = oversample(obj,novers);
+         [objout,varargout] = split_patches(obj,isplit);
          dens_int = interpolate_data(obj, dens, ipatch_ids, uvs_targ);
          [objout,varargout] = affine_transf(obj,mat,shift);
          [varargout] = scatter(obj,varargin);
          [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear);
          [objout,varargout] = rotate(obj, eul);
          [varargout] = plot_nodes(S, v, varargin);
+         wireframe(obj, opts);
          [objout,varargout] = scale(obj,sf);
          [objout,varargout] = translate(obj, r);
          [objout] = merge(Sarray);

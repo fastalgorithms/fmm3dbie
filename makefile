@@ -340,13 +340,17 @@ surf-smooth-objs: surf-smooth-mod-objs  $(SURFSMOBJS)
 #
 MWDIR = matlab
 MWF = fmm3dbie_routs
+MWFK = kern_routs
 GW = $(MWF)
+GWK = $(MWFK)
 
 
 
-matlab:	$(MSTATICLIB) $(MWDIR)/$(GW).c
+matlab:	$(MSTATICLIB) $(MWDIR)/$(GW).c $(MWDIR)/$(GWK).c
 	$(MEX) $(MWDIR)/$(GW).c lib-static/$(MSTATICLIB) $(MFLAGS) \
 	-output $(MWDIR)/$(GW) $(MEXLIBS) 
+	$(MEX) $(MWDIR)/$(GWK).c lib-static/$(MSTATICLIB) $(MFLAGS) \
+	-output $(MWDIR)/$(GWK) $(MEXLIBS) 
 
 
 matlab-dyn:	$(MDYNAMICLIB) $(MWDIR)/$(GW).c
@@ -357,7 +361,13 @@ mex: $(MSTATICLIB)
 	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GW) -mb $(MWF).mw;\
 	$(MWRAP) $(MWFLAGS) -mex $(GW) -c $(GW).c $(MWF).mw;\
 	$(MEX) $(GW).c ../lib-static/$(MSTATICLIB) $(MFLAGS) \
-	-output $(GW) $(MEXLIBS) 
+	-output $(GW) $(MEXLIBS) ;
+	$(MWRAP) $(MWFLAGS) -list -mex $(GWK) -mb $(MWFK).mw;\
+	$(MWRAP) $(MWFLAGS) -mex $(GWK) -c $(GWK).c $(MWFK).mw;\
+	$(MEX) $(GWK).c ../lib-static/$(MSTATICLIB) $(MFLAGS) \
+	-output $(GWK) $(MEXLIBS) ;
+
+
 
 mex-dyn: $(MDYNAMICLIB)
 	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GW) -mb $(MWF).mw;\
