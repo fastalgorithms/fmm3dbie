@@ -1,5 +1,6 @@
 subroutine h2d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy, r2
@@ -28,6 +29,7 @@ end subroutine h2d_slp
 
 subroutine h2d_sprime(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy

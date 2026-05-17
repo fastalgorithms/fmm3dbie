@@ -15,6 +15,7 @@ c
         subroutine gshelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)  
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -40,6 +41,7 @@ c
         subroutine gshelm_sp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1       ndi,ipars,val)  
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr, nx, ny
@@ -72,6 +74,7 @@ c
         subroutine gphihelm_sp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1       ndi,ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr, nx, ny
@@ -104,6 +107,7 @@ c
         subroutine gphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -131,6 +135,7 @@ c
         subroutine s3dgphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -158,6 +163,7 @@ c
         subroutine lapgshelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -185,6 +191,7 @@ c
         subroutine lapgphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -211,6 +218,7 @@ c
         subroutine gradxgshelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -237,6 +245,7 @@ c
         subroutine gradygshelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -262,6 +271,7 @@ c
         subroutine gradxgphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -288,6 +298,7 @@ c
         subroutine gradygphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -318,6 +329,7 @@ c
 c
         subroutine gshelm(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,ima,rhoj
         real *8 dr,pi
@@ -328,7 +340,8 @@ c
        
         if (abs(atan(imag(rhoj) / real(rhoj))) .le. 1d-14) then 
              zt = rts(1)*dr
-             call hank103(zt,h0,h1,1)
+        ione = 1
+             call hank103(zt,h0,h1,ione)
              call sk0(rhoj,dr,sk01)
              val = ejs(1)*rts(1)**2*(-sk01+2*ima*h0)
         endif
@@ -356,6 +369,7 @@ c
 c
         subroutine lapgshelm(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,ima,rhoj
         real *8 dr,pi
@@ -366,7 +380,8 @@ c
 
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call sk0(rhoj,dr,sk01)
 
         val = ejs(1)*rts(1)**4*(sk01-2*ima*h0)
@@ -391,6 +406,7 @@ c
 c
         subroutine gphihelm(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,ima,rhoj
         real *8 dr,pi
@@ -401,7 +417,8 @@ c
 
         if (abs(atan(imag(rhoj) / real(rhoj))) .le. 1d-14) then
              zt = rts(1)*dr
-             call hank103(zt,h0,h1,1)
+        ione = 1
+             call hank103(zt,h0,h1,ione)
              call sk0(rhoj,dr,sk01)
              val = ejs(1)*rts(1)*(-sk01+2*ima*h0)
         endif
@@ -429,6 +446,7 @@ c
 c
         subroutine s3dgphihelm(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,ima,rhoj
         real *8 dr,pi
@@ -439,7 +457,8 @@ c
         
         if (abs(atan(imag(rhoj) / real(rhoj))) .le. 1d-14) then
              zt = rts(1)*dr
-             call hank103(zt,h0,h1,1)
+        ione = 1
+             call hank103(zt,h0,h1,ione)
              call sk0(rhoj,dr,sk01)
              val = ejs(1)*(-sk01+2*ima*h0)
         endif
@@ -468,6 +487,7 @@ c
 c
         subroutine lapgphihelm_old(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,laph0
         complex *16 h0,h1,lap1,lap2,lap3,ima,rhoj
         real *8 dr,pi
@@ -478,7 +498,8 @@ c
 
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call lapsk0(rhoj,dr,lap1)
 
         laph0 = -rhoj*rhoj*h0
@@ -503,6 +524,7 @@ c
 c
         subroutine lapgphihelm(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,alpha
         complex *16 h0,h1,sk01,sk02,sk03,ima,rhoj
         real *8 dr,pi
@@ -512,7 +534,8 @@ c
         zt = rts(1)*dr
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call sk0(rhoj,dr,sk01)
 
         laph0 = -rhoj*rhoj*h0
@@ -547,6 +570,7 @@ c
 c
         subroutine gradgshelm(rts,ejs,dx,dy,gradx,grady)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
         complex *16 sk01x,sk01y,sk02x,sk02y,sk03x,sk03y
         complex *16 gradx,grady,h0x,h0y
@@ -559,7 +583,8 @@ c
         zt = rts(1)*dr
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call gradsk0(rhoj,dx,dy,sk01x,sk01y)
 
         h0x = -rhoj*dx/dr*h1
@@ -590,6 +615,7 @@ c
 c
         subroutine gradxgshelm(rts,ejs,dx,dy,gradx)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
         complex *16 sk01x,sk01y,sk02x,sk02y,sk03x,sk03y
         complex *16 gradx,h0x,h0y
@@ -602,7 +628,8 @@ c
         zt = rts(1)*dr
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call gradsk0(rhoj,dx,dy,sk01x,sk01y)
 
         h0x = -rhoj*dx/dr*h1
@@ -630,6 +657,7 @@ c
 c
         subroutine gradxgphihelm(rts,ejs,dx,dy,gradx)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
         complex *16 sk01x,sk01y,sk02x,sk02y,sk03x,sk03y
         complex *16 gradx,h0x,h0y
@@ -642,7 +670,8 @@ c
         zt = rts(1)*dr
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call gradsk0(rhoj,dx,dy,sk01x,sk01y)
 
         h0x = -rhoj*dx/dr*h1
@@ -671,6 +700,7 @@ c
 c
         subroutine gradygshelm(rts,ejs,dx,dy,grady)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
         complex *16 sk01x,sk01y,sk02x,sk02y,sk03x,sk03y
         complex *16 grady,h0x,h0y
@@ -683,7 +713,8 @@ c
         zt = rts(1)*dr
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call gradsk0(rhoj,dx,dy,sk01x,sk01y)
 
         h0y = -rhoj*dy/dr*h1
@@ -712,6 +743,7 @@ c
 c
         subroutine gradygphihelm(rts,ejs,dx,dy,grady)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
         complex *16 sk01x,sk01y,sk02x,sk02y,sk03x,sk03y
         complex *16 grady,h0x,h0y
@@ -724,7 +756,8 @@ c
         zt = rts(1)*dr
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call gradsk0(rhoj,dx,dy,sk01x,sk01y)
 
         h0y = -rhoj*dy/dr*h1
@@ -753,6 +786,7 @@ c
 c
         subroutine gradgphihelm(rts,ejs,dx,dy,gradx,grady)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
         complex *16 sk01x,sk01y,sk02x,sk02y,sk03x,sk03y
         complex *16 gradx,grady,h0x,h0y
@@ -765,7 +799,8 @@ c
         zt = rts(1)*dr
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call gradsk0(rhoj,dx,dy,sk01x,sk01y)
 
         h0x = -rhoj*dx/dr*h1

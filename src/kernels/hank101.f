@@ -17,6 +17,7 @@ c
   
         subroutine hank101(z,h0,h1)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         save
         complex *16 z,h0,h1,h0u,h0r,h1u,h1r,
      1      fj0,fj1,y0,y1,com,zu,zr,ima,ser2,ser3,z2,
@@ -134,6 +135,7 @@ c
 c 
         subroutine hank101u(z,ier,h0,h1)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         save
         complex *16 z,com,ima,cd,h0,h1,ccex
         dimension rea(2)
@@ -404,6 +406,7 @@ c
 c 
         subroutine hank101p(p,m,z,f)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         save
         complex *16 p(1),z,f
 c 
@@ -426,6 +429,7 @@ c
 c 
         subroutine hank101a(z,h0,h1)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         save
         dimension p(18),q(18),p1(18),q1(18),rea(2)
         complex *16 z,zinv,pp,cd,qq,ima,h0,h1,pp1,qq1,
@@ -616,6 +620,7 @@ c
 c 
         subroutine hank101l(z,h0,h1)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         save
         dimension cj0(16),cj1(16),ser2(16),ser2der(16)
         complex *16 z,fj0,fj1,y0,y1,h0,h1,z2,cd,ima
@@ -725,6 +730,7 @@ c
 c 
         subroutine hank101r(z,ier,h0,h1)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         save
         complex *16 z,com,ima,cd,h0,h1
         dimension rea(2)

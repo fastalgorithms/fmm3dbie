@@ -20,6 +20,7 @@ c
         subroutine flexrepbc1(srcinfo,ndt,targinfo,ndd,dpars,ndz,
      1    zpars,ndi,ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 srcinfo(*), targinfo(ndt)
         real *8 dx,dy,dz,dr,nx,ny,taux,tauy
@@ -70,6 +71,7 @@ c
         subroutine flexrepbc2(srcinfo,ndt,targinfo,ndd,dpars,ndz,
      1    zpars,ndi,ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 srcinfo(*), targinfo(ndt)
         real *8 dx,dy,dz,dr,nx,ny,taux,tauy,kappa
@@ -132,6 +134,7 @@ c
         subroutine gsflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)  
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -157,6 +160,7 @@ c
         subroutine bilapgsflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -182,6 +186,7 @@ c
         subroutine s3dgphiflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -209,6 +214,7 @@ c
         subroutine bilapgphiflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -237,6 +243,7 @@ c
         subroutine gphiflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -262,6 +269,7 @@ c
 c
         subroutine gsflex(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,sk04,sk05
         complex *16 ima,rhoj
@@ -273,7 +281,8 @@ c
         
         if (abs(atan(imag(rhoj) / real(rhoj))) .le. 1d-14) then
              zt = rts(1)*dr
-             call hank103(zt,h0,h1,1)
+        ione = 1
+             call hank103(zt,h0,h1,ione)
              call sk0(rhoj,dr,sk01)
              val = ejs(1)*rts(1)**2*(-sk01+2*ima*h0)
         endif
@@ -313,6 +322,7 @@ c
         subroutine gsflex23(rts,ejs,dx,dy,gsxx,gsxy,gsyy,gsxxx,gsxxy,
      1     gsxyy,gsyyy)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),zt,gsxx,gsxy,gsyy
         complex *16 gsxxx,gsxxy,gsxyy,gsyyy
         complex *16 h0xx,h0xy,h0yy,h0xxx,h0xxy,h0xyy,h0yyy
@@ -425,6 +435,7 @@ c
         subroutine gphiflex23(rts,ejs,dx,dy,gsxx,gsxy,gsyy,gsxxx,gsxxy,
      1     gsxyy,gsyyy)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),zt,gsxx,gsxy,gsyy
         complex *16 gsxxx,gsxxy,gsxyy,gsyyy
         complex *16 h0xx,h0xy,h0yy,h0xxx,h0xxy,h0xyy,h0yyy
@@ -553,6 +564,7 @@ c
 c
         subroutine gphiflex(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,sk04,sk05
         complex *16 ima,rhoj
@@ -564,7 +576,8 @@ c
 
         if (abs(atan(imag(rhoj) / real(rhoj))) .le. 1d-14) then
              zt = rts(1)*dr
-             call hank103(zt,h0,h1,1)
+        ione = 1
+             call hank103(zt,h0,h1,ione)
              call sk0(rhoj,dr,sk01)
              val = ejs(1)*rts(1)*(-sk01+2*ima*h0)
         endif
@@ -605,6 +618,7 @@ c
 c
         subroutine bilapgsflex(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,sk04,sk05
         complex *16 ima,rhoj
@@ -616,7 +630,8 @@ c
 
         rhoj = rts(1)
         
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call sk0(rhoj,dr,sk01)
         
         val = ejs(1)*rts(1)**6*(-sk01+2*ima*h0)
@@ -650,6 +665,7 @@ c
 c
         subroutine bilapgphiflex(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,sk04,sk05
         complex *16 ima,rhoj,oneoveralpha
@@ -661,7 +677,8 @@ c
 
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call sk0(rhoj,dr,sk01)
 
         val = ejs(1)*rts(1)**5*(-sk01+2*ima*h0)
@@ -701,6 +718,7 @@ c
 c
         subroutine s3dgphiflex(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,sk04,sk05
         complex *16 ima,rhoj,oneoveralpha
@@ -712,7 +730,8 @@ c
 
         rhoj = rts(1)
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call sk0(rhoj,dr,sk01)
 
         val = ejs(1)*(-sk01+2*ima*h0)

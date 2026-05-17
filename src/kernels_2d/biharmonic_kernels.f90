@@ -14,6 +14,7 @@
 
 subroutine bh2d_g(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy, r2
@@ -42,6 +43,7 @@ end subroutine bh2d_g
 subroutine bh2d_gdn(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -71,6 +73,7 @@ end subroutine bh2d_gdn
 subroutine bh2d_gsupp2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -108,6 +111,7 @@ end subroutine bh2d_gsupp2
 subroutine bh2d_gfree2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -166,6 +170,7 @@ end subroutine bh2d_gfree2
 !
 subroutine bh2d_green_der2(dx,dy,gsxx,gsxy,gsyy)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: gsxx, gsxy, gsyy
   real *8 :: dx, dy
   real *8 :: dx2, dy2, r2, r 
@@ -197,6 +202,7 @@ end subroutine bh2d_green_der2
 subroutine bh2d_green_der23(dx,dy,gsxx,gsxy,gsyy,gsxxx,gsxxy,gsxyy,&
   gsyyy)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: gsxx, gsxy, gsyy, gsxxx, gsxxy, gsxyy, gsyyy
   real *8 :: dx, dy, dx2, dy2, r2, r
   real *8 :: rm1, rm2, rm3
@@ -250,6 +256,7 @@ end subroutine bh2d_green_der23
 !
 subroutine r2logr_rders(r,g0,g1,g21,g321,g4321,g54321)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: r, g0, g1, g21, g321, g4321, g54321
   real *8 :: o8p 
   real *8 :: r2, r2d1, rm1, rm2, rm3, rm4, rm5 

@@ -18,6 +18,7 @@
 
 subroutine lap_bel_res(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 over4pi
@@ -58,6 +59,7 @@ end subroutine lap_bel_res
 
 subroutine lap_bel_log(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 over4pi
@@ -87,6 +89,7 @@ end subroutine lap_bel_log
 
 subroutine helm_bel_res(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,zval)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 over4pi
@@ -127,6 +130,7 @@ end subroutine helm_bel_res
 
 subroutine helm_bel_hank(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,zval)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 over4pi

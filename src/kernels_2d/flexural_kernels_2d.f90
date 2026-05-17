@@ -84,6 +84,7 @@ end subroutine flex2d_gdn
 subroutine flex2d_gsupp2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -137,6 +138,7 @@ end subroutine flex2d_gsupp2
 subroutine flex2d_gfree2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -208,6 +210,7 @@ end subroutine flex2d_gfree2
 subroutine flex2d_gfree2_var(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -285,6 +288,7 @@ end subroutine flex2d_gfree2_var
 subroutine flex2d_lapgx(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -319,6 +323,7 @@ end subroutine flex2d_lapgx
 subroutine flex2d_lapgy(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -353,6 +358,7 @@ end subroutine flex2d_lapgy
 subroutine flex2d_lapg(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -387,6 +393,7 @@ end subroutine flex2d_lapg
 subroutine flex2d_gxx(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -420,6 +427,7 @@ end subroutine flex2d_gxx
 subroutine flex2d_gyy(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -453,6 +461,7 @@ end subroutine flex2d_gyy
 subroutine flex2d_gxy(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn

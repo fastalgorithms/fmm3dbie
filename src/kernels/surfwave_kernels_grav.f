@@ -15,6 +15,7 @@ c
         subroutine gsgravkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)  
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -42,6 +43,7 @@ c
         subroutine gphigravkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         integer ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
@@ -98,6 +100,7 @@ c
 c
         subroutine gsgrav(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(1),ejs(1),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,ima,rhoj
         real *8 dr,pi
@@ -108,7 +111,8 @@ c
        
         if (abs(atan(imag(rhoj) / real(rhoj))) .le. 1d-14) then 
              zt = rts(1)*dr
-             call hank103(zt,h0,h1,1)
+        ione = 1
+             call hank103(zt,h0,h1,ione)
              call sk0(rhoj,dr,sk01)
              val = ejs(1)*rts(1)**2*(-sk01+2*ima*h0)
         endif
@@ -125,6 +129,7 @@ c
 c
         subroutine gphigrav(rts,ejs,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(1),ejs(1),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,ima,rhoj
         real *8 dr,pi
@@ -135,7 +140,8 @@ c
 
         if (abs(atan(imag(rhoj) / real(rhoj))) .le. 1d-14) then
              zt = rts(1)*dr
-             call hank103(zt,h0,h1,1)
+        ione = 1
+             call hank103(zt,h0,h1,ione)
              call sk0(rhoj,dr,sk01)
              val = ejs(1)*rts(1)*(-sk01+2*ima*h0)
         endif
@@ -156,6 +162,7 @@ c
         subroutine s3dgphigrav(rts,ejs,dr,val)
 c TODO ADD 1/r term
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rts(1),ejs(1),val,zt
         complex *16 h0,h1,sk01,sk02,sk03,ima,rhoj
         real *8 dr,pi
@@ -166,7 +173,8 @@ c TODO ADD 1/r term
         
         if (abs(atan(imag(rhoj) / real(rhoj))) .le. 1d-14) then
              zt = rts(1)*dr
-             call hank103(zt,h0,h1,1)
+        ione = 1
+             call hank103(zt,h0,h1,ione)
              call sk0(rhoj,dr,sk01)
              val = ejs(1)*(-sk01+2*ima*h0)
         endif

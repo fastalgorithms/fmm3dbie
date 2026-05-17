@@ -15,6 +15,7 @@
 
 subroutine l2d_g(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy, r2
@@ -38,6 +39,7 @@ end subroutine l2d_g
 subroutine l2d_gdn(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
@@ -65,6 +67,7 @@ end subroutine l2d_gdn
 
 subroutine l2d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy, r2
@@ -88,6 +91,7 @@ end subroutine l2d_slp
 subroutine l2d_sprime(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
    ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(ndd)
   integer ipars(ndi)
   real *8 :: dx, dy, r2, rdotn

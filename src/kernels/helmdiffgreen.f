@@ -8,6 +8,7 @@
         subroutine helmdiffgreen(zk,dx,dy,h0,h0x,h0y,h0xx,
      1      h0xy,h0yy,h0xxx,h0xxy,h0xyy,h0yyy)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         real *8 dx,dy,dx2,dy2,dx3,dy3,dx4,dy4
         real *8 dr,r2,r,rm1,rm2,rm3,rm4
         integer nder
@@ -40,7 +41,9 @@
 
 
         zt = zk*dr
-        call hankdiff(zt,1,3,1,cvals)
+        ione = 1
+        ithree = 3
+        call hankdiff(zt,ione,ithree,ione,cvals)
 
         d0 = cvals(1,1)
         d1 = cvals(2,1)
@@ -85,6 +88,7 @@ c
        subroutine helmdiffgreen23(zk,dx,dy,h0xx,
      1      h0xy,h0yy,h0xxx,h0xxy,h0xyy,h0yyy)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         real *8 dx,dy,dx2,dy2,dx3,dy3,dx4,dy4
         real *8 dr,r2,r,rm1,rm2,rm3,rm4
         integer nder
@@ -116,7 +120,9 @@ c
 
 
         zt = zk*dr
-        call hankdiff(zt,1,3,1,cvals)
+        ione = 1
+        ithree = 3
+        call hankdiff(zt,ione,ithree,ione,cvals)
 
 
 
@@ -159,7 +165,8 @@ c
         complex *16 zt,h0,h1
         complex *16 d0,d1,d2,d3
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
 
         d0 = h0
         d1 = -h1

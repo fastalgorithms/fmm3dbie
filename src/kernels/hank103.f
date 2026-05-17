@@ -6,6 +6,7 @@ c
 c
         subroutine hanks104(z,hanks,n,ifexpon)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 z,hanks(*)
 c
 c       This subroutine evaluates the first n+1 Hankel functions of the
@@ -58,6 +59,7 @@ c
 c
         subroutine hanks103(z,hanks,n,ifexpon)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 z,hanks(*),cd,cdd
 c
 c       This subroutine evaluates the first n+1 Hankel functions of the
@@ -115,6 +117,7 @@ c
 c
         subroutine hank103(z,h0,h1,ifexpon)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 z,h0,h1,h0u,h0r,h1u,h1r,
      1      fj0,fj1,y0,y1,zu,zr,ima,ser2,ser3,z2,
      2      cclog,cd
@@ -244,6 +247,7 @@ c
 c
         subroutine hank103u(z,ier,h0,h1,ifexpon)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 z,ima,cd,h0,h1,ccex,zzz9
         real *8 c0p1(70)
         real *8 c1p1(70)
@@ -493,6 +497,7 @@ c
 c
         subroutine hank103p(p,m,z,f)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 p(1),z,f
 c
 c       evaluate a polynomial at a point
@@ -514,6 +519,7 @@ c
 c
         subroutine hank103a(z,h0,h1,ifexpon)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         dimension p(18),q(18),p1(18),q1(18)
         complex *16 z,zinv,pp,qq,ima,h0,h1,pp1,qq1,
      1      cccexp,cdd,cdumb,zinv22
@@ -611,6 +617,7 @@ c
 c
         subroutine hank103l(z,h0,h1,ifexpon)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         dimension cj0(16),cj1(16),ser2(16),ser2der(16)
         complex *16 z,fj0,fj1,y0,y1,h0,h1,z2,cd,ima,cdddlog
 c
@@ -717,6 +724,7 @@ c
 c
         subroutine hank103r(z,ier,h0,h1,ifexpon)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 z,ima,cd,h0,h1,cccexp,cdd,zz18
         real *8 c0p1(70)
         real *8 c1p1(70)

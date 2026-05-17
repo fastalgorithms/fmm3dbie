@@ -492,6 +492,7 @@ c
       subroutine nearkernel(src, dipvec, targ, sigma, grad_sigma, pot,
      1    grad)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 src(3), targ(3), dipvec(3), sigma, grad_sigma(3), pot
       real *8 grad(3)
 
@@ -521,6 +522,7 @@ c
 
       subroutine surf_smooth_ker(r, sgma, h, hh, hhh)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 dmexp
       real *8, parameter :: pi=3.141592653589793238462643383d0
       real *8, parameter :: fourpi = 12.5663706143592d0

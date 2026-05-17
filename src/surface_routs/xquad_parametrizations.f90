@@ -276,6 +276,7 @@ subroutine xquad_ellipsoid_eval(iquad, u, v, xyz, dxyzduv, &
 !
 
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), quadinfo(3,3,*), p2(3), p3(3)
 
   x0=quadinfo(1,1,iquad)
@@ -1089,6 +1090,7 @@ end subroutine xquad_rectmesh0
 !
 subroutine xquad_rectmesh_3d(v1, v2, v3, v4, nu, nv, npatches, quadskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 quadskel(3,3,npatches), v1(3), v2(3), v3(3), v4(3)
   real *8 vl(3), vr(3), vb(3), vt(3)
   real *8 uvw1(3), uvw2(3), uvw3(3), uvw4(3)
@@ -1127,6 +1129,7 @@ end subroutine xquad_rectmesh_3d
 !
 subroutine xquad_rectmesh0_3d(v1, v2, v3, v4, quadskel)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 v1(3), v2(3), v3(3), v4(3), quadskel(3,3)
 
   do i=1,3
@@ -1146,6 +1149,7 @@ subroutine xquad_get_rectparapiped(a, b, c, na, nb, nc, &
   npatches, quadskel)
 
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 quadskel(3,3,npatches),vs(3,4)
   real *8 vcube(3,8),xnorm(3)
 
@@ -1269,6 +1273,7 @@ end
 
 subroutine get_norm_quadskel(quad, xnorm)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 quad(3,3), xnorm(3), xu(3), xv(3)
       
 

@@ -280,6 +280,7 @@
 !        stores the quadrature corrections for <enter kernel here>
 
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       integer, intent(in) :: npatches, npts
       integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
       integer, intent(in) :: iptype(npatches)

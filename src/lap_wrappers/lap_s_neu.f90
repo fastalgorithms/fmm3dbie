@@ -1671,7 +1671,8 @@
    
        
 !        compute threshold for ignoring local computation
-      call get_fmm_thresh(12, ns, srcover, ndtarg, ntarg, targs, thresh)
+      itwelve = 12
+      call get_fmm_thresh(itwelve, ns, srcover, ndtarg, ntarg, targs, thresh)
 !
 !       Add near field precomputed contribution
 !

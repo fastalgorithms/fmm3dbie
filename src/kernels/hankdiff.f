@@ -1,16 +1,19 @@
         
         subroutine hankdiff(zs,nzs,nder,nsub,
      1      cvals)
+        implicit real *8 (a-h,o-z)
+        implicit integer *8(i-n)
         complex *16 zs(nzs),cvals(nder+1,nzs),z
 
+        ione = 1
         rcut = 1
         do ii=1,nzs
         z = zs(ii)
         if (abs(z) .le. rcut) then
-        call hankdiff_loc(z,1,nder,nsub,
+        call hankdiff_loc(z,ione,nder,nsub,
      1      cvals(1,ii))
         else
-        call hankdiff_far(z,1,nder,nsub,cvals(1,ii))
+        call hankdiff_far(z,ione,nder,nsub,cvals(1,ii))
         endif
 
         enddo
@@ -27,19 +30,22 @@ c
 c
         subroutine hankdifftest(zs,nzs,nder,nsub,
      1      cvals)
+        implicit real *8 (a-h,o-z)
+        implicit integer *8(i-n)
         complex *16 zs(nzs),cvals(nder+1,nzs),z,
      1      ctmp(nder+1)
 
+        ione = 1
         rcut = 1
 
         do ii=1,nzs
-        
+
         z = zs(ii)
 
-        call hankdiff_loc(z,1,nder,nsub,
+        call hankdiff_loc(z,ione,nder,nsub,
      1      cvals(1,ii))
         call prin2('cvals = *',cvals(1,ii),2*nder+2)
-        call hankdiff_far(z,1,nder,nsub,ctmp)
+        call hankdiff_far(z,ione,nder,nsub,ctmp)
         call prin2('cvals = *',ctmp,2*nder+2)
 
         do jj=1,nder + 1
@@ -59,6 +65,8 @@ c
 c
         subroutine hankdiff_loc(zs,nzs,nder,nsub,
      1      cvals)
+        implicit real *8 (a-h,o-z)
+        implicit integer *8(i-n)
         complex *16 zs(*),cfs(11),cfslog(11),
      1      cfd(11,nder),cfdlog(11,nder+1),
      1      cvals(nzs,nder+1),
@@ -172,6 +180,7 @@ c
 c
         subroutine hankdiff_far(zs,nzs,nder,nsub,cvals)
         implicit real *8 (a-h,o-z)
+        implicit integer *8(i-n)
         complex *16 zs(*),cfs(11),cfslog(11),
      1      cfd(11,nder),cfdlog(11,nder+1),
      1      cvals(nzs,nder+1),

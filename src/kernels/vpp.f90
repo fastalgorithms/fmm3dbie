@@ -56,6 +56,7 @@ subroutine vpp_build(fun,nv,a,b,n,tol,maxsub,maxdepth,ietype, &
   ! ier = 4, ldpars insufficient   
 
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: dpars(*)
   integer :: ipars(*)
 
@@ -243,6 +244,7 @@ subroutine vpp_buildkern(kern,ndd0,dpars0,ndz0,zpars0,ndi0,ipars0, &
   ! ier = 4, ldpars insufficient   
 
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: dpars(*), dpars0(ndd0)
   integer :: ipars(*), ipars0(ndi0)
   complex *16 :: zpars(ndz0)
@@ -432,6 +434,7 @@ end subroutine vpp_buildkern
 
 subroutine pp_dcopy_scal(x,y,n,nv,nkeep,bins)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: x(n,nv,nkeep), y(nv,n,nkeep), bins(nkeep+1)
 
   do k = 1,nkeep
@@ -451,6 +454,7 @@ end subroutine pp_dcopy_scal
 subroutine ppisres(ietype,f1,f2,n,tol,ikeep)
   ! in some cases, important that f1 considered "true" value
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: f1(*), f2(*)
 
   ikeep = 1
@@ -470,6 +474,7 @@ end subroutine ppisres
 
 subroutine vpp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt), dpars(ndd)
   integer ipars(ndi)
   real *8 :: val(*)
@@ -488,6 +493,7 @@ end subroutine vpp_kern
 
 subroutine vpp_eval(r,ndd,dpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: dpars(ndd)
   integer ipars(ndi)
   real *8 :: val(*)
@@ -510,6 +516,7 @@ subroutine vpp_eval0(r,a,dcfs,n,nv,val)
   ! scaled so that polynomial is
   !     cf(1)*(x-a)^(n-1) + cf(2)*(x-a)^(n-2) + ... cf(n)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: dcfs(nv,n), val(*)
 
   x = r-a
@@ -527,6 +534,7 @@ end subroutine vpp_eval0
 
 subroutine ipp_getbin(r,as,nbin,ibin,a)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: r, as(nbin+1), a
   integer :: nbin, ibin
 
@@ -565,6 +573,7 @@ end subroutine ipp_getbin
 
 subroutine ppchebpts(x,n)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: x(n)
 
   pi = 4*atan(1d0)
@@ -578,6 +587,7 @@ end subroutine ppchebpts
 
 subroutine ppchebbary(x,n)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: x(n)
 
   pi = 4*atan(1d0)
@@ -593,6 +603,7 @@ end subroutine ppchebbary
 
 subroutine ppmonomat(x,n,amat)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: amat(n,n), x(n)
 
   do j = 1,n
@@ -609,6 +620,7 @@ end subroutine ppmonomat
 
 subroutine ppsort(a,n,as,is)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: a(n), as(n)
   integer :: is(n)
 
@@ -679,6 +691,7 @@ end subroutine ppsort
 
 subroutine ppchebinterp(n,x2,n2,amat)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: x2(n2), amat(n2,n)
 
   real *8, allocatable :: x(:), bw(:)

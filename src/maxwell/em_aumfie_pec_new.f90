@@ -334,6 +334,7 @@
 !
 !
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
 !  calling sequence variables      
       integer *8, intent(in) :: npatches,norders(npatches)
       integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches),npts

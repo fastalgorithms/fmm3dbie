@@ -1,5 +1,6 @@
         subroutine struve102(z,cval0,cval1)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 z,cval0,cval1
 
         if (abs(z) .lt. 95) then
@@ -21,6 +22,7 @@ c
 c
         subroutine eval_struve_quad(z,cval0,cval1)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         dimension roots(38),weights(38)
         complex *16 cval0,cval1,z,ima
         data ima /(0,1)/
@@ -143,6 +145,7 @@ c
 
         subroutine eval_struve_asymp(zvin,cval0,cval1)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 ima,zvin,zv,zvv,h0,h1,ct,ct1,cval0,
      1      cval1
         data ima/(0,1)/
@@ -182,7 +185,8 @@ ccc            call prin2('r2 = *',r2,1)
 
 ccc        call prinf('i = *',i,1)
         zvv = zvin
-        call hank103(zvv,h0,h1,1)
+        ione = 1
+        call hank103(zvv,h0,h1,ione)
 ccc        call prin2('h0 = *',h0,2)
 
         if (real(zvv) .gt. 0) then
@@ -207,6 +211,7 @@ c
 c
         subroutine sk0(rhoj,dr,val)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rhoj,val,ima,cr0,cr1
         complex *16 h0,h1,zt
         real *8 dr
@@ -222,7 +227,8 @@ c
 
         zt = rhoj*dr
     
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call struve102(zt,cr0,cr1)
 
         val = -ima*cr0+ima*h0
@@ -240,6 +246,7 @@ c
 c
         subroutine gradsk0(rhoj,dx,dy,sk0x,sk0y)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rhoj,val,ima,cr0,cr1
         complex *16 h0,h1,zt,h0x,h0y,cr0x,cr0y
         complex *16 sk0x,sk0y
@@ -260,7 +267,8 @@ c
 
         zt = rhoj*dr
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call struve102(zt,cr0,cr1)
 
         cr0x = 2/pi*ima*rhoj*dx/dr - rhoj*dx/dr*cr1
@@ -287,6 +295,7 @@ c
         subroutine struveKdiffgreen23(rhoj,dx,dy,sk0xx,sk0xy,sk0yy,
      1      sk0xxx,sk0xxy,sk0xyy,sk0yyy)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rhoj,val,ima,cr0,cr1
         complex *16 h0,h1,zt,cr0x,cr0y,cr1x,cr1y
         complex *16 cr0xx,cr0xy,cr0yy,cr1xx,cr1xy,cr1yy
@@ -388,6 +397,7 @@ c
 c
         subroutine lapsk0(rhoj,dr,lap)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16 rhoj,val,ima,cr0,cr1
         complex *16 h0,h1,zt
         complex *16 lapcr0,laph0,lap
@@ -405,7 +415,8 @@ c
 
         zt = rhoj*dr
 
-        call hank103(zt,h0,h1,1)
+        ione = 1
+        call hank103(zt,h0,h1,ione)
         call struve102(zt,cr0,cr1)
 
         laph0 = -rhoj*rhoj*h0

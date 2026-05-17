@@ -38,6 +38,7 @@ c-------------------------------------------------
       subroutine rsc_to_csc(ncol,nrow,nnz,row_ptr,col_ind,
      1    col_ptr,row_ind,iper)
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       integer *8, intent(in) :: ncol,nnz,nrow
       integer *8, intent(in) :: row_ptr(nrow+1),col_ind(nnz)
       integer *8, intent(out) :: col_ptr(ncol+1),row_ind(nnz)

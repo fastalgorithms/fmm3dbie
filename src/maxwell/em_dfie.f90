@@ -1614,25 +1614,26 @@ end subroutine fker_DFIE
       allocate(sigmaover(6*ns))
 	  allocate(pot_aux(6*ntarg))
 
-! 
+!
 !       oversample density
-    
-	call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+      itwo = 2
+
+	call oversample_fun_surf(itwo,npatches,norders,ixyzs,iptype,&
      &npts,sigma(1:npts),novers,ixyzso,ns,sigmaover(1:ns))
 	       
-	call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+	call oversample_fun_surf(itwo,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(npts+1:2*npts),novers,ixyzso,ns,sigmaover(ns+1:2*ns))
 
-	call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+	call oversample_fun_surf(itwo,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(2*npts+1:3*npts),novers,ixyzso,ns,sigmaover(2*ns+1:3*ns))
 
-	call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+	call oversample_fun_surf(itwo,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(3*npts+1:4*npts),novers,ixyzso,ns,sigmaover(3*ns+1:4*ns))
 
-	call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+	call oversample_fun_surf(itwo,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(4*npts+1:5*npts),novers,ixyzso,ns,sigmaover(4*ns+1:5*ns))
 
-	call oversample_fun_surf(2,npatches,norders,ixyzs,iptype,& 
+	call oversample_fun_surf(itwo,npatches,norders,ixyzs,iptype,& 
      &npts,sigma(5*npts+1:6*npts),novers,ixyzso,ns,sigmaover(5*ns+1:6*ns))
 
       ra = 0
