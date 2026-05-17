@@ -817,6 +817,260 @@
           zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
           rfac0, nquad, wnear)
 
-      endif 
+      endif
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine getnearquad_bh2d_clamped(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+!
+!  This subroutine generates the near field quadrature
+!  for the clamped plate representation using both
+!  the biharmonic Green's function (bh2d_g) and its normal derivative (bh2d_gdn).
+!  wnear(1,:) contains quadrature for bh2d_g, wnear(2,:) for bh2d_gdn.
+!
+      implicit none
+      integer, intent(in) :: npatches, npts
+      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+      integer, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: eps
+      integer, intent(in) :: iquadtype, nnz
+      integer, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer, intent(in) :: nquad
+      real *8, intent(out) :: wnear(2,nquad)
+
+      integer ipv, ndd, ndi, ndz, i
+      real *8 dpars
+      integer ipars
+      complex *16 zpars
+
+      procedure (), pointer :: fker
+      external bh2d_g, bh2d_gdn
+
+      ndd = 0
+      ndz = 0
+      ndi = 0
+
+      if (iquadtype.eq.1) then
+        ipv = 0
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wnear(1,i) = 0
+          wnear(2,i) = 0
+        enddo
+!$OMP END PARALLEL DO
+
+        fker => bh2d_g
+        call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
+          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
+          zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+          rfac0, nquad, wnear(1,:))
+
+        fker => bh2d_gdn
+        call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
+          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
+          zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+          rfac0, nquad, wnear(2,:))
+      endif
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine getnearquad_bh2d_b2v_dir(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+!
+!  This subroutine generates the near field quadrature
+!  for the b2v Dirichlet representation using bh2d_g.
+!
+      implicit none
+      integer, intent(in) :: npatches, npts
+      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+      integer, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: eps
+      integer, intent(in) :: iquadtype, nnz
+      integer, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer, intent(in) :: nquad
+      real *8, intent(out) :: wnear(nquad)
+
+      integer ipv, ndd, ndi, ndz, i
+      real *8 dpars
+      integer ipars
+      complex *16 zpars
+
+      procedure (), pointer :: fker
+      external bh2d_g
+
+      ndd = 0
+      ndz = 0
+      ndi = 0
+
+      if (iquadtype.eq.1) then
+        ipv = 0
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wnear(i) = 0
+        enddo
+!$OMP END PARALLEL DO
+
+        fker => bh2d_g
+        call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
+          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
+          zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+          rfac0, nquad, wnear)
+      endif
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine getnearquad_bh2d_v2b_neu(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+!
+!  This subroutine generates the near field quadrature
+!  for the v2b Neumann representation using bh2d_gdn.
+!
+      implicit none
+      integer, intent(in) :: npatches, npts
+      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+      integer, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: eps
+      integer, intent(in) :: iquadtype, nnz
+      integer, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer, intent(in) :: nquad
+      real *8, intent(out) :: wnear(nquad)
+
+      integer ipv, ndd, ndi, ndz, i
+      real *8 dpars
+      integer ipars
+      complex *16 zpars
+
+      procedure (), pointer :: fker
+      external bh2d_gdn
+
+      ndd = 0
+      ndz = 0
+      ndi = 0
+
+      if (iquadtype.eq.1) then
+        ipv = 0
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wnear(i) = 0
+        enddo
+!$OMP END PARALLEL DO
+
+        fker => bh2d_gdn
+        call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
+          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
+          zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+          rfac0, nquad, wnear)
+      endif
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine getnearquad_bh2d_gdn(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+!
+!  This subroutine generates the near field quadrature
+!  for the normal derivative of the biharmonic Green's function (bh2d_gdn).
+!
+      implicit none
+      integer, intent(in) :: npatches, npts
+      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+      integer, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: eps
+      integer, intent(in) :: iquadtype, nnz
+      integer, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer, intent(in) :: nquad
+      real *8, intent(out) :: wnear(nquad)
+
+      integer ipv, ndd, ndi, ndz, i
+      real *8 dpars
+      integer ipars
+      complex *16 zpars
+
+      procedure (), pointer :: fker
+      external bh2d_gdn
+
+      ndd = 0
+      ndz = 0
+      ndi = 0
+
+      if (iquadtype.eq.1) then
+        ipv = 0
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i=1,nquad
+          wnear(i) = 0
+        enddo
+!$OMP END PARALLEL DO
+
+        fker => bh2d_gdn
+        call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
+          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+          ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
+          zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+          rfac0, nquad, wnear)
+      endif
+
       return
       end

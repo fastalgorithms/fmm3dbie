@@ -16,7 +16,7 @@ function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinf
         targinfo.patch_id = obj.patch_id;
         targinfo.uvs_targ = obj.uvs_targ;
     end
-    targinfo.r;
+
     [ndtarg,ntarg] = size(targinfo.r);
     
     if isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id')
@@ -52,40 +52,26 @@ function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinf
     npatches = obj.npatches;
     npts = obj.npts;
 
-    [rsc_i, rsc_b, rsc_merged, iquad_map_i, iquad_map_b] = getnear_split(obj, targinfo.r, iptype);
+    rsc = getnear(obj, targinfo);
 
-    %%
-    nquad = rsc_merged.iquad(end) - 1;
+    nnz = length(rsc.col_ind);
+    nquad = rsc.iquad(end) - 1;
     wnear = zeros(prod(opdims), nquad);
 
-    nnz_i = length(rsc_i.col_ind);
     iquadtype = 1;
 
-    if nnz_i > 0
-        nquad_i = rsc_i.iquad(end) - 1;
-        wnear_i = getnearquad(npatches,norders,ixyzs, ...
-              iptype,npts,srccoefs,srcvals,targinfo,patch_id,uvs_targ,eps,...
-              iquadtype,nnz_i,rsc_i.row_ptr,rsc_i.col_ind,rsc_i.iquad,rsc_i.rfac0, ...
-              nquad_i);
-        if size(wnear_i,1)==nquad_i
-            wnear_i = wnear_i.';
-        end
-        for i = 1:nnz_i
-            wnear(:,iquad_map_i(1,i):iquad_map_i(2,i)) = wnear_i(:,rsc_i.iquad(i):rsc_i.iquad(i+1)-1);
+    if nnz > 0
+        wnear = getnearquad(npatches, norders, ixyzs, ...
+            iptype, npts, srccoefs, srcvals, targinfo, patch_id, uvs_targ, eps, ...
+            iquadtype, nnz, rsc.row_ptr, rsc.col_ind, rsc.iquad, nquad);
+        if size(wnear, 1) == nquad
+            wnear = wnear.';
         end
     end
 
-    if numel(rsc_b.col_ind) > 0
-        wnear_b = getsingnearquad(obj,eps,kernuse,targinfo,uvs_targ,patch_id,rsc_b);
-        for i = 1:length(rsc_b.col_ind)
-            wnear(:,iquad_map_b(1,i):iquad_map_b(2,i)) = wnear_b(:,rsc_b.iquad(i):rsc_b.iquad(i+1)-1);
-        end
-    end
+    xmat = unpack_wnear(obj, rsc, wnear, opdims);
 
-    %%
-    xmat = unpack_wnear(obj,rsc_merged,wnear,opdims);
-
-    Asmth_over = smooth_sparse_quad(kernuse,targinfo,obj,rsc_merged.row_ptr,rsc_merged.col_ind,obj.norders(1)+norderup);
+    Asmth_over = smooth_sparse_quad(kernuse, targinfo, obj, rsc.row_ptr, rsc.col_ind, obj.norders(1)+norderup);
 
     xmat = xmat - Asmth_over;
 

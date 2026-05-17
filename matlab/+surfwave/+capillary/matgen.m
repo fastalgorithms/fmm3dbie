@@ -1,0 +1,77 @@
+function A = matgen(S,type, zpars, eps, ivpp)
+%
+%  surfwave.capillary.matgen
+%
+%  Syntax
+%   A = surfwave.capillary.matgen(S,type,zpars0,eps,ivpp)
+%
+%  Integral representation
+%     pot = (Update representation here)
+%
+%  Note: for targets on surface, only principal value part of the
+%    layer potential is returned
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * zpars: parameters. zpars(1:3) are the roots, zpars(4:6) are the residues
+%    * eps: precision requested
+%
+
+    if strcmp(type,'gs')
+        iker = 0;
+    elseif strcmp(type,'gphi')
+        iker = 1;
+    elseif strcmp(type,'lapgs')
+        iker = 2;
+    elseif strcmp(type,'lapgphi')
+        iker = 3;
+    elseif strcmp(type,'s3dgphi')
+        iker = 5;
+    else
+        error('kernel name not recognized') 
+    end 
+
+    if nargin < 5
+        ivpp = 1;
+    end
+
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+    row_ptr = 1:npatches:(npatches*npts+1);
+    col_ind = repmat(1:npatches,[1,npts]);
+    row_ptr = row_ptr(:);
+    col_ind = col_ind(:);
+    zpuse = 1j;
+    nnz = npatches*npts;
+    nnzp1 = nnz + 1;
+    iquadtype = 1;
+    ntp1 = npts + 1;
+    npols = ixyzs(2) - ixyzs(1);
+    iquad = 1:npols:(npts*npts+1);
+    A = complex(zeros(npts,npts));
+    rfac0 = 1.25;
+    nquad = npts*npts;
+
+    if ivpp
+    maxdist = 1.5*sqrt((max(S.r(1,:)) - min(S.r(1,:))).^2 + (max(S.r(2,:)) - min(S.r(2,:))).^2);
+    mex_id_ = 'getnearquad_capillary_all_vpp(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], i int64_t[x], i int64_t[x], i double[x], io dcomplex[x])';
+[A] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, iker, maxdist, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, 1, 1, nquad);
+    else
+    mex_id_ = 'getnearquad_capillary_all(i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i int64_t[x], i double[x], i int64_t[x], i int64_t[x], io dcomplex[x])';
+[A] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, iker, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, 1, nquad);
+    end
+
+    A = reshape(A, [S.npts,S.npts]).';
+    
+end
+%
+%
+%
+%
+%
