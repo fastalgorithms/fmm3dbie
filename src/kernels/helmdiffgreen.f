@@ -11,7 +11,7 @@
         implicit integer *8 (i-n)
         real *8 dx,dy,dx2,dy2,dx3,dy3,dx4,dy4
         real *8 dr,r2,r,rm1,rm2,rm3,rm4
-        integer nder
+        integer *8 nder
         complex *16 d0,d1,d2,d3,ima
         complex *16 h0,h0x,h0y,zk,zt,zk2,zk3
         complex *16 h0xx,h0xy,h0yy
@@ -91,7 +91,7 @@ c
         implicit integer *8 (i-n)
         real *8 dx,dy,dx2,dy2,dx3,dy3,dx4,dy4
         real *8 dr,r2,r,rm1,rm2,rm3,rm4
-        integer nder
+        integer *8 nder
         complex *16 d0,d1,d2,d3,ima
         complex *16 h0,h0x,h0y,zk,zt,zk2,zk3
         complex *16 h0xx,h0xy,h0yy

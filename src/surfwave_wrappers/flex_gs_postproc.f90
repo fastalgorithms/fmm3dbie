@@ -27,28 +27,28 @@
 !  All other targets in the near field are handled via
 !  oversampled quadraturipv, ndd, ndi, ndz, i
       implicit none
-      integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-      integer, intent(in) :: iptype(npatches)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
       real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
-      integer, intent(in) :: ndtarg, ntarg
+      integer *8, intent(in) :: ndtarg, ntarg
       real *8, intent(in) :: targs(ndtarg, ntarg)
-      integer, intent(in) :: ipatch_id(ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
       real *8, intent(in) :: uvs_targ(2,ntarg)
       real *8, intent(in) :: eps
       complex *16, intent(in) :: zpars(10)
-      integer, intent(in) :: iquadtype, nnz
-      integer, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: nquad
+      integer *8, intent(in) :: nquad
       complex *16, intent(out) :: wnear(3,nquad)
 
 !  Temporary variables      
       complex *16 zk, ima, zpars_tmp(3)
-      integer ipv, ndd, ndi, ndz, i
+      integer *8 ipv, ndd, ndi, ndz, i
       real *8 dpars
-      integer ipars
+      integer *8 ipars
       complex *16, allocatable :: wneartmp(:)
 
       procedure (), pointer :: fker

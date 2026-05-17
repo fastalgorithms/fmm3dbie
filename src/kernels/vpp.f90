@@ -58,12 +58,12 @@ subroutine vpp_build(fun,nv,a,b,n,tol,maxsub,maxdepth,ietype, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: dpars(*)
-  integer :: ipars(*)
+  integer *8 :: ipars(*)
 
   real *8, allocatable :: subs(:,:), fs(:,:,:), fovers(:,:), &
        amat(:,:), finterp(:,:),x(:),x2(:),val(:),ak(:),as(:), &
        amono(:,:), fk(:,:,:), cfs(:,:,:),work(:)
-  integer, allocatable :: ikeep(:), is(:), ik(:), ipiv(:)
+  integer *8, allocatable :: ikeep(:), is(:), ik(:), ipiv(:)
 
   logical :: allres
 
@@ -246,14 +246,14 @@ subroutine vpp_buildkern(kern,ndd0,dpars0,ndz0,zpars0,ndi0,ipars0, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: dpars(*), dpars0(ndd0)
-  integer :: ipars(*), ipars0(ndi0)
+  integer *8 :: ipars(*), ipars0(ndi0)
   complex *16 :: zpars(ndz0)
 
   real *8 :: src(3), targ(3)
   real *8, allocatable :: subs(:,:), fs(:,:,:), fovers(:,:), &
        amat(:,:), finterp(:,:),x(:),x2(:),val(:),ak(:),as(:), &
        amono(:,:), fk(:,:,:), cfs(:,:,:), work(:)
-  integer, allocatable :: ikeep(:), is(:), ik(:), ipiv(:)
+  integer *8, allocatable :: ikeep(:), is(:), ik(:), ipiv(:)
 
   logical :: allres
 
@@ -476,7 +476,7 @@ subroutine vpp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt), dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val(*)
   complex *16 :: zpars(ndz)
 
@@ -495,7 +495,7 @@ subroutine vpp_eval(r,ndd,dpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val(*)
 
   nbin = ipars(1)
@@ -535,8 +535,8 @@ end subroutine vpp_eval0
 subroutine ipp_getbin(r,as,nbin,ibin,a)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
+  integer *8 :: nbin, ibin
   real *8 :: r, as(nbin+1), a
-  integer :: nbin, ibin
 
   ibin = 1
   jbin = nbin
@@ -622,10 +622,10 @@ subroutine ppsort(a,n,as,is)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: a(n), as(n)
-  integer :: is(n)
+  integer *8 :: is(n)
 
   real *8, allocatable :: at(:)
-  integer, allocatable :: it(:)
+  integer *8, allocatable :: it(:)
 
   allocate(at(n),it(n))
   

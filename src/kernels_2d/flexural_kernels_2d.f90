@@ -1,7 +1,7 @@
 subroutine flex2d_g(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
   real *8 :: src(*), targ(ndt), dpars(ndd)
   real *8 :: dr 
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2
   complex *16 :: val
   complex *16 :: zpars(2), zk1, zk2 
@@ -39,7 +39,7 @@ end subroutine flex2d_g
 subroutine flex2d_gdn(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
   real *8 :: src(*), targ(ndt), dpars(ndd)
   real *8 :: dr 
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2
   real *8 :: nx, ny 
   complex *16 :: val
@@ -86,7 +86,7 @@ subroutine flex2d_gsupp2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: nu, nx, ny
   complex *16 :: zk(2), zk1, zk2 
@@ -140,7 +140,7 @@ subroutine flex2d_gfree2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: nu, nx, ny, kappa
   real *8 :: nx2, nx3, ny2, ny3
@@ -212,7 +212,7 @@ subroutine flex2d_gfree2_var(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: nu, nx, ny, kappa, dadn, dadt, a
   real *8 :: nx2, nx3, ny2, ny3
@@ -290,7 +290,7 @@ subroutine flex2d_lapgx(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: nu, nx, ny
   complex *16 :: zk(2), zk1, zk2
@@ -325,7 +325,7 @@ subroutine flex2d_lapgy(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: nu, nx, ny
   complex *16 :: zk(2), zk1, zk2
@@ -360,7 +360,7 @@ subroutine flex2d_lapg(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: nu, nx, ny
   complex *16 :: zk(2), zk1, zk2
@@ -395,7 +395,7 @@ subroutine flex2d_gxx(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: nu, nx, ny
   complex *16 :: zk(2), zk1, zk2
@@ -429,7 +429,7 @@ subroutine flex2d_gyy(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: nu, nx, ny
   complex *16 :: zk(2), zk1, zk2
@@ -463,7 +463,7 @@ subroutine flex2d_gxy(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(1)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: nu, nx, ny
   complex *16 :: zk(2), zk1, zk2

@@ -10,17 +10,17 @@ c
       implicit none
 
 c     List of calling arguments
-      integer ntargs,flags(ntargs)
-      integer nptssurf,porder,maxiter
-      integer itvec(ntargs),lpatchidxvec(ntargs)
+      integer *8 ntargs,flags(ntargs)
+      integer *8 nptssurf,porder,maxiter
+      integer *8 itvec(ntargs),lpatchidxvec(ntargs)
       
       real *8 srcvals(12,nptssurf),srccoefs(9,nptssurf)
       real *8 targs(3,ntargs),sxyz(3,ntargs)
       real *8 dists(ntargs),tol,uvsloc(2,ntargs)
 
 c     List of local variables
-      integer snpols,snpols2,nn,it,lpatchidx
-      integer ipnt,idx,k
+      integer *8 snpols,snpols2,nn,it,lpatchidx
+      integer *8 ipnt,idx,k
       real *8 sxyz0(3),bs,uv0(2),pols(2000)
       real *8 uv_nodes(2,snpols),umatr(snpols,snpols)
       real *8 vmatr(snpols,snpols),wts(snpols)

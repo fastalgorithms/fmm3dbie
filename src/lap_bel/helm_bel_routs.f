@@ -119,29 +119,32 @@ c
 c
 
       implicit none 
-      integer, intent(in) :: npatches,norders(npatches),npts,nquad
-      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      integer *8, intent(in) :: npatches,norders(npatches),npts,nquad
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: iquadtype
-      integer, intent(in) :: nnz
-      integer, intent(in) :: row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(npts+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       complex *16, intent(out) :: wnear(nquad)
       real *8, intent(in) :: meancrvs(npts)
 
 
-      integer, allocatable :: ipatch_id(:)
+      integer *8, intent(in) :: iktype
+      complex *16, intent(in) :: zpars
+
+      integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_src(:,:), targvals(:,:)
-      integer ipars,iktype
-      integer ndd,ndz,ndi
-      complex *16 zpars
+      integer *8 ipars(1)
+      integer *8 ndd,ndz,ndi
       real *8 dpars
 
-      integer ndtarg
+      integer *8 ndtarg
 
-      real *8 alpha,beta,done,pi
-      integer i,j
-      integer ipv
+      real *8 done,pi
+      integer *8 i,j
+      integer *8 ipv
 
       procedure (), pointer :: fker
       external helm_bel_hank,helm_bel_res
@@ -291,29 +294,32 @@ c
 c
 
       implicit none 
-      integer, intent(in) :: npatches,norders(npatches),npts,nquad
-      integer, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      integer *8, intent(in) :: npatches,norders(npatches),npts,nquad
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: iquadtype
-      integer, intent(in) :: nnz
-      integer, intent(in) :: row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(npts+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(out) :: wnear(nquad)
       real *8, intent(in) :: meancrvs(npts)
 
 
-      integer, allocatable :: ipatch_id(:)
+      integer *8, intent(in) :: iktype
+      complex *16, intent(in) :: zpars
+
+      integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_src(:,:), targvals(:,:)
-      integer ipars,iktype
-      integer ndd,ndz,ndi
-      complex *16 zpars
+      integer *8 ipars(1)
+      integer *8 ndd,ndz,ndi
       real *8 dpars
 
-      integer ndtarg
+      integer *8 ndtarg
 
-      real *8 alpha,beta,done,pi
-      integer i,j
-      integer ipv
+      real *8 done,pi
+      integer *8 i,j
+      integer *8 ipv
 
       procedure (), pointer :: fker
       external lap_bel_log,lap_bel_res

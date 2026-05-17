@@ -99,31 +99,31 @@
 !        stores the quadrature corrections for <enter kernel here> 
   
       implicit none 
-      integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-      integer, intent(in) :: iptype(npatches)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
       real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
       real *8, intent(in) :: eps
       complex *16, intent(in) :: zpars(6)
-      integer, intent(in) :: iquadtype, nnz
-      integer, intent(in) :: row_ptr(npts+1), col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: nquad
+      integer *8, intent(in) :: nquad
       complex *16, intent(out) :: wnear(nquad)
       
       complex *16 zpars_tmp(3)
-      integer ipars(2)
+      integer *8 ipars(2)
       real *8 dpars(1)
       
 
       real *8, allocatable :: uvs_targ(:,:)
-      integer, allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
 
 
-      integer ipv, i, ndi, ndd, ndz
+      integer *8 ipv, i, ndi, ndd, ndz
       
-      integer ndtarg, ntarg
+      integer *8 ndtarg, ntarg
 
       procedure (), pointer :: fker
       external gshelmkern
@@ -268,31 +268,31 @@
 !        stores the quadrature corrections for <enter kernel here>
   
       implicit none
-      integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-      integer, intent(in) :: iptype(npatches)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
       real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
       real *8, intent(in) :: eps
       complex *16, intent(in) :: zpars(6)
-      integer, intent(in) :: iquadtype, nnz
-      integer, intent(in) :: row_ptr(npts+1), col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: nquad
+      integer *8, intent(in) :: nquad
       complex *16, intent(out) :: wnear(nquad)
       
       complex *16 zpars_tmp(3)
-      integer ipars(2)
+      integer *8 ipars(2)
       real *8 dpars(1)
       
 
       real *8, allocatable :: uvs_targ(:,:)
-      integer, allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
 
 
-      integer ipv, i, ndi, ndd, ndz
+      integer *8 ipv, i, ndi, ndd, ndz
       
-      integer ndtarg, ntarg
+      integer *8 ndtarg, ntarg
 
       procedure (), pointer :: fker
       external lapgshelmkern

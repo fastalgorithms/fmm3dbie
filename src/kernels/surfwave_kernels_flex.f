@@ -21,7 +21,7 @@ c
      1    zpars,ndi,ipars,val)
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        integer ndz, ndt
+        integer *8 ndz, ndt
         real *8 srcinfo(*), targinfo(ndt)
         real *8 dx,dy,dz,dr,nx,ny,taux,tauy
         complex *16 zpars(ndz), val, val1, val2
@@ -72,7 +72,7 @@ c
      1    zpars,ndi,ipars,val)
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        integer ndz, ndt
+        integer *8 ndz, ndt
         real *8 srcinfo(*), targinfo(ndt)
         real *8 dx,dy,dz,dr,nx,ny,taux,tauy,kappa
         complex *16 zpars(ndz), val, val1, val2
@@ -135,7 +135,7 @@ c
      1    ipars,val)  
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        integer ndz, ndt
+        integer *8 ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
         complex *16 zpars(ndz), val        
@@ -161,7 +161,7 @@ c
      1    ndi,ipars,val)
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        integer ndz, ndt
+        integer *8 ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
         complex *16 zpars(ndz), val
@@ -187,7 +187,7 @@ c
      1    ndi,ipars,val)
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        integer ndz, ndt
+        integer *8 ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
         complex *16 zpars(ndz), val
@@ -215,7 +215,7 @@ c
      1    ndi,ipars,val)
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        integer ndz, ndt
+        integer *8 ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
         complex *16 zpars(ndz), val
@@ -244,7 +244,7 @@ c
      1    ipars,val)
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        integer ndz, ndt
+        integer *8 ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
         complex *16 zpars(ndz), val

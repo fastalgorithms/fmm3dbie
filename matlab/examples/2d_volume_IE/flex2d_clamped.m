@@ -37,13 +37,7 @@ eps = 1e-8;
 
 % Volume to volume
 start = tic;
-% A = flex2d.v2v_matgen(S, zk, eps);
-getnearquad = @(varargin) flex2d.getnearquad(varargin{1:17}, [], zk, varargin{18}, 'v2v');
-skern = @(s,t) chnk.flex2d.kern(zk, s, t, 's');
-[flex_v2v_cor, norderup] = getnearquad_kern(S, skern, eps, getnearquad);
-[S_over, xinterp] = oversample(S, S.norders + norderup);
-A = flex_v2v_cor + (skern(S_over, S).*S_over.wts(:).')*xinterp;
-
+A = flex2d.v2v_matgen(S, zk, eps);
 l11 = a*eye(S.npts) + V.*A;
 fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
 

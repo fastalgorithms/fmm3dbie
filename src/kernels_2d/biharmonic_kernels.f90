@@ -16,7 +16,7 @@ subroutine bh2d_g(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2
   real *8 :: over4pi
   real *8 :: val
@@ -45,7 +45,7 @@ subroutine bh2d_gdn(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: val
   real *8 :: over4pi
@@ -75,7 +75,7 @@ subroutine bh2d_gsupp2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: val, nu, gsxx, gsxy, gsyy
   real *8 :: over4pi
@@ -113,7 +113,7 @@ subroutine bh2d_gfree2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: srcinfo(*),targinfo(ndt),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: dx, dy, r2, rdotn
   real *8 :: val, nu, gsxx, gsxy ,gsyy
   real *8 :: over4pi

@@ -16,7 +16,7 @@ c
      1    ipars,val)  
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        integer ndz, ndt
+        integer *8 ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
         complex *16 zpars(ndz), val        
@@ -44,7 +44,7 @@ c
      1    ipars,val)
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
-        integer ndz, ndt
+        integer *8 ndz, ndt
         real *8 src(*), targ(ndt)
         real *8 dx,dy,dz,dr
         complex *16 zpars(ndz), val

@@ -1592,6 +1592,7 @@ end subroutine fker_DFIE
       real *8 thresh,ra
       real *8 rr,rmin
       integer *8 nss,ii,l,npover
+      integer *8 itwo
       complex *16 ima
 	  complex *16 omega,ep0,mu0,ep1,mu1
 

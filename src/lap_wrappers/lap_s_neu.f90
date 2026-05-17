@@ -1545,47 +1545,47 @@
 !
 
       implicit none
-      integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-      integer, intent(in) :: iptype(npatches)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
       real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
         
-      integer, intent(in) :: ndtarg, ntarg
+      integer *8, intent(in) :: ndtarg, ntarg
       real *8, intent(in) :: targs(ndtarg,ntarg)
 
       real *8, intent(in) :: eps
         
-      integer, intent(in) :: ndd, ndz, ndi
+      integer *8, intent(in) :: ndd, ndz, ndi
       real *8, intent(in) :: dpars(ndd)
       complex *16, intent(in) :: zpars(ndz)
-      integer, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: ipars(ndi)
   
-      integer, intent(in) :: nnz, nquad
-      integer, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: nnz, nquad
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
         
-      integer, intent(in) :: nker
+      integer *8, intent(in) :: nker
       real *8, intent(in) :: wnear(nker,nquad)
   
-      integer, intent(in) :: nptso
-      integer, intent(in) :: ixyzso(npatches+1), novers(npatches)
+      integer *8, intent(in) :: nptso
+      integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
       real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
         
-      integer, intent(in) :: lwork
+      integer *8, intent(in) :: lwork
       real *8, intent(in) :: work(lwork)
   
-      integer, intent(in) :: ndim_s, ndim_p
-      integer, intent(in) :: idensflag, ipotflag
+      integer *8, intent(in) :: ndim_s, ndim_p
+      integer *8, intent(in) :: idensflag, ipotflag
       
       real *8, intent(in) :: sigma(npts)
       
       real *8, intent(out) :: pot(ntarg)
       real *8, allocatable :: sources(:,:), srctmp(:,:)
       real *8, allocatable :: charges(:), sigmaover(:)
-      integer ns, nt
-      integer ifpgh, ifpghtarg
+      integer *8 ns, nt
+      integer *8 ifpgh, ifpghtarg
 
-      integer i, j, jpatch, jquadstart, jstart, npols
+      integer *8 i, j, jpatch, jquadstart, jstart, npols
       real *8 pottmp, gradtmp(3)
       real *8, allocatable :: pot_aux(:), grad_aux(:,:)
 
@@ -1597,9 +1597,10 @@
       real *8 thresh, ra
       real *8 rr, rmin
       real *8 over4pi, rint
-      integer nss, ii, l, npover, ier
+      integer *8 nss, ii, l, npover, ier
+      integer *8 itwelve
 
-      integer nd, ntarg0, nmax
+      integer *8 nd, ntarg0, nmax
 
       real *8 ttot, done, pi
       data over4pi/0.07957747154594767d0/

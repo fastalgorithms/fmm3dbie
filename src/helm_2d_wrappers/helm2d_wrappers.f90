@@ -101,28 +101,28 @@
 !
 
       implicit none 
-      integer, intent(in) :: npatches, norders(npatches)
-      integer, intent(in) :: ixyzs(npatches+1), iptype(npatches)
-      integer, intent(in) :: npts
+      integer *8, intent(in) :: npatches, norders(npatches)
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      integer *8, intent(in) :: npts
       real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
       real *8, intent(in) :: eps
-      integer, intent(in) :: iquadtype, nnz
-      integer, intent(in) :: row_ptr(npts+1), col_ind(nnz), iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz), iquad(nnz+1)
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: nquad
+      integer *8, intent(in) :: nquad
       
       complex *16, intent(out) :: wnear(nquad)
 
-      integer ndtarg, ntarg, ndd, ndz, ndi
+      integer *8 ndtarg, ntarg, ndd, ndz, ndi
       real *8 dpars(1)
       complex *16 zpars(1)
-      integer ipars(1)
+      integer *8 ipars(1)
 
       real *8, allocatable :: uvs_targ(:,:)
-      integer, allocatable :: ipatch_id(:)
+      integer *8, allocatable :: ipatch_id(:)
 
-      integer i
-      integer ipv
+      integer *8 i
+      integer *8 ipv
 
       procedure (), pointer :: fker
       external h2d_slp
@@ -275,25 +275,25 @@
 !
 
       implicit none 
-      integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-      integer, intent(in) :: iptype(npatches)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
       real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
-      integer, intent(in) :: ndtarg, ntarg
+      integer *8, intent(in) :: ndtarg, ntarg
       real *8, intent(in) :: targs(ndtarg, ntarg)
-      integer, intent(in) :: ipatch_id(ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
       real *8, intent(in) :: uvs_targ(2,ntarg)
       real *8, intent(in) :: eps
-      integer, intent(in) :: iquadtype, nnz
-      integer, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: nquad
+      integer *8, intent(in) :: nquad
       complex *16, intent(out) :: wnear(nquad)
 
-      integer ipv, ndd, ndi, ndz, i
+      integer *8 ipv, ndd, ndi, ndz, i
       real *8 dpars
-      integer ipars
+      integer *8 ipars
       complex *16 zpars
   
       procedure (), pointer :: fker
@@ -437,25 +437,25 @@
 !
 
       implicit none 
-      integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-      integer, intent(in) :: iptype(npatches)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
       real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
-      integer, intent(in) :: ndtarg, ntarg
+      integer *8, intent(in) :: ndtarg, ntarg
       real *8, intent(in) :: targs(ndtarg, ntarg)
-      integer, intent(in) :: ipatch_id(ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
       real *8, intent(in) :: uvs_targ(2,ntarg)
       real *8, intent(in) :: eps
-      integer, intent(in) :: iquadtype, nnz
-      integer, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: nquad
+      integer *8, intent(in) :: nquad
       complex *16, intent(out) :: wnear(nquad)
 
-      integer ipv, ndd, ndi, ndz, i
+      integer *8 ipv, ndd, ndi, ndz, i
       real *8 dpars
-      integer ipars
+      integer *8 ipars
       complex *16 zpars
       real *8, allocatable :: wneartmp(:)
   

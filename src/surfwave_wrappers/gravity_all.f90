@@ -101,28 +101,28 @@
 !        stores the quadrature corrections for <enter kernel here> 
   
       implicit none 
-      integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-      integer, intent(in) :: iptype(npatches), ipatch_id(ntarg)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches), ipatch_id(ntarg)
       real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
       real *8, intent(in) :: eps, uvs_targ(2,ntarg), targs(ndtarg,ntarg)
       complex *16, intent(in) :: zpars(6)
-      integer, intent(in) :: iquadtype, nnz
-      integer, intent(in) :: row_ptr(npts+1), col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(in) :: rfac0
-      integer, intent(in) :: nquad
+      integer *8, intent(in) :: nquad
       complex *16, intent(out) :: wnear(nquad)
       
       complex *16 zpars_tmp(3)
-      integer ipars(2)
+      integer *8 ipars(2)
       real *8 dpars(1)
       
-      integer ipv, i, ndi, ndd, ndz
+      integer *8 ipv, i, ndi, ndd, ndz
       
-      integer ndtarg, ntarg
+      integer *8 ndtarg, ntarg
 
-      integer iker
+      integer *8 iker
 
       procedure (), pointer :: fker
       external gphigravkern, gsgravkern
@@ -256,27 +256,27 @@
   
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
-      integer, intent(in) :: npatches, npts
-      integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-      integer, intent(in) :: iptype(npatches), ipatch_id(ntarg)
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches), ipatch_id(ntarg)
       real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
       real *8, intent(in) :: eps, uvs_targ(2,ntarg), targs(ndtarg,ntarg)
       complex *16, intent(in) :: zpars0(6)
-      integer, intent(in) :: iquadtype, nnz
-      integer, intent(in) :: row_ptr(npts+1), col_ind(nnz)
-      integer, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(in) :: rfac0, maxdist
-      integer, intent(in) :: nquad
+      integer *8, intent(in) :: nquad
       complex *16, intent(out) :: wnear(nquad)
       complex *16 zpars_tmp(3), zpars
-      integer ipars(5), ipars0
-      integer, parameter :: ldpars = 10000000
+      integer *8 ipars(5), ipars0
+      integer *8, parameter :: ldpars = 10000000
       real *8 :: dpars0
       real *8, allocatable :: dpars(:)
       real *8 :: tol,pi,done,a,b
-      integer ipv, i, ndi, ndd, ndz, ndi0, ndd0, ndz0
-      integer ndtarg, ntarg, n, nf, maxsub, maxdepth, ietype
-      integer iker, ier
+      integer *8 ipv, i, ndi, ndd, ndz, ndi0, ndd0, ndz0
+      integer *8 ndtarg, ntarg, n, nf, maxsub, maxdepth, ietype
+      integer *8 iker, ier
       procedure (), pointer :: fker, fker0
       external gphigravkern, gsgravkern, vpp_kern
 
