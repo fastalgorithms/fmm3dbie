@@ -105,7 +105,7 @@ contains
     !
 
     !List of calling arguments
-    type ( Feval_stuff ), pointer :: Feval_stuff_1      !! data type that contains all the information to evaluate F
+    type ( Feval_stuff ), intent(inout) :: Feval_stuff_1      !! data type that contains all the information to evaluate F
     type ( Geometry ), intent(inout)  :: Geometry1      !! data type that contains all the information about the geometry
 
     !List of local variables
@@ -113,14 +113,41 @@ contains
 
     real *8 rlam
 
-    ! Allocate all arrays required
-    if (.not.(associated(Feval_stuff_1))) then
-      allocate(Feval_stuff_1)
-      call setup_tree_sigma_geometry(Feval_stuff_1%FSS_1,Geometry1,rlam)   !! Setup the tree structure to evaluate sgma function
-    endif
+    call setup_tree_sigma_geometry(Feval_stuff_1%FSS_1,Geometry1,rlam)   !! Setup the tree structure to evaluate sgma function
 
     return
   end subroutine start_Feval_tree
+
+
+  subroutine destroy_Feval_tree(Feval_stuff_1)
+    implicit none
+
+    !List of calling arguments
+    type ( Feval_stuff ), intent(inout) :: Feval_stuff_1
+
+    if (associated(Feval_stuff_1%FSS_1)) then
+      call destroy_fast_sigma(Feval_stuff_1%FSS_1)
+    endif
+
+    if (associated(Feval_stuff_1%Tree_local)) then
+      if (associated(Feval_stuff_1%Tree_local%Main_box)) then
+        call deallocate_tree(Feval_stuff_1%Tree_local)
+      endif
+      deallocate(Feval_stuff_1%Tree_local)
+      nullify(Feval_stuff_1%Tree_local)
+    endif
+
+    if (allocated(Feval_stuff_1%itree)) deallocate(Feval_stuff_1%itree)
+    if (allocated(Feval_stuff_1%iptr)) deallocate(Feval_stuff_1%iptr)
+    if (allocated(Feval_stuff_1%treecenters)) deallocate(Feval_stuff_1%treecenters)
+    if (allocated(Feval_stuff_1%boxsize)) deallocate(Feval_stuff_1%boxsize)
+    if (allocated(Feval_stuff_1%fcoeffs)) deallocate(Feval_stuff_1%fcoeffs)
+    if (allocated(Feval_stuff_1%fcoeffsx)) deallocate(Feval_stuff_1%fcoeffsx)
+    if (allocated(Feval_stuff_1%fcoeffsy)) deallocate(Feval_stuff_1%fcoeffsy)
+    if (allocated(Feval_stuff_1%fcoeffsz)) deallocate(Feval_stuff_1%fcoeffsz)
+
+    return
+  end subroutine destroy_Feval_tree
   
   
 
@@ -147,7 +174,7 @@ contains
     real ( kind = 8 ), intent(out) ::  F(n_targets), grad_F(3,n_targets)
 
     !! all the information required to evaluate F (trees..)
-    type ( Feval_stuff ), pointer :: Fev_stf_1    
+    type ( Feval_stuff ), intent(inout) :: Fev_stf_1
 
 
     !List of local variables
@@ -240,7 +267,7 @@ contains
 
     !List of calling arguments
     type ( Geometry ), intent(inout) :: Geometry1                   !! data type that contains all the information about the geometry
-    type ( Feval_stuff ), pointer :: Fev_stf_1      !! data type that contains all the information to evaluate F
+    type ( Feval_stuff ), intent(inout) :: Fev_stf_1      !! data type that contains all the information to evaluate F
     integer *8, intent(in) :: adapt_flag
 
     !List of local variables

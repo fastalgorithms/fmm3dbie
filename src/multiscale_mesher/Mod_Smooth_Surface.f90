@@ -295,7 +295,7 @@ subroutine find_smooth_surface(Geometry1, Feval_stuff_1, adapt_flag, ier)
 
   !List of calling arguments
   type (Geometry), intent(inout) :: Geometry1
-  type ( Feval_stuff ), pointer :: Feval_stuff_1
+  type ( Feval_stuff ), intent(inout) :: Feval_stuff_1
   integer *8, intent(in) :: adapt_flag
 
   !List of local variables
@@ -478,7 +478,7 @@ subroutine My_Newton(x,tol,maxiter,Geometry1,flag, &
   double precision, intent(inout) :: x(Geometry1%n_Sf_points)
   double precision, intent(in) :: tol
   integer *8, intent(out) :: flag
-  type ( Feval_stuff ), pointer :: Feval_stuff_1      !! data type that
+  type ( Feval_stuff ), intent(inout) :: Feval_stuff_1      !! data type that
   integer *8, intent(in) :: adapt_flag
   double precision, intent(inout) :: r_t(3,Geometry1%n_Sf_points)
   double precision, intent(inout) :: grad_F(3,Geometry1%n_Sf_points)
@@ -633,7 +633,7 @@ end subroutine My_Newton
     double precision, intent(in) :: h(Geometry1%n_Sf_points)
     double precision, intent(out) ::  F(Geometry1%n_Sf_points), &
         dF(Geometry1%n_Sf_points)
-    type ( Feval_stuff ), pointer :: Feval_stuff_1
+    type ( Feval_stuff ), intent(inout) :: Feval_stuff_1
     
     integer *8, intent(in) :: adapt_flag
     integer *8, intent(in) :: flag_con(Geometry1%n_Sf_points)
@@ -880,4 +880,3 @@ end subroutine My_Newton
 
 
 end module Mod_Smooth_Surface
-

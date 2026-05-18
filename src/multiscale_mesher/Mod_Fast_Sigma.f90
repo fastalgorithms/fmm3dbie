@@ -74,6 +74,7 @@ end type Fast_Sigma_stuff
 
 public :: setup_tree_sigma_geometry
 public :: function_eval_sigma
+public :: destroy_fast_sigma
 
 private :: find_centroids_sigmas
 private :: fast_gaussian_global
@@ -175,6 +176,32 @@ end
 
 
 
+
+
+subroutine destroy_fast_sigma(FSS_1)
+implicit none
+!! Deallocate the state owned by a Fast_Sigma_stuff pointer.
+
+    !List of calling arguments
+    type ( Fast_Sigma_stuff ), pointer ::  FSS_1
+
+        if (.not.associated(FSS_1)) then
+            return
+        endif
+
+        if (associated(FSS_1%TreeLRD_1)) then
+            if (associated(FSS_1%TreeLRD_1%Main_box)) then
+                call deallocate_tree(FSS_1%TreeLRD_1)
+            endif
+            deallocate(FSS_1%TreeLRD_1)
+            nullify(FSS_1%TreeLRD_1)
+        endif
+
+        deallocate(FSS_1)
+        nullify(FSS_1)
+
+return
+end subroutine destroy_fast_sigma
 
 
 subroutine function_eval_sigma(FSS_1,targ_vect,n_targ,sgma, &

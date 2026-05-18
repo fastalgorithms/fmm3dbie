@@ -73,8 +73,8 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, &
 
   implicit none
 
-  type ( Geometry ), pointer :: Geometry1 => null ()
-  type ( Feval_stuff ), pointer :: Feval_stuff_1 => null ()
+  type ( Geometry ) :: Geometry1
+  type ( Feval_stuff ) :: Feval_stuff_1
 
   integer *8 :: N, count,nrefine, ifplot
   integer *8 :: adapt_sigma, ifflatten
@@ -97,7 +97,6 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, &
 
   integer *8 ier
   
-  allocate(Geometry1)
   allocate(error_report(nrefine+1))
 
 
@@ -160,12 +159,14 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, &
 
   if(ier.eq.3) then
     print *, "Newton failed to converge at refinement:",  count
+    call destroy_Feval_tree(Feval_stuff_1)
     return
   endif
 
   if(ier.eq.4) then
     print *, "Newton residue increased at an intermediate iteration"
     print *, "Refinement level:", count
+    call destroy_Feval_tree(Feval_stuff_1)
     return
   endif
 
@@ -200,12 +201,14 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, &
     call find_smooth_surface(Geometry1,Feval_stuff_1,adapt_sigma, ier)
     if(ier.eq.3) then
       print *, "Newton failed to converge at refinement:",  count
+      call destroy_Feval_tree(Feval_stuff_1)
       return
     endif
 
     if(ier.eq.4) then
       print *, "Newton residue increased at an intermediate iteration"
       print *, "Refinement level:", count
+      call destroy_Feval_tree(Feval_stuff_1)
       return
     endif
 
@@ -229,6 +232,8 @@ subroutine multiscale_mesher_unif_refine(fnamein, ifiletype, ifcad, &
     write (*,*) 'Refinement nº: ',int(count,4), '  Error: ', &
         real(error_report(count+1),4)
   enddo
+
+  call destroy_Feval_tree(Feval_stuff_1)
 
 end subroutine multiscale_mesher_unif_refine 
 !

@@ -1,4 +1,4 @@
-%DRIVER_FELIPE_2 Minimal CAD-skeleton multiscale mesher visualization.
+%DRIVER_FELIPE_DEBUG Minimal CAD-skeleton multiscale mesher visualization.
 
 driverFile = mfilename('fullpath');
 examplesDir = fileparts(driverFile);
@@ -13,10 +13,10 @@ fcad = fullfile(repoRoot, 'geometries', 'meshes', 'cylinder_skeleton.txt');
 opts = struct();
 opts.nrefine = 1;
 opts.nquad = 16;
-opts.rlam = 5;
+opts.rlam = 2;
 opts.fcad = fcad;
 
-Sall = multiscale_mesher(fname, 4, opts);
+Sall = multiscale_mesher(fname, 8, opts);
 S = Sall{end};
 
 figure('Name', 'driver_felipe_2: CAD skeleton cylinder');

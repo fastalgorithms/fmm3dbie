@@ -87,7 +87,7 @@ function S = multiscale_mesher(fnamein, norder, opts)
     end
     ier = 0;
     ifcad = 0;
-    fcad = "tmp";
+    fcad = 'tmp';
     if isfield(opts, 'fcad')
       fcad = opts.fcad;
       ifcad = 1;
