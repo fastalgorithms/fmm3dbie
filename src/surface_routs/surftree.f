@@ -803,7 +803,7 @@ c
 
       bs = boxsize(1)*boxsize(2)/4.0d0
       bs2 = 2*bs
-      rscale2 = bs2**eta
+c      rscale2 = bs2**eta
       rscale2 = max(boxsize(1),boxsize(2))**eta
 
       if(real(zk)*boxsize(1).gt.5) then

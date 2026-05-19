@@ -1,4 +1,4 @@
-function [list] = find_patch_refine_list(S,errlp,funlp,tol,patch_ids,lptype,eta)
+function [refine_list,errq_list] = find_patch_refine_list(S,errlp,funlp,tol,patch_ids,lptype,eta)
 
 if nargin < 5 || isempty(patch_ids)
     patch_ids = 1:S.npatches;
@@ -26,6 +26,7 @@ end
 nd = numel(funlp);
 
 refine = false(S.npatches,1);
+errq = zeros(S.npatches,1);
 
 for ic = 1:numel(patch_ids)
     ip = patch_ids(ic);
@@ -35,13 +36,16 @@ for ic = 1:numel(patch_ids)
 
         if lhs > rhs
             refine(ip) = true;
-            break
+            if (lhs/rhs) > errq(ip)
+                errq(ip) = lhs/rhs;
+            end
+            % break
         end
     end
 end
 
-list = find(refine);
-
+refine_list = find(refine);
+errq_list = errq(refine_list);
 
 end
 

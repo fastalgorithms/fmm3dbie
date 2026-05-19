@@ -1,5 +1,5 @@
 function S = wobblytorus_adap(radii, nosc, scales, nuv, norder, iptype,...
-    tol, lptype, eta)
+    tol, lptype, eta, nd_monitor)
 % STARTORUS Create discretized torus surfer deformed toroidal Fourier mode.
 %
 % Surface is parameterized by
@@ -99,9 +99,13 @@ function S = wobblytorus_adap(radii, nosc, scales, nuv, norder, iptype,...
     eta = 0;
   end
 
+  if nargin < 10 || isempty(nd_monitor)
+    nd_monitor = 3;
+  end
+
   
   iort = -1;
-  nd = 3;
+  nd = nd_monitor;
   
   dpars = zeros(1000,1);
   
