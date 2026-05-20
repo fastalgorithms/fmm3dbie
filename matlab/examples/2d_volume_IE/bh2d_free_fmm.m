@@ -11,9 +11,8 @@
 %  where M_n is the bending moment operator and V_n is the Kirchhoff
 %  shear force operator, both depending on Poisson ratio nu.
 %
-%  The v2v block uses the dense matrix bh2d.v2v_matgen. The b2v, v2b, and
-%  b2b blocks are also assembled as dense matrices and the full system is
-%  solved with GMRES.
+%  The v2v block uses an FMM-accelerated operator (bh2d.apply_v2v via
+%  lfmm2d). The b2v, v2b, and b2b blocks are assembled as dense matrices.
 %
 
 %% Geometry and problem definition
@@ -43,11 +42,13 @@ tauy = dy ./ ds;
 
 %% Quadrature and matrix assembly
 
-% Volume to volume
+% Volume to volume: FMM-accelerated
 start = tic;
-A = bh2d.v2v_matgen(S, zk, eps);
-v2v = eye(S.npts) + V .* A;
-fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
+[Av2v_cor, nover] = bh2d.get_quad_cor_sub(S, zk, eps);
+fprintf('%5.2e s : time to compute v2v quadrature correction\n', toc(start))
+
+v2v_apply = @(mu) bh2d.apply_v2v(S, zk, mu, Av2v_cor, nover, eps);
+lhs_11 = @(mu) mu(:) + V(:) .* v2v_apply(mu);
 
 % Boundary to volume
 fkern_b2v = @(s,t) chnk.flex2d.kern(0, s, t, 'free_plate_eval', nu);
@@ -55,22 +56,23 @@ targetinfo_b2v = [];
 targetinfo_b2v.r = S.r(1:2,:);
 targetinfo_b2v.n = S.n(1:2,:);
 
-start = tic;
-out = chunkerkernevalmat(chnkr, fkern_b2v, targetinfo_b2v);
-K1  = out(:,1:3:end);
-K1H = out(:,2:3:end);
-K2  = out(:,3:3:end);
-
 % Hilbert transform needed to recover the correct representation
 double  = @(s,t) chnk.lap2d.kern(s, t, 'd');
 hilbert = @(s,t) chnk.lap2d.kern(s, t, 'hilb');
 opts_pv = []; opts_pv.sing = 'pv';
 H = chunkermat(chnkr, hilbert, opts_pv);
 
-b2v = zeros(S.npts, 2*chnkr.npt);
-b2v(:,1:2:end) = K1 - K1H * H;
-b2v(:,2:2:end) = K2;
-b2v = V .* b2v;
+% densmap maps 2-component boundary density (eta, zeta) to the
+% 3-component representation (eta, -H*eta, zeta) used by the kernel
+npt = chnkr.npt;
+densmap = zeros(3*npt, 2*npt);
+densmap(1:3:end, 1:2:end) = eye(npt);
+densmap(3:3:end, 2:2:end) = eye(npt);
+densmap(2:3:end, 1:2:end) = -H;
+
+start = tic;
+b2v = chunkerkernevalmat(chnkr, fkern_b2v, targetinfo_b2v);
+b2v = V .* (b2v * densmap);
 fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 % Volume to boundary
@@ -114,8 +116,8 @@ fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 nv = S.npts;
 nb = 2*chnkr.npt;
 
-lhs = [v2v, b2v;
-       v2b, b2b];
+lhs = @(x) [lhs_11(x(1:nv))   + b2v*x(nv+1:end); ...
+            v2b*x(1:nv)        + b2b*x(nv+1:end)];
 
 % Manufactured solution: u = sin(x) sin(y)
 rhs_vol = (4 + V(:).') .* sin(S.r(1,:)) .* sin(S.r(2,:));
@@ -156,27 +158,21 @@ rhs = [rhs_vol, rhs_bc.'].';
 
 start = tic;
 sol = gmres(lhs, rhs, [], 1e-10, 200);
-fprintf('%5.2e s : time for dense GMRES\n', toc(start))
+fprintf('%5.2e s : time for FMM-accelerated GMRES\n', toc(start))
 
 %% Evaluate solution and compute error
 
 mu  = sol(1:nv);
 rho = sol(nv+1:end);
 
-% Reconstruct density in the 3-component representation used by the kernel
-dens_comb = zeros(3*chnkr.npt, 1);
-dens_comb(1:3:end) =  rho(1:2:end);
-dens_comb(2:3:end) = -H * rho(1:2:end);
-dens_comb(3:3:end) =  rho(2:2:end);
-
 ikern = @(s,t) chnk.flex2d.kern(zk, s, t, 'free_plate_eval', nu);
-u = A * mu + chunkerkerneval(chnkr, ikern, dens_comb, S.r(1:2,:));
+u = v2v_apply(mu) + chunkerkerneval(chnkr, ikern, densmap*rho, S.r(1:2,:));
 
 ref_u = (sin(S.r(1,:)) .* sin(S.r(2,:))).';
 err = abs(u - ref_u(:)) / max(abs(u));
 fprintf('max relative error: %5.2e\n', max(err))
 
-figure; clf
+figure(1); clf
 scatter(S.r(1,:), S.r(2,:), 8, log10(err));
 title('log_{10} relative error'); colorbar
 

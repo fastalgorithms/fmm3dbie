@@ -10,9 +10,8 @@
 %
 %  where M_n is the bending moment operator depending on Poisson ratio nu.
 %
-%  The v2v block uses the dense matrix bh2d.v2v_matgen. The b2v, v2b, and
-%  b2b blocks are also assembled as dense matrices and the full system is
-%  solved with GMRES.
+%  The v2v block uses an FMM-accelerated operator (bh2d.apply_v2v via
+%  lfmm2d). The b2v, v2b, and b2b blocks are assembled as dense matrices.
 %
 
 %% Geometry and problem definition
@@ -41,11 +40,13 @@ chnkr.data(2,:,:) = kpp;
 
 %% Quadrature and matrix assembly
 
-% Volume to volume
+% Volume to volume: FMM-accelerated
 start = tic;
-A = bh2d.v2v_matgen(S, zk, eps);
-v2v = eye(S.npts) + V .* A;
-fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
+[Av2v_cor, nover] = bh2d.get_quad_cor_sub(S, zk, eps);
+fprintf('%5.2e s : time to compute v2v quadrature correction\n', toc(start))
+
+v2v_apply = @(mu) bh2d.apply_v2v(S, zk, mu, Av2v_cor, nover, eps);
+lhs_11 = @(mu) mu(:) + V(:) .* v2v_apply(mu);
 
 % Boundary to volume
 fkern_b2v = @(s,t) chnk.flex2d.kern(0, s, t, 'supported_plate_eval', nu);
@@ -97,8 +98,8 @@ fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 nv = S.npts;
 nb = 2*chnkr.npt;
 
-lhs = [v2v, b2v;
-       v2b, b2b];
+lhs = @(x) [lhs_11(x(1:nv))   + b2v*x(nv+1:end); ...
+            v2b*x(1:nv)        + b2b*x(nv+1:end)];
 
 % Manufactured solution: u = sin(x) sin(y)
 rhs_vol = (4 + V(:).') .* sin(S.r(1,:)) .* sin(S.r(2,:));
@@ -117,7 +118,7 @@ rhs = [rhs_vol, rhs_bc.'].';
 
 start = tic;
 sol = gmres(lhs, rhs, [], 1e-10, 100);
-fprintf('%5.2e s : time for dense GMRES\n', toc(start))
+fprintf('%5.2e s : time for FMM-accelerated GMRES\n', toc(start))
 
 %% Evaluate solution and compute error
 
@@ -125,13 +126,13 @@ mu  = sol(1:nv);
 rho = sol(nv+1:end);
 
 ikern = @(s,t) chnk.flex2d.kern(zk, s, t, 'supported_plate_eval', nu);
-u = A * mu + chunkerkerneval(chnkr, ikern, rho, S.r(1:2,:));
+u = v2v_apply(mu) + chunkerkerneval(chnkr, ikern, rho, S.r(1:2,:));
 
 ref_u = (sin(S.r(1,:)) .* sin(S.r(2,:))).';
 err = abs(u - ref_u(:)) / max(abs(u));
 fprintf('max relative error: %5.2e\n', max(err))
 
-figure; clf
+figure(1); clf
 scatter(S.r(1,:), S.r(2,:), 8, log10(err));
 title('log_{10} relative error'); colorbar
 

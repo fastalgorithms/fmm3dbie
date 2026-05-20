@@ -77,40 +77,12 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ_plus_s3d(S, targinfo, ker
     wstruc = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts);
     xmat4 = wstruc.spmat;
 
-    Asmth = cell(1,1);
-    S_over = oversample(S,nover);
+    targ_struct = struct('r', targs(1:2,:));
 
-    rnodes = koorn.rv_nodes(S.norders(1));
-    rnodes_over = koorn.rv_nodes(nover);
-
-    vmat = koorn.coefs2vals(S.norders(1),rnodes_over);
-    umat = koorn.vals2coefs(S.norders(1),rnodes);  
-    Ainterp = vmat*umat;
-
-    for k = 1:4
-    Asmth{k} = sparse(ntarg,npts);
-
-    for ii = 1:ntarg
-        rtarg = [];
-        rtarg.r = targs(1:2,ii);
-        for j = row_ptr(ii):(row_ptr(ii+1)-1)
-            jj = col_ind(j);
-            jds_over = S_over.ixyzs(jj):(S_over.ixyzs(jj+1)-1);
-            jds = S.ixyzs(jj):(S.ixyzs(jj+1)-1);
-            rsrc = [];
-            rsrc.r = S_over.r(:,jds_over);
-            Aloc = kern(k).eval(rsrc,rtarg).*S_over.wts(jds_over).';
-            Aloc = Aloc*Ainterp;
-            Asmth{k}(ii,jds) = Aloc;
-        end
-    end
-
-    end
-
-    xmat1 = xmat1 - Asmth{1};
-    xmat2 = xmat2 - Asmth{2};
-    xmat3 = xmat3 - Asmth{3};
-    xmat4 = xmat4 - Asmth{4};
+    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targ_struct, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targ_struct, S, row_ptr, col_ind, nover);
+    xmat3 = xmat3 - smooth_sparse_quad(kern(3), targ_struct, S, row_ptr, col_ind, nover);
+    xmat4 = xmat4 - smooth_sparse_quad(kern(4), targ_struct, S, row_ptr, col_ind, nover);
 
 end
 %

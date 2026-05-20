@@ -88,6 +88,12 @@ end
 
 plot3(rwire_plot(1,:),rwire_plot(2,:),rwire_plot(3,:),'k-',LineWidth=1)
 
+if norm(S.r(3,:)) == 0
+    view(0,90)
+else
+    view(3)
+end
+
 wfill = 0;
 if isfield(opts,'wfill')
     wfill = opts.wfill;

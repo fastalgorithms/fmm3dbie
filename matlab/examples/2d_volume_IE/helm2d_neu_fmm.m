@@ -42,7 +42,7 @@ fprintf('%5.2e s : time to compute b2v quadrature correction\n', toc(start))
 
 % Volume to boundary
 start = tic;
-[Av2b_cor, ~] = helm2d.get_quad_cor_v2b_neu(S, zk, chnkr, eps);
+[Av2b_cor, nover_v2b] = helm2d.get_quad_cor_v2b_neu(S, zk, chnkr, eps);
 fprintf('%5.2e s : time to compute v2b quadrature correction\n', toc(start))
 
 % Boundary to boundary (dense, small)
@@ -55,7 +55,7 @@ fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 
 v2v_apply  = @(mu)  helm2d.apply_v2v(S, zk, mu, v2v_cor, nover, eps);
 b2v_apply  = @(rho) helm2d.apply_b2v_neu(S, zk, chnkr, rho, Ab2v_cor, eps);
-v2b_apply  = @(mu)  helm2d.apply_v2b_neu(S, zk, chnkr, mu, Av2b_cor, nover, eps);
+v2b_apply  = @(mu)  helm2d.apply_v2b_neu(S, zk, chnkr, mu, Av2b_cor, nover_v2b, eps);
 
 %% Block operator and right-hand side
 
@@ -94,8 +94,8 @@ ref_u = (sin(S.r(1,:)) .* sin(S.r(2,:))).';
 err = abs(u - ref_u(:)) / max(abs(u));
 fprintf('max relative error: %5.2e\n', max(err))
 
-figure; clf
-scatter(S.r(1,:), S.r(2,:), 8, log10(err));
+figure(1); clf
+plot_nodes(S,log10(err));
 title('log_{10} relative error'); colorbar
 
 %%

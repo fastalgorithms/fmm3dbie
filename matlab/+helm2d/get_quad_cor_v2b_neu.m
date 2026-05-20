@@ -81,7 +81,7 @@ function [xmat,novers] = get_quad_cor_v2b_neu(S, zk, targinfo, eps, uv_bndry, pa
 
     Q = []; Q.targinfo = targinfo; Q.rfac = rfac; Q.wavenumber = zk;
     Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
-    novers = get_oversampling_parameters(S,Q,1e2*eps);
+    novers = get_oversampling_parameters(S,Q,eps);
    
     Asmth_over = smooth_sparse_quad(h2d_sprime,targinfo,S,row_ptr,col_ind,novers);
 

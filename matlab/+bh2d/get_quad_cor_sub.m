@@ -1,4 +1,4 @@
-function [xmat,nover] = get_quad_cor_sub(S, zk, eps)
+function [xmat,novers] = get_quad_cor_sub(S, zk, eps)
 
     if abs(zk)>1e-8
         error('No support for flexural problem')
@@ -96,7 +96,7 @@ function [xmat,nover] = get_quad_cor_sub(S, zk, eps)
 
     Q = []; Q.targinfo = S; Q.rfac = rfac; Q.wavenumber = 0;
     Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
-    novers = get_oversampling_parameters(S,Q,1e2*eps);
+    novers = get_oversampling_parameters(S,Q,eps);
 
     Asmth_over = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,novers);
 

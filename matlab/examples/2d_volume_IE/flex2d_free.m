@@ -92,12 +92,18 @@ targetinfo = [];
 targetinfo.r = S.r(1:2,:);
 targetinfo.n = S.n(1:2,:);
 
+% densmap converts 2-component boundary density (eta, zeta) to the
+% 3-component representation (eta, -H*eta, zeta) used by the kernel
+npt = chnkr.npt;
+densmap = zeros(3*npt, 2*npt);
+densmap(1:3:end, 1:2:end) = eye(npt);
+densmap(3:3:end, 2:2:end) = eye(npt);
+densmap(2:3:end, 1:2:end) = -H;
+
 opts = []; opts.eps = eps;
 start = tic;
-b2v = chunkerkernevalmat(chnkr, fkern, targetinfo,opts);
-l12 = zeros(S.npts, 2*chnkr.npt);
-l12(:,1:2:end) = V.*(b2v(:,1:3:end) - b2v(:,2:3:end)*H);
-l12(:,2:2:end) = V.*b2v(:,3:3:end);
+b2v = chunkerkernevalmat(chnkr, fkern, targetinfo, opts);
+l12 = V .* (b2v * densmap);
 fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 %% Right hand side and solve
@@ -146,13 +152,8 @@ sol = gmres(lhs, rhs, [], eps, 100);
 fprintf('%5.2e s : time for dense gmres\n', toc(start))
 
 % Evaluate solution and compute error
-dens_comb = zeros(3*chnkr.npt, 1);
-dens_comb(1:3:end) = sol(S.npts+1:2:end);
-dens_comb(2:3:end) = -H*sol(S.npts+1:2:end);
-dens_comb(3:3:end) = sol(S.npts+2:2:end);
-
 ikern = @(s,t) chnk.flex2d.kern(zk, s, t, 'free_plate_eval', nu);
-u = A*sol(1:S.npts) +b2v* dens_comb;
+u = A*sol(1:S.npts) + b2v*(densmap*sol(S.npts+1:end));
 u = real(u);
 
 ref_u = (sin(S.r(1,:)).*sin(S.r(2,:))).';

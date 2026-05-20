@@ -83,74 +83,17 @@ function [xmat1,xmat2,wnear] = get_quad_cor_v2b(S, targ, kern, eps, zpars, uv_bn
 
     wnear = zeros(2,nquad,'like',1i);
 
-    mex_id_ = 'getnearquad_flex_bcs(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntp1, nnz, nnzp1, 1, 1, 2, nquad);
+    mex_id_ = 'getnearquad_flex_bcs(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
+[wnear] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntp1, nnz, nnzp1, 1, 1, 2, nquad);
 
     xmat1 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(1,:).');
     xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
 
-    nover = S.norders(1) + 4; 
-    S_over = oversample(S,nover);
-    Asmth = cell(2,1);
+    nover = S.norders(1) + 4;
 
-    rnodes = koorn.rv_nodes(S.norders(1));
-    rnodes_over = koorn.rv_nodes(nover);
+    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targ, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targ, S, row_ptr, col_ind, nover);
 
-    vmat = koorn.coefs2vals(S.norders(1),rnodes_over);
-    umat = koorn.vals2coefs(S.norders(1),rnodes);  
-    Ainterp = vmat*umat;
-
-    fprintf('here\n');
-
-    for k = 1:2
-        fprintf('k=%d\n',k)
-    
-        I = [];
-        J = [];
-        v = [];
-        for ii = 1:ntarg
-            rtarg = [];
-            rtarg.r = targ.r(:,ii);
-            rtarg.n = targ.n(:,ii);
-            rtarg.d = targ.d(:,ii);
-            rtarg.d2 = targ.d2(:,ii);
-            for j = row_ptr(ii):(row_ptr(ii+1)-1)
-                jj = col_ind(j);
-                jds_over = S_over.ixyzs(jj):(S_over.ixyzs(jj+1)-1);
-                jds = S.ixyzs(jj):(S.ixyzs(jj+1)-1);
-                rsrc = [];
-                rsrc.r = S_over.r(:,jds_over);
-                Aloc = kern(k).eval(rsrc,rtarg).*S_over.wts(jds_over).';
-                Aloc = Aloc*Ainterp;
-                I = [I ii*ones(1,length(jds))];
-                J = [J jds];
-                v = [v Aloc(:).'];  
-            end
-        end
-        Asmth{k} = sparse(I,J,v,ntarg,npts);
-
-    end
-
-    xmat1 = xmat1 - Asmth{1};
-    xmat2 = xmat2 - Asmth{2};
-
-    % wnear = cell(length(iker),1);
-    % for i = 1:length(iker)
-    % wnear{i} = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
-    %       iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
-    %       row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker(i)) ;
-    % 
-    % end    
-    % prin2('quadrature generation time=*',t2,1)
-    
-    % fprintf('done generating near quad \n')
-    
-    %
-    %           .   .   .   now correct
-        
-    % fprintf('correcting quadrature \n')
-
-   
 end
 %
 %

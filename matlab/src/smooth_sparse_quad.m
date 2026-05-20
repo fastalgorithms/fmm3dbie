@@ -118,8 +118,13 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,lbat)
             targk.(field{1}) = targs.(field{1})(:,irow_ind(ks));
         end
         targk.r = [targk.r;zeros(3-size(targk.r,1),size(targk.r,2))];
+        % rtarg_orig = targk.r;
         targk.r = targk.r - rsrc;
         kernvals = reshape(kernuse(struct('r',[0;0;0]),targk),[],length(ks)).*S_over.wts(icol_ind(ks)).';
+        % Zero out entries where source and target coincide (relative norm < 1e-14)
+        src_norm = max(vecnorm(rsrc), 1);
+        self_mask = vecnorm(targk.r) < 1e-14 * src_norm;
+        kernvals(:, self_mask) = 0;
         vals(ksloc) = kernvals(:).';
     end
   

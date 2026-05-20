@@ -76,60 +76,13 @@ function [xmat1,xmat2] = get_quad_cor_v2b(S, targs, kern, eps, zpars, uv_bndry, 
     xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
 
     if nargin < 8
-        nover = S.norders+4;
+        nover = S.norders(1) + 4;
     end
-    assert(norm(S.norders - S.norders(1))==0)
-    S_over = oversample(S,nover);
-    Asmth = cell(1,1);
+    targ_struct = struct('r', targs(1:2,:), 'n', targs(10:11,:));
 
-    rnodes = koorn.rv_nodes(S.norders(1));
-    rnodes_over = koorn.rv_nodes(nover);
+    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targ_struct, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targ_struct, S, row_ptr, col_ind, nover);
 
-    vmat = koorn.coefs2vals(S.norders(1),rnodes_over);
-    umat = koorn.vals2coefs(S.norders(1),rnodes);  
-    Ainterp = vmat*umat;
-
-    for k = 1:2
-    Asmth{k} = sparse(ntarg,npts);
-
-    for ii = 1:ntarg
-        rtarg = [];
-        rtarg.r = targs(1:2,ii);
-        rtarg.n = targs(10:11,ii);
-        for j = row_ptr(ii):(row_ptr(ii+1)-1)
-            jj = col_ind(j);
-            jds_over = S_over.ixyzs(jj):(S_over.ixyzs(jj+1)-1);
-            jds = S.ixyzs(jj):(S.ixyzs(jj+1)-1);
-            rsrc = [];
-            rsrc.r = S_over.r(:,jds_over);
-            Aloc = kern(k).eval(rsrc,rtarg).*S_over.wts(jds_over).';
-            Aloc = Aloc*Ainterp;
-            Asmth{k}(ii,jds) = Aloc;
-        end
-    end
-
-    end
-
-    xmat1 = xmat1 - Asmth{1};
-    xmat2 = xmat2 - Asmth{2};
-
-    % wnear = cell(length(iker),1);
-    % for i = 1:length(iker)
-    % wnear{i} = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
-    %       iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
-    %       row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker(i)) ;
-    % 
-    % end    
-    % prin2('quadrature generation time=*',t2,1)
-    
-    % fprintf('done generating near quad \n')
-    
-    %
-    %           .   .   .   now correct
-        
-    % fprintf('correcting quadrature \n')
-
-   
 end
 %
 %

@@ -72,7 +72,7 @@ ref_u = (sin(S.r(1,:)).*sin(S.r(2,:))).';
 err = abs(u - ref_u(:)) / max(abs(u));
 fprintf('max relative error: %5.2e\n', max(err))
 
-figure; clf
+figure(1); clf
 scatter(S.r(1,:), S.r(2,:), 8, log10(err));
 title('log_{10} relative error'); colorbar
 

@@ -66,11 +66,15 @@ classdef surfer
 %                              patch_ids
 %   translate(obj, r)        - translate object
 %   merge([array of objs])   - merge an array of surface objects
+%   slicesurfer(obj,ipatch)  - extract a subset of patches by index
 %   area(obj)                - compute the surface area of object
 %   surf_fun_error(obj,f,p)  - estimate error in function approximation
 %                              on surface via basis expansion tails
 %   vals2coefs(obj, vals)    - construct basis function expansions
 %                              of function on surface
+%   mtimes(A, obj)           - apply 3x3 matrix transformation: r -> A*r
+%   plus(obj, v)             - translate surface: r -> r + v
+%   minus(obj, v)            - translate surface: r -> r - v
 % author:
     
     properties
@@ -353,9 +357,13 @@ classdef surfer
          [objout,varargout] = scale(obj,sf);
          [objout,varargout] = translate(obj, r);
          [objout] = merge(Sarray);
+         [obj2] = slicesurfer(obj, ipatchkeep);
          [coefs] = vals2coefs(obj,vals);
-         [errps] = surf_fun_error(obj,fun,p);    
-        
+         [errps] = surf_fun_error(obj,fun,p);
+         [objout] = mtimes(A, obj);
+         [objout] = plus(obj, v);
+         [objout] = minus(obj, v);
+
     end
 
     methods(Static)

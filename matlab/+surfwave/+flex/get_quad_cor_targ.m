@@ -82,58 +82,13 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
     xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
     xmat3 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(3,:).');
 
-    S_over = oversample(S,nover);
-    Asmth = cell(3,1);
+    targ_struct = struct('r', targs(1:3,:));
 
-    rnodes = koorn.rv_nodes(S.norders(1));
-    rnodes_over = koorn.rv_nodes(nover);
+    xmat1 = xmat1 - smooth_sparse_quad(gkerns(1), targ_struct, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(gkerns(2), targ_struct, S, row_ptr, col_ind, nover);
+    xmat3 = xmat3 - smooth_sparse_quad(gkerns(3), targ_struct, S, row_ptr, col_ind, nover);
+    xmat4 = xmat4 - smooth_sparse_quad(gkerns(4), targ_struct, S, row_ptr, col_ind, nover);
 
-    vmat = koorn.coefs2vals(S.norders(1),rnodes_over);
-    umat = koorn.vals2coefs(S.norders(1),rnodes);  
-    Ainterp = vmat*umat;
-
-    for k = 1:4
-    Asmth{k} = sparse(ntarg,npts);
-
-    for ii = 1:ntarg
-        rtarg = [];
-        rtarg.r = targs(:,ii);
-        for j = row_ptr(ii):(row_ptr(ii+1)-1)
-            jj = col_ind(j);
-            jds_over = S_over.ixyzs(jj):(S_over.ixyzs(jj+1)-1);
-            jds = S.ixyzs(jj):(S.ixyzs(jj+1)-1);
-            rsrc = [];
-            rsrc.r = S_over.r(:,jds_over);
-            Aloc = gkerns(k).eval(rsrc,rtarg).*S_over.wts(jds_over).';
-            Aloc = Aloc*Ainterp;
-            Asmth{k}(ii,jds) = Aloc;
-        end
-    end
-
-    end
-
-    xmat1 = xmat1 - Asmth{1};
-    xmat2 = xmat2 - Asmth{2};
-    xmat3 = xmat3 - Asmth{3};
-    xmat4 = xmat4 - Asmth{4};
-
-    % wnear = cell(length(iker),1);
-    % for i = 1:length(iker)
-    % wnear{i} = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
-    %       iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
-    %       row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker(i)) ;
-    % 
-    % end    
-    % prin2('quadrature generation time=*',t2,1)
-    
-    % fprintf('done generating near quad \n')
-    
-    %
-    %           .   .   .   now correct
-        
-    % fprintf('correcting quadrature \n')
-
-   
 end
 %
 %
