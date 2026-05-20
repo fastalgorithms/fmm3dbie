@@ -1,7 +1,7 @@
-function xmat = get_quad_cor_sub(S, gkern, eps, zk, type, norderup, targinfo)
+function xmat = get_quad_cor_sub(S, gkern, eps, zk, type, nover, targinfo)
 
     if nargin < 6
-        norderup = 0;
+        nover = 0;
     end
 
     if nargin < 7
@@ -76,7 +76,7 @@ function xmat = get_quad_cor_sub(S, gkern, eps, zk, type, norderup, targinfo)
     
     xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
 
-    Asmth_over = smooth_sparse_quad(gkern,targs,S, rsc.row_ptr, rsc.col_ind,norderup); 
+    Asmth_over = smooth_sparse_quad(gkern,targs,S, rsc.row_ptr, rsc.col_ind,nover); 
 
     xmat = xmat - Asmth_over;
 

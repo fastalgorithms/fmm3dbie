@@ -118,7 +118,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,lbat)
             targk.(field{1}) = targs.(field{1})(:,irow_ind(ks));
         end
         targk.r = targk.r - rsrc;
-        kernvals = reshape(kern(struct('r',[0;0;0]),targk),[],length(ks)).*S_over.wts(icol_ind(ks)).';
+        kernvals = reshape(kernuse(struct('r',[0;0;0]),targk),[],length(ks)).*S_over.wts(icol_ind(ks)).';
         vals(ksloc) = kernvals(:).';
     end
   
