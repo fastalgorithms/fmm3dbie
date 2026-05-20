@@ -5390,8 +5390,11 @@ function [rsc] = getnear(S, targinfo, rfac)
     else
         if isempty(targinfo)
             targs = S.r;
-        elseif isa(S, 'struct') || isa(S,'surfer')
+        elseif isa(targinfo, 'struct') || isa(targinfo,'surfer')
             targs = targinfo.r;
+        elseif isa(targinfo, 'chunker') || isa(targinfo,'chunkgraph')
+            targs = targinfo.r(:,:);
+            targs = [targs;zeros(3-targinfo.dim,targinfo.npt)];
         else
             targs = targinfo;
         end

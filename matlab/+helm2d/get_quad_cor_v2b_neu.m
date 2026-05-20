@@ -84,7 +84,9 @@ function [xmat,nover] = get_quad_cor_v2b_neu(S, zk, targinfo, eps, uv_bndry, pat
     novers = get_oversampling_parameters(S,Q,1e2*eps);
     nover = max(novers);
     nover = max(nover, S.norders(1)+1);
-    Asmth_over = smooth_sparse_quad(h2d_sprime,targinfo,S,row_ptr,col_ind,nover);
+    norderup = nover - S.norders(1);  % assumes that patches are all the same order
+    
+    Asmth_over = smooth_sparse_quad(h2d_sprime,targinfo,S,row_ptr,col_ind,norderup);
 
     xmat = xmat - Asmth_over;
 end

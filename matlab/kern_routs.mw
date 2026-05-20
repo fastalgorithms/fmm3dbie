@@ -872,7 +872,7 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo)
         for j = 1:(iends(i) - istarts(i) + 1)
             jpatch = col_ind(j + istarts(i) - 1);
             iinds = isrcinds{jpatch};
-            dr2 = (targinfo.r(1,i) - S.r(1,iinds)).^2 + (targinfo.r(2,i) - S.r(2,iinds)).^2 + (targinfo.r(3,i) - S.r(3,iinds)).^2;
+            dr2 = (targs(1,i) - S.r(1,iinds)).^2 + (targs(2,i) - S.r(2,iinds)).^2 + (targs(3,i) - S.r(3,iinds)).^2;
             [~,mind] = min(dr2);
             glob_ind = iinds(mind);
             local_inds(i) = glob_ind - ixyzs(S.patch_id(glob_ind)) + 1;
@@ -2444,7 +2444,7 @@ function A = v2b_neu(S,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_lap2d_gdn(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -2514,7 +2514,7 @@ function A = v2b_dir(S,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_lap2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -2583,7 +2583,7 @@ function A = evalmat(S,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_lap2d_g(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -2903,7 +2903,7 @@ function A = v2b_neu(zk,S,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_helm2d_gdn(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -2972,7 +2972,7 @@ function A = v2b_dir(zk,S,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_helm2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -3484,7 +3484,7 @@ function A = v2b_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
 
     end 
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -3562,7 +3562,7 @@ function A = v2b_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
 
     end 
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -3641,7 +3641,7 @@ function A = v2b_matgen_supp2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
 
     end 
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -3725,7 +3725,7 @@ function A = v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
 
     end 
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -4036,7 +4036,7 @@ function A = v2b_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
 
     end 
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -4139,7 +4139,7 @@ function A = v2b_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
     
     
     
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 
 end
 %
@@ -4243,7 +4243,7 @@ function A = v2b_matgen_supp2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
     
     
     
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 
 end
 %
@@ -4342,7 +4342,7 @@ function A = v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
 
     end 
     
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 
 end
 %
@@ -4580,7 +4580,7 @@ function A = v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
 
     end
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -4649,7 +4649,7 @@ function A = b2v_matgen_clamped(S,zk,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_bh2d_clamped(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[2,nquad] A);
 
-    A = reshape(A,[2*S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[2*S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -4718,7 +4718,7 @@ function A = b2v_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_bh2d_b2v_dir(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -4787,7 +4787,7 @@ function A = b2v_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_bh2d_v2b_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -4856,7 +4856,7 @@ function A = gdn_matgen(S,zk,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_bh2d_gdn(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %
@@ -4925,5 +4925,5 @@ function A = v2b_matgen_clamped(S,zk,targinfo,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_bh2d_clamped(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[2,nquad] A);
 
-    A = reshape(A,[S.npts 2*size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts 2*size(targinfo.r(:,:),2)]).';
 end

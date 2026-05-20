@@ -9,9 +9,6 @@
 %    u = g,  du/dn = h    on \partial\Omega,
 %
 %  using a coupled volume and boundary integral equation formulation.
-%  The volume domain \Omega is a disk discretized as a surfer object S,
-%  and the boundary \partial\Omega is discretized as a chunkie object chnkr.
-%  The manufactured solution is u = sin(x) sin(y).
 %
 %  The v2v block uses an FMM-accelerated operator (bh2d.apply_v2v via
 %  lfmm2d). The b2v, v2b, and b2b blocks are assembled as dense matrices.

@@ -73,7 +73,7 @@ function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinf
     loc_field = fieldnames(targinfo)';
     loc_field_use = {};
     for i = 1:length(loc_field)
-        if mod(size(targinfo.(loc_field{i}),2), size(targinfo.r(:,:),2)) == 0 && ~isempty(targinfo.(loc_field{i}))
+        if mod(size(targinfo.(loc_field{i})(:,:),2), size(targinfo.r(:,:),2)) == 0 && ~isempty(targinfo.(loc_field{i}))
         loc_field_use{length(loc_field_use)+1} = loc_field{i};
         end
     end
@@ -98,9 +98,6 @@ function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinf
     iquadtype = 1;
 
     if nnz > 0
-        % wnear = getnearquad(npatches, norders, ixyzs, ...
-        %     iptype, npts, srccoefs, srcvals, targinfo, patch_id, uvs_targ, eps, ...
-        %     iquadtype, nnz, rsc.row_ptr, rsc.col_ind, rsc.iquad, nquad);
         wnear = getnearquad(npatches,norders,ixyzs, ...
               iptype,npts,srccoefs,srcvals,targinfo,patch_id,uvs_targ,eps,...
               iquadtype,nnz,rsc.row_ptr,rsc.col_ind,rsc.iquad,rsc.rfac0, ...

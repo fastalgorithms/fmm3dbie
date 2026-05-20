@@ -18,20 +18,34 @@ function [targs] = extract_targ_array(targinfo)
 %          14+ if extra data is present
 %
     [~,ntarg] = size(targinfo.r);
-    targs = targinfo.r;    
+    
+    targs = targinfo.r(:,:);    
+    
 
-    if isfield(targinfo,'du')
-    targs(4:6,:) = targinfo.du;
+    if isfield(targinfo,'du') || isprop(targinfo,'du')
+        nddu = size(targinfo.du(:,:),1);
+        targs(4+(0:nddu-1),:) = targinfo.du(:,:);
     end  
-    if isfield(targinfo,'dv')
-    targs(7:9,:) = targinfo.dv;
+    if isfield(targinfo,'dv') || isprop(targinfo,'dv')
+        nddv = size(targinfo.dv(:,:),1);
+        targs(7+(0:nddv-1),:) = targinfo.dv(:,:);
     end
-    if isfield(targinfo,'n')
-    targs(10:12,:) = targinfo.n;
+    if isfield(targinfo,'n') || isprop(targinfo,'n')
+        ndn = size(targinfo.n(:,:),1);
+        targs(10+(0:ndn-1),:) = targinfo.n(:,:);
     end
-    if isfield(targinfo,'tau')
-    targs(4:6,:) = targinfo.tau;
+    if isfield(targinfo,'tau') || isprop(targinfo,'tau')
+        ndtau = size(targinfo.tau(:,:),1);
+        targs(4+(0:ndtau-1),:) = targinfo.tau(:,:);
     end            
+    if isfield(targinfo,'d') || isprop(targinfo,'d')
+        ndd = size(targinfo.d(:,:),1);
+        targs(4+(0:ndd-1),:) = targinfo.d(:,:);
+    end            
+    if mod(size(targs,1),3) == 2
+        targs = [targs;zeros(1,size(targs,2))]; 
+    end
+
     if isfield(targinfo,'kappa')
     targs(13,:) = targinfo.kappa;
     end 

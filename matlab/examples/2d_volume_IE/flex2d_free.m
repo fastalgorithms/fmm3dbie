@@ -11,6 +11,7 @@
 %  and the boundary \partial\Omega is discretized as a chunkie object chnkr.
 %  The manufactured solution is u = sin(x) sin(y).
 %
+%  Requires chunkie
 
 %% Geometry and problem definition
 
@@ -43,11 +44,10 @@ fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
 
 % Volume to boundary
 targinfo = [];
-targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
-targinfo.n = [chnkr.n(:,:); 0*chnkr.n(1,:)];
-targinfo.d = [chnkr.d(:,:); 0*chnkr.d(1,:)];
-targinfo.du = targinfo.d;
-targinfo.d2 = [chnkr.d2(:,:); 0*chnkr.d2(1,:)];
+targinfo.r = chnkr.r(:,:);
+targinfo.n = chnkr.n(:,:);
+targinfo.d = chnkr.d(:,:);
+targinfo.d2 = chnkr.d2(:,:);
 kappa = signed_curvature(chnkr);
 targinfo.kappa = kappa(:);
 [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo);
@@ -92,8 +92,9 @@ targetinfo = [];
 targetinfo.r = S.r(1:2,:);
 targetinfo.n = S.n(1:2,:);
 
+opts = []; opts.eps = eps;
 start = tic;
-b2v = chunkerkernevalmat(chnkr, fkern, targetinfo);
+b2v = chunkerkernevalmat(chnkr, fkern, targetinfo,opts);
 l12 = zeros(S.npts, 2*chnkr.npt);
 l12(:,1:2:end) = V.*(b2v(:,1:3:end) - b2v(:,2:3:end)*H);
 l12(:,2:2:end) = V.*b2v(:,3:3:end);
@@ -151,7 +152,7 @@ dens_comb(2:3:end) = -H*sol(S.npts+1:2:end);
 dens_comb(3:3:end) = sol(S.npts+2:2:end);
 
 ikern = @(s,t) chnk.flex2d.kern(zk, s, t, 'free_plate_eval', nu);
-u = A*sol(1:S.npts) + chunkerkerneval(chnkr, ikern, dens_comb, S.r(1:2,:));
+u = A*sol(1:S.npts) +b2v* dens_comb;
 u = real(u);
 
 ref_u = (sin(S.r(1,:)).*sin(S.r(2,:))).';

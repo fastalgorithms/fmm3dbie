@@ -72,21 +72,21 @@ c
       implicit none
 
 !List of calling arguments
-      integer ( kind = 4 ), intent(in) :: npoints
-      integer ( kind = 4 ), intent(in) :: order
-      integer ( kind = 4 ), intent(in) :: it,maxiter
+      integer ( kind = 8 ), intent(in) :: npoints
+      integer ( kind = 8 ), intent(in) :: order
+      integer ( kind = 8 ), intent(in) :: it,maxiter
       real ( kind = 8 ), intent(in) :: srcvals(12,npoints)
       real ( kind = 8 ), intent(in) :: srccoefs(9,npoints)
       real ( kind = 8 ), intent(in) :: pt(3)
       real ( kind = 8 ), intent(in) :: tol
       real ( kind = 8 ), intent(inout) :: uv0(2)
       real ( kind = 8 ), intent(out) :: uvs(2)
-      integer ( kind = 4 ), intent(out) :: flag
+      integer ( kind = 8 ), intent(out) :: flag
       
 
 !List of local variables
       real ( kind = 8 ) err,aux2
-      integer ( kind = 4 ) iter
+      integer ( kind = 8 ) iter
       real ( kind = 8 ) gradf(2),hesf(2,2),delta(2),dethesf
 
       err=(tol+1.0d0)**2
@@ -158,9 +158,9 @@ c
       implicit none
 
 !List of calling arguments
-      integer ( kind = 4 ), intent(in) :: npoints
-      integer ( kind = 4 ), intent(in) :: order
-      integer ( kind = 4 ), intent(in) :: it,maxiter
+      integer ( kind = 8 ), intent(in) :: npoints
+      integer ( kind = 8 ), intent(in) :: order
+      integer ( kind = 8 ), intent(in) :: it,maxiter
       real ( kind = 8 ), intent(in) :: srcvals(12,npoints)
       real ( kind = 8 ), intent(in) :: srccoefs(9,npoints)
       real ( kind = 8 ), intent(in) :: pt(3)
@@ -169,12 +169,12 @@ c
       real ( kind = 8 ), intent(in) :: rat2(3, 0:order, 0:order)
       real ( kind = 8 ), intent(inout) :: uv0(2)
       real ( kind = 8 ), intent(out) :: uvs(2)
-      integer ( kind = 4 ), intent(out) :: flag
+      integer ( kind = 8 ), intent(out) :: flag
       
 
 !List of local variables
       real ( kind = 8 ) err,aux2,tritol,tritolu,tritoll
-      integer ( kind = 4 ) iter
+      integer ( kind = 8 ) iter
       real ( kind = 8 ) gradf(2),hesf(2,2),delta(2),dethesf
 
       err=(tol+1.0d0)**2
@@ -251,9 +251,9 @@ c         if (uvs(1)<0.0d0) then
       implicit none
 
 !List of calling arguments
-      integer ( kind = 4 ), intent(in) :: npoints
-      integer ( kind = 4 ), intent(in) :: order
-      integer ( kind = 4 ), intent(in) :: it
+      integer ( kind = 8 ), intent(in) :: npoints
+      integer ( kind = 8 ), intent(in) :: order
+      integer ( kind = 8 ), intent(in) :: it
       real ( kind = 8 ), intent(in) :: srcvals(12,npoints)
       real ( kind = 8 ), intent(in) :: srccoefs(9,npoints)
       real ( kind = 8 ), intent(in) :: pt(3)
@@ -262,7 +262,7 @@ c         if (uvs(1)<0.0d0) then
       real ( kind = 8 ), intent(out) :: hesf(2,2)
       
 !List of local variables
-      integer ( kind = 4 ) npols, i 
+      integer ( kind = 8 ) npols, i 
       real ( kind = 8 ) x,y,z,xu,yu,zu,xv,yv,zv
       real ( kind = 8 ) xuu,xuv,xvv,yuu,yuv,yvv,zuu,zuv,zvv,aux1(2)
 
@@ -350,9 +350,9 @@ c         if (uvs(1)<0.0d0) then
       implicit none
 
 !List of calling arguments
-      integer ( kind = 4 ), intent(in) :: npoints
-      integer ( kind = 4 ), intent(in) :: order
-      integer ( kind = 4 ), intent(in) :: it
+      integer ( kind = 8 ), intent(in) :: npoints
+      integer ( kind = 8 ), intent(in) :: order
+      integer ( kind = 8 ), intent(in) :: it
       real ( kind = 8 ), intent(in) :: srcvals(12,npoints)
       real ( kind = 8 ), intent(in) :: srccoefs(9,npoints)
       real ( kind = 8 ), intent(in) :: pt(3)
@@ -363,7 +363,7 @@ c         if (uvs(1)<0.0d0) then
       real ( kind = 8 ), intent(out) :: hesf(2,2)
       
 !List of local variables
-      integer ( kind = 4 ) npols, i
+      integer ( kind = 8 ) npols, i
       real ( kind = 8 ) x,y,z,xu,yu,zu,xv,yv,zv
       real ( kind = 8 ) xuu,xuv,xvv,yuu,yuv,yvv,zuu,zuv,zvv,aux1(2)
 

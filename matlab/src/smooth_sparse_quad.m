@@ -87,7 +87,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,lbat)
     loc_field = fieldnames(targs)';
     loc_field_use = {};
     for i = 1:length(loc_field)
-        if mod(size(targs.(loc_field{i}),2), size(targs.r(:,:),2)) == 0 && ~isempty(targs.(loc_field{i}))
+        if mod(size(targs.(loc_field{i})(:,:),2), size(targs.r(:,:),2)) == 0 && ~isempty(targs.(loc_field{i}))
         loc_field_use{length(loc_field_use)+1} = loc_field{i};
         end
     end
@@ -117,6 +117,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,lbat)
         for field = loc_field_use
             targk.(field{1}) = targs.(field{1})(:,irow_ind(ks));
         end
+        targk.r = [targk.r;zeros(3-size(targk.r,1),size(targk.r,2))];
         targk.r = targk.r - rsrc;
         kernvals = reshape(kernuse(struct('r',[0;0;0]),targk),[],length(ks)).*S_over.wts(icol_ind(ks)).';
         vals(ksloc) = kernvals(:).';

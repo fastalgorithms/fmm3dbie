@@ -75,7 +75,7 @@ function A = v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
 
     end 
 
-    A = reshape(A,[S.npts size(targinfo.r,2)]).';
+    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
 end
 %
 %

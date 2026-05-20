@@ -11,6 +11,8 @@
 %  and the boundary \partial\Omega is discretized as a chunkie object chnkr.
 %  The manufactured solution is u = sin(x) sin(y).
 %
+%  Requires chunkie
+
 
 %% Geometry and problem definition
 
@@ -54,20 +56,16 @@ targetinfo = [];
 targetinfo.r = S.r(1:2,:);
 targetinfo.n = S.n(1:2,:);
 
+opts = []; opts.eps = eps;
 start = tic;
-b2v = chunkerkernevalmat(chnkr, fkern, targetinfo);
+b2v = chunkerkernevalmat(chnkr, fkern, targetinfo,opts);
 l12 = V.*b2v;
 fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 % Volume to boundary
-targinfo = [];
-targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
-targinfo.n = [chnkr.n(:,:); 0*chnkr.n(1,:)];
-targinfo.d = [chnkr.d(:,:); 0*chnkr.d(1,:)];
-
 start = tic;
-v2b_dir  = flex2d.v2b_matgen_dir(S, zk, targinfo, eps);
-v2b_supp = flex2d.v2b_matgen_supp2(S, zk, nu, targinfo, eps);
+v2b_dir  = flex2d.v2b_matgen_dir(S, zk, chnkr, eps);
+v2b_supp = flex2d.v2b_matgen_supp2(S, zk, nu, chnkr, eps);
 l21 = zeros(2*chnkr.npt, S.npts);
 l21(1:2:end,:) = v2b_dir;
 l21(2:2:end,:) = v2b_supp;
@@ -111,7 +109,7 @@ fprintf('%5.2e s : time for dense gmres\n', toc(start))
 
 % Evaluate solution and compute error
 ikern = @(s,t) chnk.flex2d.kern(zk, s, t, 'supported_plate_eval', nu);
-u = A*sol(1:S.npts) + chunkerkerneval(chnkr, ikern, sol(S.npts+1:end), S.r(1:2,:));
+u = A*sol(1:S.npts) + b2v* sol(S.npts+1:end);
 u = real(u);
 
 ref_u = (sin(S.r(1,:)).*sin(S.r(2,:))).';

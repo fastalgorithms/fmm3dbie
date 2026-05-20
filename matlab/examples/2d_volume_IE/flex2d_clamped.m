@@ -46,23 +46,20 @@ fkern = @(s,t) chnk.flex2d.kern(zk, s, t, 'clamped_plate_eval');
 targetinfo = [];
 targetinfo.r = S.r(1:2,:);
 targetinfo.n = S.n(1:2,:);
+opts = []; opts.eps = eps;
 
 start = tic;
-b2v = chunkerkernevalmat(chnkr, fkern, targetinfo);
+b2v = chunkerkernevalmat(chnkr, fkern, targetinfo,opts);
 l12 = V.*b2v;
 fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 % Volume to boundary
-targinfo = [];
-targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
-targinfo.n = [chnkr.n(:,:); 0*chnkr.n(1,:)];
-
 start = tic;
 getnearquad = @(varargin) flex2d.getnearquad(varargin{1:17}, [], zk, varargin{18}, 'clamped');
 rhskern = @(s,t) chnk.flex2d.kern(zk, s, t, 'clamped_plate_bcs');
-[flex_v2b_cor, norderup] = getnearquad_kern(S, rhskern, eps, getnearquad, targinfo);
+[flex_v2b_cor, norderup] = getnearquad_kern(S, rhskern, eps, getnearquad, chnkr);
 [S_over, xinterp] = oversample(S, S.norders + norderup);
-l21 = flex_v2b_cor + (rhskern(S_over, targinfo).*S_over.wts(:).')*xinterp;
+l21 = flex_v2b_cor + (rhskern(S_over, chnkr).*S_over.wts(:).')*xinterp;
 fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 
 % Boundary to boundary
@@ -101,7 +98,7 @@ fprintf('%5.2e s : time for dense gmres\n', toc(start))
 
 % Evaluate solution and compute error
 ikern = @(s,t) chnk.flex2d.kern(zk, s, t, 'clamped_plate_eval');
-u = A*sol(1:S.npts) + chunkerkerneval(chnkr, ikern, sol(S.npts+1:end), S.r(1:2,:));
+u = A*sol(1:S.npts) + b2v*sol(S.npts+1:end);
 u = real(u);
 
 ref_u = (sin(S.r(1,:)).*sin(S.r(2,:))).';
