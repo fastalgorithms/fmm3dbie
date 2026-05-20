@@ -7,9 +7,6 @@
 %
 %  with Dirichlet boundary conditions u = g on \partial\Omega,
 %  using a coupled volume and boundary integral equation formulation.
-%  The volume domain \Omega is a disk discretized as a surfer object S,
-%  and the boundary \partial\Omega is discretized as a chunkie object chnkr.
-%  The manufactured solution is u = sin(x) sin(y).
 %
 
 %% Geometry and problem definition
@@ -42,11 +39,8 @@ l12 = V.*chunkerkernevalmat(chnkr, h2d_d, S.r(1:2,:));
 fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 % Volume to boundary
-targinfo = [];
-targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
-targinfo.n = [chnkr.n(:,:); 0*chnkr.n(1,:)];
 start = tic;
-l21 = helm2d.v2b_dir(zk, S, targinfo, eps);
+l21 = helm2d.v2b_dir(zk, S, chnkr, eps);
 fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 
 % Boundary to boundary

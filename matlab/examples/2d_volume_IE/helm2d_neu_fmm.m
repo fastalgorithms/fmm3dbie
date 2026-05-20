@@ -7,13 +7,8 @@
 %
 %  with Neumann boundary conditions du/dn = g on \partial\Omega,
 %  using a coupled volume and boundary integral equation formulation.
-%  The volume domain \Omega is a disk discretized as a surfer object S,
-%  and the boundary \partial\Omega is discretized as a chunkie object chnkr.
-%  The manufactured solution is u = sin(x) sin(y).
 %
-%  Unlike helm2d_neu.m, this version uses FMM-accelerated operator
-%  application via helm2d.apply_v2v, helm2d.apply_b2v_neu, and
-%  helm2d.apply_v2b_neu, and solves with GMRES using matrix-free apply.
+%  This script uses the FMM to apply the v2v, v2b, and b2v operators
 %
 
 %% Geometry and problem definition
@@ -46,11 +41,8 @@ Ab2v_cor = chunkerkernevalmat(chnkr, h2d_s, S.r(1:2,:), opts);
 fprintf('%5.2e s : time to compute b2v quadrature correction\n', toc(start))
 
 % Volume to boundary
-targinfo = [];
-targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
-targinfo.n = [chnkr.n(:,:); 0*chnkr.n(1,:)];
 start = tic;
-[Av2b_cor, ~] = helm2d.get_quad_cor_v2b_neu(S, zk, targinfo, eps);
+[Av2b_cor, ~] = helm2d.get_quad_cor_v2b_neu(S, zk, chnkr, eps);
 fprintf('%5.2e s : time to compute v2b quadrature correction\n', toc(start))
 
 % Boundary to boundary (dense, small)
@@ -63,7 +55,7 @@ fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 
 v2v_apply  = @(mu)  helm2d.apply_v2v(S, zk, mu, v2v_cor, nover, eps);
 b2v_apply  = @(rho) helm2d.apply_b2v_neu(S, zk, chnkr, rho, Ab2v_cor, eps);
-v2b_apply  = @(mu)  helm2d.apply_v2b_neu(S, zk, targinfo, mu, Av2b_cor, nover, eps);
+v2b_apply  = @(mu)  helm2d.apply_v2b_neu(S, zk, chnkr, mu, Av2b_cor, nover, eps);
 
 %% Block operator and right-hand side
 

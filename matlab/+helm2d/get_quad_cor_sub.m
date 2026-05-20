@@ -1,4 +1,4 @@
-function [xmat,nover] = get_quad_cor_sub(S, zk, eps)
+function [xmat,novers] = get_quad_cor_sub(S, zk, eps)
 
     helm2d_kern = kernel('h','s',zk);
 
@@ -94,10 +94,8 @@ function [xmat,nover] = get_quad_cor_sub(S, zk, eps)
     Q = []; Q.targinfo = S; Q.rfac = rfac; Q.wavenumber = zk;
     Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
     novers = get_oversampling_parameters(S,Q,1e2*eps);
-    nover = max(novers);
-    norderup = nover - S.norders(1); % assumes that patches are all the same order
-    norderup = max(norderup, 1);
-    Asmth_over = smooth_sparse_quad(helm2d_kern,targs,S,row_ptr,col_ind,norderup);
+    
+    Asmth_over = smooth_sparse_quad(helm2d_kern,targs,S,row_ptr,col_ind,novers);
 
     xmat = xmat - Asmth_over;
 

@@ -6,7 +6,7 @@ function wnear = getnearquad(npatches,norders,ixyzs, ...
     [n9,~] = size(srccoefs);
     npp1 = npatches+1;
 
-    targs = [targs.r;zeros(6,size(targs.r,2));targs.n];
+    [targs] = extract_targ_array(targs);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
     nnzp1 = nnz+1;

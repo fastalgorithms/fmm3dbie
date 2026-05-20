@@ -1,4 +1,4 @@
-function [xmat,nover] = get_quad_cor_v2b_neu(S, zk, targinfo, eps, uv_bndry, patch_id)
+function [xmat,novers] = get_quad_cor_v2b_neu(S, zk, targinfo, eps, uv_bndry, patch_id)
 
     h2d_sprime = kernel('h','sp',zk);
 
@@ -82,11 +82,8 @@ function [xmat,nover] = get_quad_cor_v2b_neu(S, zk, targinfo, eps, uv_bndry, pat
     Q = []; Q.targinfo = targinfo; Q.rfac = rfac; Q.wavenumber = zk;
     Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
     novers = get_oversampling_parameters(S,Q,1e2*eps);
-    nover = max(novers);
-    nover = max(nover, S.norders(1)+1);
-    norderup = nover - S.norders(1);  % assumes that patches are all the same order
-    
-    Asmth_over = smooth_sparse_quad(h2d_sprime,targinfo,S,row_ptr,col_ind,norderup);
+   
+    Asmth_over = smooth_sparse_quad(h2d_sprime,targinfo,S,row_ptr,col_ind,novers);
 
     xmat = xmat - Asmth_over;
 end

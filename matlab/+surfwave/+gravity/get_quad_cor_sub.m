@@ -1,4 +1,4 @@
-function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, norderup, ivpp, targinfo)
+function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targinfo)
 
     if strcmp(type,'gs')
         iker = 0;
@@ -16,7 +16,7 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, norderup, ivpp, t
 
     gs_kern = kernel(gs_kern);
     if nargin < 6
-        norderup = 0;
+        nover = S.norders;
     end
 
     if nargin < 8
@@ -104,7 +104,7 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, norderup, ivpp, t
     
     xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
 
-    Asmth_over = smooth_sparse_quad(gs_kern,targs,S, rsc.row_ptr, rsc.col_ind,norderup); 
+    Asmth_over = smooth_sparse_quad(gs_kern,targs,S, rsc.row_ptr, rsc.col_ind,nover); 
 
     xmat = xmat - Asmth_over;
 

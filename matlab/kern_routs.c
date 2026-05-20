@@ -4139,7 +4139,7 @@ mw_err_label:
 
 /* ---- kern_routs.mw: 455 ----
  * getnearquad_capillary_bcs(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[1, nquad] wnear);
- * Also at kern_routs.mw: 1836
+ * Also at kern_routs.mw: 1833
  */
 static const char* stubids8_ = "getnearquad_capillary_bcs(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])";
 
@@ -5206,7 +5206,7 @@ mw_err_label:
 
 /* ---- kern_routs.mw: 598 ----
  * getnearquad_capillary_eval_all(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[3, nquad] wnear);
- * Also at kern_routs.mw: 1967
+ * Also at kern_routs.mw: 1964
  */
 static const char* stubids11_ = "getnearquad_capillary_eval_all(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])";
 
@@ -6815,7 +6815,7 @@ mw_err_label:
 
 /* ---- kern_routs.mw: 843 ----
  * get_centroid_rads(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npatp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, inout double[n3, npatches] cms, inout double[npatches] rads);
- * Also at kern_routs.mw: 3321
+ * Also at kern_routs.mw: 3307
  */
 static const char* stubids15_ = "get_centroid_rads(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c io double[xx], c io double[x])";
 
@@ -6972,7 +6972,7 @@ mw_err_label:
 
 /* ---- kern_routs.mw: 849 ----
  * findnearmem(double[n3, npatches] cms, int64_t[1] npatches, double[npatches] rads, int64_t[1] ndtarg, double[ndtarg, ntarg] targs, int64_t[1] ntarg, inout int64_t[1] nnz);
- * Also at kern_routs.mw: 3329
+ * Also at kern_routs.mw: 3315
  */
 static const char* stubids16_ = "findnearmem(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x])";
 
@@ -7120,7 +7120,7 @@ mw_err_label:
 
 /* ---- kern_routs.mw: 854 ----
  * findnear(double[n3, npatches] cms, int64_t[1] npatches, double[npatches] rads, int64_t[1] ndtarg, double[ndtarg, ntarg] targs, int64_t[1] ntarg, inout int64_t[ntp1] row_ptr, inout int64_t[nnz] col_ind);
- * Also at kern_routs.mw: 3340
+ * Also at kern_routs.mw: 3326
  */
 static const char* stubids17_ = "findnear(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x], c io int64_t[x])";
 
@@ -7574,7 +7574,7 @@ mw_err_label:
 
 /* ---- kern_routs.mw: 1544 ----
  * getnearquad_lap_s_neu_eval(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] wnear_lap);
- * Also at kern_routs.mw: 2049
+ * Also at kern_routs.mw: 2046
  */
 static const char* stubids26_ = "getnearquad_lap_s_neu_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -7950,7 +7950,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2043 ----
+/* ---- kern_routs.mw: 2040 ----
  * getnearquad_gravity_all_vpp(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[ndz] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, int64_t[1] iker, double[1] maxdist, inout dcomplex[1, nquad] wnear);
  */
 static const char* stubids29_ = "getnearquad_gravity_all_vpp(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c io dcomplex[xx])";
@@ -8386,7 +8386,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2045 ----
+/* ---- kern_routs.mw: 2042 ----
  * getnearquad_gravity_all(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[ndz] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, int64_t[1] iker, inout dcomplex[1, nquad] wnear);
  */
 static const char* stubids30_ = "getnearquad_gravity_all(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io dcomplex[xx])";
@@ -8803,7 +8803,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2231 ----
+/* ---- kern_routs.mw: 2228 ----
  * gettritree(int64_t[1] npatches, int64_t[1] norder, int64_t[1] npols, double[9, npols] srccoefs, int64_t[1] ntarg, double[3, ntarg] targs, int64_t[1] itargptr, int64_t[1] ntargptr, int64_t[1] ntrimax, int64_t[1] nlevmax, double[1] rfac, inout int64_t[1] ntri, inout int64_t[1] nlev, inout int64_t[ntrimax] ichild_start, inout double[ntrimax] da, inout double[3, ntrimax] tricm, inout double[ntrimax] trirad, inout double[6, ntrimax] tverts, inout int64_t[ntarg, ntrimax] itrirel, inout int64_t[1] ier);
  */
 static const char* stubids32_ = "gettritree(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c io int64_t[x], c io int64_t[x], c io int64_t[x], c io double[x], c io double[xx], c io double[x], c io double[xx], c io int64_t[xx], c io int64_t[x])";
@@ -9173,9 +9173,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2293 ----
+/* ---- kern_routs.mw: 2290 ----
  * getnearquad_lap2d_gv2v(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
- * Also at kern_routs.mw: 2655
+ * Also at kern_routs.mw: 2652
  */
 static const char* stubids33_ = "getnearquad_lap2d_gv2v(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -9460,7 +9460,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2361 ----
+/* ---- kern_routs.mw: 2358 ----
  * mesh_circle_pts(double[1] rmid, int64_t[3] npars, int64_t[1] iort, int64_t[1] norder, int64_t[1] iptype, int64_t[1] npatches, int64_t[1] npts, inout int64_t[npp1] ixys, inout double[6, npts] ptinfo);
  */
 static const char* stubids34_ = "mesh_circle_pts(c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io int64_t[x], c io double[xx])";
@@ -9627,9 +9627,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2445 ----
+/* ---- kern_routs.mw: 2442 ----
  * getnearquad_lap2d_gdn(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
- * Also at kern_routs.mw: 2771
+ * Also at kern_routs.mw: 2766
  */
 static const char* stubids35_ = "getnearquad_lap2d_gdn(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -10023,7 +10023,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2515 ----
+/* ---- kern_routs.mw: 2512 ----
  * getnearquad_lap2d_dir(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
  */
 static const char* stubids36_ = "getnearquad_lap2d_dir(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
@@ -10421,7 +10421,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2584 ----
+/* ---- kern_routs.mw: 2581 ----
  * getnearquad_lap2d_g(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
  */
 static const char* stubids37_ = "getnearquad_lap2d_g(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
@@ -10798,9 +10798,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2833 ----
+/* ---- kern_routs.mw: 2826 ----
  * getnearquad_helm2d_gv2v(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
- * Also at kern_routs.mw: 3044
+ * Also at kern_routs.mw: 3037
  */
 static const char* stubids40_ = "getnearquad_helm2d_gv2v(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
 
@@ -11106,7 +11106,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2904 ----
+/* ---- kern_routs.mw: 2897 ----
  * getnearquad_helm2d_gdn(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
  */
 static const char* stubids41_ = "getnearquad_helm2d_gdn(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
@@ -11504,9 +11504,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 2973 ----
+/* ---- kern_routs.mw: 2966 ----
  * getnearquad_helm2d_dir(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
- * Also at kern_routs.mw: 3103
+ * Also at kern_routs.mw: 3094
  */
 static const char* stubids42_ = "getnearquad_helm2d_dir(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
 
@@ -11903,7 +11903,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 3105 ----
+/* ---- kern_routs.mw: 3096 ----
  * getnearquad_helm2d_gdn(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[ndz] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[1, nquad] wnear);
  */
 static const char* stubids45_ = "getnearquad_helm2d_gdn(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])";
@@ -12305,7 +12305,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 3309 ----
+/* ---- kern_routs.mw: 3295 ----
  * get_rfacs(int64_t[1] norder_avg, int64_t[1] iptype_avg, inout double[1] rfac, inout double[1] rfac0);
  */
 static const char* stubids47_ = "get_rfacs(c i int64_t[x], c i int64_t[x], c io double[x], c io double[x])";
@@ -12389,7 +12389,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 3349 ----
+/* ---- kern_routs.mw: 3335 ----
  * get_iquad_rsc(int64_t[1] npatches, int64_t[npp1] ixyzs, int64_t[1] npts, int64_t[1] nnz, int64_t[ntp1] row_ptr, int64_t[nnz] col_ind, inout int64_t[nnzp1] iquad);
  */
 static const char* stubids51_ = "get_iquad_rsc(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io int64_t[x])";
@@ -12516,9 +12516,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 3405 ----
+/* ---- kern_routs.mw: 3391 ----
  * getnearquad_bh2d_gv2v(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
- * Also at kern_routs.mw: 3800
+ * Also at kern_routs.mw: 3786
  */
 static const char* stubids52_ = "getnearquad_bh2d_gv2v(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -12803,9 +12803,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 3483 ----
+/* ---- kern_routs.mw: 3469 ----
  * getnearquad_bh2d_dir(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
- * Also at kern_routs.mw: 3999
+ * Also at kern_routs.mw: 3983
  */
 static const char* stubids53_ = "getnearquad_bh2d_dir(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -13199,9 +13199,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 3561 ----
+/* ---- kern_routs.mw: 3547 ----
  * getnearquad_bh2d_neu(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
- * Also at kern_routs.mw: 4104
+ * Also at kern_routs.mw: 4088
  */
 static const char* stubids54_ = "getnearquad_bh2d_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -13595,9 +13595,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 3640 ----
+/* ---- kern_routs.mw: 3626 ----
  * getnearquad_bh2d_supp2(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, double[1] dpars, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
- * Also at kern_routs.mw: 4209
+ * Also at kern_routs.mw: 4193
  */
 static const char* stubids55_ = "getnearquad_bh2d_supp2(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -14010,9 +14010,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 3724 ----
+/* ---- kern_routs.mw: 3710 ----
  * getnearquad_bh2d_free2(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, double[1] dpars, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
- * Also at kern_routs.mw: 4311
+ * Also at kern_routs.mw: 4295
  */
 static const char* stubids56_ = "getnearquad_bh2d_free2(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -14425,9 +14425,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 3901 ----
+/* ---- kern_routs.mw: 3885 ----
  * getnearquad_flex2d_gv2v(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, double[1] eps, dcomplex[2] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
- * Also at kern_routs.mw: 3913
+ * Also at kern_routs.mw: 3897
  */
 static const char* stubids59_ = "getnearquad_flex2d_gv2v(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
 
@@ -14733,9 +14733,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4008 ----
+/* ---- kern_routs.mw: 3992 ----
  * getnearquad_flex2d_dir(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[2] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
- * Also at kern_routs.mw: 4022
+ * Also at kern_routs.mw: 4006
  */
 static const char* stubids63_ = "getnearquad_flex2d_dir(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
 
@@ -15132,9 +15132,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4111 ----
+/* ---- kern_routs.mw: 4095 ----
  * getnearquad_flex2d_neu(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[2] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
- * Also at kern_routs.mw: 4125
+ * Also at kern_routs.mw: 4109
  */
 static const char* stubids67_ = "getnearquad_flex2d_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
 
@@ -15531,9 +15531,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4217 ----
+/* ---- kern_routs.mw: 4201 ----
  * getnearquad_flex2d_supp2(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, double[1] dpars, dcomplex[2] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
- * Also at kern_routs.mw: 4236
+ * Also at kern_routs.mw: 4220
  */
 static const char* stubids71_ = "getnearquad_flex2d_supp2(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
 
@@ -15949,9 +15949,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4319 ----
+/* ---- kern_routs.mw: 4303 ----
  * getnearquad_flex2d_free2(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, double[1] dpars, dcomplex[2] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
- * Also at kern_routs.mw: 4338
+ * Also at kern_routs.mw: 4322
  */
 static const char* stubids74_ = "getnearquad_flex2d_free2(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
 
@@ -16367,7 +16367,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4382 ----
+/* ---- kern_routs.mw: 4366 ----
  * getnearquad_flex2d_free2_var(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, double[1] dpars, dcomplex[2] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout dcomplex[nquad] A);
  */
 static const char* stubids80_ = "getnearquad_flex2d_free2_var(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])";
@@ -16784,7 +16784,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4448 ----
+/* ---- kern_routs.mw: 4432 ----
  * getnearquad_flex2d_var(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[2] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, int64_t[1] kernel_id, inout dcomplex[nquad] wmat);
  */
 static const char* stubids81_ = "getnearquad_flex2d_var(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io dcomplex[x])";
@@ -17197,7 +17197,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4473 ----
+/* ---- kern_routs.mw: 4457 ----
  * flex2d_gsupp2(double[3] src, int64_t[1] ndt, double[ndt] targ, int64_t[1] ndd, double[ndd] dpars, int64_t[1] ndz, dcomplex[ndz] zpars, int64_t[1] ndi, int64_t[ndi] ipars, inout dcomplex[1] u1);
  */
 static const char* stubids82_ = "flex2d_gsupp2(c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c io dcomplex[x])";
@@ -17387,7 +17387,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4475 ----
+/* ---- kern_routs.mw: 4459 ----
  * flex2d_gfree2(double[3] src, int64_t[1] ndt, double[ndt] targ, int64_t[1] ndd, double[ndd] dpars, int64_t[1] ndz, dcomplex[ndz] zpars, int64_t[1] ndi, int64_t[ndi] ipars, inout dcomplex[1] u2);
  */
 static const char* stubids83_ = "flex2d_gfree2(c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c io dcomplex[x])";
@@ -17577,7 +17577,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4495 ----
+/* ---- kern_routs.mw: 4479 ----
  * self_quadrature(int64_t[1] norder, int64_t[1] ipv, double[2, nv] verts, int64_t[1] nv, double[1] x0, double[1] y0, double[3, 2] druse, inout int64_t[1] nquad, inout double[nmax] xs, inout double[nmax] ys, inout double[nmax] ws, inout int64_t[1] ier);
  */
 static const char* stubids84_ = "self_quadrature(c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[x], c i double[x], c i double[xx], c io int64_t[x], c io double[x], c io double[x], c io double[x], c io int64_t[x])";
@@ -17811,9 +17811,9 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4650 ----
+/* ---- kern_routs.mw: 4634 ----
  * getnearquad_bh2d_clamped(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[2, nquad] A);
- * Also at kern_routs.mw: 4926
+ * Also at kern_routs.mw: 4910
  */
 static const char* stubids87_ = "getnearquad_bh2d_clamped(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[xx])";
 
@@ -18211,7 +18211,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4719 ----
+/* ---- kern_routs.mw: 4703 ----
  * getnearquad_bh2d_b2v_dir(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
  */
 static const char* stubids88_ = "getnearquad_bh2d_b2v_dir(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
@@ -18606,7 +18606,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4788 ----
+/* ---- kern_routs.mw: 4772 ----
  * getnearquad_bh2d_v2b_neu(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
  */
 static const char* stubids89_ = "getnearquad_bh2d_v2b_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
@@ -19001,7 +19001,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 4857 ----
+/* ---- kern_routs.mw: 4841 ----
  * getnearquad_bh2d_gdn(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
  */
 static const char* stubids90_ = "getnearquad_bh2d_gdn(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
@@ -19537,51 +19537,51 @@ void mexFunction(int nlhs, mxArray* plhs[],
         mexPrintf("%d calls to kern_routs.mw:254 (kern_routs.mw:952)\n", mexprofrecord_[5]);
         mexPrintf("%d calls to kern_routs.mw:322 (kern_routs.mw:1283)\n", mexprofrecord_[6]);
         mexPrintf("%d calls to kern_routs.mw:389\n", mexprofrecord_[7]);
-        mexPrintf("%d calls to kern_routs.mw:455 (kern_routs.mw:1836)\n", mexprofrecord_[8]);
+        mexPrintf("%d calls to kern_routs.mw:455 (kern_routs.mw:1833)\n", mexprofrecord_[8]);
         mexPrintf("%d calls to kern_routs.mw:524\n", mexprofrecord_[9]);
         mexPrintf("%d calls to kern_routs.mw:526 (kern_routs.mw:930)\n", mexprofrecord_[10]);
-        mexPrintf("%d calls to kern_routs.mw:598 (kern_routs.mw:1967)\n", mexprofrecord_[11]);
+        mexPrintf("%d calls to kern_routs.mw:598 (kern_routs.mw:1964)\n", mexprofrecord_[11]);
         mexPrintf("%d calls to kern_routs.mw:666\n", mexprofrecord_[12]);
         mexPrintf("%d calls to kern_routs.mw:734\n", mexprofrecord_[13]);
         mexPrintf("%d calls to kern_routs.mw:801\n", mexprofrecord_[14]);
-        mexPrintf("%d calls to kern_routs.mw:843 (kern_routs.mw:3321)\n", mexprofrecord_[15]);
-        mexPrintf("%d calls to kern_routs.mw:849 (kern_routs.mw:3329)\n", mexprofrecord_[16]);
-        mexPrintf("%d calls to kern_routs.mw:854 (kern_routs.mw:3340)\n", mexprofrecord_[17]);
+        mexPrintf("%d calls to kern_routs.mw:843 (kern_routs.mw:3307)\n", mexprofrecord_[15]);
+        mexPrintf("%d calls to kern_routs.mw:849 (kern_routs.mw:3315)\n", mexprofrecord_[16]);
+        mexPrintf("%d calls to kern_routs.mw:854 (kern_routs.mw:3326)\n", mexprofrecord_[17]);
         mexPrintf("%d calls to kern_routs.mw:895\n", mexprofrecord_[18]);
-        mexPrintf("%d calls to kern_routs.mw:1544 (kern_routs.mw:2049)\n", mexprofrecord_[26]);
-        mexPrintf("%d calls to kern_routs.mw:2043\n", mexprofrecord_[29]);
-        mexPrintf("%d calls to kern_routs.mw:2045\n", mexprofrecord_[30]);
-        mexPrintf("%d calls to kern_routs.mw:2231\n", mexprofrecord_[32]);
-        mexPrintf("%d calls to kern_routs.mw:2293 (kern_routs.mw:2655)\n", mexprofrecord_[33]);
-        mexPrintf("%d calls to kern_routs.mw:2361\n", mexprofrecord_[34]);
-        mexPrintf("%d calls to kern_routs.mw:2445 (kern_routs.mw:2771)\n", mexprofrecord_[35]);
-        mexPrintf("%d calls to kern_routs.mw:2515\n", mexprofrecord_[36]);
-        mexPrintf("%d calls to kern_routs.mw:2584\n", mexprofrecord_[37]);
-        mexPrintf("%d calls to kern_routs.mw:2833 (kern_routs.mw:3044)\n", mexprofrecord_[40]);
-        mexPrintf("%d calls to kern_routs.mw:2904\n", mexprofrecord_[41]);
-        mexPrintf("%d calls to kern_routs.mw:2973 (kern_routs.mw:3103)\n", mexprofrecord_[42]);
-        mexPrintf("%d calls to kern_routs.mw:3105\n", mexprofrecord_[45]);
-        mexPrintf("%d calls to kern_routs.mw:3309\n", mexprofrecord_[47]);
-        mexPrintf("%d calls to kern_routs.mw:3349\n", mexprofrecord_[51]);
-        mexPrintf("%d calls to kern_routs.mw:3405 (kern_routs.mw:3800)\n", mexprofrecord_[52]);
-        mexPrintf("%d calls to kern_routs.mw:3483 (kern_routs.mw:3999)\n", mexprofrecord_[53]);
-        mexPrintf("%d calls to kern_routs.mw:3561 (kern_routs.mw:4104)\n", mexprofrecord_[54]);
-        mexPrintf("%d calls to kern_routs.mw:3640 (kern_routs.mw:4209)\n", mexprofrecord_[55]);
-        mexPrintf("%d calls to kern_routs.mw:3724 (kern_routs.mw:4311)\n", mexprofrecord_[56]);
-        mexPrintf("%d calls to kern_routs.mw:3901 (kern_routs.mw:3913)\n", mexprofrecord_[59]);
-        mexPrintf("%d calls to kern_routs.mw:4008 (kern_routs.mw:4022)\n", mexprofrecord_[63]);
-        mexPrintf("%d calls to kern_routs.mw:4111 (kern_routs.mw:4125)\n", mexprofrecord_[67]);
-        mexPrintf("%d calls to kern_routs.mw:4217 (kern_routs.mw:4236)\n", mexprofrecord_[71]);
-        mexPrintf("%d calls to kern_routs.mw:4319 (kern_routs.mw:4338)\n", mexprofrecord_[74]);
-        mexPrintf("%d calls to kern_routs.mw:4382\n", mexprofrecord_[80]);
-        mexPrintf("%d calls to kern_routs.mw:4448\n", mexprofrecord_[81]);
-        mexPrintf("%d calls to kern_routs.mw:4473\n", mexprofrecord_[82]);
-        mexPrintf("%d calls to kern_routs.mw:4475\n", mexprofrecord_[83]);
-        mexPrintf("%d calls to kern_routs.mw:4495\n", mexprofrecord_[84]);
-        mexPrintf("%d calls to kern_routs.mw:4650 (kern_routs.mw:4926)\n", mexprofrecord_[87]);
-        mexPrintf("%d calls to kern_routs.mw:4719\n", mexprofrecord_[88]);
-        mexPrintf("%d calls to kern_routs.mw:4788\n", mexprofrecord_[89]);
-        mexPrintf("%d calls to kern_routs.mw:4857\n", mexprofrecord_[90]);
+        mexPrintf("%d calls to kern_routs.mw:1544 (kern_routs.mw:2046)\n", mexprofrecord_[26]);
+        mexPrintf("%d calls to kern_routs.mw:2040\n", mexprofrecord_[29]);
+        mexPrintf("%d calls to kern_routs.mw:2042\n", mexprofrecord_[30]);
+        mexPrintf("%d calls to kern_routs.mw:2228\n", mexprofrecord_[32]);
+        mexPrintf("%d calls to kern_routs.mw:2290 (kern_routs.mw:2652)\n", mexprofrecord_[33]);
+        mexPrintf("%d calls to kern_routs.mw:2358\n", mexprofrecord_[34]);
+        mexPrintf("%d calls to kern_routs.mw:2442 (kern_routs.mw:2766)\n", mexprofrecord_[35]);
+        mexPrintf("%d calls to kern_routs.mw:2512\n", mexprofrecord_[36]);
+        mexPrintf("%d calls to kern_routs.mw:2581\n", mexprofrecord_[37]);
+        mexPrintf("%d calls to kern_routs.mw:2826 (kern_routs.mw:3037)\n", mexprofrecord_[40]);
+        mexPrintf("%d calls to kern_routs.mw:2897\n", mexprofrecord_[41]);
+        mexPrintf("%d calls to kern_routs.mw:2966 (kern_routs.mw:3094)\n", mexprofrecord_[42]);
+        mexPrintf("%d calls to kern_routs.mw:3096\n", mexprofrecord_[45]);
+        mexPrintf("%d calls to kern_routs.mw:3295\n", mexprofrecord_[47]);
+        mexPrintf("%d calls to kern_routs.mw:3335\n", mexprofrecord_[51]);
+        mexPrintf("%d calls to kern_routs.mw:3391 (kern_routs.mw:3786)\n", mexprofrecord_[52]);
+        mexPrintf("%d calls to kern_routs.mw:3469 (kern_routs.mw:3983)\n", mexprofrecord_[53]);
+        mexPrintf("%d calls to kern_routs.mw:3547 (kern_routs.mw:4088)\n", mexprofrecord_[54]);
+        mexPrintf("%d calls to kern_routs.mw:3626 (kern_routs.mw:4193)\n", mexprofrecord_[55]);
+        mexPrintf("%d calls to kern_routs.mw:3710 (kern_routs.mw:4295)\n", mexprofrecord_[56]);
+        mexPrintf("%d calls to kern_routs.mw:3885 (kern_routs.mw:3897)\n", mexprofrecord_[59]);
+        mexPrintf("%d calls to kern_routs.mw:3992 (kern_routs.mw:4006)\n", mexprofrecord_[63]);
+        mexPrintf("%d calls to kern_routs.mw:4095 (kern_routs.mw:4109)\n", mexprofrecord_[67]);
+        mexPrintf("%d calls to kern_routs.mw:4201 (kern_routs.mw:4220)\n", mexprofrecord_[71]);
+        mexPrintf("%d calls to kern_routs.mw:4303 (kern_routs.mw:4322)\n", mexprofrecord_[74]);
+        mexPrintf("%d calls to kern_routs.mw:4366\n", mexprofrecord_[80]);
+        mexPrintf("%d calls to kern_routs.mw:4432\n", mexprofrecord_[81]);
+        mexPrintf("%d calls to kern_routs.mw:4457\n", mexprofrecord_[82]);
+        mexPrintf("%d calls to kern_routs.mw:4459\n", mexprofrecord_[83]);
+        mexPrintf("%d calls to kern_routs.mw:4479\n", mexprofrecord_[84]);
+        mexPrintf("%d calls to kern_routs.mw:4634 (kern_routs.mw:4910)\n", mexprofrecord_[87]);
+        mexPrintf("%d calls to kern_routs.mw:4703\n", mexprofrecord_[88]);
+        mexPrintf("%d calls to kern_routs.mw:4772\n", mexprofrecord_[89]);
+        mexPrintf("%d calls to kern_routs.mw:4841\n", mexprofrecord_[90]);
     } else if (strcmp(id, "*profile log*") == 0) {
         FILE* logfp;
         if (nrhs != 2 || mxGetString(prhs[1], id, sizeof(id)) != 0)
@@ -19598,51 +19598,51 @@ void mexFunction(int nlhs, mxArray* plhs[],
         fprintf(logfp, "%d calls to kern_routs.mw:254 (kern_routs.mw:952)\n", mexprofrecord_[5]);
         fprintf(logfp, "%d calls to kern_routs.mw:322 (kern_routs.mw:1283)\n", mexprofrecord_[6]);
         fprintf(logfp, "%d calls to kern_routs.mw:389\n", mexprofrecord_[7]);
-        fprintf(logfp, "%d calls to kern_routs.mw:455 (kern_routs.mw:1836)\n", mexprofrecord_[8]);
+        fprintf(logfp, "%d calls to kern_routs.mw:455 (kern_routs.mw:1833)\n", mexprofrecord_[8]);
         fprintf(logfp, "%d calls to kern_routs.mw:524\n", mexprofrecord_[9]);
         fprintf(logfp, "%d calls to kern_routs.mw:526 (kern_routs.mw:930)\n", mexprofrecord_[10]);
-        fprintf(logfp, "%d calls to kern_routs.mw:598 (kern_routs.mw:1967)\n", mexprofrecord_[11]);
+        fprintf(logfp, "%d calls to kern_routs.mw:598 (kern_routs.mw:1964)\n", mexprofrecord_[11]);
         fprintf(logfp, "%d calls to kern_routs.mw:666\n", mexprofrecord_[12]);
         fprintf(logfp, "%d calls to kern_routs.mw:734\n", mexprofrecord_[13]);
         fprintf(logfp, "%d calls to kern_routs.mw:801\n", mexprofrecord_[14]);
-        fprintf(logfp, "%d calls to kern_routs.mw:843 (kern_routs.mw:3321)\n", mexprofrecord_[15]);
-        fprintf(logfp, "%d calls to kern_routs.mw:849 (kern_routs.mw:3329)\n", mexprofrecord_[16]);
-        fprintf(logfp, "%d calls to kern_routs.mw:854 (kern_routs.mw:3340)\n", mexprofrecord_[17]);
+        fprintf(logfp, "%d calls to kern_routs.mw:843 (kern_routs.mw:3307)\n", mexprofrecord_[15]);
+        fprintf(logfp, "%d calls to kern_routs.mw:849 (kern_routs.mw:3315)\n", mexprofrecord_[16]);
+        fprintf(logfp, "%d calls to kern_routs.mw:854 (kern_routs.mw:3326)\n", mexprofrecord_[17]);
         fprintf(logfp, "%d calls to kern_routs.mw:895\n", mexprofrecord_[18]);
-        fprintf(logfp, "%d calls to kern_routs.mw:1544 (kern_routs.mw:2049)\n", mexprofrecord_[26]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2043\n", mexprofrecord_[29]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2045\n", mexprofrecord_[30]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2231\n", mexprofrecord_[32]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2293 (kern_routs.mw:2655)\n", mexprofrecord_[33]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2361\n", mexprofrecord_[34]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2445 (kern_routs.mw:2771)\n", mexprofrecord_[35]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2515\n", mexprofrecord_[36]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2584\n", mexprofrecord_[37]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2833 (kern_routs.mw:3044)\n", mexprofrecord_[40]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2904\n", mexprofrecord_[41]);
-        fprintf(logfp, "%d calls to kern_routs.mw:2973 (kern_routs.mw:3103)\n", mexprofrecord_[42]);
-        fprintf(logfp, "%d calls to kern_routs.mw:3105\n", mexprofrecord_[45]);
-        fprintf(logfp, "%d calls to kern_routs.mw:3309\n", mexprofrecord_[47]);
-        fprintf(logfp, "%d calls to kern_routs.mw:3349\n", mexprofrecord_[51]);
-        fprintf(logfp, "%d calls to kern_routs.mw:3405 (kern_routs.mw:3800)\n", mexprofrecord_[52]);
-        fprintf(logfp, "%d calls to kern_routs.mw:3483 (kern_routs.mw:3999)\n", mexprofrecord_[53]);
-        fprintf(logfp, "%d calls to kern_routs.mw:3561 (kern_routs.mw:4104)\n", mexprofrecord_[54]);
-        fprintf(logfp, "%d calls to kern_routs.mw:3640 (kern_routs.mw:4209)\n", mexprofrecord_[55]);
-        fprintf(logfp, "%d calls to kern_routs.mw:3724 (kern_routs.mw:4311)\n", mexprofrecord_[56]);
-        fprintf(logfp, "%d calls to kern_routs.mw:3901 (kern_routs.mw:3913)\n", mexprofrecord_[59]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4008 (kern_routs.mw:4022)\n", mexprofrecord_[63]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4111 (kern_routs.mw:4125)\n", mexprofrecord_[67]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4217 (kern_routs.mw:4236)\n", mexprofrecord_[71]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4319 (kern_routs.mw:4338)\n", mexprofrecord_[74]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4382\n", mexprofrecord_[80]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4448\n", mexprofrecord_[81]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4473\n", mexprofrecord_[82]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4475\n", mexprofrecord_[83]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4495\n", mexprofrecord_[84]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4650 (kern_routs.mw:4926)\n", mexprofrecord_[87]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4719\n", mexprofrecord_[88]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4788\n", mexprofrecord_[89]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4857\n", mexprofrecord_[90]);
+        fprintf(logfp, "%d calls to kern_routs.mw:1544 (kern_routs.mw:2046)\n", mexprofrecord_[26]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2040\n", mexprofrecord_[29]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2042\n", mexprofrecord_[30]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2228\n", mexprofrecord_[32]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2290 (kern_routs.mw:2652)\n", mexprofrecord_[33]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2358\n", mexprofrecord_[34]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2442 (kern_routs.mw:2766)\n", mexprofrecord_[35]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2512\n", mexprofrecord_[36]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2581\n", mexprofrecord_[37]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2826 (kern_routs.mw:3037)\n", mexprofrecord_[40]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2897\n", mexprofrecord_[41]);
+        fprintf(logfp, "%d calls to kern_routs.mw:2966 (kern_routs.mw:3094)\n", mexprofrecord_[42]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3096\n", mexprofrecord_[45]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3295\n", mexprofrecord_[47]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3335\n", mexprofrecord_[51]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3391 (kern_routs.mw:3786)\n", mexprofrecord_[52]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3469 (kern_routs.mw:3983)\n", mexprofrecord_[53]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3547 (kern_routs.mw:4088)\n", mexprofrecord_[54]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3626 (kern_routs.mw:4193)\n", mexprofrecord_[55]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3710 (kern_routs.mw:4295)\n", mexprofrecord_[56]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3885 (kern_routs.mw:3897)\n", mexprofrecord_[59]);
+        fprintf(logfp, "%d calls to kern_routs.mw:3992 (kern_routs.mw:4006)\n", mexprofrecord_[63]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4095 (kern_routs.mw:4109)\n", mexprofrecord_[67]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4201 (kern_routs.mw:4220)\n", mexprofrecord_[71]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4303 (kern_routs.mw:4322)\n", mexprofrecord_[74]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4366\n", mexprofrecord_[80]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4432\n", mexprofrecord_[81]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4457\n", mexprofrecord_[82]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4459\n", mexprofrecord_[83]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4479\n", mexprofrecord_[84]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4634 (kern_routs.mw:4910)\n", mexprofrecord_[87]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4703\n", mexprofrecord_[88]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4772\n", mexprofrecord_[89]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4841\n", mexprofrecord_[90]);
         fclose(logfp);
     } else
         mexErrMsgTxt("Unknown identifier");

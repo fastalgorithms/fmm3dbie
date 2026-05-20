@@ -20,9 +20,6 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, ivpp)
         ivpp = 1;
     end
 
-    if nargin < 6
-        norderup = 0;
-    end
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     npatches = S.npatches;
     npp1 = npatches+1;

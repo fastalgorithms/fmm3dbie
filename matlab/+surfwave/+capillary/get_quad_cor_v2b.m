@@ -1,4 +1,4 @@
-function [xmat1,xmat2] = get_quad_cor_v2b(S, targs, kern, eps, zpars, uv_bndry, patch_id, norderup)
+function [xmat1,xmat2] = get_quad_cor_v2b(S, targs, kern, eps, zpars, uv_bndry, patch_id, nover)
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);
@@ -76,9 +76,9 @@ function [xmat1,xmat2] = get_quad_cor_v2b(S, targs, kern, eps, zpars, uv_bndry, 
     xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
 
     if nargin < 8
-        norderup = 4;
+        nover = S.norders+4;
     end
-    nover = S.norders(1) + norderup; 
+    assert(norm(S.norders - S.norders(1))==0)
     S_over = oversample(S,nover);
     Asmth = cell(1,1);
 

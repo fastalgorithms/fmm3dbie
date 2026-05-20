@@ -7,13 +7,8 @@
 %
 %  with Neumann boundary conditions du/dn = g on \partial\Omega,
 %  using a coupled volume and boundary integral equation formulation.
-%  The volume domain \Omega is a disk discretized as a surfer object S,
-%  and the boundary \partial\Omega is discretized as a chunkie object chnkr.
-%  The manufactured solution is u = sin(x) sin(y).
 %
-%  Uses FMM-accelerated operator application via lap2d.apply_v2v,
-%  lap2d.apply_b2v_neu, and lap2d.apply_v2b_neu, and solves with
-%  GMRES using a matrix-free apply.
+%  This script uses the FMM to apply the v2v, v2b, and b2v operators
 %
 
 %% Geometry and problem definition
