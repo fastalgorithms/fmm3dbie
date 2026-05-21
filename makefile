@@ -128,22 +128,6 @@ HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o \
 LAP = src/lap_wrappers
 LOBJS = $(LAP)/lap_comb_dir.o $(LAP)/lap_s_neu.o
 
-# Laplace 2D wrappers
-LAP2 = src/lap_2d_wrappers
-LOBJS2 = $(LAP2)/lap2d_wrappers.o
-
-# Helmholtz 2D wrappers
-HELM2 = src/helm_2d_wrappers
-HOBJS2 = $(HELM2)/helm2d_wrappers.o
-
-# Biharmonic 2D wrappers
-BH2 = src/biharmonic_2d_wrappers
-BHOBJS = $(BH2)/bh2d_wrappers.o
-
-# Flexural 2D wrappers
-FX2 = src/flexural_2d_wrappers
-FXOBJS = $(FX2)/flexural_2d_wrappers.o
-
 # Maxwell wrappers
 EM = src/maxwell
 EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
@@ -163,26 +147,14 @@ STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_mob.o
 LB = src/lap_bel
 LBOBJS_BEL = $(LB)/lap_bel_routs.o
 
-# Surface wave wrappers
-SURFWAVE = src/surfwave_wrappers
-SURFWAVEOBJS = $(SURFWAVE)/capillary_gs.o $(SURFWAVE)/capillary_gphi.o \
-	$(SURFWAVE)/capillary_gphi_postproc.o $(SURFWAVE)/capillary_all.o \
-	$(SURFWAVE)/capillary_gs_postproc.o $(SURFWAVE)/capillary_gradgs.o \
-	$(SURFWAVE)/capillary_gradgphi.o $(SURFWAVE)/flexural_all.o \
-	$(SURFWAVE)/flex_gs_postproc.o $(SURFWAVE)/flex_rep_bcs.o \
-	$(SURFWAVE)/gravity_all.o
-
 # Kernels
 KER = src/kernels
-KER2 = src/kernels_2d
 KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o \
 	$(KER)/hank101.o $(KER)/lap_bel_kernels.o \
 	$(KER)/surfwave_kernels_helm.o $(KER)/surfwave_kernels_flex.o \
 	$(KER)/hank103.o $(KER)/struve102.o $(KER)/helmdiffgreen.o \
 	$(KER)/hankdiff.o $(KER)/vpp.o \
-	$(KER2)/biharmonic_kernels.o $(KER2)/lap_kernels_2d.o \
-	$(KER2)/helm_kernels_2d.o $(KER2)/flexural_kernels_2d.o \
 	$(KER)/surfwave_kernels_grav.o
 
 # Quadrature wrappers
@@ -226,9 +198,9 @@ SURFSM_MOD_OBJS = $(SURFSM)/Mod_TreeLRD.o \
 # Add to FFLAGS so that modules get compiled in the .mod folder
 FFLAGS += -J .mod/
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(HOBJS2) $(KOBJS) $(LOBJS) $(LOBJS2) $(BHOBJS) $(FXOBJS) $(SURFWAVEOBJS) $(LBOBJS_BEL) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS_BEL) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
 
-OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(HOBJS2) $(KOBJS) $(LOBJS) $(LOBJS2) $(BHOBJS) $(FXOBJS) $(SURFWAVEOBJS) $(LBOBJS_BEL) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS_BEL) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
 OBJS_64 += $(COM)/lapack_wrap_64.o
 
 ifeq ($(BLAS_64),ON)
