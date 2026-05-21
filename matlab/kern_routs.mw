@@ -2850,368 +2850,6 @@ end
 %
 %
 %
-@ +bh2d/v2v_matgen.m
-function A = v2v_matgen(S, zk, eps)
-%
-%  bh2d.v2v_matgen
-%
-%  Syntax
-%   A = bh2d.v2v_matgen(S,zk,eps)
-%
-%  Integral representation
-%     pot = (Update representation here)
-%
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * eps: precision requested
-%
-
-    if abs(zk)>1e-8
-        error('No support for flexural problem')
-    end 
-
-
-    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
-    [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
-    [npatches,~] = size(norders);
-    npp1 = npatches+1;
-    row_ptr = 1:npatches:(npatches*npts+1);
-    col_ind = repmat(1:npatches,[1,npts]);
-    row_ptr = row_ptr(:);
-    col_ind = col_ind(:);
-    nnz = npatches*npts;
-    nnzp1 = nnz + 1;
-    iquadtype = 1;
-    ntp1 = npts + 1;
-    npols = ixyzs(2) - ixyzs(1);
-    iquad = 1:npols:(npts*npts+1);
-    A = zeros(npts,npts);
-    rfac0 = 1.25;
-    nquad = npts*npts;
-
-    
-    if abs(zk)<=1e-8 
-
-    # FORTRAN getnearquad_bh2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] A);
-    
-    end 
-    
-    A = reshape(A,[S.npts,S.npts]).';
-
-end
-%
-%
-%
-%
-@ +bh2d/v2b_matgen_dir.m
-function A = v2b_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  bh2d.v2b_matgen_dir
-%
-%  Syntax
-%   A = bh2d.v2b_matgen_dir(S,zk,targinfo,zpars,eps)
-%
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
-%
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
-%    * eps: precision requested
-%
-
-
-    if abs(zk)>1e-8
-        error('No support for flexural problem')
-    end 
-
-    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
-    [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
-    [npatches,~] = size(norders);
-    npp1 = npatches+1;
-
-    [targs] = extract_targ_array(targinfo);
-    [ndtarg,ntarg] = size(targs);
-    ntargp1 = ntarg+1;
-
-    row_ptr = 1:npatches:(npatches*ntarg+1);
-    col_ind = repmat(1:npatches,[1,ntarg]);
-    row_ptr = row_ptr(:);
-    col_ind = col_ind(:);
-    nnz = npatches*ntarg;
-    nnzp1 = nnz + 1;
-    iquadtype = 1;
-    ntp1 = npts + 1;
-    npols = ixyzs(2) - ixyzs(1);
-
-    rfac0 = 1.25;
-
-    if nargin < 5
-    ipatch_id = zeros(ntarg,1);
-    uvs_targ = zeros(2,ntarg);
-    end
-
-    iquad = 1:npols:(npts*ntarg+1);
-    nquad = iquad(nnzp1)-1;
-    A = zeros(1,nquad);
-    zpars = 0;
-    
-    if abs(zk)<=1e-8 
-
-    # FORTRAN getnearquad_bh2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
-
-    end 
-
-    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
-end
-%
-%
-%
-%
-%
-@ +bh2d/v2b_matgen_neu.m
-function A = v2b_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  bh2d.v2b_matgen_neu
-%
-%  Syntax
-%   A = bh2d.v2b_matgen_neu(S,zk,targinfo,zpars,eps)
-%
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
-%
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
-%    * eps: precision requested
-%
-
-
-    if abs(zk)>1e-8
-        error('No support for flexural problem')
-    end 
-
-    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
-    [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
-    [npatches,~] = size(norders);
-    npp1 = npatches+1;
-
-    [targs] = extract_targ_array(targinfo);
-    [ndtarg,ntarg] = size(targs);
-    ntargp1 = ntarg+1;
-
-    row_ptr = 1:npatches:(npatches*ntarg+1);
-    col_ind = repmat(1:npatches,[1,ntarg]);
-    row_ptr = row_ptr(:);
-    col_ind = col_ind(:);
-    nnz = npatches*ntarg;
-    nnzp1 = nnz + 1;
-    iquadtype = 1;
-    ntp1 = npts + 1;
-    npols = ixyzs(2) - ixyzs(1);
-
-    rfac0 = 1.25;
-
-    if nargin < 5
-    ipatch_id = zeros(ntarg,1);
-    uvs_targ = zeros(2,ntarg);
-    end
-
-    iquad = 1:npols:(npts*ntarg+1);
-    nquad = iquad(nnzp1)-1;
-    A = complex(zeros(1,nquad));
-    zpars = 0;
-    
-    if abs(zk)<=1e-8 
-
-    # FORTRAN getnearquad_bh2d_neu(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
-
-    end 
-
-    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
-end
-%
-%
-%
-%
-@ +bh2d/v2b_matgen_supp2.m
-function A = v2b_matgen_supp2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  bh2d.v2b_matgen_supp2
-%
-%  Syntax
-%   A = bh2d.v2b_matgen_supp2(S,zk,nu,targinfo,zpars,eps)
-%
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
-%
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
-%    * eps: precision requested
-%
-
-
-    if abs(zk)>1e-8
-        error('No support for flexural problem')
-    end 
-
-    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
-    [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
-    [npatches,~] = size(norders);
-    npp1 = npatches+1;
-
-    [targs] = extract_targ_array(targinfo);
-    [ndtarg,ntarg] = size(targs);
-    ntargp1 = ntarg+1;
-
-    row_ptr = 1:npatches:(npatches*ntarg+1);
-    col_ind = repmat(1:npatches,[1,ntarg]);
-    row_ptr = row_ptr(:);
-    col_ind = col_ind(:);
-    nnz = npatches*ntarg;
-    nnzp1 = nnz + 1;
-    iquadtype = 1;
-    ntp1 = npts + 1;
-    npols = ixyzs(2) - ixyzs(1);
-
-    rfac0 = 1.25;
-
-    if nargin < 6
-    ipatch_id = zeros(ntarg,1);
-    uvs_targ = zeros(2,ntarg);
-    end
-
-    iquad = 1:npols:(npts*ntarg+1);
-    nquad = iquad(nnzp1)-1;
-    A = zeros(1,nquad);
-    zpars = 0;
-    dpars = nu;
-
-    
-    if abs(zk)<=1e-8 
-
-    # FORTRAN getnearquad_bh2d_supp2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
-
-    end 
-
-    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
-end
-%
-%
-%
-%
-%
-@ +bh2d/v2b_matgen_free2.m
-function A = v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  bh2d.v2b_matgen_free2
-%
-%  Syntax
-%   A = bh2d.v2b_matgen_free2(S,zk,nu,targinfo,zpars,eps)
-%
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
-%
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
-%    * eps: precision requested
-%
-
-
-    if abs(zk)>1e-8
-        error('No support for flexural problem')
-    end 
-
-    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
-    [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
-    [npatches,~] = size(norders);
-    npp1 = npatches+1;
-
-    [targs] = extract_targ_array(targinfo);
-    [ndtarg,ntarg] = size(targs);
-    ntargp1 = ntarg+1;
-
-    row_ptr = 1:npatches:(npatches*ntarg+1);
-    col_ind = repmat(1:npatches,[1,ntarg]);
-    row_ptr = row_ptr(:);
-    col_ind = col_ind(:);
-    nnz = npatches*ntarg;
-    nnzp1 = nnz + 1;
-    iquadtype = 1;
-    ntp1 = npts + 1;
-    npols = ixyzs(2) - ixyzs(1);
-
-    rfac0 = 1.25;
-
-    if nargin < 6
-    ipatch_id = zeros(ntarg,1);
-    uvs_targ = zeros(2,ntarg);
-    end
-
-
-    
-
-
-    iquad = 1:npols:(npts*ntarg+1);
-    nquad = iquad(nnzp1)-1;
-    A = zeros(1,nquad);
-    zpars = 0;
-    dpars = nu;
-
-    
-    if abs(zk)<=1e-8 
-
-    # FORTRAN getnearquad_bh2d_free2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
-
-    end 
-
-    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
-end
-%
-%
-%
 @ +bh2d/get_quad_cor_sub.m
 function [xmat,novers] = get_quad_cor_sub(S, zk, eps)
 
@@ -4021,344 +3659,150 @@ end
 %
 %
 %
-@ +bh2d/b2v_matgen_clamped.m
-function A = b2v_matgen_clamped(S,zk,targinfo,eps,ipatch_id,uvs_targ)
+%--------------------------------------------
+@ +bh2d/matgen.m
+function A = matgen(S, zk, type, targinfo, eps, ipatch_id, uvs_targ)
 %
-%  bh2d.b2v_matgen_clamped
+%  bh2d.matgen
 %
 %  Syntax
-%   A = bh2d.b2v_matgen_clamped(S,zk,targinfo,eps)
-%   A = bh2d.b2v_matgen_clamped(S,zk,targinfo,eps,ipatch_id,uvs_targ)
+%   A = bh2d.matgen(S, zk, type, targinfo, eps)
+%   A = bh2d.matgen(S, zk, type, targinfo, eps, ipatch_id, uvs_targ)
 %
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
+%  Computes near-quadrature weight matrices for the biharmonic equation
+%  (zk = 0 only). The type string selects the operator:
 %
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
+%   v2v types (no targinfo needed, pass []):
+%     'v2v'        volume-to-volume (G_S single-layer, self-interaction)
+%
+%   v2b types (targinfo = boundary target struct):
+%     'dir'        volume-to-boundary Dirichlet (SLP)
+%     'neu'        volume-to-boundary Neumann (SLP normal derivative)
+%     'supp2'      volume-to-boundary simply-supported, part 2 (needs nu in type as 3rd token, or pass as targinfo.nu)
+%     'free2'      volume-to-boundary free plate, part 2 (needs nu)
+%     'clamped'    volume-to-boundary clamped (returns [npts x 2*ntarg])
+%     'gdn'        normal derivative of G_S to boundary targets
+%
+%   b2v types (targinfo = volume target struct, sources on boundary):
+%     'b2v_dir'     boundary-to-volume Dirichlet (SLP)
+%     'b2v_neu'     boundary-to-volume Neumann (SLP normal derivative)
+%     'b2v_clamped' boundary-to-volume clamped (returns [ntarg x 2*npts])
 %
 %  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * zk: wavenumber (must be 0 for biharmonic)
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
-%          patch if on-surface (optional)
+%    * S: surfer object
+%    * zk: wavenumber (must be 0)
+%    * type: string selecting the operator (see above)
+%    * targinfo: target struct with fields r, patch_id, uvs_targ (optional for v2v)
 %    * eps: precision requested
+%    * nu: Poisson ratio, required for supp2 and free2 types; pass as
+%          targinfo.nu or as an extra element in type, e.g. 'supp2'
+%          with targinfo.nu set.
+%
+%  Note: for on-surface targets, only the principal value part is returned.
 %
 
     if abs(zk) > 1e-8
-        error('No support for flexural problem')
+        error('bh2d.matgen: only zk = 0 (biharmonic) is supported')
     end
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
+    [n9,~]     = size(srccoefs);
     [npatches,~] = size(norders);
-    npp1 = npatches+1;
+    npp1 = npatches + 1;
+    zpars = 0;
+    rfac0 = 1.25;
+    iquadtype = 1;
+    npols = ixyzs(2) - ixyzs(1);
 
-    [targs] = extract_targ_array(targinfo);
+    % --- v2v self-interaction (no targinfo) ---
+    if strcmp(type, 'v2v')
+        ntp1 = npts + 1;
+        row_ptr = 1:npatches:(npatches*npts+1);
+        col_ind = repmat(1:npatches,[1,npts]);
+        row_ptr = row_ptr(:);
+        col_ind = col_ind(:);
+        nnz     = npatches*npts;
+        nnzp1   = nnz + 1;
+        iquad   = 1:npols:(npts*npts+1);
+        nquad   = npts*npts;
+        A = zeros(npts, npts);
+
+        # FORTRAN getnearquad_bh2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+
+        A = reshape(A, [npts, npts]).';
+        return
+    end
+
+    % --- all other types: need targinfo ---
+    [targs]       = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
-    ntargp1 = ntarg+1;
+    ntargp1 = ntarg + 1;
 
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    nnz = npatches*ntarg;
+    nnz   = npatches*ntarg;
     nnzp1 = nnz + 1;
-    iquadtype = 1;
-    npols = ixyzs(2) - ixyzs(1);
-    rfac0 = 1.25;
 
-    if nargin < 5
+    if nargin < 6
         ipatch_id = zeros(ntarg,1);
-        uvs_targ = zeros(2,ntarg);
+        uvs_targ  = zeros(2,ntarg);
     end
 
     iquad = 1:npols:(npts*ntarg+1);
     nquad = iquad(nnzp1)-1;
-    A = zeros(2,nquad);
-    zpars = 0;
 
-    # FORTRAN getnearquad_bh2d_clamped(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[2,nquad] A);
+    if strcmp(type, 'dir')
+        A = zeros(1, nquad);
+        # FORTRAN getnearquad_bh2d_dir(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        A = reshape(A, [npts, ntarg]).';
 
-    A = reshape(A,[2*S.npts size(targinfo.r(:,:),2)]).';
-end
-%
-%
-%
-%
-@ +bh2d/b2v_matgen_dir.m
-function A = b2v_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  bh2d.b2v_matgen_dir
-%
-%  Syntax
-%   A = bh2d.b2v_matgen_dir(S,zk,targinfo,eps)
-%   A = bh2d.b2v_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
-%
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * zk: wavenumber (must be 0 for biharmonic)
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
-%          patch if on-surface (optional)
-%    * eps: precision requested
-%
+    elseif strcmp(type, 'neu')
+        A = complex(zeros(1, nquad));
+        # FORTRAN getnearquad_bh2d_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        A = reshape(A, [npts, ntarg]).';
 
-    if abs(zk) > 1e-8
-        error('No support for flexural problem')
+    elseif strcmp(type, 'supp2')
+        dpars = targinfo.nu;
+        A = zeros(1, nquad);
+        # FORTRAN getnearquad_bh2d_supp2(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, double[1] dpars, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        A = reshape(A, [npts, ntarg]).';
+
+    elseif strcmp(type, 'free2')
+        dpars = targinfo.nu;
+        A = zeros(1, nquad);
+        # FORTRAN getnearquad_bh2d_free2(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, double[1] dpars, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        A = reshape(A, [npts, ntarg]).';
+
+    elseif strcmp(type, 'clamped')
+        A = zeros(2, nquad);
+        # FORTRAN getnearquad_bh2d_clamped(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[2,nquad] A);
+        A = reshape(A, [npts, 2*ntarg]).';
+
+    elseif strcmp(type, 'gdn')
+        A = zeros(1, nquad);
+        # FORTRAN getnearquad_bh2d_gdn(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        A = reshape(A, [npts, ntarg]).';
+
+    elseif strcmp(type, 'b2v_dir')
+        A = zeros(1, nquad);
+        # FORTRAN getnearquad_bh2d_b2v_dir(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        A = reshape(A, [npts, ntarg]).';
+
+    elseif strcmp(type, 'b2v_neu')
+        A = zeros(1, nquad);
+        # FORTRAN getnearquad_bh2d_v2b_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
+        A = reshape(A, [npts, ntarg]).';
+
+    elseif strcmp(type, 'b2v_clamped')
+        A = zeros(2, nquad);
+        # FORTRAN getnearquad_bh2d_clamped(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[2,nquad] A);
+        A = reshape(A, [2*npts, ntarg]).';
+
+    else
+        error('bh2d.matgen: unknown type ''%s''', type)
     end
 
-    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
-    [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
-    [npatches,~] = size(norders);
-    npp1 = npatches+1;
-
-    [targs] = extract_targ_array(targinfo);
-    [ndtarg,ntarg] = size(targs);
-    ntargp1 = ntarg+1;
-
-    row_ptr = 1:npatches:(npatches*ntarg+1);
-    col_ind = repmat(1:npatches,[1,ntarg]);
-    row_ptr = row_ptr(:);
-    col_ind = col_ind(:);
-    nnz = npatches*ntarg;
-    nnzp1 = nnz + 1;
-    iquadtype = 1;
-    npols = ixyzs(2) - ixyzs(1);
-    rfac0 = 1.25;
-
-    if nargin < 5
-        ipatch_id = zeros(ntarg,1);
-        uvs_targ = zeros(2,ntarg);
-    end
-
-    iquad = 1:npols:(npts*ntarg+1);
-    nquad = iquad(nnzp1)-1;
-    A = zeros(1,nquad);
-    zpars = 0;
-
-    # FORTRAN getnearquad_bh2d_b2v_dir(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
-
-    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
-end
-%
-%
-%
-%
-@ +bh2d/b2v_matgen_neu.m
-function A = b2v_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  bh2d.b2v_matgen_neu
-%
-%  Syntax
-%   A = bh2d.b2v_matgen_neu(S,zk,targinfo,eps)
-%   A = bh2d.b2v_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
-%
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * zk: wavenumber (must be 0 for biharmonic)
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
-%          patch if on-surface (optional)
-%    * eps: precision requested
-%
-
-    if abs(zk) > 1e-8
-        error('No support for flexural problem')
-    end
-
-    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
-    [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
-    [npatches,~] = size(norders);
-    npp1 = npatches+1;
-
-    [targs] = extract_targ_array(targinfo);
-    [ndtarg,ntarg] = size(targs);
-    ntargp1 = ntarg+1;
-
-    row_ptr = 1:npatches:(npatches*ntarg+1);
-    col_ind = repmat(1:npatches,[1,ntarg]);
-    row_ptr = row_ptr(:);
-    col_ind = col_ind(:);
-    nnz = npatches*ntarg;
-    nnzp1 = nnz + 1;
-    iquadtype = 1;
-    npols = ixyzs(2) - ixyzs(1);
-    rfac0 = 1.25;
-
-    if nargin < 5
-        ipatch_id = zeros(ntarg,1);
-        uvs_targ = zeros(2,ntarg);
-    end
-
-    iquad = 1:npols:(npts*ntarg+1);
-    nquad = iquad(nnzp1)-1;
-    A = zeros(1,nquad);
-    zpars = 0;
-
-    # FORTRAN getnearquad_bh2d_v2b_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
-
-    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
-end
-%
-%
-%
-%
-@ +bh2d/gdn_matgen.m
-function A = gdn_matgen(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  bh2d.gdn_matgen
-%
-%  Syntax
-%   A = bh2d.gdn_matgen(S,zk,targinfo,eps)
-%   A = bh2d.gdn_matgen(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  Integral representation
-%     pot = \int \partial_n G_S(r,r') \sigma(r') dA(r')
-%
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * zk: wavenumber (must be 0 for biharmonic)
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
-%          patch if on-surface (optional)
-%    * eps: precision requested
-%
-
-    if abs(zk) > 1e-8
-        error('No support for flexural problem')
-    end
-
-    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
-    [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
-    [npatches,~] = size(norders);
-    npp1 = npatches+1;
-
-    [targs] = extract_targ_array(targinfo);
-    [ndtarg,ntarg] = size(targs);
-    ntargp1 = ntarg+1;
-
-    row_ptr = 1:npatches:(npatches*ntarg+1);
-    col_ind = repmat(1:npatches,[1,ntarg]);
-    row_ptr = row_ptr(:);
-    col_ind = col_ind(:);
-    nnz = npatches*ntarg;
-    nnzp1 = nnz + 1;
-    iquadtype = 1;
-    npols = ixyzs(2) - ixyzs(1);
-    rfac0 = 1.25;
-
-    if nargin < 5
-        ipatch_id = zeros(ntarg,1);
-        uvs_targ = zeros(2,ntarg);
-    end
-
-    iquad = 1:npols:(npts*ntarg+1);
-    nquad = iquad(nnzp1)-1;
-    A = zeros(1,nquad);
-    zpars = 0;
-
-    # FORTRAN getnearquad_bh2d_gdn(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] A);
-
-    A = reshape(A,[S.npts size(targinfo.r(:,:),2)]).';
-end
-%
-%
-%
-%
-@ +bh2d/v2b_matgen_clamped.m
-function A = v2b_matgen_clamped(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  bh2d.v2b_matgen_clamped
-%
-%  Syntax
-%   A = bh2d.v2b_matgen_clamped(S,zk,targinfo,eps)
-%   A = bh2d.v2b_matgen_clamped(S,zk,targinfo,eps,ipatch_id,uvs_targ)
-%
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
-%
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * zk: wavenumber (must be 0 for biharmonic)
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
-%          patch if on-surface (optional)
-%    * eps: precision requested
-%
-
-    if abs(zk) > 1e-8
-        error('No support for flexural problem')
-    end
-
-    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
-    [n12,npts] = size(srcvals);
-    [n9,~] = size(srccoefs);
-    [npatches,~] = size(norders);
-    npp1 = npatches+1;
-
-    [targs] = extract_targ_array(targinfo);
-    [ndtarg,ntarg] = size(targs);
-    ntargp1 = ntarg+1;
-
-    row_ptr = 1:npatches:(npatches*ntarg+1);
-    col_ind = repmat(1:npatches,[1,ntarg]);
-    row_ptr = row_ptr(:);
-    col_ind = col_ind(:);
-    nnz = npatches*ntarg;
-    nnzp1 = nnz + 1;
-    iquadtype = 1;
-    npols = ixyzs(2) - ixyzs(1);
-    rfac0 = 1.25;
-
-    if nargin < 5
-        ipatch_id = zeros(ntarg,1);
-        uvs_targ = zeros(2,ntarg);
-    end
-
-    iquad = 1:npols:(npts*ntarg+1);
-    nquad = iquad(nnzp1)-1;
-    A = zeros(2,nquad);
-    zpars = 0;
-
-    # FORTRAN getnearquad_bh2d_clamped(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[2,nquad] A);
-
-    A = reshape(A,[S.npts 2*size(targinfo.r(:,:),2)]).';
 end

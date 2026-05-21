@@ -118,7 +118,7 @@ eps = 1e-12;
 Q = getnear(S); Q.targinfo = S; Q.wavenumber = zk1; Q.kernel_order = 0;
 novers   = get_oversampling_parameters(S, Q, eps);
 [geom_over, xinterp] = S.oversample(novers);
-
+nearquad_opts = []; nearquad_opts.nover = novers;
 %% Near-quad function handles
 
 getnearquad_v2v = @(varargin) flex2d.getnearquad_var(varargin{1:17}, dpars, zpars_f, varargin{18}, 'v2v');
@@ -127,7 +127,7 @@ getnearquad_v2b = @(varargin) flex2d.getnearquad(    varargin{1:17}, dpars, zpar
 
 %% v2v block: geom -> geom
 
-[v2v_near, norderup] = getnearquad_kern(S, v2vkern, eps, getnearquad_v2v, targ_geom, novers);
+v2v_near = getnearquad_kern(S, v2vkern, eps, getnearquad_v2v, targ_geom, nearquad_opts);
 
 v2vkern_eval = kernel(v2vkern);
 v2v_smth = (v2vkern_eval.eval(geom_over, targ_geom) .* geom_over.wts(:).') * xinterp;
@@ -136,7 +136,7 @@ flex_v2v = v2v_near + v2v_smth;
 
 %% v2b block: geom -> chnkr
 
-[v2b_near, ~] = getnearquad_kern(S, rhskern, eps, getnearquad_v2b, chnkrdim, novers);
+v2b_near = getnearquad_kern(S, rhskern, eps, getnearquad_v2b, chnkrdim, nearquad_opts);
 
 rhskern_eval = kernel(rhskern);
 v2b_smth = (rhskern_eval.eval(geom_over, chnkrdim) .* geom_over.wts(:).') * xinterp;

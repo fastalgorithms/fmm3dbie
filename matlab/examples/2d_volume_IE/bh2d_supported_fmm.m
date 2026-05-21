@@ -64,9 +64,10 @@ targinfo = [];
 targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
 targinfo.n = [chnkr.n(:,:); 0*chnkr.n(1,:)];
 
+targinfo.nu = nu;
 start = tic;
-v2b_dir   = bh2d.v2b_matgen_dir(S, zk, targinfo, eps);
-v2b_supp2 = bh2d.v2b_matgen_supp2(S, zk, nu, targinfo, eps);
+v2b_dir   = bh2d.matgen(S, zk, 'dir',   targinfo, eps);
+v2b_supp2 = bh2d.matgen(S, zk, 'supp2', targinfo, eps);
 v2b = zeros(2*chnkr.npt, S.npts);
 v2b(1:2:end,:) = v2b_dir;
 v2b(2:2:end,:) = v2b_supp2;

@@ -48,8 +48,8 @@ fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 % Volume to boundary (dense)
 start = tic;
-v2b_dir = bh2d.v2b_matgen_dir(S, zk, chnkr, eps);
-v2b_neu = bh2d.v2b_matgen_neu(S, zk, chnkr, eps);
+v2b_dir = bh2d.matgen(S, zk, 'dir', chnkr, eps);
+v2b_neu = bh2d.matgen(S, zk, 'neu', chnkr, eps);
 v2b = zeros(2*chnkr.npt, S.npts);
 v2b(1:2:end,:) = v2b_dir;
 v2b(2:2:end,:) = v2b_neu;

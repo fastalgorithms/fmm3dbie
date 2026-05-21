@@ -18041,6 +18041,7 @@ mw_err_label:
 
 /* ---- kern_routs.mw: 4154 ----
  * getnearquad_bh2d_b2v_dir(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
+ * Also at kern_routs.mw: 4497
  */
 static const char* stubids92_ = "getnearquad_bh2d_b2v_dir(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -18436,6 +18437,7 @@ mw_err_label:
 
 /* ---- kern_routs.mw: 4223 ----
  * getnearquad_bh2d_v2b_neu(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
+ * Also at kern_routs.mw: 4502
  */
 static const char* stubids93_ = "getnearquad_bh2d_v2b_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -18831,6 +18833,7 @@ mw_err_label:
 
 /* ---- kern_routs.mw: 4292 ----
  * getnearquad_bh2d_gdn(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, dcomplex[1] zpars, int64_t[1] iquadtype, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, inout double[nquad] A);
+ * Also at kern_routs.mw: 4492
  */
 static const char* stubids94_ = "getnearquad_bh2d_gdn(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])";
 
@@ -19404,9 +19407,9 @@ void mexFunction(int nlhs, mxArray* plhs[],
         mexPrintf("%d calls to kern_routs.mw:3910\n", mexprofrecord_[87]);
         mexPrintf("%d calls to kern_routs.mw:3930\n", mexprofrecord_[88]);
         mexPrintf("%d calls to kern_routs.mw:4085 (kern_routs.mw:4361)\n", mexprofrecord_[91]);
-        mexPrintf("%d calls to kern_routs.mw:4154\n", mexprofrecord_[92]);
-        mexPrintf("%d calls to kern_routs.mw:4223\n", mexprofrecord_[93]);
-        mexPrintf("%d calls to kern_routs.mw:4292\n", mexprofrecord_[94]);
+        mexPrintf("%d calls to kern_routs.mw:4154 (kern_routs.mw:4497)\n", mexprofrecord_[92]);
+        mexPrintf("%d calls to kern_routs.mw:4223 (kern_routs.mw:4502)\n", mexprofrecord_[93]);
+        mexPrintf("%d calls to kern_routs.mw:4292 (kern_routs.mw:4492)\n", mexprofrecord_[94]);
     } else if (strcmp(id, "*profile log*") == 0) {
         FILE* logfp;
         if (nrhs != 2 || mxGetString(prhs[1], id, sizeof(id)) != 0)
@@ -19464,9 +19467,9 @@ void mexFunction(int nlhs, mxArray* plhs[],
         fprintf(logfp, "%d calls to kern_routs.mw:3910\n", mexprofrecord_[87]);
         fprintf(logfp, "%d calls to kern_routs.mw:3930\n", mexprofrecord_[88]);
         fprintf(logfp, "%d calls to kern_routs.mw:4085 (kern_routs.mw:4361)\n", mexprofrecord_[91]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4154\n", mexprofrecord_[92]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4223\n", mexprofrecord_[93]);
-        fprintf(logfp, "%d calls to kern_routs.mw:4292\n", mexprofrecord_[94]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4154 (kern_routs.mw:4497)\n", mexprofrecord_[92]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4223 (kern_routs.mw:4502)\n", mexprofrecord_[93]);
+        fprintf(logfp, "%d calls to kern_routs.mw:4292 (kern_routs.mw:4492)\n", mexprofrecord_[94]);
         fclose(logfp);
     } else
         mexErrMsgTxt("Unknown identifier");
