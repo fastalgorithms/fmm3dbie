@@ -1,4 +1,38 @@
 function xmat = get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
+%SURFWAVE.FLEX.GET_QUAD_COR_SUB near-field quadrature correction matrix for
+%  a single flexural-gravity wave kernel by name, on-surface targets.
+%
+% Syntax:
+%   xmat = surfwave.flex.get_quad_cor_sub(S, type, zpars, eps, gs_kern)
+%   xmat = surfwave.flex.get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
+%
+% Computes the sparse near-field quadrature correction matrix for the
+% named kernel type on-surface (targets = source nodes).  For kernels
+% iker < 6 calls getnearquad_flex_all (or the variable-periodization
+% variant when ivpp=1); for iker == 6 delegates to
+% lap3d.neumann.get_quadrature_correction.
+%
+% Input:
+%   S       - surfer object describing the surface discretization
+%   type    - string kernel name:
+%               'gs'        -> iker=1  (G_s)
+%               'gphi'      -> iker=2  (G_phi)
+%               'bilapgs'   -> iker=3  (Delta^2 G_s)
+%               'bilapgphi' -> iker=4  (Delta^2 G_phi)
+%               's3dgphi'   -> iker=5  (S_{3d} G_phi)
+%               's3d'       -> iker=6  (Laplace S_{3d})
+%   zpars   - complex array of kernel parameters:
+%               zpars(1:5)  = dispersion roots
+%               zpars(6:10) = partial-fraction residues
+%   eps     - requested quadrature precision
+%   gs_kern - kernel function handle (used by smooth_sparse_quad; may be
+%             empty for on-surface-only usage)
+%   ivpp    - (optional) flag: 1 = variable-periodization MEX path
+%             (default 1), 0 = standard MEX path
+%
+% Output:
+%   xmat - (S.npts, S.npts) sparse complex near-field quadrature
+%          correction matrix
 
     if strcmp(type,'gs')
         iker = 1;

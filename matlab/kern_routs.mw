@@ -907,6 +907,44 @@ end
 function wnear = getnearquad_flexural(npatches,norders,ixyzs, ...
           iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
           row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker)
+%SURFWAVE.FLEX.GETNEARQUAD_FLEXURAL near-field quadrature for flexural-gravity
+%  wave kernels, on-surface targets only.
+%
+% Syntax:
+%   wnear = surfwave.flex.getnearquad_flexural(npatches,norders,ixyzs, ...
+%             iptype,npts,srccoefs,srcvals,eps,iquadtype,nnz, ...
+%             row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker)
+%
+% Calls getnearquad_flex_all (iker < 7) or recurses as iker=5 plus iker=6
+% (iker == 7) to compute the near-field quadrature weights for an
+% on-surface evaluation (targets = source nodes).
+%
+% Input:
+%   npatches  - number of patches
+%   norders   - (npatches,1) polynomial order on each patch
+%   ixyzs     - (npatches+1,1) start indices into srccoefs/srcvals
+%   iptype    - (npatches,1) patch type (1=RV triangles, 11/12=quads)
+%   npts      - total number of discretization points
+%   srccoefs  - (9,npts)  basis expansion coefficients
+%   srcvals   - (12,npts) xyz, derivatives, and normals at nodes
+%   eps       - requested precision
+%   iquadtype - quadrature type (1 = ggq + adaptive)
+%   nnz       - number of source-patch/target interactions in near field
+%   row_ptr   - (npts+1,1) row pointers into col_ind
+%   col_ind   - (nnz,1) source patch indices
+%   iquad     - (nnz+1,1) start indices into wnear for each interaction
+%   rfac0     - radius parameter for adaptive quadrature (rec. 1.25)
+%   zpars     - complex array of kernel parameters:
+%                 zpars(1:5)  = dispersion roots
+%                 zpars(6:10) = partial-fraction residues
+%   nquad     - total number of near-field quadrature entries
+%   iker      - kernel selector:
+%                 1 = G_s,  2 = G_phi,  3 = Delta^2 G_s,
+%                 4 = Delta^2 G_phi,  5 = S_{3d} G_phi,
+%                 6 = Laplace S_{3d},  7 = S_{3d} G_phi + Laplace S_{3d}
+%
+% Output:
+%   wnear - (nquad,1) complex near-field quadrature weights
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     npp1 = npatches+1;
@@ -935,6 +973,45 @@ end
 %
 @ +surfwave/+flex/get_quad_cor_v2b.m
 function [xmat1,xmat2,wnear] = get_quad_cor_v2b(S, targ, kern, eps, zpars, uv_bndry, patch_id)
+%SURFWAVE.FLEX.GET_QUAD_COR_V2B near-field quadrature correction matrices
+%  for the flexural-gravity wave volume-to-boundary (v2b) kernels.
+%
+% Syntax:
+%   [xmat1,xmat2,wnear] = surfwave.flex.get_quad_cor_v2b( ...
+%       S, targ, kern, eps, zpars)
+%   [xmat1,xmat2,wnear] = surfwave.flex.get_quad_cor_v2b( ...
+%       S, targ, kern, eps, zpars, uv_bndry, patch_id)
+%
+% Computes the near-field quadrature correction for the two v2b boundary
+% condition kernels (v2b bc kernel 1 and v2b bc kernel 2) by calling the
+% Fortran MEX routine getnearquad_flex_bcs. The smooth oversampled
+% quadrature is subtracted from each correction matrix via smooth_sparse_quad.
+%
+% Input:
+%   S        - surfer object describing the surface discretization
+%   targ     - target geometry struct with fields:
+%                targ.r     - (2,ntarg) positions
+%                targ.n     - (2,ntarg) unit outward normals
+%                targ.d     - (2,ntarg) parameterization tangent derivative
+%                targ.kappa - (ntarg,1) signed curvature
+%   kern     - (2,1) cell array of kernel function handles for
+%              smooth_sparse_quad subtraction:
+%                kern{1} = v2b bc kernel 1 handle
+%                kern{2} = v2b bc kernel 2 handle
+%   eps      - requested quadrature precision
+%   zpars    - complex array of kernel parameters:
+%                zpars(1:5)  = dispersion roots
+%                zpars(6:10) = partial-fraction residues
+%   uv_bndry - (optional) (2,ntarg) local uv coordinates for on-surface
+%              targets; default zeros(2,ntarg)
+%   patch_id - (optional) (ntarg,1) patch index for on-surface targets
+%              (-1 for off-surface); default zeros(ntarg,1)
+%
+% Output:
+%   xmat1 - (ntarg, S.npts) sparse complex correction matrix for v2b bc kernel 1
+%   xmat2 - (ntarg, S.npts) sparse complex correction matrix for v2b bc kernel 2
+%   wnear - (2,nquad) raw near-field quadrature weights before matrix assembly
+
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);
@@ -1035,6 +1112,33 @@ end
 %
 @ +surfwave/+flex/get_quad_cor.m
 function xmat = get_quad_cor(S, eps, zpars, iker)
+%SURFWAVE.FLEX.GET_QUAD_COR near-field quadrature correction matrix for
+%  flexural-gravity wave kernels, on-surface targets.
+%
+% Syntax:
+%   xmat = surfwave.flex.get_quad_cor(S, eps, zpars, iker)
+%
+% Computes the sparse near-field quadrature correction matrix for one or
+% more flexural-gravity wave kernels evaluated on-surface (targets = source
+% nodes).
+%
+% Input:
+%   S     - surfer object describing the surface discretization
+%   eps   - requested quadrature precision
+%   zpars - complex array of kernel parameters:
+%             zpars(1:5)  = dispersion roots
+%             zpars(6:10) = partial-fraction residues
+%   iker  - kernel selector, scalar or vector of integers:
+%             1 = G_s,          2 = G_phi,
+%             3 = Delta^2 G_s,  4 = Delta^2 G_phi,
+%             5 = S_{3d} G_phi, 6 = Laplace S_{3d},
+%             7 = S_{3d} G_phi + Laplace S_{3d}
+%
+% Output:
+%   xmat - if iker is scalar: (S.npts, S.npts) sparse complex correction
+%          matrix.  If iker is a vector: cell array of sparse matrices,
+%          one per entry of iker.
+
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     npatches = S.npatches;
@@ -1099,7 +1203,43 @@ end
 %
 @ +surfwave/+flex/get_quad_cor_targ.m
 function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps, zpars,ipatch_id,uvs_targ)
-% returns quadrature corrections for G_S, G_p, S_3d G_p and S3d evaluation / postproc
+%SURFWAVE.FLEX.GET_QUAD_COR_TARG near-field quadrature correction matrices
+%  for flexural-gravity wave post-processing kernels at off-surface targets.
+%
+% Syntax:
+%   [xmat1,xmat2,xmat3,xmat4] = surfwave.flex.get_quad_cor_targ( ...
+%       S, targinfo, gkerns, eps, zpars)
+%   [xmat1,xmat2,xmat3,xmat4] = surfwave.flex.get_quad_cor_targ( ...
+%       S, targinfo, gkerns, eps, zpars, ipatch_id, uvs_targ)
+%
+% Computes four sparse near-field quadrature correction matrices for the
+% evaluation kernels G_s, G_phi, S_{3d}G_phi, and Laplace S_{3d} at
+% arbitrary (typically off-surface) targets. Subtracts off
+% the smooth oversampled quadrature via smooth_sparse_quad.
+%
+% Input:
+%   S         - surfer object describing the surface discretization
+%   targinfo  - target geometry, struct with field .r (3,ntarg)
+%   gkerns    - (4,1) cell array of kernel function handles for
+%               smooth_sparse_quad subtraction:
+%                 gkerns{1} = G_s kernel handle
+%                 gkerns{2} = G_phi kernel handle
+%                 gkerns{3} = S_{3d} G_phi kernel handle
+%                 gkerns{4} = Laplace S_{3d} kernel handle
+%   eps       - requested quadrature precision
+%   zpars     - complex array of kernel parameters:
+%                 zpars(1:5)  = dispersion roots
+%                 zpars(6:10) = partial-fraction residues
+%   ipatch_id - (optional) (ntarg,1) patch index for on-surface targets
+%               (-1 for off-surface); default zeros(ntarg,1)
+%   uvs_targ  - (optional) (2,ntarg) local uv coordinates for on-surface
+%               targets; default zeros(2,ntarg)
+%
+% Output:
+%   xmat1 - (ntarg, S.npts) sparse complex correction matrix for G_s
+%   xmat2 - (ntarg, S.npts) sparse complex correction matrix for G_phi
+%   xmat3 - (ntarg, S.npts) sparse complex correction matrix for S_{3d}G_phi
+%   xmat4 - (ntarg, S.npts) sparse complex correction matrix for Laplace S_{3d}
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);
@@ -1190,6 +1330,37 @@ end
 %
 @ +surfwave/+flex/get_quad_cor_sub.m
 function xmat = get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
+%SURFWAVE.FLEX.GET_QUAD_COR_SUB near-field quadrature correction matrix for
+%  a single flexural-gravity wave kernel by name, on-surface targets.
+%
+% Syntax:
+%   xmat = surfwave.flex.get_quad_cor_sub(S, type, zpars, eps, gs_kern)
+%   xmat = surfwave.flex.get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
+%
+% Computes the sparse near-field quadrature correction matrix for the
+% named kernel type on-surface (targets = source nodes). 
+%
+% Input:
+%   S       - surfer object describing the surface discretization
+%   type    - string kernel name:
+%               'gs'        -> iker=1  (G_s)
+%               'gphi'      -> iker=2  (G_phi)
+%               'bilapgs'   -> iker=3  (Delta^2 G_s)
+%               'bilapgphi' -> iker=4  (Delta^2 G_phi)
+%               's3dgphi'   -> iker=5  (S_{3d} G_phi)
+%               's3d'       -> iker=6  (Laplace S_{3d})
+%   zpars   - complex array of kernel parameters:
+%               zpars(1:5)  = dispersion roots
+%               zpars(6:10) = partial-fraction residues
+%   eps     - requested quadrature precision
+%   gs_kern - kernel function handle (used by smooth_sparse_quad; may be
+%             empty for on-surface-only usage)
+%   ivpp    - (optional) flag: 1 = Chebyshev series MEX path
+%             (default 1), 0 = standard MEX path
+%
+% Output:
+%   xmat - (S.npts, S.npts) sparse complex near-field quadrature
+%          correction matrix
 
     if strcmp(type,'gs')
         iker = 1;
@@ -1299,6 +1470,48 @@ function wnear = getnearquad_flex(npatches,norders,ixyzs, ...
           iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
             iquadtype,nnz, ...
           row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker,ivpp)
+%SURFWAVE.FLEX.GETNEARQUAD_FLEX near-field quadrature for flexural-gravity
+%  wave kernels at arbitrary (possibly off-surface) targets.
+%
+% Syntax:
+%   wnear = surfwave.flex.getnearquad_flex(npatches,norders,ixyzs, ...
+%             iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
+%             iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker,ivpp)
+%
+% For iker < 6 calls getnearquad_flex_all (or its vpp variant).
+% For iker == 6 calls getnearquad_lap_s_neu_eval (Laplace S_{3d}).
+% For iker == 7 recurses as iker=5 plus iker=6.
+%
+% Input:
+%   npatches  - number of patches
+%   norders   - (npatches,1) polynomial order on each patch
+%   ixyzs     - (npatches+1,1) start indices into srccoefs/srcvals
+%   iptype    - (npatches,1) patch type (1=RV triangles, 11/12=quads)
+%   npts      - total number of discretization points
+%   srccoefs  - (9,npts)  basis expansion coefficients
+%   srcvals   - (12,npts) xyz, derivatives, and normals at nodes
+%   targs     - (ndtarg,ntarg) target coordinates, or struct with field .r
+%   ipatch_id - (ntarg,1) patch index for on-surface targets (-1 otherwise)
+%   uvs_targ  - (2,ntarg) local uv coordinates for on-surface targets
+%   eps       - requested precision
+%   iquadtype - quadrature type (1 = ggq + adaptive)
+%   nnz       - number of source-patch/target near-field interactions
+%   row_ptr   - (ntarg+1,1) row pointers into col_ind
+%   col_ind   - (nnz,1) source patch indices
+%   iquad     - (nnz+1,1) start indices into wnear for each interaction
+%   rfac0     - radius parameter for adaptive quadrature (rec. 1.25)
+%   zpars     - complex array of kernel parameters:
+%                 zpars(1:5)  = dispersion roots
+%                 zpars(6:10) = partial-fraction residues
+%   nquad     - total number of near-field quadrature entries
+%   iker      - kernel selector:
+%                 1 = G_s,  2 = G_phi,  3 = Delta^2 G_s,
+%                 4 = Delta^2 G_phi,  5 = S_{3d} G_phi,
+%                 6 = Laplace S_{3d},  7 = S_{3d} G_phi + Laplace S_{3d}
+%   ivpp      - flag: 1 = use variable-periodization MEX routine, 0 = standard
+%
+% Output:
+%   wnear - (nquad,1) complex near-field quadrature weights
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     npp1 = npatches+1;
@@ -1355,6 +1568,49 @@ function wnear = getnearquad_v2b_flex(npatches,norders,ixyzs, ...
           iptype,npts,srccoefs,srcvals,targ,ipatch_id, uvs_targ, eps,...
             iquadtype,nnz, ...
           row_ptr,col_ind,iquad,rfac0,zpars,nquad)
+%SURFWAVE.FLEX.GETNEARQUAD_V2B_FLEX near-field quadrature for the flexural-gravity
+%  wave volume-to-boundary (v2b) boundary condition kernels.
+%
+% Syntax:
+%   wnear = surfwave.flex.getnearquad_v2b_flex(npatches,norders,ixyzs, ...
+%             iptype,npts,srccoefs,srcvals,targ,ipatch_id,uvs_targ,eps, ...
+%             iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,zpars,nquad)
+%
+% Calls getnearquad_flex_bcs, which computes quadrature weights for both
+% v2b boundary condition kernels simultaneously. 
+%
+% Input:
+%   npatches  - number of patches
+%   norders   - (npatches,1) polynomial order on each patch
+%   ixyzs     - (npatches+1,1) start indices into srccoefs/srcvals
+%   iptype    - (npatches,1) patch type (1=RV triangles, 11/12=quads)
+%   npts      - total number of discretization points
+%   srccoefs  - (9,npts)  basis expansion coefficients
+%   srcvals   - (12,npts) xyz, derivatives, and normals at nodes
+%   targ      - target geometry struct with fields:
+%                 targ.r     - (2,ntarg) positions
+%                 targ.n     - (2,ntarg) unit outward normals
+%                 targ.d     - (2,ntarg) parameterization tangent derivative
+%                 targ.kappa - (ntarg,1) signed curvature
+%   ipatch_id - (ntarg,1) patch index for on-surface targets (-1 otherwise)
+%   uvs_targ  - (2,ntarg) local uv coordinates for on-surface targets
+%   eps       - requested precision
+%   iquadtype - quadrature type (1 = ggq + adaptive)
+%   nnz       - number of source-patch/target near-field interactions
+%   row_ptr   - (ntarg+1,1) row pointers into col_ind
+%   col_ind   - (nnz,1) source patch indices
+%   iquad     - (nnz+1,1) start indices into wnear for each interaction
+%   rfac0     - radius parameter for adaptive quadrature (rec. 1.25)
+%   zpars     - complex array of kernel parameters:
+%                 zpars(1:5)  = dispersion roots
+%                 zpars(6:10) = partial-fraction residues
+%   nquad     - total number of near-field quadrature entries
+%
+% Output:
+%   wnear - (2,nquad) complex near-field quadrature weights:
+%             wnear(1,:) = weights for v2b bc kernel 1
+%             wnear(2,:) = weights for v2b bc kernel 2
+
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     npp1 = npatches+1;
@@ -1665,6 +1921,44 @@ function wnear = getnearquad_gravity(npatches,norders,ixyzs, ...
           iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
             iquadtype,nnz, ...
           row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker,ivpp,S3d_scal)
+%SURFWAVE.GRAVITY.GETNEARQUAD_GRAVITY near-field quadrature for gravity wave kernels
+%
+% Syntax:
+%   wnear = surfwave.gravity.getnearquad_gravity(npatches,norders,ixyzs, ...
+%             iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
+%             iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker,ivpp,S3d_scal)
+%
+% Computes the near-field quadrature correction wnear the gravity wave kernel selected by 
+% iker. The contribution of the Laplace single layer is handled separately.
+%
+% Input:
+%   npatches  - number of patches
+%   norders   - (npatches,1) polynomial order on each patch
+%   ixyzs     - (npatches+1,1) start indices into srccoefs/srcvals
+%   iptype    - (npatches,1) patch type (1=RV triangles, 11/12=quads)
+%   npts      - total number of discretization points
+%   srccoefs  - (9,npts) basis expansion coefficients (xyz, dxyz/du, dxyz/dv)
+%   srcvals   - (12,npts) xyz, derivatives, and normals at nodes
+%   targs     - (ndtarg,ntarg) target point coordinates, or a struct with field .r
+%   ipatch_id - (ntarg,1) patch index for each target (-1 if off-surface)
+%   uvs_targ  - (2,ntarg) local uv coordinates for on-surface targets
+%   eps       - requested precision
+%   iquadtype - quadrature type (1 = ggq + adaptive)
+%   nnz       - number of source-patch/target interactions in the near field
+%   row_ptr   - (ntarg+1,1) row pointers into col_ind
+%   col_ind   - (nnz,1) source patch indices for all near-field interactions
+%   iquad     - (nnz+1,1) start indices into wnear for each interaction
+%   rfac0     - radius parameter for switching to adaptive quadrature (rec. 1.25)
+%   zpars     - complex array of kernel parameters (dispersion root and residue)
+%   nquad     - total number of near-field quadrature entries
+%   iker      - kernel selector: 0 = G_s, 1 = G_phi
+%   ivpp      - flag: 1 = use variable-periodization (vpp) Fortran routine,
+%               0 = standard routine
+%   S3d_scal  - scalar weight for the Laplace S3d correction added to wnear
+%
+% Output:
+%   wnear     - (nquad,1) complex near-field quadrature weights
+
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     npp1 = npatches+1;
@@ -1699,6 +1993,35 @@ end
 %
 @ +surfwave/+gravity/get_quad_cor_sub.m
 function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targinfo)
+%SURFWAVE.GRAVITY.GET_QUAD_COR_SUB near-field quadrature correction matrix for gravity wave kernels
+%
+% Syntax:
+%   xmat = surfwave.gravity.get_quad_cor_sub(S, gs_kern, eps, zpars, type)
+%   xmat = surfwave.gravity.get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover)
+%   xmat = surfwave.gravity.get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp)
+%   xmat = surfwave.gravity.get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targinfo)
+%
+% Computes the sparse near-field quadrature correction matrix for the
+% gravity wave kernel of the specified type.  The correction is the
+% difference between the near-field quadrature (via getnearquad_gravity)
+% and an oversampled smooth quadrature (via smooth_sparse_quad).
+%
+% Input:
+%   S        - surfer object describing the surface discretization
+%   gs_kern  - kernel object or kernel handle compatible with kernel()
+%   eps      - requested quadrature precision
+%   zpars    - complex array of kernel parameters (dispersion root, residue)
+%   type     - string selecting the kernel:
+%                'gs'   -> G_s kernel  (iker=0, S3d_scal=4)
+%                'gphi' -> G_phi kernel (iker=1, S3d_scal=2)
+%   nover    - (optional) oversampling orders; default is S.norders
+%   ivpp     - (optional) flag for variable-periodization MEX routine;
+%              default is 0 (standard routine)
+%   targinfo - (optional) target information struct with fields .r,
+%              .patch_id, .uvs_targ; default is on-surface evaluation
+%
+% Output:
+%   xmat     - sparse (ntarg, S.npts) near-field quadrature correction matrix
 
     if strcmp(type,'gs')
         iker = 0;

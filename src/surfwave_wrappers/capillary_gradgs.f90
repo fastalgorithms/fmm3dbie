@@ -4,36 +4,22 @@
         col_ind, iquad, rfac0, nquad, wnear)
 !
 !
-!  This subroutine generates the near field quadrature
-!  for the representation:
+!  Near-field quadrature for the pair of capillary wave boundary
+!  condition kernels G_s (gshelm_sp_kern) and G_phi (gphihelm_sp_kern)
+!  at off-surface targets.
 !
-!  u = (Enter representation here) 
-!
-!  On imposing the boundary condition, we get the following operator
-!
-!  du/dn + ik \lambda u =  
-!    z \sigma + S_{k}'[\sigma] + i\alpha S_{i|k|}'^2 [\sigma] + i \alpha 
-!       (D_{k}' - D_{i|k|}') S_{i|k|}[\sigma]  + 
-!       ik \lambda (S_{k} + i \alpha D_{k} S_{i|k|} + 
-!       i \alpha w S_{i|k|}) = f
-!
-!  The quadrature is computed by the following strategy
-!  targets within a sphere of radius rfac0*rs
-!  of a patch centroid is handled using adaptive integration
-!  where rs is the radius of the bounding sphere
-!  for the patch
-!  
-!  All other targets in the near field are handled via
-!  oversampled quadrature
+!  The quadrature is computed by the following strategy:
+!  targets within a sphere of radius rfac0*rs of a patch centroid
+!  are handled using adaptive integration (ggq_guru);
+!  all other near-field targets use oversampled quadrature.
 !
 !  The recommended parameter for rfac0 is 1.25d0
-!  
-! 
+!
 !  Input arguments:
 !    - npatches: integer
 !        number of patches
 !    - norders: integer(npatches)
-!        order of discretization on each patch 
+!        order of discretization on each patch
 !    - ixyzs: integer(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
@@ -41,19 +27,19 @@
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
-!        iptype = 12, quadrangular patch discretized with Chebyshev 
+!        iptype = 12, quadrangular patch discretized with Chebyshev
 !                     nodes
 !    - npts: integer
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        basis expansion coefficients of xyz, dxyz/du,
-!        and dxyz/dv on each patch. 
-!        For each point 
+!        and dxyz/dv on each patch.
+!        For each point
 !          * srccoefs(1:3,i) is xyz info
 !          * srccoefs(4:6,i) is dxyz/du info
 !          * srccoefs(7:9,i) is dxyz/dv info
 !    - srcvals: real *8 (12,npts)
-!        xyz(u,v) and derivative info sampled at the 
+!        xyz(u,v) and derivative info sampled at the
 !        discretization nodes on the surface
 !          * srcvals(1:3,i) - xyz info
 !          * srcvals(4:6,i) - dxyz/du info
@@ -64,10 +50,10 @@
 !    - ntarg: integer
 !        number of targets
 !    - targs: real *8(ndtarg,ntarg)
-!        target information 
+!        target information
 !    - ipatch_id: integer(ntarg)
 !        ipatch_id(i) indicates the patch on which target i
-!        is, if it is on surface. ipatch_id(i) should be 0 
+!        is, if it is on surface. ipatch_id(i) should be 0
 !        otherwise
 !    - uvs_targ: real *8(2,ntarg)
 !        if ipatch_id(i) > 0, then uvs_targ(1:2,i) are the
@@ -75,9 +61,9 @@
 !        uvs_targ(1:2,i) is unused otherwise
 !    - eps: real *8
 !        precision requested
-!    - zpars: complex *16 (1)
-!        kernel parameters 
-!        zpars(1) = k, Helmholtz wavenumber
+!    - zpars: complex *16(6)
+!        zpars(1:3) = cubic dispersion roots
+!        zpars(4:6) = corresponding residues
 !    - iquadtype: integer
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
@@ -97,8 +83,8 @@
 !        are matrix entries are located at (m-1)*nquad+iquad(i), where
 !        m is the kernel number
 !    - rfac0: real *8
-!        radius parameter for switching to predetermined quadarature
-!        rule        
+!        radius parameter for switching to predetermined quadrature
+!        rule
 !    - nquad: integer
 !        number of near field entries corresponding to each source target
 !        pair
@@ -106,9 +92,8 @@
 !  Output arguments
 !    - wnear: complex *16(2,nquad)
 !        The desired near field quadrature
-!        wnear(1,:) - stores the quadrature corrections for ker1 
-!        wnear(2,:) - stores the quadrature correction for ker2
-!               
+!        wnear(1,:) - stores the quadrature corrections for G_s
+!        wnear(2,:) - stores the quadrature corrections for G_phi
 !
 
       implicit none 
@@ -206,36 +191,23 @@
         col_ind, iquad, rfac0, nquad, wnear)
 !
 !
-!  This subroutine generates the near field quadrature
-!  for the representation:
+!  Near-field quadrature for the x- and y-components of the gradient
+!  of the capillary wave free-surface Green's function G_s, i.e.
+!  (d/dx G_s, d/dy G_s) via kernels gradxgshelmkern and gradygshelmkern,
+!  at off-surface targets.
 !
-!  u = (Enter representation here) 
-!
-!  On imposing the boundary condition, we get the following operator
-!
-!  du/dn + ik \lambda u =  
-!    z \sigma + S_{k}'[\sigma] + i\alpha S_{i|k|}'^2 [\sigma] + i \alpha 
-!       (D_{k}' - D_{i|k|}') S_{i|k|}[\sigma]  + 
-!       ik \lambda (S_{k} + i \alpha D_{k} S_{i|k|} + 
-!       i \alpha w S_{i|k|}) = f
-!
-!  The quadrature is computed by the following strategy
-!  targets within a sphere of radius rfac0*rs
-!  of a patch centroid is handled using adaptive integration
-!  where rs is the radius of the bounding sphere
-!  for the patch
-!  
-!  All other targets in the near field are handled via
-!  oversampled quadrature
+!  The quadrature is computed by the following strategy:
+!  targets within a sphere of radius rfac0*rs of a patch centroid
+!  are handled using adaptive integration (ggq_guru);
+!  all other near-field targets use oversampled quadrature.
 !
 !  The recommended parameter for rfac0 is 1.25d0
-!  
-! 
+!
 !  Input arguments:
 !    - npatches: integer
 !        number of patches
 !    - norders: integer(npatches)
-!        order of discretization on each patch 
+!        order of discretization on each patch
 !    - ixyzs: integer(npatches+1)
 !        ixyzs(i) denotes the starting location in srccoefs,
 !        and srcvals array corresponding to patch i
@@ -243,19 +215,19 @@
 !        type of patch
 !        iptype = 1, triangular patch discretized using RV nodes
 !        iptype = 11, quadrangular patch discretized with GL nodes
-!        iptype = 12, quadrangular patch discretized with Chebyshev 
+!        iptype = 12, quadrangular patch discretized with Chebyshev
 !                     nodes
 !    - npts: integer
 !        total number of discretization points on the boundary
 !    - srccoefs: real *8 (9,npts)
 !        basis expansion coefficients of xyz, dxyz/du,
-!        and dxyz/dv on each patch. 
-!        For each point 
+!        and dxyz/dv on each patch.
+!        For each point
 !          * srccoefs(1:3,i) is xyz info
 !          * srccoefs(4:6,i) is dxyz/du info
 !          * srccoefs(7:9,i) is dxyz/dv info
 !    - srcvals: real *8 (12,npts)
-!        xyz(u,v) and derivative info sampled at the 
+!        xyz(u,v) and derivative info sampled at the
 !        discretization nodes on the surface
 !          * srcvals(1:3,i) - xyz info
 !          * srcvals(4:6,i) - dxyz/du info
@@ -266,10 +238,10 @@
 !    - ntarg: integer
 !        number of targets
 !    - targs: real *8(ndtarg,ntarg)
-!        target information 
+!        target information
 !    - ipatch_id: integer(ntarg)
 !        ipatch_id(i) indicates the patch on which target i
-!        is, if it is on surface. ipatch_id(i) should be 0 
+!        is, if it is on surface. ipatch_id(i) should be 0
 !        otherwise
 !    - uvs_targ: real *8(2,ntarg)
 !        if ipatch_id(i) > 0, then uvs_targ(1:2,i) are the
@@ -277,9 +249,9 @@
 !        uvs_targ(1:2,i) is unused otherwise
 !    - eps: real *8
 !        precision requested
-!    - zpars: complex *16 (1)
-!        kernel parameters 
-!        zpars(1) = k, Helmholtz wavenumber
+!    - zpars: complex *16(6)
+!        zpars(1:3) = cubic dispersion roots
+!        zpars(4:6) = corresponding residues
 !    - iquadtype: integer
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
@@ -299,8 +271,8 @@
 !        are matrix entries are located at (m-1)*nquad+iquad(i), where
 !        m is the kernel number
 !    - rfac0: real *8
-!        radius parameter for switching to predetermined quadarature
-!        rule        
+!        radius parameter for switching to predetermined quadrature
+!        rule
 !    - nquad: integer
 !        number of near field entries corresponding to each source target
 !        pair
@@ -308,9 +280,8 @@
 !  Output arguments
 !    - wnear: complex *16(2,nquad)
 !        The desired near field quadrature
-!        wnear(1,:) - stores the quadrature corrections for ker1 
-!        wnear(2,:) - stores the quadrature correction for ker2
-!               
+!        wnear(1,:) - stores the quadrature corrections for d/dx G_s
+!        wnear(2,:) - stores the quadrature corrections for d/dy G_s
 !
 
       implicit none 

@@ -1,4 +1,46 @@
 function [xmat1,xmat2,wnear] = get_quad_cor_v2b(S, targ, kern, eps, zpars, uv_bndry, patch_id)
+%SURFWAVE.FLEX.GET_QUAD_COR_V2B near-field quadrature correction matrices
+%  for the flexural-gravity wave volume-to-boundary (v2b) kernels.
+%
+% Syntax:
+%   [xmat1,xmat2,wnear] = surfwave.flex.get_quad_cor_v2b( ...
+%       S, targ, kern, eps, zpars)
+%   [xmat1,xmat2,wnear] = surfwave.flex.get_quad_cor_v2b( ...
+%       S, targ, kern, eps, zpars, uv_bndry, patch_id)
+%
+% Computes the near-field quadrature correction for the two v2b boundary
+% condition kernels (v2b bc kernel 1 and v2b bc kernel 2) by calling the
+% Fortran MEX routine getnearquad_flex_bcs.  The target struct targ must
+% carry position, normal, tangent-derivative, and curvature information,
+% which are packed into a 13-row target array (rows 1:2 = position,
+% 4:5 = unit tangent, 10:11 = unit outward normal, 13 = signed curvature)
+% before being passed to the MEX routine.  The smooth oversampled
+% quadrature is subtracted from each correction matrix via smooth_sparse_quad.
+%
+% Input:
+%   S        - surfer object describing the surface discretization
+%   targ     - target geometry struct with fields:
+%                targ.r     - (2,ntarg) positions
+%                targ.n     - (2,ntarg) unit outward normals
+%                targ.d     - (2,ntarg) parameterization tangent derivative
+%                targ.kappa - (ntarg,1) signed curvature
+%   kern     - (2,1) cell array of kernel function handles for
+%              smooth_sparse_quad subtraction:
+%                kern{1} = v2b bc kernel 1 handle
+%                kern{2} = v2b bc kernel 2 handle
+%   eps      - requested quadrature precision
+%   zpars    - complex array of kernel parameters:
+%                zpars(1:5)  = dispersion roots
+%                zpars(6:10) = partial-fraction residues
+%   uv_bndry - (optional) (2,ntarg) local uv coordinates for on-surface
+%              targets; default zeros(2,ntarg)
+%   patch_id - (optional) (ntarg,1) patch index for on-surface targets
+%              (-1 for off-surface); default zeros(ntarg,1)
+%
+% Output:
+%   xmat1 - (ntarg, S.npts) sparse complex correction matrix for v2b bc kernel 1
+%   xmat2 - (ntarg, S.npts) sparse complex correction matrix for v2b bc kernel 2
+%   wnear - (2,nquad) raw near-field quadrature weights before matrix assembly
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);

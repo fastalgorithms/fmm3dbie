@@ -1,21 +1,33 @@
 function A = matgen(S,type, zpars0, eps, ivpp)
+%SURFWAVE.FLEX.MATGEN dense near-field quadrature matrix for a single
+%  flexural-gravity wave kernel, on-surface (all target-source pairs).
 %
-%  surfwave.flex.matgen
+% Syntax:
+%   A = surfwave.flex.matgen(S, type, zpars0, eps)
+%   A = surfwave.flex.matgen(S, type, zpars0, eps, ivpp)
 %
-%  Syntax
-%   A = surfwave.flex.matgen(S,zpars,eps)
+% Builds the full (S.npts x S.npts) complex quadrature matrix by calling
+% getnearquad_flex_all (or its variable-periodization variant) with a
+% fully-dense row_ptr/col_ind/iquad structure (every target sees every
+% source patch).  The matrix is returned in the standard (target, source)
+% orientation.
 %
-%  Integral representation
-%     pot = (Update representation here)
+% Input:
+%   S      - surfer object describing the surface discretization
+%   type   - string kernel name:
+%              'gs'        -> G_s
+%              'gphi'      -> G_phi
+%              'bilapgs'   -> Delta^2 G_s
+%              'bilapgphi' -> Delta^2 G_phi
+%   zpars0 - complex array of kernel parameters:
+%              zpars0(1:5)  = dispersion roots
+%              zpars0(6:10) = partial-fraction residues
+%   eps    - requested quadrature precision
+%   ivpp   - (optional) flag: 1 = variable-periodization MEX path
+%            (default 1), 0 = standard MEX path
 %
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * zpars: parameters. zpars(1:3) are the roots, zpars(4:6) are the residues
-%    * eps: precision requested
-%
+% Output:
+%   A - (S.npts, S.npts) complex dense quadrature matrix
 
     if strcmp(type,'gs')
         iker = 1;

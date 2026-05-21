@@ -1,5 +1,43 @@
 function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps, zpars,ipatch_id,uvs_targ)
-% returns quadrature corrections for G_S, G_p, S_3d G_p and S3d evaluation / postproc
+%SURFWAVE.FLEX.GET_QUAD_COR_TARG near-field quadrature correction matrices
+%  for flexural-gravity wave post-processing kernels at off-surface targets.
+%
+% Syntax:
+%   [xmat1,xmat2,xmat3,xmat4] = surfwave.flex.get_quad_cor_targ( ...
+%       S, targinfo, gkerns, eps, zpars)
+%   [xmat1,xmat2,xmat3,xmat4] = surfwave.flex.get_quad_cor_targ( ...
+%       S, targinfo, gkerns, eps, zpars, ipatch_id, uvs_targ)
+%
+% Computes four sparse near-field quadrature correction matrices for the
+% evaluation kernels G_s, G_phi, S_{3d}G_phi, and Laplace S_{3d} at
+% arbitrary (typically off-surface) targets.  Calls the Fortran MEX routine
+% getnearquad_flex_eval for the first three kernels simultaneously and
+% lap3d.neumann.get_quadrature_correction for the fourth, then subtracts
+% the smooth oversampled quadrature via smooth_sparse_quad.
+%
+% Input:
+%   S         - surfer object describing the surface discretization
+%   targinfo  - target geometry, struct with field .r (3,ntarg)
+%   gkerns    - (4,1) cell array of kernel function handles for
+%               smooth_sparse_quad subtraction:
+%                 gkerns{1} = G_s kernel handle
+%                 gkerns{2} = G_phi kernel handle
+%                 gkerns{3} = S_{3d} G_phi kernel handle
+%                 gkerns{4} = Laplace S_{3d} kernel handle
+%   eps       - requested quadrature precision
+%   zpars     - complex array of kernel parameters:
+%                 zpars(1:5)  = dispersion roots
+%                 zpars(6:10) = partial-fraction residues
+%   ipatch_id - (optional) (ntarg,1) patch index for on-surface targets
+%               (-1 for off-surface); default zeros(ntarg,1)
+%   uvs_targ  - (optional) (2,ntarg) local uv coordinates for on-surface
+%               targets; default zeros(2,ntarg)
+%
+% Output:
+%   xmat1 - (ntarg, S.npts) sparse complex correction matrix for G_s
+%   xmat2 - (ntarg, S.npts) sparse complex correction matrix for G_phi
+%   xmat3 - (ntarg, S.npts) sparse complex correction matrix for S_{3d}G_phi
+%   xmat4 - (ntarg, S.npts) sparse complex correction matrix for Laplace S_{3d}
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);

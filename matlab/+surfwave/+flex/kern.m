@@ -1,67 +1,74 @@
 function submat= kern(srcinfo,targinfo,type,varargin)
-%FLEX2D.KERN standard Modified biharmonic layer potential kernels in 2D
-% 
-% Syntax: submat = surfwave.flex.kern(zk,srcinfo,targingo,type,varargin)
+%SURFWAVE.FLEX.KERN flexural-gravity wave layer potential kernels
 %
-% Let x be targets and y be sources for these formulas, with
-% n_x and n_y the corresponding unit normals at those points
-% (if defined). Note that the normal information is obtained
-% by taking the perpendicular to the provided tangential deriviative
-% info and normalizing  
-%  
-% Kernels based on G(x,y) = i/4 H_0^{(1)}(zk |x-y|)
+% Syntax: submat = surfwave.flex.kern(srcinfo,targinfo,type,nu,rts,ejs)
 %
-% D(x,y) = \nabla_{n_y} G(x,y)
-% S(x,y) = G(x,y)
-% S'(x,y) = \nabla_{n_x} G(x,y)
-% D'(x,y) = \nabla_{n_x} \nabla_{n_y} G(x,y)
+% Let x be targets and y be sources, with n_x, n_y unit outward normals
+% and tau_x, tau_y unit tangents.  Kernels are built from the
+% flexural-gravity Green's functions G_s and G_phi.
 %
 % Input:
-%   zk - complex number, Helmholtz wave number
-%   srcinfo - description of sources in ptinfo struct format, i.e.
-%                ptinfo.r - positions (2,:) array
-%                ptinfo.d - first derivative in underlying
-%                     parameterization (2,:)
-%                ptinfo.d2 - second derivative in underlying
-%                     parameterization (2,:)
-%   targinfo - description of targets in ptinfo struct format,
-%                if info not relevant (d/d2) it doesn't need to
-%                be provided. sprime requires tangent info in
-%                targinfo.d
-%   type - string, determines kernel type
-%                type == 'd', double layer kernel D
-%                type == 's', single layer kernel S
-%                type == 'sprime', normal derivative of single
-%                      layer S'
-%                type == 'dprime', normal derivative of double layer D'
-%                type == 'c', combined layer kernel coef(1) D + coef(2) S
-%                type == 'stau', tangential derivative of single layer
-%                type == 'all', returns all four layer potentials, 
-%                       [coef(1,1)*D coef(1,2)*S; coef(2,1)*D' coef(2,2)*S']
-%                type == 'c2trans' returns the combined field, and the 
-%                          normal derivative of the combined field
-%                        [coef(1)*D + coef(2)*S; coef(1)*D' + coef(2)*S']
-%                type == 'trans_rep' returns the potential corresponding
-%                           to the transmission representation
-%                        [coef(1)*D coef(2)*S]
-%                type == 'trans_rep_prime' returns the normal derivative
-%                          corresponding to the transmission representation
-%                        [coef(1)*D' coef(2)*S']
-%                type == 'trans_rep_grad' returns the gradient corresponding
-%                         to the transmission representation
-%                        [coef(1)*d_x D coef(2)*d_x S;
-%                         coef(1)*d_y D coef(2)*d_y S]
-%   varargin{1} - nu 
-%   varargin{2} - rts
-%   varargin{3} - ejs
+%   srcinfo  - source geometry struct:
+%                srcinfo.r  - positions (2,:)
+%                srcinfo.d  - parameterization tangent derivative (2,:)
+%                srcinfo.d2 - second derivative (2,:)
+%                srcinfo.n  - unit outward normal (2,:)
+%   targinfo - target geometry struct (same fields; only .r required
+%              for evaluation-only types)
+%   type     - string selecting the kernel.  Boundary integral types:
+%                'free plate first part'            K11+K12 (no H-transform)
+%                'free plate first part bh'         K11+K12 with biharmonic part
+%                'free plate K21 first part bh'     K21 first part with bh
+%                'free plate hilbert subtract'      H-transform subtraction
+%                'free plate hilbert'               H-transform part
+%                'free plate hilbert bh'            H-transform with bh
+%                'free plate K21 second part'       K21 second part
+%                'free plate K21 hilbert part bh'   K21 H-transform with bh
+%                'free plate K21 hilbert part'      K21 H-transform
+%                'free plate K22 second part'       K22 second part
+%                'free plate hilbert unsubtract'    H-transform unsubtraction
+%                'free plate first part interior'   interior K11+K12
+%                'free plate K21 first part interior' interior K21 first part
+%                'free plate K21 second part interior' interior K21 second part
+%                'hilb'                             raw Hilbert-transform kernel
+%              Post-processing / evaluation types:
+%                'free plate eval first'            G_{ny} evaluation
+%                'free plate eval first hilbert'    G_{tauy} (Hilbert-coupled)
+%                'free plate eval second'           G_phi single layer
+%                'free plate eval first int eq'     interior-equation variant
+%                'free plate eval first hilbert int eq'
+%                'free plate eval second int eq'
+%                'free plate eval first gs'         G_s variant
+%                'free plate eval first hilbert gs'
+%                'free plate eval second gs'
+%                'free plate eval first gphi'       G_phi variant
+%                'free plate eval first hilbert gphi'
+%                'free plate eval second gphi'
+%                'free plate eval kerns gs'         G_s full eval kernel set
+%                'free plate eval kerns gphi'       G_phi full eval kernel set
+%                'free_plate_eval_gs_1/2/3'         G_s sub-kernels 1-3
+%                'free_plate_eval_gp_1/2/3'         G_phi sub-kernels 1-3
+%                'free_plate_gs_eval'               G_s evaluation matrix
+%                'free_plate_gphi_eval'             G_phi evaluation matrix
+%              Single-layer and volume-to-boundary types:
+%                'gs_s'                             G_s single layer
+%                'gphi_s'                           G_phi single layer
+%                's3d_gphi'                         S_{3d} G_phi
+%                'gphi_bilap'                       bilaplacian of G_phi
+%                'v2b_bc_1'                         v2b boundary condition 1
+%                'v2b_bc_2'                         v2b boundary condition 2
+%                'gs_v2b_bc_1'                      G_s v2b bc 1
+%                'gs_v2b_bc_2'                      G_s v2b bc 2
+%                'gp_v2b_bc_1'                      G_phi v2b bc 1
+%                'gp_v2b_bc_2'                      G_phi v2b bc 2
+%                'gs_v2b'                           G_s volume-to-boundary
+%                'gphi_v2b'                         G_phi volume-to-boundary
+%   varargin{1} - nu:  Poisson ratio
+%   varargin{2} - rts: (5,1) dispersion roots
+%   varargin{3} - ejs: (5,1) partial-fraction residues
 %
 % Output:
-%   submat - the evaluation of the selected kernel for the
-%            provided sources and targets. the number of
-%            rows equals the number of targets and the
-%            number of columns equals the number of sources  
-%
-% see also CHNK.HELM2D.GREEN
+%   submat - (ntarg,nsrc) matrix of kernel evaluations
 
 src = srcinfo.r;
 targ = targinfo.r;

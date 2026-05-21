@@ -1,27 +1,35 @@
 function [val,grad,hess,der3] = gsflexstab(rts,ejs,src,targ)
-%GSFLEXSTAB evaluates the derivatives of the flexural-gravity wave green's  
-% function in a stable manner using power series
+%GSFLEXSTAB evaluate G_s and its derivatives for flexural-gravity waves
+%  using numerically stable power series near the origin.
 %
-% - grad(:,:,1) has G_{x1}, grad(:,:,2) has G_{x2}
-% - hess(:,:,1) has G_{x1x1}, hess(:,:,2) has G_{x1x2}, 
-% hess(:,:,3) has G_{x2x2}
-% - der3 has the third derivatives in the order G_{x1x1x1}, G_{x1x1x2}, 
-% G_{x1x2x2}, G_{x2x2x2}
-% - der4 has the fourth derivatives in the order G_{x1x1x1x1}, 
-% G_{x1x1x1x2}, G_{x1x1x2x2}, G_{x1x2x2x2}, G_{x2x2x2x2}
+% Syntax:
+%   val              = surfwave.flex.gsflexstab(rts, ejs, src, targ)
+%   [val,grad]       = surfwave.flex.gsflexstab(rts, ejs, src, targ)
+%   [val,grad,hess]  = surfwave.flex.gsflexstab(rts, ejs, src, targ)
+%   [val,grad,hess,der3] = surfwave.flex.gsflexstab(rts, ejs, src, targ)
 %
-% derivatives are on the *target* variables
+% Evaluates G_s and its spatial derivatives up to third order.  For
+% source-target separations where |k|*r < 1 a power-series expansion is
+% used to avoid cancellation error; the standard formula from gsflex is
+% used for larger separations.  All derivatives are with respect to the
+% *target* variables.
 %
-% input:
+% Input:
+%   rts - (5,1) complex dispersion roots of  alpha*z^5 + gamma*z - 1 = 0
+%   ejs - (5,1) complex partial-fraction residues
+%   src - (2,ns) source positions
+%   targ - (2,nt) target positions
 %
-% src - (2,ns) array of source locations
-% targ - (2,nt) array of target locations
-% k - wave number, as above
-%
-% optional input:
-%
-% ifr2logr - boolean, default: false. If true, also subtract off the 
-%             k^2/(8pi) r^2 log r kernel
+% Output:
+%   val  - (nt,ns) Green's function values G_s
+%   grad - (nt,ns,2) first derivatives:
+%            grad(:,:,1) = G_{x1},  grad(:,:,2) = G_{x2}
+%   hess - (nt,ns,3) second derivatives:
+%            hess(:,:,1) = G_{x1x1},  hess(:,:,2) = G_{x1x2},
+%            hess(:,:,3) = G_{x2x2}
+%   der3 - (nt,ns,4) third derivatives:
+%            der3(:,:,1) = G_{x1x1x1},  der3(:,:,2) = G_{x1x1x2},
+%            der3(:,:,3) = G_{x1x2x2},  der3(:,:,4) = G_{x2x2x2}
 
 
 [~,ns] = size(src);

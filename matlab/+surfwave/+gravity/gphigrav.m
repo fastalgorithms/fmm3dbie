@@ -1,19 +1,16 @@
 function val = gphigrav(rts,src,targ)
 %
-% computes the green's function for the integro-differential equation 
-% determined by the polynomial:
-%             |z| - 1 = 0
+% Evaluates the gravity wave free-surface Green's function G_phi, built
+% from the single dispersion root of the linear dispersion relation
+%   |z| - 1 = 0  (gravity waves, non-dimensionalized).
 %
-% outputs are:
-% - val is the value of the Green's function centered at zero and
-%   evaluated at (x,y)
+% Input:
+%   rts  - dispersion root (currently not used)
+%   src  - source positions, (2,ns) array or struct with field .r
+%   targ - target positions, (2,nt) array or struct with field .r
 %
-% input:
-%
-% x - x-coordinates array
-% y - y-coordinates array
-% rts - roots of cubic polynomial
-% ejs - residues (see notes)
+% Output:
+%   val  - (nt,ns) array of Green's function values G_phi(targ,src)
 %
 
 % src = src.r;

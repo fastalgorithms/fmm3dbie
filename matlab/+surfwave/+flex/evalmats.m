@@ -1,27 +1,34 @@
 function wnear = evalmats(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
+%SURFWAVE.FLEX.EVALMATS dense near-field quadrature weights for the
+%  flexural-gravity wave post-processing kernels at off-surface targets.
 %
-%  surfwave.flex.evalmats
+% Syntax:
+%   wnear = surfwave.flex.evalmats(S, targinfo, zpars, eps)
+%   wnear = surfwave.flex.evalmats(S, targinfo, zpars, eps, ipatch_id, uvs_targ)
 %
-%  Syntax
-%   A = surfwave.flex.evalmats(S,targinfo,zpars,eps)
+% Builds the full (all target-source pairs) quadrature weight array for the
+% three evaluation kernels G_s, G_phi, and S_{3d}G_phi by calling the
+% Fortran MEX routine getnearquad_flex_eval with a fully-dense
+% row_ptr/col_ind/iquad structure.
 %
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
+% Input:
+%   S         - surfer object describing the surface discretization
+%   targinfo  - target geometry struct or array:
+%                 targinfo.r  - (3,ntarg) target positions (required)
+%   zpars     - complex array of kernel parameters:
+%                 zpars(1:5)  = dispersion roots
+%                 zpars(6:10) = partial-fraction residues
+%   eps       - requested quadrature precision
+%   ipatch_id - (optional) (ntarg,1) patch index for on-surface targets
+%               (-1 for off-surface); default zeros(ntarg,1)
+%   uvs_targ  - (optional) (2,ntarg) local uv coordinates for on-surface
+%               targets; default zeros(2,ntarg)
 %
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
-%    * zpars: parameters. zpars(1:5) are the roots, zpars(6:10) are the residues
-%    * eps: precision requested
-%
+% Output:
+%   wnear - (3,nquad) complex near-field quadrature weights:
+%             wnear(1,:) = weights for G_s
+%             wnear(2,:) = weights for G_phi
+%             wnear(3,:) = weights for S_{3d}G_phi
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);

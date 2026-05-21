@@ -11,7 +11,7 @@
 %   v2v(mu) + b2v(rho)   = rhs_vol
 %   v2b(mu) + b2b(rho)   = rhs_bdry
 
-cparams = []; cparams.maxchunklen = 0.3;
+cparams = []; cparams.maxchunklen = 0.2;
 chnkr = chunkerfunc(@(t) starfish(t,5,0.),cparams);
 [S, chnkr] = triangulate_chunker_interior(chnkr, 6, 0.3);
 
@@ -204,7 +204,6 @@ fprintf('\nPreprocessing summary:\n');
 fprintf('  tgs        = %.2f s\n', tgs);
 fprintf('  tgp        = %.2f s\n', tgp);
 fprintf('  ts3d       = %.2f s\n', ts3d);
-fprintf('  tb2v_corr  = %.2f s\n', tb2v_corr);
 fprintf('  tb2v       = %.2f s\n', tb2v);
 fprintf('  tv2b       = %.2f s\n', tv2b);
 fprintf('  tb2b       = %.2f s\n', tb2b);

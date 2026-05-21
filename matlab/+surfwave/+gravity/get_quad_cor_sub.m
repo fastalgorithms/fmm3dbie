@@ -1,4 +1,34 @@
 function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targinfo)
+%SURFWAVE.GRAVITY.GET_QUAD_COR_SUB near-field quadrature correction matrix for gravity wave kernels
+%
+% Syntax:
+%   xmat = surfwave.gravity.get_quad_cor_sub(S, gs_kern, eps, zpars, type)
+%   xmat = surfwave.gravity.get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover)
+%   xmat = surfwave.gravity.get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp)
+%   xmat = surfwave.gravity.get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targinfo)
+%
+% Computes the sparse near-field quadrature correction matrix for the
+% gravity wave kernel of the specified type.  The correction is the
+% difference between the near-field quadrature (via getnearquad_gravity)
+% and an oversampled smooth quadrature (via smooth_sparse_quad), assembled
+% as a sparse matrix of size (ntarg, S.npts).
+%
+% Input:
+%   S        - surfer object describing the surface discretization
+%   gs_kern  - kernel object or kernel handle compatible with kernel()
+%   eps      - requested quadrature precision
+%   zpars    - complex array of kernel parameters (dispersion root, residue)
+%   type     - string selecting the kernel:
+%                'gs'   -> G_s kernel  (iker=0, S3d_scal=4)
+%                'gphi' -> G_phi kernel (iker=1, S3d_scal=2)
+%   nover    - (optional) oversampling orders; default is S.norders
+%   ivpp     - (optional) flag for variable-periodization MEX routine;
+%              default is 0 (standard routine)
+%   targinfo - (optional) target information struct with fields .r,
+%              .patch_id, .uvs_targ; default is on-surface evaluation
+%
+% Output:
+%   xmat     - sparse (ntarg, S.npts) near-field quadrature correction matrix
 
     if strcmp(type,'gs')
         iker = 0;

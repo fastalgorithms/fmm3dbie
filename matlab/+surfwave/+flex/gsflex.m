@@ -1,35 +1,29 @@
 function [val,grad,hess,third,fourth] = gsflex(rts,ejs,src,targ,ifr2logr)
 %
-% computes the green's function centered at (x,y) = 0 for the 
-% integro-differential equation determined by the roots of the polynomial:
-%             z^5 - beta*z + gamma = 0
+% Evaluates the flexural-gravity wave free-surface Green's function G_s
+% and its derivatives up to fourth order.  G_s is built from the 5 roots
+% of the dispersion polynomial  alpha*z^5 + gamma*z - 1 = 0.
 %
-% output is a cell array with all the kernels needed to solve the adjointed
-% Lippman Schwinger equation: {val,hessxx,hessxy,hessyy,gradlapx,gradlapy}
-% where:
-% - val is the value of the Green's function centered at zero and
-%   evaluated at (x,y)
-% - grad(:,:,1) has G_{x1}, grad(:,:,2) has G_{x2}
-% - hess(:,:,1) has G_{x1x1}, hess(:,:,2) has G_{x1x2}, 
-% hess(:,:,3) has G_{x2x2}
-% - third has the third derivatives in the order G_{x1x1x1}, G_{x1x1x2}, 
-% G_{x1x2x2}, G_{x2x2x2}
-% - fourth has the fourth derivatives in the order G_{x1x1x1x1}, 
-% G_{x1x1x1x2}, G_{x1x1x2x2}, G_{x1x2x2x2}, G_{x2x2x2x2}
+% Output:
+%   val   - (nt,ns) Green's function values G_s(targ,src)
+%   grad  - (nt,ns,2) first derivatives: grad(:,:,1) = G_{x1},
+%           grad(:,:,2) = G_{x2}
+%   hess  - (nt,ns,3) second derivatives: hess(:,:,1) = G_{x1x1},
+%           hess(:,:,2) = G_{x1x2}, hess(:,:,3) = G_{x2x2}
+%   third - (nt,ns,4) third derivatives in order G_{x1x1x1}, G_{x1x1x2},
+%           G_{x1x2x2}, G_{x2x2x2}
+%   fourth- (nt,ns,5) fourth derivatives in order G_{x1x1x1x1},
+%           G_{x1x1x1x2}, G_{x1x1x2x2}, G_{x1x2x2x2}, G_{x2x2x2x2}
 %
-% input:
+% Input:
+%   rts      - (5,1) roots of the dispersion polynomial
+%   ejs      - (5,1) partial-fraction residues corresponding to rts
+%   src      - (2,ns) source positions, or struct with field .r
+%   targ     - (2,nt) target positions, or struct with field .r
 %
-% x - x-coordinates array
-% y - y-coordinates array
-% beta - coefficient beta in the equation
-% gamma - coefficient gamma in the equation
-%
-% optional input:
-%
-% opt - bool, default: false. 
-%         Possible options are:
-%         opt = false => Green's function (and derivatives)
-%         opt = true => kernel used to evaluate phi on surface
+% Optional input:
+%   ifr2logr - bool (default false). If true, the r^2*log(r) part of G_s
+%              is subtracted off (used for the fourth-derivative path)
 %
 
 rslf = 1e-14;

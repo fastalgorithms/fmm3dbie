@@ -1,32 +1,19 @@
 function val = s3dgphiflex(rts,ejs,src,targ)
 %
-% computes the green's function centered at (x,y) = 0 for the 
-% integro-differential equation determined by the roots of the polynomial:
-%             z^5 - beta*z + gamma = 0
+% Evaluates the 3D-component contribution to the flexural-gravity wave
+% Green's function, G_{3d,phi} = S_{3d}[G_phi], built from the 5 roots
+% of the dispersion polynomial  alpha*z^5 + gamma*z - 1 = 0.
+% This is the (1/8)*sum_j ej*(-sk0_j + 2i*h0_j) combination used in the
+% post-processing evaluation of phi.
 %
-% output is a cell array with all the kernels needed to solve the adjointed
-% Lippman Schwinger equation: {val,hessxx,hessxy,hessyy,gradlapx,gradlapy}
-% where:
-% - val is the value of the Green's function centered at zero and
-%   evaluated at (x,y)
-% - hessxx is G_{xx}, hessxy is G_{xy}, 
-%   hessyy is G_{yy}
-% - gradlap is the gradient of the Laplacian, namely 
-%   gradlapx is G_{xxx} + G_{xyy}, gradlapy is G_{yxx} + G_{yyy}
+% Output:
+%   val  - (nt,ns) values of G_{3d,phi}(targ,src)
 %
-% input:
-%
-% x - x-coordinates array
-% y - y-coordinates array
-% beta - coefficient beta in the equation
-% gamma - coefficient gamma in the equation
-%
-% optional input:
-%
-% opt - bool, default: false. 
-%         Possible options are:
-%         opt = false => Green's function (and derivatives)
-%         opt = true => kernel used to evaluate phi on surface
+% Input:
+%   rts  - (5,1) roots of the dispersion polynomial
+%   ejs  - (5,1) partial-fraction residues corresponding to rts
+%   src  - (2,ns) source positions, or struct with field .r
+%   targ - (2,nt) target positions, or struct with field .r
 %
 
 rslf = 1e-14;

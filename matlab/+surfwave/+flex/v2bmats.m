@@ -1,27 +1,34 @@
 function wnear = v2bmats(S,targinfo,zpars,eps)
+%SURFWAVE.FLEX.V2BMATS dense near-field quadrature weights for the
+%  flexural-gravity wave volume-to-boundary (v2b) boundary condition kernels.
 %
-%  surfwave.flex.evalmats
+% Syntax:
+%   wnear = surfwave.flex.v2bmats(S, targinfo, zpars, eps)
 %
-%  Syntax
-%   A = surfwave.flex.evalmats(S,targinfo,zpars,eps)
+% Builds the full (all target-source pairs) quadrature weight array for the
+% two v2b boundary condition kernels by calling the Fortran MEX routine
+% getnearquad_flex_bcs with a fully-dense row_ptr/col_ind/iquad structure.
+% The target struct must carry position, normal, tangent-derivative, and
+% curvature information; these are packed into a 13-row array internally
+% (rows 1:2 = position, 4:5 = unit tangent, 10:11 = unit outward normal,
+% 13 = signed curvature).
 %
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
+% Input:
+%   S        - surfer object describing the surface discretization
+%   targinfo - target geometry struct with fields:
+%                targinfo.r     - (2,ntarg) positions
+%                targinfo.n     - (2,ntarg) unit outward normals
+%                targinfo.d     - (2,ntarg) parameterization tangent derivative
+%                targinfo.kappa - (ntarg,1) signed curvature
+%   zpars    - complex array of kernel parameters:
+%                zpars(1:5)  = dispersion roots
+%                zpars(6:10) = partial-fraction residues
+%   eps      - requested quadrature precision
 %
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
-%    * zpars: parameters. zpars(1:5) are the roots, zpars(6:10) are the residues
-%    * eps: precision requested
-%
+% Output:
+%   wnear - (2,nquad) complex near-field quadrature weights:
+%             wnear(1,:) = weights for v2b bc kernel 1
+%             wnear(2,:) = weights for v2b bc kernel 2
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);
