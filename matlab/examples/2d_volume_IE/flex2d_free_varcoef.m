@@ -1,17 +1,17 @@
-% flex2d_free_varcoef.m
 %
-% Variable thickness version of flex2d_free_surferfun_dense.
+%  flex2d_free_varcoef
 %
-% Builds all four operator blocks (v2v, v2b, b2v, b2b) as explicit dense
-% matrices using the same near-correction + smooth-oversampled-part
-% strategy as test_surfer_vs_surferfun, then solves the coupled
-% volume/boundary system with backslash.
+%  Solves the variable-coefficient flexural wave equation
 %
-% Blocks:
-%   v2v: geom nodes -> geom nodes   (skern,      getnearquad_kern 'v2v')
-%   v2b: geom nodes -> chnkr points (rhskern,    getnearquad_kern 'free')
-%   b2v: chnkr pts  -> geom nodes   (repkern,    chunkerkernevalmat)
-%   b2b: chnkr pts  -> chnkr points (biekern,    chunkermat + diagval)
+%    a(r) \Delta^2 u + b(r) \Delta u + c(r) u = f    in \Omega
+%
+%  with free plate boundary conditions on \partial\Omega,
+%  where the coefficients a, b, c vary spatially (variable thickness).
+%
+%  All four operator blocks are assembled as dense matrices using
+%  near-correction + smooth oversampled quadrature. The coupled
+%  volume/boundary system is solved with gmres.
+%
 
 %% Geometry
 
@@ -83,11 +83,12 @@ fkern1  = @(s,t) flex2d.kern(zpars_f, s, t, 'free_plate_var',      nu);
 double  = @(s,t) chnk.lap2d.kern(s,t,'d');
 hilbert = @(s,t) chnk.lap2d.kern(s,t,'hilb');
 
-%% b2b boundary integral system
+%% Quadrature
 
 opts  = []; opts.sing  = 'log';
 opts2 = []; opts2.sing = 'pv';
 
+start = tic;
 sysmat1 = chunkermat(chnkr,fkern1, opts);
 D = chunkermat(chnkr, double,  opts);
 H = chunkermat(chnkr, hilbert, opts2);
@@ -106,45 +107,38 @@ Djump = -[-1/2 + (1/8)*(1+nu).^2, 0; 0, 1/2];
 Djump = kron(eye(chnkr.npt), Djump);
 
 sysb2b = Djump + sysmat;
+fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 
 densmap = zeros(3*chnkr.npt, 2*chnkr.npt);
 densmap(1:3:end, 1:2:end) = eye(chnkr.npt);
 densmap(3:3:end, 2:2:end) = eye(chnkr.npt);
 densmap(2:3:end, 1:2:end) = -H;
 
-%% Oversampling parameters
-
 eps = 1e-12;
 Q = getnear(S); Q.targinfo = S; Q.wavenumber = zk1; Q.kernel_order = 0;
 novers   = get_oversampling_parameters(S, Q, eps);
 [geom_over, xinterp] = S.oversample(novers);
 nearquad_opts = []; nearquad_opts.nover = novers;
-%% Near-quad function handles
 
 getnearquad_v2v = @(varargin) flex2d.getnearquad_var(varargin{1:17}, dpars, zpars_f, varargin{18}, 'v2v');
 getnearquad_s   = @(varargin) flex2d.getnearquad(    varargin{1:17}, dpars, zpars_f, varargin{18}, 'v2v');
 getnearquad_v2b = @(varargin) flex2d.getnearquad(    varargin{1:17}, dpars, zpars_f, varargin{18}, 'free_var');
 
-%% v2v block: geom -> geom
-
+start = tic;
 v2v_near = getnearquad_kern(S, v2vkern, eps, getnearquad_v2v, targ_geom, nearquad_opts);
-
 v2vkern_eval = kernel(v2vkern);
 v2v_smth = (v2vkern_eval.eval(geom_over, targ_geom) .* geom_over.wts(:).') * xinterp;
-
 flex_v2v = v2v_near + v2v_smth;
+fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
 
-%% v2b block: geom -> chnkr
-
+start = tic;
 v2b_near = getnearquad_kern(S, rhskern, eps, getnearquad_v2b, chnkrdim, nearquad_opts);
-
 rhskern_eval = kernel(rhskern);
 v2b_smth = (rhskern_eval.eval(geom_over, chnkrdim) .* geom_over.wts(:).') * xinterp;
-
 flex_v2b = v2b_near + v2b_smth;
+fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 
-%% b2v block: chnkr -> geom
-
+start = tic;
 opts_cor = []; opts_cor.corrections = 0;
 
 repkerns = cell(7,1);
@@ -160,6 +154,7 @@ flex_b2v = 0;
 for ii = 1:7
     flex_b2v = flex_b2v + icoefs(ii,:).' .* chunkerkernevalmat(chnkr, repkerns{ii}, S.r(1:2,:), opts_cor) * densmap;
 end
+fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 %% Assemble full system
 %   [  a*I + flex_v2v ,   flex_b2v  ]   [ eta  ]   [ rhs_vol ]
@@ -219,9 +214,9 @@ rhs_bc(2:2:end) = secondbc;
 
 rhs = [rhs_vol(:); rhs_bc];
 
-%% Solve
-
-sol = sysmat \ rhs;
+start = tic;
+sol = gmres(sysmat, rhs, [], 1e-10, size(sysmat,1));
+fprintf('%5.2e s : time for gmres\n', toc(start))
 
 %% Evaluate solution
 
@@ -234,8 +229,6 @@ flex_s_v2v = v2v_s_near + v2v_s_smth;
 
 opts_cor = []; opts_cor.corrections = 0;
 flex_s_b2v = chunkerkernevalmat(chnkr, repkern, S.r(1:2,:), opts_cor) * densmap;
-
-%% Error
 
 u     = [flex_s_v2v, flex_s_b2v] * sol;
 ref_u = sin(S.r(1,:)) .* sin(S.r(2,:));

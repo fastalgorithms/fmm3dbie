@@ -82,12 +82,15 @@ targinfo.n  = [chnkr.n(:,:); 0*chnkr.n(1,:)];
 targinfo.kappa = kappa(:);
 targinfo.du = [taux; tauy; zeros(size(taux))];
 
+[sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo);
+
+targinfo.nu = nu;
 start = tic;
-v2b_supp2 = bh2d.v2b_matgen_supp2(S, zk, nu, chnkr, eps);
-v2b_free2 = bh2d.v2b_matgen_free2(S, zk, nu, chnkr, eps);
+v2b_supp = bh2d.matgen(S, zk, 'supp2', targinfo, eps, patch_inds, uvsloc);
+v2b_free = bh2d.matgen(S, zk, 'free2', targinfo, eps, patch_inds, uvsloc);
 v2b = zeros(2*chnkr.npt, S.npts);
-v2b(1:2:end,:) = v2b_supp2;
-v2b(2:2:end,:) = v2b_free2;
+v2b(1:2:end,:) = v2b_supp;
+v2b(2:2:end,:) = v2b_free;
 fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 
 % Boundary to boundary
@@ -124,22 +127,22 @@ rhs_vol = (4 + V(:).') .* sin(S.r(1,:)) .* sin(S.r(2,:));
 
 sinx = sin(chnkr.r(1,:));  cosx = cos(chnkr.r(1,:));
 siny = sin(chnkr.r(2,:));  cosy = cos(chnkr.r(2,:));
-nx = chnkr.n(1,:).';  ny = chnkr.n(2,:).';
-taux = taux.';  tauy = tauy.';  kappa = kappa(:);
+nx = chnkr.n(1,:);  ny = chnkr.n(2,:);
+taux = taux(:).';  tauy = tauy(:).';  kappa = kappa(:).';
 
 % Bending moment M_n[u]
 rhs_bc = zeros(nb, 1);
-rhs_bc(1:2:end) = -(1+nu)*siny.*siny.' + ...
-    2*(1-nu)*cosx.*cosy.'.*chnkr.n(1,:).*chnkr.n(2,:);
+rhs_bc(1:2:end) = -(1+nu)*siny.*siny + ...
+    2*(1-nu)*cosx.*cosy.*chnkr.n(1,:).*chnkr.n(2,:);
 
 % Kirchhoff shear V_n[u]
-gsxx  = (-sinx.*siny).';
-gsxy  = ( cosx.*cosy).';
-gsyy  = (-sinx.*siny).';
-gsxxx = (-cosx.*siny).';
-gsxxy = (-sinx.*cosy).';
-gsxyy = (-cosx.*siny).';
-gsyyy = (-sinx.*cosy).';
+gsxx  = (-sinx.*siny);
+gsxy  = ( cosx.*cosy);
+gsyy  = (-sinx.*siny);
+gsxxx = (-cosx.*siny);
+gsxxy = (-sinx.*cosy);
+gsxyy = (-cosx.*siny);
+gsyyy = (-sinx.*cosy);
 
 rhs_bc(2:2:end) = ...
     gsxxx.*(nx.*nx.*nx) + gsxxy.*(3*nx.*nx.*ny) + ...
