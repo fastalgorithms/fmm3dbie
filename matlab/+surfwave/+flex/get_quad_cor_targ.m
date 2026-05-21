@@ -20,10 +20,6 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
        srccoefs);
@@ -34,10 +30,8 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
     % find near quadrature correction interactions
     % 
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
@@ -70,9 +64,6 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
     mex_id_ = 'getnearquad_flex_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
 [wnear] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntargp1, nnz, nnzp1, 1, 1, 3, nquad);
 
-    % mex_id_ = 'getnearquad_flex_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-    % [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntargp1, nnz, nnzp1, 1, 1, 3, nquad);
-
     opts.rep = 'eval';
     opts.format = 'sparse';
     wstruc = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts);
@@ -82,12 +73,10 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
     xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
     xmat3 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(3,:).');
 
-    targ_struct = struct('r', targs(1:3,:));
-
-    xmat1 = xmat1 - smooth_sparse_quad(gkerns(1), targ_struct, S, row_ptr, col_ind, nover);
-    xmat2 = xmat2 - smooth_sparse_quad(gkerns(2), targ_struct, S, row_ptr, col_ind, nover);
-    xmat3 = xmat3 - smooth_sparse_quad(gkerns(3), targ_struct, S, row_ptr, col_ind, nover);
-    xmat4 = xmat4 - smooth_sparse_quad(gkerns(4), targ_struct, S, row_ptr, col_ind, nover);
+    xmat1 = xmat1 - smooth_sparse_quad(gkerns(1), targinfo, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(gkerns(2), targinfo, S, row_ptr, col_ind, nover);
+    xmat3 = xmat3 - smooth_sparse_quad(gkerns(3), targinfo, S, row_ptr, col_ind, nover);
+    xmat4 = xmat4 - smooth_sparse_quad(gkerns(4), targinfo, S, row_ptr, col_ind, nover);
 
 end
 %

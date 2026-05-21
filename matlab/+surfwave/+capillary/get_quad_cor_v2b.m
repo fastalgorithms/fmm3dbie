@@ -18,31 +18,22 @@ function [xmat1,xmat2] = get_quad_cor_v2b(S, targs, kern, eps, zpars, uv_bndry, 
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
 
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
-
-    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
        srccoefs);
 
     rad_near = rads*rfac;
 
-    % 
+    %
     % find near quadrature correction interactions
-    % 
+    %
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
     iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
-     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
 
     if nargin < 6
         ipatch_id = zeros(ntarg,1);
@@ -76,12 +67,11 @@ function [xmat1,xmat2] = get_quad_cor_v2b(S, targs, kern, eps, zpars, uv_bndry, 
     xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
 
     if nargin < 8
-        nover = S.norders(1) + 4;
+        nover = S.norders + 4;
     end
-    targ_struct = struct('r', targs(1:2,:), 'n', targs(10:11,:));
 
-    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targ_struct, S, row_ptr, col_ind, nover);
-    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targ_struct, S, row_ptr, col_ind, nover);
+    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targinfo, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targinfo, S, row_ptr, col_ind, nover);
 
 end
 %

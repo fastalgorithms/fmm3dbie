@@ -27,19 +27,16 @@ function wnear = evalmats(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -60,10 +57,7 @@ function wnear = evalmats(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
     mex_id_ = 'getnearquad_flex_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
 [wnear] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntargp1, nnz, nnzp1, 1, 1, 3, nquad);
 
-%    mex_id_ = 'getnearquad_flex_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-% [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntargp1, nnz, nnzp1, 1, 1, 3, nquad);
 
-    
 end
 %
 %

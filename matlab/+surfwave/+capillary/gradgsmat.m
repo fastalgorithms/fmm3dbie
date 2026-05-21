@@ -28,19 +28,16 @@ function wnear = gradgsmat(S,targinfo,zpars,eps)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;

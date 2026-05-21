@@ -39,10 +39,8 @@ Ab2v_cor = chunkerkernevalmat(chnkr, l2d_d, S.r(1:2,:), opts);
 fprintf('%5.2e s : time to compute b2v quadrature correction\n', toc(start))
 
 % Volume to boundary (SLP: single-layer from volume to boundary)
-targinfo = [];
-targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
 start = tic;
-[Av2b_cor, nover_v2b] = lap2d.get_quad_cor_v2b_dir(S, targinfo, eps);
+[Av2b_cor, nover_v2b] = lap2d.get_quad_cor_v2b_dir(S, chnkr, eps);
 fprintf('%5.2e s : time to compute v2b quadrature correction\n', toc(start))
 
 % Boundary to boundary (dense, small): -1/2 I + D
@@ -55,7 +53,7 @@ fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 
 v2v_apply = @(mu)  lap2d.apply_v2v(S, mu, Av2v_cor, nover, eps);
 b2v_apply = @(rho) lap2d.apply_b2v_dir(S, chnkr, rho, Ab2v_cor, eps);
-v2b_apply = @(mu)  lap2d.apply_v2b_dir(S, targinfo, mu, Av2b_cor, nover_v2b, eps);
+v2b_apply = @(mu)  lap2d.apply_v2b_dir(S, chnkr, mu, Av2b_cor, nover_v2b, eps);
 
 %% Block operator and right-hand side
 

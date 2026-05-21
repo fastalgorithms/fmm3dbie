@@ -20,10 +20,6 @@ function [xmat,novers] = get_quad_cor_v2b_dir(S, zk, targinfo, eps, uv_bndry, pa
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
        srccoefs);
@@ -34,10 +30,8 @@ function [xmat,novers] = get_quad_cor_v2b_dir(S, zk, targinfo, eps, uv_bndry, pa
     % find near quadrature correction interactions
     %
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
@@ -82,7 +76,7 @@ function [xmat,novers] = get_quad_cor_v2b_dir(S, zk, targinfo, eps, uv_bndry, pa
     Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
     novers = get_oversampling_parameters(S,Q,eps);
 
-    Asmth_over = smooth_sparse_quad(h2d_s,targs,S,row_ptr,col_ind,novers);
+    Asmth_over = smooth_sparse_quad(h2d_s,targinfo,S,row_ptr,col_ind,novers);
 
     xmat = xmat - Asmth_over;
 end

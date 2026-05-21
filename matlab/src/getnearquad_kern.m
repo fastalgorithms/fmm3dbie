@@ -1,8 +1,8 @@
-function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, opts)
+function [xmat,nover] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, opts)
 %
-%  [xmat, norderup] = getnearquad_kern(obj, kern, eps, getnearquad)
-%  [xmat, norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo)
-%  [xmat, norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, opts)
+%  [xmat, nover] = getnearquad_kern(obj, kern, eps, getnearquad)
+%  [xmat, nover] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo)
+%  [xmat, nover] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, opts)
 %
 %  Compute the near-field quadrature correction matrix for the kernel kern
 %  on the surface obj, optionally evaluated at off-surface target points.
@@ -36,11 +36,11 @@ function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinf
         opts = [];
     end
     if ~isfield(opts, 'nover') || isempty(opts.nover)
-        noverup = obj.norders(1) + 2;
+        nover = obj.norders(1) + 2;
     else
-        noverup = opts.nover;
+        nover = opts.nover;
     end
-    norderup = noverup - obj.norders(1);
+
     if ~isfield(opts, 'subtract') || isempty(opts.subtract)
         subtract = true;
     else
@@ -110,7 +110,7 @@ function [xmat,norderup] = getnearquad_kern(obj, kern, eps, getnearquad, targinf
     xmat = unpack_wnear(obj, rsc, wnear, opdims);
 
     if subtract
-        Asmth_over = smooth_sparse_quad(kernuse, targinfo, obj, rsc.row_ptr, rsc.col_ind, noverup);
+        Asmth_over = smooth_sparse_quad(kernuse, targinfo, obj, rsc.row_ptr, rsc.col_ind, nover);
         xmat = xmat - Asmth_over;
     end
 

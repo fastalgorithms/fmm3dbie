@@ -144,6 +144,10 @@ subroutine bh2d_gfree2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
   taux = targinfo(4)
   tauy = targinfo(5)
 
+  ds = sqrt(taux*taux + tauy*tauy)
+  taux = taux/ds
+  tauy = tauy/ds
+
   taux2 = taux*taux 
   tauy2 = tauy*tauy
 

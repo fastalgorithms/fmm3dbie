@@ -1,11 +1,11 @@
 %
-%  lap2d_dir
+%  lap2d_neu
 %
 %  Solves the variable-coefficient Laplace equation
 %
 %    -\Delta u + V(r) u = f    in \Omega
 %
-%  with Dirichlet boundary conditions u = g on \partial\Omega,
+%  with Neumann boundary conditions du/dn = g on \partial\Omega,
 %  using a coupled volume and boundary integral equation formulation.
 %
 
@@ -18,7 +18,7 @@ cparams = []; cparams.ta = pi/nch; cparams.tb = 2*pi + cparams.ta;
 chnkr = chunkerfuncuni(@(t) ellipse(t), nch, cparams);
 chnkr = sort(chnkr);
 
-V = 0*eval_gauss(S.r);
+V = eval_gauss(S.r);
 
 eps = 1e-9;
 
@@ -31,19 +31,20 @@ l11 = -eye(S.npts) + V.*A;
 fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
 
 % Boundary to volume
-l2d_d = kernel('l', 'd');
+l2d_s = kernel('l', 's');
+l2d_sp = kernel('l', 'sp');
 start = tic;
-l12 = V.*chunkerkernevalmat(chnkr, l2d_d, S.r(1:2,:));
+l12 = V.*chunkerkernevalmat(chnkr, l2d_s, S.r(1:2,:));
 fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 % Volume to boundary
 start = tic;
-l21 = lap2d.v2b_dir(S, chnkr, eps);
+l21 = lap2d.v2b_neu(S, chnkr, eps);
 fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 
 % Boundary to boundary
 start = tic;
-l22 = -0.5*eye(chnkr.npt) + chunkermat(chnkr, l2d_d);
+l22 = 0.5*eye(chnkr.npt) + chunkermat(chnkr, l2d_sp);
 fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 
 %% Right hand side and solve
@@ -52,7 +53,8 @@ fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 lhs = [l11, l12; l21, l22];
 
 rhs_vol = (-2 + V(:).').*sin(S.r(1,:)).*sin(S.r(2,:));
-rhs_bc  = sin(chnkr.r(1,:)).*sin(chnkr.r(2,:));
+rhs_bc  =  cos(chnkr.r(1,:)) .* sin(chnkr.r(2,:)) .* chnkr.n(1,:) ...
+         + sin(chnkr.r(1,:)) .* cos(chnkr.r(2,:)) .* chnkr.n(2,:);
 
 rhs = [rhs_vol rhs_bc].';
 
@@ -63,7 +65,7 @@ fprintf('%5.2e s : time for dense gmres\n', toc(start))
 % Evaluate solution and compute error
 mu  = sol(1:S.npts);
 rho = sol(S.npts+1:end);
-u = A*mu + chunkerkerneval(chnkr, l2d_d, rho, S.r(1:2,:));
+u = A*mu + chunkerkerneval(chnkr, l2d_s, rho, S.r(1:2,:));
 u = real(u);
 
 ref_u = (sin(S.r(1,:)).*sin(S.r(2,:))).';

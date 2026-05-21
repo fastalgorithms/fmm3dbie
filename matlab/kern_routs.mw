@@ -229,14 +229,11 @@ function A = matgen(S,type, zpars0, eps, ivpp)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*npts+1);
     col_ind = repmat(1:npatches,[1,npts]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*npts;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -289,19 +286,16 @@ function wnear = evalmats(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -321,10 +315,7 @@ function wnear = evalmats(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
 
     # FORTRAN getnearquad_flex_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[3,nquad] wnear);
 
-%    mex_id_ = 'getnearquad_flex_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-% [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntargp1, nnz, nnzp1, 1, 1, 3, nquad);
 
-    
 end
 %
 %
@@ -358,19 +349,16 @@ function wnear = v2bmats(S,targinfo,zpars,eps)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
-    targs = targinfo;
+    [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -424,23 +412,20 @@ function wnear = v2bmat(S,targinfo,zpars,eps)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
-    targs = targinfo;
+    [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
-    ntp1 = npts + 1;
+    ntp1 = ntarg + 1;
     npols = ixyzs(2) - ixyzs(1);
 
     rfac0 = 1.25;
@@ -501,14 +486,11 @@ function A = matgen(S,type, zpars, eps, ivpp)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*npts+1);
     col_ind = repmat(1:npatches,[1,npts]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*npts;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -565,19 +547,16 @@ function wnear = gsevalmat(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -633,19 +612,16 @@ function wnear = lapgphievalmat(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -703,19 +679,16 @@ function wnear = gradgsmat(S,targinfo,zpars,eps)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -770,19 +743,16 @@ function wnear = gradgphimat(S,targinfo,zpars,eps)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -894,8 +864,6 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo)
 
             # FORTRAN findnearsrfcpnt(int[1] ntarg_i, double[ndtarg,ntarg_i] targ_i, int[1] npts, int[1] porder, int[1] snpols, int[1] maxiter, double[n12,npts] srcvals, double[n9,npts] srccoefs, double[1] tol, int[ntarg_i]  lpatchidxvec, int[ntarg_i] itvec, inout double[ndtarg,ntarg_i] sxyz_ij, inout double[2,ntarg_i] uvsloc_ij, inout double[ntarg_i] dists_ij, inout int[ntarg_i] flags_ij);
 
-%            mex_id_ = 'findnearsrfcpnt(i int[x], i double[xx], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], io double[xx], io double[xx], io double[x], io int[x])';
-%            [sxyz_ij, uvsloc_ij, dists_ij, flags_ij] = fmm3dbie_routs(mex_id_, ntarg_i, targ_i, npts, porder, snpols, maxiter, srcvals, srccoefs, tol, lpatchidxvec, itvec, sxyz_ij, uvsloc_ij, dists_ij, flags_ij, 1, ndtarg, ntarg_i, 1, 1, 1, 1, n12, npts, n9, npts, 1, ntarg_i, ntarg_i, ndtarg, ntarg_i, 2, ntarg_i, ntarg_i, ntarg_i);
 
             if dists_ij < dists(i)
                 dists(i) = dists_ij;
@@ -1004,10 +972,6 @@ function [xmat1,xmat2,wnear] = get_quad_cor_v2b(S, targ, kern, eps, zpars, uv_bn
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
        srccoefs);
@@ -1018,10 +982,8 @@ function [xmat1,xmat2,wnear] = get_quad_cor_v2b(S, targ, kern, eps, zpars, uv_bn
     % find near quadrature correction interactions
     % 
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
@@ -1058,8 +1020,8 @@ function [xmat1,xmat2,wnear] = get_quad_cor_v2b(S, targ, kern, eps, zpars, uv_bn
 
     nover = S.norders(1) + 4;
 
-    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targ, S, row_ptr, col_ind, nover);
-    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targ, S, row_ptr, col_ind, nover);
+    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targinfo, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targinfo, S, row_ptr, col_ind, nover);
 
 end
 %
@@ -1087,10 +1049,6 @@ function xmat = get_quad_cor(S, eps, zpars, iker)
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
        srccoefs);
@@ -1104,9 +1062,7 @@ function xmat = get_quad_cor(S, eps, zpars, iker)
     targs = srcvals(1:3,:);
     ntarg = npts;
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
 
@@ -1130,21 +1086,10 @@ function xmat = get_quad_cor(S, eps, zpars, iker)
           row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker(i)) ;
 
     end
-    t2 = toc;
 
     if length(iker) == 1
         wnear = wnear{1};
     end
-    
-    % prin2('quadrature generation time=*',t2,1)
-    
-    % fprintf('done generating near quad \n')
-    
-    %
-    %           .   .   .   now correct
-        
-    % fprintf('correcting quadrature \n')
-
 
    xmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
    
@@ -1175,10 +1120,6 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
        srccoefs);
@@ -1189,10 +1130,8 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
     % find near quadrature correction interactions
     % 
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
@@ -1224,9 +1163,6 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
 
     # FORTRAN getnearquad_flex_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[3,nquad] wnear);
 
-    % mex_id_ = 'getnearquad_flex_eval(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-    % [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntargp1, nnz, nnzp1, 1, 1, 3, nquad);
-
     opts.rep = 'eval';
     opts.format = 'sparse';
     wstruc = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts);
@@ -1236,12 +1172,10 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
     xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
     xmat3 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(3,:).');
 
-    targ_struct = struct('r', targs(1:3,:));
-
-    xmat1 = xmat1 - smooth_sparse_quad(gkerns(1), targ_struct, S, row_ptr, col_ind, nover);
-    xmat2 = xmat2 - smooth_sparse_quad(gkerns(2), targ_struct, S, row_ptr, col_ind, nover);
-    xmat3 = xmat3 - smooth_sparse_quad(gkerns(3), targ_struct, S, row_ptr, col_ind, nover);
-    xmat4 = xmat4 - smooth_sparse_quad(gkerns(4), targ_struct, S, row_ptr, col_ind, nover);
+    xmat1 = xmat1 - smooth_sparse_quad(gkerns(1), targinfo, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(gkerns(2), targinfo, S, row_ptr, col_ind, nover);
+    xmat3 = xmat3 - smooth_sparse_quad(gkerns(3), targinfo, S, row_ptr, col_ind, nover);
+    xmat4 = xmat4 - smooth_sparse_quad(gkerns(4), targinfo, S, row_ptr, col_ind, nover);
 
 end
 %
@@ -1294,10 +1228,6 @@ function xmat = get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
        srccoefs);
@@ -1311,10 +1241,8 @@ function xmat = get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
     targs = srcvals(1:3,:);
     ntarg = npts;
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
 
@@ -1360,42 +1288,7 @@ function xmat = get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
         wnear = wnear{1};
     end
 
-    npols = ixyzs(2:end)-ixyzs(1:end-1);
-    npts_col = npols(col_ind);
-
-    [nt,~] = size(row_ptr);
-    ntarg = nt-1;
-    nrep = zeros(ntarg,1);
-    istarts = row_ptr(1:end-1);
-    iends = row_ptr(2:end)-1;
-    icol_ind = zeros(sum(npts_col),1);
-    isrcinds = cell(npatches,1);
-    for i=1:npatches
-        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
-    end
-
-    istart = 1;
-    for i=1:ntarg
-        nrep(i) = sum(npts_col(istarts(i):iends(i))); 
-        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
-        nelem = length(iinds);
-        icol_ind(istart:istart+nelem-1) = iinds;
-        istart = istart+nelem;
-    end
-    irow_ind = repelem((1:ntarg)',nrep);    
-
-   nnz = length(irow_ind);
-    lbat = 1e3;
-    nbat = ceil(nnz/lbat);
-    
-    for k = 1:nbat
-        ks = (lbat*(k-1)+1):min(lbat*k,nnz);
-        rsrc = S.r(:,icol_ind(ks));
-        rtarg = S.r(:,irow_ind(ks));
-        rnear = rtarg - rsrc;
-        wnear(ks) = wnear(ks)-gs_kern(struct('r',[0;0;0]),struct('r',rnear)).*S.wts(icol_ind(ks));
-    end
-   xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+   xmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
 
 end
 %
@@ -1495,14 +1388,9 @@ function wnear = getnearquad_v2b_flex(npatches,norders,ixyzs, ...
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %   compute near quadrature correction
 
-    nquad = iquad(nnz+1)-1;
-
-    iquadtype = 1;
-
     wnear = zeros(2,nquad,'like',1i);
 
-    mex_id_ = 'getnearquad_flex_bcs(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i int[x], i int[x], i double[xx], i int[x], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], io dcomplex[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 13, 1, 1, ntp1, nnz, nnzp1, 1, 1, 2, nquad);
+    # FORTRAN getnearquad_flex_bcs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[2,nquad] wnear);
 
 
 end
@@ -1550,10 +1438,6 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, ivpp)
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
        srccoefs);
@@ -1567,10 +1451,8 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, ivpp)
     targs = srcvals(1:3,:);
     ntarg = npts;
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
 
@@ -1594,11 +1476,9 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, ivpp)
         A = zeros(nquad,1,'like',1i);
         if ivpp
         maxdist = 1.5*sqrt((max(S.r(1,:)) - min(S.r(1,:))).^2 + (max(S.r(2,:)) - min(S.r(2,:))).^2);
-        mex_id_ = 'getnearquad_capillary_all_vpp(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], i double[x], io dcomplex[x])';
-        [A] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, iker, maxdist, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, 1, 1, nquad);
+            # FORTRAN getnearquad_capillary_all_vpp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, double[1] maxdist, inout dcomplex[nquad] A);
         else
-        mex_id_ = 'getnearquad_capillary_all(i int[x], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i dcomplex[x], i int[x], i int[x], i int[x], i int[x], i int[x], i double[x], i int[x], i int[x], io dcomplex[x])';
-        [A] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, iker, A, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, 1, nquad);
+            # FORTRAN getnearquad_capillary_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] A);
         end  
         wnear{i} = A;
     elseif iker == 6
@@ -1613,42 +1493,7 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, ivpp)
         wnear = wnear{1};
     end
 
-    npols = ixyzs(2:end)-ixyzs(1:end-1);
-    npts_col = npols(col_ind);
-
-    [nt,~] = size(row_ptr);
-    ntarg = nt-1;
-    nrep = zeros(ntarg,1);
-    istarts = row_ptr(1:end-1);
-    iends = row_ptr(2:end)-1;
-    icol_ind = zeros(sum(npts_col),1);
-    isrcinds = cell(npatches,1);
-    for i=1:npatches
-        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
-    end
-
-    istart = 1;
-    for i=1:ntarg
-        nrep(i) = sum(npts_col(istarts(i):iends(i))); 
-        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
-        nelem = length(iinds);
-        icol_ind(istart:istart+nelem-1) = iinds;
-        istart = istart+nelem;
-    end
-    irow_ind = repelem((1:ntarg)',nrep);    
-
-    nnz = length(irow_ind);
-    lbat = 1e3;
-    nbat = ceil(nnz/lbat);
-    
-    for k = 1:nbat
-        ks = (lbat*(k-1)+1):min(lbat*k,nnz);
-        rsrc = S.r(:,icol_ind(ks));
-        rtarg = S.r(:,irow_ind(ks));
-        rnear = rtarg - rsrc;
-        wnear(ks) = wnear(ks)-gs_kern(struct('r',[0;0;0]),struct('r',rnear)).*S.wts(icol_ind(ks));
-    end
-   xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+   xmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
 
 end
 %
@@ -1675,31 +1520,22 @@ function [xmat1,xmat2] = get_quad_cor_v2b(S, targs, kern, eps, zpars, uv_bndry, 
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
 
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
-
-    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
+    [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
        srccoefs);
 
     rad_near = rads*rfac;
 
-    % 
+    %
     % find near quadrature correction interactions
-    % 
+    %
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
     iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
-     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
 
     if nargin < 6
         ipatch_id = zeros(ntarg,1);
@@ -1732,12 +1568,11 @@ function [xmat1,xmat2] = get_quad_cor_v2b(S, targs, kern, eps, zpars, uv_bndry, 
     xmat2 = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear(2,:).');
 
     if nargin < 8
-        nover = S.norders(1) + 4;
+        nover = S.norders + 4;
     end
-    targ_struct = struct('r', targs(1:2,:), 'n', targs(10:11,:));
 
-    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targ_struct, S, row_ptr, col_ind, nover);
-    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targ_struct, S, row_ptr, col_ind, nover);
+    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targinfo, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targinfo, S, row_ptr, col_ind, nover);
 
 end
 %
@@ -1765,10 +1600,6 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ_plus_s3d(S, targinfo, ker
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
        srccoefs);
@@ -1779,10 +1610,8 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ_plus_s3d(S, targinfo, ker
     % find near quadrature correction interactions
     % 
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
@@ -1822,12 +1651,10 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ_plus_s3d(S, targinfo, ker
     wstruc = lap3d.neumann.get_quadrature_correction(S,eps,targinfo,opts);
     xmat4 = wstruc.spmat;
 
-    targ_struct = struct('r', targs(1:2,:));
-
-    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targ_struct, S, row_ptr, col_ind, nover);
-    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targ_struct, S, row_ptr, col_ind, nover);
-    xmat3 = xmat3 - smooth_sparse_quad(kern(3), targ_struct, S, row_ptr, col_ind, nover);
-    xmat4 = xmat4 - smooth_sparse_quad(kern(4), targ_struct, S, row_ptr, col_ind, nover);
+    xmat1 = xmat1 - smooth_sparse_quad(kern(1), targinfo, S, row_ptr, col_ind, nover);
+    xmat2 = xmat2 - smooth_sparse_quad(kern(2), targinfo, S, row_ptr, col_ind, nover);
+    xmat3 = xmat3 - smooth_sparse_quad(kern(3), targinfo, S, row_ptr, col_ind, nover);
+    xmat4 = xmat4 - smooth_sparse_quad(kern(4), targinfo, S, row_ptr, col_ind, nover);
 
 end
 %
@@ -1977,7 +1804,7 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targ
     
     xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
 
-    Asmth_over = smooth_sparse_quad(gs_kern,targs,S, rsc.row_ptr, rsc.col_ind,nover); 
+    Asmth_over = smooth_sparse_quad(gs_kern,targinfo,S, rsc.row_ptr, rsc.col_ind,nover); 
 
     xmat = xmat - Asmth_over;
 
@@ -2091,14 +1918,11 @@ function A = slp_matgen(S, eps)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*npts+1);
     col_ind = repmat(1:npatches,[1,npts]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*npts;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -2149,19 +1973,16 @@ function A = v2b_neu(S,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -2219,19 +2040,16 @@ function A = v2b_dir(S,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -2289,19 +2107,16 @@ function A = evalmat(S,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -2334,55 +2149,32 @@ function [xmat,novers] = get_quad_cor_sub(S, eps)
     lap2d_kern = kernel('l','s');
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
     npatches = S.npatches;
-    npts = S.npts;
     ndtarg = 3;
     npp1 = npatches+1;
-    ntarg = npts;
-    ntp1 = ntarg+1;
-    n9 = 9;
-    n12 = 12;
-
-    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
-
-    %this might need fixing
 
     iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
        srccoefs);
 
     rad_near = rads*rfac;
 
-    %
-    % find near quadrature correction interactions
-    %
-
     targs = srcvals(1:3,:);
     ntarg = npts;
+    ntp1 = ntarg+1;
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
 
     iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
-     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %   compute near quadrature correction
 
     nquad = iquad(nnz+1)-1;
 
@@ -2392,31 +2184,7 @@ function [xmat,novers] = get_quad_cor_sub(S, eps)
 
     # FORTRAN getnearquad_lap2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] wnear);
 
-    npols = ixyzs(2:end)-ixyzs(1:end-1);
-    npts_col = npols(col_ind);
-
-    [nt,~] = size(row_ptr);
-    ntarg = nt-1;
-    nrep = zeros(ntarg,1);
-    istarts = row_ptr(1:end-1);
-    iends = row_ptr(2:end)-1;
-    icol_ind = zeros(sum(npts_col),1);
-    isrcinds = cell(npatches,1);
-    for i=1:npatches
-        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
-    end
-
-    istart = 1;
-    for i=1:ntarg
-        nrep(i) = sum(npts_col(istarts(i):iends(i)));
-        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
-        nelem = length(iinds);
-        icol_ind(istart:istart+nelem-1) = iinds;
-        istart = istart+nelem;
-    end
-    irow_ind = repelem((1:ntarg)',nrep);
-    
-    xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+    xmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear);
 
     Q = []; Q.targinfo = S; Q.rfac = rfac; Q.wavenumber = 0;
     Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
@@ -2427,9 +2195,6 @@ function [xmat,novers] = get_quad_cor_sub(S, eps)
     xmat = xmat - Asmth_over;
 
 end
-%
-%
-%
 %
 @ +lap2d/get_quad_cor_v2b_neu.m
 function [xmat,novers] = get_quad_cor_v2b_neu(S, targinfo, eps, uv_bndry, patch_id)
@@ -2454,10 +2219,6 @@ function [xmat,novers] = get_quad_cor_v2b_neu(S, targinfo, eps, uv_bndry, patch_
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
        srccoefs);
@@ -2468,10 +2229,8 @@ function [xmat,novers] = get_quad_cor_v2b_neu(S, targinfo, eps, uv_bndry, patch_
     % find near quadrature correction interactions
     %
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
@@ -2545,14 +2304,11 @@ function A = slp_matgen(S, zk, eps)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*npts+1);
     col_ind = repmat(1:npatches,[1,npts]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*npts;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -2604,19 +2360,16 @@ function A = v2b_neu(zk,S,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -2673,19 +2426,16 @@ function A = v2b_dir(zk,S,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -2716,55 +2466,32 @@ function [xmat,novers] = get_quad_cor_sub(S, zk, eps)
     helm2d_kern = kernel('h','s',zk);
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
     npatches = S.npatches;
-    npts = S.npts;
     ndtarg = 3;
     npp1 = npatches+1;
-    ntarg = npts;
-    ntp1 = ntarg+1;
-    n9 = 9;
-    n12 = 12;
-
-    % [patch_id, uvs_targ] = get_patch_id_uvs(S);
-
-    %this might need fixing
 
     iptype_avg = floor(sum(iptype)/(npatches+0.0d0));
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
        srccoefs);
 
     rad_near = rads*rfac;
 
-    %
-    % find near quadrature correction interactions
-    %
-
     targs = srcvals(1:3,:);
     ntarg = npts;
+    ntp1 = ntarg+1;
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
 
     iquad = get_iquad_rsc(npatches,ixyzs,npts,ntarg,nnz,row_ptr,col_ind);
-     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % wts = get_qwts_f(npatches,norders,ixyzs,iptype,ntarg,srcvals);
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %   compute near quadrature correction
 
     nquad = iquad(nnz+1)-1;
 
@@ -2774,34 +2501,9 @@ function [xmat,novers] = get_quad_cor_sub(S, zk, eps)
 
     zpars = complex(double(real(zk)), double(imag(zk)));
 
-
     # FORTRAN getnearquad_helm2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[1] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad] A);
 
-    npols = ixyzs(2:end)-ixyzs(1:end-1);
-    npts_col = npols(col_ind);
-
-    [nt,~] = size(row_ptr);
-    ntarg = nt-1;
-    nrep = zeros(ntarg,1);
-    istarts = row_ptr(1:end-1);
-    iends = row_ptr(2:end)-1;
-    icol_ind = zeros(sum(npts_col),1);
-    isrcinds = cell(npatches,1);
-    for i=1:npatches
-        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
-    end
-
-    istart = 1;
-    for i=1:ntarg
-        nrep(i) = sum(npts_col(istarts(i):iends(i)));
-        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
-        nelem = length(iinds);
-        icol_ind(istart:istart+nelem-1) = iinds;
-        istart = istart+nelem;
-    end
-    irow_ind = repelem((1:ntarg)',nrep);
-    
-    xmat = sparse(irow_ind,icol_ind, A, ntarg, S.npts);
+    xmat = conv_rsc_to_spmat(S, row_ptr, col_ind, A);
 
     Q = []; Q.targinfo = S; Q.rfac = rfac; Q.wavenumber = zk;
     Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
@@ -2864,10 +2566,6 @@ function [xmat,novers] = get_quad_cor_v2b_neu(S, zk, targinfo, eps, uv_bndry, pa
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
        srccoefs);
@@ -2878,10 +2576,8 @@ function [xmat,novers] = get_quad_cor_v2b_neu(S, zk, targinfo, eps, uv_bndry, pa
     % find near quadrature correction interactions
     %
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
@@ -2959,10 +2655,6 @@ function [xmat,novers] = get_quad_cor_v2b_dir(S, zk, targinfo, eps, uv_bndry, pa
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
        srccoefs);
@@ -2973,10 +2665,8 @@ function [xmat,novers] = get_quad_cor_v2b_dir(S, zk, targinfo, eps, uv_bndry, pa
     % find near quadrature correction interactions
     %
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, ntarg);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,ntarg,nnz);
 
@@ -3020,7 +2710,7 @@ function [xmat,novers] = get_quad_cor_v2b_dir(S, zk, targinfo, eps, uv_bndry, pa
     Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
     novers = get_oversampling_parameters(S,Q,eps);
 
-    Asmth_over = smooth_sparse_quad(h2d_s,targs,S,row_ptr,col_ind,novers);
+    Asmth_over = smooth_sparse_quad(h2d_s,targinfo,S,row_ptr,col_ind,novers);
 
     xmat = xmat - Asmth_over;
 end
@@ -3108,14 +2798,11 @@ function A = v2v_matgen(S, zk, eps)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*npts+1);
     col_ind = repmat(1:npatches,[1,npts]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*npts;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -3174,19 +2861,16 @@ function A = v2b_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -3252,19 +2936,16 @@ function A = v2b_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -3329,19 +3010,16 @@ function A = v2b_matgen_supp2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -3409,19 +3087,16 @@ function A = v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -3484,10 +3159,6 @@ function [xmat,novers] = get_quad_cor_sub(S, zk, eps)
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ...
        srccoefs);
@@ -3501,10 +3172,8 @@ function [xmat,novers] = get_quad_cor_sub(S, zk, eps)
     targs = srcvals(1:3,:);
     ntarg = npts;
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
 
@@ -3527,31 +3196,7 @@ function [xmat,novers] = get_quad_cor_sub(S, zk, eps)
     # FORTRAN getnearquad_bh2d_gv2v(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] wnear);
     end
 
-    npols = ixyzs(2:end)-ixyzs(1:end-1);
-    npts_col = npols(col_ind);
-
-    [nt,~] = size(row_ptr);
-    ntarg = nt-1;
-    nrep = zeros(ntarg,1);
-    istarts = row_ptr(1:end-1);
-    iends = row_ptr(2:end)-1;
-    icol_ind = zeros(sum(npts_col),1);
-    isrcinds = cell(npatches,1);
-    for i=1:npatches
-        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
-    end
-
-    istart = 1;
-    for i=1:ntarg
-        nrep(i) = sum(npts_col(istarts(i):iends(i)));
-        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
-        nelem = length(iinds);
-        icol_ind(istart:istart+nelem-1) = iinds;
-        istart = istart+nelem;
-    end
-    irow_ind = repelem((1:ntarg)',nrep);
-    
-    xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+    xmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
 
     Q = []; Q.targinfo = S; Q.rfac = rfac; Q.wavenumber = 0;
     Q.row_ptr = row_ptr; Q.col_ind = col_ind; Q.kernel_order = -1;
@@ -3592,14 +3237,11 @@ function A = v2v_matgen(S, zk, eps)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*npts+1);
     col_ind = repmat(1:npatches,[1,npts]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*npts;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -3686,19 +3328,16 @@ function A = v2b_matgen_dir(S,zk,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -3791,19 +3430,16 @@ function A = v2b_matgen_neu(S,zk,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -3895,19 +3531,16 @@ function A = v2b_matgen_supp2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;
@@ -3997,19 +3630,16 @@ function A = v2b_matgen_free2(S,zk,nu,targinfo,eps,ipatch_id,uvs_targ)
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
-    npatp1 = npatches+1;
     npp1 = npatches+1;
 
     [targs] = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-    n3 = 3;
     row_ptr = 1:npatches:(npatches*ntarg+1);
     col_ind = repmat(1:npatches,[1,ntarg]);
     row_ptr = row_ptr(:);
     col_ind = col_ind(:);
-    zpuse = 1j;
     nnz = npatches*ntarg;
     nnzp1 = nnz + 1;
     iquadtype = 1;

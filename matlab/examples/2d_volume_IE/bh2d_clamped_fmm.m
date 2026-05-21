@@ -47,12 +47,9 @@ b2v = V(:) .* chunkerkernevalmat(chnkr, fkern_b2v, targetinfo_b2v);
 fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 % Volume to boundary (dense)
-targinfo = [];
-targinfo.r = [chnkr.r(:,:); 0*chnkr.r(1,:)];
-targinfo.n = [chnkr.n(:,:); 0*chnkr.n(1,:)];
 start = tic;
-v2b_dir = bh2d.v2b_matgen_dir(S, zk, targinfo, eps);
-v2b_neu = bh2d.v2b_matgen_neu(S, zk, targinfo, eps);
+v2b_dir = bh2d.v2b_matgen_dir(S, zk, chnkr, eps);
+v2b_neu = bh2d.v2b_matgen_neu(S, zk, chnkr, eps);
 v2b = zeros(2*chnkr.npt, S.npts);
 v2b(1:2:end,:) = v2b_dir;
 v2b(2:2:end,:) = v2b_neu;

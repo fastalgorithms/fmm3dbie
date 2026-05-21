@@ -49,7 +49,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,lbat)
     try
         targs.r; 
     catch 
-        targs = struct('r',targs); 
+        targs = struct('r',targs(1:3,:)); 
     end
 
     [S_over,val2over] = oversample(S,nover);

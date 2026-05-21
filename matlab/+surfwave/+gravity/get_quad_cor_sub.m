@@ -104,7 +104,7 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targ
     
     xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
 
-    Asmth_over = smooth_sparse_quad(gs_kern,targs,S, rsc.row_ptr, rsc.col_ind,nover); 
+    Asmth_over = smooth_sparse_quad(gs_kern,targinfo,S, rsc.row_ptr, rsc.col_ind,nover); 
 
     xmat = xmat - Asmth_over;
 

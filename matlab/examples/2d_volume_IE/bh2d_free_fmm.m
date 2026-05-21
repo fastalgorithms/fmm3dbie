@@ -77,14 +77,14 @@ fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
 % Volume to boundary
 targinfo = [];
-targinfo.r  = [chnkr.r(:,:); 0*chnkr.r(1,:)];
+targinfo.r  = chnkr.r;
 targinfo.n  = [chnkr.n(:,:); 0*chnkr.n(1,:)];
 targinfo.kappa = kappa(:);
 targinfo.du = [taux; tauy; zeros(size(taux))];
 
 start = tic;
-v2b_supp2 = bh2d.v2b_matgen_supp2(S, zk, nu, targinfo, eps);
-v2b_free2 = bh2d.v2b_matgen_free2(S, zk, nu, targinfo, eps);
+v2b_supp2 = bh2d.v2b_matgen_supp2(S, zk, nu, chnkr, eps);
+v2b_free2 = bh2d.v2b_matgen_free2(S, zk, nu, chnkr, eps);
 v2b = zeros(2*chnkr.npt, S.npts);
 v2b(1:2:end,:) = v2b_supp2;
 v2b(2:2:end,:) = v2b_free2;

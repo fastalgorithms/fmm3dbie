@@ -37,10 +37,6 @@ function xmat = get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
     norder_avg = floor(sum(norders)/(npatches+0.0d0));
 
     [rfac, rfac0] = get_rfacs(norder_avg,iptype_avg);
-    % prin2('rfac = *',rfac,1)
-    % prin2('rfac0 = *',rfac0,1)
-
-        % allocate(cms(3,npatches),rads(npatches),rad_near(npatches))
 
     [cms, rads] = get_centroid_rads(npatches,norders,ixyzs,iptype,npts, ... 
        srccoefs);
@@ -54,10 +50,8 @@ function xmat = get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
     targs = srcvals(1:3,:);
     ntarg = npts;
 
-    % prinf('entering find near mem',0,0)
     nnz = findnearmem(cms, npatches, rad_near, ndtarg, targs, npts);
     nnzp1 = nnz+1;
-    % prinf('nnz = *',nnz,1);
 
     [row_ptr,col_ind] = findnear(cms,npatches,rad_near,ndtarg,targs,npts,nnz);
 
@@ -105,42 +99,7 @@ function xmat = get_quad_cor_sub(S, type, zpars, eps, gs_kern, ivpp)
         wnear = wnear{1};
     end
 
-    npols = ixyzs(2:end)-ixyzs(1:end-1);
-    npts_col = npols(col_ind);
-
-    [nt,~] = size(row_ptr);
-    ntarg = nt-1;
-    nrep = zeros(ntarg,1);
-    istarts = row_ptr(1:end-1);
-    iends = row_ptr(2:end)-1;
-    icol_ind = zeros(sum(npts_col),1);
-    isrcinds = cell(npatches,1);
-    for i=1:npatches
-        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
-    end
-
-    istart = 1;
-    for i=1:ntarg
-        nrep(i) = sum(npts_col(istarts(i):iends(i))); 
-        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
-        nelem = length(iinds);
-        icol_ind(istart:istart+nelem-1) = iinds;
-        istart = istart+nelem;
-    end
-    irow_ind = repelem((1:ntarg)',nrep);    
-
-   nnz = length(irow_ind);
-    lbat = 1e3;
-    nbat = ceil(nnz/lbat);
-    
-    for k = 1:nbat
-        ks = (lbat*(k-1)+1):min(lbat*k,nnz);
-        rsrc = S.r(:,icol_ind(ks));
-        rtarg = S.r(:,irow_ind(ks));
-        rnear = rtarg - rsrc;
-        wnear(ks) = wnear(ks)-gs_kern(struct('r',[0;0;0]),struct('r',rnear)).*S.wts(icol_ind(ks));
-    end
-   xmat = sparse(irow_ind,icol_ind, wnear, ntarg, S.npts);
+   xmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
 
 end
 %

@@ -57,8 +57,8 @@ fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 start = tic;
 getnearquad = @(varargin) flex2d.getnearquad(varargin{1:17}, [], zk, varargin{18}, 'clamped');
 rhskern = @(s,t) chnk.flex2d.kern(zk, s, t, 'clamped_plate_bcs');
-[flex_v2b_cor, norderup] = getnearquad_kern(S, rhskern, eps, getnearquad, chnkr);
-[S_over, xinterp] = oversample(S, S.norders + norderup);
+[flex_v2b_cor, nover] = getnearquad_kern(S, rhskern, eps, getnearquad, chnkr);
+[S_over, xinterp] = oversample(S, nover);
 l21 = flex_v2b_cor + (rhskern(S_over, chnkr).*S_over.wts(:).')*xinterp;
 fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 

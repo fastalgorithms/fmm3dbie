@@ -55,7 +55,7 @@ fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 
 v2v_apply = @(mu)  helm2d.apply_v2v(S, zk, mu, v2v_cor, nover, eps);
 b2v_apply = @(rho) helm2d.apply_b2v_dir(S, zk, chnkr, rho, Ab2v_cor, eps);
-v2b_apply = @(mu)  helm2d.apply_v2b_dir(S, zk, targinfo, mu, Av2b_cor, nover_v2b, eps);
+v2b_apply = @(mu)  helm2d.apply_v2b_dir(S, zk, chnkr, mu, Av2b_cor, nover_v2b, eps);
 
 %% Block operator and right-hand side
 

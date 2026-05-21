@@ -88,8 +88,6 @@ mex_id_ = 'findnearmem(c i double[xx], c i int64_t[x], c i double[x], c i int64_
             mex_id_ = 'findnearsrfcpnt(c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c io double[xx], c io double[xx], c io double[x], c io int64_t[x])';
 [sxyz_ij, uvsloc_ij, dists_ij, flags_ij] = kern_routs(mex_id_, ntarg_i, targ_i, npts, porder, snpols, maxiter, srcvals, srccoefs, tol, lpatchidxvec, itvec, sxyz_ij, uvsloc_ij, dists_ij, flags_ij, 1, ndtarg, ntarg_i, 1, 1, 1, 1, n12, npts, n9, npts, 1, ntarg_i, ntarg_i, ndtarg, ntarg_i, 2, ntarg_i, ntarg_i, ntarg_i);
 
-%            mex_id_ = 'findnearsrfcpnt(i int[x], i double[xx], i int[x], i int[x], i int[x], i int[x], i double[xx], i double[xx], i double[x], i int[x], i int[x], io double[xx], io double[xx], io double[x], io int[x])';
-%            [sxyz_ij, uvsloc_ij, dists_ij, flags_ij] = fmm3dbie_routs(mex_id_, ntarg_i, targ_i, npts, porder, snpols, maxiter, srcvals, srccoefs, tol, lpatchidxvec, itvec, sxyz_ij, uvsloc_ij, dists_ij, flags_ij, 1, ndtarg, ntarg_i, 1, 1, 1, 1, n12, npts, n9, npts, 1, ntarg_i, ntarg_i, ndtarg, ntarg_i, 2, ntarg_i, ntarg_i, ntarg_i);
 
             if dists_ij < dists(i)
                 dists(i) = dists_ij;
