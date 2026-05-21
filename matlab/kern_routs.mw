@@ -191,23 +191,32 @@ end
 %
 @ +surfwave/+flex/matgen.m
 function A = matgen(S,type, zpars0, eps, ivpp)
+SURFWAVE.FLEX.MATGEN dense near-field quadrature matrix for a single
+%  flexural-gravity wave kernel, on-surface (all target-source pairs).
 %
-%  surfwave.flex.matgen
+% Syntax:
+%   A = surfwave.flex.matgen(S, type, zpars0, eps)
+%   A = surfwave.flex.matgen(S, type, zpars0, eps, ivpp)
 %
-%  Syntax
-%   A = surfwave.flex.matgen(S,zpars,eps)
+% Builds the full (S.npts x S.npts) complex quadrature matrix by calling
+% getnearquad_flex_all (or its Chebyshev series variant)
 %
-%  Integral representation
-%     pot = (Update representation here)
+% Input:
+%   S      - surfer object describing the surface discretization
+%   type   - string kernel name:
+%              'gs'        -> G_s
+%              'gphi'      -> G_phi
+%              'bilapgs'   -> Delta^2 G_s
+%              'bilapgphi' -> Delta^2 G_phi
+%   zpars0 - complex array of kernel parameters:
+%              zpars0(1:5)  = dispersion roots
+%              zpars0(6:10) = partial-fraction residues
+%   eps    - requested quadrature precision
+%   ivpp   - (optional) flag: 1 = Chebyshev series MEX path
+%            (default 1), 0 = standard MEX path
 %
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * zpars: parameters. zpars(1:3) are the roots, zpars(4:6) are the residues
-%    * eps: precision requested
-%
+% Output:
+%   A - (S.npts, S.npts) complex dense quadrature matrix
 
     if strcmp(type,'gs')
         iker = 1;
@@ -258,28 +267,34 @@ end
 %
 @ +surfwave/+flex/evalmats.m
 function wnear = evalmats(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
+%SURFWAVE.FLEX.EVALMATS dense near-field quadrature weights for the
+%  flexural-gravity wave post-processing kernels at off-surface targets.
 %
-%  surfwave.flex.evalmats
+% Syntax:
+%   wnear = surfwave.flex.evalmats(S, targinfo, zpars, eps)
+%   wnear = surfwave.flex.evalmats(S, targinfo, zpars, eps, ipatch_id, uvs_targ)
 %
-%  Syntax
-%   A = surfwave.flex.evalmats(S,targinfo,zpars,eps)
+% Builds the full (all target-source pairs) quadrature weight array for the
+% three evaluation kernels G_s, G_phi, and S_{3d}G_phi
 %
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
+% Input:
+%   S         - surfer object describing the surface discretization
+%   targinfo  - target geometry struct or array:
+%                 targinfo.r  - (3,ntarg) target positions (required)
+%   zpars     - complex array of kernel parameters:
+%                 zpars(1:5)  = dispersion roots
+%                 zpars(6:10) = partial-fraction residues
+%   eps       - requested quadrature precision
+%   ipatch_id - (optional) (ntarg,1) patch index for on-surface targets
+%               (-1 for off-surface); default zeros(ntarg,1)
+%   uvs_targ  - (optional) (2,ntarg) local uv coordinates for on-surface
+%               targets; default zeros(2,ntarg)
 %
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
-%    * zpars: parameters. zpars(1:5) are the roots, zpars(6:10) are the residues
-%    * eps: precision requested
+% Output:
+%   wnear - (3,nquad) complex near-field quadrature weights:
+%             wnear(1,:) = weights for G_s
+%             wnear(2,:) = weights for G_phi
+%             wnear(3,:) = weights for S_{3d}G_phi
 %
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -321,29 +336,31 @@ end
 %
 @ +surfwave/+flex/v2bmats.m
 function wnear = v2bmats(S,targinfo,zpars,eps)
+%SURFWAVE.FLEX.V2BMATS dense near-field quadrature weights for the
+%  flexural-gravity wave volume-to-boundary (v2b) boundary condition kernels.
 %
-%  surfwave.flex.evalmats
+% Syntax:
+%   wnear = surfwave.flex.v2bmats(S, targinfo, zpars, eps)
 %
-%  Syntax
-%   A = surfwave.flex.evalmats(S,targinfo,zpars,eps)
+% Builds the full (all target-source pairs) quadrature weight array for the
+% two v2b boundary condition kernels.
 %
-%  Integral representation
-%     pot = \int G_S(r,r') \sigma(r') dA(r')
+% Input:
+%   S        - surfer object describing the surface discretization
+%   targinfo - target geometry struct with fields:
+%                targinfo.r     - (2,ntarg) positions
+%                targinfo.n     - (2,ntarg) unit outward normals
+%                targinfo.d     - (2,ntarg) parameterization tangent derivative
+%                targinfo.kappa - (ntarg,1) signed curvature
+%   zpars    - complex array of kernel parameters:
+%                zpars(1:5)  = dispersion roots
+%                zpars(6:10) = partial-fraction residues
+%   eps      - requested quadrature precision
 %
-%  Note: for targets on surface, only principal value part of the
-%    layer potential is returned
-%
-%  Input arguments:
-%    * S: surfer object, see README.md in matlab for details
-%    * targinfo: target info
-%       targinfo.r = (3,nt) target locations
-%       targinfo.patch_id (nt,) patch id of target, = -1, if target
-%          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
-%          patch if on-surface (optional)
-%    * zpars: parameters. zpars(1:5) are the roots, zpars(6:10) are the residues
-%    * eps: precision requested
-%
+% Output:
+%   wnear - (2,nquad) complex near-field quadrature weights:
+%             wnear(1,:) = weights for v2b bc kernel 1
+%             wnear(2,:) = weights for v2b bc kernel 2
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);
@@ -1508,7 +1525,7 @@ function wnear = getnearquad_flex(npatches,norders,ixyzs, ...
 %                 1 = G_s,  2 = G_phi,  3 = Delta^2 G_s,
 %                 4 = Delta^2 G_phi,  5 = S_{3d} G_phi,
 %                 6 = Laplace S_{3d},  7 = S_{3d} G_phi + Laplace S_{3d}
-%   ivpp      - flag: 1 = use variable-periodization MEX routine, 0 = standard
+%   ivpp      - flag: 1 = use Chebyshev series MEX routine, 0 = standard
 %
 % Output:
 %   wnear - (nquad,1) complex near-field quadrature weights
@@ -1952,7 +1969,7 @@ function wnear = getnearquad_gravity(npatches,norders,ixyzs, ...
 %   zpars     - complex array of kernel parameters (dispersion root and residue)
 %   nquad     - total number of near-field quadrature entries
 %   iker      - kernel selector: 0 = G_s, 1 = G_phi
-%   ivpp      - flag: 1 = use variable-periodization (vpp) Fortran routine,
+%   ivpp      - flag: 1 = use Chebyshev series (vpp) Fortran routine,
 %               0 = standard routine
 %   S3d_scal  - scalar weight for the Laplace S3d correction added to wnear
 %
@@ -2015,7 +2032,7 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targ
 %                'gs'   -> G_s kernel  (iker=0, S3d_scal=4)
 %                'gphi' -> G_phi kernel (iker=1, S3d_scal=2)
 %   nover    - (optional) oversampling orders; default is S.norders
-%   ivpp     - (optional) flag for variable-periodization MEX routine;
+%   ivpp     - (optional) flag for Chebyshev series MEX routine;
 %              default is 0 (standard routine)
 %   targinfo - (optional) target information struct with fields .r,
 %              .patch_id, .uvs_targ; default is on-surface evaluation

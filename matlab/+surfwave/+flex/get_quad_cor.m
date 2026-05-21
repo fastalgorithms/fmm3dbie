@@ -7,8 +7,7 @@ function xmat = get_quad_cor(S, eps, zpars, iker)
 %
 % Computes the sparse near-field quadrature correction matrix for one or
 % more flexural-gravity wave kernels evaluated on-surface (targets = source
-% nodes).  Calls getnearquad_flexural for each requested kernel and
-% assembles the result into a sparse matrix via conv_rsc_to_spmat.
+% nodes).
 %
 % Input:
 %   S     - surfer object describing the surface discretization
@@ -26,6 +25,7 @@ function xmat = get_quad_cor(S, eps, zpars, iker)
 %   xmat - if iker is scalar: (S.npts, S.npts) sparse complex correction
 %          matrix.  If iker is a vector: cell array of sparse matrices,
 %          one per entry of iker.
+
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     npatches = S.npatches;

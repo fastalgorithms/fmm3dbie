@@ -10,11 +10,7 @@ function [xmat1,xmat2,wnear] = get_quad_cor_v2b(S, targ, kern, eps, zpars, uv_bn
 %
 % Computes the near-field quadrature correction for the two v2b boundary
 % condition kernels (v2b bc kernel 1 and v2b bc kernel 2) by calling the
-% Fortran MEX routine getnearquad_flex_bcs.  The target struct targ must
-% carry position, normal, tangent-derivative, and curvature information,
-% which are packed into a 13-row target array (rows 1:2 = position,
-% 4:5 = unit tangent, 10:11 = unit outward normal, 13 = signed curvature)
-% before being passed to the MEX routine.  The smooth oversampled
+% Fortran MEX routine getnearquad_flex_bcs. The smooth oversampled
 % quadrature is subtracted from each correction matrix via smooth_sparse_quad.
 %
 % Input:
@@ -41,6 +37,7 @@ function [xmat1,xmat2,wnear] = get_quad_cor_v2b(S, targ, kern, eps, zpars, uv_bn
 %   xmat1 - (ntarg, S.npts) sparse complex correction matrix for v2b bc kernel 1
 %   xmat2 - (ntarg, S.npts) sparse complex correction matrix for v2b bc kernel 2
 %   wnear - (2,nquad) raw near-field quadrature weights before matrix assembly
+
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);

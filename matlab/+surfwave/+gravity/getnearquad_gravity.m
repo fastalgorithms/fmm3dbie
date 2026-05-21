@@ -9,10 +9,8 @@ function wnear = getnearquad_gravity(npatches,norders,ixyzs, ...
 %             iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
 %             iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker,ivpp,S3d_scal)
 %
-% Computes the near-field quadrature correction wnear for a single
-% gravity wave kernel selected by iker, combined with a scaled Laplace
-% single-layer (S3d) contribution.  Calls the Fortran MEX routines
-% getnearquad_gravity_all or getnearquad_gravity_all_vpp depending on ivpp.
+% Computes the near-field quadrature correction wnear the gravity wave kernel selected by 
+% iker. The contribution of the Laplace single layer is handled separately.
 %
 % Input:
 %   npatches  - number of patches
@@ -35,12 +33,13 @@ function wnear = getnearquad_gravity(npatches,norders,ixyzs, ...
 %   zpars     - complex array of kernel parameters (dispersion root and residue)
 %   nquad     - total number of near-field quadrature entries
 %   iker      - kernel selector: 0 = G_s, 1 = G_phi
-%   ivpp      - flag: 1 = use variable-periodization (vpp) Fortran routine,
+%   ivpp      - flag: 1 = use Chebyshev series (vpp) Fortran routine,
 %               0 = standard routine
 %   S3d_scal  - scalar weight for the Laplace S3d correction added to wnear
 %
 % Output:
 %   wnear     - (nquad,1) complex near-field quadrature weights
+
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     npp1 = npatches+1;

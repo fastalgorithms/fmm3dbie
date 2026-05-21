@@ -40,7 +40,7 @@ function wnear = getnearquad_flex(npatches,norders,ixyzs, ...
 %                 1 = G_s,  2 = G_phi,  3 = Delta^2 G_s,
 %                 4 = Delta^2 G_phi,  5 = S_{3d} G_phi,
 %                 6 = Laplace S_{3d},  7 = S_{3d} G_phi + Laplace S_{3d}
-%   ivpp      - flag: 1 = use variable-periodization MEX routine, 0 = standard
+%   ivpp      - flag: 1 = use Chebyshev series MEX routine, 0 = standard
 %
 % Output:
 %   wnear - (nquad,1) complex near-field quadrature weights

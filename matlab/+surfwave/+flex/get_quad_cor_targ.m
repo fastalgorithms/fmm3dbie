@@ -10,9 +10,7 @@ function [xmat1,xmat2,xmat3,xmat4] = get_quad_cor_targ(S, targinfo, gkerns, eps,
 %
 % Computes four sparse near-field quadrature correction matrices for the
 % evaluation kernels G_s, G_phi, S_{3d}G_phi, and Laplace S_{3d} at
-% arbitrary (typically off-surface) targets.  Calls the Fortran MEX routine
-% getnearquad_flex_eval for the first three kernels simultaneously and
-% lap3d.neumann.get_quadrature_correction for the fourth, then subtracts
+% arbitrary (typically off-surface) targets. Subtracts off
 % the smooth oversampled quadrature via smooth_sparse_quad.
 %
 % Input:

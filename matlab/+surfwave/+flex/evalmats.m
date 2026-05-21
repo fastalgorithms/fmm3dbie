@@ -7,9 +7,7 @@ function wnear = evalmats(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
 %   wnear = surfwave.flex.evalmats(S, targinfo, zpars, eps, ipatch_id, uvs_targ)
 %
 % Builds the full (all target-source pairs) quadrature weight array for the
-% three evaluation kernels G_s, G_phi, and S_{3d}G_phi by calling the
-% Fortran MEX routine getnearquad_flex_eval with a fully-dense
-% row_ptr/col_ind/iquad structure.
+% three evaluation kernels G_s, G_phi, and S_{3d}G_phi
 %
 % Input:
 %   S         - surfer object describing the surface discretization
@@ -29,6 +27,7 @@ function wnear = evalmats(S,targinfo,zpars,eps,ipatch_id,uvs_targ)
 %             wnear(1,:) = weights for G_s
 %             wnear(2,:) = weights for G_phi
 %             wnear(3,:) = weights for S_{3d}G_phi
+%
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);

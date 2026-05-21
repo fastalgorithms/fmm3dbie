@@ -1,5 +1,5 @@
 function A = matgen(S,type, zpars0, eps, ivpp)
-%SURFWAVE.FLEX.MATGEN dense near-field quadrature matrix for a single
+SURFWAVE.FLEX.MATGEN dense near-field quadrature matrix for a single
 %  flexural-gravity wave kernel, on-surface (all target-source pairs).
 %
 % Syntax:
@@ -7,10 +7,7 @@ function A = matgen(S,type, zpars0, eps, ivpp)
 %   A = surfwave.flex.matgen(S, type, zpars0, eps, ivpp)
 %
 % Builds the full (S.npts x S.npts) complex quadrature matrix by calling
-% getnearquad_flex_all (or its variable-periodization variant) with a
-% fully-dense row_ptr/col_ind/iquad structure (every target sees every
-% source patch).  The matrix is returned in the standard (target, source)
-% orientation.
+% getnearquad_flex_all (or its Chebyshev series variant)
 %
 % Input:
 %   S      - surfer object describing the surface discretization
@@ -23,7 +20,7 @@ function A = matgen(S,type, zpars0, eps, ivpp)
 %              zpars0(1:5)  = dispersion roots
 %              zpars0(6:10) = partial-fraction residues
 %   eps    - requested quadrature precision
-%   ivpp   - (optional) flag: 1 = variable-periodization MEX path
+%   ivpp   - (optional) flag: 1 = Chebyshev series MEX path
 %            (default 1), 0 = standard MEX path
 %
 % Output:

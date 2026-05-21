@@ -6,12 +6,7 @@ function wnear = v2bmats(S,targinfo,zpars,eps)
 %   wnear = surfwave.flex.v2bmats(S, targinfo, zpars, eps)
 %
 % Builds the full (all target-source pairs) quadrature weight array for the
-% two v2b boundary condition kernels by calling the Fortran MEX routine
-% getnearquad_flex_bcs with a fully-dense row_ptr/col_ind/iquad structure.
-% The target struct must carry position, normal, tangent-derivative, and
-% curvature information; these are packed into a 13-row array internally
-% (rows 1:2 = position, 4:5 = unit tangent, 10:11 = unit outward normal,
-% 13 = signed curvature).
+% two v2b boundary condition kernels.
 %
 % Input:
 %   S        - surfer object describing the surface discretization

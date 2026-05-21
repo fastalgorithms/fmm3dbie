@@ -11,9 +11,7 @@ function wnear = getnearquad_v2b_flex(npatches,norders,ixyzs, ...
 %             iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,zpars,nquad)
 %
 % Calls getnearquad_flex_bcs, which computes quadrature weights for both
-% v2b boundary condition kernels simultaneously.  The target struct targ
-% must carry position, tangent, normal, and curvature information; these
-% are packed into a 13-row target array internally.
+% v2b boundary condition kernels simultaneously. 
 %
 % Input:
 %   npatches  - number of patches
@@ -46,6 +44,7 @@ function wnear = getnearquad_v2b_flex(npatches,norders,ixyzs, ...
 %   wnear - (2,nquad) complex near-field quadrature weights:
 %             wnear(1,:) = weights for v2b bc kernel 1
 %             wnear(2,:) = weights for v2b bc kernel 2
+
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     npp1 = npatches+1;

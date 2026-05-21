@@ -23,7 +23,6 @@
 !  at off-surface targets (x not on the plate boundary).
 !  Near-field corrections are computed for all three kernels at once.
       implicit none
-      implicit none
       integer *8, intent(in) :: npatches, npts
       integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
       integer *8, intent(in) :: iptype(npatches)

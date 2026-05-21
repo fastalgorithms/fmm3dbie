@@ -28,7 +28,6 @@
 !  are handled using adaptive integration (ggq_guru);
 !  all other near-field targets use oversampled quadrature.
       implicit none
-      implicit none
       integer *8, intent(in) :: npatches, npts
       integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
       integer *8, intent(in) :: iptype(npatches)

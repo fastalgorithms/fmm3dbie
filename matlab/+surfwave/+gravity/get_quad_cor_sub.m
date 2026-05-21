@@ -10,8 +10,7 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targ
 % Computes the sparse near-field quadrature correction matrix for the
 % gravity wave kernel of the specified type.  The correction is the
 % difference between the near-field quadrature (via getnearquad_gravity)
-% and an oversampled smooth quadrature (via smooth_sparse_quad), assembled
-% as a sparse matrix of size (ntarg, S.npts).
+% and an oversampled smooth quadrature (via smooth_sparse_quad).
 %
 % Input:
 %   S        - surfer object describing the surface discretization
@@ -22,7 +21,7 @@ function xmat = get_quad_cor_sub(S, gs_kern, eps, zpars, type, nover, ivpp, targ
 %                'gs'   -> G_s kernel  (iker=0, S3d_scal=4)
 %                'gphi' -> G_phi kernel (iker=1, S3d_scal=2)
 %   nover    - (optional) oversampling orders; default is S.norders
-%   ivpp     - (optional) flag for variable-periodization MEX routine;
+%   ivpp     - (optional) flag for Chebyshev series MEX routine;
 %              default is 0 (standard routine)
 %   targinfo - (optional) target information struct with fields .r,
 %              .patch_id, .uvs_targ; default is on-surface evaluation
