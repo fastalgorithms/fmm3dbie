@@ -1,3 +1,14 @@
+!
+!  Near-field quadrature for post-processing evaluation of the flexural
+!  wave solution at off-surface target points.
+!
+!  Assembles three kernels simultaneously:
+!    wnear(1,:) -> G_s    (gsflexkern)
+!    wnear(2,:) -> G_phi  (gphiflexkern)
+!    wnear(3,:) -> G_{3d,phi} (s3dgphiflexkern)
+!
+!  zpars(1:10): first 10 entries of the flexural zpars (roots + residues)
+!
 
       subroutine getnearquad_flex_eval(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
@@ -6,26 +17,12 @@
 !
 !
 !  This subroutine generates the near field quadrature
-!  for the representation:
+!  for post-processing evaluation of:
+!    u(x) = S_s[sigma](x) + S_phi[sigma](x) + S_{3d,phi}[sigma](x)
 !
-!  u = (Enter representation here) 
-!
-!  On imposing the boundary condition, we get the following operator
-!
-!  du/dn + ik \lambda u =  
-!    z \sigma + S_{k}'[\sigma] + i\alpha S_{i|k|}'^2 [\sigma] + i \alpha 
-!       (D_{k}' - D_{i|k|}') S_{i|k|}[\sigma]  + 
-!       ik \lambda (S_{k} + i \alpha D_{k} S_{i|k|} + 
-!       i \alpha w S_{i|k|}) = f
-!
-!  The quadrature is computed by the following strategy
-!  targets within a sphere of radius rfac0*rs
-!  of a patch centroid is handled using adaptive integration
-!  where rs is the radius of the bounding sphere
-!  for the patch
-!  
-!  All other targets in the near field are handled via
-!  oversampled quadraturipv, ndd, ndi, ndz, i
+!  at off-surface targets (x not on the plate boundary).
+!  Near-field corrections are computed for all three kernels at once.
+      implicit none
       implicit none
       integer *8, intent(in) :: npatches, npts
       integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)

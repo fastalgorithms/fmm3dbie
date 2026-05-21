@@ -1,3 +1,12 @@
+!
+!  Near-field quadrature for the two flexural wave plate boundary conditions.
+!
+!  Assembles both the moment (BC1) and shear force (BC2) kernels
+!  simultaneously, returning wnear(1,:) for flexrepbc1 and
+!  wnear(2,:) for flexrepbc2.
+!
+!  zpars(1:13) as in flexural_all.f90 (roots, residues, alpha, gamma, nu)
+!
 
       subroutine getnearquad_flex_bcs(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
@@ -6,26 +15,19 @@
 !
 !
 !  This subroutine generates the near field quadrature
-!  for the representation:
+!  for the flexural wave boundary conditions:
 !
-!  u = (Enter representation here) 
+!  BC1 (moment):    (-gamma/2 * M[G_s] + M[G_phi]) / 2
+!  BC2 (shear):     (-gamma/2 * V[G_s] + V[G_phi]) / 2
 !
-!  On imposing the boundary condition, we get the following operator
+!  where M and V are the second- and third-order boundary operators
+!  from flexrepbc1 and flexrepbc2 respectively.
 !
-!  du/dn + ik \lambda u =  
-!    z \sigma + S_{k}'[\sigma] + i\alpha S_{i|k|}'^2 [\sigma] + i \alpha 
-!       (D_{k}' - D_{i|k|}') S_{i|k|}[\sigma]  + 
-!       ik \lambda (S_{k} + i \alpha D_{k} S_{i|k|} + 
-!       i \alpha w S_{i|k|}) = f
-!
-!  The quadrature is computed by the following strategy
-!  targets within a sphere of radius rfac0*rs
-!  of a patch centroid is handled using adaptive integration
-!  where rs is the radius of the bounding sphere
-!  for the patch
-!  
-!  All other targets in the near field are handled via
-!  oversampled quadraturipv, ndd, ndi, ndz, i
+!  The quadrature is computed by the following strategy:
+!  targets within a sphere of radius rfac0*rs of a patch centroid
+!  are handled using adaptive integration (ggq_guru);
+!  all other near-field targets use oversampled quadrature.
+      implicit none
       implicit none
       integer *8, intent(in) :: npatches, npts
       integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)

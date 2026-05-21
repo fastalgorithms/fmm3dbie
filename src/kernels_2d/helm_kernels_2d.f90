@@ -1,3 +1,17 @@
+! Kernels for solving the Helmholtz equation in 2D
+!
+! the following routines rely on the srcinfo and targinfo arrays
+! containing the following information, standardized in the following
+! way:
+!
+!     *info(1:3) = xyz
+!     *info(4:6) = tangent vector 1
+!     *info(7:9) = tangent vector 2
+!     *info(10:12) = normal vector
+!
+!
+
+
 subroutine h2d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
@@ -9,11 +23,12 @@ subroutine h2d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   data over4pi/0.07957747154594767d0/
   data ima/(0.0d0,1.0d0)/
   !
-  ! returns the 2d helmholtz single layer potential kernel
+  ! returns the 2D Helmholtz single layer potential kernel
+  !   val = (i/4) * H_0^{(1)}(k*r)
   !
 
   ifexpon = 1
-  
+
   dx=targ(1)-src(1)
   dy=targ(2)-src(2)
   r2=dx**2+dy**2
@@ -38,11 +53,13 @@ subroutine h2d_sprime(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   data over4pi/0.07957747154594767d0/
   data ima/(0.0d0,1.0d0)/
   !
-  ! returns the 2d helmholtz single layer potential kernel
+  ! returns the normal derivative of the 2D Helmholtz single layer kernel
+  !   with respect to the target normal targ(10:11)
+  !   val = (i/4) * k * H_1^{(1)}(k*r) * (r . n) / r
   !
 
   ifexpon = 1
-  
+
   dx=targ(1)-src(1)
   dy=targ(2)-src(2)
   r=sqrt(dx**2+dy**2)

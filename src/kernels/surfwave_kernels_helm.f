@@ -1,19 +1,32 @@
+! Kernels for Helmholtz surface wave problems
 !
 ! the following routines rely on the srcinfo and targinfo arrays
 ! containing the following information, standardized in the following
 ! way:
 !
 !     *info(1:3) = xyz
-!     *info(4:5) = normal vector in the 2d plane
+!     *info(4:5) = tangent vector in the 2d plane
+!     *info(10:11) = normal vector in the 2d plane
 !
-!     *zpars(1:3) = roots of cubic polynomial, 
+!     *zpars(1:3) = roots of the cubic dispersion polynomial,
 !           zpars(1) must be the root closest to the real axis
-!     *zpars(4:6) = residues
+!     *zpars(4:6) = residues corresponding to zpars(1:3)
+!
+! The Helmholtz surface wave Green's functions gs and gphi are sums
+! over the three dispersion roots, evaluated via the primitive routines
+! gshelm and gphihelm. Gradient routines operate on (dx,dy) directly.
+!
 c
+c
+c  Kernel wrappers (src/targ in srcinfo/targinfo format)
 c
 c
         subroutine gshelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
-     1    ipars,val)  
+     1    ipars,val)
+c
+c  returns the Helmholtz surface wave free-surface Green's function
+c  G_s(r) at r = |x-y|
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -39,7 +52,12 @@ c
 c
 c
         subroutine gshelm_sp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,
-     1       ndi,ipars,val)  
+     1       ndi,ipars,val)
+c
+c  returns the normal derivative of G_s at x-y = (dx,dy),
+c  dotted with the target normal targ(10:11):
+c    val = grad G_s . n
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -73,6 +91,11 @@ c
 c
         subroutine gphihelm_sp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1       ndi,ipars,val)
+c
+c  returns the normal derivative of the velocity potential Green's
+c  function G_phi, dotted with the target normal targ(10:11):
+c    val = grad G_phi . n
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -106,6 +129,10 @@ c
 c
         subroutine gphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
+c
+c  returns the Helmholtz surface wave velocity potential Green's function
+c  G_phi(r) at r = |x-y|
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -134,6 +161,10 @@ c
 c
         subroutine s3dgphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
+c
+c  returns the 3D free-space contribution to G_phi at r = |x-y|
+c  (residue-weighted sum without the rts prefactor, scaled by 1/8)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -162,6 +193,9 @@ c
 c
         subroutine lapgshelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
+c
+c  returns the Laplacian of the free-surface Green's function: Delta G_s(r)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -190,6 +224,10 @@ c
 c
         subroutine lapgphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
+c
+c  returns the Laplacian of the velocity potential Green's function:
+c  Delta G_phi(r), including the 1/r free-space correction
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -217,6 +255,10 @@ c
 c
         subroutine gradxgshelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
+c
+c  returns the x-derivative of the free-surface Green's function:
+c  d G_s / dx at (dx,dy) = targ(1:2) - src(1:2)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -244,6 +286,10 @@ c
 c
         subroutine gradygshelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
+c
+c  returns the y-derivative of the free-surface Green's function:
+c  d G_s / dy at (dx,dy) = targ(1:2) - src(1:2)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -270,6 +316,10 @@ c
 c
         subroutine gradxgphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
+c
+c  returns the x-derivative of the velocity potential Green's function:
+c  d G_phi / dx at (dx,dy) = targ(1:2) - src(1:2)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -297,6 +347,10 @@ c
 c
         subroutine gradygphihelmkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
+c
+c  returns the y-derivative of the velocity potential Green's function:
+c  d G_phi / dy at (dx,dy) = targ(1:2) - src(1:2)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -327,7 +381,14 @@ c
 c
 c
 c
+c
+c  Primitive Green's function evaluators (r-only or (dx,dy) interface)
+c
         subroutine gshelm(rts,ejs,dr,val)
+c
+c  returns the free-surface Green's function G_s(r) as a weighted sum
+c  over 3 dispersion roots: real root via Hankel+K_0, complex roots via K_0
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt
@@ -368,6 +429,10 @@ c
 c
 c
         subroutine lapgshelm(rts,ejs,dr,val)
+c
+c  returns the Laplacian of G_s: Delta G_s(r) = -sum_j ejs(j)*rts(j)^4 * K_0(-rts(j)*r)
+c  (real root uses Hankel, complex roots use K_0)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt
@@ -405,6 +470,10 @@ c
 c
 c
         subroutine gphihelm(rts,ejs,dr,val)
+c
+c  returns the velocity potential Green's function G_phi(r): same structure
+c  as gshelm but with rts(j)^1 prefactor instead of rts(j)^2, scaled by 1/4
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt
@@ -445,6 +514,10 @@ c
 c
 c
         subroutine s3dgphihelm(rts,ejs,dr,val)
+c
+c  returns the 3D free-space part of G_phi: residue-weighted K_0 sum
+c  without the rts prefactor, scaled by 1/8
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt
@@ -486,6 +559,9 @@ c
 c
 c
         subroutine lapgphihelm_old(rts,ejs,dr,val)
+c
+c  (deprecated) earlier version of lapgphihelm using lapsk0 directly
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,laph0
@@ -523,6 +599,10 @@ c
 c
 c
         subroutine lapgphihelm(rts,ejs,dr,val)
+c
+c  returns Delta G_phi(r), including the 1/r free-space correction term
+c  (uses alpha = 1/sum_j ejs(j)*rts(j)^2 to scale the correction)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,alpha
@@ -569,6 +649,9 @@ c
 c
 c
         subroutine gradgshelm(rts,ejs,dx,dy,gradx,grady)
+c
+c  returns both components of grad G_s at displacement (dx,dy)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
@@ -614,6 +697,9 @@ c
 c
 c
         subroutine gradxgshelm(rts,ejs,dx,dy,gradx)
+c
+c  returns the x-component of grad G_s at displacement (dx,dy)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
@@ -656,6 +742,9 @@ c
 c
 c
         subroutine gradxgphihelm(rts,ejs,dx,dy,gradx)
+c
+c  returns the x-component of grad G_phi at displacement (dx,dy)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
@@ -699,6 +788,9 @@ c
 c
 c
         subroutine gradygshelm(rts,ejs,dx,dy,grady)
+c
+c  returns the y-component of grad G_s at displacement (dx,dy)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
@@ -742,6 +834,9 @@ c
 c
 c
         subroutine gradygphihelm(rts,ejs,dx,dy,grady)
+c
+c  returns the y-component of grad G_phi at displacement (dx,dy)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1
@@ -785,6 +880,9 @@ c
 c
 c
         subroutine gradgphihelm(rts,ejs,dx,dy,gradx,grady)
+c
+c  returns both components of grad G_phi at displacement (dx,dy)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(3),ejs(3),val,zt,ima,rhoj,h0,h1

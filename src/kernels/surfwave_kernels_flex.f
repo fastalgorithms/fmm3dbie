@@ -1,24 +1,38 @@
+! Kernels for flexural surface wave problems
 !
 ! the following routines rely on the srcinfo and targinfo arrays
 ! containing the following information, standardized in the following
 ! way:
 !
 !     *info(1:3) = xyz
-!     *info(4:5) = tangential vector in the 2d plane
-!     *info(10:11) = normal vector in the 2d plae
-!     *info(13) = kappa (curvature) 
+!     *info(4:5) = tangent vector in the 2d plane
+!     *info(10:11) = normal vector in the 2d plane
+!     *info(13) = kappa (curvature)
 !
-!     *zpars(1:5) = roots of quintic polynomial, 
+!     *zpars(1:5) = roots of the quintic dispersion polynomial,
 !           zpars(1) must be the root closest to the real axis
-!     *zpars(6:10) = residues
+!     *zpars(6:10) = residues corresponding to zpars(1:5)
+!     *zpars(11) = alpha (stiffness parameter)
+!     *zpars(12) = gamma (mass loading parameter)
+!     *zpars(13) = nu (Poisson ratio)
+!
+! The flexural Green's functions gs and gphi are weighted sums over
+! the five dispersion roots, evaluated via gsflex / gphiflex (r-only)
+! or gsflex23 / gphiflex23 (second and third derivative tensors).
+!
 c
 c
-c
-c        
+c  Kernel wrappers (src/targ in srcinfo/targinfo format)
 c
 c
         subroutine flexrepbc1(srcinfo,ndt,targinfo,ndd,dpars,ndz,
      1    zpars,ndi,ipars,val)
+c
+c  returns the first boundary condition kernel for the flexural rep:
+c  moment condition (2nd-order operator on gs and gphi weighted by gamma and nu)
+c    val = (-gamma/2 * M[gs] + M[gphi]) / 2
+c  where M[g] = (n^T Hess(g) n) + nu*(tau^T Hess(g) tau)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -70,6 +84,12 @@ c
 c
         subroutine flexrepbc2(srcinfo,ndt,targinfo,ndd,dpars,ndz,
      1    zpars,ndi,ipars,val)
+c
+c  returns the second boundary condition kernel for the flexural rep:
+c  shear force condition (3rd-order operator on gs and gphi with kappa)
+c    val = (-gamma/2 * V[gs] + V[gphi]) / 2
+c  where V[g] is the Kirchhoff shear force involving kappa, n, tau, and nu
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -132,7 +152,10 @@ c
 c
 c
         subroutine gsflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
-     1    ipars,val)  
+     1    ipars,val)
+c
+c  returns the flexural free-surface Green's function G_s(r) at r = |x-y|
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -159,6 +182,10 @@ c
 c
         subroutine bilapgsflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
+c
+c  returns the biharmonic (Delta^2) of the free-surface Green's function:
+c  Delta^2 G_s(r)
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -185,6 +212,10 @@ c
 c
         subroutine s3dgphiflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
+c
+c  returns the 3D free-space part of the velocity potential Green's
+c  function G_phi(r): residue-weighted sum without rts prefactor, scaled by 1/8
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -213,6 +244,10 @@ c
 c
         subroutine bilapgphiflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,
      1    ndi,ipars,val)
+c
+c  returns the biharmonic of the velocity potential Green's function:
+c  Delta^2 G_phi(r), including the 1/r free-space correction
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -242,6 +277,10 @@ c
 c
         subroutine gphiflexkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
+c
+c  returns the flexural velocity potential Green's function G_phi(r)
+c  at r = |x-y|
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -267,7 +306,15 @@ c
 c
 c
 c
+c
+c  Primitive Green's function evaluators
+c
         subroutine gsflex(rts,ejs,dr,val)
+c
+c  returns the flexural free-surface Green's function G_s at distance dr:
+c  weighted sum over 5 roots, real root via Hankel+K_0, complex roots via K_0
+c  G_s(r) = sum_j ejs(j)*rts(j)^2 * (-K_0 + 2i*H_0 or K_0) / 2
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt
@@ -321,6 +368,11 @@ c
 c
         subroutine gsflex23(rts,ejs,dx,dy,gsxx,gsxy,gsyy,gsxxx,gsxxy,
      1     gsxyy,gsyyy)
+c
+c  returns the 2nd and 3rd derivative tensors of G_s at displacement (dx,dy):
+c  gsxx, gsxy, gsyy (Hessian) and gsxxx, gsxxy, gsxyy, gsyyy (3rd order)
+c  uses helmdiffgreen23 for real root and struveKdiffgreen23 for all roots
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),zt,gsxx,gsxy,gsyy
@@ -434,6 +486,11 @@ c
 c
         subroutine gphiflex23(rts,ejs,dx,dy,gsxx,gsxy,gsyy,gsxxx,gsxxy,
      1     gsxyy,gsyyy)
+c
+c  returns the 2nd and 3rd derivative tensors of G_phi at displacement (dx,dy)
+c  same structure as gsflex23 but with rts(j)^1 prefactor; includes a
+c  1/(2*pi) correction term in the 3rd derivatives from the 1/r free-space term
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),zt,gsxx,gsxy,gsyy
@@ -563,6 +620,10 @@ c
 c
 c
         subroutine gphiflex(rts,ejs,dr,val)
+c
+c  returns the flexural velocity potential Green's function G_phi at distance dr:
+c  same structure as gsflex but with rts(j)^1 prefactor, scaled by 1/4
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt
@@ -617,6 +678,10 @@ c
 c
 c
         subroutine bilapgsflex(rts,ejs,dr,val)
+c
+c  returns Delta^2 G_s(r): biharmonic of the free-surface Green's function.
+c  rts(j)^6 prefactor, real root uses Hankel+K_0, complex roots use K_0.
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt
@@ -664,6 +729,10 @@ c
 c
 c
         subroutine bilapgphiflex(rts,ejs,dr,val)
+c
+c  returns Delta^2 G_phi(r): biharmonic of the velocity potential Green's function,
+c  rts(j)^5 prefactor, scaled by 1/4, plus oneoveralpha/(2*pi*r) free-space term
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt
@@ -717,6 +786,10 @@ c
 c
 c
         subroutine s3dgphiflex(rts,ejs,dr,val)
+c
+c  returns the 3D free-space part of G_phi at distance dr:
+c  residue-weighted K_0 sum without rts prefactor, scaled by 1/8
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(5),ejs(5),val,zt

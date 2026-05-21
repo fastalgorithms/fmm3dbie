@@ -1,8 +1,4 @@
-!
-!
-!  Make notes of pde being solved, and representation used
-!
-!
+!  See file header above for PDE and representation details.
 
       subroutine getnearquad_flex_all(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, &
@@ -10,17 +6,13 @@
         iquad, rfac0, nquad, iker, wnear)
 !
 !  This subroutine generates the near field quadrature
-!  for the representation:
+!  for the flexural wave representation:
 !
-!  u = (Enter representation here) 
+!  u(x) = a1*S_s[sigma] + a2*S_phi[sigma]
+!        + a3*bilapS_s[sigma] + a4*bilapS_phi[sigma] + a5*S_{3d,phi}[sigma]
 !
-!  On imposing the boundary condition, we get the following operator
-!
-!  du/dn + ik \lambda u =  
-!    z \sigma + S_{k}'[\sigma] + i\alpha S_{i|k|}'^2 [\sigma] + i \alpha 
-!       (D_{k}' - D_{i|k|}') S_{i|k|}[\sigma]  + 
-!       ik \lambda (S_{k} + i \alpha D_{k} S_{i|k|} + 
-!       i \alpha w S_{i|k|}) = f
+!  On imposing the boundary conditions (plate moment + shear force),
+!  we obtain a 2x2 system in sigma
 !
 !  The quadrature is computed by the following strategy
 !  targets within a sphere of radius rfac0*rs
@@ -65,9 +57,12 @@
 !          * srcvals(10:12,i) - normals info
 !    - eps: real *8
 !        precision requested
-!    - zpars: complex *16(*)
-!        kernel parameters (Referring to formula (1))
-!        fix documentation here
+!    - zpars: complex *16(13)
+!        zpars(1:5)  = roots of the quintic dispersion polynomial
+!        zpars(6:10) = corresponding residues
+!        zpars(11)   = alpha (stiffness/mass parameter)
+!        zpars(12)   = gamma (mass loading parameter)
+!        zpars(13)   = nu (Poisson ratio)
 !    - iquadtype: integer
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
@@ -93,12 +88,16 @@
 !        number of near field entries corresponding to each source target
 !        pair
 !    - iker: integer
-!        index of kernel, iker = 0 -> gs, iker = 1 -> gphi, iker = 2 -> lapgs
+!        index of kernel to assemble:
+!        iker = 1 -> G_s    (gsflexkern)
+!        iker = 2 -> G_phi  (gphiflexkern)
+!        iker = 3 -> Delta^2 G_s   (bilapgsflexkern)
+!        iker = 4 -> Delta^2 G_phi (bilapgphiflexkern)
+!        iker = 5 -> G_{3d,phi}    (s3dgphiflexkern)
 !
 !  Output arguments
 !    - wnear: complex *16(nquad)
-!        The desired near field quadrature
-!        stores the quadrature corrections for <enter kernel here> 
+!        near field quadrature corrections for the selected kernel 
   
       implicit none 
       integer *8, intent(in) :: npatches, npts
@@ -176,12 +175,9 @@
 !
 !
 !
-!
-!
-!
-!  Make notes of pde being solved, and representation used
-!
-!
+!  _vpp variant: uses the vpp quadrature scheme for the logarithmically
+!  singular flexural kernels, building a kernel table via vpp_buildkern
+!  for whichever kernel is selected by iker.
 !
       subroutine getnearquad_flex_all_vpp(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, &
@@ -244,9 +240,12 @@
 !          * srcvals(10:12,i) - normals info
 !    - eps: real *8
 !        precision requested
-!    - zpars: complex *16(*)
-!        kernel parameters (Referring to formula (1))
-!        fix documentation here
+!    - zpars: complex *16(13)
+!        zpars(1:5)  = roots of the quintic dispersion polynomial
+!        zpars(6:10) = corresponding residues
+!        zpars(11)   = alpha (stiffness/mass parameter)
+!        zpars(12)   = gamma (mass loading parameter)
+!        zpars(13)   = nu (Poisson ratio)
 !    - iquadtype: integer
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
@@ -272,12 +271,16 @@
 !        number of near field entries corresponding to each source target
 !        pair
 !    - iker: integer
-!        index of kernel, iker = 0 -> gs, iker = 1 -> gphi, iker = 2 -> lapgs
+!        index of kernel to assemble:
+!        iker = 1 -> G_s    (gsflexkern)
+!        iker = 2 -> G_phi  (gphiflexkern)
+!        iker = 3 -> Delta^2 G_s   (bilapgsflexkern)
+!        iker = 4 -> Delta^2 G_phi (bilapgphiflexkern)
+!        iker = 5 -> G_{3d,phi}    (s3dgphiflexkern)
 !
 !  Output arguments
 !    - wnear: complex *16(nquad)
-!        The desired near field quadrature
-!        stores the quadrature corrections for <enter kernel here>
+!        near field quadrature corrections for the selected kernel
 
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)

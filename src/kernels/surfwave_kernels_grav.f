@@ -1,19 +1,31 @@
+! Kernels for gravity surface wave problems
 !
 ! the following routines rely on the srcinfo and targinfo arrays
 ! containing the following information, standardized in the following
 ! way:
 !
 !     *info(1:3) = xyz
-!     *info(4:5) = normal vector in the 2d plane
+!     *info(4:5) = tangent vector in the 2d plane
+!     *info(10:11) = normal vector in the 2d plane
 !
-!     *zpars(1:3) = roots of cubic polynomial, 
-!           zpars(1) must be the root closest to the real axis
-!     *zpars(4:6) = residues
+!     *zpars(1) = root of the dispersion relation
+!     *zpars(2) = residue (set to 1.0 in kernel wrappers)
+!
+! The gravity Green's functions gs and gphi are evaluated via
+! the primitive routines gsgrav and gphigrav.
+!
 c
+c
+c
+c  Kernel wrappers (src/targ in srcinfo/targinfo format)
 c
 c
         subroutine gsgravkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
-     1    ipars,val)  
+     1    ipars,val)
+c
+c  returns the gravity wave free-surface Green's function G_s(r)
+c  evaluated at r = |x-y|, using zpars(1) as the dispersion root
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -38,10 +50,12 @@ c
 c
 c
 c
-c
-c
         subroutine gphigravkern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,
      1    ipars,val)
+c
+c  returns the gravity wave velocity potential Green's function G_phi(r)
+c  evaluated at r = |x-y|, using zpars(1) as the dispersion root
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         integer *8 ndz, ndt
@@ -98,7 +112,15 @@ c
 c
 c
 c
+c
+c  Primitive Green's function evaluators (r-only interface)
+c
         subroutine gsgrav(rts,ejs,dr,val)
+c
+c  returns the gravity wave free-surface Green's function G_s at distance dr
+c    G_s(r) = ejs(1)*rts(1)^2 * (-K_0(rts(1)*r) + 2i*H_0(rts(1)*r)) / 2
+c  where rts(1) is the dispersion root on the real axis
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(1),ejs(1),val,zt
@@ -128,6 +150,11 @@ c
 c
 c
         subroutine gphigrav(rts,ejs,dr,val)
+c
+c  returns the gravity wave velocity potential Green's function G_phi at
+c  distance dr. For the real dispersion root uses Hankel/K_0; for the
+c  imaginary root uses K_0 with negated argument.
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(1),ejs(1),val,zt
@@ -160,7 +187,12 @@ c
 c
 c
         subroutine s3dgphigrav(rts,ejs,dr,val)
-c TODO ADD 1/r term
+c
+c  returns the 3D free-space contribution to the gravity wave velocity
+c  potential Green's function at distance dr (same form as gphigrav
+c  but without the rts(1) prefactor, scaled by 1/8)
+c  TODO: add 1/r free-space term
+c
         implicit real *8 (a-h,o-z)
         implicit integer *8 (i-n)
         complex *16 rts(1),ejs(1),val,zt

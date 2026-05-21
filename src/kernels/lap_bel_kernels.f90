@@ -1,19 +1,16 @@
-
-
+! Kernels for the Laplace-Beltrami and Helmholtz-Beltrami operators
 !
 ! the following routines rely on the srcinfo and targinfo arrays
 ! containing the following information, standardized in the following
 ! way:
 !
 !     *info(1:3) = xyz
-!     *info(4:6) = tanget vector 1
+!     *info(4:6) = tangent vector 1
 !     *info(7:9) = tangent vector 2
 !     *info(10:12) = normal vector
+!     *info(13) = mean curvature H
 !
-!     *info(13) = meancrvs if it exists (THIS might need to be fixed later!)
 !
-!
-
 
 
 subroutine lap_bel_res(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
@@ -31,16 +28,16 @@ subroutine lap_bel_res(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   data ima/(0.0d0,1.0d0)/
   data over4pi/0.07957747154594767d0/
   !
-  ! returns the laplace beltrami operator applied to log, i.e.
+  ! returns the Laplace-Beltrami residual kernel applied to log|x-y|
   !
-  ! K(x,y) = (n(x).(x-y)/|x-y|^2)^2 -2H(x)*(n(x).(x-y)/|x-y|^2)
+  !   K(x,y) = (n(x).(x-y)/|x-y|^2)^2 - 2H(x)*(n(x).(x-y)/|x-y|^2)
+  !
+  ! scaled by 1/4pi, where H(x) = targ(13) is the mean curvature at x
   !
 
   dx=targ(1)-src(1)
   dy=targ(2)-src(2)
   dz=targ(3)-src(3)
-
-  
 
   r2=dx**2+dy**2+dz**2
   rn = dx*targ(10) + dy*targ(11) + dz*targ(12)
@@ -72,14 +69,13 @@ subroutine lap_bel_log(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   data ima/(0.0d0,1.0d0)/
   data over4pi/0.07957747154594767d0/
   !
-  ! returns the log of the Euclidean distance log|x-y|/4pi
+  ! returns the logarithmic kernel log|x-y| / (4pi)
+  !   (single layer potential kernel for the Laplace-Beltrami operator)
   !
 
   dx=targ(1)-src(1)
   dy=targ(2)-src(2)
   dz=targ(3)-src(3)
-
-  
 
   r2=dx**2+dy**2+dz**2
   val = log(r2)*over4pi
@@ -102,16 +98,17 @@ subroutine helm_bel_res(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,zval)
   data ima/(0.0d0,1.0d0)/
   data over4pi/0.07957747154594767d0/
   !
-  ! returns the Helmholtz beltrami operator applied to Hankel, i.e.
+  ! returns the Helmholtz-Beltrami residual kernel applied to H_0(zk|x-y|)
   !
-  ! K(x,y) = -zk^2*H_2*(n(x).(x-y)/|x-y|)^2 +2H(x)*zk*H_1*(n(x).(x-y)/|x-y|)
+  !   K(x,y) = (-zk^2*H_2(zk*r)*(n(x).(x-y)/r)^2
+  !              + 2H(x)*zk*H_1(zk*r)*(n(x).(x-y)/r)) / (4i)
+  !
+  ! where H(x) = targ(13) is the mean curvature at x
   !
 
   dx=targ(1)-src(1)
   dy=targ(2)-src(2)
   dz=targ(3)-src(3)
-
-  
 
   r2=dx**2+dy**2+dz**2
   r=sqrt(r2)
@@ -142,7 +139,8 @@ subroutine helm_bel_hank(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,zval)
 
   data ima/(0.0d0,1.0d0)/
   !
-  ! returns the 0th Hankel function H_0(zk |x-y|) 
+  ! returns the Hankel function kernel H_0^{(1)}(zk*|x-y|) / (4i)
+  !   (single layer potential kernel for the Helmholtz-Beltrami operator)
   !
 
   dx=targ(1)-src(1)

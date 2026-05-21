@@ -1,7 +1,23 @@
 !
+!  Near-field quadrature routines for gravity wave problems.
 !
-!  Make notes of pde being solved, and representation used
+!  PDE: Laplace equation in the fluid domain with a free-surface
+!  boundary condition. The scattered field phi satisfies:
+!    Delta phi = 0  in the fluid
+!    d phi/dn = f   on the body boundary
 !
+!  Representation: single layer potential using the gravity wave
+!  Green's function G_s (free-surface part) and velocity potential
+!  Green's function G_phi:
+!    phi(x) = S_s[sigma](x) = int G_s(x,y) sigma(y) dS(y)
+!
+!  zpars(1) = dispersion root (real, closest to real axis)
+!  zpars(2) = residue (= 1)
+!  zpars(3:6) = additional dispersion roots/residues if used
+!
+!  iker selects which kernel to assemble:
+!    iker = 0 -> G_s (free-surface Green's function)
+!    iker = 1 -> G_phi (velocity potential Green's function)
 !
 
       subroutine getnearquad_gravity_all(npatches, norders, &
@@ -10,17 +26,13 @@
         iquad, rfac0, nquad, iker, wnear)
 !
 !  This subroutine generates the near field quadrature
-!  for the representation:
+!  for the gravity wave representation:
 !
-!  u = (Enter representation here) 
+!  phi(x) = int G_s(x,y) sigma(y) dS(y)
 !
-!  On imposing the boundary condition, we get the following operator
+!  On imposing the Neumann boundary condition d phi/dn = f, we get:
 !
-!  du/dn + ik \lambda u =  
-!    z \sigma + S_{k}'[\sigma] + i\alpha S_{i|k|}'^2 [\sigma] + i \alpha 
-!       (D_{k}' - D_{i|k|}') S_{i|k|}[\sigma]  + 
-!       ik \lambda (S_{k} + i \alpha D_{k} S_{i|k|} + 
-!       i \alpha w S_{i|k|}) = f
+!  sigma/2 + int d G_s/dn(x,y) sigma(y) dS(y) = f
 !
 !  The quadrature is computed by the following strategy
 !  targets within a sphere of radius rfac0*rs
@@ -65,9 +77,10 @@
 !          * srcvals(10:12,i) - normals info
 !    - eps: real *8
 !        precision requested
-!    - zpars: complex *16(*)
-!        kernel parameters (Referring to formula (1))
-!        fix documentation here
+!    - zpars: complex *16(6)
+!        zpars(1) = dispersion root (real, on real axis)
+!        zpars(2) = residue (= 1 for gravity wave)
+!        zpars(3:6) = additional roots/residues if used
 !    - iquadtype: integer
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
@@ -93,12 +106,13 @@
 !        number of near field entries corresponding to each source target
 !        pair
 !    - iker: integer
-!        index of kernel, iker = 0 -> gs, iker = 1 -> gphi, iker = 2 -> lapgs
+!        index of kernel to assemble:
+!        iker = 0 -> G_s (free-surface Green's function gsgravkern)
+!        iker = 1 -> G_phi (velocity potential Green's function gphigravkern)
 !
 !  Output arguments
 !    - wnear: complex *16(nquad)
-!        The desired near field quadrature
-!        stores the quadrature corrections for <enter kernel here> 
+!        near field quadrature corrections for the selected kernel 
   
       implicit none 
       integer *8, intent(in) :: npatches, npts
@@ -158,23 +172,23 @@
 !
 !
 !
+!  _vpp variant: uses the vpp (variable-point-pair) quadrature scheme
+!  to handle the logarithmic singularity of G_s and G_phi, building
+!  a precomputed kernel table via vpp_buildkern before calling ggq_guru.
+
       subroutine getnearquad_gravity_all_vpp(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         ipatch_id, uvs_targ, eps, zpars0, iquadtype, nnz, row_ptr, col_ind, &
         iquad, rfac0, nquad, iker, maxdist, wnear)
 !
 !  This subroutine generates the near field quadrature
-!  for the representation:
+!  for the gravity wave representation:
 !
-!  u = (Enter representation here) 
+!  phi(x) = int G_s(x,y) sigma(y) dS(y)
 !
-!  On imposing the boundary condition, we get the following operator
+!  On imposing the Neumann boundary condition d phi/dn = f, we get:
 !
-!  du/dn + ik \lambda u =  
-!    z \sigma + S_{k}'[\sigma] + i\alpha S_{i|k|}'^2 [\sigma] + i \alpha 
-!       (D_{k}' - D_{i|k|}') S_{i|k|}[\sigma]  + 
-!       ik \lambda (S_{k} + i \alpha D_{k} S_{i|k|} + 
-!       i \alpha w S_{i|k|}) = f
+!  sigma/2 + int d G_s/dn(x,y) sigma(y) dS(y) = f
 !
 !  The quadrature is computed by the following strategy
 !  targets within a sphere of radius rfac0*rs
@@ -219,9 +233,10 @@
 !          * srcvals(10:12,i) - normals info
 !    - eps: real *8
 !        precision requested
-!    - zpars: complex *16(*)
-!        kernel parameters (Referring to formula (1))
-!        fix documentation here
+!    - zpars: complex *16(6)
+!        zpars(1) = dispersion root (real, on real axis)
+!        zpars(2) = residue (= 1 for gravity wave)
+!        zpars(3:6) = additional roots/residues if used
 !    - iquadtype: integer
 !        quadrature type
 !          * iquadtype = 1, use ggq for self + adaptive integration
@@ -247,12 +262,13 @@
 !        number of near field entries corresponding to each source target
 !        pair
 !    - iker: integer
-!        index of kernel, iker = 0 -> gs, iker = 1 -> gphi, iker = 2 -> lapgs
+!        index of kernel to assemble:
+!        iker = 0 -> G_s (free-surface Green's function gsgravkern)
+!        iker = 1 -> G_phi (velocity potential Green's function gphigravkern)
 !
 !  Output arguments
 !    - wnear: complex *16(nquad)
-!        The desired near field quadrature
-!        stores the quadrature corrections for <enter kernel here> 
+!        near field quadrature corrections for the selected kernel 
   
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
