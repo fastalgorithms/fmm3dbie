@@ -143,19 +143,13 @@ EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 STOK = src/stok_wrappers
 STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_mob.o
 
-# Laplace Beltrami wrappers
-LB = src/lap_bel
-LBOBJS_BEL = $(LB)/lap_bel_routs.o
-
 # Kernels
 KER = src/kernels
 KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o \
-	$(KER)/hank101.o $(KER)/lap_bel_kernels.o \
-	$(KER)/surfwave_kernels_helm.o $(KER)/surfwave_kernels_flex.o \
-	$(KER)/hank103.o $(KER)/struve102.o $(KER)/helmdiffgreen.o \
-	$(KER)/hankdiff.o $(KER)/vpp.o \
-	$(KER)/surfwave_kernels_grav.o
+	$(KER)/hank101.o \
+	$(KER)/hank103.o $(KER)/helmdiffgreen.o \
+	$(KER)/hankdiff.o $(KER)/vpp.o
 
 # Quadrature wrappers
 QUAD = src/quadratures
@@ -198,9 +192,9 @@ SURFSM_MOD_OBJS = $(SURFSM)/Mod_TreeLRD.o \
 # Add to FFLAGS so that modules get compiled in the .mod folder
 FFLAGS += -J .mod/
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS_BEL) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
 
-OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS_BEL) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
 OBJS_64 += $(COM)/lapack_wrap_64.o
 
 ifeq ($(BLAS_64),ON)
