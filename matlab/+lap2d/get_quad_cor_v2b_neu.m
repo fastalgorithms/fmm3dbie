@@ -79,6 +79,3 @@ function [xmat,novers] = get_quad_cor_v2b_neu(S, targinfo, eps, uv_bndry, patch_
 end
 %
 %
-%
-%
-%

@@ -18,7 +18,7 @@ cparams = []; cparams.ta = pi/nch; cparams.tb = 2*pi + cparams.ta;
 chnkr = chunkerfuncuni(@(t) ellipse(t), nch, cparams);
 chnkr = sort(chnkr);
 
-V = 0*eval_gauss(S.r);
+V = eval_gauss(S.r);
 
 eps = 1e-9;
 
@@ -61,7 +61,7 @@ err = abs(u - ref_u(:)) / max(abs(u));
 fprintf('max relative error: %5.2e\n', max(err))
 
 figure(1); clf
-scatter(S.r(1,:), S.r(2,:), 8, log10(err));
+plot(S, log10(S.patch_max(err)));
 title('log_{10} relative error'); colorbar
 
 %%

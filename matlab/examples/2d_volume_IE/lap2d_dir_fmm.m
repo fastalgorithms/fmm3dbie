@@ -28,7 +28,6 @@ eps = 1e-8;
 
 start = tic;
 [Av2v_cor, nover] = lap2d.get_quad_cor_sub(S, eps);
-fprintf('%5.2e s : time to compute v2v quadrature correction\n', toc(start))
 
 l2d_d = kernel('l', 'd');
 opts = []; opts.corrections = true;
@@ -37,7 +36,7 @@ Ab2v_cor = chunkerkernevalmat(chnkr, l2d_d, S.r(1:2,:), opts);
 [Av2b_cor, nover_v2b] = lap2d.get_quad_cor_v2b_dir(S, chnkr, eps);
 
 lhs_22 = -0.5*eye(chnkr.npt) + chunkermat(chnkr, l2d_d);
-fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
+fprintf('%5.2e s : time to assemble system\n', toc(start))
 
 %% FMM-accelerated apply functions
 
@@ -82,7 +81,7 @@ err = abs(u - ref_u(:)) / max(abs(u));
 fprintf('max relative error: %5.2e\n', max(err))
 
 figure(1); clf
-scatter(S.r(1,:), S.r(2,:), 8, log10(err));
+plot(S, log10(S.patch_max(err)));
 title('log_{10} relative error'); colorbar
 
 %%

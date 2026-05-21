@@ -30,6 +30,11 @@ cparams = []; cparams.maxchunklen = 4/max(abs(zk));
 chnkr = chunkerfunc(@(t) ellipse(t), cparams);
 chnkr = sort(chnkr);
 
+cparams = []; cparams.maxchunklen = 0.2;
+% chnkr = chunkerfunc(@(t) starfish(t,5,0.1),cparams);
+chnkr = chunkerfunc(@(t) starfish(t,5,0.),cparams);
+[S, chnkr] = triangulate_chunker_interior(chnkr, 6, 0.2);
+
 V = eval_gauss(S.r);
 
 eps = 1e-10;
@@ -51,12 +56,12 @@ targinfo.d2 = chnkr.d2(:,:);
 kappa = signed_curvature(chnkr);
 targinfo.kappa = kappa(:);
 [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo);
-targinfo.patch_id = patch_inds;
-targinfo.uvs_targ = uvsloc;
+% snap to boundary
+uvsloc(2,:) = 0;
 
 start = tic;
-v2b_supp = flex2d.v2b_matgen_supp2(S, zk, nu, targinfo, eps, targinfo.patch_id, targinfo.uvs_targ);
-v2b_free = flex2d.v2b_matgen_free2(S, zk, nu, targinfo, eps, targinfo.patch_id, targinfo.uvs_targ);
+v2b_supp = flex2d.v2b_matgen_supp2(S, zk, nu, targinfo, eps, patch_id, uvsloc);
+v2b_free = flex2d.v2b_matgen_free2(S, zk, nu, targinfo, eps, patch_id, uvsloc);
 l21 = zeros(2*chnkr.npt, S.npts);
 l21(1:2:end,:) = v2b_supp;
 l21(2:2:end,:) = v2b_free;
@@ -161,7 +166,7 @@ err = abs(u - ref_u(:)) / max(abs(u));
 fprintf('max relative error: %5.2e\n', max(err))
 
 figure; clf
-scatter(S.r(1,:), S.r(2,:), 8, log10(err));
+plot(S, log10(S.patch_max(err)));
 title('log_{10} relative error'); colorbar
 
 %%

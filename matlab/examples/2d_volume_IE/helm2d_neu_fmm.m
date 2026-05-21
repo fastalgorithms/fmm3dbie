@@ -86,7 +86,7 @@ err = abs(u - ref_u(:)) / max(abs(u));
 fprintf('max relative error: %5.2e\n', max(err))
 
 figure(1); clf
-plot_nodes(S,log10(err));
+plot(S, log10(S.patch_max(err)));
 title('log_{10} relative error'); colorbar
 
 %%
