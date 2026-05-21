@@ -161,7 +161,7 @@ STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_mob.o
 
 # Laplace Beltrami wrappers
 LB = src/lap_bel
-LBOBJS_BEL = $(LB)/helm_bel_routs.o
+LBOBJS_BEL = $(LB)/lap_bel_routs.o
 
 # Surface wave wrappers
 SURFWAVE = src/surfwave_wrappers

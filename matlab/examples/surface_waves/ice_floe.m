@@ -1,16 +1,13 @@
-% ice_floe_surferfun_star_dense.m
+% ice_floe.m
 %
-% Dense-matrix version of ice_floe_surferfun_star.
-%
-% Replaces PCFFT apply_grav with explicit dense matrices for all four
-% operator blocks:
+% Solve the ice floe problem (gravity outside and flexural gravity inside)
 %   gs_v2v  : S -> S   (gravity single-layer)
 %   flex_v2v: S -> S   (flex single-layer, 'v2v')
 %   flex_v2b: S -> chnkr  (flex, 'free_plate_bcs')
 %   flex_b2v: chnkr -> S  (flex, 'free_plate_eval')
 %   flex_b2b: chnkr -> chnkr (BIE system)
 %
-% The coupled system (matching apply_grav) is:
+% The coupled system is:
 %   h = 2*mu + Gs*mu - flex_v2v*eta - flex_b2v*zeta   = rhs_grav
 %   f = -g/2*Gs*mu  + a*eta + b*(flex_v2v*eta + flex_b2v*zeta) = rhs_vol
 %   g =  flex_v2b*eta + sysb2b*zeta                    = rhs_bc
@@ -49,12 +46,10 @@ fprintf('alpha = %f, beta = %f, gamma = %f\n', alpha, beta, gamma)
 
 %% Geometry
 cparams = []; cparams.maxchunklen = 0.2;
-% chnkr = chunkerfunc(@(t) starfish(t,5,0.1),cparams);
-chnkr = chunkerfunc(@(t) starfish(t,5,0.),cparams);
+chnkr = chunkerfunc(@(t) starfish(t,5,0.1),cparams);
 [S, chnkr] = triangulate_chunker_interior(chnkr, 6, 0.2);
 
 chnkr = sort(chnkr);
-chnkr = makedatarows(chnkr, 2);
 
 kappa = signed_curvature(chnkr);
 kappa = kappa(:);
@@ -71,17 +66,17 @@ for i = 1:length(loc_field)
     end
 end
 chnkr_info.r   = chnkr_info.r;
-chnkr_info.d   = chnkr_info.d./vecnorm(chnkr_info.d);
+% chnkr_info.d   = chnkr_info.d./vecnorm(chnkr_info.d);
 chnkr_info.d2  = chnkr_info.d2;
 chnkr_info.n   = chnkr_info.n;
 chnkr_info.wts = chnkr_info.wts(:);
 
-% [~, patch_inds, uvsloc] = get_closest_pts(S, chnkr_info);
-% chnkr_info.patch_id = patch_inds;
-% chnkr_info.uvs_targ = uvsloc;
-% % triangulate_chunker_interior aligns the edge patches
-% chnkr_info.uvs_targ(2,:) = 0;
-% chnkr_info.kappa = kappa;
+[~, patch_inds, uvsloc] = get_closest_pts(S, chnkr_info);
+chnkr_info.patch_id = patch_inds;
+chnkr_info.uvs_targ = uvsloc;
+% triangulate_chunker_interior aligns the edge patches
+chnkr_info.uvs_targ(2,:) = 0;
+chnkr_info.kappa = kappa;
 
 targ_S = [];
 targ_S.r        = S.r;
@@ -129,7 +124,7 @@ sysb2b = diagval + flex_b2b_val * densmap;
 %% Oversampling parameters
 
 Q = getnear(S); Q.targinfo = S; Q.wavenumber = zk1; Q.kernel_order = 0;
-novers   = get_oversampling_parameters(S, Q, 1e2*eps_quad);
+novers = get_oversampling_parameters(S, Q, 1e2*eps_quad);
 novers = max(novers,S.norders+1);
 [S_over, xinterp] = S.oversample(novers);
 nearquad_opts = []; nearquad_opts.nover = novers;
@@ -141,44 +136,28 @@ getnearquad_v2b  = @(varargin) flex2d.getnearquad(varargin{1:17}, dpars, zpars_f
 
 %% Gravity block
 
-fprintf('Building gs v2v near correction ...\n'); tic;
+fprintf('Building gravity blocks ...\n'); tic;
 gs_v2v_near = getnearquad_kern(S, gs_kern, eps_quad, getnearquad_grav, targ_S, nearquad_opts);
-fprintf('  done (%.2f s)\n', toc);
-
-gs_kern_eval = kernel(gs_kern);
-fprintf('Building gs v2v smooth part ...\n'); tic;
-gs_v2v_smth = (gs_kern_eval.eval(S_over, targ_S) .* S_over.wts(:).') * xinterp;
-fprintf('  done (%.2f s)\n', toc);
+gs_v2v_smth = (gs_kern(S_over, targ_S) .* S_over.wts(:).') * xinterp;
 
 gs_v2v = gs_v2v_near + gs_v2v_smth;
 
+fprintf('  done (%.2f s)\n', toc);
+
 %% Flex v2v block
 
-fprintf('Building flex v2v near correction ...\n'); tic;
+fprintf('Building flex ...\n'); 
 flex_v2v_near = getnearquad_kern(S, skern, eps_quad, getnearquad_v2v, targ_S, nearquad_opts);
-fprintf('  done (%.2f s)\n', toc);
-
-skern_eval = kernel(skern);
-fprintf('Building flex v2v smooth part ...\n'); tic;
-flex_v2v_smth = (skern_eval.eval(S_over, targ_S) .* S_over.wts(:).') * xinterp;
-fprintf('  done (%.2f s)\n', toc);
+flex_v2v_smth = (skern(S_over, targ_S) .* S_over.wts(:).') * xinterp;
 
 flex_v2v = flex_v2v_near + flex_v2v_smth;
 
-fprintf('Building flex v2b near correction ...\n'); tic;
 flex_v2b_near = getnearquad_kern(S, rhskern, eps_quad, getnearquad_v2b, chnkr_info, nearquad_opts);
-fprintf('  done (%.2f s)\n', toc);
-
-rhskern_eval = kernel(rhskern);
-fprintf('Building flex v2b smooth part ...\n'); tic;
-flex_v2b_smth = (rhskern_eval.eval(S_over, chnkr_info) .* S_over.wts(:).') * xinterp;
-fprintf('  done (%.2f s)\n', toc);
+flex_v2b_smth = (rhskern(S_over, chnkr_info) .* S_over.wts(:).') * xinterp;
 
 flex_v2b = flex_v2b_near + flex_v2b_smth;
 
-fprintf('Building flex b2v ...\n'); tic;
-opts_cor = []; opts_cor.corrections = 0;
-flex_b2v = chunkerkernevalmat(chnkr, repkern, S.r(1:2,:), opts_cor) * densmap;
+flex_b2v = chunkerkernevalmat(chnkr, repkern, S.r(1:2,:)) * densmap;
 fprintf('  done (%.2f s)\n', toc);
 
 %% Assemble dense system matrix
@@ -250,8 +229,7 @@ figure(10); clf
 subplot(1,2,1)
 plot(S, real(ref_u)); colorbar; title('u_{true}'); 
 subplot(1,2,2)
-plot(S,real(u));colorbar
-% plot(S, S.patch_max(log10(err))); colorbar; title('log_{10} error');
+plot(S, S.patch_max(log10(err))); colorbar; title('log_{10} error');
 
 figure(11); clf
 plot(S, log10(surf_fun_error(S, u))); colorbar

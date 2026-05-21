@@ -23,17 +23,12 @@ nu = 0.3;
 zk1 = sqrt((- b + sqrt(b^2 + 4*a*c)) / (2*a));
 zk2 = sqrt((- b - sqrt(b^2 + 4*a*c)) / (2*a));
 zk = [zk1, zk2];
-
+zk = 0;
 S = geometries.disk([],[],[4 4 4],6);
 
 cparams = []; cparams.maxchunklen = 4/max(abs(zk));
 chnkr = chunkerfunc(@(t) ellipse(t), cparams);
 chnkr = sort(chnkr);
-
-cparams = []; cparams.maxchunklen = 0.2;
-% chnkr = chunkerfunc(@(t) starfish(t,5,0.1),cparams);
-chnkr = chunkerfunc(@(t) starfish(t,5,0.),cparams);
-[S, chnkr] = triangulate_chunker_interior(chnkr, 6, 0.2);
 
 V = eval_gauss(S.r);
 
@@ -52,16 +47,15 @@ targinfo = [];
 targinfo.r = chnkr.r(:,:);
 targinfo.n = chnkr.n(:,:);
 targinfo.d = chnkr.d(:,:);
+% targinfo.d = targinfo.d./vecnorm(targinfo.d);
 targinfo.d2 = chnkr.d2(:,:);
 kappa = signed_curvature(chnkr);
 targinfo.kappa = kappa(:);
 [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo);
-% snap to boundary
-uvsloc(2,:) = 0;
 
 start = tic;
-v2b_supp = flex2d.v2b_matgen_supp2(S, zk, nu, targinfo, eps, patch_id, uvsloc);
-v2b_free = flex2d.v2b_matgen_free2(S, zk, nu, targinfo, eps, patch_id, uvsloc);
+v2b_supp = flex2d.v2b_matgen_supp2(S, zk, nu, targinfo, eps, patch_inds, uvsloc);
+v2b_free = flex2d.v2b_matgen_free2(S, zk, nu, targinfo, eps, patch_inds, uvsloc);
 l21 = zeros(2*chnkr.npt, S.npts);
 l21(1:2:end,:) = v2b_supp;
 l21(2:2:end,:) = v2b_free;

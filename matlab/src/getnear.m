@@ -63,10 +63,10 @@ function [rsc] = getnear(S, targinfo, rfac)
             targs = targinfo.r;
         elseif isa(targinfo, 'chunker') || isa(targinfo,'chunkgraph')
             targs = targinfo.r(:,:);
-            targs = [targs;zeros(3-targinfo.dim,targinfo.npt)];
         else
             targs = targinfo;
         end
+        targs = [targs;zeros(max(3-size(targs,1),0),size(targs,2))];
     end
     ndtarg = size(targs,1); 
     ntarg = size(targs,2); 
