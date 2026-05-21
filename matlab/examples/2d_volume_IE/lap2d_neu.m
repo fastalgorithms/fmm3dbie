@@ -24,28 +24,18 @@ eps = 1e-9;
 
 %% Quadrature
 
-% Volume to volume
 start = tic;
 A = lap2d.slp_matgen(S, eps);
 l11 = -eye(S.npts) + V.*A;
-fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
 
-% Boundary to volume
 l2d_s = kernel('l', 's');
 l2d_sp = kernel('l', 'sp');
-start = tic;
 l12 = V.*chunkerkernevalmat(chnkr, l2d_s, S.r(1:2,:));
-fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
-% Volume to boundary
-start = tic;
 l21 = lap2d.v2b_neu(S, chnkr, eps);
-fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 
-% Boundary to boundary
-start = tic;
 l22 = 0.5*eye(chnkr.npt) + chunkermat(chnkr, l2d_sp);
-fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
+fprintf('%5.2e s : time to assemble system matrix\n', toc(start))
 
 %% Right hand side and solve
 

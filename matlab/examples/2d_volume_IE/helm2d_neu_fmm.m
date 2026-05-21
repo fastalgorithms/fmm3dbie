@@ -28,26 +28,17 @@ eps = 1e-8;
 
 %% Quadrature corrections
 
-% Volume to volume
 start = tic;
 [v2v_cor, nover] = helm2d.get_quad_cor_sub(S, zk, eps);
-fprintf('%5.2e s : time to compute v2v quadrature correction\n', toc(start))
 
-% Boundary to volume
 h2d_s = kernel('h', 's', zk);
-start = tic;
 opts = []; opts.corrections = true;
 Ab2v_cor = chunkerkernevalmat(chnkr, h2d_s, S.r(1:2,:), opts);
-fprintf('%5.2e s : time to compute b2v quadrature correction\n', toc(start))
 
-% Volume to boundary
-start = tic;
 [Av2b_cor, nover_v2b] = helm2d.get_quad_cor_v2b_neu(S, zk, chnkr, eps);
 fprintf('%5.2e s : time to compute v2b quadrature correction\n', toc(start))
 
-% Boundary to boundary (dense, small)
 h2d_sp = kernel('h', 'sp', zk);
-start = tic;
 lhs_22 = 0.5*eye(chnkr.npt) + chunkermat(chnkr, h2d_sp);
 fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 

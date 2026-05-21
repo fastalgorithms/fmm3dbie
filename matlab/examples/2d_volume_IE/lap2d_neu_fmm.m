@@ -26,28 +26,18 @@ eps = 1e-8;
 
 %% Quadrature corrections
 
-% Volume to volume
 start = tic;
 [Av2v_cor, nover] = lap2d.get_quad_cor_sub(S, eps);
-fprintf('%5.2e s : time to compute v2v quadrature correction\n', toc(start))
 
-% Boundary to volume
 l2d_s = kernel('l', 's');
-start = tic;
 opts = []; opts.corrections = true;
 Ab2v_cor = chunkerkernevalmat(chnkr, l2d_s, S.r(1:2,:), opts);
-fprintf('%5.2e s : time to compute b2v quadrature correction\n', toc(start))
 
-% Volume to boundary
-start = tic;
 [Av2b_cor, nover_v2b] = lap2d.get_quad_cor_v2b_neu(S, chnkr, eps);
-fprintf('%5.2e s : time to compute v2b quadrature correction\n', toc(start))
 
-% Boundary to boundary (dense, small)
 l2d_sp = kernel('l', 'sp');
-start = tic;
 lhs_22 = 0.5*eye(chnkr.npt) + chunkermat(chnkr, l2d_sp);
-fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
+fprintf('%5.2e s : time to assemble system\n', toc(start))
 
 %% FMM-accelerated apply functions
 

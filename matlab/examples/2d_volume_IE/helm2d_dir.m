@@ -26,25 +26,15 @@ eps = 1e-9;
 
 %% Quadrature
 
-% Volume to volume
 start = tic;
 A = helm2d.slp_matgen(S, zk, eps);
 l11 = -eye(S.npts) + V.*A;
-fprintf('%5.2e s : time to assemble v2v matrix\n', toc(start))
 
-% Boundary to volume
 h2d_d = kernel.helm2d('d', zk);
-start = tic;
 l12 = V.*chunkerkernevalmat(chnkr, h2d_d, S.r(1:2,:));
-fprintf('%5.2e s : time to assemble b2v matrix\n', toc(start))
 
-% Volume to boundary
-start = tic;
 l21 = helm2d.v2b_dir(zk, S, chnkr, eps);
-fprintf('%5.2e s : time to assemble v2b matrix\n', toc(start))
 
-% Boundary to boundary
-start = tic;
 l22 = -0.5*eye(chnkr.npt) + chunkermat(chnkr, h2d_d);
 fprintf('%5.2e s : time to assemble b2b matrix\n', toc(start))
 
