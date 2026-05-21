@@ -55,8 +55,8 @@ for i = 1:nuni
 
     [~, xinterp, ~, dumat, dvmat] = patch_sub(norder, iptype);
     xinterp_cell{i} = xinterp;
-    dumat_cell{i}   = dumat * xinterp;
-    dvmat_cell{i}   = dvmat * xinterp;
+    dumat_cell{i}   = dumat;
+    dvmat_cell{i}   = dvmat;
     npols_uni(i)    = size(xinterp, 2);
 end
 
@@ -74,10 +74,10 @@ for ii = 1:npatches
     iout  = ixyzso(ii):ixyzso(ii+1)-1;
 
     if lsplit(ii)
-        rvals = obj.r(:, obj.ixyzs(ii):obj.ixyzs(ii+1)-1);
-        rsub  = rvals * xinterp_cell{iind}.';
-        dusub = rvals * dumat_cell{iind}.';
-        dvsub = rvals * dvmat_cell{iind}.';
+        inodes = obj.ixyzs(ii):obj.ixyzs(ii+1)-1;
+        rsub  = obj.r(:,  inodes) * xinterp_cell{iind}.';
+        dusub = obj.du(:, inodes) * dumat_cell{iind}.';
+        dvsub = obj.dv(:, inodes) * dvmat_cell{iind}.';
         n     = cross(dusub, dvsub);
         n     = n ./ vecnorm(n);
         srcmat(:,iout) = [rsub; dusub; dvsub; n];

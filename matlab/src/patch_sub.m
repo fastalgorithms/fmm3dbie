@@ -25,12 +25,13 @@ function [uvst,xinterp,pols,dumat,dvmat] = patch_sub(norder, iptype)
 %    * xinterp: (4*npols, npols) interpolation matrix mapping
 %        function values at the original nodes to values at uvst
 %    * pols: (4*npols, npols) basis polynomial values at uvst
-%    * dumat: (4*npols, npols) interpolation matrix for the
-%        u-derivative, mapping original node values to u-derivatives
-%        at the sub-patch nodes
-%    * dvmat: (4*npols, npols) interpolation matrix for the
-%        v-derivative, mapping original node values to v-derivatives
-%        at the sub-patch nodes
+%    * dumat: (4*npols, npols) interpolation matrix mapping parent
+%        dr/du tangent vectors at the original nodes to dr/dt tangent
+%        vectors at the sub-patch nodes, where t is the sub-patch's
+%        own local parameter. Accounts for the chain rule ds/dt = +-1/2
+%        of the affine sub-patch mapping (sign -1/2 for iptype==1 quad 2,
+%        +1/2 for all other quads).
+%    * dvmat: (4*npols, npols) same as dumat but for the v component
 %
 
     if iptype == 1
@@ -43,8 +44,6 @@ function [uvst,xinterp,pols,dumat,dvmat] = patch_sub(norder, iptype)
         amat = koorn.vals2coefs(norder,uvs);
         pols = koorn.pols(norder,uvst);
         xinterp = pols.'*amat;
-
-        [~,deru,derv] = koorn.ders(norder,uvs);
     elseif iptype == 11
         [uvs] = polytens.lege.nodes(norder);
         uvs1 = uvs/2+[-0.5;-0.5];
@@ -55,8 +54,6 @@ function [uvst,xinterp,pols,dumat,dvmat] = patch_sub(norder, iptype)
         amat = polytens.lege.vals2coefs(norder,uvs);
         pols = polytens.lege.pols(norder,uvst);
         xinterp = pols.'*amat;
-
-        [~,deru,derv] = polytens.lege.ders(norder,uvs);
     elseif iptype == 12
         [uvs] = polytens.cheb.nodes(norder);
         uvs1 = uvs/2+[-0.5;-0.5];
@@ -67,11 +64,19 @@ function [uvst,xinterp,pols,dumat,dvmat] = patch_sub(norder, iptype)
         amat = polytens.cheb.vals2coefs(norder,uvs);
         pols = polytens.cheb.pols(norder,uvst);
         xinterp = pols.'*amat;
-
-        [~,deru,derv] = polytens.cheb.ders(norder,uvs);
     end
     pols = pols.';
-dumat = kron(eye(4),deru.'*amat);
-dvmat = kron(eye(4),derv.'*amat);    
+    npols = size(xinterp, 2);
+    if iptype == 1
+        % Quad 2 uses uvs2 = -uvs/2 + [0.5;0.5], so ds/dt = -1/2 for
+        % both components; quads 1,3,4 use uvs/2+offset, so ds/dt = +1/2.
+        signs = [ones(npols,1); -ones(npols,1); ones(2*npols,1)];
+        dumat = (signs .* xinterp) / 2;
+        dvmat = dumat;
+    else
+        % iptype 11,12: all quads use uvs/2+offset, so ds/dt = +1/2.
+        dumat = xinterp / 2;
+        dvmat = xinterp / 2;
+    end
 
 end

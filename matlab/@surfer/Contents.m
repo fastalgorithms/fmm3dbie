@@ -8,6 +8,7 @@
 %   load_from_file        - Create surfer object by loading a .go3 file
 %   merge                 - Combine array of surfer objects into a single such object.
 %   oversample            - Creates surfer object with patches of higher order than given.
+%   resolve_fun           - Refine a surfer until a function defined on it is resolved.
 %   plot                  - Plot surface patches of a surfer object in current figure
 %   plot_nodes            - show nodes of a surfer object, or function on nodes
 %   rotate                - Return a surfer object rotated by Euler angles

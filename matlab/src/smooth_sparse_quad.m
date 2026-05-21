@@ -77,10 +77,9 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,lbat)
         icol_ind(istart:istart+nelem-1) = iinds;
         istart = istart+nelem;
     end
-    irow_ind = repelem((1:ntarg)',nrep);    
-    
+    irow_ind = repelem((1:ntarg)',nrep);
+
     nnz = length(irow_ind);
-    vals = zeros(1,nnz);
     
     nbat = ceil(nnz/lbat);
     
@@ -109,6 +108,8 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,lbat)
     irow_indopdim = irow_indopdim(:);
     icol_indopdim = icol_indopdim(:);
 
+    vals = zeros(1, prod(opdims)*nnz);
+
     for k = 1:nbat
         ks = (lbat*(k-1)+1):min(lbat*k,nnz);
         ksloc = (prod(opdims)*lbat*(k-1)+1):(prod(opdims)*min(lbat*k,nnz));
@@ -118,16 +119,17 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,lbat)
             targk.(field{1}) = targs.(field{1})(:,irow_ind(ks));
         end
         targk.r = [targk.r;zeros(3-size(targk.r,1),size(targk.r,2))];
-        % rtarg_orig = targk.r;
         targk.r = targk.r - rsrc;
-        kernvals = reshape(kernuse(struct('r',[0;0;0]),targk),[],length(ks)).*S_over.wts(icol_ind(ks)).';
+        kernvals = reshape(kernuse(struct('r',[0;0;0]),targk), opdims(1), length(ks), opdims(2)) ...
+                   .* reshape(S_over.wts(icol_ind(ks)), 1, length(ks), 1);
         % Zero out entries where source and target coincide (relative norm < 1e-14)
         src_norm = max(vecnorm(rsrc), 1);
         self_mask = vecnorm(targk.r) < 1e-14 * src_norm;
-        kernvals(:, self_mask) = 0;
-        vals(ksloc) = kernvals(:).';
+        kernvals(:, self_mask, :) = 0;
+        % Permute to (opdims(1), opdims(2), length(ks)) and flatten
+        vals(ksloc) = reshape(permute(kernvals, [1 3 2]), 1, []);
     end
-  
+
    Asmth = sparse(irow_indopdim,icol_indopdim, vals, opdims(1)*ntarg, opdims(2)*S_over.npts);
 
    Asmth = Asmth*val2over;

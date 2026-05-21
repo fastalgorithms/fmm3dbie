@@ -68,7 +68,7 @@ classdef surfer
 %   merge([array of objs])   - merge an array of surface objects
 %   slicesurfer(obj,ipatch)  - extract a subset of patches by index
 %   area(obj)                - compute the surface area of object
-%   surf_fun_error(obj,f,p)  - estimate error in function approximation
+%   surf_fun_error(obj,f,...)  - estimate error in function approximation
 %                              on surface via basis expansion tails
 %   vals2coefs(obj, vals)    - construct basis function expansions
 %                              of function on surface
@@ -359,7 +359,7 @@ classdef surfer
          [objout] = merge(Sarray);
          [obj2] = slicesurfer(obj, ipatchkeep);
          [coefs] = vals2coefs(obj,vals);
-         [errps] = surf_fun_error(obj,fun,p);
+         [errps] = surf_fun_error(obj,fun,p,nordcheck);
          [objout] = mtimes(A, obj);
          [objout] = plus(obj, v);
          [objout] = minus(obj, v);
