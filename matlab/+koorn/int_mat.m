@@ -1,4 +1,4 @@
-function [xintmatu,xintmatv,xinterp] = koorn_int_mat(uvs,norder,nleg,pt)
+function [xintmatu,xintmatv,xinterp] = int_mat(uvs,norder,nleg,pt)
 
     xintmatu = zeros(size(uvs,2),(norder+1)*(norder+2)/2);
     xintmatv = zeros(size(uvs,2),(norder+1)*(norder+2)/2);
