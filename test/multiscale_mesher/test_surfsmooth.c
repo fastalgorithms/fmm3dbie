@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stddef.h>
 
-
 #ifndef MWF77_RETURN
 #define MWF77_RETURN int
 #endif
@@ -17,7 +16,7 @@
 #define MWF77_multiscale_mesher multiscale_mesher_unif_refine__
 #endif
 
-void multiscale_mesher_unif_refine_cfname_(char *, int*, int*, int *, int *, int *, double *, char *, int *);
+void multiscale_mesher_unif_refine_cfname_(char *, int64_t*, int64_t*, char *, int64_t*, int64_t *, int64_t *, int64_t *, double *, char *, int64_t *);
 void f2cstr_(char *);
 
 #ifdef __cplusplus
@@ -27,21 +26,24 @@ extern "C"
 int main(int argc, char **argv)
 {
   char *filenamein;
-  filenamein = "/Users/mrachh/git/fmm3dbie/geometries/meshes/sphere.msh";
+  filenamein = "../../geometries/meshes/sphere.msh";
 
   char *filenameout;
-  filenameout = "/Users/mrachh/git/fmm3dbie/geometries/sphere";
+  filenameout = "../../geometries/sphere";
 
-  int ifiletype = 1;
-  int norder_skel = 12;
-  int norder_smooth = 4;
-  int nrefine = 1;
-  int adapt_flag = 1;
+  int64_t ifiletype = 1;
+  int64_t norder_skel = 12;
+  int64_t norder_smooth = 4;
+  int64_t nrefine = 1;
+  int64_t adapt_flag = 1;
   double rlam = 2.5;
-  int ier = 0;
+  int64_t ier = 0;
+  int64_t ifcad = 0;
+  char *fcad;
+  fcad = "tmp";
   
 
-  multiscale_mesher_unif_refine_cfname_(filenamein, &ifiletype, &norder_skel, &norder_smooth, 
+  multiscale_mesher_unif_refine_cfname_(filenamein, &ifiletype, &ifcad, fcad, &norder_skel, &norder_smooth, 
      &nrefine, &adapt_flag, &rlam, filenameout, &ier);
   return 0;
 

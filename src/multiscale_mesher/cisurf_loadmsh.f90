@@ -220,6 +220,7 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   type (Geometry), intent(inout) :: Geometry1     !! where the geometry will be loaded
   character(len=*), intent(in) :: filename         !! name of the msh file
   character(len=1000) :: tmp1
+  character :: tmp2
   integer *8 :: n_order_sf, nsk, nsf
   integer *8  :: norder_skel, norder_smooth
   
@@ -229,9 +230,9 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   integer *8 :: ielem, nelems, maxelems
   double precision :: x, y, z, d, dmin
   double precision, allocatable :: xs(:), ys(:), zs(:)
-  integer *8 :: ierror, iflag
+  integer *8 :: ierror, iflag, itmp
   integer *8 :: ierror1, ierror2
-  integer *8 :: ier
+  integer *8 :: ier, nnode_per_tri, ipointer
 
 
   Geometry1%ifflat = 0
@@ -247,9 +248,19 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   endif
   rewind(8)
 
+  read(8,'(a41,a1)', iostat=ierror1) tmp1,tmp2
+  read(tmp2, '(I1)') nnode_per_tri
+  if (nnode_per_tri.ne.3.and.nnode_per_tri.ne.6) then
+    ier = 2
+    close(8)
+    return
+  endif
 
-  read(8,'(a)', iostat=ierror1) tmp1
   read(8,'(a)', iostat=ierror2) tmp1
+
+
+
+
 
   if(ierror1+ierror2.gt.0) then
     ier = 2
@@ -258,8 +269,8 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
 
   endif
 
-  ! count the number of nodes and elements
-  !
+    ! count the number of nodes and elements
+    !
   nnodes = 0
   iflag = 0
   ierror = 0
@@ -267,7 +278,7 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
     read (8,'(a)', iostat=ierror1) tmp1
     ierror = ierror + ierror1
     if (index(tmp1, 'End Coordinates') > 0) then
-      iflag = 1
+    iflag = 1
     else
       nnodes = nnodes + 1
     endif
@@ -278,6 +289,7 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
     ierror = ierror + ierror1
     if (index(tmp1, 'Elements') > 0) exit
   end do
+
 
   iflag = 0
   nelems = 0
@@ -291,12 +303,14 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
       nelems = nelems + 1 
     endif
   enddo
+
   rewind(8)
   if(ierror.gt.0) then
     ier = 2
     close(8)
     return
   endif
+
 
   n = nelems
 
@@ -311,6 +325,7 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
   Geometry1%n_order_sf = nsf
 
   m = nnodes
+  if (nnode_per_tri.eq.3) m = m + 3*n
   Geometry1%npoints=m
   Geometry1%ntri=n
   Geometry1%ntri_sk=n
@@ -326,6 +341,7 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
 
   allocate(Geometry1%Points(3,m))
   allocate(Geometry1%Tri(6,n))
+
   
 
   read(8,'(a)', iostat=ierror1) tmp1
@@ -351,19 +367,49 @@ subroutine readgidmsh(Geometry1, filename, norder_skel, norder_smooth, ier)
     if (index(tmp1, 'Elements') > 0) exit
   end do
 
-  do i=1,nelems
-    read (8, *, iostat=ierror1) ielem, Geometry1%Tri(1,i), &
-    Geometry1%Tri(2,i), Geometry1%Tri(3,i), Geometry1%Tri(4,i), &
-    Geometry1%Tri(5,i), Geometry1%Tri(6,i)
-    ierror = ierror + ierror1
-  enddo
+  if (nnode_per_tri.eq.6) then
+
+    do i=1,nelems
+      read (8, *, iostat=ierror1) ielem, Geometry1%Tri(1,i), &
+      Geometry1%Tri(2,i), Geometry1%Tri(3,i), Geometry1%Tri(4,i), &
+      Geometry1%Tri(5,i), Geometry1%Tri(6,i)
+      ierror = ierror + ierror1
+    enddo
+  else
+    ipointer = nnodes + 1
+    Geometry1%ifflat = 1
+    do i = 1, nelems
+      read(8, *, iostat=ierror1) ielem, aux1, aux2, aux3
+      ierror = ierror + ierror1
+
+      Geometry1%Tri(1,i) = aux1
+      Geometry1%Tri(2,i) = aux2
+      Geometry1%Tri(3,i) = aux3
+      Geometry1%Tri(4,i) = ipointer
+      Geometry1%Tri(5,i) = ipointer + 1
+      Geometry1%Tri(6,i) = ipointer + 2
+
+      ! Midpoint of edge n1-n2  (stored at ipointer)
+      Geometry1%Points(:, ipointer) = &
+      (Geometry1%Points(:, aux1) + Geometry1%Points(:, aux2)) / 2.0d0
+
+      ! Midpoint of edge n2-n3  (stored at ipointer+1)
+      Geometry1%Points(:, ipointer+1) = &
+      (Geometry1%Points(:, aux2) + Geometry1%Points(:, aux3)) / 2.0d0
+
+      ! Midpoint of edge n1-n3  (stored at ipointer+2)
+      Geometry1%Points(:, ipointer+2) = &
+      (Geometry1%Points(:, aux1) + Geometry1%Points(:, aux3)) / 2.0d0
+
+      ipointer = ipointer + 3
+    enddo
+  endif
 
   if(ierror.gt.0) then
     ier = 2
     close(8)
     return
   endif
-
 
   close(8)
   
@@ -1312,6 +1358,7 @@ subroutine get_filetype(filename, ifiletype, ier)
   ier = 0
   fstr_gid_tritest = 'MESH dimension 3 ElemType Triangle Nnode '
   fstr_gmshtest = '$MeshFormat'
+  
 
 ! 
   open(unit=33, file=trim(filename), status='old', iostat=io)
