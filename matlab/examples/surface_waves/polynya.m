@@ -11,9 +11,9 @@
 %   v2v(mu) + b2v(rho)   = rhs_vol
 %   v2b(mu) + b2b(rho)   = rhs_bdry
 
-cparams = []; cparams.maxchunklen = 0.2;
-chnkr = chunkerfunc(@(t) starfish(t,5,0.1),cparams);
-[S, chnkr] = triangulate_chunker_interior(chnkr, 6, 0.2);
+cparams = []; cparams.maxchunklen = 0.3;
+chnkr = chunkerfunc(@(t) starfish(t,5,0.),cparams);
+[S, chnkr] = triangulate_chunker_interior(chnkr, 6, 0.3);
 
 chnkr = sort(chnkr);
 
@@ -132,25 +132,17 @@ densmap(1:3:end,1:2:end) = eye(npt);
 densmap(3:3:end,2:2:end) = eye(npt);
 densmap(2:3:end,1:2:end) = H;
 
-opts_corr = []; opts_corr.eps = eps; opts_corr.corrections = true;
+opts_corr = []; opts_corr.eps = eps; 
 
-fprintf('Bdry-to-vol near-field corrections ... '); tic;
-gs_b2v_corr = chunkerkernevalmat(chnkr, ikerngs,   S.r(1:2,:), opts_corr);
-gp_b2v_corr = chunkerkernevalmat(chnkr, ikerngphi, S.r(1:2,:), opts_corr);
-tb2v_corr = toc; fprintf('%.2f s\n', tb2v_corr);
+fprintf('Bdry-to-vol ... '); tic;
+gs_b2v = chunkerkernevalmat(chnkr, ikerngs,   S.r(1:2,:), opts_corr);
+gp_b2v = chunkerkernevalmat(chnkr, ikerngphi, S.r(1:2,:), opts_corr);
+tb2v = toc; fprintf('%.2f s\n', tb2v);
 
-chnkr2_info = []; chnkr2_info.r = chnkr2.r(1:2,:);
-wts_chnkr   = repmat(chnkr2.wts(:).',3,1); wts_chnkr = wts_chnkr(:).';
-
-fprintf('Bdry-to-vol smooth quadrature ...      '); tic;
-gs_b2v_smth = ikerngs(chnkr, S.r(1:2,:)) .* wts_chnkr(:);
-gp_b2v_smth = ikerngphi(chnkr, S.r(1:2,:)) .* wts_chnkr(:);
-
-gs_b2v = (gs_b2v_smth + gs_b2v_corr) * densmap;
-gp_b2v = (gp_b2v_smth + gp_b2v_corr) * densmap;
+gs_b2v = gs_b2v * densmap;
+gp_b2v = gp_b2v * densmap;
 
 b2v_mat = 1/2*gs_b2v - gp_b2v;
-tb2v = toc; fprintf('%.2f s\n', tb2v);
 
 targinfo2 = [];
 targinfo2.r     = [chnkr.r(:,:); zeros(1,chnkr.npt)];
