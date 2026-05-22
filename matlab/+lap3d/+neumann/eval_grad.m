@@ -1,4 +1,4 @@
-function p = eval_der(S,sigma,targinfo,eps,varargin)
+function p = eval_grad(S,sigma,targinfo,eps,varargin)
 %
 %  lap3d.neumann.eval_grad   
 %    Evaluates derivative of the Laplace neumann layer potential at a collection 

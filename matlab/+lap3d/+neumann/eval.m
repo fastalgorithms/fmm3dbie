@@ -56,7 +56,7 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
     end
 
     ipot = 1;
-    if ifield(opts,'eval_pot')
+    if isfield(opts,'eval_pot')
         ipot = opts.eval_pot;
     end
     if ipot
@@ -158,19 +158,23 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
     p = [];
     end
     igrad = 0;
-    if ifield(opts,'eval_grad')
+    if isfield(opts,'eval_grad')
         igrad = opts.eval_grad;
     end
     if igrad
         gradopts = [];
-        if ifield(opts,'gradopts')
+        if isfield(opts,'gradopts')
             gradopts = opts.gradopts;
         end
         targinfouse = targinfo;
+        if isfield(opts.gradopts,'grad_dir')
+            targinfouse.n = opts.gradopts.grad_dir;
+        else
         try
             targinfouse.d = targinfo.d;
         catch
             targinfouse.d = targinfo.n;
+        end
         end
         varargout{1} = lap3d.neumann.eval_grad(S,sigma,targinfouse,eps,gradopts);
     end

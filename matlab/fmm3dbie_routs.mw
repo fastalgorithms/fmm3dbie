@@ -1237,7 +1237,7 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
     end
 
     ipot = 1;
-    if ifield(opts,'eval_pot')
+    if isfield(opts,'eval_pot')
         ipot = opts.eval_pot;
     end
     if ipot
@@ -1338,19 +1338,23 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
     p = [];
     end
     igrad = 0;
-    if ifield(opts,'eval_grad')
+    if isfield(opts,'eval_grad')
         igrad = opts.eval_grad;
     end
     if igrad
         gradopts = [];
-        if ifield(opts,'gradopts')
+        if isfield(opts,'gradopts')
             gradopts = opts.gradopts;
         end
         targinfouse = targinfo;
+        if isfield(opts.gradopts,'grad_dir')
+            targinfouse.n = opts.gradopts.grad_dir;
+        else
         try
             targinfouse.d = targinfo.d;
         catch
             targinfouse.d = targinfo.n;
+        end
         end
         varargout{1} = lap3d.neumann.eval_grad(S,sigma,targinfouse,eps,gradopts);
     end
@@ -1531,7 +1535,9 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
       # FORTRAN getnearquad_lap_s_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] wnear);
     elseif strcmpi(qtype, 'eval')
       # FORTRAN getnearquad_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear);
-    else
+    elseif strcmpi(qtype, 'der')
+      # FORTRAN getnearquad_lap_s_neu_der(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_pts_i, int[nnz] col_ind_i, int[nnzp1] iquad_i, double[1] rfac0, int[1] nquad, inout double[nquad] wnear_i);
+        g_kern = @(s,t)  lap3d.kern(s,t,'sprime');
       error('lap3d.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
     end
     

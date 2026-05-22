@@ -68,6 +68,7 @@ classdef surfer
 %   merge([array of objs])   - merge an array of surface objects
 %   slicesurfer(obj,ipatch)  - extract a subset of patches by index
 %   area(obj)                - compute the surface area of object
+%   patch_area(obj)          - compute the surface area of each patch
 %   volume(obj)              - compute the signed enclosed volume of object
 %   surf_fun_error(obj,f,...)  - estimate error in function approximation
 %                              on surface via basis expansion tails
@@ -345,6 +346,7 @@ classdef surfer
         
          [varargout] = plot(obj,varargin);
          a = area(obj);
+         as = patch_area(obj);
          [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(obj);
          [objout,varargout] = oversample(obj,novers);
          [objout,varargout] = split_patches(obj,isplit);
