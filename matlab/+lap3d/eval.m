@@ -17,11 +17,6 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
 % Syntax for Neumann problems
 %   [p] = lap3d.eval(S, 'neu', densities, targinfo, eps);
 %   [p] = lap3d.eval(S, 'neu', densities, targinfo, eps, opts);
-%   [p, grad] = lap3d.eval(S, 'neu', densities, targinfo, eps, opts);
-%
-%   [grad] = lap3d.eval(S, 'neu_grad', densities, targinfo, eps);
-%   [grad] = lap3d.eval(S, 'neu_grad', densities, targinfo, eps, opts);
-%
 %
 %  SEE ALSO: lap3d.solver, lap3d.dirichlet.eval, lap3d.neumann.eval
 %
@@ -79,16 +74,6 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
           opts = varargin{1};
         end
         [p, varargout{1:nargout-1}] = lap3d.neumann.eval(S, densities, targinfo, eps, opts);
-
-      case {'neu_grad', 'neumann_grad'}
-        opts = [];
-        if nargin > 5
-          opts = varargin{1};
-        end
-        opts.eval_pot = 0;
-        opts.gradopts = opts;
-        opts.eval_grad = 1;
-        [~, p] = lap3d.neumann.eval(S, densities, targinfo, eps, opts);
 
         otherwise
             error('LAP3D.EVAL: representation %s not found\n',bc);
