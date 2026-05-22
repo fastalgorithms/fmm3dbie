@@ -58,9 +58,12 @@ function p = eval_der(S,sigma,targinfo,eps,varargin)
     end
 
     targinfouse = targinfo;
-    % compute derivative in the direction targinfo.d. 
-    targinfouse.n = targinfo.d;
-    
+    if isfield(opts,'grad_dir')
+        targinfouse.n = opts.grad_dir;
+    else
+        % compute derivative in the direction targinfo.d. 
+        targinfouse.n = targinfo.d;
+    end
     if(isprecompq)
       if ~(strcmpi(Q.format,'rsc'))
         fprintf('Ignoring quadrature corrections\n');

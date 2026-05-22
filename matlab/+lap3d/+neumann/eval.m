@@ -1,4 +1,4 @@
-function p = eval(S,sigma,targinfo,eps,varargin)
+function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %
 %  lap3d.neumann.eval
 %    Evaluates the Laplace neumann layer potential at a collection 
@@ -7,31 +7,43 @@ function p = eval(S,sigma,targinfo,eps,varargin)
 %  Syntax
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps)
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
+%   [pot,grad] = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
 %
 %  Integral representation
-%     pot = S_{0} [\sigma] 
+%     pot = S_{0} [\sigma]
 %
 %  S_{0}: Laplace single layer potential
-%  
+%
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
-%    * targinfo: target info (optional)
+%    * targinfo: target info
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
-%    * opts: options struct
 %    * eps: precision requested
+%    * opts: options struct (optional)
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
-%        opts.precomp_quadrature: precomputed quadrature corrections 
+%        opts.precomp_quadrature: precomputed quadrature corrections
 %           struct currently only supports quadrature corrections
-%           computed in rsc format 
+%           computed in rsc format
+%        opts.eval_pot: if 0, skip potential evaluation and return p=[]
+%           (default 1)
+%        opts.eval_grad: if 1, evaluate directional derivative of
+%           potential (default 0); returned as second output argument
+%        opts.gradopts: options struct passed to lap3d.neumann.eval_grad
+%        opts.grad_dir: (3,nt) override for derivative directions;
+%           if not set, targinfo.d (or targinfo.n) is used
+%
+%  Output arguments:
+%    * pot: (nt,1) potential values, or [] if opts.eval_pot=0
+%    * grad: (nt,1) directional derivative, returned when opts.eval_grad=1
 %    
 
     if(nargin < 5) 
@@ -39,6 +51,12 @@ function p = eval(S,sigma,targinfo,eps,varargin)
     else
       opts = varargin{1};
     end
+
+    ipot = 1;
+    if ifield(opts,'eval_pot')
+        ipot = opts.eval_pot;
+    end
+    if ipot
 
     nonsmoothonly = false;
     if(isfield(opts,'nonsmoothonly'))
@@ -132,6 +150,30 @@ function p = eval(S,sigma,targinfo,eps,varargin)
 % Call the layer potential evaluator
     mex_id_ = 'lap_s_neu_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[x])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, sigma, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, npts, 1, 1, ntarg);
+
+    else
+    p = [];
+    end
+    igrad = 0;
+    if ifield(opts,'eval_grad')
+        igrad = opts.eval_grad;
+    end
+    if igrad
+        gradopts = [];
+        if ifield(opts,'gradopts')
+            gradopts = opts.gradopts;
+        end
+        targinfouse = targinfo;
+        try
+            targinfouse.d = targinfo.d;
+        catch
+            targinfouse.d = targinfo.n;
+        end
+        if isfield(opts,'grad_dir')
+            targinfouse.d = opts.grad_dir;
+        end
+        varargout{1} = lap3d.neumann.eval_grad(S,sigma,targinfouse,eps,gradopts);
+    end
 end    
 %
 %

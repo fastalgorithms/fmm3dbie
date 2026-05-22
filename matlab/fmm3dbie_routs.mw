@@ -1179,7 +1179,7 @@ end
 %-------------------------------------------------
 
 @ +lap3d/+neumann/eval.m 
-function p = eval(S,sigma,targinfo,eps,varargin)
+function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %
 %  lap3d.neumann.eval
 %    Evaluates the Laplace neumann layer potential at a collection 
@@ -1220,6 +1220,12 @@ function p = eval(S,sigma,targinfo,eps,varargin)
     else
       opts = varargin{1};
     end
+
+    ipot = 1;
+    if ifield(opts,'eval_pot')
+        ipot = opts.eval_pot;
+    end
+    if ipot
 
     nonsmoothonly = false;
     if(isfield(opts,'nonsmoothonly'))
@@ -1312,6 +1318,27 @@ function p = eval(S,sigma,targinfo,eps,varargin)
     ipotflag = 1;
 % Call the layer potential evaluator
     # FORTRAN lap_s_neu_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, double[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout double[ntarg] p);   
+
+    else
+    p = [];
+    end
+    igrad = 0;
+    if ifield(opts,'eval_grad')
+        igrad = opts.eval_grad;
+    end
+    if igrad
+        gradopts = [];
+        if ifield(opts,'gradopts')
+            gradopts = opts.gradopts;
+        end
+        targinfouse = targinfo;
+        try
+            targinfouse.d = targinfo.d;
+        catch
+            targinfouse.d = targinfo.n;
+        end
+        varargout{1} = lap3d.neumann.eval_grad(S,sigma,targinfouse,eps,gradopts);
+    end
 end    
 %
 %
