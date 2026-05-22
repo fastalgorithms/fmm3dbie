@@ -19,3 +19,4 @@
 %   surfer                - class which describes a surface divided into triangles/quads (patches).
 %   translate             - translate a surfer object by given vector(s)
 %   vals2coefs            - convert values to coeffs on given surfer object
+%   volume                - compute the signed enclosed volume of object
