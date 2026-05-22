@@ -11,6 +11,7 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %
 %  Integral representation
 %     pot = S_{0} [\sigma]
+%     pot = S_{0} [\sigma] 
 %
 %  S_{0}: Laplace single layer potential
 %
@@ -21,11 +22,13 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
 %    * targinfo: target info
+%    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
+%    * opts: options struct
 %    * eps: precision requested
 %    * opts: options struct (optional)
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
@@ -44,7 +47,7 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %  Output arguments:
 %    * pot: (nt,1) potential values, or [] if opts.eval_pot=0
 %    * grad: (nt,1) directional derivative, returned when opts.eval_grad=1
-%    
+%           computed in rsc format 
 
     if(nargin < 5) 
       opts = [];
@@ -168,9 +171,6 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
             targinfouse.d = targinfo.d;
         catch
             targinfouse.d = targinfo.n;
-        end
-        if isfield(opts,'grad_dir')
-            targinfouse.d = opts.grad_dir;
         end
         varargout{1} = lap3d.neumann.eval_grad(S,sigma,targinfouse,eps,gradopts);
     end

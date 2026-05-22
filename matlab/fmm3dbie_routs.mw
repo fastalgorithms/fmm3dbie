@@ -1188,32 +1188,47 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %  Syntax
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps)
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
+%   [pot,grad] = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
 %
 %  Integral representation
+%     pot = S_{0} [\sigma]
 %     pot = S_{0} [\sigma] 
 %
 %  S_{0}: Laplace single layer potential
-%  
+%
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
+%    * targinfo: target info
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %    * eps: precision requested
+%    * opts: options struct (optional)
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
-%        opts.precomp_quadrature: precomputed quadrature corrections 
+%        opts.precomp_quadrature: precomputed quadrature corrections
 %           struct currently only supports quadrature corrections
+%           computed in rsc format
+%        opts.eval_pot: if 0, skip potential evaluation and return p=[]
+%           (default 1)
+%        opts.eval_grad: if 1, evaluate directional derivative of
+%           potential (default 0); returned as second output argument
+%        opts.gradopts: options struct passed to lap3d.neumann.eval_grad
+%        opts.grad_dir: (3,nt) override for derivative directions;
+%           if not set, targinfo.d (or targinfo.n) is used
+%
+%  Output arguments:
+%    * pot: (nt,1) potential values, or [] if opts.eval_pot=0
+%    * grad: (nt,1) directional derivative, returned when opts.eval_grad=1
 %           computed in rsc format 
-%    
 
     if(nargin < 5) 
       opts = [];

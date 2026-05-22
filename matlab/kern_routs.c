@@ -1132,7 +1132,7 @@ MWF77_RETURN MWF77_self_quadrature(int64_t*, int64_t*, double*, int64_t*, double
 } /* end extern C */
 #endif
 
-/* ---- kern_routs.mw: 142 ----
+/* ---- kern_routs.mw: 145 ----
  * lap_s_neu_eval_addsub_der(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npatp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, double[1] eps, int64_t[1] ndd, double[ndd] dpars, int64_t[1] ndz, dcomplex[ndz] zpars, int64_t[1] ndi, int64_t[ndi] ipars, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, int64_t[1] nquad, int64_t[1] nker, double[nquad] wnear, int64_t[npatches] novers, int64_t[1] nptso, int64_t[npatp1] ixyzso, double[12, nptso] srcover, double[nptso] wover, int64_t[1] lwork, double[lwork] work, int64_t[1] idensflag, int64_t[1] ndim_s, double[npts] sigma, int64_t[1] ipotflag, int64_t[1] ndim_p, inout double[ntarg] p);
  */
 static const char* stubids1_ = "lap_s_neu_eval_addsub_der(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[x])";
@@ -1768,7 +1768,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 181 ----
+/* ---- kern_routs.mw: 184 ----
  * get_centroid_rads(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npatp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, inout double[n3, npatches] cms, inout double[npatches] rads);
  */
 static const char* stubids2_ = "get_centroid_rads(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c io double[xx], c io double[x])";
@@ -1924,7 +1924,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 187 ----
+/* ---- kern_routs.mw: 190 ----
  * findnearmem(double[n3, npatches] cms, int64_t[1] npatches, double[npatches] rads, int64_t[1] ndtarg, double[ndtarg, ntarg] targs, int64_t[1] ntarg, inout int64_t[1] nnz);
  */
 static const char* stubids3_ = "findnearmem(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x])";
@@ -2071,7 +2071,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 192 ----
+/* ---- kern_routs.mw: 195 ----
  * findnear(double[n3, npatches] cms, int64_t[1] npatches, double[npatches] rads, int64_t[1] ndtarg, double[ndtarg, ntarg] targs, int64_t[1] ntarg, inout int64_t[ntp1] row_ptr, inout int64_t[nnz] col_ind);
  */
 static const char* stubids4_ = "findnear(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x], c io int64_t[x])";
@@ -2235,7 +2235,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 233 ----
+/* ---- kern_routs.mw: 236 ----
  * findnearsrfcpnt(int64_t[1] ntarg_i, double[ndtarg, ntarg_i] targ_i, int64_t[1] npts, int64_t[1] porder, int64_t[1] snpols, int64_t[1] maxiter, double[n12, npts] srcvals, double[n9, npts] srccoefs, double[1] tol, int64_t[ntarg_i] lpatchidxvec, int64_t[ntarg_i] itvec, inout double[ndtarg, ntarg_i] sxyz_ij, inout double[2, ntarg_i] uvsloc_ij, inout double[ntarg_i] dists_ij, inout int64_t[ntarg_i] flags_ij);
  */
 static const char* stubids5_ = "findnearsrfcpnt(c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c io double[xx], c io double[xx], c io double[x], c io int64_t[x])";
@@ -2524,7 +2524,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 316 ----
+/* ---- kern_routs.mw: 319 ----
  * gettritree(int64_t[1] npatches, int64_t[1] norder, int64_t[1] npols, double[9, npols] srccoefs, int64_t[1] ntarg, double[3, ntarg] targs, int64_t[1] itargptr, int64_t[1] ntargptr, int64_t[1] ntrimax, int64_t[1] nlevmax, double[1] rfac, inout int64_t[1] ntri, inout int64_t[1] nlev, inout int64_t[ntrimax] ichild_start, inout double[ntrimax] da, inout double[3, ntrimax] tricm, inout double[ntrimax] trirad, inout double[6, ntrimax] tverts, inout int64_t[ntarg, ntrimax] itrirel, inout int64_t[1] ier);
  */
 static const char* stubids6_ = "gettritree(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c io int64_t[x], c io int64_t[x], c io int64_t[x], c io double[x], c io double[xx], c io double[x], c io double[xx], c io int64_t[xx], c io int64_t[x])";
@@ -2894,7 +2894,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- kern_routs.mw: 348 ----
+/* ---- kern_routs.mw: 351 ----
  * self_quadrature(int64_t[1] norder, int64_t[1] ipv, double[2, nv] verts, int64_t[1] nv, double[1] x0, double[1] y0, double[3, 2] druse, inout int64_t[1] nquad, inout double[nmax] xs, inout double[nmax] ys, inout double[nmax] ws, inout int64_t[1] ier);
  */
 static const char* stubids7_ = "self_quadrature(c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[x], c i double[x], c i double[xx], c io int64_t[x], c io double[x], c io double[x], c io double[x], c io int64_t[x])";
@@ -3172,13 +3172,13 @@ void mexFunction(int nlhs, mxArray* plhs[],
     } else if (strcmp(id, "*profile report*") == 0) {
         if (!mexprofrecord_)
             mexPrintf("Profiler inactive\n");
-        mexPrintf("%d calls to kern_routs.mw:142\n", mexprofrecord_[1]);
-        mexPrintf("%d calls to kern_routs.mw:181\n", mexprofrecord_[2]);
-        mexPrintf("%d calls to kern_routs.mw:187\n", mexprofrecord_[3]);
-        mexPrintf("%d calls to kern_routs.mw:192\n", mexprofrecord_[4]);
-        mexPrintf("%d calls to kern_routs.mw:233\n", mexprofrecord_[5]);
-        mexPrintf("%d calls to kern_routs.mw:316\n", mexprofrecord_[6]);
-        mexPrintf("%d calls to kern_routs.mw:348\n", mexprofrecord_[7]);
+        mexPrintf("%d calls to kern_routs.mw:145\n", mexprofrecord_[1]);
+        mexPrintf("%d calls to kern_routs.mw:184\n", mexprofrecord_[2]);
+        mexPrintf("%d calls to kern_routs.mw:190\n", mexprofrecord_[3]);
+        mexPrintf("%d calls to kern_routs.mw:195\n", mexprofrecord_[4]);
+        mexPrintf("%d calls to kern_routs.mw:236\n", mexprofrecord_[5]);
+        mexPrintf("%d calls to kern_routs.mw:319\n", mexprofrecord_[6]);
+        mexPrintf("%d calls to kern_routs.mw:351\n", mexprofrecord_[7]);
     } else if (strcmp(id, "*profile log*") == 0) {
         FILE* logfp;
         if (nrhs != 2 || mxGetString(prhs[1], id, sizeof(id)) != 0)
@@ -3188,13 +3188,13 @@ void mexFunction(int nlhs, mxArray* plhs[],
             mexErrMsgTxt("Cannot open log for output");
         if (!mexprofrecord_)
             fprintf(logfp, "Profiler inactive\n");
-        fprintf(logfp, "%d calls to kern_routs.mw:142\n", mexprofrecord_[1]);
-        fprintf(logfp, "%d calls to kern_routs.mw:181\n", mexprofrecord_[2]);
-        fprintf(logfp, "%d calls to kern_routs.mw:187\n", mexprofrecord_[3]);
-        fprintf(logfp, "%d calls to kern_routs.mw:192\n", mexprofrecord_[4]);
-        fprintf(logfp, "%d calls to kern_routs.mw:233\n", mexprofrecord_[5]);
-        fprintf(logfp, "%d calls to kern_routs.mw:316\n", mexprofrecord_[6]);
-        fprintf(logfp, "%d calls to kern_routs.mw:348\n", mexprofrecord_[7]);
+        fprintf(logfp, "%d calls to kern_routs.mw:145\n", mexprofrecord_[1]);
+        fprintf(logfp, "%d calls to kern_routs.mw:184\n", mexprofrecord_[2]);
+        fprintf(logfp, "%d calls to kern_routs.mw:190\n", mexprofrecord_[3]);
+        fprintf(logfp, "%d calls to kern_routs.mw:195\n", mexprofrecord_[4]);
+        fprintf(logfp, "%d calls to kern_routs.mw:236\n", mexprofrecord_[5]);
+        fprintf(logfp, "%d calls to kern_routs.mw:319\n", mexprofrecord_[6]);
+        fprintf(logfp, "%d calls to kern_routs.mw:351\n", mexprofrecord_[7]);
         fclose(logfp);
     } else
         mexErrMsgTxt("Unknown identifier");

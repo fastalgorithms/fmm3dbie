@@ -88,7 +88,7 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
         opts.eval_pot = 0;
         opts.gradopts = opts;
         opts.eval_grad = 1;
-        [p, varargout{1:nargout-1}] = lap3d.neumann.eval(S, densities, targinfo, eps, opts);
+        [~, p] = lap3d.neumann.eval(S, densities, targinfo, eps, opts);
 
         otherwise
             error('LAP3D.EVAL: representation %s not found\n',bc);
