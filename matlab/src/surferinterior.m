@@ -2,8 +2,6 @@ function in = surferinterior(S,targs, opts)
 % Identify which targets are inside a surfer. Assumes normals are pointed
 % outwards. 
 %
-% If the surface is interesting, use opts.quadrature = true (slow, but accurate)
-
 if nargin < 3
     opts = [];
 end
@@ -16,24 +14,10 @@ end
 targ = targs.r;
 
 eps = 1e-4;
-% try
-%     if quadrature, error('use quadrature');end
-%     pg = 0;
-%     pgt = 1;
-% 
-%     srcinfo.sources = S.r;
-%     srcinfo.dipoles = S.n.*S.wts(:).';
-% 
-%     U = lfmm3d(eps,srcinfo,pg,targ,pgt);
-% 
-%     us = U.pottarg / 4/pi;
-% 
-% catch
-%     warning('fmm3d not detected, surferinterior will be slow')
-    dens = ones(S.npts,1);
-    us = lap3d.dirichlet.eval(S,dens,targs,eps,[0,1]);
-% end
 
+% evaluate double layer with small tolerance
+dens = ones(S.npts,1);
+us = lap3d.dirichlet.eval(S,dens,targs,eps,[0,1]);
 
 in = -us;
 ifix = (abs(in - round(in))>0.1) | abs(in)>1.5;
