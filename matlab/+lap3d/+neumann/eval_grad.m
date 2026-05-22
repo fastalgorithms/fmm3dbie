@@ -1,15 +1,15 @@
 function p = eval_der(S,sigma,targinfo,eps,varargin)
 %
-%  lap3d.neumann.eval_der   
+%  lap3d.neumann.eval_grad   
 %    Evaluates derivative of the Laplace neumann layer potential at a collection 
 %    of targets
 %
 %  Syntax
-%   pot = lap3d.neumann.eval_der(S,sigma,targinfo,eps)
-%   pot = lap3d.neumann.eval_der(S,sigma,targinfo,eps,opts)
+%   pot = lap3d.neumann.eval_grad(S,sigma,targinfo,eps)
+%   pot = lap3d.neumann.eval_grad(S,sigma,targinfo,eps,opts)
 %
-%  Integral representation
-%     pot = S'_{0} [\sigma] 
+%  Evaluate
+%     pot = d . nabla S_{0} [\sigma] 
 %
 %  S_{0}: Laplace single layer potential
 %  
@@ -21,7 +21,7 @@ function p = eval_der(S,sigma,targinfo,eps,varargin)
 %    * sigma: layer potential density
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
-%       targinfo.n = (3,nt) target locations
+%       targinfo.d = (3,nt) target derivative direction
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
@@ -51,6 +51,10 @@ function p = eval_der(S,sigma,targinfo,eps,varargin)
       isprecompq = true;
       Q = opts.precomp_quadrature;
     end
+
+    targinfouse = targinfo;
+    % compute derivative in the direction targinfo.d. 
+    targinfouse.n = targinfo.d;
     
     if(isprecompq)
       if ~(strcmpi(Q.format,'rsc'))

@@ -1,4 +1,6 @@
 function [xs, ys, ws] = self_quadrature(norder, ipv, verts, x0, y0, dr)
+% return the self quadrature nodes for the patch with vertices in verts 
+% and singularity at (x0,y0). dr is the surface Jacobian at (x0,y0)
     nmax = 50000;
     xs = zeros(nmax,1);
     ys = zeros(nmax,1);
