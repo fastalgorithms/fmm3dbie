@@ -27,21 +27,31 @@ function obj = lap3d(type, coefs)
 %      Calls lap3d.dirichlet.get_quadrature_correction or
 %      lap3d.neumann.get_quadrature_correction.
 %
+% Kernel orders (obj.sing):  s -> -1,  d -> 0,  sp -> 0,  c -> -1
+%
+% Oversampling orders:
+%   obj.get_overs_orders(S, t, eps)
+%      Returns novers, the per-patch oversampling orders needed for
+%      accurate near-field quadrature.  Wraps get_oversampling_parameters,
+%      using getnear(S,t) to build the required rsc struct.
+%
 % See also LAP3D.KERN, LAP3D.DIRICHLET.EVAL, LAP3D.NEUMANN.EVAL
 
 if ( nargin < 1 )
     error('KERNEL3D.LAP3D: missing Laplace kernel type.');
 end
 
-obj        = kernel3d();
-obj.name   = 'laplace';
-obj.opdims = [1 1];
+obj           = kernel3d();
+obj.name      = 'laplace';
+obj.opdims    = [1 1];
+obj.zk        = 0;
+obj.ifcomplex = 0;
 
 switch lower(type)
 
     case {'s', 'single'}
         obj.type = 's';
-        obj.sing = 'weak';
+        obj.sing = -1;
 
         obj.eval = @(s,t) lap3d.kern(s, t, 's');
 
@@ -51,11 +61,12 @@ switch lower(type)
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
                             lap3d.dirichlet.eval(S, sigma, targ, eps, dpars_s, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          lap3d.dirichlet.get_quadrature_correction(S, eps, varargin{:});
+                          lap3d.dirichlet.get_quadrature_correction(S, eps, dpars_s, varargin{:});
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.sing);
 
     case {'d', 'double'}
         obj.type = 'd';
-        obj.sing = 'weak';
+        obj.sing = -1;
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'd');
 
@@ -65,11 +76,12 @@ switch lower(type)
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
                             lap3d.dirichlet.eval(S, sigma, targ, eps, dpars_d, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          lap3d.dirichlet.get_quadrature_correction(S, eps, varargin{:});
+                          lap3d.dirichlet.get_quadrature_correction(S, eps,dpars_d, varargin{:});
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.sing);
 
     case {'sp', 'sprime'}
         obj.type = 'sp';
-        obj.sing = 'weak';
+        obj.sing = -1;
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'sprime');
 
@@ -81,6 +93,7 @@ switch lower(type)
                             lap3d.neumann.eval(S, sigma, targ, eps, dpars_sp, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
                           lap3d.neumann.get_quadrature_correction(S, eps, varargin{:});
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.sing);
 
     case {'c', 'combined'}
         if ( nargin < 2 )
@@ -90,7 +103,7 @@ switch lower(type)
         coefs = coefs(:);
 
         obj.type        = 'c';
-        obj.sing         = 'weak';
+        obj.sing         = -1;
         obj.params.coefs = coefs;
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'c', coefs(1), coefs(2));
@@ -101,7 +114,8 @@ switch lower(type)
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
                             lap3d.dirichlet.eval(S, sigma, targ, eps, dpars_c, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          lap3d.dirichlet.get_quadrature_correction(S, eps, varargin{:});
+                          lap3d.dirichlet.get_quadrature_correction(S, eps, dpars_c, varargin{:});
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.sing);
 
     otherwise
         error('KERNEL3D.LAP3D: unknown Laplace kernel type ''%s''.', type);

@@ -156,10 +156,10 @@ if strcmpi(type,'evalg')
 
   nxsrc = repmat(srcnorm(1,:),nt,1);
   nysrc = repmat(srcnorm(2,:),nt,1);
-  nzsrc = repmat(srcnorm(2,:),nt,1);
+  nzsrc = repmat(srcnorm(3,:),nt,1);
   % D
   submatd  = -(grad(:,:,1).*nxsrc+grad(:,:,2).*nysrc+grad(:,:,3).*nzsrc);
-    
+
   submat(:,:,1) = coef*submatd;
   submat(:,:,2) = submats;
   submat(:,:,3) = -coef*(hess(:,:,1,1).*nxsrc + hess(:,:,1,2).*nysrc+...
@@ -168,7 +168,7 @@ if strcmpi(type,'evalg')
   submat(:,:,5) = -coef*(hess(:,:,2,1).*nxsrc + hess(:,:,2,2).*nysrc+...
       hess(:,:,2,3).*nzsrc);
   submat(:,:,6) = grad(:,:,2);
-    submat(:,:,7) = -coef*(hess(:,:,3,1).*nxsrc + hess(:,:,3,2).*nysrc+...
+  submat(:,:,7) = -coef*(hess(:,:,3,1).*nxsrc + hess(:,:,3,2).*nysrc+...
       hess(:,:,3,3).*nzsrc);
   submat(:,:,8) = grad(:,:,3);
 end

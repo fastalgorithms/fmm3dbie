@@ -217,7 +217,7 @@ if strcmpi(type,'evalg')
 
   nxsrc = repmat(srcnorm(1,:),nt,1);
   nysrc = repmat(srcnorm(2,:),nt,1);
-  nzsrc = repmat(srcnorm(2,:),nt,1);
+  nzsrc = repmat(srcnorm(3,:),nt,1);
   % D
   submatd  = -(grad(:,:,1).*nxsrc+grad(:,:,2).*nysrc+grad(:,:,3).*nzsrc);
     

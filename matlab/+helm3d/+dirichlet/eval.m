@@ -1,7 +1,7 @@
 function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %
 %  helm3d.dirichlet.eval
-%    Evaluates the helmholtz dirichlet layer potential at a collection 
+%    Evaluates the helmholtz dirichlet layer potential at a collection
 %    of targets
 %
 %  Syntax
@@ -11,8 +11,15 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
 %
+%  when opts.iprime = 0 (default), or
+%
+%     pot = \alpha S_{k}' [\sigma] + \beta D_{k}' [\sigma]
+%
+%  when opts.iprime = 1 (combined prime kernel)
+%
 %  S_{k}, D_{k}: helmholtz single and double layer potential
-%  
+%  S_{k}', D_{k}': normal derivatives thereof (at target)
+%
 %  \alpha, beta = rep_pars(1:2)
 %  k = zk
 %
@@ -36,12 +43,13 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
-%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%        opts.iprime - if 1, evaluate combined prime kernel (default 0)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct
 %           currently only supports quadrature corrections
-%           computed in rsc format 
-%    
+%           computed in rsc format
+%
 
-    if(nargin < 7) 
+    if(nargin < 7)
       opts = [];
     else
       opts = varargin{1};
@@ -52,12 +60,15 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
       nonsmoothonly = opts.nonsmoothonly;
     end
 
+    iprime = 0;
+    if isfield(opts,'iprime'); iprime = opts.iprime; end
+
     isprecompq = false;
     if isfield(opts, 'precomp_quadrature')
       isprecompq = true;
       Q = opts.precomp_quadrature;
     end
-    
+
     if(isprecompq)
       if ~(strcmpi(Q.format,'rsc'))
         fprintf('Invalid precomputed quadrature format\n');
@@ -82,13 +93,26 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-% Compute quadrature corrections   
+    if(isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id'))
+      patch_id = targinfo.patch_id;
+    else
+      patch_id = -1*ones(ntarg,1);
+    end
+
+    if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))
+      uvs_targ = targinfo.uvs_targ;
+    else
+      uvs_targ = zeros(2,ntarg);
+    end
+
+% Compute quadrature corrections
     if ~isprecompq
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
+        opts_quad.iprime = iprime;
 %
-%  For now Q is going to be a struct with 'quad_format', 
+%  For now Q is going to be a struct with 'quad_format',
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
 %  and either, 'wnear', 'row_ind', 'col_ptr', or
 %  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
@@ -104,7 +128,7 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
     end
     nquad = Q.iquad(end)-1;
     nnz = length(Q.col_ind);
-    nnzp1 = nnz+1; 
+    nnzp1 = nnz+1;
 
     [novers] = get_oversampling_parameters(S,Q,eps);
     Sover = oversample(S,novers);
@@ -113,7 +137,7 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 % Extract oversampled arrays
 
     [srcover,~,~,ixyzso,~,wover] = extract_arrays(Sover);
-    nptso = Sover.npts; 
+    nptso = Sover.npts;
 
 % Extract quadrature arrays
     row_ptr = Q.row_ptr;
@@ -128,21 +152,26 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
     zpars(2) = rep_pars(1);
     zpars(3) = rep_pars(2);
 
-    ndd = 0;
-    dpars = [];
-    ndz = 3;
-    ndi = 0;
-    ipars = [];
-    nker = 1;
-    lwork = 0;
-    work = [];
-    ndim = 1;
-    idensflag = 0;
-    ipotflag = 0;
-    ndim_p = 1;
 % Call the layer potential evaluator
-    mex_id_ = 'helm_comb_dir_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c io dcomplex[x])';
+    if iprime == 0
+      ndd = 0;
+      dpars = [];
+      ndz = 3;
+      ndi = 0;
+      ipars = [];
+      nker = 1;
+      lwork = 0;
+      work = [];
+      ndim = 1;
+      idensflag = 0;
+      ipotflag = 0;
+      ndim_p = 1;
+      mex_id_ = 'helm_comb_dir_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c io dcomplex[x])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim, sigma, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, npts, 1, 1, ntarg);
+    else
+      mex_id_ = 'helm_comb_cprime_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i dcomplex[x], c io dcomplex[x])';
+[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, sigma, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 3, npts, ntarg);
+    end
 end    
 %
 %

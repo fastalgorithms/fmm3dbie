@@ -527,3 +527,71 @@ end subroutine h3d_sgradz
 
 
 
+subroutine h3d_combprime(srcinfo, ndt, targinfo, ndd, dpars, ndz, &
+  zpars, ndi, ipars, val)
+!
+!  This subroutine evaluates the combined prime kernel
+!    alpha * S'_k + beta * D'_k
+!
+!  where S'_k = d/dn_x G_k  (normal derivative at target)
+!        D'_k = d/dn_x d/dn_y G_k  (hypersingular, normals at both src and targ)
+!
+!  zpars(1) = k
+!  zpars(2) = alpha
+!  zpars(3) = beta
+!
+!  srcinfo(1:3)   = source position
+!  srcinfo(10:12) = source normal (n_y)
+!  targinfo(1:3)  = target position
+!  targinfo(10:12)= target normal (n_x)
+!
+
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: srcinfo(12), targinfo(12), dpars(ndd)
+  integer *8 ipars(ndi)
+  complex *16 :: zpars(ndz), val, zk, alpha, beta
+
+  real *8 :: rns(3), rnt(3)
+  real *8 :: rnsdot, rntdot, rnstdot
+  real *8 :: over4pi
+  complex *16 :: ima, zexp, ztmp
+
+  data ima/(0.0d0,1.0d0)/
+  data over4pi/0.07957747154594767d0/
+
+  zk    = zpars(1)
+  alpha = zpars(2)
+  beta  = zpars(3)
+
+  ! source normal n_y, target normal n_x
+  rns(1) = srcinfo(10);  rns(2) = srcinfo(11);  rns(3) = srcinfo(12)
+  rnt(1) = targinfo(10); rnt(2) = targinfo(11); rnt(3) = targinfo(12)
+
+  dx = targinfo(1) - srcinfo(1)
+  dy = targinfo(2) - srcinfo(2)
+  dz = targinfo(3) - srcinfo(3)
+
+  r      = sqrt(dx**2 + dy**2 + dz**2)
+  rnsdot = dx*rns(1) + dy*rns(2) + dz*rns(3)
+  rntdot = dx*rnt(1) + dy*rnt(2) + dz*rnt(3)
+  rnstdot= rns(1)*rnt(1) + rns(2)*rnt(2) + rns(3)*rnt(3)
+
+  ztmp = ima*zk*r
+  zexp = exp(ztmp)
+
+  ! S'_k = -rntdot*(1-ikr)*exp(ikr)/r^3 * over4pi
+  val = -alpha * rntdot * (1.0d0 - ztmp) * zexp / (r**3) * over4pi
+
+  ! D'_k = [ rnstdot*(ikr-1)*exp(ikr)/r^3
+  !        - rnsdot*rntdot*(k^2r^2 - 3ikr + 3)*exp(ikr)/r^5 ] * over4pi
+  val = val + beta * ( rnstdot * (ztmp - 1.0d0) * zexp / (r**3) &
+      - rnsdot * rntdot * (ztmp**2 - 3.0d0*ztmp + 3.0d0) * zexp / (r**5) &
+      ) * over4pi
+
+  return
+end subroutine h3d_combprime
+
+
+
+

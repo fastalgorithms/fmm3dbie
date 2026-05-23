@@ -1687,7 +1687,7 @@ end
 function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %
 %  helm3d.dirichlet.eval
-%    Evaluates the helmholtz dirichlet layer potential at a collection 
+%    Evaluates the helmholtz dirichlet layer potential at a collection
 %    of targets
 %
 %  Syntax
@@ -1697,8 +1697,15 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %  Integral representation
 %     pot = \alpha S_{k} [\sigma] + \beta D_{k} [\sigma]
 %
+%  when opts.iprime = 0 (default), or
+%
+%     pot = \alpha S_{k}' [\sigma] + \beta D_{k}' [\sigma]
+%
+%  when opts.iprime = 1 (combined prime kernel)
+%
 %  S_{k}, D_{k}: helmholtz single and double layer potential
-%  
+%  S_{k}', D_{k}': normal derivatives thereof (at target)
+%
 %  \alpha, beta = rep_pars(1:2)
 %  k = zk
 %
@@ -1722,12 +1729,13 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
-%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%        opts.iprime - if 1, evaluate combined prime kernel (default 0)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct
 %           currently only supports quadrature corrections
-%           computed in rsc format 
-%    
+%           computed in rsc format
+%
 
-    if(nargin < 7) 
+    if(nargin < 7)
       opts = [];
     else
       opts = varargin{1};
@@ -1738,12 +1746,15 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
       nonsmoothonly = opts.nonsmoothonly;
     end
 
+    iprime = 0;
+    if isfield(opts,'iprime'); iprime = opts.iprime; end
+
     isprecompq = false;
     if isfield(opts, 'precomp_quadrature')
       isprecompq = true;
       Q = opts.precomp_quadrature;
     end
-    
+
     if(isprecompq)
       if ~(strcmpi(Q.format,'rsc'))
         fprintf('Invalid precomputed quadrature format\n');
@@ -1768,13 +1779,26 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-% Compute quadrature corrections   
+    if(isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id'))
+      patch_id = targinfo.patch_id;
+    else
+      patch_id = -1*ones(ntarg,1);
+    end
+
+    if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))
+      uvs_targ = targinfo.uvs_targ;
+    else
+      uvs_targ = zeros(2,ntarg);
+    end
+
+% Compute quadrature corrections
     if ~isprecompq
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
+        opts_quad.iprime = iprime;
 %
-%  For now Q is going to be a struct with 'quad_format', 
+%  For now Q is going to be a struct with 'quad_format',
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
 %  and either, 'wnear', 'row_ind', 'col_ptr', or
 %  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
@@ -1790,7 +1814,7 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
     end
     nquad = Q.iquad(end)-1;
     nnz = length(Q.col_ind);
-    nnzp1 = nnz+1; 
+    nnzp1 = nnz+1;
 
     [novers] = get_oversampling_parameters(S,Q,eps);
     Sover = oversample(S,novers);
@@ -1799,7 +1823,7 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 % Extract oversampled arrays
 
     [srcover,~,~,ixyzso,~,wover] = extract_arrays(Sover);
-    nptso = Sover.npts; 
+    nptso = Sover.npts;
 
 % Extract quadrature arrays
     row_ptr = Q.row_ptr;
@@ -1814,20 +1838,24 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
     zpars(2) = rep_pars(1);
     zpars(3) = rep_pars(2);
 
-    ndd = 0;
-    dpars = [];
-    ndz = 3;
-    ndi = 0;
-    ipars = [];
-    nker = 1;
-    lwork = 0;
-    work = [];
-    ndim = 1;
-    idensflag = 0;
-    ipotflag = 0;
-    ndim_p = 1;
 % Call the layer potential evaluator
-    # FORTRAN helm_comb_dir_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, dcomplex[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);   
+    if iprime == 0
+      ndd = 0;
+      dpars = [];
+      ndz = 3;
+      ndi = 0;
+      ipars = [];
+      nker = 1;
+      lwork = 0;
+      work = [];
+      ndim = 1;
+      idensflag = 0;
+      ipotflag = 0;
+      ndim_p = 1;
+      # FORTRAN helm_comb_dir_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, dcomplex[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);
+    else
+      # FORTRAN helm_comb_cprime_eval(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, dcomplex[npts] sigma, inout dcomplex[ntarg] p);
+    end
 end    
 %
 %
@@ -1945,28 +1973,18 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
 
 
     
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
-    
+    iprime = 0;
+    if isfield(opts,'iprime'); iprime = opts.iprime; end
 
-    cms = S.cms;
-    rads = S.rads; 
-
-    rad_near = rads*rfac;
-    nnz = 0;
-    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
-
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
-
-    iquad = zeros(nnz+1,1);
-    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+    rsc = getnear(S, targinfo);
+    row_ptr = rsc.row_ptr;
+    col_ind = rsc.col_ind;
+    iquad   = rsc.iquad;
+    rfac    = rsc.rfac;
+    rfac0   = rsc.rfac0;
+    nnz     = length(col_ind);
+    ntp1    = ntarg+1;
+    nnzp1   = nnz+1;
 
     nquad = iquad(nnz+1)-1;
     wnear = complex(zeros(nquad,1));
@@ -1984,8 +2002,12 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     zpars(1) = zk;
     zpars(2) = rep_pars(1);
     zpars(3) = rep_pars(2);
-    # FORTRAN getnearquad_helm_comb_dir_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
-    
+    if iprime == 0
+      # FORTRAN getnearquad_helm_comb_dir_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
+    else
+      # FORTRAN getnearquad_helm_comb_cprime_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
+    end
+
     Q = [];
     Q.targinfo = targinfo;
     Q.ifcomplex = 1;
@@ -1994,10 +2016,13 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     Q.rfac = rfac;
     Q.nquad = nquad;
     Q.format = ff;
-    
 
-    if(abs(zpars(3)) > 1e-16)
-        Q.kernel_order = 0;
+    if iprime == 0
+      if(abs(zpars(3)) > 1e-16)
+          Q.kernel_order = 0;
+      end
+    else
+      Q.kernel_order = 1;
     end
 
     if(strcmpi(ff,'rsc'))
@@ -5440,5 +5465,7 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc.row_ptr = row_ptr;
     rsc.col_ind = col_ind;
     rsc.iquad = iquad;
+    rsc.rfac = rfac;
+    rsc.rfac0 = rfac0;
 
 end
