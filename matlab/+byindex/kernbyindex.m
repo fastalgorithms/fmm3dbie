@@ -1,28 +1,39 @@
-function mat = kernbyindex(i, j, surfers, kern, opdims_mat, novers, opts)
+function mat = kernbyindex(i, j, surfers, kern, opdims_mat, eps, novers, opts)
 %KERNBYINDEX  Evaluate smooth-rule matrix entries by index for surfer arrays.
 %
-% mat = flam.kernbyindex(i, j, surfers, kern, opdims_mat)
-% mat = flam.kernbyindex(i, j, surfers, kern, opdims_mat, novers)
+% mat = byindex.kernbyindex(i, j, surfers, kern, opdims_mat, eps)
+% mat = byindex.kernbyindex(i, j, surfers, kern, opdims_mat, eps, novers)
+% mat = byindex.kernbyindex(i, j, surfers, kern, opdims_mat, eps, novers, opts)
 %
 % Input:
 %   i, j       - row/col indices to evaluate
 %   surfers    - surfer object or array of surfer objects
 %   kern       - kernel3d object (scalar or nsurfers x nsurfers)
 %   opdims_mat - (2 x nsurfers x nsurfers), or (2,1) to broadcast
+%   eps        - precision requested (e.g. 1e-10), passed to get_overs_orders
 %   novers     - oversampling orders (optional). Either:
-%                  vector of length nsurfers: one order per surfer,
+%                  scalar or vector of length nsurfers: one order per surfer,
 %                    applied uniformly to all patches of that surfer
 %                  cell array of length nsurfers: novers{k} is a vector
 %                    of length npatches giving per-patch orders for surfer k
-%                If omitted, kern.get_overs_orders is called per block
+%                If omitted or empty, kern.get_overs_orders is called per block
 %                (matching surfermat behaviour).
+%   opts       - options struct (optional, reserved for future use)
 %
 % Output:
 %   mat - length(i) x length(j) matrix of smooth-rule entries
 
 if ~isa(kern, 'kernel3d')
-    error('FLAM.KERNBYINDEX: kern must be a kernel3d object');
+    error('BYINDEX.KERNBYINDEX: kern must be a kernel3d object');
 end
+
+if nargin < 6
+    error('BYINDEX.KERNBYINDEX: eps is required');
+end
+if nargin < 7, novers = []; end
+if nargin < 8, opts   = []; end  %#ok<NASGU>
+
+quad_eps = eps;
 
 nsurfers = length(surfers);
 
@@ -39,17 +50,16 @@ if ~(ndims(opdims_mat) == 3 && isequal(size(opdims_mat), [2, nsurfers, nsurfers]
     opdims_mat = tmp;
 end
 
-if nargin < 7, opts = []; end
-quad_eps = eps();
-if isfield(opts, 'eps'), quad_eps = opts.eps; end
-
 % Normalize novers to cell array of per-patch vectors, or leave empty to
 % call get_overs_orders per block.
-use_get_overs = (nargin < 6 || isempty(novers));
+use_get_overs = isempty(novers);
 if ~use_get_overs
     if ~iscell(novers)
-        % vector of length nsurfers: broadcast each scalar to all patches
+        % scalar or vector of length nsurfers: broadcast to all patches
         novers_vec = novers(:);
+        if numel(novers_vec) == 1
+            novers_vec = repmat(novers_vec, nsurfers, 1);
+        end
         novers = cell(1, nsurfers);
         for k = 1:nsurfers
             novers{k} = novers_vec(k) * ones(surfers(k).npatches, 1);
@@ -256,7 +266,6 @@ for itrg = 1:nsurfers
                 sub_kern_over = ktmp.eval(srcp_over, targinfo) .* wts_over_rep;
 
                 if itrg == isrc
-                    % Only targets on the same patch p can coincide
                     trg_in_p = find(ismember(iuni, p_inds));
                     if ~isempty(trg_in_p)
                         trg_r_p = targinfo.r(:, trg_in_p);
@@ -290,24 +299,15 @@ end
 
 function srcp = slice_surfer(srfj, pts)
     src_field = fieldnames(srfj)';
-    src_field_use = {};
+    srcp = [];
     for i = 1:length(src_field)
-        try
-            val = srfj.(src_field{i});
-        catch
-            continue
-        end
+        try, val = srfj.(src_field{i}); catch, continue; end
         if isempty(val), continue; end
         if mod(size(val(:,:), 2), srfj.npts) == 0
-            src_field_use{end+1} = src_field{i};
+            srcp.(src_field{i}) = srfj.(src_field{i})(:, pts);
         end
     end
-    srcp = [];
-    for f = src_field_use
-        srcp.(f{1}) = srfj.(f{1})(:, pts);
-    end
 end
-
 
 
 function col_inds = expand_cols(loc_juni_p, opdims_src)

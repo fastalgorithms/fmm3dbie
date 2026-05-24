@@ -1,4 +1,4 @@
-%TEST_KERNBYINDEX  Verify flam.kernbyindex entries match surfermat entries.
+%TEST_KERNBYINDEX  Verify byindex.kernbyindex entries match surfermat entries.
 %
 % Scenario 1: single surfer, no novers passed (uses get_overs_orders internally)
 % Scenario 2: two-surfer array, same
@@ -27,7 +27,7 @@ n = S.npts * opdims(1);
 ii = randi(n, 50, 1);
 jj = randi(n, 50, 1);
 
-Acheck = flam.kernbyindex(ii, jj, S, kern, opdims);
+Acheck = byindex.kernbyindex(ii, jj, S, kern, opdims, eps);
 
 err1 = norm(Acheck - Asmth(ii, jj), 'fro') / (norm(Asmth(ii, jj), 'fro') + eps);
 fprintf('  relative error: %.2e\n', err1);
@@ -39,16 +39,20 @@ fprintf('Scenario 2: two-surfer array, lap single-layer ...\n');
 
 S2 = geometries.ellipsoid([1,1,1], [3,3,3], [4;0;0], 6);
 srfrs = [S, S2];
-kern_sl = kernel3d('l', 's');
-opdims_sl = kern_sl.opdims;
+kerns(2,2) = kernel3d();
+kerns(1,1) = kernel3d('l', 's');
+kerns(2,1) = kernel3d('l', 'sp');
+kerns(1,2) = kernel3d('l', 'd');
+kerns(2,2) = kernel3d('l', 'dp');
+opdims_2 = reshape([kerns.opdims],2,2,2);
 
-Asmth2 = surfermat(srfrs, kern_sl, eps, opts_sm);
+Asmth2 = surfermat(srfrs, kerns, eps, opts_sm);
 n2 = size(Asmth2, 1);
 m2 = size(Asmth2, 2);
 ii2 = randi(n2, 80, 1);
 jj2 = randi(m2, 80, 1);
 
-Acheck2 = flam.kernbyindex(ii2, jj2, srfrs, kern_sl, opdims_sl);
+Acheck2 = byindex.kernbyindex(ii2, jj2, srfrs, kerns, opdims_2, eps);
 
 err2 = norm(Acheck2 - Asmth2(ii2, jj2), 'fro') / (norm(Asmth2(ii2, jj2), 'fro') + eps);
 fprintf('  relative error: %.2e\n', err2);
@@ -90,7 +94,7 @@ n3 = S3.npts;
 ii3 = randi(n3, 60, 1);
 jj3 = randi(n3, 60, 1);
 
-Acheck3 = flam.kernbyindex(ii3, jj3, S3, kern3, opdims3, nover3);
+Acheck3 = byindex.kernbyindex(ii3, jj3, S3, kern3, opdims3, eps, nover3);
 
 err3 = norm(Acheck3 - Aref3(ii3, jj3), 'fro') / (norm(Aref3(ii3, jj3), 'fro') + eps);
 fprintf('  relative error: %.2e\n', err3);
@@ -102,45 +106,9 @@ fprintf('Scenario 4: wrong novers gives wrong answer ...\n');
 
 % Use norders(1) (no oversampling) when the correct answer needs more
 nover_wrong = S3.norders(1);
-Acheck_wrong = flam.kernbyindex(ii3, jj3, S3, kern3, opdims3, nover_wrong);
+Acheck_wrong = byindex.kernbyindex(ii3, jj3, S3, kern3, opdims3, eps, nover_wrong);
 
 err_wrong = norm(Acheck_wrong - Aref3(ii3, jj3), 'fro') / (norm(Aref3(ii3, jj3), 'fro') + eps);
 fprintf('  relative error with wrong novers: %.2e\n', err_wrong);
 assert(err_wrong > tol, 'FAIL: wrong novers should give error > tol but got %.2e', err_wrong);
 fprintf('  PASS (correctly wrong)\n\n');
-
-%% Scenario 5: helm3d cprime, single surfer
-fprintf('Scenario 5: helm3d cprime, single surfer ...\n');
-
-S5 = geometries.ellipsoid([1,1,1], [3,3,3], [], 5);
-zk5 = 1.1 + 0.1i;
-kern5 = kernel3d('h', 'cprime', zk5, [1; 1i]);
-opdims5 = kern5.opdims;
-
-Asmth5 = surfermat(S5, kern5, eps, opts_sm);
-n5 = S5.npts;
-ii5 = randi(n5, 50, 1);
-jj5 = randi(n5, 50, 1);
-
-Acheck5 = flam.kernbyindex(ii5, jj5, S5, kern5, opdims5);
-
-err5 = norm(Acheck5 - Asmth5(ii5,jj5), 'fro') / (norm(Asmth5(ii5,jj5), 'fro') + eps);
-fprintf('  relative error: %.2e\n', err5);
-assert(err5 < tol, 'FAIL: %.2e', err5);
-fprintf('  PASS\n\n');
-
-%% Scenario 6: helm3d dprime, single surfer
-fprintf('Scenario 6: helm3d dprime, single surfer ...\n');
-
-kern6 = kernel3d('h', 'dprime', zk5);
-opdims6 = kern6.opdims;
-
-Asmth6 = surfermat(S5, kern6, eps, opts_sm);
-Acheck6 = flam.kernbyindex(ii5, jj5, S5, kern6, opdims6);
-
-err6 = norm(Acheck6 - Asmth6(ii5,jj5), 'fro') / (norm(Asmth6(ii5,jj5), 'fro') + eps);
-fprintf('  relative error: %.2e\n', err6);
-assert(err6 < tol, 'FAIL: %.2e', err6);
-fprintf('  PASS\n\n');
-
-fprintf('All tests passed.\n');

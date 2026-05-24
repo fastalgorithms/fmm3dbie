@@ -82,22 +82,26 @@ if isfield(opts,'unif_nover'), unif_nover = opts.unif_nover; end
 if isfield(opts,'unif_novers'), unif_nover = opts.unif_novers; end
 nsurfers = length(surfers);
 
-opdims_mat = zeros(2,nsurfers,nsurfers);
 lsurfer    = zeros(nsurfers,1);
-
-novers = cell(nsurfers, nsurfers);
-
 for i=1:nsurfers
     lsurfer(i) = surfers{i}.npts;
+end
 
+if numel(kern) == 1
+    opdims_mat = repmat(reshape(kern.opdims, 2, 1, 1), 1, nsurfers, nsurfers);
+else
+    opdims_mat = reshape([kern.opdims], 2, nsurfers, nsurfers);
+end
+
+novers = cell(nsurfers, nsurfers);
+for i=1:nsurfers
     for j=1:nsurfers
-        if (size(kern) == 1)
+        if numel(kern) == 1
             ktmp = kern;
         else
             ktmp = kern(i,j);
         end
-        opdims_mat(:,i,j) = ktmp.opdims;
-        if ismethod(surfers{j},'oversample') 
+        if ismethod(surfers{j},'oversample')
             novers{i,j} = ktmp.get_overs_orders(surfers{j},surfers{i},eps);
         else
             novers{i,j} = NaN;

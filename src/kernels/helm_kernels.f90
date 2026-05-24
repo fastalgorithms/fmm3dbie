@@ -583,9 +583,9 @@ subroutine h3d_combprime(srcinfo, ndt, targinfo, ndd, dpars, ndz, &
   ! S'_k = -rntdot*(1-ikr)*exp(ikr)/r^3 * over4pi
   val = -alpha * rntdot * (1.0d0 - ztmp) * zexp / (r**3) * over4pi
 
-  ! D'_k = [ rnstdot*(ikr-1)*exp(ikr)/r^3
-  !        - rnsdot*rntdot*(k^2r^2 - 3ikr + 3)*exp(ikr)/r^5 ] * over4pi
-  val = val + beta * ( rnstdot * (ztmp - 1.0d0) * zexp / (r**3) &
+  ! D'_k = [ +rnstdot*(1-ikr)*exp(ikr)/r^3
+  !          -rnsdot*rntdot*(k^2r^2 - 3ikr + 3)*exp(ikr)/r^5 ] * over4pi
+  val = val + beta * ( rnstdot * (1.0d0 - ztmp) * zexp / (r**3) &
       - rnsdot * rntdot * (ztmp**2 - 3.0d0*ztmp + 3.0d0) * zexp / (r**5) &
       ) * over4pi
 

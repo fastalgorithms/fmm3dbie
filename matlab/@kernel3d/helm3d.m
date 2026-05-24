@@ -88,8 +88,8 @@ switch lower(type)
 
         % sprime = cprime with coefs = [1, 0]
         rep_pars_sp = [1.0; 0.0];
-        obj.layer_eval = @(S,sigma,targ,eps) ...
-                            helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars_sp);
+        obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
+                            helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars_sp, varargin);
         obj.getquad  = @(S,eps,varargin) ...
                           helm_combprime_getquad(S, eps, zk, rep_pars_sp, varargin);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
@@ -103,8 +103,8 @@ switch lower(type)
 
         % dprime = cprime with coefs = [0, 1], iprime = 1
         rep_pars_dp = [0.0; 1.0];
-        obj.layer_eval = @(S,sigma,targ,eps) ...
-                            helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars_dp);
+        obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
+                            helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars_dp, varargin);
         obj.getquad  = @(S,eps,varargin) ...
                           helm_combprime_getquad(S, eps, zk, rep_pars_dp, varargin);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
@@ -149,8 +149,8 @@ switch lower(type)
         obj.eval = @(s,t) helm3d.kern(zk, s, t, 'cprime', coefs);
 
         rep_pars_cp = coefs;
-        obj.layer_eval = @(S,sigma,targ,eps) ...
-                            helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars_cp);
+        obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
+                            helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars_cp, varargin);
         obj.getquad  = @(S,eps,varargin) ...
                           helm_combprime_getquad(S, eps, zk, rep_pars_cp, varargin);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
@@ -186,18 +186,100 @@ switch lower(type)
         obj.src_fields = {'n'};
         obj.targ_fields = {'n'};
 
+    % ------------------------------------------------------------------
+    %  trans_sys  -- alias for 'trans', the 2×2 BIE system kernel
+    % ------------------------------------------------------------------
+    case {'trans_sys', 'transmission_sys'}
+        if ( nargin < 3 )
+            error('KERNEL3D.HELM3D: trans_sys requires rep_params = [alpha0;beta0;alpha1;beta1].');
+        end
+        obj = kernel3d.helm3d('trans', zk, coefs);
+        obj.type = 'trans_sys';
+
+    % ------------------------------------------------------------------
+    %  trans_rep  -- [1 x 2] evaluation/representation kernel
+    %
+    %   Given density [rho; sigma] on surface, evaluates the field at targs:
+    %      u(x) = D_{zk}[rho](x)  +  (i*zk) * S_{zk}[sigma](x)
+    %
+    %   opdims = [1, 2].  Each source column has 2 components: [rho, sigma].
+    % ------------------------------------------------------------------
+    case {'trans_rep', 'transmission_rep'}
+        % Build [1 x 2] interleaved kernel: col 1 = D_{zk}[rho], col 2 = (i*zk)*S_{zk}[sigma]
+        coef_s = 1i * zk;
+        Ks_rep = kernel3d.helm3d('s', zk);
+        Kd_rep = kernel3d.helm3d('d', zk);
+        KikS   = coef_s .* Ks_rep;
+        obj = kernel3d.interleave([Kd_rep, KikS]);
+        obj.type = 'trans_rep';
+
+    % ------------------------------------------------------------------
+    %  s2trans  -- [2 x 1] single-layer → transmission conversion kernel
+    %
+    %   Given density sigma, returns [S_{zk}[sigma]; S'_{zk}[sigma]]
+    %   (field value and normal derivative at target).
+    %   opdims = [2, 1].
+    % ------------------------------------------------------------------
+    case {'s2trans'}
+        Ks  = kernel3d.helm3d('s',  zk);
+        Ksp = kernel3d.helm3d('sp', zk);
+        kmat = [Ks; Ksp];
+        obj = kernel3d.interleave(kmat);
+        obj.type = 's2trans';
+
+    % ------------------------------------------------------------------
+    %  d2trans  -- [2 x 1] double-layer → transmission conversion kernel
+    %
+    %   Given density rho, returns [D_{zk}[rho]; D'_{zk}[rho]].
+    %   opdims = [2, 1].
+    % ------------------------------------------------------------------
+    case {'d2trans'}
+        Kd  = kernel3d.helm3d('d',  zk);
+        Kdp = kernel3d.helm3d('dp', zk);
+        kmat = [Kd; Kdp];
+        obj = kernel3d.interleave(kmat);
+        obj.type = 'd2trans';
+
+    % ------------------------------------------------------------------
+    %  c2trans  -- [2 x 1] combined-layer → transmission conversion kernel
+    %
+    %   Given density sigma with coefficients coefs=[alpha;beta],
+    %   returns [(alpha*S + beta*D)[sigma]; (alpha*S' + beta*D')[sigma]].
+    %   opdims = [2, 1].
+    % ------------------------------------------------------------------
+    case {'c2trans'}
+        if ( nargin < 3 )
+            warning('KERNEL3D.HELM3D: missing coefs for c2trans. Defaulting to [1 1].');
+            coefs = [1; 1];
+        end
+        coefs = coefs(:);
+        Kc  = kernel3d.helm3d('c',  zk, coefs);
+        Kcp = kernel3d.helm3d('cp', zk, coefs);
+        kmat = [Kc; Kcp];
+        obj = kernel3d.interleave(kmat);
+        obj.type = 'c2trans';
+
     otherwise
         error('KERNEL3D.HELM3D: unknown Helmholtz kernel type ''%s''.', type);
 
 end
 
+% All non-interleaved Helmholtz types are scalar per block entry (nker=1).
+% Interleaved types (trans_rep, s2trans, d2trans, c2trans) inherit rsc_to_interleave
+% from kernel3d.interleave; trans/trans_sys has opdims=[2,2], also nker=1 per block.
+if isempty(obj.rsc_to_interleave)
+    obj.rsc_to_interleave = kernel3d.rsc_interleave_scalar();
 end
 
-function p = helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars,args)
+end
+
+function p = helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, args)
 %HELM_COMBPRIME_EVAL  Call helm3d.dirichlet.eval with iprime=1.
-if nargin < 7, args = []; end
+%   args is the varargin cell from the lambda: {} or {opts}
+if nargin < 7 || isempty(args), args = {}; end
+% Ensure opts struct is present and has iprime=1
 if isempty(args) || ~isstruct(args{end})
-    args{end+1} = [];
+    args{end+1} = struct();
 end
 args{end}.iprime = 1;
 p = helm3d.dirichlet.eval(S, sigma, targ, eps, zk, rep_pars, args{:});
@@ -205,10 +287,27 @@ end
 
 function Q = helm_combprime_getquad(S, eps, zk, rep_pars, args)
 %HELM_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
-%   args is the varargin cell from the lambda: {} or {targinfo} or {targinfo, opts}
-if nargin < 4, args = []; end
-args{end+2-length(args)} = [];
-args{end}.iprime = 1;
-if isempty(args{1}), args{1} = S; end
-Q = helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, args{:});
+%   args is the varargin cell from the lambda.
+%   Accepts: {} (self-quadrature on S), {targinfo}, or {targinfo, opts}
+%   where targinfo can be a struct or a surfer object.
+if nargin < 5 || isempty(args), args = {}; end
+% Separate targinfo and opts from args
+if length(args) >= 2
+    targinfo = args{1};
+    opts = args{2};
+elseif length(args) == 1
+    targinfo = args{1};
+    opts = struct();
+else
+    % No targets provided: use S as on-surface self-quadrature
+    targinfo = S;
+    opts = struct();
+end
+% If targinfo is empty use S
+if isempty(targinfo)
+    targinfo = S;
+end
+% Set iprime flag
+opts.iprime = 1;
+Q = helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts);
 end

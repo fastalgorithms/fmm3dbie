@@ -56,26 +56,31 @@ end
 
 nsurfers = length(surfers);
 
-opdims_mat = zeros(2, nsurfers, nsurfers);
 lsurfer    = zeros(nsurfers, 1);
+for i=1:nsurfers
+    lsurfer(i) = surfers{i}.npts;
+end
+
+if numel(kern) == 1
+    opdims_mat = repmat(reshape(kern.opdims, 2, 1, 1), 1, nsurfers, nsurfers);
+else
+    opdims_mat = reshape([kern.opdims], 2, nsurfers, nsurfers);
+end
 
 novers_tmp = cell(nsurfers, nsurfers);
 for i=1:nsurfers
-    lsurfer(i) = surfers{i}.npts;
-
     for j=1:nsurfers
-        if (size(kern) == 1)
+        if numel(kern) == 1
             ktmp = kern;
         else
             ktmp = kern(i,j);
         end
-        opdims_mat(:,i,j) = ktmp.opdims;
         if isempty(novers)
-        if ismethod(surfers{j},'oversample') 
-            novers_tmp{i,j} = ktmp.get_overs_orders(surfers{j},surfers{i},eps);
-        else
-            novers_tmp{i,j} = NaN;
-        end
+            if ismethod(surfers{j},'oversample')
+                novers_tmp{i,j} = ktmp.get_overs_orders(surfers{j},surfers{i},eps);
+            else
+                novers_tmp{i,j} = NaN;
+            end
         end
     end
 end

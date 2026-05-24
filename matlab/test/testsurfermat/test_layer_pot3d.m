@@ -19,7 +19,7 @@
 %   The relative l2 error between (1) and (2) is printed for every kernel.
 %   A FAIL is reported if the error exceeds the tolerance.
 
-run ../startup.m
+run ../../startup.m
 
 % ---- global parameters ----
 zk   = 1.1 + 0.4i;   % Helmholtz wavenumber
@@ -47,29 +47,38 @@ src.r  = S.r;
 src.n  = S.n;
 src.du = S.du;
 src.dv = S.dv;
-return
-%%
+
 nfail = 0;
+
+coefs_lap = [0.7; 1.3];
+coefs_h   = [1i*zk; 1.0];
 
 % ---- list of tests: {label, kernel, density} ----
 tests = { ...
-    'lap  s',              kernel3d('l','s'),               sigma_r; ...
-    'lap  d',              kernel3d('l','d'),               sigma_r; ...
-    'lap  sp',             kernel3d('l','sp'),              sigma_r; ...
-    'lap  c [1,1]',        kernel3d('l','c',[1;1]),         sigma_r; ...
-    'lap  c [2,-0.5]',     kernel3d('l','c',[2;-0.5]),      sigma_r; ...
+    'lap  s',                  kernel3d('l','s'),                sigma_r; ...
+    'lap  d',                  kernel3d('l','d'),                sigma_r; ...
+    'lap  sp',                 kernel3d('l','sp'),               sigma_r; ...
+    'lap  dp',                 kernel3d('l','dp'),               sigma_r; ...
+    'lap  c',                  kernel3d('l','c',coefs_lap),      sigma_r; ...
+    'lap  cp',                 kernel3d('l','cp',coefs_lap),     sigma_r; ...
+    'helm s',                  kernel3d('h','s', zk),            sigma_c; ...
+    'helm d',                  kernel3d('h','d', zk),            sigma_c; ...
+    'helm sp',                 kernel3d('h','sp',zk),            sigma_c; ...
+    'helm dp',                 kernel3d('h','dp',zk),            sigma_c; ...
+    'helm c',                  kernel3d('h','c', zk,coefs_h),   sigma_c; ...
+    'helm cp',                 kernel3d('h','cp',zk,coefs_h),   sigma_c; ...
 };
 
-fprintf('\n=== Laplace kernels ===\n\n');
+fprintf('\n=== All prime and non-prime kernels (well-separated target) ===\n\n');
 for k = 1:size(tests,1)
     label = tests{k,1};
     K     = tests{k,2};
     sigma = tests{k,3};
 
-    % (1) smooth quadrature reference: K.eval returns (nt x ns) matrix
+    % (1) smooth quadrature reference: exact for well-separated target
     ref = K.eval(src, targ) * (sigma .* wts);
 
-    % (2) layer_eval (FMM + near corrections, corrections vanish here)
+    % (2) layer_eval (FMM + near-field quadrature)
     lp  = K.layer_eval(S, sigma, targ, eps);
 
     err = norm(lp - ref) / max(norm(ref), 1e-30);
@@ -82,35 +91,7 @@ for k = 1:size(tests,1)
     fprintf('  %-30s rel err = %.2e   [%s]\n', label, err, status);
 end
 
-tests_h = { ...
-    'helm s',                  kernel3d('h','s', zk),               sigma_c; ...
-    'helm d',                  kernel3d('h','d', zk),               sigma_c; ...
-    'helm sp',                 kernel3d('h','sp',zk),               sigma_c; ...
-    'helm c [i*zk, 1]',        kernel3d('h','c', zk,[1i*zk;1]),     sigma_c; ...
-    'helm cprime [i*zk, 1]',   kernel3d('h','cprime',zk,[1i*zk;1]), sigma_c; ...
-};
-
-fprintf('\n=== Helmholtz kernels (zk = %.2f%+.2fi) ===\n\n', real(zk), imag(zk));
-for k = 1:size(tests_h,1)
-    label = tests_h{k,1};
-    K     = tests_h{k,2};
-    sigma = tests_h{k,3};
-
-    ref = K.eval(src, targ) * (sigma .* wts);
-    lp  = K.layer_eval(S, sigma, targ, eps);
-
-    err = norm(lp - ref) / max(norm(ref), 1e-30);
-    if err <= tol
-        status = 'PASS';
-    else
-        status = 'FAIL';
-        nfail  = nfail + 1;
-    end
-    fprintf('  %-30s rel err = %.2e   [%s]\n', label, err, status);
-end
-
-fprintf('\nDone. %d test(s) run, %d FAILED.\n', ...
-    size(tests,1)+size(tests_h,1), nfail);
+fprintf('\nDone. %d test(s) run, %d FAILED.\n', size(tests,1), nfail);
 if nfail > 0
-    warning('test_layer_pot3d: %d test(s) FAILED.', nfail);
+    error('test_layer_pot3d: %d test(s) FAILED.', nfail);
 end

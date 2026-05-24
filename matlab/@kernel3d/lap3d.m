@@ -91,9 +91,9 @@ switch lower(type)
         dpars_sp = [1.0; 0.0];
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'sp', sigma);
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-                            lap_combprime_eval(S, sigma, targ, eps, dpars_sp, varargin{:});
+                            lap_combprime_eval(S, sigma, targ, eps, dpars_sp, varargin);
         obj.getquad  = @(S,eps,varargin) ...
-                          lap_combprime_getquad(S, eps, dpars_sp, varargin{:});
+                          lap_combprime_getquad(S, eps, dpars_sp, varargin);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields = {'n'};
 
@@ -107,9 +107,9 @@ switch lower(type)
         dpars_dp = [0.0; 1.0];
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'dp', sigma);
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-                            lap_combprime_eval(S, sigma, targ, eps, dpars_dp, varargin{:});
+                            lap_combprime_eval(S, sigma, targ, eps, dpars_dp, varargin);
         obj.getquad  = @(S,eps,varargin) ...
-                          lap_combprime_getquad(S, eps, dpars_dp, varargin{:});
+                          lap_combprime_getquad(S, eps, dpars_dp, varargin);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
         obj.targ_fields = {'n'};
@@ -155,8 +155,8 @@ switch lower(type)
         obj.fmm  = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'cp', sigma, coefs);
 
         dpars_c = coefs;
-        obj.layer_eval = @(S,sigma,targ,eps) ...
-                            lap_combprime_eval(S, sigma, targ, eps, dpars_c);
+        obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
+                            lap_combprime_eval(S, sigma, targ, eps, dpars_c, varargin);
         obj.getquad  = @(S,eps,varargin) ...
                           lap_combprime_getquad(S, eps, dpars_c, varargin);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
@@ -168,24 +168,45 @@ switch lower(type)
 
 end
 
+obj.rsc_to_interleave = kernel3d.rsc_interleave_scalar();
+
 end
 
-function p = lap_combprime_eval(S, sigma, targ, eps, rep_pars,args)
-%HELM_COMBPRIME_EVAL  Call helm3d.dirichlet.eval with iprime=1.
-if nargin < 6, args = []; end
+function p = lap_combprime_eval(S, sigma, targ, eps, rep_pars, args)
+%LAP_COMBPRIME_EVAL  Call lap3d.dirichlet.eval with iprime=1.
+%   args is the varargin cell from the lambda: {} or {opts}
+if nargin < 6 || isempty(args), args = {}; end
+% Ensure opts struct is present and has iprime=1
 if isempty(args) || ~isstruct(args{end})
-    args{end+1} = [];
+    args{end+1} = struct();
 end
 args{end}.iprime = 1;
 p = lap3d.dirichlet.eval(S, sigma, targ, eps, rep_pars, args{:});
 end
 
 function Q = lap_combprime_getquad(S, eps, rep_pars, args)
-%HELM_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
-%   args is the varargin cell from the lambda: {} or {targinfo} or {targinfo, opts}
-if nargin < 4, args = []; end
-args{end+2-length(args)} = [];
-args{end}.iprime = 1;
-if isempty(args{1}), args{1} = S; end
-Q = lap3d.dirichlet.get_quadrature_correction(S, eps, rep_pars, args{:});
+%LAP_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
+%   args is the varargin cell from the lambda.
+%   Accepts: {} (self-quadrature on S), {targinfo}, or {targinfo, opts}
+%   where targinfo can be a struct or a surfer object.
+if nargin < 4 || isempty(args), args = {}; end
+% Separate targinfo and opts from args
+if length(args) >= 2
+    targinfo = args{1};
+    opts = args{2};
+elseif length(args) == 1
+    targinfo = args{1};
+    opts = struct();
+else
+    % No targets provided: use S as on-surface self-quadrature
+    targinfo = S;
+    opts = struct();
+end
+% If targinfo is empty use S
+if isempty(targinfo)
+    targinfo = S;
+end
+% Set iprime flag
+opts.iprime = 1;
+Q = lap3d.dirichlet.get_quadrature_correction(S, eps, rep_pars, targinfo, opts);
 end

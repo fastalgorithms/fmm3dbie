@@ -2,7 +2,7 @@ function [Kpxy, nbr] = proxyfun(slf, nbr, l, ctr, surfers, kern, kern2, ...
     opdims_mat, pr, pn, pw, pin, ifaddtrans)
 %PROXYFUN  Proxy function for rskelf, for kernels defined on arrays of surfers.
 %
-% [Kpxy, nbr] = flam.proxyfun(slf, nbr, l, ctr, surfers, kern, kern2,
+% [Kpxy, nbr] = byindex.proxyfun(slf, nbr, l, ctr, surfers, kern, kern2,
 %     opdims_mat, pr, pn, pw, pin, ifaddtrans)
 %
 % pr, pn, pw  - (3,npxy) proxy points/normals and (npxy,1) weights, unit-scale

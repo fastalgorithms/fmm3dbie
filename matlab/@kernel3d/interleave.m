@@ -194,6 +194,11 @@ K.targ_fields = all_targ_fields;
 
 K.eval = @eval_;
 
+% Interleaved kernels do not produce packed wnear(nker,nquad) RSC structs;
+% each sub-kernel's getquad is called individually and assembled directly
+% into a sparse matrix.  rsc_to_interleave is therefore not applicable.
+% (Property remains empty.)
+
 if all(arrayfun(@(k) isa(kerns(k).fmm, 'function_handle'), 1:numel(kerns)))
     K.fmm = @fmm_;
 else

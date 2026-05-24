@@ -7,9 +7,15 @@ classdef kernel3d
 %
 %      NAME                              TYPE
 %      ----                              ----
-%      'laplace'   ('lap', 'l')          's', 'd', 'sp', 'c'
+%      'laplace'   ('lap', 'l')          's', 'd', 'sp', 'dp', 'c', 'cp'
 %      'helmholtz' ('helm', 'h')         's', 'd', 'sp', 'dprime',
-%                                        'c', 'cprime', 'trans'
+%                                        'c', 'cprime',
+%                                        'trans'/'trans_sys',
+%                                        'trans_rep',
+%                                        's2trans', 'd2trans', 'c2trans'
+%      'maxwell'   ('em3d', 'em')        'nrccie-bc', 'nrccie-eval'
+%      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
+%      'zero'/'zeros'                    (no type needed)
 %
 %   Some kernels accept extra parameters as trailing arguments, e.g.
 %   the combined-layer Laplace kernel:
@@ -60,6 +66,31 @@ classdef kernel3d
         targ_fields    % Ptinfo fields required at targets
                        % the location 'r' is implicitly added
 
+        rsc_to_interleave  % Struct describing how to map wnear(nker,nquad) to the
+                           % (opdims(1)*nt, opdims(2)*ns) sparse matrix.
+                           %
+                           % Fields:
+                           %   .type      - 'scalar'    : nker=1, trivial 1-to-1 mapping
+                           %                'full'      : nker = opdims(1)*opdims(2),
+                           %                              column-major layout within block
+                           %                'symmetric' : nker = m*(m+1)/2 for an m x m
+                           %                              symmetric block; upper triangle
+                           %                              stored in column-major order
+                           %                'basis'     : nker independent scalar kernels
+                           %                              combined via a coefficient matrix
+                           %                              to fill the opdims(1) x opdims(2) block
+                           %   .nker      - number of rows in wnear (must match Fortran)
+                           %   .row_inds  - (nker,1) row index within block for each wnear row
+                           %                (for 'full' and 'symmetric' types)
+                           %   .col_inds  - (nker,1) col index within block for each wnear row
+                           %   For 'symmetric' only:
+                           %   .sym_row_inds - row indices of off-diagonal reflected entries
+                           %   .sym_col_inds - col indices of off-diagonal reflected entries
+                           %   .sym_ker_inds - which wnear row each reflected entry mirrors
+                           %   For 'basis' only:
+                           %   .coef_mat  - (opdims(1)*opdims(2), nker) coefficient matrix
+                           %                such that vec(A_block) = coef_mat * wnear(:,q)
+
     end
 
     properties (Hidden = true)
@@ -85,6 +116,16 @@ classdef kernel3d
                         obj = kernel3d.lap3d(varargin{:});
                     case {'helmholtz', 'helm', 'h'}
                         obj = kernel3d.helm3d(varargin{:});
+                    case {'maxwell', 'em3d', 'em'}
+                        obj = kernel3d.em3d(varargin{:});
+                    case {'stokes', 'stok3d', 'stok'}
+                        obj = kernel3d.stok3d(varargin{:});
+                    case {'zero', 'zeros'}
+                        if ~isempty(varargin)
+                            obj = kernel3d.zeros(varargin{1});
+                        else
+                            obj = kernel3d.zeros();
+                        end
                     otherwise
                         error('KERNEL3D: kernel ''%s'' not found.', kern);
                 end
@@ -121,10 +162,16 @@ classdef kernel3d
 
         obj    = lap3d(varargin);
         obj    = helm3d(varargin);
+        obj    = em3d(varargin);
+        obj    = stok3d(varargin);
+        obj    = zeros(opdims);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
         Q      = addquad(Qf,Qg,S,sign);
         Q      = scalequad(Qf,S,c);
+        ri     = rsc_interleave_scalar();
+        ri     = rsc_interleave_full(m, n);
+        ri     = rsc_interleave_symmetric3();
 
     end
 

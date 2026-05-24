@@ -417,8 +417,8 @@ subroutine l3d_combprime(srcinfo, ndt, targinfo, ndd, dpars, ndz, &
 !
 !  Explicitly:
 !    S'_0(x,y) = - (x-y).n_x / (4 pi |x-y|^3)
-!    D'_0(x,y) = [-n_x.n_y / |x-y|^3
-!                 + 3 (x-y).n_y (x-y).n_x / |x-y|^5 ] / (4 pi)
+!    D'_0(x,y) = [+n_x.n_y / |x-y|^3
+!                 - 3 (x-y).n_y (x-y).n_x / |x-y|^5 ] / (4 pi)
 !
 !  Parameters:
 !    dpars(1) = alpha
@@ -460,9 +460,9 @@ subroutine l3d_combprime(srcinfo, ndt, targinfo, ndd, dpars, ndz, &
   ! S'_0 = -rntdot / r^3 * over4pi
   val = -alpha * rntdot / (r**3) * over4pi
 
-  ! D'_0 = [-rnstdot/r^3 + 3*rnsdot*rntdot/r^5] * over4pi
-  val = val + beta * (-rnstdot / (r**3) &
-      + 3.0d0 * rnsdot * rntdot / (r**5)) * over4pi
+  ! D'_0 = [+rnstdot/r^3 - 3*rnsdot*rntdot/r^5] * over4pi
+  val = val + beta * (rnstdot / (r**3) &
+      - 3.0d0 * rnsdot * rntdot / (r**5)) * over4pi
 
   return
 end subroutine l3d_combprime
