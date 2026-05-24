@@ -35,6 +35,13 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
 
     f.get_overs_orders = [];
 
+    src  = union(f.src_fields,  g.src_fields);
+    targ = union(f.targ_fields, g.targ_fields);
+    if isempty(src),  src  = []; end
+    if isempty(targ), targ = []; end
+    f.src_fields  = src;
+    f.targ_fields = targ;
+
 else
     error('KERNEL3D:minus:invalid', ...
         'F and G must be kernel3d class objects');

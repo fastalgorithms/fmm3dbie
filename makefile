@@ -126,7 +126,7 @@ HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o \
 
 # Laplace wrappers
 LAP = src/lap_wrappers
-LOBJS = $(LAP)/lap_comb_dir.o $(LAP)/lap_s_neu.o
+LOBJS = $(LAP)/lap_comb_dir.o $(LAP)/lap_s_neu.o $(LAP)/lap_comb_cprime.o
 
 # Maxwell wrappers
 EM = src/maxwell

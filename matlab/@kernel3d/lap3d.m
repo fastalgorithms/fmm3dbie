@@ -27,7 +27,7 @@ function obj = lap3d(type, coefs)
 %      Calls lap3d.dirichlet.get_quadrature_correction or
 %      lap3d.neumann.get_quadrature_correction.
 %
-% Kernel orders (obj.sing):  s -> -1,  d -> 0,  sp -> 0,  c -> -1
+% Kernel orders (obj.kernel_order):  s -> -1,  d -> 0,  sp -> 0,  dp -> 1,  c -> 0,  cp -> 1
 %
 % Oversampling orders:
 %   obj.get_overs_orders(S, t, eps)
@@ -51,7 +51,7 @@ switch lower(type)
 
     case {'s', 'single'}
         obj.type = 's';
-        obj.sing = -1;
+        obj.kernel_order = -1;
 
         obj.eval = @(s,t) lap3d.kern(s, t, 's');
 
@@ -62,11 +62,11 @@ switch lower(type)
                             lap3d.dirichlet.eval(S, sigma, targ, eps, dpars_s, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
                           lap3d.dirichlet.get_quadrature_correction(S, eps, dpars_s, varargin{:});
-        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.sing);
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
     case {'d', 'double'}
         obj.type = 'd';
-        obj.sing = -1;
+        obj.kernel_order = 0;
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'd');
 
@@ -77,11 +77,12 @@ switch lower(type)
                             lap3d.dirichlet.eval(S, sigma, targ, eps, dpars_d, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
                           lap3d.dirichlet.get_quadrature_correction(S, eps,dpars_d, varargin{:});
-        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.sing);
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
+        obj.src_fields = {'n'};
 
     case {'sp', 'sprime'}
         obj.type = 'sp';
-        obj.sing = -1;
+        obj.kernel_order = 0;
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'sprime');
 
@@ -90,10 +91,29 @@ switch lower(type)
         dpars_sp = [1.0; 0.0];
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'sp', sigma);
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-                            lap3d.neumann.eval(S, sigma, targ, eps, dpars_sp, varargin{:});
+                            lap_combprime_eval(S, sigma, targ, eps, dpars_sp, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          lap3d.neumann.get_quadrature_correction(S, eps, varargin{:});
-        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.sing);
+                          lap_combprime_getquad(S, eps, varargin{:});
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
+        obj.targ_fields = {'n'};
+
+    case {'dp', 'dprime'}
+        obj.type = 'dp';
+        obj.kernel_order = 1;
+
+        obj.eval = @(s,t) lap3d.kern(s, t, 'dprime');
+
+        % dpars for dirichlet eval: [alpha_S, beta_D] = [0, 1]
+        dpars_dp = [0.0; 1.0];
+        obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'dp', sigma);
+        obj.fmm      = [];
+        obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
+                            lap_combprime_eval(S, sigma, targ, eps, dpars_dp, varargin{:});
+        obj.getquad  = @(S,eps,varargin) ...
+                          lap_combprime_getquad(S, eps, varargin{:});
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
+        obj.src_fields = {'n'};
+        obj.targ_fields = {'n'};
 
     case {'c', 'combined'}
         if ( nargin < 2 )
@@ -101,9 +121,10 @@ switch lower(type)
             coefs = [1; 1];
         end
         coefs = coefs(:);
+        assert(isreal(coefs), 'KERNEL3D.LAP3D: coefs must be real for combined field.');
 
-        obj.type        = 'c';
-        obj.sing         = -1;
+        obj.type         = 'c';
+        obj.kernel_order = 0;
         obj.params.coefs = coefs;
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'c', coefs(1), coefs(2));
@@ -115,11 +136,55 @@ switch lower(type)
                             lap3d.dirichlet.eval(S, sigma, targ, eps, dpars_c, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
                           lap3d.dirichlet.get_quadrature_correction(S, eps, dpars_c, varargin{:});
-        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.sing);
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
+        obj.src_fields = {'n'};
 
+    case {'cp', 'cprime'}
+        if ( nargin < 3 )
+            warning('KERNEL3D.LAP3D: missing coefs for cprime. Defaulting to [1 1].');
+            coefs = [1; 1];
+        end
+        coefs = coefs(:);
+        assert(isreal(coefs), 'KERNEL3D.LAP3D: coefs must be real for combined field.');
+        
+
+        obj.type         = 'cprime';
+        obj.kernel_order = 1;
+        obj.params.coefs = coefs;
+
+        obj.eval = @(s,t) lap3d.kern(s, t, 'cprime', coefs);
+
+        rep_pars_cp = coefs;
+        obj.layer_eval = @(S,sigma,targ,eps) ...
+                            lap_combprime_eval(S, sigma, targ, eps, rep_pars_cp);
+        obj.getquad  = @(S,eps,varargin) ...
+                          lap_combprime_getquad(S, eps, rep_pars_cp, varargin);
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
+        obj.src_fields = {'n'};
+        obj.targ_fields = {'n'};
+        
     otherwise
         error('KERNEL3D.LAP3D: unknown Laplace kernel type ''%s''.', type);
 
 end
 
+end
+
+function p = lap_combprime_eval(S, sigma, targ, eps, rep_pars,args)
+%HELM_COMBPRIME_EVAL  Call helm3d.dirichlet.eval with iprime=1.
+if isempty(args) || ~isstruct(args{end})
+    args{end+1} = [];
+end
+args{end}.iprime = 1;
+p = lap3d.dirichlet.eval(S, sigma, targ, eps, rep_pars, args{:});
+end
+
+function Q = lap_combprime_getquad(S, eps, rep_pars, args)
+%HELM_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
+%   args is the varargin cell from the lambda: {} or {targinfo} or {targinfo, opts}
+if isempty(args) || ~isstruct(args{end})
+    args{end+1} = [];
+end
+args{end}.iprime = 1;
+Q = lap3d.dirichlet.get_quadrature_correction(S, eps, rep_pars, args{:});
 end

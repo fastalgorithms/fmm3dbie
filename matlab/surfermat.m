@@ -1,5 +1,5 @@
-function [sysmat,varargout] = surfermat(surferobj,kern,opts)
-% [sysmat, opts, novers_out] = surfermat(...)
+function [sysmat,novers] = surfermat(surferobj,kern,eps,opts)
+% [sysmat, novers] = surfermat(...)
 %   novers_out is a cell(nsurfers,nsurfers) of per-patch oversampling order
 %   vectors, one per block, as returned by kern.get_overs_orders.
 %SURFERERMAT build matrix for given kernel and surfer description of 
@@ -44,13 +44,17 @@ function [sysmat,varargout] = surfermat(surferobj,kern,opts)
 %
 % Author: Tristan Goodwill
 
-surfers = surferobj;
-
-if ~isa(kern,'kernel3d')
-        error('SURFERMAT: second input kern not of supported type');
+% Accept either an array of surfers or a cell array of surfers.
+% Convert arrays to cell arrays for uniform indexing below.
+if iscell(surferobj)
+    surfers = surferobj;
+else
+    surfers = num2cell(surferobj(:).',1);
 end
 
-if nargin < 3
+if ~isa(kern,'kernel3d'), error('SURFERMAT: second input kern not of supported type'); end
+
+if nargin < 4
     opts = [];
 end
 
@@ -60,46 +64,53 @@ l2scale = false;
 selfquad = true;
 
 % get opts from struct if available
-if isfield(opts,'selfquad')
-    selfquad = opts.selfquad;
-end
-if isfield(opts,'l2scale')
-    l2scale = opts.l2scale;
-end
-if isfield(opts,'nonsmoothonly')
-    nonsmoothonly = opts.nonsmoothonly;
-end
-if isfield(opts,'corrections')
-    corrections = opts.corrections;
-end
-if corrections
-    nonsmoothonly = true;
-end
-adaptive_correction = true;
-if isfield(opts,'adaptive_correction')
-    adaptive_correction = opts.adaptive_correction;
-end
-quad_eps = eps();
-if isfield(opts,'eps')
-    quad_eps = opts.eps;
-end
+if isfield(opts,'selfquad'), selfquad = opts.selfquad; end
+if isfield(opts,'l2scale'), l2scale = opts.l2scale; end
+if isfield(opts,'nonsmoothonly'), nonsmoothonly = opts.nonsmoothonly; end
+if isfield(opts,'corrections'), corrections = opts.corrections; end
+if corrections, nonsmoothonly = true; end
 
+adaptive_correction = true;
+if isfield(opts,'adaptive_correction'), adaptive_correction = opts.adaptive_correction; end
+
+forcesmooth = false;
+if isfield(opts,'forcesmooth'), forcesmooth = opts.forcesmooth; end
+if forcesmooth, adaptive_correction = false; selfquad = false; end
+
+unif_nover = 0;
+if isfield(opts,'unif_nover'), unif_nover = opts.unif_nover; end
+if isfield(opts,'unif_novers'), unif_nover = opts.unif_novers; end
 nsurfers = length(surfers);
 
 opdims_mat = zeros(2,nsurfers,nsurfers);
 lsurfer    = zeros(nsurfers,1);
 
+novers = cell(nsurfers, nsurfers);
+
 for i=1:nsurfers
-    lsurfer(i) = surfers(i).npts;
-    
+    lsurfer(i) = surfers{i}.npts;
+
     for j=1:nsurfers
         if (size(kern) == 1)
-            opdims_mat(:,i,j) = kern.opdims;
+            ktmp = kern;
         else
-            opdims_mat(:,i,j) = kern(i,j).opdims;
+            ktmp = kern(i,j);
+        end
+        opdims_mat(:,i,j) = ktmp.opdims;
+        if ismethod(surfers{j},'oversample') 
+            novers{i,j} = ktmp.get_overs_orders(surfers{j},surfers{i},eps);
+        else
+            novers{i,j} = NaN;
         end
     end
-end    
+end
+if unif_nover
+    for j=1:nsurfers
+        noversj = cell2mat(novers(:,j).');
+        noversj = repmat(max(noversj,[],2),1,nsurfers);
+        novers(:,j) = mat2cell(noversj,size(noversj,1),2);
+    end
+end
 
 for i = 1:nsurfers
     assert(all(opdims_mat(1,i,:) == opdims_mat(1,i,1)), ...
@@ -134,35 +145,14 @@ end
 
 %% Now build quadratures
 
-novers_out = cell(nsurfers, nsurfers);
-
 for i = 1:nsurfers
-    surferi = surfers(i);
+    surferi = surfers{i};
     for j = 1:nsurfers
-        surferj = surfers(j);
+        surferj = surfers{j};
         if (surferi.npts < 1 || surferj.npts<1)
             sysmat_tmp = [];
             break
         end
-
-        % When i~=j, strip patch_id/uvs_targ so evaluators treat targets
-        % as off-surface points.
-        if i == j
-            surferi_targ = surferi;
-        else
-            targs = extract_targ_array(surferi);
-            surferi_targ = [];
-            surferi_targ.r = targs(1:3,:);
-            if size(targs,1) == 12
-                surferi_targ.du = targs(4:6,:);
-                surferi_targ.dv = targs(7:9,:);
-                surferi_targ.n  = targs(10:12,:);
-            end
-        end
-
-        opdims = reshape(opdims_mat(:,i,j),[2,1]);
-        wts = repmat(surferj.wts(:).', opdims(2), 1);
-        wts = wts(:).';
 
         if (size(kern) == 1)
             ktmp = kern;
@@ -170,12 +160,27 @@ for i = 1:nsurfers
             ktmp = kern(i,j);
         end
 
-        novers = ktmp.get_overs_orders(surferj,surferi_targ,quad_eps);
-        novers_out{i,j} = novers;
-        if ismethod(surferj,'oversample')
-            [surferjover, xinterp] = surferj.oversample(novers);
+        % When i~=j, strip patch_id/uvs_targ so evaluators treat targets
+        % as off-surface points.
+        if i == j
+            surferi_targ = surferi;
+        else
+            surferi_targ = []; surferi_targ.r = surferi.r(:,:);
+            for field = ktmp.targ_field(:).'
+                surferi_targ.(field{1}) = surferi.(field{1})(:,:);
+            end
+        end
+
+        opdims = reshape(opdims_mat(:,i,j),[2,1]);
+        wts = repmat(surferj.wts(:).', opdims(2), 1);
+        wts = wts(:).';
+
+        noversj = novers{i,j};
+        if ismethod(surferj,'oversample') && ~any(isnan(noversj))
+            [surferjover, xinterp] = surferj.oversample(noversj);
             xinterp = kron(xinterp, eye(opdims(2)));
         else
+            novers{i,j} = NaN;
             surferjover = surferj;
             xinterp = eye(numel(wts));
         end
@@ -184,33 +189,25 @@ for i = 1:nsurfers
         wtsover = wtsover(:).';
 
         if (~nonsmoothonly)
-            sysmat_tmp = (ktmp.eval(surferjover,surferi_targ).*wtsover);
-            % Zero out entries where oversampled source and target coincide.
             if i == j
-                src_norm = max(vecnorm(surferjover.r), 1);
-                targ_r   = surferi_targ.r;
-                for q = 1:size(surferjover.r, 2)
-                    diff_norms = vecnorm(targ_r - surferjover.r(:,q));
-                    self_mask  = diff_norms < 1e-14 * src_norm(q);
-                    if any(self_mask)
-                        row_off = (1:opdims(1)) + opdims(1)*(find(self_mask).' - 1);
-                        col_off = (1:opdims(2)) + opdims(2)*(q-1);
-                        sysmat_tmp(row_off(:), col_off) = 0;
-                    end
-                end
+            % Zero out entries where oversampled source and target coincide.
+            sysmat_tmp = ktmp.eval_mask(surferjover,surferi_targ);
+            else
+            sysmat_tmp = (ktmp.eval(surferjover,surferi_targ));
             end
-            sysmat_tmp = sysmat_tmp*xinterp;
+            
+            sysmat_tmp = (sysmat_tmp.*wtsover)*xinterp;
         end
 
         if (adaptive_correction || (i==j)) && selfquad && ~isempty(ktmp.getquad)
-            Qj = ktmp.getquad(surferj,quad_eps,surferi_targ);
+            Qj = ktmp.getquad(surferj,eps,surferi_targ);
             if isfield(Qj, 'row_ptr')
                 sysmat_quad = conv_rsc_to_spmat(surferj,Qj.row_ptr,Qj.col_ind,Qj.wnear);
             else
                 sysmat_quad = Qj;
             end
             if corrections
-                sysmat_smth = smooth_sparse_quad(ktmp, surferi_targ, surferj, Qj.row_ptr, Qj.col_ind, novers);
+                sysmat_smth = smooth_sparse_quad(ktmp, surferi_targ, surferj, Qj.row_ptr, Qj.col_ind, noversj);
                 sysmat_quad = sysmat_quad-sysmat_smth;
             end
 
@@ -246,21 +243,6 @@ for i = 1:nsurfers
 end
 
 if (nonsmoothonly)
-    % Fix sparse entry format to use rcip matrix entries for repeats
-    % instead of using the precomputed self correction
-    
-    ijind = [isysmat jsysmat];
-    [~,idx] = unique(ijind, 'rows','last');
-    
-    sysmat = sparse(isysmat(idx),jsysmat(idx),vsysmat(idx),nrows,ncols);
+    sysmat = sparse(isysmat,jsysmat,vsysmat,nrows,ncols);
 end
-
-
-if (nargout > 1)
-    varargout{1} = opts;
-end
-if (nargout > 2)
-    varargout{2} = novers_out;
-end
-
 end

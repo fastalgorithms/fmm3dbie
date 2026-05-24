@@ -14,8 +14,15 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %  Integral representation
 %     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]
 %
+%  when opts.iprime = 0 (default), or
+%
+%     pot = \alpha S_{0}' [\sigma] + \beta D_{0}' [\sigma]
+%
+%  when opts.iprime = 1 (combined prime kernel)
+%
 %  S_{0}, D_{0}: Laplace single and double layer potential
-%  
+%  S_{0}', D_{0}': normal derivatives thereof (at target)
+%
 %  \alpha, beta = dpars(1:2)
 %
 %  Note: for targets on surface, only principal value part of the
@@ -42,6 +49,8 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.iprime - if 1, compute quadrature for combined prime kernel
+%           (default 0)
 %
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -104,37 +113,13 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     if(n1 ~=2 && n2 ~=ntarg)
       fprintf('Incorrect size of uvs_targ array in targinfo struct. Aborting! \n');
     end
+    rsc = getnear(S, targinfo);
+    row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
+    rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
+    nquad   = rsc.nquad;
+    ntp1    = ntarg+1;
+    nnzp1   = nnz+1;
 
-
-    
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    mex_id_ = 'get_rfacs(c i int64_t[x], c i int64_t[x], c io double[x], c io double[x])';
-[rfac, rfac0] = fmm3dbie_routs(mex_id_, norder0, iptype0, rfac, rfac0, 1, 1, 1, 1);
-    
-
-    cms = S.cms;
-    rads = S.rads; 
-
-    rad_near = rads*rfac;
-    nnz = 0;
-    mex_id_ = 'findnearmem(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x])';
-[nnz] = fmm3dbie_routs(mex_id_, cms, npatches, rad_near, ndtarg, targs, ntarg, nnz, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, 1);
-
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    mex_id_ = 'findnear(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x], c io int64_t[x])';
-[row_ptr, col_ind] = fmm3dbie_routs(mex_id_, cms, npatches, rad_near, ndtarg, targs, ntarg, row_ptr, col_ind, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, ntp1, nnz);
-
-    iquad = zeros(nnz+1,1);
-    mex_id_ = 'get_iquad_rsc(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io int64_t[x])';
-[iquad] = fmm3dbie_routs(mex_id_, npatches, ixyzs, npts, nnz, row_ptr, col_ind, iquad, 1, npp1, 1, 1, ntp1, nnz, nnzp1);
-
-    nquad = iquad(nnz+1)-1;
     wnear = zeros(nquad,1);
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
@@ -145,9 +130,13 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
         iquadtype = 1;
       end
     end
-    mex_id_ = 'getnearquad_lap_comb_dir_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])';
+    if iprime == 0
+        mex_id_ = 'getnearquad_lap_comb_dir_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])';
 [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
-    
+    else
+        mex_id_ = 'getnearquad_lap_comb_dir_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
+    end
     Q = [];
     Q.targinfo = targinfo;
     Q.ifcomplex = 0;

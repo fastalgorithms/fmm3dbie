@@ -50,9 +50,9 @@ switch lower(type)
         error('HELM3D:fmm:type', 'Unknown kernel type ''%s''.', type);
 end
 
-if ( isstruct(targinfo) )
-    targuse = targinfo.r;
-else
+try
+    targuse = targinfo.r(:,:);
+catch
     targuse = targinfo;
 end
 

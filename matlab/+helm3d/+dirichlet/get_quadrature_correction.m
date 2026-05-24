@@ -112,12 +112,8 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     if isfield(opts,'iprime'); iprime = opts.iprime; end
 
     rsc = getnear(S, targinfo);
-    row_ptr = rsc.row_ptr;
-    col_ind = rsc.col_ind;
-    iquad   = rsc.iquad;
-    rfac    = rsc.rfac;
-    rfac0   = rsc.rfac0;
-    nnz     = length(col_ind);
+    row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
+    rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
     ntp1    = ntarg+1;
     nnzp1   = nnz+1;
 

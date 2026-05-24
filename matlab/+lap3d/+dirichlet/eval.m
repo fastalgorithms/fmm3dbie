@@ -11,8 +11,15 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
 %  Integral representation
 %     pot = \alpha S_{0} [\sigma] + \beta D_{0} [\sigma]
 %
+%  when opts.iprime = 0 (default), or
+%
+%     pot = \alpha S_{0}' [\sigma] + \beta D_{0}' [\sigma]
+%
+%  when opts.iprime = 1 (combined prime kernel)
+%
 %  S_{0}, D_{0}: Laplace single and double layer potential
-%  
+%  S_{0}', D_{0}': normal derivatives thereof (at target)
+%
 %  \alpha, beta = dpars(1:2)
 %
 %  Note: for targets on surface, only principal value part of the
@@ -21,7 +28,7 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
-%    * targinfo: target info 
+%    * targinfo: target info
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
@@ -34,10 +41,11 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
-%        opts.precomp_quadrature: precomputed quadrature corrections struct 
+%        opts.iprime - if 1, evaluate combined prime kernel (default 0)
+%        opts.precomp_quadrature: precomputed quadrature corrections struct
 %           currently only supports quadrature corrections
-%           computed in rsc format 
-%    
+%           computed in rsc format
+%
 
     if(nargin < 6) 
       opts = [];
@@ -49,7 +57,10 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
     if(isfield(opts,'nonsmoothonly'))
       nonsmoothonly = opts.nonsmoothonly;
     end
-    
+
+    iprime = 0;
+    if isfield(opts,'iprime'); iprime = opts.iprime; end
+
     isprecompq = false;
     if isfield(opts, 'precomp_quadrature')
       isprecompq = true;
@@ -79,19 +90,31 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-% Compute quadrature corrections   
+    if(isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id'))
+      patch_id = targinfo.patch_id;
+    else
+      patch_id = -1*ones(ntarg,1);
+    end
+
+    if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))
+      uvs_targ = targinfo.uvs_targ;
+    else
+      uvs_targ = zeros(2,ntarg);
+    end
+
+% Compute quadrature corrections
     if ~isprecompq
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
+        opts_quad.iprime = iprime;
 %
-%  For now Q is going to be a struct with 'quad_format', 
+%  For now Q is going to be a struct with 'quad_format',
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
 %  and either, 'wnear', 'row_ind', 'col_ptr', or
 %  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
 %  if nkernel is >1
 %
-
         [Q] = lap3d.dirichlet.get_quadrature_correction(S,eps,dpars,targinfo,opts_quad);
       else
         opts_qcorr = [];
@@ -120,23 +143,34 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
 
     p = zeros(ntarg,1);
 
-    ndd = 2;
-    ndz = 0;
-    zpars = [];
-    ndi = 0;
-    ipars = [];
+% Call the layer potential evaluator
     nker = 1;
     lwork = 0;
     work = [];
-    ndim = 1;
     idensflag = 0;
     ipotflag = 0;
     ndim_p = 1;
 
-% Call the layer potential evaluator
-    mex_id_ = 'lap_comb_dir_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[x])';
+    if iprime == 0
+      ndd = 2;
+      ndz = 0;
+      zpars = [];
+      ndi = 0;
+      ipars = [];
+      ndim = 1;
+      mex_id_ = 'lap_comb_dir_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[x])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim, sigma, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, npts, 1, 1, ntarg);
-end    
+    else
+      ndd = 2;
+      ndz = 0;
+      zpars = [];
+      ndi = 0;
+      ipars = [];
+      ndim = 1;
+      mex_id_ = 'lap_comb_cprime_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[x])';
+[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim, sigma, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, npts, 1, 1, ntarg);
+    end
+end
 %
 %
 %

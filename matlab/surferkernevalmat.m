@@ -1,4 +1,4 @@
-function [sysmat,varargout] = surferkernevalmat(surferobj,kern,targobj,opts)
+function [sysmat,novers] = surferkernevalmat(surferobj,kern, targobj, eps,opts)
 %SURFERKERNEVALMAT build evaluation matrix for given kernel, surfer description
 % of boundary, and off-surface target points. This is a wrapper for various
 % quadrature routines. Optionally, return only those interactions which do
@@ -29,7 +29,6 @@ function [sysmat,varargout] = surferkernevalmat(surferobj,kern,targobj,opts)
 %                         return in a sparse array, see opts.nonsmoothonly
 %           opts.quad = quad type 'kern' to call kern.get_quad, or 'native'
 %               to use the smooth rule
-%           opts.eps = (1e-10) tolerance for adaptive quadrature
 %
 % Output:
 %   sysmat - the evaluation matrix mapping densities on the boundary
@@ -42,62 +41,55 @@ function [sysmat,varargout] = surferkernevalmat(surferobj,kern,targobj,opts)
 %
 % Author: Tristan Goodwill
 
-surfers = surferobj;
+if iscell(surferobj)
+    surfers = surferobj;
+else
+    surfers = num2cell(surferobj(:).',1);
+end
 
 if ~isa(kern,'kernel3d')
         error('SURFEREVALMAT: second input kern not of supported type');
 end
 
-if nargin < 4
-    opts = [];
-end
+if nargin < 5, opts = []; end
 
 % Assign appropriate object to targinfo
-if isa(targobj, 'surfer') || isstruct(targobj)
-    targs_arr = extract_targ_array(targobj);
-elseif isnumeric(targobj)
-    targs_arr = targobj;
+if isnumeric(targobj)
+    targinfo = targobj.r;
 else
-    error('SURFERKERNEVALMAT: input 3 is not a supported type');
+    targinfo = targobj;
 end
-targinfo = [];
-targinfo.r = targs_arr(1:3,:);
-if size(targs_arr, 1) == 12
-    targinfo.du = targs_arr(4:6,:);
-    targinfo.dv = targs_arr(7:9,:);
-    targinfo.n  = targs_arr(10:12,:);
-end
-
-nonsmoothonly = false;
-corrections = false;
 
 % get opts from struct if available
-if isfield(opts,'nonsmoothonly')
-    nonsmoothonly = opts.nonsmoothonly;
-end
-if isfield(opts,'corrections')
-    corrections = opts.corrections;
-end
-if corrections
-    nonsmoothonly = true;
-end
+nonsmoothonly = false;
+if isfield(opts,'nonsmoothonly'), nonsmoothonly = opts.nonsmoothonly; end
+corrections = false;
+if isfield(opts,'corrections'), corrections = opts.corrections; end
+if corrections, nonsmoothonly = true; end
 adaptive_correction = true;
-if isfield(opts,'adaptive_correction')
-    adaptive_correction = opts.adaptive_correction;
-end
+if isfield(opts,'adaptive_correction'), adaptive_correction = opts.adaptive_correction; end
 
 nsurfers = length(surfers);
 
 opdims_mat = zeros(2,nsurfers);
 lsurfer    = zeros(nsurfers,1);
 
+
+novers = cell(nsurfers, 1);
+
 for j=1:nsurfers
-    lsurfer(j) = surfers(j).npts;
+    lsurfer(j) = surfers{j}.npts;
 
     if (size(kern) == 1)
-        opdims_mat(:,j) = kern.opdims;
+        ktmp = kern;
     else
-        opdims_mat(:,j) = kern(j).opdims;
+        ktmp = kern(j);
+    end
+    opdims_mat(:,j) = ktmp.opdims;
+    if ismethod(surfers{j},'oversample') 
+        novers{j} = ktmp.get_overs_orders(surfers{j},targobj,eps);
+    else
+        novers{j} = NaN;
     end
 end
 
@@ -111,7 +103,7 @@ for j = 1:nsurfers
         'SURFEREVALMAT: opdims(2) is not consistent for block-column %d', j);
 end
 
-ntarg   = size(targinfo.r, 2);
+ntarg   = size(targinfo.r(:,:), 2);
 opdim1  = opdims_mat(1,1);
 
 icollocs = zeros(nsurfers+1,1);
@@ -135,7 +127,7 @@ end
 %% Now build quadratures
 
 for j = 1:nsurfers
-    surferj = surfers(j);
+    surferj = surfers{j};
     if (surferj.npts < 1 || ntarg < 1)
         sysmat_tmp = [];
         continue
@@ -151,10 +143,16 @@ for j = 1:nsurfers
         ktmp = kern(j);
     end
 
-    novers = ktmp.get_overs_orders(surferj,targinfo,eps);
-    [surferjover, xinterp] = oversample(surferj,novers);
+    noversj = novers{j};
+    if ismethod(surferj,'oversample') && ~any(isnan(noversj))
+        [surferjover, xinterp] = surferj.oversample(noversj);
+        xinterp = kron(xinterp, eye(opdims(2)));
+    else
+        novers{j} = NaN;
+        surferjover = surferj;
+        xinterp = eye(numel(wts));
+    end
 
-    xinterp = kron(xinterp, eye(opdims(2)));
     wtsover = repmat(surferjover.wts(:).', opdims(2), 1);
     wtsover = wtsover(:).';
 
@@ -170,7 +168,7 @@ for j = 1:nsurfers
             sysmat_quad = Qj;
         end
         if corrections
-            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, Qj.row_ptr, Qj.col_ind, novers);
+            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, Qj.row_ptr, Qj.col_ind, noversj);
             sysmat_quad = sysmat_quad-sysmat_smth;
         end
 
@@ -196,19 +194,9 @@ for j = 1:nsurfers
 
 end
 
+
 if (nonsmoothonly)
-    % Fix sparse entry format to use rcip matrix entries for repeats
-    % instead of using the precomputed self correction
-
-    ijind = [isysmat jsysmat];
-    [~,idx] = unique(ijind, 'rows','last');
-
-    sysmat = sparse(isysmat(idx),jsysmat(idx),vsysmat(idx),nrows,ncols);
-end
-
-
-if (nargout > 1)
-    varargout{1} = opts;
+    sysmat = sparse(isysmat,jsysmat,vsysmat,nrows,ncols);
 end
 
 end

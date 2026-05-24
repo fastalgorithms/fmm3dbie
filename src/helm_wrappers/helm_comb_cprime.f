@@ -364,8 +364,9 @@ C$OMP END PARALLEL DO
       call get_iquad_rsc(npatches,ixyzs,ntarg,nnz,row_ptr,col_ind,
      1         iquad)
 
-c     ikerorder = 1 for hypersingular (D')
-      ikerorder = 1
+c     ikerorder: 0 for S' only (alpha only), 1 if D' is present
+      ikerorder = 0
+      if(abs(zpars(3)).gt.1.0d-16) ikerorder = 1
 
       allocate(novers(npatches),ixyzso(npatches+1))
 
@@ -454,8 +455,16 @@ C$OMP END PARALLEL DO
       if(abs(beta).lt.1.0d-16)  ifdipole = 0
 
       ier = 0
-      call hfmm3d_t_cd_g(eps,zpars(1),ns,sources,charges,dipvec,
-     1  ntarg,srctmp,pot_aux,grad_aux,ier)
+      if(ifcharge.eq.1.and.ifdipole.eq.1) then
+        call hfmm3d_t_cd_g(eps,zpars(1),ns,sources,charges,dipvec,
+     1    ntarg,srctmp,pot_aux,grad_aux,ier)
+      elseif(ifcharge.eq.1.and.ifdipole.eq.0) then
+        call hfmm3d_t_c_g(eps,zpars(1),ns,sources,charges,
+     1    ntarg,srctmp,pot_aux,grad_aux,ier)
+      elseif(ifcharge.eq.0.and.ifdipole.eq.1) then
+        call hfmm3d_t_d_g(eps,zpars(1),ns,sources,dipvec,
+     1    ntarg,srctmp,pot_aux,grad_aux,ier)
+      endif
 
 c     dot gradient with target normal
 C$OMP PARALLEL DO DEFAULT(SHARED)
@@ -501,10 +510,12 @@ C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,pottmp,gradtmp)
             srctmp2(1,nss) = srcover(1,l)
             srctmp2(2,nss) = srcover(2,l)
             srctmp2(3,nss) = srcover(3,l)
-            ctmp2(nss)    = charges(l)
-            dtmp2(1,nss)  = dipvec(1,l)
-            dtmp2(2,nss)  = dipvec(2,l)
-            dtmp2(3,nss)  = dipvec(3,l)
+            if(ifcharge.eq.1) ctmp2(nss)   = charges(l)
+            if(ifdipole.eq.1) then
+              dtmp2(1,nss) = dipvec(1,l)
+              dtmp2(2,nss) = dipvec(2,l)
+              dtmp2(3,nss) = dipvec(3,l)
+            endif
           enddo
         enddo
 
@@ -513,8 +524,271 @@ C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,pottmp,gradtmp)
         gradtmp(2) = 0
         gradtmp(3) = 0
 
-        call h3ddirectcdg(nd,zpars(1),srctmp2,ctmp2,dtmp2,
-     1    nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+        if(ifcharge.eq.1.and.ifdipole.eq.1) then
+          call h3ddirectcdg(nd,zpars(1),srctmp2,ctmp2,dtmp2,
+     1      nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+        elseif(ifcharge.eq.1.and.ifdipole.eq.0) then
+          call h3ddirectcg(nd,zpars(1),srctmp2,ctmp2,
+     1      nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+        elseif(ifcharge.eq.0.and.ifdipole.eq.1) then
+          call h3ddirectdg(nd,zpars(1),srctmp2,dtmp2,
+     1      nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+        endif
+
+        pot(i) = pot(i) - (gradtmp(1)*targs(10,i) +
+     1                     gradtmp(2)*targs(11,i) +
+     2                     gradtmp(3)*targs(12,i))
+      enddo
+C$OMP END PARALLEL DO
+
+      return
+      end
+c
+c
+c
+
+
+      subroutine helm_comb_cprime_eval_addsub(npatches,norders,ixyzs,
+     1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
+     2   eps,ndd,dpars,ndz,zpars,ndi,ipars,
+     3   nnz,row_ptr,col_ind,iquad,nquad,nker,wnear,novers,
+     4   nptso,ixyzso,srcover,whtsover,lwork,work,idensflag,
+     5   ndim_s,sigma,ipotflag,ndim_p,pot)
+c
+c------------------------------
+c  This subroutine evaluates the combined prime layer potential
+c
+c    K[\sigma] = (\alpha S_{k}' + \beta D_{k}')[\sigma]
+c
+c  where the near field quadrature is precomputed and stored
+c  in row sparse compressed format, and the oversampled geometry
+c  is provided by the caller.
+c
+c  For targets on the boundary, this routine returns only the
+c  principal value part.
+c
+c  The FMM computes grad_x (alpha*S_k + beta*D_k)[sigma] at targets,
+c  dotted with the target normal n_x, using add-subtract to remove
+c  the near contribution and replace it with the precomputed wnear.
+c
+c  Input arguments:
+c    - npatches: integer *8
+c    - norders: integer *8(npatches)
+c    - ixyzs: integer *8(npatches+1)
+c    - iptype: integer *8(npatches)
+c    - npts: integer *8
+c    - srccoefs: real *8(9,npts)
+c    - srcvals: real *8(12,npts)
+c    - ndtarg: integer *8
+c        leading dimension of target array (must be >= 12)
+c    - ntarg: integer *8
+c    - targs: real *8(ndtarg,ntarg)
+c        rows 10:12 must contain target normals
+c    - eps: real *8
+c    - ndd: integer *8 (unused, pass 0)
+c    - dpars: real *8(ndd) (unused)
+c    - ndz: integer *8
+c        must be 3
+c    - zpars: complex *16(ndz)
+c        zpars(1) = k, zpars(2) = alpha, zpars(3) = beta
+c    - ndi: integer *8 (unused, pass 0)
+c    - ipars: integer *8(ndi) (unused)
+c    - nnz: integer *8
+c    - row_ptr: integer *8(ntarg+1)
+c    - col_ind: integer *8(nnz)
+c    - iquad: integer *8(nnz+1)
+c    - nquad: integer *8
+c    - nker: integer *8 (must be 1)
+c    - wnear: complex *16(nker,nquad)
+c        precomputed near quadrature for K = alpha*S_k' + beta*D_k'
+c    - novers: integer *8(npatches)
+c    - nptso: integer *8
+c    - ixyzso: integer *8(npatches+1)
+c    - srcover: real *8(12,nptso)
+c    - whtsover: real *8(nptso)
+c    - lwork: integer *8 (unused)
+c    - work: real *8(lwork) (unused)
+c    - idensflag: integer *8 (unused)
+c    - ndim_s: integer *8 (must be 1)
+c    - sigma: complex *16(npts)
+c    - ipotflag: integer *8 (unused)
+c    - ndim_p: integer *8 (must be 1)
+c
+c  Output arguments:
+c    - pot: complex *16(ntarg)
+c
+
+      implicit none
+      integer *8, intent(in) :: npatches,npts
+      integer *8, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      integer *8, intent(in) :: ndtarg,ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer *8, intent(in) :: ndd,ndz,ndi
+      real *8, intent(in) :: dpars(max(ndd,1))
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(max(ndi,1))
+      integer *8, intent(in) :: nnz,nquad
+      integer *8, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: nker
+      complex *16, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: nptso
+      integer *8, intent(in) :: ixyzso(npatches+1),novers(npatches)
+      real *8, intent(in) :: srcover(12,nptso),whtsover(nptso)
+      integer *8, intent(in) :: lwork
+      real *8, intent(in) :: work(max(lwork,1))
+      integer *8, intent(in) :: ndim_s,ndim_p,idensflag,ipotflag
+      complex *16, intent(in) :: sigma(npts)
+      complex *16, intent(out) :: pot(ntarg)
+
+      integer *8 ns
+      complex *16 alpha,beta
+      integer *8 ifcharge,ifdipole
+
+      real *8, allocatable :: sources(:,:),srctmp(:,:),srctmp2(:,:)
+      complex *16, allocatable :: charges(:),dipvec(:,:),sigmaover(:)
+      complex *16, allocatable :: ctmp2(:),dtmp2(:,:)
+      complex *16, allocatable :: pot_aux(:),grad_aux(:,:)
+
+      integer *8 i,j,jpatch,jquadstart,jstart
+      integer *8 nss,l,npols,nmax
+      complex *16 pottmp,gradtmp(3)
+      real *8 thresh
+
+      integer *8 ier
+      integer *8 nd,ntarg0
+      integer *8 int8_12
+
+      parameter (nd=1,ntarg0=1)
+      int8_12 = 12
+
+      ns = nptso
+      alpha = zpars(2)
+      beta  = zpars(3)
+
+      ifcharge = 1
+      ifdipole = 1
+      if(abs(alpha).lt.1.0d-16) ifcharge = 0
+      if(abs(beta).lt.1.0d-16)  ifdipole = 0
+
+      allocate(sources(3,ns),srctmp(3,ntarg))
+      allocate(charges(ns),dipvec(3,ns))
+      allocate(sigmaover(ns))
+      allocate(pot_aux(ntarg),grad_aux(3,ntarg))
+
+c     oversample density
+      call oversample_fun_surf(2_8,npatches,norders,ixyzs,iptype,
+     1    npts,sigma,novers,ixyzso,ns,sigmaover)
+
+c     set FMM source/target arrays
+C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ns
+        sources(1,i) = srcover(1,i)
+        sources(2,i) = srcover(2,i)
+        sources(3,i) = srcover(3,i)
+        charges(i) = alpha*sigmaover(i)*whtsover(i)
+        dipvec(1,i) = beta*sigmaover(i)*whtsover(i)*srcover(10,i)
+        dipvec(2,i) = beta*sigmaover(i)*whtsover(i)*srcover(11,i)
+        dipvec(3,i) = beta*sigmaover(i)*whtsover(i)*srcover(12,i)
+      enddo
+C$OMP END PARALLEL DO
+
+C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        srctmp(1,i) = targs(1,i)
+        srctmp(2,i) = targs(2,i)
+        srctmp(3,i) = targs(3,i)
+        pot(i)        = 0
+        pot_aux(i)    = 0
+        grad_aux(1,i) = 0
+        grad_aux(2,i) = 0
+        grad_aux(3,i) = 0
+      enddo
+C$OMP END PARALLEL DO
+
+c     call FMM: compute gradient of (alpha*S_k + beta*D_k)[sigma]
+      ier = 0
+      if(ifcharge.eq.1.and.ifdipole.eq.1) then
+        call hfmm3d_t_cd_g(eps,zpars(1),ns,sources,charges,dipvec,
+     1    ntarg,srctmp,pot_aux,grad_aux,ier)
+      elseif(ifcharge.eq.1.and.ifdipole.eq.0) then
+        call hfmm3d_t_c_g(eps,zpars(1),ns,sources,charges,
+     1    ntarg,srctmp,pot_aux,grad_aux,ier)
+      elseif(ifcharge.eq.0.and.ifdipole.eq.1) then
+        call hfmm3d_t_d_g(eps,zpars(1),ns,sources,dipvec,
+     1    ntarg,srctmp,pot_aux,grad_aux,ier)
+      endif
+
+c     dot gradient with target normal
+C$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
+        pot(i) = grad_aux(1,i)*targs(10,i) +
+     1           grad_aux(2,i)*targs(11,i) +
+     2           grad_aux(3,i)*targs(12,i)
+      enddo
+C$OMP END PARALLEL DO
+
+      call get_fmm_thresh(int8_12,ns,srcover,int8_12,ntarg,srctmp,
+     1  thresh)
+
+c     add precomputed near quadrature
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,jquadstart)
+C$OMP$PRIVATE(jstart,pottmp,npols,l)
+      do i=1,ntarg
+        do j=row_ptr(i),row_ptr(i+1)-1
+          jpatch = col_ind(j)
+          npols = ixyzs(jpatch+1)-ixyzs(jpatch)
+          jquadstart = iquad(j)
+          jstart = ixyzs(jpatch)
+          do l=1,npols
+            pot(i) = pot(i) + wnear(1,jquadstart+l-1)*sigma(jstart+l-1)
+          enddo
+        enddo
+      enddo
+C$OMP END PARALLEL DO
+
+c     subtract near FMM contribution (add-subtract correction)
+      call get_near_corr_max(ntarg,row_ptr,nnz,col_ind,npatches,
+     1  ixyzso,nmax)
+      allocate(srctmp2(3,nmax),ctmp2(nmax),dtmp2(3,nmax))
+
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2)
+C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,pottmp,gradtmp)
+      do i=1,ntarg
+        nss = 0
+        do j=row_ptr(i),row_ptr(i+1)-1
+          jpatch = col_ind(j)
+          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+            nss = nss+1
+            srctmp2(1,nss) = srcover(1,l)
+            srctmp2(2,nss) = srcover(2,l)
+            srctmp2(3,nss) = srcover(3,l)
+            if(ifcharge.eq.1) ctmp2(nss)   = charges(l)
+            if(ifdipole.eq.1) then
+              dtmp2(1,nss) = dipvec(1,l)
+              dtmp2(2,nss) = dipvec(2,l)
+              dtmp2(3,nss) = dipvec(3,l)
+            endif
+          enddo
+        enddo
+
+        pottmp = 0
+        gradtmp(1) = 0
+        gradtmp(2) = 0
+        gradtmp(3) = 0
+
+        if(ifcharge.eq.1.and.ifdipole.eq.1) then
+          call h3ddirectcdg(nd,zpars(1),srctmp2,ctmp2,dtmp2,
+     1      nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+        elseif(ifcharge.eq.1.and.ifdipole.eq.0) then
+          call h3ddirectcg(nd,zpars(1),srctmp2,ctmp2,
+     1      nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+        elseif(ifcharge.eq.0.and.ifdipole.eq.1) then
+          call h3ddirectdg(nd,zpars(1),srctmp2,dtmp2,
+     1      nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+        endif
 
         pot(i) = pot(i) - (gradtmp(1)*targs(10,i) +
      1                     gradtmp(2)*targs(11,i) +

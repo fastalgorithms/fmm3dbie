@@ -39,26 +39,13 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 
     kern = kernel3d(kern);
 
-    src_field = fieldnames(S)';
-    src_field_use = {};
-    for i = 1:length(src_field)
-        if mod(size(S.(src_field{i})(:,:),2), size(S.r(:,:),2)) == 0 && ~isempty(S.(src_field{i}))
-        src_field_use{length(src_field_use)+1} = src_field{i};
-        end
-    end
-
-    targ_field = fieldnames(targs)';
-    targ_field_use = {};
-    for i = 1:length(targ_field)
-        if mod(size(targs.(targ_field{i})(:,:),2), size(targs.r(:,:),2)) == 0 && ~isempty(targs.(targ_field{i}))
-        targ_field_use{length(targ_field_use)+1} = targ_field{i};
-        end
-    end
-
     ntarg = size(targs.r, 2);
     
-    [S_over, val2over] = oversample(S, nover);
-
+    if ismethod(S,'oversample') && ~any(isnan(nover))
+        [S_over, val2over] = oversample(S, nover);
+    else
+        S_over = S; val2over = eye(size(S.r(:,:),2));
+    end
     ixyzs = S_over.ixyzs;
     opdims = kern.opdims;
 
@@ -90,45 +77,31 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 
         % Targets interacting with patch p
         targ_inds = csc.row_ind(ptstart:ptend);   % (ntarg_p,1)
-        ntarg_p   = length(targ_inds);
 
         % Oversampled source points on patch p
         src_inds  = ixyzs(p):(ixyzs(p+1)-1);      % (npts_p,1)
-        npts_p    = length(src_inds);
 
         % Extract source and target sub-structs
         srcp = [];
-        for field = src_field_use
+        srcp.r = S_over.r(:,src_inds);
+        for field = kern.src_fields(:).'
             srcp.(field{1}) = S_over.(field{1})(:,src_inds);
         end
 
 
         targp = [];
-        for field = targ_field_use
+        targp.r = targs.r(:,targ_inds);
+        for field = kern.targ_fields(:).'
             targp.(field{1}) = targs.(field{1})(:,targ_inds);
         end
 
-        % Evaluate kernel: result is (opdims(1)*ntarg_p) x (opdims(2)*npts_p)
-        Kblock = kern.eval(srcp, targp);
+        % Evaluate kernel. Use eval_mask to zero out self interactions
+        Kblock = kern.eval_mask(srcp, targp);
 
         % Weight columns by quadrature weights of oversampled patch
         wts_p = repmat(S_over.wts(src_inds).', opdims(2), 1);
         wts_p = wts_p(:).';
         Kblock = Kblock .* wts_p;
-
-        % Zero out self-interactions (source == target, relative tol 1e-14)
-        % Only relevant when ntarg_p == npts_p (i.e. on-surface self patch).
-        % We check each (target, src) pair via norms.
-        if ntarg_p == npts_p
-            src_norm = max(vecnorm(srcp.r), 1);
-            for q = 1:npts_p
-                diff_norms = vecnorm(targp.r - srcp.r(:,q));
-                self_mask  = diff_norms < 1e-14 * src_norm(q);
-                row_off    = (1:opdims(1)) + opdims(1)*(find(self_mask)-1).';
-                col_off    = (1:opdims(2)) + opdims(2)*(q-1);
-                Kblock(row_off(:), col_off) = 0;
-            end
-        end
 
         % Build global row/col indices (before val2over projection)
         % rows: opdims(1) entries per target
@@ -139,9 +112,10 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
         icols_p = icols_p(:);  % (opdims(2)*npts_p, 1)
 
         [ii, jj, vv] = find(sparse(Kblock));
-        irow_vals = [irow_vals; irows_p(ii)];
+        irows_p = irows_p(ii);
+        irow_vals = [irow_vals; irows_p(:)];
         icol_vals = [icol_vals; icols_p(jj)];
-        vals      = [vals;      vv];
+        vals      = [vals;      vv(:)];
     end
 
     Asmth = sparse(irow_vals, icol_vals, vals, ...

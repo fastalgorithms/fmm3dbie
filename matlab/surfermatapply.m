@@ -1,4 +1,4 @@
-function pot = surfermatapply(surferobj, kern, dens, cors, opts)
+function pot = surfermatapply(surferobj, kern, dens, eps, novers, cors, opts)
 %SURFERMATAPPLY apply the integral operator for given kernel and surfer
 % description of boundary to a density, using the FMM-accelerated smooth
 % quadrature rule and adding a precomputed sparse correction.
@@ -12,44 +12,82 @@ function pot = surfermatapply(surferobj, kern, dens, cors, opts)
 %   cors  - sparse matrix of near-field quadrature corrections,
 %           as returned by surfermat(S,kern,opts) with nonsmoothonly=true,
 %           or as assembled by the user.  cors*dens is added to the output.
-%   opts  - options structure (optional)
-%           opts.eps = (1e-10) tolerance for FMM / oversampling
 %
 % Output:
 %   pot  - result of applying the operator to dens, length nrows
 %
 % Author: Tristan Goodwill
 
-surfers = surferobj;
+if iscell(surferobj)
+    surfers = surferobj;
+else
+    surfers = num2cell(surferobj(:).',1);
+end
 
 if ~isa(kern, 'kernel3d')
     error('SURFERMATAPPLY: second input kern not of supported type');
 end
 
-if nargin < 5
-    opts = [];
+if nargin < 5, novers = []; end
+if nargin < 6, cors = []; end
+if nargin < 7, opts = []; end
+
+usematlab = 1;
+if isfield(opts,'usematlab'), usematlab = opts.usematlab; end
+usefmm = 1;
+if isfield(opts,'usefmm'), usefmm = opts.usefmm; end
+
+unif_nover = 0;
+if isfield(opts,'unif_nover'), unif_nover = opts.unif_nover; end
+if isfield(opts,'unif_novers'), unif_nover = opts.unif_novers; end
+
+
+if isempty(cors)
+    warning('surfermatapply is inefficient with empty corrections')
+    coropts = opts;
+    if usematlab
+        coropts.corrections = 1;
+    else
+        coropts.nonsmoothonly = 1;
+    end
+    [cors,novers] = surfermat(surferobj,kern,coropts);
 end
 
-eps = 1e-10;
-if isfield(opts, 'eps')
-    eps = opts.eps;
-end
 
 nsurfers = length(surfers);
 
 opdims_mat = zeros(2, nsurfers, nsurfers);
 lsurfer    = zeros(nsurfers, 1);
 
-for i = 1:nsurfers
-    lsurfer(i) = surfers(i).npts;
+novers_tmp = cell(nsurfers, nsurfers);
+for i=1:nsurfers
+    lsurfer(i) = surfers{i}.npts;
 
-    for j = 1:nsurfers
-        if (numel(kern) == 1)
-            opdims_mat(:,i,j) = kern.opdims;
+    for j=1:nsurfers
+        if (size(kern) == 1)
+            ktmp = kern;
         else
-            opdims_mat(:,i,j) = kern(i,j).opdims;
+            ktmp = kern(i,j);
+        end
+        opdims_mat(:,i,j) = ktmp.opdims;
+        if isempty(novers)
+        if ismethod(surfers{j},'oversample') 
+            novers_tmp{i,j} = ktmp.get_overs_orders(surfers{j},surfers{i},eps);
+        else
+            novers_tmp{i,j} = NaN;
+        end
         end
     end
+end
+if isempty(novers)
+    if unif_nover
+        for j=1:nsurfers
+            noversj = cell2mat(novers_tmp(:,j).');
+            noversj = repmat(max(noversj,[],2),1,nsurfers);
+            novers_tmp(:,j) = mat2cell(noversj,size(noversj,1),2);
+        end
+    end
+    novers = novers_tmp;
 end
 
 for i = 1:nsurfers
@@ -76,32 +114,17 @@ ncols = icollocs(end)-1;
 
 pot = zeros(nrows, 1);
 
-%% Apply smooth part via layer_eval with nonsmoothonly = true
-
-opts_eval = [];
-opts_eval.nonsmoothonly = true;
-
 for i = 1:nsurfers
-    surferi = surfers(i);
+    surferi = surfers{i};
     for j = 1:nsurfers
-        surferj = surfers(j);
+        surferj = surfers{j};
         if (surferi.npts < 1 || surferj.npts < 1)
             continue
         end
 
-        % When i~=j, strip patch_id/uvs_targ so evaluators treat targets
-        % as off-surface points.
-        if i == j
-            surferi_targ = surferi;
-        else
-            targs = extract_targ_array(surferi);
-            surferi_targ = [];
-            surferi_targ.r = targs(1:3,:);
-            if size(targs,1) == 12
-                surferi_targ.du = targs(4:6,:);
-                surferi_targ.dv = targs(7:9,:);
-                surferi_targ.n  = targs(10:12,:);
-            end
+        surferi_targ = []; surferi_targ.r = surferi.r(:,:);
+        for field = ktmp.targ_fields(:).'
+            surferi_targ.(field{1}) = surferi.(field{1})(:,:);
         end
 
         if (numel(kern) == 1)
@@ -115,14 +138,58 @@ for i = 1:nsurfers
 
         dens_j = dens(icolinds);
 
-        pot_ij = ktmp.layer_eval(surferj, dens_j, surferi_targ, eps, opts_eval);
+        % call layer eval or handle things in matlab
+        if usematlab
+            noversj = novers{i,j};
 
+            if ismethod(surferj,'oversample') && ~any(isnan(noversj))
+                [surferjover, xinterp] = surferj.oversample(noversj);
+                xinterp = kron(xinterp, eye(ktmp.opdims(2)));
+            else
+                surferjover = surferj;
+                xinterp = eye(numel(wts));
+            end
+            wtsover = repmat(surferjover.wts(:).', ktmp.opdims(2), 1);
+            dens_j = wtsover(:).*(xinterp*dens_j);
+            if usefmm && ~isempty(ktmp.fmm)
+                pot_ij = ktmp.fmm(eps,surferjover,surferi_targ,dens_j);
+            else
+                % zero out self entries
+                if i == j
+                    pot_ij = ktmp.eval_mask(surferjover,surferi_targ)*dens_j;
+                else
+                    pot_ij = ktmp.eval(surferjover,surferi_targ)*dens_j;
+                end
+            end
+        else
+            % Build a proper Q struct from the (i,j) block of cors
+            cors_ij = cors(irowinds, icolinds);
+            rsc_ij  = conv_spmat_to_rsc(surferj, cors_ij);
+
+            % TODO we could get rfac faster than this
+            rsc_near = getnear(surferj, surferi_targ);
+
+            Q = [];
+            Q.targinfo     = surferi_targ;
+            Q.format       = 'rsc';  Q.wavenumber = ktmp.zk;
+            Q.kernel_order = ktmp.kernel_order; 
+            Q.nquad   = rsc_ij.nquad;   Q.row_ptr = rsc_ij.row_ptr;
+            Q.col_ind = rsc_ij.col_ind; Q.iquad   = rsc_ij.iquad;
+            Q.wnear   = rsc_ij.wnear;   Q.rfac    = rsc_near.rfac;
+
+            opts_eval = [];
+            opts_eval.precomp_quadrature = Q;
+            pot_ij = ktmp.layer_eval(surferj, dens_j, surferi_targ, eps, opts_eval);
+        end
         pot(irowinds) = pot(irowinds) + pot_ij(:);
     end
 end
 
-%% Add near-field correction
+%% Add near-field correction (usematlab path only; layer_eval path folds
+%  cors into precomp_quadrature above)
 
-pot = pot + cors * dens;
+if usematlab
+    pot = pot + cors * dens;
+end
 
 end

@@ -108,4 +108,38 @@ fprintf('  relative error with wrong novers: %.2e\n', err_wrong);
 assert(err_wrong > tol, 'FAIL: wrong novers should give error > tol but got %.2e', err_wrong);
 fprintf('  PASS (correctly wrong)\n\n');
 
+%% Scenario 5: helm3d cprime, single surfer
+fprintf('Scenario 5: helm3d cprime, single surfer ...\n');
+
+S5 = geometries.ellipsoid([1,1,1], [3,3,3], [], 5);
+zk5 = 1.1 + 0.1i;
+kern5 = kernel3d('h', 'cprime', zk5, [1; 1i]);
+opdims5 = kern5.opdims;
+
+Asmth5 = surfermat(S5, kern5, opts_sm);
+n5 = S5.npts;
+ii5 = randi(n5, 50, 1);
+jj5 = randi(n5, 50, 1);
+
+Acheck5 = flam.kernbyindex(ii5, jj5, S5, kern5, opdims5);
+
+err5 = norm(Acheck5 - Asmth5(ii5,jj5), 'fro') / (norm(Asmth5(ii5,jj5), 'fro') + eps);
+fprintf('  relative error: %.2e\n', err5);
+assert(err5 < tol, 'FAIL: %.2e', err5);
+fprintf('  PASS\n\n');
+
+%% Scenario 6: helm3d dprime, single surfer
+fprintf('Scenario 6: helm3d dprime, single surfer ...\n');
+
+kern6 = kernel3d('h', 'dprime', zk5);
+opdims6 = kern6.opdims;
+
+Asmth6 = surfermat(S5, kern6, opts_sm);
+Acheck6 = flam.kernbyindex(ii5, jj5, S5, kern6, opdims6);
+
+err6 = norm(Acheck6 - Asmth6(ii5,jj5), 'fro') / (norm(Asmth6(ii5,jj5), 'fro') + eps);
+fprintf('  relative error: %.2e\n', err6);
+assert(err6 < tol, 'FAIL: %.2e', err6);
+fprintf('  PASS\n\n');
+
 fprintf('All tests passed.\n');

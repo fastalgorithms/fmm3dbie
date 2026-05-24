@@ -112,8 +112,10 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc = [];
     rsc.row_ptr = row_ptr;
     rsc.col_ind = col_ind;
-    rsc.iquad = iquad;
-    rsc.rfac = rfac;
-    rsc.rfac0 = rfac0;
+    rsc.iquad   = iquad;
+    rsc.rfac    = rfac;
+    rsc.rfac0   = rfac0;
+    rsc.nnz     = length(col_ind);
+    rsc.nquad   = iquad(nnz+1)-1;
 
 end

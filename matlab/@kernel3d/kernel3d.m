@@ -40,7 +40,7 @@ classdef kernel3d
 %         kernel with density sigma from sources s to targets t with
 %         accuracy eps.
 %
-%      K.sing      - kernel order: -1 (weakly singular), 0 (pv), 1 (hypersingular)
+%      K.kernel_order - kernel order: -1 (single layer), 0 (double layer), 1 (derivative of double layer)
 %      K.zk        - wavenumber
 %      K.ifcomplex - 0 if kernel is real-valued, 1 if complex-valued
 %      K.opdims    - [m n], operator dimensions (scalar kernels: [1 1])
@@ -50,21 +50,27 @@ classdef kernel3d
 
         name           % Name of the kernel
         type           % Type of the kernel
-        params         % Structure of kernel parameters
         eval           % Function handle for kernel evaluation
         getquad        % Function handle to get quadrature corrections
-        fmm              % Function handle for raw FMM call
-        layer_eval       % Function handle for FMM + quadrature layer-potential eval
-        get_overs_orders % Function handle to get oversampling orders
-        sing           % Kernel order: -1 (weakly singular), 0 (pv), 1 (hypersingular)
-        zk      = 0    % Wavenumber (0 for Laplace)
-        ifcomplex = 0  % 0 = real-valued kernel, 1 = complex-valued kernel
+        fmm            % Function handle for raw FMM call
+        kernel_order   % Kernel order: -1 (single layer), 0 (double layer), 1 (derivative of double layer)
         opdims = [0 0] % Dimension of the operator [m n]
-        isnan  = false % Boolean, true for NaN kernels
-        iszero = false % Boolean, true for zero kernels
+        src_fields     % Ptinfo fields required at sources, i.e. {'n'} for double layer
+                       % the location 'r' is implicitly added
+        targ_fields    % Ptinfo fields required at targets
+                       % the location 'r' is implicitly added
 
     end
 
+    properties (Hidden = true)
+        zk      = 0    % Wavenumber for oversampling purposes (largest wavenumber in the probelm)
+        ifcomplex = 0  % 0 = real-valued kernel, 1 = complex-valued kernel
+        layer_eval       % Function handle for FMM + quadrature layer-potential eval
+        get_overs_orders % Function handle to get oversampling orders
+        isnan  = false % Boolean, true for NaN kernels
+        iszero = false % Boolean, true for zero kernels
+        params         % Structure of kernel parameters
+    end
     methods
 
         function obj = kernel3d(kern, varargin)
@@ -87,8 +93,10 @@ classdef kernel3d
                 try
                     s = []; s.r = randn(3,1); s.n = randn(3,1);
                     s.du = randn(3,1); s.dv = randn(3,1);
+                    s.d = randn(3,1); s.d2 = randn(3,1);
                     t = []; t.r = randn(3,1); t.n = randn(3,1);
                     t.du = randn(3,1); t.dv = randn(3,1);
+                    t.d = randn(3,1); t.d2 = randn(3,1);
                     obj.opdims = size(kern(s,t));
                 catch
                     % unable to determine opdims automatically
@@ -104,6 +112,8 @@ classdef kernel3d
             end
 
         end
+
+        val    = eval_mask(obj,src,targ);
 
     end
 

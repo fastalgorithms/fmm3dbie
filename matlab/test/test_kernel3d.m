@@ -35,7 +35,7 @@ types = {'s', 'd', 'sp'};
 
 for k = 1:length(types)
     tp = types{k};
-    K  = (-kernel3d('laplace', tp)+ 2*kernel3d('helmholtz', zk, tp))/2;
+    K  = (-kernel3d('laplace', tp)+ 2*kernel3d('helmholtz', tp, zk))/2;
 
     % Dense eval: (nt x ns) matrix times sigma
     mat     = K.eval(src, targ);
@@ -52,7 +52,8 @@ end
 
 % Combined layer
 coefs = [0.9; -0.5];
-K = kernel3d('laplace', 'c', coefs);
+coefs_h = [1i*zk; 1.0];
+K = kernel3d('laplace', 'c', coefs)+kernel3d('helmholtz', 'c',zk, coefs_h);
 
 mat     = K.eval(src, targ);
 pot_mat = mat * sigma;
@@ -65,40 +66,55 @@ fprintf('lap3d  type=''c'' coefs=[%.1f %.1f]   rel err = %.2e   [%s]\n', ...
     coefs(1), coefs(2), err, status);
 
 % -------------------------------------------------------------------------
-fprintf('\n=== kernel3d helm3d tests ===\n\n');
+fprintf('\n=== kernel3d helm3d cprime tests ===\n\n');
 
-zk = 3.0 + 0.0i;
+zk2 = 1.3 + 0.2i;
+coefs_cp = [1.0 + 0.5i; 2.0 - 0.3i];
 
-types_h = {'s', 'd', 'sp'};
+kern_c  = kernel3d('h', 'c',      zk2, coefs_cp);   % alpha*S + beta*D
+kern_cp = kernel3d('h', 'cprime', zk2, coefs_cp);   % alpha*S' + beta*D'
 
-for k = 1:length(types_h)
-    tp = types_h{k};
-    K  = kernel3d('helmholtz', zk, tp);
+% --- Test 1: kern.eval agrees with finite-difference d/dn_x of kern_c ---
+fprintf('cprime eval vs finite-difference of combined ...\n');
 
-    mat     = K.eval(src, targ);
-    pot_mat = mat * sigma;
+h = 1e-5;
+mat_cp  = kern_cp.eval(src, targ);
+% build targ +/- h*n
+targ_p = targ; targ_p.r = targ.r + h*targ.n;
+targ_m = targ; targ_m.r = targ.r - h*targ.n;
+mat_fd = (kern_c.eval(src, targ_p) - kern_c.eval(src, targ_m)) / (2*h);
 
-    pot_fmm = K.fmm(eps, src, targ, sigma);
+err_fd = norm(mat_cp - mat_fd, 'fro') / norm(mat_fd, 'fro');
 
-    err = norm(pot_fmm - pot_mat) / norm(pot_mat);
-    status = 'PASS';
-    if err > tol, status = 'FAIL'; end
-    fprintf('helm3d  zk=%.1f  type=''%s''   rel err = %.2e   [%s]\n', ...
-        real(zk), tp, err, status);
+status = 'PASS'; if err_fd > 1e-4, status = 'FAIL'; end
+fprintf('  rel err (eval vs FD): %.2e   [%s]\n', err_fd, status);
+
+if ~isempty(kern_cp.fmm)
+sigma = randn(size(targ.r,2),1);
+pot_fmm = kern_cp.fmm(eps, src, targ, sigma);
+err_fmm = norm(mat_cp*sigma - pot_fmm, 'fro') / norm(mat_fd*sigma, 'fro');
+status = 'PASS'; if err_fmm > 1e-4, status = 'FAIL'; end
+fprintf('  rel err (eval vs fmm): %.2e   [%s]\n', err_fmm, status);
 end
+% --- Test 2: layer_eval of cprime agrees with finite-diff of layer_eval c ---
+fprintf('cprime layer_eval vs finite-difference of combined layer_eval ...\n');
 
-% Combined layer
-coefs_h = [1i*zk; 1.0];
-K = kernel3d('helmholtz', zk, 'c', coefs_h);
+S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+eps_lp = 1e-7;
+sigma_s = randn(S.npts, 1);
 
-mat     = K.eval(src, targ);
-pot_mat = mat * sigma;
-pot_fmm = K.fmm(eps, src, targ, sigma);
+% off-surface targets, well away from surface
+targ_off.r = randn(3, 20); targ_off.r = targ_off.r ./ vecnorm(targ_off.r) * 2.5;
+targ_off.n = randn(3, 20); targ_off.n = targ_off.n ./ vecnorm(targ_off.n);
 
-err = norm(pot_fmm - pot_mat) / norm(pot_mat);
-status = 'PASS';
-if err > tol, status = 'FAIL'; end
-fprintf('helm3d  zk=%.1f  type=''c'' coefs=[%.1fi %.1f]   rel err = %.2e   [%s]\n', ...
-    real(zk), imag(coefs_h(1)), real(coefs_h(2)), err, status);
+pot_c_p = kern_c.layer_eval(S, sigma_s, struct('r', targ_off.r + h*targ_off.n), eps_lp);
+pot_c_m = kern_c.layer_eval(S, sigma_s, struct('r', targ_off.r - h*targ_off.n), eps_lp);
+pot_fd   = (pot_c_p - pot_c_m) / (2*h);
+
+pot_cp = kern_cp.layer_eval(S, sigma_s, targ_off, eps_lp);
+
+err_lp = norm(pot_cp - pot_fd) / norm(pot_fd);
+status = 'PASS'; if err_lp > 1e-4, status = 'FAIL'; end
+fprintf('  rel err (layer_eval vs FD): %.2e   [%s]\n', err_lp, status);
 
 fprintf('\nDone.\n');

@@ -20,8 +20,8 @@ rowstarts = [0 cumsum(rowdims)];
 colstarts = [0 cumsum(coldims)];
 opdims    = [sum(rowdims) sum(coldims)];
 
-% Worst-case singularity order across all sub-kernels
-sing = max(arrayfun(@(k) kerns(k).sing, 1:numel(kerns)));
+% Worst-case kernel order across all sub-kernels
+kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
 
 % -------------------------------------------------------------------------
 %  Helper: build interleaved row/col index cells for given nt, ns
@@ -154,14 +154,43 @@ sing = max(arrayfun(@(k) kerns(k).sing, 1:numel(kerns)));
     end
 
 % -------------------------------------------------------------------------
+%  get_overs_orders  -- elementwise max over all sub-kernels
+% -------------------------------------------------------------------------
+    function novers = get_overs_orders_(S, t, eps)
+        novers = [];
+        for k = 1:numel(kerns)
+            nov_k = kerns(k).get_overs_orders(S, t, eps);
+            if isempty(novers)
+                novers = nov_k;
+            else
+                novers = max(novers, nov_k);
+            end
+        end
+    end
+
+% -------------------------------------------------------------------------
+%  Union of src_fields / targ_fields across all sub-kernels
+% -------------------------------------------------------------------------
+all_src_fields  = {};
+all_targ_fields = {};
+for ki = 1:numel(kerns)
+    all_src_fields  = union(all_src_fields,  kerns(ki).src_fields);
+    all_targ_fields = union(all_targ_fields, kerns(ki).targ_fields);
+end
+if isempty(all_src_fields),  all_src_fields  = []; end
+if isempty(all_targ_fields), all_targ_fields = []; end
+
+% -------------------------------------------------------------------------
 %  Assemble output kernel
 % -------------------------------------------------------------------------
 K           = kernel3d();
 K.name      = 'custom';
 K.type      = 'interleaved';
 K.opdims    = opdims;
-K.sing      = sing;
-K.ifcomplex = max(arrayfun(@(k) kerns(k).ifcomplex, 1:numel(kerns)));
+K.kernel_order = kernel_order;
+K.ifcomplex   = max(arrayfun(@(k) kerns(k).ifcomplex, 1:numel(kerns)));
+K.src_fields  = all_src_fields;
+K.targ_fields = all_targ_fields;
 
 K.eval = @eval_;
 
@@ -183,6 +212,10 @@ else
     K.getquad = [];
 end
 
-K.get_overs_orders = [];
+if all(arrayfun(@(k) isa(kerns(k).get_overs_orders, 'function_handle'), 1:numel(kerns)))
+    K.get_overs_orders = @get_overs_orders_;
+else
+    K.get_overs_orders = [];
+end
 
 end

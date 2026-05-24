@@ -401,3 +401,70 @@ subroutine l3d_spp_sum_dp(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
 end subroutine l3d_spp_sum_dp
 
 
+
+
+subroutine l3d_combprime(srcinfo, ndt, targinfo, ndd, dpars, ndz, &
+  zk, ndi, ipars, val)
+!
+!  This subroutine evaluates the combined prime kernel for Laplace
+!    alpha * S'_0 + beta * D'_0
+!
+!  where
+!    S'_0 = d/dn_x G_0              (normal derivative at target)
+!    D'_0 = d/dn_x d/dn_y G_0      (hypersingular, normals at src and targ)
+!
+!  and G_0 = 1/(4 pi r) is the Laplace Green's function.
+!
+!  Explicitly:
+!    S'_0(x,y) = - (x-y).n_x / (4 pi |x-y|^3)
+!    D'_0(x,y) = [-n_x.n_y / |x-y|^3
+!                 + 3 (x-y).n_y (x-y).n_x / |x-y|^5 ] / (4 pi)
+!
+!  Parameters:
+!    dpars(1) = alpha
+!    dpars(2) = beta
+!
+!  srcinfo(1:3)   = source position y
+!  srcinfo(10:12) = source normal n_y
+!  targinfo(1:3)  = target position x
+!  targinfo(10:12)= target normal n_x
+!
+
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: srcinfo(12), targinfo(12), dpars(ndd)
+  integer *8 :: ipars(ndi)
+  complex *16 :: zk
+  real *8 :: val
+
+  real *8 :: rns(3), rnt(3)
+  real *8 :: over4pi
+  data over4pi/0.07957747154594767d0/
+
+  alpha = dpars(1)
+  beta  = dpars(2)
+
+  ! source normal n_y, target normal n_x
+  rns(1) = srcinfo(10);  rns(2) = srcinfo(11);  rns(3) = srcinfo(12)
+  rnt(1) = targinfo(10); rnt(2) = targinfo(11); rnt(3) = targinfo(12)
+
+  dx = targinfo(1) - srcinfo(1)
+  dy = targinfo(2) - srcinfo(2)
+  dz = targinfo(3) - srcinfo(3)
+
+  r      = sqrt(dx**2 + dy**2 + dz**2)
+  rnsdot = dx*rns(1) + dy*rns(2) + dz*rns(3)
+  rntdot = dx*rnt(1) + dy*rnt(2) + dz*rnt(3)
+  rnstdot= rns(1)*rnt(1) + rns(2)*rnt(2) + rns(3)*rnt(3)
+
+  ! S'_0 = -rntdot / r^3 * over4pi
+  val = -alpha * rntdot / (r**3) * over4pi
+
+  ! D'_0 = [-rnstdot/r^3 + 3*rnsdot*rntdot/r^5] * over4pi
+  val = val + beta * (-rnstdot / (r**3) &
+      + 3.0d0 * rnsdot * rntdot / (r**5)) * over4pi
+
+  return
+end subroutine l3d_combprime
+
+

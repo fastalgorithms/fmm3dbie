@@ -55,25 +55,25 @@ targ = targinfo.r;
 [~,ns] = size(src);
 [~,nt] = size(targ);
 
-if strcmpi(type,'d')
+switch lower(type)
+% double layer
+case {'d', 'double'}
   srcnorm = srcinfo.n;
   [~,grad] = lap3d.green(src,targ);
   nx = repmat(srcnorm(1,:),nt,1);
   ny = repmat(srcnorm(2,:),nt,1);
   nz = repmat(srcnorm(3,:),nt,1);
   submat = -(grad(:,:,1).*nx + grad(:,:,2).*ny+grad(:,:,3).*nz);
-end
 
-if strcmpi(type,'sprime')
+case {'sp', 'sprime'}
   targnorm = targinfo.n;
   [~,grad] = lap3d.green(src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
   submat = (grad(:,:,1).*nx + grad(:,:,2).*ny+grad(:,:,3).*nz);
-end
 
-if strcmpi(type,'sdu')
+case {'sdu'}
   du = targinfo.du;
   [~,grad] = lap3d.green(src,targ);
   dx = repmat((du(1,:)).',1,ns);
@@ -82,9 +82,8 @@ if strcmpi(type,'sdu')
   dn = sqrt(dx.*dx+dy.*dy+dz.*dz);
   submat = (grad(:,:,1).*dx./dn + grad(:,:,2).*dy+...
       grad(:,:,3).*dz)./dn;
-end
 
-if strcmpi(type,'sdv')
+case {'sdv'}
   dv = targinfo.dv;
   [~,grad] = lap3d.green(src,targ);
   dx = repmat((dv(1,:)).',1,ns);
@@ -93,18 +92,30 @@ if strcmpi(type,'sdv')
   dn = sqrt(dx.*dx+dy.*dy+dz.*dz);
   submat = (grad(:,:,1).*dx./dn + grad(:,:,2).*dy+...
       grad(:,:,3).*dz)./dn;
-end
 
-if strcmpi(type,'s')
+case {'s', 'single'}
   submat = lap3d.green(src,targ);
-end
 
-if strcmpi(type,'dprime')
-  disp("unsupported kernel");
-  submat = 0;
-end
+case {'dp', 'dprime'}
+  targnorm = targinfo.n;
+  srcnorm = srcinfo.n;
+  [~, ~, hess] = lap3d.green(zk, src, targ);
+  nxsrc = repmat(srcnorm(1,:), nt, 1);
+  nysrc = repmat(srcnorm(2,:), nt, 1);
+  nzsrc = repmat(srcnorm(3,:), nt, 1);
 
-if strcmpi(type,'c')
+  nxtarg = repmat(targnorm(1,:).', 1, ns);
+  nytarg = repmat(targnorm(2,:).', 1, ns);
+  nztarg = repmat(targnorm(3,:).', 1, ns);
+
+  submat = -(hess(:,:,1,1).*nxsrc.*nxtarg + ...
+           hess(:,:,1,2).*(nxsrc.*nytarg + nysrc.*nxtarg) + ...
+           hess(:,:,1,3).*(nxsrc.*nztarg + nzsrc.*nxtarg) + ...
+           hess(:,:,2,2).*nysrc.*nytarg + ...
+           hess(:,:,2,3).*(nysrc.*nztarg + nzsrc.*nytarg)+ ...
+           hess(:,:,3,3).*nzsrc.*nztarg);
+
+case {'c', 'combined'}
 %%%%%%
 %       .  .  .  alpha*S + beta*D
 %%%%%%
@@ -117,14 +128,40 @@ if strcmpi(type,'c')
   nz = repmat(srcnorm(3,:),nt,1);
   submat = -beta*(grad(:,:,1).*nx + grad(:,:,2).*ny+grad(:,:,3).*nz)...
       +alpha*s;
-end
 
-if strcmpi(type,'all')
+case {'cp','cprime'}
+%%%%%%
+%       .  .  .  alpha*S + beta*D
+%%%%%%
+  srcnorm = srcinfo.n;
+  targnorm = targinfo.n;
+  coefs = varargin{1};
+  alpha = coefs(1);
+  beta  = coefs(2);
+  [~, grad, hess] = lap3d.green(zk, src, targ);
+
+  nxsrc = repmat(srcnorm(1,:), nt, 1);
+  nysrc = repmat(srcnorm(2,:), nt, 1);
+  nzsrc = repmat(srcnorm(3,:), nt, 1);
+
+  nxtarg = repmat(targnorm(1,:).', 1, ns);
+  nytarg = repmat(targnorm(2,:).', 1, ns);
+  nztarg = repmat(targnorm(3,:).', 1, ns);
+
+  submat = -beta*(hess(:,:,1,1).*nxsrc.*nxtarg + ...
+           hess(:,:,1,2).*(nxsrc.*nytarg + nysrc.*nxtarg) + ...
+           hess(:,:,1,3).*(nxsrc.*nztarg + nzsrc.*nxtarg) + ...
+           hess(:,:,2,2).*nysrc.*nytarg + ...
+           hess(:,:,2,3).*(nysrc.*nztarg + nzsrc.*nytarg)+ ...
+           hess(:,:,3,3).*nzsrc.*nztarg) + ...
+           alpha*(grad(:,:,1).*nxtarg + grad(:,:,2).*nytarg + ...
+                  grad(:,:,3).*nztarg);
+
+case {'all'}
   disp("unsupported kernel");
   submat = 0;
-end
 
-if strcmpi(type,'eval')
+case {'eval'}
   coef = varargin{1};
   
   srcnorm = srcinfo.n;
@@ -142,10 +179,8 @@ if strcmpi(type,'eval')
     
   submat(:,1:2:2*ns) = coef*submatd;
   submat(:,2:2:2*ns) = submats;
-end
 
-
-if strcmpi(type,'evalg')
+case {'evalg'}
   coef = varargin{1};
   
   srcnorm = srcinfo.n;
@@ -171,8 +206,8 @@ if strcmpi(type,'evalg')
   submat(:,:,7) = -coef*(hess(:,:,3,1).*nxsrc + hess(:,:,3,2).*nysrc+...
       hess(:,:,3,3).*nzsrc);
   submat(:,:,8) = grad(:,:,3);
+
 end
 
 
-
-
+end
