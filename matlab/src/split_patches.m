@@ -1,4 +1,4 @@
-function [Sover, ipatchid, uvstot, interp_mat, ivec, jvec, vvec] = ...
+function [Sover, ipatchid, uvstot, interp_mat, ivec, jvec, vvec, ipatsplit] = ...
     split_patches(S, patch_ids)
 % SPLIT_PATCHES  Refine selected patches of a surface discretization.
 %
@@ -144,6 +144,7 @@ cols_idx = [];
 
 uvstot = [];
 ipatchid = [];
+ipatsplit = [];
 
 if nargin < 2
     patch_ids = [];
@@ -163,7 +164,9 @@ for ii = 1:npatches
         % store local uv coordinates
         uvstot = [uvstot uvssub];
         % store id of patch ii new points on subpatches belong to
-        ipatchid = [ipatchid; ii*ones(length(uvssub),1)];
+        ipatchid = [ipatchid; ii*ones(length(uvssub),1),ones(length(uvssub),1)];
+        % store if patch comes from refinement or not
+        ipatsplit = [ipatsplit;ii*ones(4,1),ones(4,1)];
         % refined patch: contributes four subpatch block-rows.
         interp_mat_list = [interp_mat_list [2 3 4 5]];
         cols_idx = [cols_idx ii*ones(1,4)];
@@ -172,7 +175,9 @@ for ii = 1:npatches
     else
         srcvals = [srcvals {S.srccoefs{ii}(1:9,:)*c2v.'}];
         uvstot = [uvstot uvs];
-        ipatchid = [ipatchid; ii*ones(length(uvs),1)];
+        ipatchid = [ipatchid; ii*ones(length(uvs),1),zeros(length(uvs),1)];
+        % store if patch comes from refinement or not
+        ipatsplit = [ipatsplit;ii,0];
         % unrefined patch: contributes a single identity block-row.
         interp_mat_list = [interp_mat_list 1];
         cols_idx = [cols_idx ii];
