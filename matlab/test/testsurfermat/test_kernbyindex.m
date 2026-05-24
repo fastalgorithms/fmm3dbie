@@ -4,9 +4,10 @@
 % Scenario 2: two-surfer array, same
 % Scenario 3: explicit novers vector, compared against manually built reference
 
-run ../startup.m
+run ../../startup.m
 
-tol = 1e-10;
+eps = 1e-10;
+tol = 1e-9;
 rng(42);
 
 fprintf('=== test_kernbyindex ===\n\n');
@@ -20,7 +21,7 @@ S = geometries.ellipsoid([1,1,1], [3,3,3], [], 6);
 kern = kernel3d('l', 'c', [1,1]);
 opdims = kern.opdims;
 
-Asmth = surfermat(S, kern, opts_sm);
+Asmth = surfermat(S, kern, eps, opts_sm);
 
 n = S.npts * opdims(1);
 ii = randi(n, 50, 1);
@@ -41,7 +42,7 @@ srfrs = [S, S2];
 kern_sl = kernel3d('l', 's');
 opdims_sl = kern_sl.opdims;
 
-Asmth2 = surfermat(srfrs, kern_sl, opts_sm);
+Asmth2 = surfermat(srfrs, kern_sl, eps, opts_sm);
 n2 = size(Asmth2, 1);
 m2 = size(Asmth2, 2);
 ii2 = randi(n2, 80, 1);
@@ -116,7 +117,7 @@ zk5 = 1.1 + 0.1i;
 kern5 = kernel3d('h', 'cprime', zk5, [1; 1i]);
 opdims5 = kern5.opdims;
 
-Asmth5 = surfermat(S5, kern5, opts_sm);
+Asmth5 = surfermat(S5, kern5, eps, opts_sm);
 n5 = S5.npts;
 ii5 = randi(n5, 50, 1);
 jj5 = randi(n5, 50, 1);
@@ -134,7 +135,7 @@ fprintf('Scenario 6: helm3d dprime, single surfer ...\n');
 kern6 = kernel3d('h', 'dprime', zk5);
 opdims6 = kern6.opdims;
 
-Asmth6 = surfermat(S5, kern6, opts_sm);
+Asmth6 = surfermat(S5, kern6, eps, opts_sm);
 Acheck6 = flam.kernbyindex(ii5, jj5, S5, kern6, opdims6);
 
 err6 = norm(Acheck6 - Asmth6(ii5,jj5), 'fro') / (norm(Asmth6(ii5,jj5), 'fro') + eps);

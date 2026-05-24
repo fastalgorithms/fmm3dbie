@@ -99,7 +99,7 @@ case {'s', 'single'}
 case {'dp', 'dprime'}
   targnorm = targinfo.n;
   srcnorm = srcinfo.n;
-  [~, ~, hess] = lap3d.green(zk, src, targ);
+  [~, ~, hess] = lap3d.green(src, targ);
   nxsrc = repmat(srcnorm(1,:), nt, 1);
   nysrc = repmat(srcnorm(2,:), nt, 1);
   nzsrc = repmat(srcnorm(3,:), nt, 1);
@@ -138,7 +138,7 @@ case {'cp','cprime'}
   coefs = varargin{1};
   alpha = coefs(1);
   beta  = coefs(2);
-  [~, grad, hess] = lap3d.green(zk, src, targ);
+  [~, grad, hess] = lap3d.green(src, targ);
 
   nxsrc = repmat(srcnorm(1,:), nt, 1);
   nysrc = repmat(srcnorm(2,:), nt, 1);

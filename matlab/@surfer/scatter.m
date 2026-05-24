@@ -7,6 +7,31 @@ function scatter(obj,s,c,varargin)
 %
 % See also: PLOT_NODES
 
+if nargin < 2, s = 20; end
+
+% Handle arrays of surfers: scatter each one, splitting any color vector.
+if numel(obj) > 1
+    ih = ishold();
+    hold on
+    ipt = 1;
+    ntotal = sum([obj.npts]);
+    for k = 1:numel(obj)
+        nk = obj(k).npts;
+        if nargin < 3
+            scatter(obj(k), s, varargin{:});
+        else
+            ck = c;
+            if isnumeric(c) && length(c(:)) == ntotal
+                ck = c(ipt:ipt+nk-1);
+            end
+            scatter(obj(k), s, ck, varargin{:});
+        end
+        ipt = ipt + nk;
+    end
+    if ~ih, hold off; end
+    return
+end
+
 ifhold = ishold();
 
 x = obj.r(1,:);

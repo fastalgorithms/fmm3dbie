@@ -18,6 +18,28 @@ function varargout = plot(obj, varargin)
 %
 % See also TRISURF
   
+% Handle arrays of surfers: plot each one, splitting any function vector.
+if numel(obj) > 1
+    ih = ishold();
+    hold on
+    ipt = 1;
+    for k = 1:numel(obj)
+        nk = obj(k).npts;
+        args = varargin;
+        if ~isempty(args) && isnumeric(args{1})
+            v = args{1}(:);
+            if length(v) == sum([obj.npts])
+                args{1} = v(ipt:ipt+nk-1);
+            end
+        end
+        plot(obj(k), args{:});
+        ipt = ipt + nk;
+    end
+    if ~ih, hold off; end
+    if nargout == 1, varargout{1} = []; end
+    return
+end
+
 f = obj.mean_curv.';
 fcoefs = obj.vals2coefs(f);
 istart = 1;

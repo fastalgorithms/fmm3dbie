@@ -108,7 +108,7 @@ if unif_nover
     for j=1:nsurfers
         noversj = cell2mat(novers(:,j).');
         noversj = repmat(max(noversj,[],2),1,nsurfers);
-        novers(:,j) = mat2cell(noversj,size(noversj,1),2);
+        novers(:,j) = mat2cell(noversj,size(noversj,1),ones(nsurfers,1));
     end
 end
 
@@ -166,7 +166,7 @@ for i = 1:nsurfers
             surferi_targ = surferi;
         else
             surferi_targ = []; surferi_targ.r = surferi.r(:,:);
-            for field = ktmp.targ_field(:).'
+            for field = ktmp.targ_fields(:).'
                 surferi_targ.(field{1}) = surferi.(field{1})(:,:);
             end
         end

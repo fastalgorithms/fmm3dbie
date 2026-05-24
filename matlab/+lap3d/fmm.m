@@ -17,8 +17,10 @@ function varargout = fmm(eps, srcinfo, targinfo, type, sigma, varargin)
 %   targinfo - ptinfo struct: .r (3,:), .n (3,:) (normals needed for sprime)
 %   type     - 's'      single layer S
 %              'd'      double layer D
-%              'sp'/'sprime'  normal deriv of S at target
+%              'sp'/'sprime'  normal deriv of S at target, S'
+%              'dp'/'dprime'  normal deriv of D at target, D'
 %              'c'      combined layer coefs(1)*S + coefs(2)*D
+%              'cp'/'cprime'  combined prime coefs(1)*S' + coefs(2)*D'
 %   sigma    - density (ns x 1), already scaled by quadrature weights
 %   varargin{1} - coefs [alpha; beta] for combined layer
 %
@@ -39,9 +41,13 @@ srcuse.sources = srcinfo.r;
 switch lower(type)
     case {'s', 'sprime', 'sp'}
         srcuse.charges = sigma(:).';
-    case {'d'}
+    case {'d', 'dprime', 'dp'}
         srcuse.dipoles = sigma(:).'.*srcinfo.n;
     case {'c', 'combined'}
+        coefs = varargin{1};
+        srcuse.charges = coefs(1) * sigma(:).';
+        srcuse.dipoles = coefs(2) * sigma(:).'.*srcinfo.n;
+    case {'cp', 'cprime'}
         coefs = varargin{1};
         srcuse.charges = coefs(1) * sigma(:).';
         srcuse.dipoles = coefs(2) * sigma(:).'.*srcinfo.n;
@@ -58,7 +64,7 @@ end
 pg  = 0;
 pgt = min(nargout, 3);
 switch lower(type)
-    case {'sprime', 'sp'}
+    case {'sprime', 'sp', 'dprime', 'dp', 'cprime', 'cp'}
         pgt = max(min(nargout + 1, 3), 2);
 end
 
@@ -69,7 +75,7 @@ if ( nargout > 0 )
     switch lower(type)
         case {'s', 'd', 'c', 'combined'}
             varargout{1} = U.pottarg(:);
-        case {'sprime', 'sp'}
+        case {'sprime', 'sp', 'dprime', 'dp', 'cprime', 'cp'}
             if ( ~isfield(targinfo, 'n') )
                 error('LAP3D:fmm:normals', ...
                     'targinfo.n required for kernel type ''%s''.', type);

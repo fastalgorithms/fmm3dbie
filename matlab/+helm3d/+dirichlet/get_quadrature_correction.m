@@ -150,13 +150,14 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
 
-    if iprime == 0
+    %if iprime == 0
       if(abs(zpars(3)) > 1e-16)
           Q.kernel_order = 0;
       end
-    else
-      Q.kernel_order = 1;
-    end
+    %else
+    %  Q.kernel_order = 1;
+    %end
+    Q.kernel_order = Q.kernel_order+iprime;
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;

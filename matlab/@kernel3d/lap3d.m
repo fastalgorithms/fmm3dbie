@@ -93,7 +93,7 @@ switch lower(type)
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
                             lap_combprime_eval(S, sigma, targ, eps, dpars_sp, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          lap_combprime_getquad(S, eps, varargin{:});
+                          lap_combprime_getquad(S, eps, dpars_sp, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields = {'n'};
 
@@ -106,11 +106,10 @@ switch lower(type)
         % dpars for dirichlet eval: [alpha_S, beta_D] = [0, 1]
         dpars_dp = [0.0; 1.0];
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'dp', sigma);
-        obj.fmm      = [];
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
                             lap_combprime_eval(S, sigma, targ, eps, dpars_dp, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          lap_combprime_getquad(S, eps, varargin{:});
+                          lap_combprime_getquad(S, eps, dpars_dp, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
         obj.targ_fields = {'n'};
@@ -140,7 +139,7 @@ switch lower(type)
         obj.src_fields = {'n'};
 
     case {'cp', 'cprime'}
-        if ( nargin < 3 )
+        if ( nargin < 2 )
             warning('KERNEL3D.LAP3D: missing coefs for cprime. Defaulting to [1 1].');
             coefs = [1; 1];
         end
@@ -153,12 +152,13 @@ switch lower(type)
         obj.params.coefs = coefs;
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'cprime', coefs);
+        obj.fmm  = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'cp', sigma, coefs);
 
-        rep_pars_cp = coefs;
+        dpars_c = coefs;
         obj.layer_eval = @(S,sigma,targ,eps) ...
-                            lap_combprime_eval(S, sigma, targ, eps, rep_pars_cp);
+                            lap_combprime_eval(S, sigma, targ, eps, dpars_c);
         obj.getquad  = @(S,eps,varargin) ...
-                          lap_combprime_getquad(S, eps, rep_pars_cp, varargin);
+                          lap_combprime_getquad(S, eps, dpars_c, varargin);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
         obj.targ_fields = {'n'};
@@ -172,6 +172,7 @@ end
 
 function p = lap_combprime_eval(S, sigma, targ, eps, rep_pars,args)
 %HELM_COMBPRIME_EVAL  Call helm3d.dirichlet.eval with iprime=1.
+if nargin < 6, args = []; end
 if isempty(args) || ~isstruct(args{end})
     args{end+1} = [];
 end
@@ -182,9 +183,9 @@ end
 function Q = lap_combprime_getquad(S, eps, rep_pars, args)
 %HELM_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
 %   args is the varargin cell from the lambda: {} or {targinfo} or {targinfo, opts}
-if isempty(args) || ~isstruct(args{end})
-    args{end+1} = [];
-end
+if nargin < 4, args = []; end
+args{end+2-length(args)} = [];
 args{end}.iprime = 1;
+if isempty(args{1}), args{1} = S; end
 Q = lap3d.dirichlet.get_quadrature_correction(S, eps, rep_pars, args{:});
 end

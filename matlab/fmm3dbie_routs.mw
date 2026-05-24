@@ -948,8 +948,10 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 
     if nargin < 5
       opts = [];
-
     end
+
+    iprime = 0;
+    if isfield(opts,'iprime'); iprime = opts.iprime; end
 
     ff = 'rsc';
     if(isfield(opts,'format'))
@@ -1885,6 +1887,12 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
       ndi = 0;
       ipars = [];
       ndim = 1;
+      nker = 1;
+      lwork = 0;
+      work = [];
+      idensflag = 0;
+      ipotflag = 0;
+      ndim_p = 1;
       # FORTRAN helm_comb_cprime_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, dcomplex[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);
     end
 end
@@ -2044,13 +2052,14 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
 
-    if iprime == 0
+    %if iprime == 0
       if(abs(zpars(3)) > 1e-16)
           Q.kernel_order = 0;
       end
-    else
-      Q.kernel_order = 1;
-    end
+    %else
+    %  Q.kernel_order = 1;
+    %end
+    Q.kernel_order = Q.kernel_order+iprime;
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;

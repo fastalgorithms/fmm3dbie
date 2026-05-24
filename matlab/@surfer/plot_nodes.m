@@ -22,7 +22,29 @@ function varargout = plot_nodes(S, v, varargin)
 % See also PLOT, SCATTER
 
 % Barnett 6/5/24, before I found surfer.scatter
-  
+
+% Handle arrays of surfers: plot each one, splitting any function vector.
+if numel(S) > 1
+    ih = ishold();
+    hold on
+    ipt = 1;
+    for k = 1:numel(S)
+        nk = S(k).npts;
+        vk = [];
+        if nargin > 1 && ~isempty(v)
+            vv = v(:);
+            if length(vv) == sum([S.npts])
+                vk = vv(ipt:ipt+nk-1);
+            end
+        end
+        plot_nodes(S(k), vk, varargin{:});
+        ipt = ipt + nk;
+    end
+    if ~ih, hold off; end
+    if nargout >= 1, varargout{1} = []; end
+    return
+end
+
 if nargin==1 || isempty(v)
   h = scatter3(S.r(1,:),S.r(2,:), S.r(3,:), '.', varargin{:});
 else

@@ -195,6 +195,7 @@ end
 
 function p = helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars,args)
 %HELM_COMBPRIME_EVAL  Call helm3d.dirichlet.eval with iprime=1.
+if nargin < 7, args = []; end
 if isempty(args) || ~isstruct(args{end})
     args{end+1} = [];
 end
@@ -205,9 +206,9 @@ end
 function Q = helm_combprime_getquad(S, eps, zk, rep_pars, args)
 %HELM_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
 %   args is the varargin cell from the lambda: {} or {targinfo} or {targinfo, opts}
-if isempty(args) || ~isstruct(args{end})
-    args{end+1} = [];
-end
+if nargin < 4, args = []; end
+args{end+2-length(args)} = [];
 args{end}.iprime = 1;
+if isempty(args{1}), args{1} = S; end
 Q = helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, args{:});
 end

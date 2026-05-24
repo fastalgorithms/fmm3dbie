@@ -75,8 +75,10 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 
     if nargin < 5
       opts = [];
-
     end
+
+    iprime = 0;
+    if isfield(opts,'iprime'); iprime = opts.iprime; end
 
     ff = 'rsc';
     if(isfield(opts,'format'))
