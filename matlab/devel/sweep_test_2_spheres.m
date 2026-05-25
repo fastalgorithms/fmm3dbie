@@ -6,6 +6,9 @@ n_ref_prcnt = numel(ref_prcnt_in_vec);
 sphere_rad = 1.1; % radius of spheres
 sepdist = 0.001; % offset between spheres
 
+na = 8; % resolution of sphere
+norder = 8; % patch order on sphere
+
 % generate reference solution
 tol_sol = 1e-10; % tolerance for reference solution
 nasol=  10;
@@ -39,10 +42,10 @@ dens_diff_l2_vec = zeros(n_ref_prcnt,1); % difference in layer density in non-re
 for ii = 1:n_ref_prcnt
 ref_prcnt_in = ref_prcnt_in_vec(ii);
 [err_H_Lp_vec(ii),err_orig_vec(ii),err_ref_vec(ii), dens_diff_linf_vec(ii),dens_diff_l2_vec(ii)] = ...
-    test_2_spheres(ref_prcnt_in,sphere_rad, sepdist,Ssol,nptssol1,layerdenssol);
+    test_2_spheres(ref_prcnt_in,sphere_rad, sepdist,Ssol,nptssol1,layerdenssol,norder,na);
 end
 
-function [err_H_Lp,err_orig,err_ref, dens_diff_linf,dens_diff_l2] = test_2_spheres(ref_prcnt_in,sphere_rad,sepdist,Ssol,nptssol1,layerdenssol)
+function [err_H_Lp,err_orig,err_ref, dens_diff_linf,dens_diff_l2] = test_2_spheres(ref_prcnt_in,sphere_rad,sepdist,Ssol,nptssol1,layerdenssol,norder,na)
 %%
 % tolerances
 tol_dens = 1e-5; % tolerance for refining patch based on error in monitor
@@ -57,9 +60,7 @@ ref_prcnt = ref_prcnt_in; % Percentage of number of flagged patches to refine
 a = sphere_rad;
 d = sepdist;
 c0_2 = [2*a + d; 0; 0];
-na = 8;
 %nuv = [2,1];
-norder = 8; % patch order
 npols = (norder+1)*(norder+2)/2; % points per patch
 
 % generate spheres
