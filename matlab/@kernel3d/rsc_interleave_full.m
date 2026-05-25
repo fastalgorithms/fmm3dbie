@@ -9,18 +9,18 @@ function ri = rsc_interleave_full(m, n)
 %   where k = row + m*(col-1),  row in 1..m,  col in 1..n.
 %
 %   Returns a struct with fields:
-%     .type     = 'full'
-%     .nker     = m*n
-%     .row_inds = (m*n, 1) row indices within the block (1-based)
-%     .col_inds = (m*n, 1) col indices within the block (1-based)
+%     .type    = 'full'
+%     .nker    = m*n
+%     .row_ids = (m*n, 1) row index within block for each wnear row (1-based)
+%     .col_ids = (m*n, 1) col index within block for each wnear row (1-based)
 
 nker = m * n;
 % Column-major ordering: row index varies fastest.
 % wnear(k) <-> block entry (mod(k-1, m)+1,  ceil(k/m))
 [rows, cols] = meshgrid(1:m, 1:n);   % rows(j,i)=i, cols(j,i)=j; (:) gives col-major
-ri.type     = 'full';
-ri.nker     = nker;
-ri.row_inds = rows(:);   % (m*n, 1)  — row index for wnear row k
-ri.col_inds = cols(:);   % (m*n, 1)  — col index for wnear row k
+ri.type    = 'full';
+ri.nker    = nker;
+ri.row_ids = rows(:);   % (m*n, 1)  — row index for wnear row k
+ri.col_ids = cols(:);   % (m*n, 1)  — col index for wnear row k
 
 end

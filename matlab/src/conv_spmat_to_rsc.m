@@ -1,105 +1,76 @@
-function rsc = conv_spmat_to_rsc(S, spmat)
+function rsc = conv_spmat_to_rsc(S, spmat, ri)
 %CONV_SPMAT_TO_RSC convert a sparse matrix to patch-based rsc format.
 %
 %  Syntax:
 %    rsc = conv_spmat_to_rsc(S, spmat)
+%    rsc = conv_spmat_to_rsc(S, spmat, ri)
 %
-%  Given a sparse matrix whose columns correspond to discretisation
-%  points on S and whose rows correspond to targets, this routine
-%  returns the row-sparse-compressed (rsc) struct used by the
-%  layer-potential evaluators.
+%  For scalar kernels (ri omitted): spmat is (ntarg, S.npts), wnear is
+%  returned as (nquad,1).  For vector/tensor kernels pass the kernel's
+%  rsc_to_interleave struct as ri: spmat is (m*ntarg, n*S.npts) and
+%  wnear is returned as (nker, nquad).
 %
-%  The rsc struct stores interactions at the *patch* level: one entry
-%  in col_ind per (target, patch) pair that has at least one nonzero
-%  column in spmat.  The corresponding quadrature weights (wnear) are
-%  stored contiguously in the order prescribed by iquad.
-%
-%  Input arguments:
-%    * S      : surfer object
-%    * spmat  : sparse matrix, size (ntarg, S.npts)
-%               Columns are ordered consistently with S.ixyzs.
-%
-%  Output arguments:
-%    * rsc.row_ptr : (ntarg+1, 1) double -- standard CSR row pointer
-%    * rsc.col_ind : (nnz,    1) double -- patch indices (1-based)
-%    * rsc.iquad   : (nnz+1,  1) double -- start of each patch block
-%                                          in wnear
-%    * rsc.wnear   : (nquad,  1) complex -- quadrature weights
-%    * rsc.nquad   : scalar
-%    * rsc.nnz     : scalar  (number of target-patch pairs)
-%
+%  Output rsc fields:
+%    .row_ptr  (ntarg+1, 1)  CSR row pointer
+%    .col_ind  (nnz, 1)      patch indices (1-based)
+%    .iquad    (nnz+1, 1)    start of each patch block in wnear
+%    .wnear    (nker, nquad) quadrature weights
+%    .nquad    scalar
+%    .nnz      scalar
 
-    ixyzs    = S.ixyzs(:);          % (npatches+1, 1)
+    if nargin < 3 || isempty(ri)
+        ri = kernel3d.rsc_interleave_scalar();
+    end
+
+    nker   = ri.nker;
+    scalar = strcmp(ri.type, 'scalar');
+    m      = max(ri.row_ids);
+    n      = max(ri.col_ids);
+
+    ixyzs    = S.ixyzs(:);
     npatches = S.npatches;
-    ntarg    = size(spmat, 1);
+    npols    = ixyzs(2:end) - ixyzs(1:end-1);
+    ntarg    = size(spmat, 1) / m;
 
-    npols = ixyzs(2:end) - ixyzs(1:end-1);   % points per patch
+    % Find active (target, patch) pairs from the (1,1) block component.
+    [row_ptr, col_ind] = get_rsc_pattern(S, spmat, [m, n]);
 
-    % ----------------------------------------------------------------
-    % Build row_ptr and col_ind at the patch level.
-    % A (target i, patch p) pair is "active" if spmat(i, ixyzs(p):ixyzs(p+1)-1)
-    % contains at least one nonzero.
-    % ----------------------------------------------------------------
-
-    % Work column-by-column in the sparse matrix to find active patches
-    % per target without expanding to a full dense matrix.
-
-    [row_s, col_s] = find(spmat);   % row = target index, col = point index
-
-    if isempty(row_s)
+    if isempty(col_ind)
         rsc.row_ptr = ones(ntarg+1, 1);
-        rsc.col_ind = zeros(0,      1);
-        rsc.iquad   = ones( 1,      1);
-        rsc.wnear   = complex(zeros(0, 1));
+        rsc.col_ind = zeros(0, 1);
+        rsc.iquad   = ones(1, 1);
+        rsc.wnear   = complex(zeros(nker, 0));
         rsc.nquad   = 0;
         rsc.nnz     = 0;
         return
     end
 
-    % Map each nonzero point index to its patch index
-    % patch_of_col(k) = patch that contains point col_s(k)
-    patch_of_col = zeros(size(col_s));
-    for p = 1:npatches
-        mask = (col_s >= ixyzs(p)) & (col_s < ixyzs(p+1));
-        patch_of_col(mask) = p;
-    end
+    targ_inds  = repelem((1:ntarg).', diff(row_ptr));
+    patch_inds = col_ind;
+    nnz_pairs  = numel(col_ind);
 
-    % Unique (target, patch) pairs
-    pairs      = unique([row_s, patch_of_col], 'rows');  % (nnz, 2)
-    targ_inds  = pairs(:,1);
-    patch_inds = pairs(:,2);
-    nnz_pairs  = size(pairs, 1);
-
-    % Build row_ptr
-    counts = zeros(ntarg, 1);
-    for k = 1:nnz_pairs
-        counts(targ_inds(k)) = counts(targ_inds(k)) + 1;
-    end
-    row_ptr = [1; 1 + cumsum(counts)];
-
-    col_ind = patch_inds;
-
-    % ----------------------------------------------------------------
-    % Build iquad: for rsc entry k (the k-th (targ,patch) pair),
-    % iquad(k) is where in wnear the weights for that pair start.
-    % The block has npols(patch_inds(k)) entries.
-    % ----------------------------------------------------------------
-    block_sizes = npols(patch_inds);              % (nnz_pairs, 1)
-    iquad = [1; 1 + cumsum(block_sizes)];         % (nnz_pairs+1, 1)
+    block_sizes = npols(patch_inds);
+    iquad = [1; 1 + cumsum(block_sizes)];
     nquad = iquad(end) - 1;
 
-    % ----------------------------------------------------------------
-    % Fill wnear: for each (targ, patch) pair extract the row of spmat
-    % corresponding to that target and the columns for that patch.
-    % ----------------------------------------------------------------
-    wnear = complex(zeros(nquad, 1));
+    % Extract wnear: for each (targ, patch) pair and each kernel component
+    % read the appropriate block row/col out of spmat.
+    kr    = ri.row_ids(:);
+    kc    = ri.col_ids(:);
+    wnear = complex(zeros(nker, nquad));
     for k = 1:nnz_pairs
-        t = targ_inds(k);
-        p = patch_inds(k);
-        src_cols = ixyzs(p):(ixyzs(p+1)-1);           % point indices for patch p
+        t        = targ_inds(k);
+        p        = patch_inds(k);
+        src_cols = ixyzs(p):(ixyzs(p+1)-1);
         wstart   = iquad(k);
         wend     = iquad(k+1) - 1;
-        wnear(wstart:wend) = spmat(t, src_cols);
+        for ki = 1:nker
+            wnear(ki, wstart:wend) = spmat(m*(t-1)+kr(ki), n*(src_cols-1)+kc(ki));
+        end
+    end
+
+    if scalar
+        wnear = wnear(1,:).';
     end
 
     rsc.row_ptr = row_ptr;

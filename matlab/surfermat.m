@@ -193,13 +193,49 @@ for i = 1:nsurfers
         wtsover = wtsover(:).';
 
         if (~nonsmoothonly)
-            if i == j
-            % Zero out entries where oversampled source and target coincide.
-            sysmat_tmp = ktmp.eval_mask(surferjover,surferi_targ);
-            else
-            sysmat_tmp = (ktmp.eval(surferjover,surferi_targ));
+            nrows = opdims(1)*size(surferi_targ.r(:,:),2);
+            ncols = opdims(2)*size(surferjover.r(:,:),2);
+            sysmat_tmp = zeros(nrows, ncols);
+            for p = 1:surferjover.npatches
+                src_inds = surferjover.ixyzs(p):(surferjover.ixyzs(p+1)-1);
+                srcp = [];
+                srcp.r = surferjover.r(:,src_inds);
+                for field = ktmp.src_fields(:).'
+                    srcp.(field{1}) = surferjover.(field{1})(:,src_inds);
+                end
+                col_inds = (1:opdims(2)).' + opdims(2)*(src_inds-1);
+                col_inds = col_inds(:);
+                if i == j
+                    % Only this patch can have coincident source/target points;
+                    % use eval_mask to zero them out, plain eval for all others.
+                    targ_inds_self = surferi_targ.ixyzs(p):(surferi_targ.ixyzs(p+1)-1);
+                    row_inds_self  = (1:opdims(1)).' + opdims(1)*(targ_inds_self-1);
+                    row_inds_self  = row_inds_self(:);
+
+                    targp_self = []; targp_self.r = surferi_targ.r(:,targ_inds_self);
+                    for field = ktmp.targ_fields(:).'
+                        targp_self.(field{1}) = surferi_targ.(field{1})(:,targ_inds_self);
+                    end
+                    targp_self.uvs_targ = surferi_targ.uvs_targ(:,targ_inds_self);
+                    targp_self.patch_id = surferi_targ.patch_id(targ_inds_self);
+                    sysmat_tmp(row_inds_self, col_inds) = ktmp.eval_mask(srcp, targp_self);
+
+                    % Off-diagonal target blocks: plain eval
+                    off_targ_inds = [1:targ_inds_self(1)-1, targ_inds_self(end)+1:surferi_targ.npts];
+                    if ~isempty(off_targ_inds)
+                        targp_off = []; targp_off.r = surferi_targ.r(:,off_targ_inds);
+                        for field = ktmp.targ_fields(:).'
+                            targp_off.(field{1}) = surferi_targ.(field{1})(:,off_targ_inds);
+                        end
+                        row_inds_off = (1:opdims(1)).' + opdims(1)*(off_targ_inds-1);
+                        row_inds_off = row_inds_off(:);
+                        sysmat_tmp(row_inds_off, col_inds) = ktmp.eval(srcp, targp_off);
+                    end
+                else
+                    sysmat_tmp(:, col_inds) = ktmp.eval(srcp, surferi_targ);
+                end
             end
-            
+
             sysmat_tmp = (sysmat_tmp.*wtsover)*xinterp;
         end
 
@@ -211,7 +247,13 @@ for i = 1:nsurfers
                 sysmat_quad = Qj;
             end
             if corrections
-                sysmat_smth = smooth_sparse_quad(ktmp, surferi_targ, surferj, Qj.row_ptr, Qj.col_ind, noversj);
+                if isfield(Qj, 'row_ptr')
+                    rp = Qj.row_ptr;
+                    ci = Qj.col_ind;
+                else
+                    [rp, ci] = get_rsc_pattern(surferj, Qj, opdims);
+                end
+                sysmat_smth = smooth_sparse_quad(ktmp, surferi_targ, surferj, rp, ci, noversj);
                 sysmat_quad = sysmat_quad-sysmat_smth;
             end
 

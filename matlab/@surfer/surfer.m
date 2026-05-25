@@ -351,6 +351,7 @@ classdef surfer
          [objout,varargout] = scale(obj,sf);
          [objout,varargout] = translate(obj, r);
          [objout] = merge(Sarray);
+         [obj2] = slicesurfer(obj, ipatchkeep);
          [coefs] = vals2coefs(obj,vals);
          [errps] = surf_fun_error(obj,fun,p);    
         

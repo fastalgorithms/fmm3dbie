@@ -70,26 +70,25 @@ classdef kernel3d
                            % (opdims(1)*nt, opdims(2)*ns) sparse matrix.
                            %
                            % Fields:
-                           %   .type      - 'scalar'    : nker=1, trivial 1-to-1 mapping
-                           %                'full'      : nker = opdims(1)*opdims(2),
-                           %                              column-major layout within block
-                           %                'symmetric' : nker = m*(m+1)/2 for an m x m
-                           %                              symmetric block; upper triangle
-                           %                              stored in column-major order
-                           %                'basis'     : nker independent scalar kernels
-                           %                              combined via a coefficient matrix
-                           %                              to fill the opdims(1) x opdims(2) block
-                           %   .nker      - number of rows in wnear (must match Fortran)
-                           %   .row_inds  - (nker,1) row index within block for each wnear row
-                           %                (for 'full' and 'symmetric' types)
-                           %   .col_inds  - (nker,1) col index within block for each wnear row
+                           %   .type     - 'scalar'    : nker=1, trivial 1-to-1 mapping
+                           %               'full'      : nker = opdims(1)*opdims(2),
+                           %                             column-major layout within block
+                           %               'symmetric' : nker = m*(m+1)/2 for an m x m
+                           %                             symmetric block; upper triangle
+                           %                             stored in column-major order
+                           %               'basis'     : nker independent scalar kernels
+                           %                             combined via a coefficient matrix
+                           %                             to fill the opdims(1) x opdims(2) block
+                           %   .nker     - number of rows in wnear (must match Fortran)
+                           %   .row_ids  - (nker,1) row index within block for each wnear row
+                           %   .col_ids  - (nker,1) col index within block for each wnear row
                            %   For 'symmetric' only:
-                           %   .sym_row_inds - row indices of off-diagonal reflected entries
-                           %   .sym_col_inds - col indices of off-diagonal reflected entries
-                           %   .sym_ker_inds - which wnear row each reflected entry mirrors
+                           %   .sym_row_ids - row indices of off-diagonal reflected entries
+                           %   .sym_col_ids - col indices of off-diagonal reflected entries
+                           %   .sym_ker_ids - which wnear row each reflected entry mirrors
                            %   For 'basis' only:
-                           %   .coef_mat  - (opdims(1)*opdims(2), nker) coefficient matrix
-                           %                such that vec(A_block) = coef_mat * wnear(:,q)
+                           %   .coef_mat - (opdims(1)*opdims(2), nker) coefficient matrix
+                           %               such that vec(A_block) = coef_mat * wnear(:,q)
 
     end
 
@@ -172,6 +171,7 @@ classdef kernel3d
         ri     = rsc_interleave_scalar();
         ri     = rsc_interleave_full(m, n);
         ri     = rsc_interleave_symmetric3();
+        obj    = tangent_kern(kernin, ids, jds);
 
     end
 

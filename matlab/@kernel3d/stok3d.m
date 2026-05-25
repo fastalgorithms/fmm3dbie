@@ -103,12 +103,15 @@ end
 % -----------------------------------------------------------------------
 function mat = stok_eval_reshape(submat)
 %STOK_EVAL_RESHAPE   Reshape (3,nt,3,ns) to (3*nt, 3*ns).
+%
+%   submat has layout (row_comp, targ, col_comp, src).
+%   The target matrix M satisfies
+%       M(row_comp + 3*(targ-1), col_comp + 3*(src-1)) = submat(row_comp,targ,col_comp,src)
+%   which is exactly what column-major reshape gives — no permutation needed.
 sz = size(submat);
 if numel(sz) == 4
     nt = sz(2); ns = sz(4);
-    % submat(row_comp, targ, col_comp, src) -> (3*nt, 3*ns)
-    % Permute to (targ, row_comp, src, col_comp) then reshape
-    mat = reshape(permute(submat, [2 1 4 3]), [3*nt, 3*ns]);
+    mat = reshape(submat, [3*nt, 3*ns]);
 else
     % Already scalar or flat
     mat = submat;

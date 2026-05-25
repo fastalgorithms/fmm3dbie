@@ -1,49 +1,41 @@
-function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear)
+function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
 % CONV_RSC_TO_SPMAT  Make sparse matrix from patch-wise RSC quadrature format.
 %
 %  Syntax:
 %    spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear)
+%    spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
 %
-%  For scalar kernels:
+%  For scalar kernels (ri omitted or ri.type == 'scalar'):
 %    wnear is (nquad,) or (1,nquad).  Returns sparse(ntarg, S.npts).
 %
-%  For vector kernels (e.g. Stokes):
+%  For vector/tensor kernels pass the kernel's rsc_to_interleave struct as ri:
 %    wnear is (nker, nquad).
-%    Returns sparse(m*ntarg, n*S.npts) where the kernel component layout
-%    is inferred from nker:
-%      nker == m*n  (full tensor, no symmetry)
-%      nker == m*(m+1)/2  with m==n  (symmetric tensor, upper-triangle order)
-%        Components stored as (1,1),(1,2),...,(1,m),(2,2),(2,3),...,(m,m)
+%    Returns sparse(m*ntarg, n*S.npts) where the block layout is read from ri.
 %
-%    Currently supported nker values:
-%      nker==1  -> scalar (m=n=1)
-%      nker==3  -> vector (m=3, n=1)
-%      nker==9  -> full 3x3 tensor (m=n=3)
-%      nker==6  -> symmetric 3x3 tensor (m=n=3, upper triangle)
+%  ri fields used:
+%    .type     - 'scalar', 'full', or 'symmetric'
+%    .nker     - number of rows in wnear
+%    .row_ids  - (nker,1) row index within the opdims block for each wnear row
+%    .col_ids  - (nker,1) col index within the opdims block for each wnear row
+%    For 'symmetric' only:
+%    .sym_row_ids - row indices of off-diagonal reflected entries
+%    .sym_col_ids - col indices of off-diagonal reflected entries
+%    .sym_ker_ids - which wnear row each reflected entry mirrors
+
+    % Default ri: scalar
+    if nargin < 5 || isempty(ri)
+        ri = kernel3d.rsc_interleave_scalar();
+    end
 
     sz = size(wnear);
-    if numel(sz) == 2 && sz(1) > 1 && sz(2) >1
-        nker  = sz(1);
+    if numel(sz) == 2 && sz(1) > 1 && sz(2) > 1
         nquad = sz(2);
     else
-        % scalar: wnear is (nquad,) or (1,nquad) or already flattened
-        nker  = 1;
         nquad = numel(wnear);
         wnear = reshape(wnear, 1, nquad);
     end
 
-    % Determine operator dimensions [m, n] from nker
-    if nker == 1
-        m = 1; n = 1; sym = false;
-    elseif nker == 3
-        m = 3; n = 1; sym = false;
-    elseif nker == 9
-        m = 3; n = 3; sym = false;
-    elseif nker == 6
-        m = 3; n = 3; sym = true;   % symmetric 3x3, upper triangle
-    else
-        error('conv_rsc_to_spmat: unsupported nker=%d', nker);
-    end
+    nker = ri.nker;
 
     ixyzs    = S.ixyzs(:);
     npatches = S.npatches;
@@ -56,15 +48,15 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear)
     istarts = row_ptr(1:end-1);
     iends   = row_ptr(2:end) - 1;
 
-    % Build point-level (irow_ind, icol_ind) for scalar indexing
+    % Build point-level (irow_ind_scalar, icol_ind) indices
     isrcinds = cell(npatches, 1);
     for i = 1:npatches
         isrcinds{i} = ixyzs(i):(ixyzs(i+1)-1);
     end
 
     total_pts = sum(npts_col);
-    icol_ind  = zeros(total_pts, 1);
-    irow_ind_scalar = zeros(total_pts, 1);  % target index (1..ntarg)
+    icol_ind        = zeros(total_pts, 1);
+    irow_ind_scalar = zeros(total_pts, 1);
 
     istart = 1;
     for i = 1:ntarg
@@ -76,33 +68,24 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear)
         istart = istart + nelem;
     end
 
-    if m == 1 && n == 1
+    if strcmp(ri.type, 'scalar')
         % ----- Scalar kernel -----
         spmat = sparse(irow_ind_scalar, icol_ind, wnear(1,:).', ntarg, npts);
         return
     end
 
     % ----- Vector / tensor kernel -----
-    % For each scalar (targ, src) pair we need to fill an [m x n] block.
-    % Build triplet lists for sparse().
+    % Infer opdims from the block indices stored in ri.
+    m = max(ri.row_ids);
+    n = max(ri.col_ids);
 
+    kr = ri.row_ids(:).';   % (1, nker)
+    kc = ri.col_ids(:).';   % (1, nker)
+
+    sym = strcmp(ri.type, 'symmetric');
     if sym
-        % Symmetric 3x3: upper-triangle order
-        % kernel index -> (row_comp, col_comp) pairs
-        % wnear(1,:)=(1,1), (2,:)=(1,2), (3,:)=(1,3),
-        %           (4,:)=(2,2), (5,:)=(2,3), (6,:)=(3,3)
-        kr = [1 1 1 2 2 3];
-        kc = [1 2 3 2 3 3];
-        % Symmetry counterparts (off-diagonal reflected entries)
-        sym_kr = [2 3 3];
-        sym_kc = [1 1 2];
-        sym_ki = [2 3 5];   % indices in wnear that give the reflected value
-        n_entries_per_pair = nker + numel(sym_ki);  % 6 + 3 = 9
+        n_entries_per_pair = nker + numel(ri.sym_ker_ids);
     else
-        % Full tensor: col-major order 1..m*n
-        [kc_mat, kr_mat] = meshgrid(1:n, 1:m);
-        kr = kr_mat(:).';
-        kc = kc_mat(:).';
         n_entries_per_pair = nker;
     end
 
@@ -111,11 +94,6 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear)
     II = zeros(NZ, 1);
     JJ = zeros(NZ, 1);
     VV = zeros(NZ, 1);
-
-    % wnear is (nker, nquad); the k-th quadrature weight (in scalar order)
-    % for pair index p corresponds to wnear(:, p) (one column per scalar pair).
-    % NOTE: wnear is stored with nquad matching the scalar expansion, so
-    % column p of wnear corresponds to icol_ind(p), irow_ind_scalar(p).
 
     off = 0;
     for ki = 1:nker
@@ -128,6 +106,9 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear)
     end
 
     if sym
+        sym_kr = ri.sym_row_ids(:).';
+        sym_kc = ri.sym_col_ids(:).';
+        sym_ki = ri.sym_ker_ids(:).';
         for si = 1:numel(sym_ki)
             ki_src = sym_ki(si);
             ir = sym_kr(si);

@@ -168,7 +168,13 @@ for j = 1:nsurfers
             sysmat_quad = Qj;
         end
         if corrections
-            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, Qj.row_ptr, Qj.col_ind, noversj);
+            if isfield(Qj, 'row_ptr')
+                rp = Qj.row_ptr;
+                ci = Qj.col_ind;
+            else
+                [rp, ci] = get_rsc_pattern(surferj, Qj, opdims);
+            end
+            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, rp, ci, noversj);
             sysmat_quad = sysmat_quad-sysmat_smth;
         end
 

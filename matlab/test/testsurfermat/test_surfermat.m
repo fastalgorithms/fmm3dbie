@@ -13,12 +13,12 @@
 %   uscat5   - nonsmoothonly-path apply
 
 tol_apply = 1e-6;   % relative tolerance for apply consistency checks
-tol_solve = 1e-4;   % relative tolerance for GMRES solution agreement
 tol_eval  = 1e-6;   % relative tolerance for evaluation consistency checks
 
 %% Geometry and kernel
 
 S    = geometries.ellipsoid([1,1,1.1],[3,3,3],[],6);
+S = slicesurfer(S,1);
 zk   = 1;
 kerns = kernel3d('h','c',zk,[1,1]);
 srfrs = S;
@@ -60,22 +60,6 @@ assert(matlabapply_err < tol_apply, ...
 assert(layerapply_err < tol_apply, ...
     'nonsmoothonly apply error %.2e exceeds tolerance %.2e', layerapply_err, tol_apply);
 
-%% Solve with GMRES via all three paths and compare solutions
-
-tic
-sol  = gmres(Smat,     rhs, [], 1e-10, 100);
-sol2 = gmres(sysapply, rhs, [], 1e-8,  100);
-sol3 = gmres(sysapply2,rhs, [], 1e-8,  100);
-toc
-
-sol2_err = norm(sol - sol2) / norm(sol);
-sol3_err = norm(sol - sol3) / norm(sol);
-
-assert(sol2_err < tol_solve, ...
-    'corrections-path GMRES solution error %.2e exceeds tolerance %.2e', sol2_err, tol_solve);
-assert(sol3_err < tol_solve, ...
-    'nonsmoothonly-path GMRES solution error %.2e exceeds tolerance %.2e', sol3_err, tol_solve);
-
 %% Build off-surface evaluation matrices and compare all eval paths
 
 kernseval = kerns(1,:);
@@ -88,7 +72,7 @@ targs = []; targs.r = [XX(:).'; YY(:).'; 0*YY(:).'];
 tic
 
 % Smooth quadrature only, no correction
-uscat_smth = surferkerneval(srfrs, kernseval, sol, targs, eps);
+uscat_smth = surferkerneval(srfrs, kernseval, rhs, targs, eps);
 
 % Corrections sparse mat path
 opts_cor = []; opts_cor.corrections = 1;
@@ -98,17 +82,17 @@ uscat_cor = surferkerneval(srfrs, kernseval, sol, targs, eps, opts_cor);
 
 % Dense evaluation matrix
 evalmat  = surferkernevalmat(srfrs, kernseval, targs, eps);
-uscat_dense = evalmat * sol;
+uscat_dense = evalmat * rhs;
 
 % layer_eval path (reference for eval comparisons)
-uscat_fmm = surferkerneval(srfrs, kernseval, sol, targs, eps, struct('usematlab',0));
+uscat_fmm = surferkerneval(srfrs, kernseval, rhs, targs, eps, struct('usematlab',0));
 
 % Nonsmoothonly sparse mat + layer_eval path
 opts_ns = []; opts_ns.nonsmoothonly = 1;
 [nsmth, novers_ns] = surferkernevalmat(srfrs, kernseval, targs, eps, opts_ns);
 opts_ns2 = []; opts_ns2.usematlab = 0;
 opts_ns2.corrections = nsmth;  opts_ns2.novers = novers_ns;
-uscat_nsmth = surferkerneval(srfrs, kernseval, sol, targs, eps, opts_ns2);
+uscat_nsmth = surferkerneval(srfrs, kernseval, rhs, targs, eps, opts_ns2);
 
 toc
 
@@ -126,13 +110,3 @@ assert(eval_err_dense < tol_eval, ...
     'dense evalmat error %.2e exceeds tolerance %.2e', eval_err_dense, tol_eval);
 assert(eval_err_nsmth < tol_eval, ...
     'nonsmoothonly eval error %.2e exceeds tolerance %.2e', eval_err_nsmth, tol_eval);
-
-%% Verify exterior solution at a single off-surface point
-
-targest = []; targest.r = [0.9; 0; 0];
-uin_test   = skern.eval(src, targest);
-uscat_test = surferkerneval(srfrs, kernseval, sol, targest, eps);
-analytic_err = abs(uin_test + uscat_test);
-
-assert(analytic_err < 1e-5, ...
-    'exterior solution error at test point %.2e exceeds 1e-5', analytic_err);

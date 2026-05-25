@@ -169,7 +169,7 @@ for i = 1:nsurfers
         else
             % Build a proper Q struct from the (i,j) block of cors
             cors_ij = cors(irowinds, icolinds);
-            rsc_ij  = conv_spmat_to_rsc(surferj, cors_ij);
+            rsc_ij  = conv_spmat_to_rsc(surferj, cors_ij, ktmp.rsc_to_interleave);
 
             % TODO we could get rfac faster than this
             rsc_near = getnear(surferj, surferi_targ);

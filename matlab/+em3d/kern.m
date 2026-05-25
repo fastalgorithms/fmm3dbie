@@ -392,8 +392,222 @@ if strcmpi(type,'DeldotS')
   
 end
 
+if strcmpi(type,'nrccie-bc')
+%
+%  NRCCIE boundary-condition (system) kernel.
+%
+%  Density: [j_u, j_v, rho]   (3 components / source point, surface-tangent basis)
+%  Output:  [pot_u, pot_v, pot_rho]  (3 equations / target point)
+%  Matrix size: (3*nt) x (3*ns), component-fast row/col ordering.
+%
+%  Follows get_nrccie_inteq_comps_from_potgrad in em_nrccie_pec.f90.
+%  For source density component d_s (= du_s or dv_s) and scalar rho:
+%
+%  zcurl   = grad_t G x d_s              (curl of vector single layer)
+%  zvec    = n_t x zcurl                 (= -M_k[J] term, magnetic BC)
+%  E       = ik*G*d_s - grad_t G * rho   (E from representation)
+%  nxnxE   = (n_t . E)*n_t - E           (= n x n x E)
+%  zvec3   = alpha*nxnxE - zvec
+%  pot_u/v = zvec3 . du_t/dv_t
+%  pot_rho = (grad_t S_k[rho] - ik*S_k[J]).n_t + alpha*(div_t S_k[J] - ik*S_k[rho])
+%
+%  varargin{1} = alpha  (CFIE regularization parameter)
+
+  alpha = varargin{1};
+
+  targnorm = targinfo.n;
+  drut = targinfo.du;
+  drvt = targinfo.dv;
+  drus = srcinfo.du;
+  drvs = srcinfo.dv;
+  srcnorm = srcinfo.n;
+
+  [gfun, grad] = helm3d.green(zk, src, targ);
+  % gfun : (nt, ns)
+  % grad : (nt, ns, 3)  — gradient w.r.t. target x
+
+  gx = grad(:,:,1);  gy = grad(:,:,2);  gz = grad(:,:,3);
+
+  % Target geometry
+  nx  = repmat(targnorm(1,:).', 1, ns);
+  ny  = repmat(targnorm(2,:).', 1, ns);
+  nz  = repmat(targnorm(3,:).', 1, ns);
+  dxut = repmat(drut(1,:).', 1, ns);  dyut = repmat(drut(2,:).', 1, ns);  dzut = repmat(drut(3,:).', 1, ns);
+  dxvt = repmat(drvt(1,:).', 1, ns);  dyvt = repmat(drvt(2,:).', 1, ns);  dzvt = repmat(drvt(3,:).', 1, ns);
+
+  % Source geometry
+  dxus = repmat(drus(1,:), nt, 1);  dyus = repmat(drus(2,:), nt, 1);  dzus = repmat(drus(3,:), nt, 1);
+  dxvs = repmat(drvs(1,:), nt, 1);  dyvs = repmat(drvs(2,:), nt, 1);  dzvs = repmat(drvs(3,:), nt, 1);
+  nxs  = repmat(srcnorm(1,:), nt, 1);
+  nys  = repmat(srcnorm(2,:), nt, 1);
+  nzs  = repmat(srcnorm(3,:), nt, 1);
+
+  % Helper: given source tangent vector ds = (dxs, dys, dzs), compute the
+  % (nt, ns) matrices for each block row/col of the kernel matrix.
+  %
+  % zcurl = grad_t G x ds  (curl of G*ds w.r.t. target)
+  %   zcurl_x = gy*dzs - gz*dys
+  %   zcurl_y = gz*dxs - gx*dzs
+  %   zcurl_z = gx*dys - gy*dxs
+  %
+  % zvec = n_t x zcurl
+  %   zvec_x = ny*zcurl_z - nz*zcurl_y
+  %   zvec_y = nz*zcurl_x - nx*zcurl_z
+  %   zvec_z = nx*zcurl_y - ny*zcurl_x
+  %
+  % E = ik*G*ds  (J column; rho column adds -grad_t G term handled separately)
+  %   Ex = ik*G*dxs,  Ey = ik*G*dys,  Ez = ik*G*dzs
+  %
+  % n_t.E = ik*G*(nx*dxs + ny*dys + nz*dzs)
+  % nxnxE = (n_t.E)*n_t - E
+  %   nxnxE_x = (n_t.E)*nx - ik*G*dxs
+  %   etc.
+  %
+  % zvec3 = alpha*nxnxE - zvec
+  % pot_u = zvec3 . du_t,  pot_v = zvec3 . dv_t
+
+  % --- Column j_u ---
+  curl_x_u = gy.*dzus - gz.*dyus;
+  curl_y_u = gz.*dxus - gx.*dzus;
+  curl_z_u = gx.*dyus - gy.*dxus;
+
+  zvec_x_u = ny.*curl_z_u - nz.*curl_y_u;
+  zvec_y_u = nz.*curl_x_u - nx.*curl_z_u;
+  zvec_z_u = nx.*curl_y_u - ny.*curl_x_u;
+
+  ndotE_u  = 1i*zk*gfun .* (nx.*dxus + ny.*dyus + nz.*dzus);
+  v3x_u = alpha*(ndotE_u.*nx - 1i*zk*gfun.*dxus) - zvec_x_u;
+  v3y_u = alpha*(ndotE_u.*ny - 1i*zk*gfun.*dyus) - zvec_y_u;
+  v3z_u = alpha*(ndotE_u.*nz - 1i*zk*gfun.*dzus) - zvec_z_u;
+
+  K_uu = dxut.*v3x_u + dyut.*v3y_u + dzut.*v3z_u;  % ru component, j_u col
+  K_vu = dxvt.*v3x_u + dyvt.*v3y_u + dzvt.*v3z_u;  % rv component, j_u col
+
+  % pot_rho (row 3), j_u column:
+  %   (grad_t(0) - ik*G*J).n_t + alpha*(div_t(G*J) - ik*0)
+  %   = -ik*G*(d_s.n_t) + alpha*(grad_t G . d_s)
+  K_ru = -1i*zk*gfun.*(dxus.*nx + dyus.*ny + dzus.*nz) ...
+         + alpha*(gx.*dxus + gy.*dyus + gz.*dzus);
+
+  % --- Column j_v ---
+  curl_x_v = gy.*dzvs - gz.*dyvs;
+  curl_y_v = gz.*dxvs - gx.*dzvs;
+  curl_z_v = gx.*dyvs - gy.*dxvs;
+
+  zvec_x_v = ny.*curl_z_v - nz.*curl_y_v;
+  zvec_y_v = nz.*curl_x_v - nx.*curl_z_v;
+  zvec_z_v = nx.*curl_y_v - ny.*curl_x_v;
+
+  ndotE_v  = 1i*zk*gfun .* (nx.*dxvs + ny.*dyvs + nz.*dzvs);
+  v3x_v = alpha*(ndotE_v.*nx - 1i*zk*gfun.*dxvs) - zvec_x_v;
+  v3y_v = alpha*(ndotE_v.*ny - 1i*zk*gfun.*dyvs) - zvec_y_v;
+  v3z_v = alpha*(ndotE_v.*nz - 1i*zk*gfun.*dzvs) - zvec_z_v;
+
+  K_uv = dxut.*v3x_v + dyut.*v3y_v + dzut.*v3z_v;
+  K_vv = dxvt.*v3x_v + dyvt.*v3y_v + dzvt.*v3z_v;
+
+  K_rv = -1i*zk*gfun.*(dxvs.*nx + dyvs.*ny + dzvs.*nz) ...
+         + alpha*(gx.*dxvs + gy.*dyvs + gz.*dzvs);
+
+  % --- Column rho ---
+  % E_rho = -grad_t G,  J=0
+  % n_t.E_rho = -(gx*nx + gy*ny + gz*nz)
+  % nxnxE_rho = (n_t.E_rho)*n_t - E_rho = -(gx*nx+...)*n_t + grad_t G
+  % zvec_rho = n_t x (grad_t G x 0) = 0   (no J curl term)
+  % zvec3_rho = alpha*nxnxE_rho
+
+  ndotE_r = -(gx.*nx + gy.*ny + gz.*nz);
+  v3x_r = alpha*(ndotE_r.*nx + gx);
+  v3y_r = alpha*(ndotE_r.*ny + gy);
+  v3z_r = alpha*(ndotE_r.*nz + gz);
+
+  K_ur = dxut.*v3x_r + dyut.*v3y_r + dzut.*v3z_r;
+  K_vr = dxvt.*v3x_r + dyvt.*v3y_r + dzvt.*v3z_r;
+
+  % pot_rho row, rho column:
+  %   (grad_t G - ik*0).n_t + alpha*(0 - ik*G*rho)
+  %   = (grad_t G).n_t - alpha*ik*G
+  %   = S'_k[rho] - alpha*ik*G
+  % where S'_k = n_s . grad_y G = -n_s . grad_x G
+  Sp  = -(nxs.*gx + nys.*gy + nzs.*gz);
+  K_rr = Sp - alpha*1i*zk*gfun;
+
+  % --- Assemble (3*nt) x (3*ns) matrix, component-fast rows/cols ---
+  submat = complex(zeros(3*nt, 3*ns));
+  submat(1:nt,        1:ns)        = K_uu;
+  submat(1:nt,        ns+1:2*ns)   = K_uv;
+  submat(1:nt,        2*ns+1:3*ns) = K_ur;
+  submat(nt+1:2*nt,   1:ns)        = K_vu;
+  submat(nt+1:2*nt,   ns+1:2*ns)   = K_vv;
+  submat(nt+1:2*nt,   2*ns+1:3*ns) = K_vr;
+  submat(2*nt+1:3*nt, 1:ns)        = K_ru;
+  submat(2*nt+1:3*nt, ns+1:2*ns)   = K_rv;
+  submat(2*nt+1:3*nt, 2*ns+1:3*ns) = K_rr;
+
+end
+
+if strcmpi(type,'nrccie-eval')
+%
+%  NRCCIE field-evaluation kernel.
+%
+%  Representation:
+%    E = ik * S_k[J]  -  grad(S_k)[rho]
+%    H = curl(S_k[J]) = grad(S_k) x J
+%
+%  Density columns: [J_x, J_y, J_z, rho]  (4 Cartesian components / source)
+%  Output rows:     [E_x, E_y, E_z, H_x, H_y, H_z]  (6 / target)
+%  Matrix size: (6*nt) x (4*ns)
+%
+%  For a single (t,s) pair the 6x4 block is:
+%    [ik*G    0      0      -dGdx ]
+%    [0       ik*G   0      -dGdy ]
+%    [0       0      ik*G   -dGdz ]
+%    [0      -dGdz  +dGdy    0    ]
+%    [+dGdz   0     -dGdx    0    ]
+%    [-dGdy  +dGdx   0       0    ]
+%  where G = S_k(t,s), dGdx/y/z = d/dx G(t,s)  (w.r.t. target).
+
+  [G, gradG] = helm3d.green(zk, src, targ);
+  % G     : (nt, ns)
+  % gradG : (nt, ns, 3)
+
+  gx = gradG(:,:,1);   % (nt, ns)
+  gy = gradG(:,:,2);
+  gz = gradG(:,:,3);
+  ikG = 1i*zk*G;
+
+  % Build (6, nt, 4, ns) tensor, then permute+reshape to (6*nt, 4*ns)
+  T = complex(zeros(6, nt, 4, ns));
+
+  % col 1: J_x
+  T(1,:,1,:) = ikG;    % E_x
+  T(5,:,1,:) = gz;     % H_y = +dGdz * J_x
+  T(6,:,1,:) = -gy;    % H_z = -dGdy * J_x
+
+  % col 2: J_y
+  T(2,:,2,:) = ikG;    % E_y
+  T(4,:,2,:) = -gz;    % H_x = -dGdz * J_y
+  T(6,:,2,:) = gx;     % H_z = +dGdx * J_y
+
+  % col 3: J_z
+  T(3,:,3,:) = ikG;    % E_z
+  T(4,:,3,:) = gy;     % H_x = +dGdy * J_z
+  T(5,:,3,:) = -gx;    % H_y = -dGdx * J_z
+
+  % col 4: rho  ->  E = -gradG * rho,  H = 0
+  T(1,:,4,:) = -gx;
+  T(2,:,4,:) = -gy;
+  T(3,:,4,:) = -gz;
+
+  % row index: itarg + nt*(icomp-1), col index: isrc + ns*(jcomp-1)
+  % (component-fast, matching stok/lap/helm eval convention)
+  % permute (6,nt,4,ns) -> (nt,6,ns,4) then reshape.
+  submat = reshape(permute(T, [2,1,4,3]), [6*nt, 4*ns]);
+
+end
+
 if strcmpi(type,'NdotCurlS')
-    
+
   targnorm = targinfo.n;
   [~,grad] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
