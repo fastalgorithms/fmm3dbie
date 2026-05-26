@@ -6,6 +6,11 @@
 % Combined kernels are checked against coefs(1)*S + coefs(2)*D.
 % FMM is checked against eval for Laplace, Helmholtz, and Stokes.
 % The arithmetic section uses a single composite kernel expression.
+% Transmission kernels:
+%   trans_sys / trans_sys_diff: eval checked against 4 scalar sub-kernels
+%     assembled into the 2x2 block.  trans_sys also gets a layer_eval check.
+%   trans_rep: eval checked against D+(ik)*S applied to split densities.
+%   x2trans / x2trans_diff: eval rows checked against the two scalar halves.
 %
 % Failures are accumulated and reported at the end.  The script asserts
 % only once, at the very end, so every kernel is always exercised.
@@ -72,16 +77,21 @@ failures = {};
 % Stokes point densities are (3,ns); all others are column vectors.
 % Transmission x2trans kernels use check_x2trans instead of check_layer/fmm/fd.
 %
-coefs_lap = [0.7; 1.3];
-coefs_h   = [1i*zk; 1.0];
-coefs_ct  = [1i*zk; 1.0];
+coefs_lap  = [0.7; 1.3];
+coefs_h    = [1i*zk; 1.0];
+coefs_ct   = [1i*zk; 1.0];
 coefs_stok = [0.7; 1.3];
-zk_em     = 2.5 + 0.1i;
-alpha_em  = 0.5;
+zk1        = 0.3 + 0.15i;   % second wavenumber for diff kernels
+zk_em      = 2.5 + 0.1i;
+alpha_em   = 0.5;
 
 sigma_stok_pt = randn(3, ns);   % Stokes point density for FMM check
-sigma_em3_pt  = randn(3, ns) + 1i*randn(3,ns); % em nrccie-bc: (3, ns) [j_ru, j_rv, rho] (orthonormal frame)
-sigma_em4_pt  = randn(4, ns) + 1i*randn(4, ns); % em nrccie-eval: (4, npts) [Jx, Jy, Jz, rho]
+sigma_em3_pt  = randn(3, ns) + 1i*randn(3,ns);
+sigma_em4_pt  = randn(4, ns) + 1i*randn(4, ns);
+
+% Transmission 2-density densities (interleaved [rho; sigma] columns).
+sigma_2d   = randn(2*S.npts, 1) + 1i*randn(2*S.npts, 1);  % for trans_sys layer_eval
+sigma_2d_pt = randn(2*ns, 1)   + 1i*randn(2*ns, 1);        % point version
 
 kernels = { ...
 % --- Laplace ---
@@ -98,10 +108,10 @@ kernels = { ...
   kernel3d('h','dp',zk),          'helm dp',     sigma_s,    sigma,           kernel3d('h','d',zk);          ...
   kernel3d('h','c',zk,coefs_h),   'helm c',      sigma_s,    sigma,           [];                           ...
   kernel3d('h','cp',zk,coefs_h),  'helm cp',     sigma_s,    sigma,           kernel3d('h','c',zk,coefs_h);  ...
-% --- Transmission x2trans (check_x2trans; surface sigma unused but must be present) ---
-  kernel3d('h','s2trans',zk),     'helm s2trans',sigma_s,    sigma_s,              kernel3d('h','s',zk);          ...
-  kernel3d('h','d2trans',zk),     'helm d2trans',sigma_s,    sigma_s,              kernel3d('h','d',zk);          ...
-  kernel3d('h','c2trans',zk,coefs_ct),'helm c2trans',sigma_s,sigma_s,             kernel3d('h','c',zk,coefs_ct);  ...
+% --- Transmission x2trans ---
+  kernel3d('h','s2trans',zk),     'helm s2trans',sigma_s,    sigma_s,         kernel3d('h','s',zk);          ...
+  kernel3d('h','d2trans',zk),     'helm d2trans',sigma_s,    sigma_s,         kernel3d('h','d',zk);          ...
+  kernel3d('h','c2trans',zk,coefs_ct),'helm c2trans',sigma_s,sigma_s,        kernel3d('h','c',zk,coefs_ct);  ...
 % --- Stokes ---
   kernel3d('stok','s'),           'stok s',      sigma_stok, sigma_stok_pt,   [];                           ...
   kernel3d('stok','d'),           'stok d',      sigma_stok, sigma_stok_pt,   [];                           ...
@@ -122,16 +132,12 @@ for k = 1:size(kernels, 1)
     label  = kernels{k,2};
     sig_s  = kernels{k,3};
     sig_pt = kernels{k,4};
-    K_aux  = kernels{k,5};  % base kernel (FD check) or top kernel (x2trans)
+    K_aux  = kernels{k,5};  % base kernel (FD check) or top-half kernel (x2trans)
 
-    % x2trans kernels store their bottom-half kernel in K_aux (col 5).
-    % The top-half kernel is stored one row up, in col 5 of that row — but
-    % it is simpler to just pass both halves directly in the table (K_aux
-    % holds the top kernel; the bottom is derived from the type string).
     is_x2trans = ismember(K.type, {'s2trans','d2trans','c2trans'});
 
     if is_x2trans
-        K_top = K_aux;   % top-half kernel stored in col 5
+        K_top = K_aux;
         switch K.type
             case 's2trans',  K_bot = kernel3d('h','sp',zk);
             case 'd2trans',  K_bot = kernel3d('h','dp',zk);
@@ -151,143 +157,100 @@ for k = 1:size(kernels, 1)
     end
 end
 
-% trans_rep: [1x2] interleaved kernel  u = D[rho] + (ik)*S[sigma].
-% Density must be interleaved: [rho(1); sigma(1); rho(2); sigma(2); ...]
-Ktr = kernel3d('h', 'trans_rep', zk);
-rho_rep   = sigma_r(1:ns);
-sig_rep   = 2*sigma_r(1:ns);
-sigma_int = reshape([rho_rep.'; sig_rep.'], 2*ns, 1);   % interleaved layout
-pot_tr    = Ktr.eval(src, targ) * sigma_int;
-pot_ref   = kernel3d('h','d',zk).eval(src,targ)*rho_rep ...
-          + (1i*zk)*kernel3d('h','s',zk).eval(src,targ)*sig_rep;
-err_tr    = norm(pot_tr - pot_ref) / norm(pot_ref);
-status    = pass_fail(err_tr, 1e-13);
-if strcmp(status, 'FAIL')
-    failures{end+1} = sprintf('helm trans_rep: eval vs D+(ik)S  err=%.2e', err_tr);
-end
-fprintf('  %-24s  eval vs D+(ik)S  err=%.2e  [%s]\n', 'helm trans_rep', err_tr, status);
-
 % =========================================================================
-% Maxwell eval checks
+% Transmission kernel checks
 % =========================================================================
-%
-% nrccie-bc  eval check: K.eval(src,targ)*sigma == manual assembly from
-%   sub-kernels NxCurlS, NxS, NxDelS, NdotS, DeldotS, S, S'.
-%
-% nrccie-eval eval check: K.eval(src,targ)*sigma == ik*S[J] - gradS[rho]
-%   for E, and curlS[J] for H, computed directly from helm3d.green.
 
-fprintf('\n=== Maxwell eval checks ===\n');
+fprintf('\n=== Transmission kernel checks ===\n');
 
-% --- shared setup ---
-% src already has .r, .n, .du, .dv set at the top of the script
+zks        = [zk; zk1];
+diff_coefs = [1.2; 0.8];          % a0, a1 for scalar diff checks
+coe_22     = [0.7+0.1i, 0.3; ...  % 2x2 coefs for trans_sys
+              0.5,       1.2i];
+coe_222    = cat(3, coe_22, 0.9*coe_22);  % 2x2x2 coefs for trans_sys_diff
 
-% Density for nrccie-bc: [j_u, j_v, rho]  each ns x 1, complex
-ju  = randn(ns,1) + 1i*randn(ns,1);
-jv  = randn(ns,1) + 1i*randn(ns,1);
-rho = randn(ns,1) + 1i*randn(ns,1);
-% Interleaved layout to match reshape((3,ns,3,ns),...) column-major convention
-% used in em3d.kern (same as Stokes): row/col index = icomp + m*(ipoint-1).
-sigma_bc = reshape([ju, jv, rho].', 3*ns, 1);   % (3*ns, 1), interleaved: [ju(1);jv(1);rho(1);ju(2);...]
-
-% ---- nrccie-bc eval ----
-K_bc = kernel3d('em', 'nrccie-bc', zk_em, alpha_em);
-
-pot_bc = K_bc.eval(src, targ) * sigma_bc;   % (3*nt, 1)
-
-% Reference: same computation as em3d.kern 'nrccie-bc', inlined.
-% Follows get_nrccie_inteq_comps_from_potgrad in em_nrccie_pec.f90.
-[Gfun, gradG] = helm3d.green(zk_em, src.r, targ.r);
-gx = gradG(:,:,1);  gy = gradG(:,:,2);  gz = gradG(:,:,3);
-
-nx  = repmat(targ.n(1,:).',  1, ns);  ny  = repmat(targ.n(2,:).', 1, ns);  nz  = repmat(targ.n(3,:).', 1, ns);
-dxut = repmat(targ.du(1,:).', 1, ns); dyut = repmat(targ.du(2,:).', 1, ns); dzut = repmat(targ.du(3,:).', 1, ns);
-dxvt = repmat(targ.dv(1,:).', 1, ns); dyvt = repmat(targ.dv(2,:).', 1, ns); dzvt = repmat(targ.dv(3,:).', 1, ns);
-dxus = repmat(src.du(1,:), nt, 1);    dyus = repmat(src.du(2,:), nt, 1);    dzus = repmat(src.du(3,:), nt, 1);
-dxvs = repmat(src.dv(1,:), nt, 1);    dyvs = repmat(src.dv(2,:), nt, 1);    dzvs = repmat(src.dv(3,:), nt, 1);
-nxs  = repmat(src.n(1,:),  nt, 1);    nys  = repmat(src.n(2,:),  nt, 1);    nzs  = repmat(src.n(3,:),  nt, 1);
-
-% j_u column
-curl_x_u = gy.*dzus - gz.*dyus;  curl_y_u = gz.*dxus - gx.*dzus;  curl_z_u = gx.*dyus - gy.*dxus;
-zv_x_u = ny.*curl_z_u - nz.*curl_y_u;  zv_y_u = nz.*curl_x_u - nx.*curl_z_u;  zv_z_u = nx.*curl_y_u - ny.*curl_x_u;
-ndE_u = 1i*zk_em*Gfun.*(nx.*dxus + ny.*dyus + nz.*dzus);
-v3x_u = alpha_em*(ndE_u.*nx - 1i*zk_em*Gfun.*dxus) - zv_x_u;
-v3y_u = alpha_em*(ndE_u.*ny - 1i*zk_em*Gfun.*dyus) - zv_y_u;
-v3z_u = alpha_em*(ndE_u.*nz - 1i*zk_em*Gfun.*dzus) - zv_z_u;
-K_uu_r = dxut.*v3x_u + dyut.*v3y_u + dzut.*v3z_u;
-K_vu_r = dxvt.*v3x_u + dyvt.*v3y_u + dzvt.*v3z_u;
-K_ru_r = -1i*zk_em*Gfun.*(dxus.*nx+dyus.*ny+dzus.*nz) + alpha_em*(gx.*dxus+gy.*dyus+gz.*dzus);
-
-% j_v column
-curl_x_v = gy.*dzvs - gz.*dyvs;  curl_y_v = gz.*dxvs - gx.*dzvs;  curl_z_v = gx.*dyvs - gy.*dxvs;
-zv_x_v = ny.*curl_z_v - nz.*curl_y_v;  zv_y_v = nz.*curl_x_v - nx.*curl_z_v;  zv_z_v = nx.*curl_y_v - ny.*curl_x_v;
-ndE_v = 1i*zk_em*Gfun.*(nx.*dxvs + ny.*dyvs + nz.*dzvs);
-v3x_v = alpha_em*(ndE_v.*nx - 1i*zk_em*Gfun.*dxvs) - zv_x_v;
-v3y_v = alpha_em*(ndE_v.*ny - 1i*zk_em*Gfun.*dyvs) - zv_y_v;
-v3z_v = alpha_em*(ndE_v.*nz - 1i*zk_em*Gfun.*dzvs) - zv_z_v;
-K_uv_r = dxut.*v3x_v + dyut.*v3y_v + dzut.*v3z_v;
-K_vv_r = dxvt.*v3x_v + dyvt.*v3y_v + dzvt.*v3z_v;
-K_rv_r = -1i*zk_em*Gfun.*(dxvs.*nx+dyvs.*ny+dzvs.*nz) + alpha_em*(gx.*dxvs+gy.*dyvs+gz.*dzvs);
-
-% rho column
-ndE_r = -(gx.*nx + gy.*ny + gz.*nz);
-v3x_r = alpha_em*(ndE_r.*nx + gx);  v3y_r = alpha_em*(ndE_r.*ny + gy);  v3z_r = alpha_em*(ndE_r.*nz + gz);
-K_ur_r = dxut.*v3x_r + dyut.*v3y_r + dzut.*v3z_r;
-K_vr_r = dxvt.*v3x_r + dyvt.*v3y_r + dzvt.*v3z_r;
-Sp_ref = -(nxs.*gx + nys.*gy + nzs.*gz);
-K_rr_r = Sp_ref - alpha_em*1i*zk_em*Gfun;
-
-% Compute each output component per target (nt x 1 vectors)
-out_u   = K_uu_r*ju + K_uv_r*jv + K_ur_r*rho;
-out_v   = K_vu_r*ju + K_vv_r*jv + K_vr_r*rho;
-out_rho = K_ru_r*ju + K_rv_r*jv + K_rr_r*rho;
-% Interleave: [u(1); v(1); rho(1); u(2); v(2); rho(2); ...]
-pot_bc_ref = reshape([out_u, out_v, out_rho].', 3*nt, 1);
-
-err_bc = norm(pot_bc - pot_bc_ref) / norm(pot_bc_ref);
-status = pass_fail(err_bc, 1e-10);
-if strcmp(status, 'FAIL')
-    failures{end+1} = sprintf('em nrccie-bc: eval vs sub-kernels err=%.2e', err_bc);
+% --- scalar diff kernels: each against explicit scalar subtraction ---
+for kd = { {'s_diff',  's',  {}};  {'d_diff',  'd',  {}};  ...
+            {'sp_diff', 'sp', {}}; {'dp_diff', 'dp', {}} }
+    kd = kd{1};
+    Kdiff = kernel3d('h', kd{1}, zks, diff_coefs);
+    K0    = diff_coefs(1) .* kernel3d('h', kd{2}, zk,  kd{3}{:});
+    K1    = diff_coefs(2) .* kernel3d('h', kd{2}, zk1, kd{3}{:});
+    Kref  = K0 - K1;
+    M     = Kdiff.eval(src, targ);
+    Mref  = Kref.eval(src, targ);
+    failures = report(failures, ['helm ' kd{1}], 'eval vs explicit diff', ...
+                      norm(M - Mref,'fro') / norm(Mref,'fro'), 1e-13);
 end
-fprintf('  %-24s  eval vs sub-kernels  err=%.2e  [%s]\n', 'em nrccie-bc', err_bc, status);
-
-% ---- nrccie-eval eval ----
-% Density: [Jx, Jy, Jz, rho_c]  each ns columns, complex
-Jx  = randn(ns,1) + 1i*randn(ns,1);
-Jy  = randn(ns,1) + 1i*randn(ns,1);
-Jz  = randn(ns,1) + 1i*randn(ns,1);
-rhoc = randn(ns,1) + 1i*randn(ns,1);
-sigma_ev = reshape([Jx, Jy, Jz, rhoc].', 4*ns, 1);   % (4*ns,1), interleaved: [Jx(1);Jy(1);Jz(1);rho(1);...]
-
-K_ev = kernel3d('em', 'nrccie-eval', zk_em);
-
-pot_ev = K_ev.eval(src, targ) * sigma_ev;  % (6*nt, 1)
-
-% Reference: E = ik*S_k[J] - gradS_k[rho],  H = curl_t(S_k[J]) = gradG x J
-% Gfun/gradG/gx/gy/gz already computed above for zk_em, same src/targ.
-ikG = 1i*zk_em * Gfun;   % (nt, ns)
-
-Ex_ref = ikG*Jx - gx*rhoc;
-Ey_ref = ikG*Jy - gy*rhoc;
-Ez_ref = ikG*Jz - gz*rhoc;
-% H = gradG x J  (curl of scalar G times vector J = gradG x J)
-%   H_x = gy*Jz - gz*Jy
-%   H_y = gz*Jx - gx*Jz
-%   H_z = gx*Jy - gy*Jx
-Hx_ref = gy*Jz - gz*Jy;
-Hy_ref = gz*Jx - gx*Jz;
-Hz_ref = gx*Jy - gy*Jx;
-
-% Row layout is interleaved: icomp + 6*(itarg-1), matching reshape((6,nt,4,ns),...).
-% Interleave to: [Ex(1);Ey(1);Ez(1);Hx(1);Hy(1);Hz(1); Ex(2);...]
-pot_ev_ref = reshape([Ex_ref, Ey_ref, Ez_ref, Hx_ref, Hy_ref, Hz_ref].', 6*nt, 1);
-
-err_ev = norm(pot_ev - pot_ev_ref) / norm(pot_ev_ref);
-status = pass_fail(err_ev, 1e-10);
-if strcmp(status, 'FAIL')
-    failures{end+1} = sprintf('em nrccie-eval: eval vs direct err=%.2e', err_ev);
+% c_diff and cp_diff (need combined coefs)
+c_coefs4 = [coefs_ct; diff_coefs];
+for kd = { {'c_diff', 'c'}; {'cp_diff', 'cp'} }
+    kd = kd{1};
+    Kdiff = kernel3d('h', kd{1}, zks, c_coefs4);
+    K0    = diff_coefs(1) .* kernel3d('h', kd{2}, zk,  coefs_ct);
+    K1    = diff_coefs(2) .* kernel3d('h', kd{2}, zk1, coefs_ct);
+    Kref  = K0 - K1;
+    M     = Kdiff.eval(src, targ);
+    Mref  = Kref.eval(src, targ);
+    failures = report(failures, ['helm ' kd{1}], 'eval vs explicit diff', ...
+                      norm(M - Mref,'fro') / norm(Mref,'fro'), 1e-13);
 end
-fprintf('  %-24s  eval vs direct       err=%.2e  [%s]\n', 'em nrccie-eval', err_ev, status);
+
+% --- trans_rep: check blocks match coefs(1)*D and coefs(2)*S ---
+Ktr      = kernel3d('h', 'trans_rep', zk, [0.7; 1.3]);
+M_tr     = Ktr.eval(src, targ);            % (nt x 2*ns)
+M_D      = 0.7 * kernel3d('h','d',zk).eval(src,targ);
+M_S      = 1.3 * kernel3d('h','s',zk).eval(src,targ);
+err_D    = norm(M_tr(:,1:2:end) - M_D,'fro') / norm(M_D,'fro');
+err_S    = norm(M_tr(:,2:2:end) - M_S,'fro') / norm(M_S,'fro');
+failures = report(failures, 'helm trans_rep', 'eval blocks vs D, S', ...
+                  max(err_D, err_S), 1e-13);
+
+% --- trans_sys: 2x2 interleaved eval vs coefs.*[D,S;D',S'] blocks ---
+Kts      = kernel3d('h', 'trans_sys', zk, coe_22);
+M_ts     = Kts.eval(src, targ);            % (2*nt x 2*ns)
+M_D      = kernel3d('h','d', zk).eval(src,targ);
+M_S      = kernel3d('h','s', zk).eval(src,targ);
+M_Dp     = kernel3d('h','dp',zk).eval(src,targ);
+M_Sp     = kernel3d('h','sp',zk).eval(src,targ);
+e11 = norm(M_ts(1:2:end,1:2:end) - coe_22(1,1)*M_D, 'fro') / norm(coe_22(1,1)*M_D,'fro');
+e12 = norm(M_ts(1:2:end,2:2:end) - coe_22(1,2)*M_S, 'fro') / norm(coe_22(1,2)*M_S,'fro');
+e21 = norm(M_ts(2:2:end,1:2:end) - coe_22(2,1)*M_Dp,'fro') / norm(coe_22(2,1)*M_Dp,'fro');
+e22 = norm(M_ts(2:2:end,2:2:end) - coe_22(2,2)*M_Sp,'fro') / norm(coe_22(2,2)*M_Sp,'fro');
+failures = report(failures, 'helm trans_sys', 'eval 2x2 blocks', max([e11 e12 e21 e22]), 1e-13);
+
+% --- trans_sys: layer_eval ---
+sigma_ts = reshape(sigma_2d, 2, S.npts);
+failures = check_layer(failures, Kts, S, sigma_ts, targ_off, eps, tol_leval, 'helm trans_sys');
+
+% --- trans_sys_diff: 2x2 eval vs explicit (c0.*K0 - c1.*K1) for each block ---
+Ktsd     = kernel3d('h', 'trans_sys_diff', zks, coe_222);
+M_tsd    = Ktsd.eval(src, targ);           % (2*nt x 2*ns)
+c0 = coe_222(:,:,1);  c1 = coe_222(:,:,2);
+M_D0 = kernel3d('h','d', zk ).eval(src,targ);  M_D1 = kernel3d('h','d', zk1).eval(src,targ);
+M_S0 = kernel3d('h','s', zk ).eval(src,targ);  M_S1 = kernel3d('h','s', zk1).eval(src,targ);
+M_Dp0= kernel3d('h','dp',zk ).eval(src,targ);  M_Dp1= kernel3d('h','dp',zk1).eval(src,targ);
+M_Sp0= kernel3d('h','sp',zk ).eval(src,targ);  M_Sp1= kernel3d('h','sp',zk1).eval(src,targ);
+f11 = norm(M_tsd(1:2:end,1:2:end) - (c0(1,1)*M_D0 -c1(1,1)*M_D1),'fro') / norm(c0(1,1)*M_D0-c1(1,1)*M_D1,'fro');
+f12 = norm(M_tsd(1:2:end,2:2:end) - (c0(1,2)*M_S0 -c1(1,2)*M_S1),'fro') / norm(c0(1,2)*M_S0-c1(1,2)*M_S1,'fro');
+f21 = norm(M_tsd(2:2:end,1:2:end) - (c0(2,1)*M_Dp0-c1(2,1)*M_Dp1),'fro') / norm(c0(2,1)*M_Dp0-c1(2,1)*M_Dp1,'fro');
+f22 = norm(M_tsd(2:2:end,2:2:end) - (c0(2,2)*M_Sp0-c1(2,2)*M_Sp1),'fro') / norm(c0(2,2)*M_Sp0-c1(2,2)*M_Sp1,'fro');
+failures = report(failures, 'helm trans_sys_diff', 'eval 2x2 blocks', max([f11 f12 f21 f22]), 1e-13);
+
+% --- x2trans_diff kernels: rows match scalar diff halves ---
+for kd = { {'s2trans_diff', 's_diff', 'sp_diff'}; ...
+            {'d2trans_diff', 'd_diff', 'dp_diff'} }
+    kd  = kd{1};
+    K2t = kernel3d('h', kd{1}, zks, diff_coefs);
+    Ktop = kernel3d('h', kd{2}, zks, diff_coefs);
+    Kbot = kernel3d('h', kd{3}, zks, diff_coefs);
+    failures = check_x2trans_diff(failures, K2t, Ktop, Kbot, src, targ, ['helm ' kd{1}]);
+end
+% c2trans_diff
+Kc2d  = kernel3d('h', 'c2trans_diff',  zks, c_coefs4);
+Kctop = kernel3d('h', 'c_diff',  zks, c_coefs4);
+Kcbot = kernel3d('h', 'cp_diff', zks, c_coefs4);
+failures = check_x2trans_diff(failures, Kc2d, Kctop, Kcbot, src, targ, 'helm c2trans_diff');
 
 % =========================================================================
 % Combined-layer checks: C.eval == coefs(1)*S.eval + coefs(2)*D.eval
@@ -441,4 +404,29 @@ function failures = check_x2trans(failures, K2t, K_top, K_bot, src, targ, label)
         failures{end+1} = sprintf('%s: block mismatch top=%.2e bot=%.2e', label, err_top, err_bot);
     end
     fprintf('  %-24s  eval blocks         err=%.2e  [%s]\n', label, err, status);
+end
+
+function failures = check_x2trans_diff(failures, K2t, K_top, K_bot, src, targ, label)
+%CHECK_X2TRANS_DIFF  Like check_x2trans but K_top/K_bot are already the
+%   expected difference kernels (kernel3d objects with eval handles).
+    mat     = K2t.eval(src, targ);
+    mat_top = K_top.eval(src, targ);
+    mat_bot = K_bot.eval(src, targ);
+    err_top = norm(mat(1:2:end,:) - mat_top, 'fro') / norm(mat_top, 'fro');
+    err_bot = norm(mat(2:2:end,:) - mat_bot, 'fro') / norm(mat_bot, 'fro');
+    err     = max(err_top, err_bot);
+    status  = pass_fail(err, 1e-13);
+    if strcmp(status, 'FAIL')
+        failures{end+1} = sprintf('%s: block mismatch top=%.2e bot=%.2e', label, err_top, err_bot);
+    end
+    fprintf('  %-24s  eval blocks         err=%.2e  [%s]\n', label, err, status);
+end
+
+function failures = report(failures, label, desc, err, tol)
+%REPORT  Print one result line and accumulate failures.
+    status = pass_fail(err, tol);
+    if strcmp(status, 'FAIL')
+        failures{end+1} = sprintf('%s %s err=%.2e', label, desc, err);
+    end
+    fprintf('  %-24s  %-22s  err=%.2e  [%s]\n', label, desc, err, status);
 end

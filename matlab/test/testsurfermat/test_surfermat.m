@@ -18,7 +18,7 @@ tol_eval  = 1e-6;   % relative tolerance for evaluation consistency checks
 %% Geometry and kernel
 
 S    = geometries.ellipsoid([1,1,1.1],[3,3,3],[],6);
-S = slicesurfer(S,1);
+S = slicesurfer(S,[1]);
 zk   = 1;
 kerns = kernel3d('h','c',zk,[1,1]);
 srfrs = S;
@@ -78,7 +78,7 @@ uscat_smth = surferkerneval(srfrs, kernseval, rhs, targs, eps);
 opts_cor = []; opts_cor.corrections = 1;
 [evalcors, novers_eval] = surferkernevalmat(srfrs, kernseval, targs, eps, opts_cor);
 opts_cor.corrections = evalcors;  opts_cor.novers = novers_eval;
-uscat_cor = surferkerneval(srfrs, kernseval, sol, targs, eps, opts_cor);
+uscat_cor = surferkerneval(srfrs, kernseval, rhs, targs, eps, opts_cor);
 
 % Dense evaluation matrix
 evalmat  = surferkernevalmat(srfrs, kernseval, targs, eps);
@@ -110,3 +110,37 @@ assert(eval_err_dense < tol_eval, ...
     'dense evalmat error %.2e exceeds tolerance %.2e', eval_err_dense, tol_eval);
 assert(eval_err_nsmth < tol_eval, ...
     'nonsmoothonly eval error %.2e exceeds tolerance %.2e', eval_err_nsmth, tol_eval);
+
+
+%%
+
+opts = [];
+opts.nonsmoothonly = 1;
+zks = [0.9];
+% tr_kern = kernel3d('h','trans_sys_diff',zks);
+% 
+% s_kern  = kernel3d('h','s_diff',zks);
+% d_kern  = kernel3d('h','d_diff',zks);
+% sp_kern = kernel3d('h','sp_diff',zks);
+% dp_kern = kernel3d('h','dp_diff',zks);
+
+tr_kern = kernel3d('h','trans_sys',zks);
+
+s_kern  = kernel3d('h','s',zks);
+d_kern  = kernel3d('h','d',zks);
+sp_kern = kernel3d('h','sp',zks);
+dp_kern = kernel3d('h','dp',zks);
+
+trmat = surfermat(srfrs, tr_kern, eps,opts);
+
+smat  = surfermat(srfrs, s_kern, eps,opts);
+dmat  = surfermat(srfrs, d_kern, eps,opts);
+spmat = surfermat(srfrs, sp_kern, eps,opts);
+dpmat = surfermat(srfrs, dp_kern, eps,opts);
+trmat2 = zeros(size(trmat));
+trmat2(1:2:end, 1:2:end) = dmat;
+trmat2(1:2:end, 2:2:end) = smat;
+trmat2(2:2:end, 1:2:end) = dpmat;
+trmat2(2:2:end, 2:2:end) = spmat;
+
+assert(norm(trmat-trmat2,1)<1e-14*norm(trmat,1), 'interleaved surfermat inccorrect')

@@ -33,7 +33,7 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
         f.getquad = [];
     end
 
-    f.get_overs_orders = [];
+    f.get_overs_orders = @(S,t,eps) max(f.get_overs_orders(S, t, eps),g.get_overs_orders(S, t, eps));
 
     src  = union(f.src_fields,  g.src_fields);
     targ = union(f.targ_fields, g.targ_fields);

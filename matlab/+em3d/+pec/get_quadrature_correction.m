@@ -116,7 +116,7 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
     if(isfield(tinfouse,'patch_id') || isprop(tinfouse,'patch_id'))
       patch_id = tinfouse.patch_id;
     else
-      patch_id = zeros(ntarg,1);
+      patch_id = -ones(ntarg,1);
     end
 
     if(isfield(tinfouse,'uvs_targ') || isprop(tinfouse,'uvs_targ'))

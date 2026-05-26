@@ -47,6 +47,7 @@ function rsc = conv_spmat_to_rsc(S, spmat, ri)
         rsc.wnear   = complex(zeros(nker, 0));
         rsc.nquad   = 0;
         rsc.nnz     = 0;
+        rsc.format  = 'rsc';
         return
     end
 
@@ -70,12 +71,13 @@ function rsc = conv_spmat_to_rsc(S, spmat, ri)
             src_cols = ixyzs(p):(ixyzs(p+1)-1);
             wstart   = iquad(k);
             wend     = iquad(k+1) - 1;
+            seen_ker = false(nker, 1);
             for ei = 1:numel(ri.entries)
                 e  = ri.entries(ei);
+                if seen_ker(e.ker_id), continue; end
+                seen_ker(e.ker_id) = true;
                 wnear(e.ker_id, wstart:wend) = ...
                     spmat(m*(t-1)+e.row_id, n*(src_cols-1)+e.col_id) / e.coef;
-                % Only extract each ker_id once (first occurrence wins).
-                % Duplicate entries for the same ker_id are consistent by construction.
             end
         end
     else
@@ -103,4 +105,5 @@ function rsc = conv_spmat_to_rsc(S, spmat, ri)
     rsc.wnear   = wnear;
     rsc.nquad   = nquad;
     rsc.nnz     = nnz_pairs;
+    rsc.format  = 'rsc';
 end

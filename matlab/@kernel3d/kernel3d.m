@@ -8,14 +8,14 @@ classdef kernel3d
 %      NAME                              TYPE
 %      ----                              ----
 %      'laplace'   ('lap', 'l')          's', 'd', 'sp', 'dp', 'c', 'cp'
-%      'helmholtz' ('helm', 'h')         's', 'd', 'sp', 'dprime',
-%                                        'c', 'cprime',
-%                                        'trans_sys' (single zk, [2x2]),
-%                                        'trans_sys_diff' (two zks, [2x2]),
+%      'helmholtz' ('helm', 'h')         's', 'd', 'sp', 'dprime', 'c', 'cprime',
+%                                        's_diff', 'd_diff', 'sp_diff', 'dp_diff',
+%                                        'c_diff', 'cp_diff',
+%                                        'trans_sys' ([2x2], single zk),
+%                                        'trans_sys_diff' ([2x2], two zks),
 %                                        'trans_rep' ([1x2]),
 %                                        's2trans', 'd2trans', 'c2trans',
-%                                        's2trans_diff', 'd2trans_diff',
-%                                        'c2trans_diff'
+%                                        's2trans_diff', 'd2trans_diff', 'c2trans_diff'
 %      'maxwell'   ('em3d', 'em')        'nrccie-bc', 'nrccie-eval'
 %      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
 %      'zero'/'zeros'                    (no type needed)

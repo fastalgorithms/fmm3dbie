@@ -125,6 +125,7 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
     JJ = zeros(NZ, 1);
     VV = zeros(NZ, 1);
 
+    if ~isempty(wnear)
     off = 0;
     for ki = 1:nker
         ir = kr(ki);
@@ -148,6 +149,7 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
             VV(off+1:off+np) = wnear(ki_src, :).';
             off = off + np;
         end
+    end
     end
 
     spmat = sparse(II, JJ, VV, m*ntarg, n*npts);

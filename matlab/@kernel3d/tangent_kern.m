@@ -61,10 +61,18 @@ tgt_scalar_rows = setdiff((1:tgt_opdim_in)', jds(:));
                 isfield(varargin{end}, 'precomp_quadrature')
             opts  = varargin{end};
             Q_tan = opts.precomp_quadrature;
-            if isstruct(Q_tan), Q_tan = conv_rsc_to_spmat(Q_tan); end
+            if isstruct(Q_tan), Q_tan = conv_rsc_to_spmat(S,Q_tan.row_ptr,Q_tan.col_ind,Q_tan.wnear, kernin.rsc_to_interleave); end
             Ps     = tangent_block(S,    ids, src_scalar_rows, src_opdim_out, true);
             Pt_exp = tangent_block(targ, jds, tgt_scalar_rows, tgt_opdim_out, false);
-            opts.precomp_quadrature = conv_spmat_to_rsc(Pt_exp * Q_tan * Ps);
+            Q_cart = conv_spmat_to_rsc(S,Pt_exp * Q_tan * Ps,kernin.rsc_to_interleave);
+            
+            % TODO we could get rfac faster than this
+            rsc_near = getnear(S, targ);
+
+            Q_cart.targinfo     = targ;
+            Q_cart.format       = 'rsc';  Q_cart.wavenumber = kernin.zk;
+            Q_cart.kernel_order = kernin.kernel_order; Q_cart.rfac    = rsc_near.rfac;
+            opts.precomp_quadrature = Q_cart;
             varargin{end} = opts;
         end
 
@@ -77,7 +85,7 @@ tgt_scalar_rows = setdiff((1:tgt_opdim_in)', jds(:));
     function Q = getquad_(S, eps, varargin)
         Q_cart = kernin.getquad(S, eps, varargin{:});
         if ~issparse(Q_cart)
-            Q_cart = conv_rsc_to_spmat(S, Q_cart.row_ptr, Q_cart.col_ind, Q_cart.wnear);
+            Q_cart = conv_rsc_to_spmat(S, Q_cart.row_ptr, Q_cart.col_ind, Q_cart.wnear,kernin.rsc_to_interleave);
         end
         if ~isempty(varargin) && isstruct(varargin{1})
             targ = varargin{1};

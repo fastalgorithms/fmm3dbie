@@ -3,24 +3,29 @@
 % Solves  n x (E + E_inc) = 0  on the surface of a torus,
 % then evaluates the scattered field on a 2D slice.
 
-
-zk    = 1.5;
 zk = 7;
 alpha = 0.5;
 eps   = 1e-6;
 
 % S = geometries.torus(1, 0.4, [3,3,3], [0;0;0], 8, 1);
-S = geometries.ellipsoid([1,1,1.5],[3,3,3], [0;0;0], 8);
+% S = geometries.ellipsoid([1,1,1.5],[3,3,3], [0;0;0], 8);
 S = geometries.ellipsoid([1,1,1.5],[1,1,1], [0;0;0], 8);
 
 % % --- build system matrix (nrccie-bc kernel + 1/2 identity) ---
-% K   = kernel3d.em3d('nrccie-bc', zk, alpha);
-% % K   = kernel3d.em3d('nrccie-eval', zk, alpha);
-% A   = surfermat(S, K, eps);
-% A   = A + 0.5*eye(size(A));
+K   = kernel3d.em3d('nrccie-bc', zk, alpha);
+tic;
+Q = K.getquad(S,eps);
+toc;
+tic;
+Q = K.getquad(S,eps,S);
+toc;
+tic;
+A   = surfermat(S, K, eps);
+A   = A + 0.5*eye(size(A));
+toc;
 % 
 % % --- incident plane wave and nrccie RHS ---
-[einc, hinc] = em3d.planewave(zk, [pi/3; pi/4], [1; 0], S);
+% [einc, hinc] = em3d.planewave(zk, [pi/3; pi/4], [1; 0], S);
 % rhs = nrccie_rhs(S, einc, hinc, alpha);
 % 
 % % --- solve ---
@@ -28,46 +33,36 @@ S = geometries.ellipsoid([1,1,1.5],[1,1,1], [0;0;0], 8);
 % 
 % % --- recover Cartesian J and rho from orthonormal density ---
 % [Jvec, rho] = nrccie_to_cartesian(S, sol);
+% dens_eval = [Jvec; rho];   % (4, npts): [Jx; Jy; Jz; rho]
+
+[einc, hinc] = em3d.planewave(zk, [pi/3; pi/4], [1; 0], S);
+
 opts = [];
 opts.eps_gmres = 1e-10;
 tic;
 [dens_eval] = em3d.pec.solver(S, einc, hinc, eps, zk, alpha, opts);
 toc;
 
+%%
 % --- evaluate scattered field on a 2D slice ---
 nplot = 200;
 xx = linspace(-3, 3, nplot);
 [XX, YY] = meshgrid(xx, xx);
 targs.r = [XX(:).'; YY(:).'; zeros(1, nplot^2)];
-%%
+
 Keval = kernel3d.em3d('nrccie-eval', zk);
-% dens_eval = [Jvec; rho];   % (4, npts): [Jx; Jy; Jz; rho]
 opts.usematlab = 1;
 tic;
 Escat = surferkerneval(S, Keval, dens_eval(:), targs, eps,opts);
 toc;
-
-tic;
-[E, H] = em3d.pec.eval(S, dens_eval, targs, eps, zk, alpha);
-toc;
-%%
 Escat = reshape(Escat, 6, []);
-
-[norm(E - Escat(1:3,:)), norm(H - Escat(4:6,:))]
 
 [Einc, Hinc] = em3d.planewave(zk, [pi/3; pi/4], [1; 0], targs);
 Etot = Einc + Escat(1:3, :);
 Htot = Hinc + Escat(4:6, :);
 
-% Etot = Einc + E;
-% Htot = Hinc + H;
-Etot = -E + Escat(1:3, :);
-Htot = -H + Escat(4:6, :);
-
 figure(1); clf
-% h = pcolor(XX, YY, reshape(real(Etot(1,:)), nplot, nplot));
-% h = pcolor(XX, YY, reshape(vecnorm([Etot;Htot]), nplot, nplot));
-h = pcolor(XX, YY, reshape(log10(vecnorm([Etot;Htot])), nplot, nplot));
+h = pcolor(XX, YY, reshape(vecnorm([Etot;Htot]), nplot, nplot));
 h.EdgeColor = 'none';
 colorbar; title('Re(E_x) total');
 hold on; plot(S, zeros(S.npts,1)); hold off
