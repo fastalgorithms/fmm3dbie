@@ -2,9 +2,10 @@ function obj = stok3d(type, coefs)
 %KERNEL3D.STOK3D   Construct a Stokes kernel in 3D.
 %
 %   KERNEL3D.STOK3D(type) or KERNEL3D.STOK3D(type, coefs), where type is:
-%      's'           - single layer (Stokeslet),    G_{ij}(x,y) = delta_ij/(8pi*r) + r_i r_j/(8pi*r^3)
-%      'd','traction' - double layer (stresslet),    T_{ijk}(x,y) n_k applied to normal
-%      'c'           - combined layer,              coefs(1)*S + coefs(2)*D  (default coefs=[1 1])
+%      's'            - single layer (Stokeslet),    G_{ij}(x,y) = delta_ij/(8pi*r) + r_i r_j/(8pi*r^3)
+%      'd','traction'  - double layer (stresslet),    T_{ijk}(x,y) n_k(y) applied to source normal
+%      'sp','sprime'   - traction of S at target,     T_{ijk}(x,y) n_k(x) (target normal)
+%      'c'            - combined layer,              coefs(1)*S + coefs(2)*D  (default coefs=[1 1])
 %
 % Kernel evaluation:
 %   obj.eval(srcinfo, targinfo)
@@ -19,9 +20,12 @@ function obj = stok3d(type, coefs)
 % Quadrature corrections:
 %   obj.getquad(S, eps, varargin)
 %
-% Kernel orders (obj.kernel_order):  s -> -1,  d -> 0,  c -> 0
+% Kernel orders (obj.kernel_order):  s -> -1,  d -> 0,  sp -> 0,  c -> 0
 %
-% See also STOK3D.KERN, STOK3D.VELOCITY.EVAL, STOK3D.VELOCITY.GET_QUADRATURE_CORRECTION
+% Note: 'sp'/'sprime' requires targinfo.n (target normals).
+%
+% See also STOK3D.KERN, STOK3D.VELOCITY.EVAL, STOK3D.VELOCITY.GET_QUADRATURE_CORRECTION,
+%          STOK3D.TRACTION.EVAL, STOK3D.TRACTION.GET_QUADRATURE_CORRECTION
 
 if nargin < 1
     error('KERNEL3D.STOK3D: missing Stokes kernel type.');
@@ -65,6 +69,21 @@ switch lower(type)
                           stok_getquad(S, eps, dpars_d, varargin);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
+
+    case {'sp', 'sprime'}
+        obj.type         = 'sp';
+        obj.kernel_order = 0;
+
+        obj.eval = @(s,t) stok_eval_reshape(stok3d.kern(s, t, 'sprime'));
+
+        obj.fmm = @(eps,src,targ,sigma) stok3d.fmm(eps, src, targ, 'sp', sigma);
+
+        obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
+                            stok_sprime_layer_eval(S, sigma, targ, eps, varargin);
+        obj.getquad  = @(S,eps,varargin) ...
+                          stok_sprime_getquad(S, eps, varargin);
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
+        obj.targ_fields = {'n'};
 
     case {'c', 'combined'}
         if nargin < 2
@@ -147,4 +166,35 @@ if isempty(targinfo)
     targinfo = S;
 end
 Q = stok3d.velocity.get_quadrature_correction(S, eps, dpars, targinfo, opts);
+end
+
+function p = stok_sprime_layer_eval(S, sigma, targ, eps, args)
+%STOK_SPRIME_LAYER_EVAL  Wrap stok3d.traction.eval.
+if nargin < 5 || isempty(args), args = {}; end
+if ~isempty(args) && isstruct(args{end})
+    opts = args{end};
+else
+    opts = struct();
+end
+p_mat = stok3d.traction.eval(S, sigma, targ, eps, opts);
+p = p_mat(:);
+end
+
+function Q = stok_sprime_getquad(S, eps, args)
+%STOK_SPRIME_GETQUAD  Wrap stok3d.traction.get_quadrature_correction.
+if nargin < 3 || isempty(args), args = {}; end
+if length(args) >= 2
+    targinfo = args{1};
+    opts     = args{2};
+elseif length(args) == 1
+    targinfo = args{1};
+    opts     = struct();
+else
+    targinfo = S;
+    opts     = struct();
+end
+if isempty(targinfo)
+    targinfo = S;
+end
+Q = stok3d.traction.get_quadrature_correction(S, eps, targinfo, opts);
 end

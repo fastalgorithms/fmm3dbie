@@ -115,6 +115,7 @@ kernels = { ...
 % --- Stokes ---
   kernel3d('stok','s'),           'stok s',      sigma_stok, sigma_stok_pt,   [];                           ...
   kernel3d('stok','d'),           'stok d',      sigma_stok, sigma_stok_pt,   [];                           ...
+  kernel3d('stok','sp'),          'stok sp',     sigma_stok, sigma_stok_pt,   [];                           ...
   kernel3d('stok','c',coefs_stok),'stok c',      sigma_stok, sigma_stok_pt,   [];                           ...
 % --- Maxwell ---
   kernel3d('em','nrccie-bc',zk_em,alpha_em),   'em nrccie-bc',   sigma_em3, sigma_em3_pt, [];  ...
@@ -251,6 +252,29 @@ Kc2d  = kernel3d('h', 'c2trans_diff',  zks, c_coefs4);
 Kctop = kernel3d('h', 'c_diff',  zks, c_coefs4);
 Kcbot = kernel3d('h', 'cp_diff', zks, c_coefs4);
 failures = check_x2trans_diff(failures, Kc2d, Kctop, Kcbot, src, targ, 'helm c2trans_diff');
+
+% =========================================================================
+% Stokes S' kernel: eval == negative transpose of DLP (src<->targ swapped)
+% =========================================================================
+%
+% Physical kernels: t(S)_{ij}(x,y) = T_{ijk}(x,y) n_k(x) = D_{ji}(y,x)
+%
+% Both kern.m DLP and S' use the double-negative convention
+% (they return the negative of their respective physical kernels), so:
+%   kern_SP(src,targ) = -t(S)(targ,src) = -D^T(src,targ) = kern_D^T(targ,src)
+%
+% In full-matrix notation (block 3x3 layout, (3*nt) x (3*ns)):
+%   SP_mat  ==  -D_mat(targ,src)^T
+%
+fprintf('\n=== Stokes S'' vs negative-transpose of DLP ===\n');
+K_sp = kernel3d('stok','sp');
+K_d  = kernel3d('stok','d');
+% Swap roles: D evaluated with sources=targ, targets=src
+% (targ needs .n for S'; src needs .n for D — both already populated)
+SP_mat   = K_sp.eval(src, targ);                 % (3*nt, 3*ns)
+D_swap   = K_d.eval(targ, src);                  % (3*ns, 3*nt)  [src<->targ]
+err_spdlp = norm(SP_mat + D_swap.', 'fro') / norm(SP_mat, 'fro');
+failures = report(failures, 'stok sp', 'eval == -D(targ,src)^T', err_spdlp, 1e-12);
 
 % =========================================================================
 % Combined-layer checks: C.eval == coefs(1)*S.eval + coefs(2)*D.eval

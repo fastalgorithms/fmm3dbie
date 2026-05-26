@@ -57,8 +57,21 @@ if strcmpi(type,'d')
 end
 
 if strcmpi(type,'sprime')
-  disp("unsupported kernel");
-  submat = 0;
+  % S'_{ij}(x,y) = T_{ijk}(x,y) n_k(x)
+  %              = -3(r . n_x) r_i r_j / r^5 / (4pi),  r = x - y
+  %
+  % Identical to the DLP formula but contracting with the TARGET normal
+  % n_x instead of the source normal n_y.  Uses the same double-negative
+  % sign convention as the 'd' case above so that the resulting matrix
+  % is sign-consistent with st3d_strac and stok_sprime_eval_addsub.
+  targnorm = targinfo.n;
+  [~,grad] = stok3d.green(src, targ);
+  % grad(k, i, it, j, is): stok3d.green(src,targ) with r = targ - src
+  nx = reshape(repmat(targnorm(1,:).', 1, ns), [1, 1, nt, 1, ns]);
+  ny = reshape(repmat(targnorm(2,:).', 1, ns), [1, 1, nt, 1, ns]);
+  nz = reshape(repmat(targnorm(3,:).', 1, ns), [1, 1, nt, 1, ns]);
+  submat = -(grad(1,:,:,:,:).*nx + grad(2,:,:,:,:).*ny + grad(3,:,:,:,:).*nz);
+  submat = -reshape(submat, [3, nt, 3, ns]);
 end
 
 if strcmpi(type,'sdu')

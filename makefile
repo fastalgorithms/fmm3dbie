@@ -141,7 +141,7 @@ EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 
 # Stokes wrappers
 STOK = src/stok_wrappers
-STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_mob.o
+STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_mob.o $(STOK)/stok_s_trac_eval.o
 
 # Kernels
 KER = src/kernels
