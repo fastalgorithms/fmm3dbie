@@ -163,7 +163,7 @@ for j = 1:nsurfers
     if adaptive_correction
         Qj = ktmp.getquad(surferj,eps,targinfo);
         if isfield(Qj, 'row_ptr')
-            sysmat_quad = conv_rsc_to_spmat(surferj,Qj.row_ptr,Qj.col_ind,Qj.wnear);
+            sysmat_quad = conv_rsc_to_spmat(surferj,Qj.row_ptr,Qj.col_ind,Qj.wnear, ktmp.rsc_to_interleave);
         else
             sysmat_quad = Qj;
         end

@@ -174,7 +174,6 @@ end
 
 function p = lap_combprime_eval(S, sigma, targ, eps, rep_pars, args)
 %LAP_COMBPRIME_EVAL  Call lap3d.dirichlet.eval with iprime=1.
-%   args is the varargin cell from the lambda: {} or {opts}
 if nargin < 6 || isempty(args), args = {}; end
 % Ensure opts struct is present and has iprime=1
 if isempty(args) || ~isstruct(args{end})
@@ -186,9 +185,6 @@ end
 
 function Q = lap_combprime_getquad(S, eps, rep_pars, args)
 %LAP_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
-%   args is the varargin cell from the lambda.
-%   Accepts: {} (self-quadrature on S), {targinfo}, or {targinfo, opts}
-%   where targinfo can be a struct or a surfer object.
 if nargin < 4 || isempty(args), args = {}; end
 % Separate targinfo and opts from args
 if length(args) >= 2

@@ -74,6 +74,36 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
         return
     end
 
+    if strcmp(ri.type, 'basis')
+        % ----- Basis kernel -----
+        % Each wnear row is a scalar basis kernel that contributes to one or
+        % more block entries with a (possibly complex) scalar coefficient.
+        % ri.m, ri.n   : block opdims
+        % ri.entries   : struct array, each with fields:
+        %   .ker_id  (1-based index into wnear rows)
+        %   .row_id  (1-based block row)
+        %   .col_id  (1-based block col)
+        %   .coef    (scalar coefficient, may be complex)
+        m = ri.m;
+        n = ri.n;
+        ne = numel(ri.entries);
+        np = numel(icol_ind);
+        NZ = np * ne;
+        II = zeros(NZ, 1);
+        JJ = zeros(NZ, 1);
+        VV = complex(zeros(NZ, 1));
+        off = 0;
+        for ei = 1:ne
+            e  = ri.entries(ei);
+            II(off+1:off+np) = m*(irow_ind_scalar-1) + e.row_id;
+            JJ(off+1:off+np) = n*(icol_ind-1) + e.col_id;
+            VV(off+1:off+np) = e.coef * wnear(e.ker_id, :).';
+            off = off + np;
+        end
+        spmat = sparse(II, JJ, VV, m*ntarg, n*npts);
+        return
+    end
+
     % ----- Vector / tensor kernel -----
     % Infer opdims from the block indices stored in ri.
     m = max(ri.row_ids);

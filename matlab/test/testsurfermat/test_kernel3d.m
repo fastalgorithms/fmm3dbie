@@ -22,6 +22,7 @@ nt  = 300;
 % Sources inside unit ball, targets in annulus [2,3] — no singularities.
 src.r = randn(3,ns);  src.r = src.r ./ vecnorm(src.r) .* rand(1,ns);
 src.n = randn(3,ns);  src.n = src.n ./ vecnorm(src.n);
+src.du = randn(3,ns); src.dv = randn(3,ns);  % tangent vectors for EM kernels
 
 targ.r = randn(3,nt);  targ.r = targ.r ./ vecnorm(targ.r) .* (2 + rand(1,nt));
 targ.n = randn(3,nt);  targ.n = targ.n ./ vecnorm(targ.n);
@@ -38,7 +39,7 @@ S = slicesurfer(S, 1);
 sigma_sr   = randn(S.npts, 1);                        % real surface density
 sigma_s    = randn(S.npts, 1) + 1i*randn(S.npts, 1); % complex surface density
 sigma_stok = randn(3, S.npts);                        % Stokes: (3, npts)
-sigma_em3  = randn(3, S.npts) + 1i*randn(3, S.npts); % em nrccie-bc: (3, npts) [j_u, j_v, rho]
+sigma_em3  = randn(3, S.npts) + 1i*randn(3, S.npts); % em nrccie-bc: (3, npts) [j_ru, j_rv, rho] (orthonormal frame)
 sigma_em4  = randn(4, S.npts) + 1i*randn(4, S.npts); % em nrccie-eval: (4, npts) [Jx, Jy, Jz, rho]
 
 % Off-surface targets at radius 5.
@@ -79,6 +80,8 @@ zk_em     = 2.5 + 0.1i;
 alpha_em  = 0.5;
 
 sigma_stok_pt = randn(3, ns);   % Stokes point density for FMM check
+sigma_em3_pt  = randn(3, ns) + 1i*randn(3,ns); % em nrccie-bc: (3, ns) [j_ru, j_rv, rho] (orthonormal frame)
+sigma_em4_pt  = randn(4, ns) + 1i*randn(4, ns); % em nrccie-eval: (4, npts) [Jx, Jy, Jz, rho]
 
 kernels = { ...
 % --- Laplace ---
@@ -96,16 +99,16 @@ kernels = { ...
   kernel3d('h','c',zk,coefs_h),   'helm c',      sigma_s,    sigma,           [];                           ...
   kernel3d('h','cp',zk,coefs_h),  'helm cp',     sigma_s,    sigma,           kernel3d('h','c',zk,coefs_h);  ...
 % --- Transmission x2trans (check_x2trans; surface sigma unused but must be present) ---
-  kernel3d('h','s2trans',zk),     'helm s2trans',sigma_s,    [],              kernel3d('h','s',zk);          ...
-  kernel3d('h','d2trans',zk),     'helm d2trans',sigma_s,    [],              kernel3d('h','d',zk);          ...
-  kernel3d('h','c2trans',zk,coefs_ct),'helm c2trans',sigma_s,[],             kernel3d('h','c',zk,coefs_ct);  ...
+  kernel3d('h','s2trans',zk),     'helm s2trans',sigma_s,    sigma_s,              kernel3d('h','s',zk);          ...
+  kernel3d('h','d2trans',zk),     'helm d2trans',sigma_s,    sigma_s,              kernel3d('h','d',zk);          ...
+  kernel3d('h','c2trans',zk,coefs_ct),'helm c2trans',sigma_s,sigma_s,             kernel3d('h','c',zk,coefs_ct);  ...
 % --- Stokes ---
   kernel3d('stok','s'),           'stok s',      sigma_stok, sigma_stok_pt,   [];                           ...
   kernel3d('stok','d'),           'stok d',      sigma_stok, sigma_stok_pt,   [];                           ...
   kernel3d('stok','c',coefs_stok),'stok c',      sigma_stok, sigma_stok_pt,   [];                           ...
 % --- Maxwell ---
-  kernel3d('em','nrccie-bc',zk_em,alpha_em),   'em nrccie-bc',   sigma_em3, [], [];  ...
-  kernel3d('em','nrccie-eval',zk_em),           'em nrccie-eval', sigma_em4, [], [];  ...
+  kernel3d('em','nrccie-bc',zk_em,alpha_em),   'em nrccie-bc',   sigma_em3, sigma_em3_pt, [];  ...
+  kernel3d('em','nrccie-eval',zk_em),           'em nrccie-eval', sigma_em4, sigma_em4_pt, [];  ...
 };
 
 % =========================================================================
@@ -177,14 +180,15 @@ fprintf('  %-24s  eval vs D+(ik)S  err=%.2e  [%s]\n', 'helm trans_rep', err_tr, 
 fprintf('\n=== Maxwell eval checks ===\n');
 
 % --- shared setup ---
-% src and targ already have .r, .n, .du, .dv (linter added du/dv to targ)
-src.du = randn(3,ns);   src.dv = randn(3,ns);   % source tangent vectors for EM
+% src already has .r, .n, .du, .dv set at the top of the script
 
 % Density for nrccie-bc: [j_u, j_v, rho]  each ns x 1, complex
 ju  = randn(ns,1) + 1i*randn(ns,1);
 jv  = randn(ns,1) + 1i*randn(ns,1);
 rho = randn(ns,1) + 1i*randn(ns,1);
-sigma_bc = [ju; jv; rho];   % (3*ns, 1), stacked component-fast
+% Interleaved layout to match reshape((3,ns,3,ns),...) column-major convention
+% used in em3d.kern (same as Stokes): row/col index = icomp + m*(ipoint-1).
+sigma_bc = reshape([ju, jv, rho].', 3*ns, 1);   % (3*ns, 1), interleaved: [ju(1);jv(1);rho(1);ju(2);...]
 
 % ---- nrccie-bc eval ----
 K_bc = kernel3d('em', 'nrccie-bc', zk_em, alpha_em);
@@ -233,9 +237,12 @@ K_vr_r = dxvt.*v3x_r + dyvt.*v3y_r + dzvt.*v3z_r;
 Sp_ref = -(nxs.*gx + nys.*gy + nzs.*gz);
 K_rr_r = Sp_ref - alpha_em*1i*zk_em*Gfun;
 
-pot_bc_ref = [K_uu_r*ju + K_uv_r*jv + K_ur_r*rho; ...
-              K_vu_r*ju + K_vv_r*jv + K_vr_r*rho; ...
-              K_ru_r*ju + K_rv_r*jv + K_rr_r*rho];
+% Compute each output component per target (nt x 1 vectors)
+out_u   = K_uu_r*ju + K_uv_r*jv + K_ur_r*rho;
+out_v   = K_vu_r*ju + K_vv_r*jv + K_vr_r*rho;
+out_rho = K_ru_r*ju + K_rv_r*jv + K_rr_r*rho;
+% Interleave: [u(1); v(1); rho(1); u(2); v(2); rho(2); ...]
+pot_bc_ref = reshape([out_u, out_v, out_rho].', 3*nt, 1);
 
 err_bc = norm(pot_bc - pot_bc_ref) / norm(pot_bc_ref);
 status = pass_fail(err_bc, 1e-10);
@@ -250,7 +257,7 @@ Jx  = randn(ns,1) + 1i*randn(ns,1);
 Jy  = randn(ns,1) + 1i*randn(ns,1);
 Jz  = randn(ns,1) + 1i*randn(ns,1);
 rhoc = randn(ns,1) + 1i*randn(ns,1);
-sigma_ev = [Jx; Jy; Jz; rhoc];   % (4*ns, 1)
+sigma_ev = reshape([Jx, Jy, Jz, rhoc].', 4*ns, 1);   % (4*ns,1), interleaved: [Jx(1);Jy(1);Jz(1);rho(1);...]
 
 K_ev = kernel3d('em', 'nrccie-eval', zk_em);
 
@@ -271,9 +278,9 @@ Hx_ref = gy*Jz - gz*Jy;
 Hy_ref = gz*Jx - gx*Jz;
 Hz_ref = gx*Jy - gy*Jx;
 
-% Row layout is component-fast: itarg + nt*(icomp-1).
-% [Ex_ref; Ey_ref; ...] stacks all nt values per component — correct.
-pot_ev_ref = [Ex_ref; Ey_ref; Ez_ref; Hx_ref; Hy_ref; Hz_ref];
+% Row layout is interleaved: icomp + 6*(itarg-1), matching reshape((6,nt,4,ns),...).
+% Interleave to: [Ex(1);Ey(1);Ez(1);Hx(1);Hy(1);Hz(1); Ex(2);...]
+pot_ev_ref = reshape([Ex_ref, Ey_ref, Ez_ref, Hx_ref, Hy_ref, Hz_ref].', 6*nt, 1);
 
 err_ev = norm(pot_ev - pot_ev_ref) / norm(pot_ev_ref);
 status = pass_fail(err_ev, 1e-10);

@@ -46,17 +46,16 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
     else
         S_over = S; val2over = eye(size(S.r(:,:),2));
     end
+    
     ixyzs = S_over.ixyzs;
     opdims = kern.opdims;
+    val2over = kron(val2over,eye(opdims(2)));
 
-    % Convert rsc -> csc so we can loop over patches (columns) rather
-    % than targets (rows), evaluating all oversampled source points on
-    % each patch against all interacting targets in one kern.eval call.
+    % Convert rsc -> csc so we can loop over patches (columns)
     rsc = [];
     rsc.row_ptr = row_ptr;
     rsc.col_ind = col_ind;
-    % Build iquad: each rsc entry maps to its own contiguous block of
-    % oversampled source points; iquad marks the start of each block.
+
     npatches = S.npatches;
     nnz_rsc  = length(col_ind);
     npols = ixyzs(2:end) - ixyzs(1:end-1);  % pts per patch (oversampled)

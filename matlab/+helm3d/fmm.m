@@ -14,7 +14,7 @@ function varargout = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 %   eps      - precision requested
 %   zk       - Helmholtz wavenumber (complex)
 %   srcinfo  - ptinfo struct: .r (3,:), .n (3,:)
-%   targinfo - ptinfo struct: .r (3,:), .n (3,:) (normals needed for sprime)
+%   targinfo - ptinfo struct: .r (3,:), .n (3,:)
 %   type     - 's'           single layer S
 %              'd'           double layer D
 %              'sp'/'sprime' normal deriv of S at target

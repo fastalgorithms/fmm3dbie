@@ -41,7 +41,7 @@ switch lower(type)
 
         obj.eval = @(s,t) stok_eval_reshape(stok3d.kern(s, t, 's'));
 
-        obj.fmm = @(eps,src,targ,sigma) stok_fmm_s(eps, src, targ, sigma);
+        obj.fmm = @(eps,src,targ,sigma) stok3d.fmm(eps, src, targ, 's', sigma);
 
         dpars_s = [1.0; 0.0];
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
@@ -56,7 +56,7 @@ switch lower(type)
 
         obj.eval = @(s,t) stok_eval_reshape(stok3d.kern(s, t, 'd'));
 
-        obj.fmm = @(eps,src,targ,sigma) stok_fmm_d(eps, src, targ, sigma);
+        obj.fmm = @(eps,src,targ,sigma)  stok3d.fmm(eps, src, targ, 'd', sigma);
 
         dpars_d = [0.0; 1.0];
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
@@ -79,7 +79,7 @@ switch lower(type)
 
         obj.eval = @(s,t) stok_eval_reshape(stok3d.kern(s, t, 'c', coefs(1), coefs(2)));
 
-        obj.fmm = @(eps,src,targ,sigma) stok_fmm_c(eps, src, targ, sigma, coefs);
+        obj.fmm = @(eps,src,targ,sigma)  stok3d.fmm(eps, src, targ, 'c', sigma, coefs);
 
         dpars_c = coefs;
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
@@ -104,25 +104,21 @@ end
 function mat = stok_eval_reshape(submat)
 %STOK_EVAL_RESHAPE   Reshape (3,nt,3,ns) to (3*nt, 3*ns).
 %
-%   submat has layout (row_comp, targ, col_comp, src).
-%   The target matrix M satisfies
-%       M(row_comp + 3*(targ-1), col_comp + 3*(src-1)) = submat(row_comp,targ,col_comp,src)
-%   which is exactly what column-major reshape gives — no permutation needed.
 sz = size(submat);
 if numel(sz) == 4
     nt = sz(2); ns = sz(4);
     mat = reshape(submat, [3*nt, 3*ns]);
+elseif numel(sz) == 3
+    nt = sz(2); ns = 1;
+    mat = reshape(submat, [3*nt, 3*ns]);    
 else
     % Already scalar or flat
     mat = submat;
 end
 end
 
-% -----------------------------------------------------------------------
 function p = stok_layer_eval(S, sigma, targ, eps, dpars, args)
 %STOK_LAYER_EVAL  Wrap stok3d.velocity.eval.
-%   sigma must be (3, npts) on entry; p is returned as (3*ntarg, 1).
-%   args is the varargin cell from the lambda.
 if nargin < 6 || isempty(args), args = {}; end
 if ~isempty(args) && isstruct(args{end})
     opts = args{end};
@@ -134,11 +130,8 @@ p_mat = stok3d.velocity.eval(S, sigma, targ, eps, dpars, opts);
 p = p_mat(:);
 end
 
-% -----------------------------------------------------------------------
 function Q = stok_getquad(S, eps, dpars, args)
 %STOK_GETQUAD  Wrap stok3d.velocity.get_quadrature_correction.
-%   args is the varargin cell from the lambda.
-%   Accepts: {} (self-quadrature on S), {targinfo}, or {targinfo, opts}.
 if nargin < 4 || isempty(args), args = {}; end
 if length(args) >= 2
     targinfo = args{1};
@@ -154,47 +147,4 @@ if isempty(targinfo)
     targinfo = S;
 end
 Q = stok3d.velocity.get_quadrature_correction(S, eps, dpars, targinfo, opts);
-end
-
-% -----------------------------------------------------------------------
-function U = stok_fmm_s(eps, src, targ, sigma)
-%STOK_FMM_S  Raw stfmm3d call for single-layer (Stokeslet) kernel.
-%   sigma: (3,ns) density.  Returns (3,nt) velocity at targ.r.
-srcinfo = struct();
-srcinfo.sources = src.r;
-srcinfo.stoklet = sigma;
-U_out = stfmm3d(eps, srcinfo, 0, targ.r, 1);
-U = reshape(U_out.pottarg, 3, []);
-end
-
-% -----------------------------------------------------------------------
-function U = stok_fmm_d(eps, src, targ, sigma)
-%STOK_FMM_D  Raw stfmm3d call for double-layer (stresslet/traction) kernel.
-%   sigma: (3,ns) density; src.n: (3,ns) source normals.
-%   Returns (3,nt) velocity at targ.r.
-srcinfo = struct();
-srcinfo.sources = src.r;
-srcinfo.strslet = sigma;
-srcinfo.strsvec = src.n;
-U_out = stfmm3d(eps, srcinfo, 0, targ.r, 1);
-U = reshape(U_out.pottarg, 3, []);
-end
-
-% -----------------------------------------------------------------------
-function U = stok_fmm_c(eps, src, targ, sigma, coefs)
-%STOK_FMM_C  Raw stfmm3d call for combined Stokes layer.
-%   coefs(1)*S + coefs(2)*D.
-%   sigma: (3,ns) density; src.n: (3,ns) source normals (used by D part).
-%   Returns (3,nt) velocity at targ.r.
-srcinfo = struct();
-srcinfo.sources = src.r;
-if coefs(1) ~= 0
-    srcinfo.stoklet = coefs(1) * sigma;
-end
-if coefs(2) ~= 0
-    srcinfo.strslet = coefs(2) * sigma;
-    srcinfo.strsvec = src.n;
-end
-U_out = stfmm3d(eps, srcinfo, 0, targ.r, 1);
-U = reshape(U_out.pottarg, 3, []);
 end

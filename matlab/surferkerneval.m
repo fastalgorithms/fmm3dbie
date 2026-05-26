@@ -60,6 +60,8 @@ else
     targinfo = targobj;
 end
 
+
+
 nsurfers = length(surfers);
 
 opdims_mat = zeros(2, nsurfers);
@@ -75,6 +77,18 @@ for j = 1:nsurfers
     end
 end
 
+
+if size(dens,2) > 1
+    if size(dens,2) > 10
+        warning('Use surferkernevalmat for layer potentials with many densities')
+    end
+    pot = zeros(opdims_mat(1,1)*size(targinfo.r(:,:),2),size(dens,2));
+    opts.corrections = cors;
+    for i = 1:size(dens,2)
+        pot(:,i) = surferkerneval(surferobj, kern, dens(:,i), targinfo, eps, opts);
+    end
+    return
+end
 novers_tmp = cell(nsurfers, 1);
 for j=1:nsurfers
     lsurfer(j) = surfers{j}.npts;

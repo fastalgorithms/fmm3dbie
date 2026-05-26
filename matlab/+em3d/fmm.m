@@ -16,31 +16,21 @@ function pot = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 % Input:
 %   eps      - precision requested
 %   zk       - Maxwell wavenumber (complex)
-%   srcinfo  - ptinfo struct with fields:
-%                .r  (3, ns)  source positions
-%                .n  (3, ns)  unit outward normals
-%                .du (3, ns)  first tangent vector (dxyz/du)
-%                .dv (3, ns)  second tangent vector (dxyz/dv)
-%   targinfo - ptinfo struct with fields:
-%                .r  (3, nt)  target positions
-%                .n  (3, nt)  unit outward normals   [needed for nrccie-bc]
-%                .du (3, nt)  first tangent vector   [needed for nrccie-bc]
-%                .dv (3, nt)  second tangent vector  [needed for nrccie-bc]
+%   srcinfo  - source ptinfo struct 
+%   targinfo - targ ptinfo struct
 %   type     - kernel type string:
 %                'nrccie-bc'    Non-resonant CFIE boundary-condition operator.
-%                               sigma (3*ns x 1): [j_u(1:ns); j_v(1:ns); rho(1:ns)]
-%                               where j_u, j_v are the tangential components of J
-%                               in the local orthonormal frame (ru, rv), and rho
-%                               is the surface charge.
-%                               pot (3*nt x 1): [M_u(1:nt); M_v(1:nt); E_n(1:nt)]
-%                               i.e. the tangential components of H and the normal
-%                               component of E at the target points.
+%                               sigma (3*ns x 1): interleaved [j_ru;j_rv;rho] per point
+%                                 j_ru = coeff of ru_s = du_s/|du_s| (orthonormal frame)
+%                                 j_rv = coeff of rv_s = n_s x ru_s
+%                               pot (3*nt x 1): interleaved [pot_ru;pot_rv;pot_rho] per point
+%                                 pot_ru/rv projected onto orthonormal target frame
 %
 %                'nrccie-eval'  NRCCIE field evaluation.
 %                               sigma (4*ns x 1): [J_x; J_y; J_z; rho] Cartesian
 %                               pot   (6*nt x 1): [E_x; E_y; E_z; H_x; H_y; H_z]
 %
-%   sigma    - density, flat column vector (already scaled by quadrature weights)
+%   sigma    - density
 %   varargin{1} - alpha: CFIE regularisation parameter (only for 'nrccie-bc')
 %
 % Output:
@@ -67,24 +57,6 @@ end
 nt = size(targ, 2);
 
 % -------------------------------------------------------------------------
-% Compute local orthonormal frames at source points (ru, rv)
-% ru  = du / |du|
-% rv  = (n x du) / |n x du|
-% -------------------------------------------------------------------------
-du = srcinfo.du;
-n_src = srcinfo.n;
-
-ru = zeros(3, ns);
-rv = zeros(3, ns);
-for i = 1:ns
-    u = du(:,i);
-    u = u / norm(u);
-    ru(:,i) = u;
-    tmp = cross(n_src(:,i), u);
-    rv(:,i) = tmp / norm(tmp);
-end
-
-% -------------------------------------------------------------------------
 % Dispatch on kernel type
 % -------------------------------------------------------------------------
 switch lower(type)
@@ -93,113 +65,108 @@ switch lower(type)
     case 'nrccie-bc'
     % ======================================================================
     %
-    %  Representation:
-    %    E = ik S_k[J]  -  grad S_k[rho]
-    %    H = curl S_k[J]
+    %  Orthonormal-frame convention matching em3d.kern 'nrccie-bc' and Fortran.
     %
-    %  sigma = [j_u(1:ns); j_v(1:ns); rho(1:ns)]  (already wt-scaled)
+    %  sigma (3*ns x 1): interleaved [j_ru(1);j_rv(1);rho(1); j_ru(2);...] (wt-scaled)
+    %    j_ru = coefficient of ru_s = du_s/|du_s|
+    %    j_rv = coefficient of rv_s = n_s x ru_s
+    %  pot   (3*nt x 1): interleaved [pot_ru(1);pot_rv(1);pot_rho(1); pot_ru(2);...]
+    %    pot_ru = zvec3 . ru_t,  pot_rv = zvec3 . rv_t,  ru_t = du_t/|du_t|
     %
-    %  We reconstruct the Cartesian current J = j_u * ru + j_v * rv
-    %  and call emfmm3d with:
-    %    h_current = J          -> contributes curl S_k[J]   to E (not used here directly)
-    %    e_current = ik * J     -> contributes S_k[ik*J]     to E
-    %    e_charge  = -rho       -> contributes grad S_k[-rho] = -grad S_k[rho] to E
-    %
-    %  We request both E (= ik S_k[J] - grad S_k[rho]) and curlE (= H).
-    %  Then project to local components [M_u; M_v; E_n].
-    %
-    %  varargin{1} = alpha (scalar, required but not used in FMM itself —
-    %  the projection below is independent of alpha; alpha only appears in
-    %  the near-quadrature and the integral-equation assembler).
+    %  zvec3 = alpha*nxnxE - n_t x (curl S_k[J])
+    %  pot_rho = (grad_x S_k[rho]).n_t - ik*(S_k[J].n_t)
+    %            + alpha*(div_x S_k[J] - ik*S_k[rho])
 
-    sigma = sigma(:);
-    j_u = sigma(1:ns);
-    j_v = sigma(ns+1:2*ns);
-    rho = sigma(2*ns+1:3*ns);
+    alpha = varargin{1};
 
-    % Cartesian current (3 x ns)
-    J = bsxfun(@times, ru, j_u.') + bsxfun(@times, rv, j_v.');
+    sigma3 = reshape(sigma, 3, ns);   % rows: j_ru, j_rv, rho
+    j_ru = sigma3(1,:);   % (1 x ns)
+    j_rv = sigma3(2,:);
+    rho  = sigma3(3,:);
 
-    % Pack srcinfo for emfmm3d
-    src_em = [];
-    src_em.sources   = src;
-    src_em.h_current = J;                      % (3, ns), nd=1
-    src_em.e_current = (1i*zk) * J;            % (3, ns)
-    src_em.e_charge  = -rho(:).';              % (1, ns)
+    % Build orthonormal source frame and Cartesian current J = j_ru*ru_s + j_rv*rv_s
+    du_s = srcinfo.du;   % (3, ns)
+    n_s  = srcinfo.n;
+    ru_s = du_s ./ vecnorm(du_s);              % (3, ns)
+    rv_s = cross(n_s ./ vecnorm(n_s), ru_s, 1); % (3, ns)
+    J = bsxfun(@times, ru_s, j_ru) + bsxfun(@times, rv_s, j_rv);   % (3, ns)
 
-    % Evaluate E and curlE (= H) at targets
-    ifE     = 1;
-    ifcurlE = 1;
-    ifdivE  = 0;
-    U = emfmm3d(eps, zk, src_em, targ, ifE, ifcurlE, ifdivE);
+    % FMM A: H = curl S_k[J]  (used for n_t x H term)
+    src_A = struct('sources', src, 'h_current', J);
+    U_A   = emfmm3d(eps, zk, src_A, targ, 1, 0, 0);
+    H     = U_A.E;   % (3, nt)
 
-    % E  (3 x nt), H = curlE  (3 x nt)
-    E = U.E;      % 3 x nt
-    H = U.curlE;  % 3 x nt
+    % FMM B: S_k[J] (vector) and div S_k[J]
+    src_B  = struct('sources', src, 'e_current', J);
+    U_B    = emfmm3d(eps, zk, src_B, targ, 1, 0, 1);
+    SkJ    = U_B.E;      % (3, nt)
+    divSkJ = U_B.divE;   % (1, nt)
 
-    % Project onto local target frame
-    du_t  = targinfo.du;
-    dv_t  = targinfo.dv;
-    n_t   = targinfo.n;
+    % FMM C: S_k[rho] and grad_x S_k[rho]
+    src_C     = struct('sources', src, 'charges', rho);
+    U_C       = hfmm3d(eps, zk, src_C, 0, targ, 2);
+    SkRho     = U_C.pottarg(:).';    % (1, nt)
+    gradSkRho = U_C.gradtarg;        % (3, nt)
 
-    % Compute target orthonormal frame (ru_t, rv_t)
-    ru_t = zeros(3, nt);
-    rv_t = zeros(3, nt);
-    for i = 1:nt
-        u = du_t(:,i);
-        u = u / norm(u);
-        ru_t(:,i) = u;
-        tmp = cross(n_t(:,i), u);
-        rv_t(:,i) = tmp / norm(tmp);
-    end
+    % Build orthonormal target frame: ru_t = du_t/|du_t|,  rv_t = n_t x ru_t
+    du_t = targinfo.du;   % (3, nt)
+    n_t  = targinfo.n;
+    ru_t = du_t ./ vecnorm(du_t);               % (3, nt)
+    rv_t = cross(n_t ./ vecnorm(n_t), ru_t, 1); % (3, nt)
 
-    % M_u = ru_t . H,  M_v = rv_t . H,  E_n = n_t . E
-    M_u = sum(ru_t .* H, 1).';   % (nt x 1)
-    M_v = sum(rv_t .* H, 1).';   % (nt x 1)
-    E_n = sum(n_t  .* E, 1).';   % (nt x 1)
+    % zvec3 = alpha*nxnxE - n_t x H,  where E = ik*S_k[J] - grad S_k[rho]
+    nxH_x = n_t(2,:).*H(3,:) - n_t(3,:).*H(2,:);
+    nxH_y = n_t(3,:).*H(1,:) - n_t(1,:).*H(3,:);
+    nxH_z = n_t(1,:).*H(2,:) - n_t(2,:).*H(1,:);
 
-    pot = [M_u; M_v; E_n];       % (3*nt x 1)
+    E_x = (1i*zk)*SkJ(1,:) - gradSkRho(1,:);
+    E_y = (1i*zk)*SkJ(2,:) - gradSkRho(2,:);
+    E_z = (1i*zk)*SkJ(3,:) - gradSkRho(3,:);
+    ndotE    = n_t(1,:).*E_x + n_t(2,:).*E_y + n_t(3,:).*E_z;
+    anx2E_x  = alpha*(ndotE.*n_t(1,:) - E_x);
+    anx2E_y  = alpha*(ndotE.*n_t(2,:) - E_y);
+    anx2E_z  = alpha*(ndotE.*n_t(3,:) - E_z);
 
-    % ======================================================================
+    zvec3_x = anx2E_x - nxH_x;
+    zvec3_y = anx2E_y - nxH_y;
+    zvec3_z = anx2E_z - nxH_z;
+
+    % Project onto orthonormal target frame
+    pot_ru = ru_t(1,:).*zvec3_x + ru_t(2,:).*zvec3_y + ru_t(3,:).*zvec3_z;   % (1, nt)
+    pot_rv = rv_t(1,:).*zvec3_x + rv_t(2,:).*zvec3_y + rv_t(3,:).*zvec3_z;
+
+    % pot_rho = (grad_x S_k[rho]).n_t - ik*(S_k[J].n_t) + alpha*(div S_k[J] - ik*S_k[rho])
+    gradSkRho_nt = n_t(1,:).*gradSkRho(1,:) + n_t(2,:).*gradSkRho(2,:) + n_t(3,:).*gradSkRho(3,:);
+    SkJ_nt       = n_t(1,:).*SkJ(1,:)       + n_t(2,:).*SkJ(2,:)       + n_t(3,:).*SkJ(3,:);
+    pot_rho = gradSkRho_nt - 1i*zk*SkJ_nt + alpha*(divSkJ(:).' - 1i*zk*SkRho);
+
+    % Interleaved output: [pot_ru(1);pot_rv(1);pot_rho(1); pot_ru(2);...]
+    pot = reshape([pot_ru; pot_rv; pot_rho], 3*nt, 1);
+
     case 'nrccie-eval'
     % ======================================================================
     %
-    %  Representation:
-    %    E = ik S_k[J]  -  grad S_k[rho]
-    %    H = curl S_k[J]
+    %  sigma (4*ns x 1): interleaved [Jx(1);Jy(1);Jz(1);rho(1); Jx(2);...] (wt-scaled)
+    %  pot   (6*nt x 1): interleaved [Ex(1);Ey(1);Ez(1);Hx(1);Hy(1);Hz(1); Ex(2);...]
     %
-    %  sigma = [J_x(1:ns); J_y(1:ns); J_z(1:ns); rho(1:ns)]  (wt-scaled)
-    %  pot   = [E_x; E_y; E_z; H_x; H_y; H_z]                (6*nt x 1)
+    %  H = curl S_k[J],  E = ik S_k[J] - grad S_k[rho]
 
-    sigma = sigma(:);
-    J   = reshape(sigma(1:3*ns), 3, ns);    % Cartesian current (3 x ns)
-    rho = sigma(3*ns+1:4*ns).';             % (1 x ns)
+    sigma4 = reshape(sigma, 4, ns);   % rows: Jx, Jy, Jz, rho  (interleaved input)
+    J   = sigma4(1:3,:);              % (3, ns)
+    rho = sigma4(4,:);                % (1, ns)
 
-    src_em = [];
-    src_em.sources   = src;
-    src_em.h_current = J;            % curl S_k[J]   -> H
-    src_em.e_current = (1i*zk) * J;  % ik S_k[J]    -> E
-    src_em.e_charge  = -rho;         % -grad S_k[rho] -> E
+    % Two separate emfmm3d calls
+    src_H = struct('sources', src, 'h_current', J);
+    U_H   = emfmm3d(eps, zk, src_H, targ, 1, 0, 0);
+    H     = U_H.E;   % (3, nt)
 
-    ifE     = 1;
-    ifcurlE = 1;
-    ifdivE  = 0;
-    U = emfmm3d(eps, zk, src_em, targ, ifE, ifcurlE, ifdivE);
+    src_E = struct('sources', src, 'e_current', (1i*zk)*J, 'e_charge', -rho);
+    U_E   = emfmm3d(eps, zk, src_E, targ, 1, 0, 0);
+    E     = U_E.E;   % (3, nt)
 
-    E = U.E;      % (3 x nt)
-    H = U.curlE;  % (3 x nt)
-
-    pot = [E(:); H(:)];   % (6*nt x 1)  [E_x E_y E_z then H_x H_y H_z]
-
-    % Reshape to column-major (component varies slowest, matches kern.m convention):
-    %   pot(1:nt)        = E_x
-    %   pot(nt+1:2*nt)   = E_y
-    %   pot(2*nt+1:3*nt) = E_z
-    %   pot(3*nt+1:4*nt) = H_x
-    %   pot(4*nt+1:5*nt) = H_y
-    %   pot(5*nt+1:6*nt) = H_z
-    pot = [E(1,:).'; E(2,:).'; E(3,:).'; ...
-           H(1,:).'; H(2,:).'; H(3,:).'];
+    % Interleaved output: [Ex(1);Ey(1);Ez(1);Hx(1);Hy(1);Hz(1); Ex(2);...]
+    EH  = [E; H];    % (6, nt)
+    pot = EH(:);
 
     otherwise
         error('EM3D:fmm:type', 'Unknown em3d kernel type ''%s''.', type);

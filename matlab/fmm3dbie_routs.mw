@@ -4413,16 +4413,42 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
       rep = opts.rep;
     end
 
-    if strcmpi(rep, 'nrccie')
+    if strcmpi(rep, 'nrccie') || strcmpi(rep, 'nrccie-eval')
       nker = 4;
       ndim_s = 4;
       [nn, ~] = size(densities);
       zpars = complex(zeros(2,1));
       zpars(1) = zk;
       zpars(2) = rep_params;
-      
+
       if nn ~= ndim_s
-        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n'); 
+        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n');
+      end
+    end
+
+    if strcmpi(rep, 'nrccie-bc')
+%      nker = 9;
+%      ndim_s = 3;
+%      [nn, ~] = size(densities);
+%      zpars = complex(zeros(2,1));
+%      zpars(1) = zk;
+%      zpars(2) = rep_params;
+%
+%      if nn ~= ndim_s
+%        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n');
+%      end
+%    end
+%
+%    if strcmpi(rep, 'nrccie-bc-targ')
+      nker = 9;
+      ndim_s = 3;
+      [nn, ~] = size(densities);
+      zpars = complex(zeros(2,1));
+      zpars(1) = zk;
+      zpars(2) = rep_params;
+
+      if nn ~= ndim_s
+        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n');
       end
     end
 
@@ -4440,12 +4466,19 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-% Compute quadrature corrections   
+
+% Compute quadrature corrections
     if ~isprecompq
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
-        opts_quad.rep = [rep '-eval'];
+        if strcmpi(rep, 'nrccie-bc')
+          opts_quad.rep = 'nrccie-bc';
+        elseif strcmpi(rep, 'nrccie-eval')
+          opts_quad.rep = 'nrccie-eval';
+        else
+          opts_quad.rep = [rep '-eval'];
+        end
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -4481,11 +4514,6 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     iquad = Q.iquad;
     wnear = Q.wnear;
 
-    p = complex(zeros(6,ntarg));
-
-    ipotflag = 3;
-
-
     ndd = 0;
     dpars = [];
     ndz = length(zpars);
@@ -4493,16 +4521,31 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     ipars = [];
     lwork = 0;
     work = [];
-    ndim_p = 6;
     idensflag = 1;
 % Call the layer potential evaluator
-    
-    if strcmpi(rep, 'nrccie')
-      # FORTRAN em_nrccie_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[ndim_s,npts] densities, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ndim_p,ntarg] p);   
+
+    if strcmpi(rep, 'nrccie') || strcmpi(rep, 'nrccie-eval')
+      ndim_p = 6;
+      ipotflag = 3;
+      p = complex(zeros(ndim_p,ntarg));
+      # FORTRAN em_nrccie_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[ndim_s,npts] densities, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ndim_p,ntarg] p);
+      E = p(1:3,:);
+      H = p(4:6,:);
+    elseif strcmpi(rep, 'nrccie-bc')
+      %
+      %  Off-surface: lpcomp_em_nrccie_pec_addsub_targ.  Takes explicit
+      %  target array; targets need not coincide with source points.
+      %  ndim = ndim_s = 3: density [j_ru; j_rv; rho] in orthonormal frame.
+      %  pot  = (3, ntarg): IE operator output in the target's local frame.
+      %  No identity term is added (zero off-surface).
+      %
+      ndim_p = 3;
+      p = complex(zeros(ndim_p,ntarg));
+      # FORTRAN lpcomp_em_nrccie_pec_addsub_targ(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] ndim_s, dcomplex[ndim_s,npts] densities, inout dcomplex[ndim_p,ntarg] p);
+      E = p(1:3,:);
+      H = [];
     end
-    E = p(1:3,:);
-    H = p(4:6,:);
-end    
+end
 %
 %
 %
@@ -4605,18 +4648,18 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
        ff = 'rsc';
     end
 
-    tinfouse = [];
-    if strcmpi(qtype, 'nrccie-bc')
-      tinfouse.r = S.r;
-      tinfouse.du = S.du;
-      tinfouse.dv = S.dv;
-      tinfouse.n = S.n;
-      tinfouse.patch_id = S.patch_id;
-      tinfouse.uvs_targ = S.uvs_targ;
-    else
-      tinfouse = targinfo;
-    end
-
+%    tinfouse = [];
+%    if strcmpi(qtype, 'nrccie-bc')
+%      tinfouse.r = S.r;
+%      tinfouse.du = S.du;
+%      tinfouse.dv = S.dv;
+%      tinfouse.n = S.n;
+%      tinfouse.patch_id = S.patch_id;
+%      tinfouse.uvs_targ = S.uvs_targ;
+%    else
+%      tinfouse = targinfo;
+%    end
+    tinfouse = targinfo;
 
 
 
@@ -4627,7 +4670,7 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
     if(isfield(tinfouse,'patch_id') || isprop(tinfouse,'patch_id'))
       patch_id = tinfouse.patch_id;
     else
-      patch_id = zeros(ntarg,1);
+      patch_id = -ones(ntarg,1);
     end
 
     if(isfield(tinfouse,'uvs_targ') || isprop(tinfouse,'uvs_targ'))
@@ -4689,12 +4732,21 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
       zpars(1) = zk;
       zpars(2) = rep_params;
 
-      # FORTRAN getnearquad_em_nrccie_pec(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
+%      # FORTRAN getnearquad_em_nrccie_pec(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
+      # FORTRAN getnearquad_em_nrccie_pec_targ(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
     elseif strcmpi(qtype, 'nrccie-eval')
       nker = 4;
       wnear = complex(zeros(nker,nquad));
       zpuse = complex(zk);
       # FORTRAN getnearquad_em_nrccie_pec_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
+%    elseif strcmpi(qtype, 'nrccie-bc-targ')
+%      nker = 9;
+%      wnear = complex(zeros(nker,nquad));
+%      ndz = 2;
+%      zpars = complex(zeros(2,1));
+%      zpars(1) = zk;
+%      zpars(2) = rep_params;
+%      # FORTRAN getnearquad_em_nrccie_pec_targ(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
     else
       error('em3d.pec.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
     end

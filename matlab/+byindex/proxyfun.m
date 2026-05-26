@@ -1,5 +1,5 @@
 function [Kpxy, nbr] = proxyfun(slf, nbr, l, ctr, surfers, kern, kern2, ...
-    opdims_mat, pr, pn, pw, pin, ifaddtrans)
+    pr, pn, pw, pin, ifaddtrans)
 %PROXYFUN  Proxy function for rskelf, for kernels defined on arrays of surfers.
 %
 % [Kpxy, nbr] = byindex.proxyfun(slf, nbr, l, ctr, surfers, kern, kern2,
@@ -17,16 +17,23 @@ if isempty(kern2), kern2 = kern; end
 
 nsurfers = length(surfers);
 
-if ~(ndims(opdims_mat) == 3 && isequal(size(opdims_mat), [2, nsurfers, nsurfers]))
-    v = opdims_mat(:);
-    tmp = zeros(2, nsurfers, nsurfers);
-    for ii_ = 1:nsurfers
-        for jj_ = 1:nsurfers
-            tmp(1,ii_,jj_) = v(1); tmp(2,ii_,jj_) = v(2);
-        end
-    end
-    opdims_mat = tmp;
+if numel(kern) == 1
+    opdims_mat = repmat(reshape(kern.opdims, 2, 1, 1), 1, nsurfers, nsurfers);
+else
+    opdims_mat = reshape([kern.opdims], 2, nsurfers, nsurfers);
 end
+
+
+% if ~(ndims(opdims_mat) == 3 && isequal(size(opdims_mat), [2, nsurfers, nsurfers]))
+%     v = opdims_mat(:);
+%     tmp = zeros(2, nsurfers, nsurfers);
+%     for ii_ = 1:nsurfers
+%         for jj_ = 1:nsurfers
+%             tmp(1,ii_,jj_) = v(1); tmp(2,ii_,jj_) = v(2);
+%         end
+%     end
+%     opdims_mat = tmp;
+% end
 
 % Column (source) offsets
 icollocs = zeros(nsurfers+1, 1); icollocs(1) = 1;
@@ -89,7 +96,8 @@ for isrc = 1:nsurfers
     [juni, ~, ijuni] = unique(jpts);
     ijuni2 = (ijuni-1)*opdims_src + mod(mat_col_ind(:)-mat_col_start, opdims_src) + 1;
 
-    srcp = slice_surfer(srfj, juni);
+    if numel(kern) == 1, ktmp_src = kern; else, ktmp_src = kern(1, isrc); end
+    srcp = slice_surfer(srfj, juni, ktmp_src.src_fields);
     wsrc = repmat(srfj.wts(juni(:)).', opdims_src, 1);
     wsrc = wsrc(:).';
 
@@ -116,14 +124,11 @@ end
 end
 
 
-function srcp = slice_surfer(srfj, pts)
-    src_field = fieldnames(srfj)';
+function srcp = slice_surfer(srfj, pts, src_fields)
     srcp = [];
-    for i = 1:length(src_field)
-        try, val = srfj.(src_field{i}); catch, continue; end
-        if isempty(val), continue; end
-        if mod(size(val(:,:), 2), srfj.npts) == 0
-            srcp.(src_field{i}) = srfj.(src_field{i})(:, pts);
-        end
+    srcp.r = srfj.r(:, pts);
+    for k = 1:length(src_fields)
+        f = src_fields{k};
+        srcp.(f) = srfj.(f)(:, pts);
     end
 end

@@ -396,31 +396,37 @@ if strcmpi(type,'nrccie-bc')
 %
 %  NRCCIE boundary-condition (system) kernel.
 %
-%  Density: [j_u, j_v, rho]   (3 components / source point, surface-tangent basis)
-%  Output:  [pot_u, pot_v, pot_rho]  (3 equations / target point)
+%  Matches the Fortran convention of lpcomp_em_nrccie_pec_addsub_targ /
+%  get_nrccie_inteq_comps_from_potgrad in em_nrccie_pec.f90.
+%
+%  Density: [j_ru, j_rv, rho]   (3 components / source point)
+%    j_ru = coefficient of ru_s = du_s / |du_s|
+%    j_rv = coefficient of rv_s = n_s x ru_s
+%  Output:  [pot_ru, pot_rv, pot_rho]  (3 equations / target point)
+%    pot_ru = zvec3 . ru_t,  pot_rv = zvec3 . rv_t
+%    where ru_t = du_t/|du_t|,  rv_t = n_t x ru_t
 %  Matrix size: (3*nt) x (3*ns), component-fast row/col ordering.
 %
-%  Follows get_nrccie_inteq_comps_from_potgrad in em_nrccie_pec.f90.
-%  For source density component d_s (= du_s or dv_s) and scalar rho:
+%  For source orthonormal tangent vector ds (= ru_s or rv_s) and scalar rho:
 %
-%  zcurl   = grad_t G x d_s              (curl of vector single layer)
-%  zvec    = n_t x zcurl                 (= -M_k[J] term, magnetic BC)
-%  E       = ik*G*d_s - grad_t G * rho   (E from representation)
-%  nxnxE   = (n_t . E)*n_t - E           (= n x n x E)
+%  zcurl   = grad_t G x ds          (curl of G*ds w.r.t. target)
+%  zvec    = n_t x zcurl            (= -M_k[J] term, magnetic BC)
+%  E       = ik*G*ds                (E from J; rho column adds -grad_t G)
+%  nxnxE   = (n_t . E)*n_t - E     (= n x n x E)
 %  zvec3   = alpha*nxnxE - zvec
-%  pot_u/v = zvec3 . du_t/dv_t
-%  pot_rho = (grad_t S_k[rho] - ik*S_k[J]).n_t + alpha*(div_t S_k[J] - ik*S_k[rho])
+%  pot_ru  = zvec3 . ru_t
+%  pot_rv  = zvec3 . rv_t
+%  pot_rho = (grad_t G . n_t)*[rho col] - ik*G*(ru_s/rv_s . n_t)*[J cols]
+%          + alpha*(div G*J - ik*G*rho), all using target normal n_t
 %
 %  varargin{1} = alpha  (CFIE regularization parameter)
 
   alpha = varargin{1};
 
   targnorm = targinfo.n;
-  drut = targinfo.du;
-  drvt = targinfo.dv;
-  drus = srcinfo.du;
-  drvs = srcinfo.dv;
-  srcnorm = srcinfo.n;
+  drut     = targinfo.du;
+  srcnorm  = srcinfo.n;
+  drus     = srcinfo.du;
 
   [gfun, grad] = helm3d.green(zk, src, targ);
   % gfun : (nt, ns)
@@ -428,121 +434,107 @@ if strcmpi(type,'nrccie-bc')
 
   gx = grad(:,:,1);  gy = grad(:,:,2);  gz = grad(:,:,3);
 
-  % Target geometry
-  nx  = repmat(targnorm(1,:).', 1, ns);
-  ny  = repmat(targnorm(2,:).', 1, ns);
-  nz  = repmat(targnorm(3,:).', 1, ns);
-  dxut = repmat(drut(1,:).', 1, ns);  dyut = repmat(drut(2,:).', 1, ns);  dzut = repmat(drut(3,:).', 1, ns);
-  dxvt = repmat(drvt(1,:).', 1, ns);  dyvt = repmat(drvt(2,:).', 1, ns);  dzvt = repmat(drvt(3,:).', 1, ns);
+  % Target orthonormal frame: ru_t = du_t/|du_t|,  rv_t = n_t x ru_t
+  rut = drut     ./ vecnorm(drut);                    % (3, nt)
+  rnt = targnorm ./ vecnorm(targnorm);                % (3, nt) unit normal
+  rvt = cross(rnt, rut, 1);                           % (3, nt)
 
-  % Source geometry
-  dxus = repmat(drus(1,:), nt, 1);  dyus = repmat(drus(2,:), nt, 1);  dzus = repmat(drus(3,:), nt, 1);
-  dxvs = repmat(drvs(1,:), nt, 1);  dyvs = repmat(drvs(2,:), nt, 1);  dzvs = repmat(drvs(3,:), nt, 1);
-  nxs  = repmat(srcnorm(1,:), nt, 1);
-  nys  = repmat(srcnorm(2,:), nt, 1);
-  nzs  = repmat(srcnorm(3,:), nt, 1);
+  nx   = repmat(rnt(1,:).', 1, ns);
+  ny   = repmat(rnt(2,:).', 1, ns);
+  nz   = repmat(rnt(3,:).', 1, ns);
+  rxut = repmat(rut(1,:).', 1, ns);
+  ryut = repmat(rut(2,:).', 1, ns);
+  rzut = repmat(rut(3,:).', 1, ns);
+  rxvt = repmat(rvt(1,:).', 1, ns);
+  ryvt = repmat(rvt(2,:).', 1, ns);
+  rzvt = repmat(rvt(3,:).', 1, ns);
 
-  % Helper: given source tangent vector ds = (dxs, dys, dzs), compute the
-  % (nt, ns) matrices for each block row/col of the kernel matrix.
-  %
-  % zcurl = grad_t G x ds  (curl of G*ds w.r.t. target)
-  %   zcurl_x = gy*dzs - gz*dys
-  %   zcurl_y = gz*dxs - gx*dzs
-  %   zcurl_z = gx*dys - gy*dxs
-  %
+  % Source orthonormal frame: ru_s = du_s/|du_s|,  rv_s = n_s x ru_s
+  rus = drus    ./ vecnorm(drus);                     % (3, ns)
+  rns = srcnorm ./ vecnorm(srcnorm);                  % (3, ns) unit normal
+  rvs = cross(rns, rus, 1);                           % (3, ns)
+
+  rxus = repmat(rus(1,:), nt, 1);
+  ryus = repmat(rus(2,:), nt, 1);
+  rzus = repmat(rus(3,:), nt, 1);
+  rxvs = repmat(rvs(1,:), nt, 1);
+  ryvs = repmat(rvs(2,:), nt, 1);
+  rzvs = repmat(rvs(3,:), nt, 1);
+
+  % --- Column j_ru (density coefficient of ru_s) ---
+  % zcurl = grad_t G x ru_s
+  curl_x_u = gy.*rzus - gz.*ryus;
+  curl_y_u = gz.*rxus - gx.*rzus;
+  curl_z_u = gx.*ryus - gy.*rxus;
   % zvec = n_t x zcurl
-  %   zvec_x = ny*zcurl_z - nz*zcurl_y
-  %   zvec_y = nz*zcurl_x - nx*zcurl_z
-  %   zvec_z = nx*zcurl_y - ny*zcurl_x
-  %
-  % E = ik*G*ds  (J column; rho column adds -grad_t G term handled separately)
-  %   Ex = ik*G*dxs,  Ey = ik*G*dys,  Ez = ik*G*dzs
-  %
-  % n_t.E = ik*G*(nx*dxs + ny*dys + nz*dzs)
-  % nxnxE = (n_t.E)*n_t - E
-  %   nxnxE_x = (n_t.E)*nx - ik*G*dxs
-  %   etc.
-  %
-  % zvec3 = alpha*nxnxE - zvec
-  % pot_u = zvec3 . du_t,  pot_v = zvec3 . dv_t
-
-  % --- Column j_u ---
-  curl_x_u = gy.*dzus - gz.*dyus;
-  curl_y_u = gz.*dxus - gx.*dzus;
-  curl_z_u = gx.*dyus - gy.*dxus;
-
   zvec_x_u = ny.*curl_z_u - nz.*curl_y_u;
   zvec_y_u = nz.*curl_x_u - nx.*curl_z_u;
   zvec_z_u = nx.*curl_y_u - ny.*curl_x_u;
+  % zvec3 = alpha*nxnxE - zvec,  E = ik*G*ru_s
+  ndotE_u  = 1i*zk*gfun .* (nx.*rxus + ny.*ryus + nz.*rzus);
+  v3x_u = alpha*(ndotE_u.*nx - 1i*zk*gfun.*rxus) - zvec_x_u;
+  v3y_u = alpha*(ndotE_u.*ny - 1i*zk*gfun.*ryus) - zvec_y_u;
+  v3z_u = alpha*(ndotE_u.*nz - 1i*zk*gfun.*rzus) - zvec_z_u;
 
-  ndotE_u  = 1i*zk*gfun .* (nx.*dxus + ny.*dyus + nz.*dzus);
-  v3x_u = alpha*(ndotE_u.*nx - 1i*zk*gfun.*dxus) - zvec_x_u;
-  v3y_u = alpha*(ndotE_u.*ny - 1i*zk*gfun.*dyus) - zvec_y_u;
-  v3z_u = alpha*(ndotE_u.*nz - 1i*zk*gfun.*dzus) - zvec_z_u;
+  K_uu = rxut.*v3x_u + ryut.*v3y_u + rzut.*v3z_u;
+  K_vu = rxvt.*v3x_u + ryvt.*v3y_u + rzvt.*v3z_u;
+  % pot(3) for j_ru col: ztmp=-ik*G*(ru_s.n_t), ztmp2=ru_s.grad_x G
+  K_ru = -1i*zk*gfun.*(rxus.*nx + ryus.*ny + rzus.*nz) ...
+         + alpha*(gx.*rxus + gy.*ryus + gz.*rzus);
 
-  K_uu = dxut.*v3x_u + dyut.*v3y_u + dzut.*v3z_u;  % ru component, j_u col
-  K_vu = dxvt.*v3x_u + dyvt.*v3y_u + dzvt.*v3z_u;  % rv component, j_u col
-
-  % pot_rho (row 3), j_u column:
-  %   (grad_t(0) - ik*G*J).n_t + alpha*(div_t(G*J) - ik*0)
-  %   = -ik*G*(d_s.n_t) + alpha*(grad_t G . d_s)
-  K_ru = -1i*zk*gfun.*(dxus.*nx + dyus.*ny + dzus.*nz) ...
-         + alpha*(gx.*dxus + gy.*dyus + gz.*dzus);
-
-  % --- Column j_v ---
-  curl_x_v = gy.*dzvs - gz.*dyvs;
-  curl_y_v = gz.*dxvs - gx.*dzvs;
-  curl_z_v = gx.*dyvs - gy.*dxvs;
-
+  % --- Column j_rv (density coefficient of rv_s) ---
+  curl_x_v = gy.*rzvs - gz.*ryvs;
+  curl_y_v = gz.*rxvs - gx.*rzvs;
+  curl_z_v = gx.*ryvs - gy.*rxvs;
   zvec_x_v = ny.*curl_z_v - nz.*curl_y_v;
   zvec_y_v = nz.*curl_x_v - nx.*curl_z_v;
   zvec_z_v = nx.*curl_y_v - ny.*curl_x_v;
+  ndotE_v  = 1i*zk*gfun .* (nx.*rxvs + ny.*ryvs + nz.*rzvs);
+  v3x_v = alpha*(ndotE_v.*nx - 1i*zk*gfun.*rxvs) - zvec_x_v;
+  v3y_v = alpha*(ndotE_v.*ny - 1i*zk*gfun.*ryvs) - zvec_y_v;
+  v3z_v = alpha*(ndotE_v.*nz - 1i*zk*gfun.*rzvs) - zvec_z_v;
 
-  ndotE_v  = 1i*zk*gfun .* (nx.*dxvs + ny.*dyvs + nz.*dzvs);
-  v3x_v = alpha*(ndotE_v.*nx - 1i*zk*gfun.*dxvs) - zvec_x_v;
-  v3y_v = alpha*(ndotE_v.*ny - 1i*zk*gfun.*dyvs) - zvec_y_v;
-  v3z_v = alpha*(ndotE_v.*nz - 1i*zk*gfun.*dzvs) - zvec_z_v;
-
-  K_uv = dxut.*v3x_v + dyut.*v3y_v + dzut.*v3z_v;
-  K_vv = dxvt.*v3x_v + dyvt.*v3y_v + dzvt.*v3z_v;
-
-  K_rv = -1i*zk*gfun.*(dxvs.*nx + dyvs.*ny + dzvs.*nz) ...
-         + alpha*(gx.*dxvs + gy.*dyvs + gz.*dzvs);
+  K_uv = rxut.*v3x_v + ryut.*v3y_v + rzut.*v3z_v;
+  K_vv = rxvt.*v3x_v + ryvt.*v3y_v + rzvt.*v3z_v;
+  % pot(3) for j_rv col: ztmp=-ik*G*(rv_s.n_t), ztmp2=rv_s.grad_x G
+  K_rv = -1i*zk*gfun.*(rxvs.*nx + ryvs.*ny + rzvs.*nz) ...
+         + alpha*(gx.*rxvs + gy.*ryvs + gz.*rzvs);
 
   % --- Column rho ---
   % E_rho = -grad_t G,  J=0
-  % n_t.E_rho = -(gx*nx + gy*ny + gz*nz)
-  % nxnxE_rho = (n_t.E_rho)*n_t - E_rho = -(gx*nx+...)*n_t + grad_t G
-  % zvec_rho = n_t x (grad_t G x 0) = 0   (no J curl term)
+  % nxnxE_rho = (n_t.E_rho)*n_t - E_rho = -(n_t.grad G)*n_t + grad G
   % zvec3_rho = alpha*nxnxE_rho
-
   ndotE_r = -(gx.*nx + gy.*ny + gz.*nz);
   v3x_r = alpha*(ndotE_r.*nx + gx);
   v3y_r = alpha*(ndotE_r.*ny + gy);
   v3z_r = alpha*(ndotE_r.*nz + gz);
 
-  K_ur = dxut.*v3x_r + dyut.*v3y_r + dzut.*v3z_r;
-  K_vr = dxvt.*v3x_r + dyvt.*v3y_r + dzvt.*v3z_r;
+  K_ur = rxut.*v3x_r + ryut.*v3y_r + rzut.*v3z_r;
+  K_vr = rxvt.*v3x_r + ryvt.*v3y_r + rzvt.*v3z_r;
 
   % pot_rho row, rho column:
-  %   (grad_t G - ik*0).n_t + alpha*(0 - ik*G*rho)
-  %   = (grad_t G).n_t - alpha*ik*G
-  %   = S'_k[rho] - alpha*ik*G
-  % where S'_k = n_s . grad_y G = -n_s . grad_x G
-  Sp  = -(nxs.*gx + nys.*gy + nzs.*gz);
-  K_rr = Sp - alpha*1i*zk*gfun;
+  %   (grad_x G) . n_t - alpha*ik*G
+  % Matches Fortran pot(3) = zgrad(4,:) . n_t + alpha*ztmp2 for J=0.
+  % helm3d.green returns grad w.r.t. target x (rx = xt-xs), so:
+  %   (grad_x G) . n_t = nx*gx + ny*gy + nz*gz   (positive sign).
+  % Note: this differs from the classical S'_k = n_y.grad_y G = -n_t.grad_x G
+  % because here n_t is the TARGET normal, not the source normal.
+  K_rr = (nx.*gx + ny.*gy + nz.*gz) - alpha*1i*zk*gfun;
 
-  % --- Assemble (3*nt) x (3*ns) matrix, component-fast rows/cols ---
-  submat = complex(zeros(3*nt, 3*ns));
-  submat(1:nt,        1:ns)        = K_uu;
-  submat(1:nt,        ns+1:2*ns)   = K_uv;
-  submat(1:nt,        2*ns+1:3*ns) = K_ur;
-  submat(nt+1:2*nt,   1:ns)        = K_vu;
-  submat(nt+1:2*nt,   ns+1:2*ns)   = K_vv;
-  submat(nt+1:2*nt,   2*ns+1:3*ns) = K_vr;
-  submat(2*nt+1:3*nt, 1:ns)        = K_ru;
-  submat(2*nt+1:3*nt, ns+1:2*ns)   = K_rv;
-  submat(2*nt+1:3*nt, 2*ns+1:3*ns) = K_rr;
+  % --- Assemble (3*nt) x (3*ns) matrix, interleaved rows/cols ---
+  % Row ordering: [ru_t, rv_t, rho] x target points (interleaved)
+  % Col ordering: [j_ru, j_rv, rho] x source points (interleaved)
+  T = complex(zeros(3, nt, 3, ns));
+  T(1,:,1,:) = reshape(K_uu, [1,nt,1,ns]);
+  T(2,:,1,:) = reshape(K_vu, [1,nt,1,ns]);
+  T(3,:,1,:) = reshape(K_ru, [1,nt,1,ns]);
+  T(1,:,2,:) = reshape(K_uv, [1,nt,1,ns]);
+  T(2,:,2,:) = reshape(K_vv, [1,nt,1,ns]);
+  T(3,:,2,:) = reshape(K_rv, [1,nt,1,ns]);
+  T(1,:,3,:) = reshape(K_ur, [1,nt,1,ns]);
+  T(2,:,3,:) = reshape(K_vr, [1,nt,1,ns]);
+  T(3,:,3,:) = reshape(K_rr, [1,nt,1,ns]);
+  submat = reshape(T, [3*nt, 3*ns]);
 
 end
 
@@ -576,33 +568,34 @@ if strcmpi(type,'nrccie-eval')
   gz = gradG(:,:,3);
   ikG = 1i*zk*G;
 
-  % Build (6, nt, 4, ns) tensor, then permute+reshape to (6*nt, 4*ns)
+  % Build (6, nt, 4, ns) tensor.  Each (nt,ns) matrix reshaped to (1,nt,1,ns).
   T = complex(zeros(6, nt, 4, ns));
+  r = @(M) reshape(M, [1,nt,1,ns]);
 
   % col 1: J_x
-  T(1,:,1,:) = ikG;    % E_x
-  T(5,:,1,:) = gz;     % H_y = +dGdz * J_x
-  T(6,:,1,:) = -gy;    % H_z = -dGdy * J_x
+  T(1,:,1,:) = r(ikG);    % E_x
+  T(5,:,1,:) = r(gz);     % H_y = +dGdz * J_x
+  T(6,:,1,:) = r(-gy);    % H_z = -dGdy * J_x
 
   % col 2: J_y
-  T(2,:,2,:) = ikG;    % E_y
-  T(4,:,2,:) = -gz;    % H_x = -dGdz * J_y
-  T(6,:,2,:) = gx;     % H_z = +dGdx * J_y
+  T(2,:,2,:) = r(ikG);    % E_y
+  T(4,:,2,:) = r(-gz);    % H_x = -dGdz * J_y
+  T(6,:,2,:) = r(gx);     % H_z = +dGdx * J_y
 
   % col 3: J_z
-  T(3,:,3,:) = ikG;    % E_z
-  T(4,:,3,:) = gy;     % H_x = +dGdy * J_z
-  T(5,:,3,:) = -gx;    % H_y = -dGdx * J_z
+  T(3,:,3,:) = r(ikG);    % E_z
+  T(4,:,3,:) = r(gy);     % H_x = +dGdy * J_z
+  T(5,:,3,:) = r(-gx);    % H_y = -dGdx * J_z
 
   % col 4: rho  ->  E = -gradG * rho,  H = 0
-  T(1,:,4,:) = -gx;
-  T(2,:,4,:) = -gy;
-  T(3,:,4,:) = -gz;
+  T(1,:,4,:) = r(-gx);
+  T(2,:,4,:) = r(-gy);
+  T(3,:,4,:) = r(-gz);
 
-  % row index: itarg + nt*(icomp-1), col index: isrc + ns*(jcomp-1)
-  % (component-fast, matching stok/lap/helm eval convention)
-  % permute (6,nt,4,ns) -> (nt,6,ns,4) then reshape.
-  submat = reshape(permute(T, [2,1,4,3]), [6*nt, 4*ns]);
+  % row index: icomp_out + 6*(itarg-1)  (interleaved)
+  % col index: icomp_in  + 4*(isrc -1)  (interleaved)
+  % reshape(6,nt,4,ns) -> (6*nt, 4*ns) in column-major directly:
+  submat = reshape(T, [6*nt, 4*ns]);
 
 end
 

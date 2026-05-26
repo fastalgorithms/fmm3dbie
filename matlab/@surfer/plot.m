@@ -23,17 +23,22 @@ if numel(obj) > 1
     ih = ishold();
     hold on
     ipt = 1;
+    ipatch = 1;
     for k = 1:numel(obj)
         nk = obj(k).npts;
+        npk = obj(k).npatches;
         args = varargin;
         if ~isempty(args) && isnumeric(args{1})
             v = args{1}(:);
             if length(v) == sum([obj.npts])
                 args{1} = v(ipt:ipt+nk-1);
+            elseif length(v) == sum([obj.npatches])
+                args{1} = v(ipatch:ipatch+npk-1);
             end
         end
         plot(obj(k), args{:});
         ipt = ipt + nk;
+        ipatch = ipatch + npk;
     end
     if ~ih, hold off; end
     if nargout == 1, varargout{1} = []; end

@@ -345,7 +345,7 @@ classdef surfer
          dens_int = interpolate_data(obj, dens, ipatch_ids, uvs_targ);
          [objout,varargout] = affine_transf(obj,mat,shift);
          [varargout] = scatter(obj,varargin);
-         [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear);
+         [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear,ri);
          [objout,varargout] = rotate(obj, eul);
          [varargout] = plot_nodes(S, v, varargin);
          [objout,varargout] = scale(obj,sf);

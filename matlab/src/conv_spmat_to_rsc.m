@@ -24,8 +24,13 @@ function rsc = conv_spmat_to_rsc(S, spmat, ri)
 
     nker   = ri.nker;
     scalar = strcmp(ri.type, 'scalar');
-    m      = max(ri.row_ids);
-    n      = max(ri.col_ids);
+    basis  = strcmp(ri.type, 'basis');
+    if basis
+        m = ri.m;  n = ri.n;
+    else
+        m = max(ri.row_ids);
+        n = max(ri.col_ids);
+    end
 
     ixyzs    = S.ixyzs(:);
     npatches = S.npatches;
@@ -55,17 +60,36 @@ function rsc = conv_spmat_to_rsc(S, spmat, ri)
 
     % Extract wnear: for each (targ, patch) pair and each kernel component
     % read the appropriate block row/col out of spmat.
-    kr    = ri.row_ids(:);
-    kc    = ri.col_ids(:);
     wnear = complex(zeros(nker, nquad));
-    for k = 1:nnz_pairs
-        t        = targ_inds(k);
-        p        = patch_inds(k);
-        src_cols = ixyzs(p):(ixyzs(p+1)-1);
-        wstart   = iquad(k);
-        wend     = iquad(k+1) - 1;
-        for ki = 1:nker
-            wnear(ki, wstart:wend) = spmat(m*(t-1)+kr(ki), n*(src_cols-1)+kc(ki));
+    if basis
+        % Basis type: invert the linear combination B(r,c) = sum_e coef_e * w(ker_e).
+        % We use the first listed entry for each ker_id to recover wnear(ker_id).
+        for k = 1:nnz_pairs
+            t        = targ_inds(k);
+            p        = patch_inds(k);
+            src_cols = ixyzs(p):(ixyzs(p+1)-1);
+            wstart   = iquad(k);
+            wend     = iquad(k+1) - 1;
+            for ei = 1:numel(ri.entries)
+                e  = ri.entries(ei);
+                wnear(e.ker_id, wstart:wend) = ...
+                    spmat(m*(t-1)+e.row_id, n*(src_cols-1)+e.col_id) / e.coef;
+                % Only extract each ker_id once (first occurrence wins).
+                % Duplicate entries for the same ker_id are consistent by construction.
+            end
+        end
+    else
+        kr = ri.row_ids(:);
+        kc = ri.col_ids(:);
+        for k = 1:nnz_pairs
+            t        = targ_inds(k);
+            p        = patch_inds(k);
+            src_cols = ixyzs(p):(ixyzs(p+1)-1);
+            wstart   = iquad(k);
+            wend     = iquad(k+1) - 1;
+            for ki = 1:nker
+                wnear(ki, wstart:wend) = spmat(m*(t-1)+kr(ki), n*(src_cols-1)+kc(ki));
+            end
         end
     end
 

@@ -79,7 +79,8 @@ h = pcolor(XX,YY,reshape(real(uin+uscat),size(XX))); h.EdgeColor = 'none';
 clim([0,0.1])
 colorbar
 hold on
-plot(srfrs,ones(size(rhs,1),1))
+h = plot(srfrs,ones(size(rhs,1),1));
+h.FaceColor = 0.8*[1,1,1];
 hold off
 
 figure(4);clf

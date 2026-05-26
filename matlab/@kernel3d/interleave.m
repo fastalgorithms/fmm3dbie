@@ -23,9 +23,6 @@ opdims    = [sum(rowdims) sum(coldims)];
 % Worst-case kernel order across all sub-kernels
 kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
 
-% -------------------------------------------------------------------------
-%  Helper: build interleaved row/col index cells for given nt, ns
-% -------------------------------------------------------------------------
     function [ridx, cidx] = make_idx(nt, ns)
         ridx = cell(m, 1);
         cidx = cell(n, 1);
@@ -39,9 +36,6 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
         end
     end
 
-% -------------------------------------------------------------------------
-%  eval
-% -------------------------------------------------------------------------
     function out = eval_(s, t)
         [~, ns] = size(s.r);
         [~, nt] = size(t.r);
@@ -54,9 +48,6 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
         end
     end
 
-% -------------------------------------------------------------------------
-%  fmm
-% -------------------------------------------------------------------------
     function varargout = fmm_(eps, s, t, sigma)
         if isstruct(t)
             [~, nt] = size(t.r);
@@ -90,9 +81,6 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
         end
     end
 
-% -------------------------------------------------------------------------
-%  layer_eval  -- signature: layer_eval(S, sigma, targinfo, eps, ...)
-% -------------------------------------------------------------------------
     function out = layer_eval_(S, sigma, targinfo, eps, varargin)
         if isstruct(targinfo)
             nt = size(targinfo.r, 2);
@@ -113,10 +101,6 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
         end
     end
 
-% -------------------------------------------------------------------------
-%  getquad  -- signature: getquad(S, eps, targinfo, ...)
-%  Returns a sparse matrix (sum of all sub-kernel quad corrections).
-% -------------------------------------------------------------------------
     function Q = getquad_(S, eps, varargin)
         Q = sparse(0);
         for k = 1:m
@@ -153,9 +137,6 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
         end
     end
 
-% -------------------------------------------------------------------------
-%  get_overs_orders  -- elementwise max over all sub-kernels
-% -------------------------------------------------------------------------
     function novers = get_overs_orders_(S, t, eps)
         novers = [];
         for k = 1:numel(kerns)
@@ -168,9 +149,6 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
         end
     end
 
-% -------------------------------------------------------------------------
-%  Union of src_fields / targ_fields across all sub-kernels
-% -------------------------------------------------------------------------
 all_src_fields  = {};
 all_targ_fields = {};
 for ki = 1:numel(kerns)
@@ -180,9 +158,6 @@ end
 if isempty(all_src_fields),  all_src_fields  = []; end
 if isempty(all_targ_fields), all_targ_fields = []; end
 
-% -------------------------------------------------------------------------
-%  Assemble output kernel
-% -------------------------------------------------------------------------
 K           = kernel3d();
 K.name      = 'custom';
 K.type      = 'interleaved';
@@ -193,11 +168,6 @@ K.src_fields  = all_src_fields;
 K.targ_fields = all_targ_fields;
 
 K.eval = @eval_;
-
-% Interleaved kernels do not produce packed wnear(nker,nquad) RSC structs;
-% each sub-kernel's getquad is called individually and assembled directly
-% into a sparse matrix.  rsc_to_interleave is therefore not applicable.
-% (Property remains empty.)
 
 if all(arrayfun(@(k) isa(kerns(k).fmm, 'function_handle'), 1:numel(kerns)))
     K.fmm = @fmm_;

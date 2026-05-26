@@ -1,71 +1,53 @@
-function mat = kernbyindex(i, j, surfers, kern, opdims_mat, eps, novers, opts)
+function mat = kernbyindex(i, j, surfers, kern, eps, novers, Qsparse, opts)
 %KERNBYINDEX  Evaluate smooth-rule matrix entries by index for surfer arrays.
 %
-% mat = byindex.kernbyindex(i, j, surfers, kern, opdims_mat, eps)
-% mat = byindex.kernbyindex(i, j, surfers, kern, opdims_mat, eps, novers)
-% mat = byindex.kernbyindex(i, j, surfers, kern, opdims_mat, eps, novers, opts)
+% mat = byindex.kernbyindex(i, j, surfers, kern, eps)
+% mat = byindex.kernbyindex(i, j, surfers, kern, eps, novers)
+% mat = byindex.kernbyindex(i, j, surfers, kern, eps, novers, Qsparse)
+% mat = byindex.kernbyindex(i, j, surfers, kern, eps, novers, Qsparse, opts)
 %
 % Input:
-%   i, j       - row/col indices to evaluate
-%   surfers    - surfer object or array of surfer objects
-%   kern       - kernel3d object (scalar or nsurfers x nsurfers)
-%   opdims_mat - (2 x nsurfers x nsurfers), or (2,1) to broadcast
-%   eps        - precision requested (e.g. 1e-10), passed to get_overs_orders
-%   novers     - oversampling orders (optional). Either:
-%                  scalar or vector of length nsurfers: one order per surfer,
-%                    applied uniformly to all patches of that surfer
-%                  cell array of length nsurfers: novers{k} is a vector
-%                    of length npatches giving per-patch orders for surfer k
-%                If omitted or empty, kern.get_overs_orders is called per block
-%                (matching surfermat behaviour).
-%   opts       - options struct (optional, reserved for future use)
+%   i, j      - row/col indices to evaluate
+%   surfers   - surfer object or array of surfer objects
+%   kern      - kernel3d object (scalar or nsurfers x nsurfers)
+%   eps       - precision requested (e.g. 1e-10)
+%   novers    - (optional) cell(nsurfers,nsurfers) of per-patch oversampling
+%               order vectors, as returned by surfermat.  novers{itrg,isrc}
+%               is a vector of length surfers(isrc).npatches.
+%               If omitted or empty, kern.get_overs_orders is called per block.
+%   Qsparse   - (optional) sparse matrix of singular quadrature corrections
+%               (same size as the full matrix).  Entries are inserted via
+%               spget_quadcorr, replacing the smooth-rule values at those
+%               positions.  Pass [] to skip.
+%   opts      - options struct (optional, reserved for future use)
 %
 % Output:
-%   mat - length(i) x length(j) matrix of smooth-rule entries
+%   mat - length(i) x length(j) matrix of smooth-rule entries (with singular
+%         corrections applied where Qsparse is provided)
 
 if ~isa(kern, 'kernel3d')
     error('BYINDEX.KERNBYINDEX: kern must be a kernel3d object');
 end
 
-if nargin < 6
+if nargin < 5
     error('BYINDEX.KERNBYINDEX: eps is required');
 end
-if nargin < 7, novers = []; end
-if nargin < 8, opts   = []; end  %#ok<NASGU>
+if nargin < 6, novers  = []; end
+if nargin < 7, Qsparse = []; end
+if nargin < 8, opts    = []; end  %#ok<NASGU>
 
 quad_eps = eps;
 
 nsurfers = length(surfers);
 
-% Broadcast opdims_mat to (2 x nsurfers x nsurfers)
-if ~(ndims(opdims_mat) == 3 && isequal(size(opdims_mat), [2, nsurfers, nsurfers]))
-    v = opdims_mat(:);
-    tmp = zeros(2, nsurfers, nsurfers);
-    for ii_ = 1:nsurfers
-        for jj_ = 1:nsurfers
-            tmp(1, ii_, jj_) = v(1);
-            tmp(2, ii_, jj_) = v(2);
-        end
-    end
-    opdims_mat = tmp;
+% Build opdims_mat (2 x nsurfers x nsurfers) from kern
+if numel(kern) == 1
+    opdims_mat = repmat(reshape(kern.opdims, 2, 1, 1), 1, nsurfers, nsurfers);
+else
+    opdims_mat = reshape([kern.opdims], 2, nsurfers, nsurfers);
 end
 
-% Normalize novers to cell array of per-patch vectors, or leave empty to
-% call get_overs_orders per block.
 use_get_overs = isempty(novers);
-if ~use_get_overs
-    if ~iscell(novers)
-        % scalar or vector of length nsurfers: broadcast to all patches
-        novers_vec = novers(:);
-        if numel(novers_vec) == 1
-            novers_vec = repmat(novers_vec, nsurfers, 1);
-        end
-        novers = cell(1, nsurfers);
-        for k = 1:nsurfers
-            novers{k} = novers_vec(k) * ones(surfers(k).npatches, 1);
-        end
-    end
-end
 
 % Build row/col offset tables
 irowlocs = zeros(nsurfers+1, 1);
@@ -105,15 +87,12 @@ for itrg = 1:nsurfers
 
     ntrg_uni = length(iuni);
 
-    % Full stripped target struct for get_overs_orders (matches surfermat)
-    targs = extract_targ_array(srfi);
-    targinfo_full = [];
-    targinfo_full.r = targs(1:3,:);
-    if size(targs,1) == 12
-        targinfo_full.du = targs(4:6,:);
-        targinfo_full.dv = targs(7:9,:);
-        targinfo_full.n  = targs(10:12,:);
-    end
+    % Full target struct for get_overs_orders
+    targs_full = [];
+    targs_full.r  = srfi.r;
+    targs_full.n  = srfi.n;
+    targs_full.du = srfi.du;
+    targs_full.dv = srfi.dv;
 
     for isrc = 1:nsurfers
         srfj = surfers(isrc);
@@ -142,17 +121,17 @@ for itrg = 1:nsurfers
             if itrg == isrc
                 targ_for_overs = srfi;
             else
-                targ_for_overs = targinfo_full;
+                targ_for_overs = targs_full;
             end
             novers_j = ktmp.get_overs_orders(srfj, targ_for_overs, quad_eps);
         else
-            novers_j = novers{isrc}(:);
+            novers_j = novers{itrg, isrc}(:);
         end
         norders_j = srfj.norders(:);
 
-        if all(novers_j == norders_j)
+        if all(novers_j == norders_j) || any(isnan(novers_j))
             % No oversampling needed: evaluate at original nodes directly
-            srcp = slice_surfer(srfj, juni);
+            srcp = slice_surfer(srfj, juni, ktmp.src_fields);
             wts  = repmat(srfj.wts(juni(:)).', opdims_src, 1);
             wts  = wts(:).';
             matuni = ktmp.eval(srcp, targinfo) .* wts;
@@ -294,18 +273,21 @@ for itrg = 1:nsurfers
     end
 end
 
+% Apply singular quadrature corrections
+if ~isempty(Qsparse)
+    P = zeros(max(i), 1);
+    mat = mat + spget_quadcorr(i(:), j(:), P, Qsparse);
+end
+
 end
 
 
-function srcp = slice_surfer(srfj, pts)
-    src_field = fieldnames(srfj)';
+function srcp = slice_surfer(srfj, pts, src_fields)
     srcp = [];
-    for i = 1:length(src_field)
-        try, val = srfj.(src_field{i}); catch, continue; end
-        if isempty(val), continue; end
-        if mod(size(val(:,:), 2), srfj.npts) == 0
-            srcp.(src_field{i}) = srfj.(src_field{i})(:, pts);
-        end
+    srcp.r = srfj.r(:, pts);
+    for k = 1:length(src_fields)
+        f = src_fields{k};
+        srcp.(f) = srfj.(f)(:, pts);
     end
 end
 

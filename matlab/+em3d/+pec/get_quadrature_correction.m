@@ -94,18 +94,18 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
        ff = 'rsc';
     end
 
-    tinfouse = [];
-    if strcmpi(qtype, 'nrccie-bc')
-      tinfouse.r = S.r;
-      tinfouse.du = S.du;
-      tinfouse.dv = S.dv;
-      tinfouse.n = S.n;
-      tinfouse.patch_id = S.patch_id;
-      tinfouse.uvs_targ = S.uvs_targ;
-    else
-      tinfouse = targinfo;
-    end
-
+%    tinfouse = [];
+%    if strcmpi(qtype, 'nrccie-bc')
+%      tinfouse.r = S.r;
+%      tinfouse.du = S.du;
+%      tinfouse.dv = S.dv;
+%      tinfouse.n = S.n;
+%      tinfouse.patch_id = S.patch_id;
+%      tinfouse.uvs_targ = S.uvs_targ;
+%    else
+%      tinfouse = targinfo;
+%    end
+    tinfouse = targinfo;
 
 
 
@@ -182,14 +182,23 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
       zpars(1) = zk;
       zpars(2) = rep_params;
 
-      mex_id_ = 'getnearquad_em_nrccie_pec(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+%      # FORTRAN getnearquad_em_nrccie_pec(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
+      mex_id_ = 'getnearquad_em_nrccie_pec_targ(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
     elseif strcmpi(qtype, 'nrccie-eval')
       nker = 4;
       wnear = complex(zeros(nker,nquad));
       zpuse = complex(zk);
       mex_id_ = 'getnearquad_em_nrccie_pec_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
 [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpuse, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+%    elseif strcmpi(qtype, 'nrccie-bc-targ')
+%      nker = 9;
+%      wnear = complex(zeros(nker,nquad));
+%      ndz = 2;
+%      zpars = complex(zeros(2,1));
+%      zpars(1) = zk;
+%      zpars(2) = rep_params;
+%      # FORTRAN getnearquad_em_nrccie_pec_targ(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
     else
       error('em3d.pec.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
     end
