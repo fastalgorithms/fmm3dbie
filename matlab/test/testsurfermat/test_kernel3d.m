@@ -319,6 +319,56 @@ if strcmp(status, 'FAIL')
 end
 fprintf('  %-24s  err=%.2e  [%s]\n', 'composite expression', err_arith, status);
 
+% layer_eval: same composite expression, well-separated target
+pot_leval = Kexpr.layer_eval(S, sigma_sr, targ_off, eps);
+pot_lref  = ((-c1)*K_hs.layer_eval(S,sigma_sr,targ_off,eps) ...
+           +       K_hd.layer_eval(S,sigma_sr,targ_off,eps) ...
+           - (K_ls.layer_eval(S,sigma_sr,targ_off,eps) ...
+           +  K_hc.layer_eval(S,sigma_sr,targ_off,eps))/3) / c2;
+err_leval = norm(pot_leval - pot_lref) / norm(pot_lref);
+status    = pass_fail(err_leval, tol_leval);
+if strcmp(status, 'FAIL')
+    failures{end+1} = sprintf('arithmetic composite layer_eval error %.2e', err_leval);
+end
+fprintf('  %-24s  err=%.2e  [%s]\n', 'composite layer_eval', err_leval, status);
+
+% fmm: same composite expression
+pot_fmm  = Kexpr.fmm(eps, src, targ, sigma_r);
+pot_fref = ((-c1)*K_hs.fmm(eps,src,targ,sigma_r) ...
+          +       K_hd.fmm(eps,src,targ,sigma_r) ...
+          - (K_ls.fmm(eps,src,targ,sigma_r) ...
+          +  K_hc.fmm(eps,src,targ,sigma_r))/3) / c2;
+err_fmm  = norm(pot_fmm - pot_fref) / norm(pot_fref);
+status   = pass_fail(err_fmm, tol_fmm);
+if strcmp(status, 'FAIL')
+    failures{end+1} = sprintf('arithmetic composite fmm error %.2e', err_fmm);
+end
+fprintf('  %-24s  err=%.2e  [%s]\n', 'composite fmm', err_fmm, status);
+
+% =========================================================================
+% kernel3d.zeros — check opdims
+% =========================================================================
+
+fprintf('\n=== kernel3d.zeros ===\n');
+
+for od = {[1 1], [3 3], [2 3]}
+    opdims = od{1};
+    Kz = kernel3d.zeros(opdims);
+    assert(isequal(Kz.opdims, opdims), ...
+        'zeros opdims mismatch: got [%d %d]', Kz.opdims(1), Kz.opdims(2));
+    assert(Kz.iszero, 'zeros: iszero should be true');
+    % eval returns correct size zeros
+    M = Kz.eval(src, targ);
+    assert(isequal(size(M), [opdims(1)*nt, opdims(2)*ns]), ...
+        'zeros eval size wrong for opdims [%d %d]', opdims(1), opdims(2));
+    % fmm returns correct size zeros
+    sigma_z = zeros(opdims(2)*ns, 1);
+    v = Kz.fmm(eps, src, targ, sigma_z);
+    assert(isequal(size(v), [opdims(1)*nt, 1]), ...
+        'zeros fmm size wrong for opdims [%d %d]', opdims(1), opdims(2));
+    fprintf('  zeros([%d %d])  opdims/eval/fmm size  [PASS]\n', opdims(1), opdims(2));
+end
+
 % =========================================================================
 fprintf('\n=== Summary ===\n');
 nfail = numel(failures);

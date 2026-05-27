@@ -93,16 +93,16 @@ S3b = geometries.ellipsoid([1,1,1], [2,2,2], [3;0;0], 5);
 srfrs3 = [S3a, S3b];
 
 kerns3(2,2) = kernel3d();
-kerns3(1,1) = kernel3d('stok', 's');
-kerns3(2,1) = kernel3d('stok', 'sp');
-kerns3(1,2) = kernel3d('stok', 'd');
-kerns3(2,2) = kernel3d('stok', 's');   % reuse s for (2,2) — opdims still [3,3]
+kerns3(1,1) = kernel3d('l', 's');
+kerns3(2,1) = kernel3d('l', 'sp');
+kerns3(1,2) = kernel3d('l', 'd');
+kerns3(2,2) = kernel3d('l', 's');   % reuse s for (2,2) — opdims still [3,3]
 
 % Full surfermat (default opts: selfquad on) as reference
-Afull3 = surfermat(srfrs3, kerns3, eps);
+[Afull3,novers3] = surfermat(srfrs3, kerns3, eps);
 
-% Smooth-only surfermat (no selfquad) to get novers
-[Asmth3, novers3] = surfermat(srfrs3, kerns3, eps, opts_sm);
+% % Smooth-only surfermat (no selfquad) to get novers
+% [Asmth3, novers3] = surfermat(srfrs3, kerns3, eps, opts_sm);
 
 % Nonsmoothonly sparse matrix: full near-singular quadrature values
 opts_ns = struct('nonsmoothonly', 1);
