@@ -1,17 +1,15 @@
 ctr1 = [0;0;0];
 ctr2 = [3;0;0];
 
-S1 = geometries.ellipsoid([1,1,1.5],4*[1,1,1],ctr1,6);
-S2 = geometries.ellipsoid([1,1.5,1],4*[1,1,1],ctr2,6);
+S1 = geometries.ellipsoid([1,1,1.5],3*[1,1,1],ctr1,6);
+S2 = geometries.ellipsoid([1,1.5,1],3*[1,1,1],ctr2,6);
 
 zk = 0.1;
 kerns(2,2) = kernel3d();
-% kerns(1,1) = 2*kernel3d('h','c',zk,[1,1]);
-% kerns(1,2) = -2*kernel3d('h','s',zk);
-% kerns(2,1) = 2*kernel3d('h','cp',zk,[1,1]);
-% kerns(2,2) = -2*kernel3d('h','sp',zk);
-kerns(:,1) = 2*kernel3d('h','c',zk,[1,1]);
-kerns(:,2) = 2*kernel3d('h','d',zk);
+kerns(1,1) = 2*kernel3d('l','c',[1,1]);
+kerns(1,2) = -2*kernel3d('l','s');
+kerns(2,1) = 2*kernel3d('l','cp',[1,1]);
+kerns(2,2) = -2*kernel3d('l','sp');
 
 eps = 1e-10;
 srfrs = [S1,S2];
@@ -21,9 +19,8 @@ Smat = Smat+eye(size(Smat));
 tbuild = toc
 
 rhskerns(2,1) = kernel3d();
-rhskerns(1) = kernel3d('h','s',zk);
-% rhskerns(2) = kernel3d('h','sp',zk);
-rhskerns(2) = kernel3d('h','s',zk);
+rhskerns(1) = kernel3d('l','s');
+rhskerns(2) = kernel3d('l','sp');
 %%
 src = []; src.r = ctr1;
 src = []; src.r = ctr2;
@@ -39,7 +36,6 @@ sol = Smat\rhs;
 tsolve = toc
 
 kernseval = kerns(1,:);
-% kernseval = -2*kernel3d('l','s');
 % %%
 nplot = 100;
 xx = linspace(-2,6,nplot)+1e-2;  yy = 2*linspace(-2,2,nplot)+3e-2;
@@ -47,7 +43,7 @@ xx = linspace(-2,6,nplot)+1e-2;  yy = 2*linspace(-2,2,nplot)+3e-2;
 targs = []; targs.r = [XX(:).'; YY(:).'; 0*YY(:).'];
 
 tic;
-skern = kernel3d('h','s',zk);
+skern = kernel3d('l','s');
 uin = skern.eval(src,targs);
 uscat = surferkerneval(srfrs,kernseval,sol,targs,eps);
 tplot = toc

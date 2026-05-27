@@ -144,3 +144,70 @@ trmat2(2:2:end, 1:2:end) = dpmat;
 trmat2(2:2:end, 2:2:end) = spmat;
 
 assert(norm(trmat-trmat2,1)<1e-14*norm(trmat,1), 'interleaved surfermat inccorrect')
+
+%%
+
+s_kern0 = kernel3d('l','s');
+d_kern0 = kernel3d('l','d');
+
+smat  = surfermat(srfrs, s_kern, eps,opts);
+dmat  = surfermat(srfrs, d_kern, eps,opts);
+
+s0mat  = surfermat(srfrs, s_kern0, eps,opts);
+d0mat  = surfermat(srfrs, d_kern0, eps,opts);
+
+tmat = surfermat(srfrs, kernel3d([s_kern,s_kern0;d_kern,d_kern0]), eps,opts);
+
+tol_blk = 1e-13;
+assert(norm(tmat(1:2:end,1:2:end) - smat,  1) < tol_blk*norm(smat,  1), ...
+    'block surfermat: (1,1) block mismatch');
+assert(norm(tmat(2:2:end,1:2:end) - dmat,  1) < tol_blk*norm(dmat,  1), ...
+    'block surfermat: (2,1) block mismatch');
+assert(norm(tmat(1:2:end,2:2:end) - s0mat, 1) < tol_blk*norm(s0mat, 1), ...
+    'block surfermat: (1,2) block mismatch');
+assert(norm(tmat(2:2:end,2:2:end) - d0mat, 1) < tol_blk*norm(d0mat, 1), ...
+    'block surfermat: (2,2) block mismatch');
+
+rhs0 = randn(S.npts,1);
+rhs1 = randn(S.npts,1);
+rhs = [rhs0(:).';rhs1(:).']; rhs = rhs(:);
+
+a0 = surfermatapply(srfrs, s_kern0, rhs0,eps);
+a1 = surfermatapply(srfrs, s_kern, rhs1,eps);
+b0 = surfermatapply(srfrs, d_kern0, rhs0,eps);
+b1 = surfermatapply(srfrs, d_kern, rhs1,eps);
+
+ab = surfermatapply(srfrs, kernel3d([s_kern0,s_kern;d_kern0,d_kern]), rhs,eps);
+
+assert(norm(ab(1:2:end) - (a0+a1)) < tol_blk*norm(a0+a1), ...
+    'block surfermatapply: row 1 mismatch');
+assert(norm(ab(2:2:end) - (b0+b1)) < tol_blk*norm(b0+b1), ...
+    'block surfermatapply: row 2 mismatch');
+
+c0 = surferkerneval(srfrs, s_kern0, rhs0,targs,eps);
+c1 = surferkerneval(srfrs, s_kern, rhs1,targs,eps);
+d0 = surferkerneval(srfrs, d_kern0, rhs0,targs,eps);
+d1 = surferkerneval(srfrs, d_kern, rhs1,targs,eps);
+
+cd = surferkerneval(srfrs, kernel3d([s_kern0,s_kern;d_kern0,d_kern]), rhs,targs,eps);
+
+assert(norm(cd(1:2:end) - (c0+c1)) < tol_blk*norm(c0+c1), ...
+    'block surferkerneval: row 1 mismatch');
+assert(norm(cd(2:2:end) - (d0+d1)) < tol_blk*norm(d0+d1), ...
+    'block surferkerneval: row 2 mismatch');
+
+%%
+k1 = 2*(kernel3d('stok','s')+kernel3d('stok','d'));
+k2 = kernel3d([s_kern,d_kern, s_kern]);
+
+smat1 = surfermat(srfrs,k1,eps);
+smat2 = surfermat(srfrs,k2,eps);
+
+smat = surfermat(srfrs, kernel3d([k1;k2]),eps);
+
+for i = 1:3
+    assert(norm(smat(i:4:end,:) - smat1(i:3:end,:),1) < tol_blk*norm(smat1,1), ...
+        'stacked surfermat: row block %d mismatch', i);
+end
+assert(norm(smat(4:4:end,:) - smat2,1) < tol_blk*norm(smat2,1), ...
+    'stacked surfermat: bottom block mismatch');

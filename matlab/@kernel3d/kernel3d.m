@@ -165,8 +165,8 @@ classdef kernel3d
         obj    = zeros(opdims);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
-        Q      = addquad(Qf,Qg,S,sign);
-        Q      = scalequad(Qf,S,c);
+        Q      = addquad(Qf,Qg,S,sign,ri);
+        Q      = scalequad(Qf,S,c,ri);
         ri     = rsc_interleave_scalar();
         ri     = rsc_interleave_full(m, n);
         ri     = rsc_interleave_symmetric3();

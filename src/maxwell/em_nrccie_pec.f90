@@ -2245,9 +2245,10 @@ end subroutine fker_em_nrccie_pec_s
       ndd=1
       ndi=2
 !
-!       ipv = 0: no principal value treatment needed for off-surface targets
+!       ipv = 1: kernel has a principal-value singularity (double-layer type)
 !
-      ipv=0
+      ipv=1
+
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, idim)
       do i=1,nquad

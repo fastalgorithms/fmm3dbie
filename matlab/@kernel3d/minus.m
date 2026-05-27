@@ -27,8 +27,9 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
     if (isa(f.getquad, 'function_handle') && isa(g.getquad, 'function_handle'))
         fgetquad = f.getquad;
         ggetquad = g.getquad;
+        fri = f.rsc_to_interleave;
         f.getquad = @(S, eps, varargin) kernel3d.addquad( ...
-            fgetquad(S, eps, varargin{:}), ggetquad(S, eps, varargin{:}), S, -1);
+            fgetquad(S, eps, varargin{:}), ggetquad(S, eps, varargin{:}), S, -1, fri);
     else
         f.getquad = [];
     end

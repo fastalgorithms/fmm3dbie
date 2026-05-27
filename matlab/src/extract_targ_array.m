@@ -16,9 +16,9 @@ function [targs] = extract_targ_array(targinfo)
 %         and 12 if r,du,dv,and n are present in the struct
 %
     [~,ntarg] = size(targinfo.r);
-    has_n  = isfield(targinfo,'n');
-    has_du = isfield(targinfo,'du');
-    has_dv = isfield(targinfo,'dv');
+    has_n  = isfield(targinfo,'n') || isprop(targinfo,'n') ;
+    has_du = isfield(targinfo,'du') || isprop(targinfo,'du') ;
+    has_dv = isfield(targinfo,'dv') || isprop(targinfo,'dv') ;
     targs(1:3,:) = targinfo.r;
    if has_du,  targs(4:6,:)   = targinfo.du;  end
    if has_dv,  targs(7:9,:)   = targinfo.dv;  end

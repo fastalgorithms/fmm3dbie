@@ -108,7 +108,8 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
                 Qkl_raw = kerns(k,l).getquad(S, eps, varargin{:});
                 % Convert rsc struct to sparse if needed
                 if isstruct(Qkl_raw) && isfield(Qkl_raw, 'row_ptr')
-                    Qkl = conv_rsc_to_spmat(S, Qkl_raw.row_ptr, Qkl_raw.col_ind, Qkl_raw.wnear);
+                    ri = kerns(k,l).rsc_to_interleave;
+                    Qkl = conv_rsc_to_spmat(S, Qkl_raw.row_ptr, Qkl_raw.col_ind, Qkl_raw.wnear, ri);
                 else
                     Qkl = Qkl_raw;
                 end

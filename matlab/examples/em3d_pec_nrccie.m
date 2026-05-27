@@ -13,34 +13,29 @@ S = geometries.ellipsoid([1,1,1.5],[1,1,1], [0;0;0], 8);
 
 % % --- build system matrix (nrccie-bc kernel + 1/2 identity) ---
 K   = kernel3d.em3d('nrccie-bc', zk, alpha);
-tic;
-Q = K.getquad(S,eps);
-toc;
-tic;
-Q = K.getquad(S,eps,S);
-toc;
+
 tic;
 A   = surfermat(S, K, eps);
 A   = A + 0.5*eye(size(A));
 toc;
-% 
-% % --- incident plane wave and nrccie RHS ---
-% [einc, hinc] = em3d.planewave(zk, [pi/3; pi/4], [1; 0], S);
-% rhs = nrccie_rhs(S, einc, hinc, alpha);
-% 
-% % --- solve ---
-% sol = A \ rhs;
-% 
-% % --- recover Cartesian J and rho from orthonormal density ---
-% [Jvec, rho] = nrccie_to_cartesian(S, sol);
-% dens_eval = [Jvec; rho];   % (4, npts): [Jx; Jy; Jz; rho]
+
+% --- incident plane wave and nrccie RHS ---
+[einc, hinc] = em3d.planewave(zk, [pi/3; pi/4], [1; 0], S);
+rhs = nrccie_rhs(S, einc, hinc, alpha);
+
+% --- solve ---
+sol = A \ rhs;
+
+% --- recover Cartesian J and rho from orthonormal density ---
+[Jvec, rho] = nrccie_to_cartesian(S, sol);
+dens_eval = [Jvec; rho];   % (4, npts): [Jx; Jy; Jz; rho]
 
 [einc, hinc] = em3d.planewave(zk, [pi/3; pi/4], [1; 0], S);
 
 opts = [];
 opts.eps_gmres = 1e-10;
 tic;
-[dens_eval] = em3d.pec.solver(S, einc, hinc, eps, zk, alpha, opts);
+[dens_eval2] = em3d.pec.solver(S, einc, hinc, eps, zk, alpha, opts);
 toc;
 
 %%

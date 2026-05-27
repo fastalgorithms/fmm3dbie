@@ -50,7 +50,7 @@ if isempty(cors)
     else
         coropts.nonsmoothonly = 1;
     end
-    [cors,novers] = surfermat(surferobj,kern,coropts);
+    [cors,novers] = surfermat(surferobj,kern,eps,coropts);
 end
 
 

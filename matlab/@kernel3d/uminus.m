@@ -17,8 +17,9 @@ end
 
 if (isa(f.getquad, 'function_handle'))
     fgetquad = f.getquad;
+    fri = f.rsc_to_interleave;
     f.getquad = @(S, eps, varargin) kernel3d.scalequad( ...
-        fgetquad(S, eps, varargin{:}), S, -1);
+        fgetquad(S, eps, varargin{:}), S, -1, fri);
 else
     f.getquad = [];
 end

@@ -145,17 +145,31 @@ end
 function Q = em3d_nrccie_bc_getquad(S, eps, zk, alpha, args)
 %EM3D_NRCCIE_BC_GETQUAD  Near-quadrature for nrccie-bc.
 %  Wraps em3d.pec.get_quadrature_correction with rep = 'nrccie-bc'.
+%  If a targinfo struct (with field .r) or surfer is the first element of
+%  args it is used as the target; otherwise the surface S is used
+%  (self-quadrature, the normal use case for the BIE).
 if nargin < 5 || isempty(args), args = {}; end
-opts_use = struct();
 if length(args) >= 2
+    targinfo = args{1};
     opts_use = args{2};
-elseif length(args) >= 1 && isstruct(args{1}) && ~isfield(args{1},'r')
-    % single arg and it looks like an opts struct, not targinfo
-    opts_use = args{1};
+elseif length(args) == 1
+    if isstruct(args{1}) && isfield(args{1}, 'r')
+        targinfo = args{1};
+        opts_use = struct();
+    elseif isa(args{1}, 'surfer')
+        targinfo = args{1};
+        opts_use = struct();
+    else
+        targinfo = S;
+        opts_use = args{1};
+    end
+else
+    targinfo = S;
+    opts_use = struct();
 end
+if isempty(targinfo), targinfo = S; end
 opts_use.rep = 'nrccie-bc';
-% nrccie-bc uses surface itself as targets (self-quadrature)
-Q = em3d.pec.get_quadrature_correction(S, eps, zk, alpha, S, opts_use);
+Q = em3d.pec.get_quadrature_correction(S, eps, zk, alpha, targinfo, opts_use);
 end
 
 function p = em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, args)

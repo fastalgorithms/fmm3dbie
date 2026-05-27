@@ -15,11 +15,18 @@ function mat = kernbyindex(i, j, surfers, kern, eps, novers, Qsparse, opts)
 %               order vectors, as returned by surfermat.  novers{itrg,isrc}
 %               is a vector of length surfers(isrc).npatches.
 %               If omitted or empty, kern.get_overs_orders is called per block.
-%   Qsparse   - (optional) sparse matrix of singular quadrature corrections
-%               (same size as the full matrix).  Entries are inserted via
-%               spget_quadcorr, replacing the smooth-rule values at those
-%               positions.  Pass [] to skip.
-%   opts      - options struct (optional, reserved for future use)
+%   Qsparse   - (optional) sparse matrix of quadrature corrections
+%               (same size as the full matrix).  Pass [] to skip.
+%               Two modes, selected by opts.replace_quadcorr:
+%                 true (default): replacement, i.e. overwrite smooth entries
+%                   with Qsparse values where nonzero.  Use with nonsmoothonly=1
+%                   output from surfermat, which stores the full near-singular
+%                   quadrature values directly.
+%                 false: additive, i.e. mat += Qsparse.  Use with corrections=1
+%                   output from surfermat, which stores (near-singular - smooth)
+%                   so that smooth + correction = full.
+%   opts      - options struct
+%     opts.replace_quadcorr - logical (default true), see Qsparse above
 %
 % Output:
 %   mat - length(i) x length(j) matrix of smooth-rule entries (with singular
@@ -34,7 +41,12 @@ if nargin < 5
 end
 if nargin < 6, novers  = []; end
 if nargin < 7, Qsparse = []; end
-if nargin < 8, opts    = []; end  %#ok<NASGU>
+if nargin < 8, opts    = []; end
+
+replace_quadcorr = true;
+if isstruct(opts) && isfield(opts, 'replace_quadcorr')
+    replace_quadcorr = opts.replace_quadcorr;
+end
 
 quad_eps = eps;
 
@@ -276,7 +288,17 @@ end
 % Apply singular quadrature corrections
 if ~isempty(Qsparse)
     P = zeros(max(i), 1);
-    mat = mat + spget_quadcorr(i(:), j(:), P, Qsparse);
+    corr = spget_quadcorr(i(:), j(:), P, Qsparse);
+    if replace_quadcorr
+        % nonsmoothonly mode: Qsparse holds full near-singular values;
+        % replace smooth entries wherever Qsparse is nonzero
+        mask = (corr ~= 0);
+        mat(mask) = corr(mask);
+    else
+        % corrections mode: Qsparse holds (near-singular - smooth);
+        % add to smooth entries
+        mat = mat + corr;
+    end
 end
 
 end
