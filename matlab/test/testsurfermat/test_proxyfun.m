@@ -10,21 +10,22 @@ tol = 1e-9;
 
 fprintf('=== test_proxyfun ===\n\n');
 
-% Big sphere surfer, radius 1, centered at origin
-S = geometries.sphere(2, 10, [0;0;0], 6, 1);
-kern = kernel3d('h', 's', zk);
+% Single sphere surfer. Sources are points near ctr on one side of the sphere,
+% targets are points far from ctr on the other side.
+S    = geometries.sphere(2, 10, [0;0;0], 6, 1);
 kern = kernel3d('l', 's');
 
-% Source ids: points inside ball of radius r_src
-r_src  = 0.3;
-r_sep  = 1;   % proxy sphere radius (unit-scale, will be rescaled by l)
-r_targ = 2;   % targets outside this ball
+ctr    = [2; 0; 0];   % near one pole of the sphere
+r_src  = 0.5;         % sources within this radius of ctr
+r_targ = 2.0;         % targets beyond this radius from ctr
+l      = 2*r_src;     % box half-length = 0.6
+r_sep  = 2.0;         % proxy sphere unit-scale radius
+                       % physical proxy radius = r_sep*l = 1.2
+                       % source-to-proxy gap = 1.2 - 0.3 = 0.9  (ratio 4:1)
+                       % target-to-proxy gap = 2.0 - 1.2 = 0.8
 
-ctr = [2; 0; 0];
-l   = 2*r_src;    % box half-length — proxy points live at r_sep/l in unit scale
-
-srcids  = find(vecnorm(S.r-ctr) < r_src).';
-targids = find(vecnorm(S.r-ctr) > r_targ).';
+srcids  = find(vecnorm(S.r - ctr) < r_src).';
+targids = find(vecnorm(S.r - ctr) > r_targ).';
 
 assert(~isempty(srcids),  'No source points found in inner ball');
 assert(~isempty(targids), 'No target points found outside outer ball');
@@ -32,19 +33,34 @@ assert(~isempty(targids), 'No target points found outside outer ball');
 % True src->targ block
 src2targ = byindex.kernbyindex(targids, srcids, S, kern, eps);
 
-% Proxy surface: random points on a sphere of radius r_sep (unit-scale: r_sep/l)
-nproxy = 400;
-pr = randn(3, nproxy);
-pr = (r_sep / l) .* pr ./ vecnorm(pr);   % unit-scale proxy points
+% Proxy surface: GL in cos(theta) x equispaced in phi on sphere of radius r_sep
+ntheta = 20;
+nphi   = 20;
+[ct, wt] = polytens.lege.pts(ntheta);   % ntheta GL nodes on [-1,1] for cos(theta)
+theta = acos(ct(:));                     % (ntheta,1)
+phi   = (0:nphi-1).' * (2*pi/nphi);     % (nphi,1), equispaced
+wphi  = 2*pi/nphi;                       % scalar weight per phi point
+
+% Tensor product: (ntheta*nphi) proxy points
+[TH, PH] = meshgrid(theta, phi);         % (nphi,ntheta) each
+TH = TH(:); PH = PH(:);
+
+% Weights: w_theta * w_phi, with sin(theta) already in GL weight (integrating
+% over cos(theta) absorbs the Jacobian: int f dOmega = int_{-1}^{1} int_0^{2pi} f dphi d(cos theta))
+[~, WT] = meshgrid(wt(:), ones(nphi,1));
+WT = WT(:);                              % (ntheta*nphi,1), GL weights
+pw = WT * wphi;                          % (ntheta*nphi,1), solid-angle weights
+
+% pr in unit scale: proxyfun does pxy = pr*l + ctr internally,
+% so pass points at radius r_sep (no /l factor here)
+pr = r_sep * [sin(TH).*cos(PH), sin(TH).*sin(PH), cos(TH)].';  % (3,nproxy)
 pn = pr ./ vecnorm(pr);                   % outward normals
-pw = ones(nproxy, 1)/nproxy*4*pi;                     % equal weights
 
-% pin: logical mask — is a (unit-scale recentered) point inside the proxy sphere?
-pin = @(dr) vecnorm(dr) < (r_sep / l);
+% pin: unit-scale test — a point dr (already divided by l) is inside
+% the proxy sphere if its unit-scale radius < r_sep
+pin = @(dr) vecnorm(dr) < r_sep;
 
-% slf = column indices for srcids (scalar kernel, opdims=[1,1])
 slf = srcids;
-% nbr = row indices for targids — proxyfun will filter to those outside proxy
 nbr = targids;
 
 ifaddtrans = false;
@@ -69,10 +85,3 @@ errpxy = norm(Kpxy(:,rem) - Kpxy(:,skel)*T,'fro')/norm(Kpxy,'fro')
 err = norm(src2targ(:,rem) - src2targ(:,skel)*T,'fro')/norm(src2targ,'fro')
 
 assert(err < tol, 'FAIL: low-rank error %.2e exceeds tol %.2e', err, tol);
-% err = norm(src2targ - src2targ_lr, 'fro') / norm(src2targ, 'fro');
-% fprintf('Rank of proxy approximation: %d  (out of %d sources, %d targets)\n', ...
-%     k, length(srcids), length(targids));
-% fprintf('Low-rank factorization error: %.2e\n', err);
-% assert(err < tol, 'FAIL: low-rank error %.2e exceeds tol %.2e', err, tol);
-% fprintf('PASS\n');
-
