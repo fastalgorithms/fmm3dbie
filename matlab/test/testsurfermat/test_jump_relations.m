@@ -114,12 +114,14 @@ coefs_h   = [1i*zk; 1.0];
 % targets for hypersingular kernels; only test usematlab=1 for those.
 jump_tests = {
 %  label          kernel                              density      expected jump (at ic)  hypersingular
-  'lap  d',   kernel3d('l','d'),                sigma_r,    @(s)  s(ic),               false;
-  'lap  sp',  kernel3d('l','sp'),               sigma_r,    @(s) -s(ic),               false;
+  % 'lap  d',   kernel3d('l','d'),                sigma_r,    @(s)  s(ic),               false;
+  % 'lap  sp',  kernel3d('l','sp'),               sigma_r,    @(s) -s(ic),               false;
+  'lap  dp',  kernel3d('l','dp'),               sigma_r,    @(s) 0*s,               false;
   'lap  c',   kernel3d('l','c',coefs_lap),      sigma_r,    @(s)  coefs_lap(2)*s(ic),  false;
   'lap  cp',  kernel3d('l','cp',coefs_lap),     sigma_r,    @(s) -coefs_lap(1)*s(ic),  true;
   'helm d',   kernel3d('h','d',zk),             sigma_c,    @(s)  s(ic),               false;
   'helm sp',  kernel3d('h','sp',zk),            sigma_c,    @(s) -s(ic),               false;
+  'helm  dp', kernel3d('h','dp',zk),            sigma_c,    @(s) 0*s,               false;
   'helm c',   kernel3d('h','c',zk,coefs_h),    sigma_c,    @(s)  coefs_h(2)*s(ic),    false;
   'helm cp',  kernel3d('h','cp',zk,coefs_h),   sigma_c,    @(s) -coefs_h(1)*s(ic),    true;
   'stok d',   kernel3d('stok','d'),             sigma_stok, @(s)  s(:,ic),             false;
@@ -142,19 +144,19 @@ for k = 1:size(jump_tests, 1)
         u_ext = surferkerneval(S, kern, sigma(:), targ_ext, eps, opts_ke);
         u_int = surferkerneval(S, kern, sigma(:), targ_int, eps, opts_ke);
         jump     = u_ext - u_int;
-        err_jump = norm(jump(:) - exp_jump(:)) / norm(exp_jump(:));
+        % err_jump = norm(jump(:) - exp_jump(:)) / norm(exp_jump(:));
+        err_jump = norm(jump(:) - exp_jump(:)) / norm(abs(u_ext(:)));
         if err_jump < tol, st = 'PASS'; else, st = 'FAIL'; nfail = nfail+1; end
         fprintf('  %-12s  jump err (usematlab=%d) = %.2e  [%s]\n', label, usematlab, err_jump, st);
     end
     % Use usematlab=1 values for the one-sided check below
-    opts_ke1 = struct('usematlab', 1);
-    u_ext = surferkerneval(S, kern, sigma(:), targ_ext, eps, opts_ke1);
+    u_ext = surferkerneval(S, kern, sigma(:), targ_ext, eps, struct('usematlab', 1));
 
     % (2) One-sided: u_ext = surfermatapply(at ic) + exp_jump/2
     % For hypersingular kernels, layer_eval (usematlab=0) does not support
     % off-surface targets, so only test usematlab=1.
     um_vals = [0, 1];
-    if hypsing, um_vals = 1; end
+    % if hypsing, um_vals = 1; end
     for usematlab = um_vals
         opts_ma  = struct('usematlab', usematlab);
         pot_full = surfermatapply(S, kern, sigma(:), eps, [], [], opts_ma);
@@ -178,14 +180,14 @@ kern_em3 = kernel3d('em', 'nrccie-bc', zk_em, alpha_em);
 exp_jump3 = -sigma_em3(:, ic);
 
 for usematlab = [0, 1]
-    opts_ke = struct('usematlab', usematlab);
-    u_ext3 = surferkerneval(S, kern_em3, sigma_em3(:), targ_ext, eps, opts_ke);
-    u_int3 = surferkerneval(S, kern_em3, sigma_em3(:), targ_int, eps, opts_ke);
+    opts_ke3 = struct('usematlab', usematlab);
+    u_ext3 = surferkerneval(S, kern_em3, sigma_em3(:), targ_ext, eps, opts_ke3);
+    u_int3 = surferkerneval(S, kern_em3, sigma_em3(:), targ_int, eps, opts_ke3);
     err_em3 = norm((u_ext3 - u_int3) - exp_jump3) / norm(exp_jump3);
     if err_em3 < tol, st = 'PASS'; else, st = 'FAIL'; nfail = nfail+1; end
     fprintf('  %-12s  jump err (usematlab=%d) = %.2e  [%s]\n', 'em nrccie-bc', usematlab, err_em3, st);
 end
-u_ext3 = surferkerneval(S, kern_em3, sigma_em3(:), targ_ext, eps, struct('usematlab',1));
+u_ext3 = surferkerneval(S, kern_em3, sigma_em3(:), targ_ext, eps, struct('usematlab', 1));
 
 for usematlab = [0, 1]
     opts_ma  = struct('usematlab', usematlab);

@@ -803,18 +803,5 @@
       enddo
 !$OMP END PARALLEL DO
 
-      !
-      ! Negate to match the double-negative sign convention used by the
-      ! Stokes DLP evaluator: kern_SP = -t(S), so that SP_mat = -D^T
-      ! (with swapped src/targ roles) in the same way that kern_D = -D.
-      !
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
-      do i = 1,nt
-        pot(1,i) = -pot(1,i)
-        pot(2,i) = -pot(2,i)
-        pot(3,i) = -pot(3,i)
-      enddo
-!$OMP END PARALLEL DO
-
       return
       end

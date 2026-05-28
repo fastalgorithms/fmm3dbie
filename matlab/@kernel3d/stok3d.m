@@ -49,9 +49,9 @@ switch lower(type)
 
         dpars_s = [1.0; 0.0];
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-                            stok_layer_eval(S, sigma, targ, eps, dpars_s, varargin);
+                            stok_layer_eval(S, sigma, targ, eps, dpars_s, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          stok_getquad(S, eps, dpars_s, varargin);
+                          stok_getquad(S, eps, dpars_s, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
     case {'d', 'double', 'traction'}
@@ -64,9 +64,9 @@ switch lower(type)
 
         dpars_d = [0.0; 1.0];
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-                            stok_layer_eval(S, sigma, targ, eps, dpars_d, varargin);
+                            stok_layer_eval(S, sigma, targ, eps, dpars_d, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          stok_getquad(S, eps, dpars_d, varargin);
+                          stok_getquad(S, eps, dpars_d, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
 
@@ -79,9 +79,9 @@ switch lower(type)
         obj.fmm = @(eps,src,targ,sigma) stok3d.fmm(eps, src, targ, 'sp', sigma);
 
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-                            stok_sprime_layer_eval(S, sigma, targ, eps, varargin);
+                            stok_sprime_layer_eval(S, sigma, targ, eps, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          stok_sprime_getquad(S, eps, varargin);
+                          stok_sprime_getquad(S, eps, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields = {'n'};
 
@@ -102,9 +102,9 @@ switch lower(type)
 
         dpars_c = coefs;
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-                            stok_layer_eval(S, sigma, targ, eps, dpars_c, varargin);
+                            stok_layer_eval(S, sigma, targ, eps, dpars_c, varargin{:});
         obj.getquad  = @(S,eps,varargin) ...
-                          stok_getquad(S, eps, dpars_c, varargin);
+                          stok_getquad(S, eps, dpars_c, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
 
@@ -136,67 +136,33 @@ else
 end
 end
 
-function p = stok_layer_eval(S, sigma, targ, eps, dpars, args)
+function p = stok_layer_eval(S, sigma, targ, eps, dpars, opts)
 %STOK_LAYER_EVAL  Wrap stok3d.velocity.eval.
 %  sigma may arrive as (3*npts,1) flat or already (3,npts); reshape to (3,npts).
-if nargin < 6 || isempty(args), args = {}; end
-if ~isempty(args) && isstruct(args{end})
-    opts = args{end};
-else
-    opts = struct();
-end
+if nargin < 6 || isempty(opts), opts = struct(); end
 sigma = reshape(sigma, 3, []);
 p_mat = stok3d.velocity.eval(S, sigma, targ, eps, dpars, opts);
 p = p_mat(:);
 end
 
-function Q = stok_getquad(S, eps, dpars, args)
+function Q = stok_getquad(S, eps, dpars, targinfo, opts)
 %STOK_GETQUAD  Wrap stok3d.velocity.get_quadrature_correction.
-if nargin < 4 || isempty(args), args = {}; end
-if length(args) >= 2
-    targinfo = args{1};
-    opts     = args{2};
-elseif length(args) == 1
-    targinfo = args{1};
-    opts     = struct();
-else
-    targinfo = S;
-    opts     = struct();
-end
-if isempty(targinfo)
-    targinfo = S;
-end
+if nargin < 4 || isempty(targinfo), targinfo = S; end
+if nargin < 5 || isempty(opts),     opts     = struct(); end
 Q = stok3d.velocity.get_quadrature_correction(S, eps, dpars, targinfo, opts);
 end
 
-function p = stok_sprime_layer_eval(S, sigma, targ, eps, args)
+function p = stok_sprime_layer_eval(S, sigma, targ, eps, opts)
 %STOK_SPRIME_LAYER_EVAL  Wrap stok3d.traction.eval.
-if nargin < 5 || isempty(args), args = {}; end
-if ~isempty(args) && isstruct(args{end})
-    opts = args{end};
-else
-    opts = struct();
-end
+if nargin < 5 || isempty(opts), opts = struct(); end
 sigma = reshape(sigma, 3, []);
 p_mat = stok3d.traction.eval(S, sigma, targ, eps, opts);
 p = p_mat(:);
 end
 
-function Q = stok_sprime_getquad(S, eps, args)
+function Q = stok_sprime_getquad(S, eps, targinfo, opts)
 %STOK_SPRIME_GETQUAD  Wrap stok3d.traction.get_quadrature_correction.
-if nargin < 3 || isempty(args), args = {}; end
-if length(args) >= 2
-    targinfo = args{1};
-    opts     = args{2};
-elseif length(args) == 1
-    targinfo = args{1};
-    opts     = struct();
-else
-    targinfo = S;
-    opts     = struct();
-end
-if isempty(targinfo)
-    targinfo = S;
-end
+if nargin < 3 || isempty(targinfo), targinfo = S; end
+if nargin < 4 || isempty(opts),     opts     = struct(); end
 Q = stok3d.traction.get_quadrature_correction(S, eps, targinfo, opts);
 end

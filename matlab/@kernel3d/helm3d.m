@@ -107,9 +107,9 @@ switch lower(type)
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'sp', sigma);
         rep_pars         = [1.0; 0.0];
         obj.layer_eval   = @(S,sigma,targ,eps,varargin) ...
-                               helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, varargin);
+                               helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, varargin{:});
         obj.getquad      = @(S,eps,varargin) ...
-                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin);
+                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields  = {'n'};
 
@@ -119,9 +119,9 @@ switch lower(type)
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'dprime');
         rep_pars         = [0.0; 1.0];
         obj.layer_eval   = @(S,sigma,targ,eps,varargin) ...
-                               helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, varargin);
+                               helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, varargin{:});
         obj.getquad      = @(S,eps,varargin) ...
-                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin);
+                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
         obj.targ_fields  = {'n'};
@@ -149,9 +149,9 @@ switch lower(type)
         obj.params.coefs = coefs;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'cprime', coefs);
         obj.layer_eval   = @(S,sigma,targ,eps,varargin) ...
-                               helm_combprime_eval(S, sigma, targ, eps, zk, coefs, varargin);
+                               helm_combprime_eval(S, sigma, targ, eps, zk, coefs, varargin{:});
         obj.getquad      = @(S,eps,varargin) ...
-                               helm_combprime_getquad(S, eps, zk, coefs, varargin);
+                               helm_combprime_getquad(S, eps, zk, coefs, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
         obj.targ_fields  = {'n'};
@@ -357,27 +357,17 @@ function [zk0, zk1, comb, a0, a1] = parse_diff4(zk, coefs, name)
     a1   = coefs(4);
 end
 
-function p = helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, args)
+function p = helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, opts)
 %HELM_COMBPRIME_EVAL  Call helm3d.dirichlet.eval with iprime=1.
-    if nargin < 7 || isempty(args), args = {}; end
-    if isempty(args) || ~isstruct(args{end})
-        args{end+1} = struct();
-    end
-    args{end}.iprime = 1;
-    p = helm3d.dirichlet.eval(S, sigma, targ, eps, zk, rep_pars, args{:});
+    if nargin < 7 || isempty(opts), opts = struct(); end
+    opts.iprime = 1;
+    p = helm3d.dirichlet.eval(S, sigma, targ, eps, zk, rep_pars, opts);
 end
 
-function Q = helm_combprime_getquad(S, eps, zk, rep_pars, args)
+function Q = helm_combprime_getquad(S, eps, zk, rep_pars, targinfo, opts)
 %HELM_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
-    if nargin < 5 || isempty(args), args = {}; end
-    if length(args) >= 2
-        targinfo = args{1};  opts = args{2};
-    elseif length(args) == 1
-        targinfo = args{1};  opts = struct();
-    else
-        targinfo = S;        opts = struct();
-    end
-    if isempty(targinfo), targinfo = S; end
+    if nargin < 5 || isempty(targinfo), targinfo = S; end
+    if nargin < 6 || isempty(opts),     opts     = struct(); end
     opts.iprime = 1;
     Q = helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts);
 end

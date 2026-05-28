@@ -87,10 +87,10 @@ switch lower(type)
         obj.fmm = @(eps,src,targ,sigma) em3d.fmm(eps, zk, src, targ, 'nrccie-bc', sigma, alpha);
 
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-            em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, varargin);
+            em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, varargin{:});
 
         obj.getquad = @(S,eps,varargin) ...
-            em3d_nrccie_bc_getquad(S, eps, zk, alpha, varargin);
+            em3d_nrccie_bc_getquad(S, eps, zk, alpha, varargin{:});
 
         obj.get_overs_orders = @(S,t,eps) ...
             kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
@@ -118,10 +118,10 @@ switch lower(type)
         obj.fmm = @(eps,src,targ,sigma) em3d.fmm(eps, zk, src, targ, 'nrccie-eval', sigma);
 
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-            em3d_nrccie_eval_layer_eval(S, sigma, targ, eps, zk, varargin);
+            em3d_nrccie_eval_layer_eval(S, sigma, targ, eps, zk, varargin{:});
 
         obj.getquad = @(S,eps,varargin) ...
-            em3d_nrccie_eval_getquad(S, eps, zk, varargin);
+            em3d_nrccie_eval_getquad(S, eps, zk, varargin{:});
 
         obj.get_overs_orders = @(S,t,eps) ...
             kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
@@ -142,37 +142,15 @@ end
 % NRCCIE-BC helpers
 % =========================================================================
 
-function Q = em3d_nrccie_bc_getquad(S, eps, zk, alpha, args)
+function Q = em3d_nrccie_bc_getquad(S, eps, zk, alpha, targinfo, opts)
 %EM3D_NRCCIE_BC_GETQUAD  Near-quadrature for nrccie-bc.
-%  Wraps em3d.pec.get_quadrature_correction with rep = 'nrccie-bc'.
-%  If a targinfo struct (with field .r) or surfer is the first element of
-%  args it is used as the target; otherwise the surface S is used
-%  (self-quadrature, the normal use case for the BIE).
-if nargin < 5 || isempty(args), args = {}; end
-if length(args) >= 2
-    targinfo = args{1};
-    opts_use = args{2};
-elseif length(args) == 1
-    if isstruct(args{1}) && isfield(args{1}, 'r')
-        targinfo = args{1};
-        opts_use = struct();
-    elseif isa(args{1}, 'surfer')
-        targinfo = args{1};
-        opts_use = struct();
-    else
-        targinfo = S;
-        opts_use = args{1};
-    end
-else
-    targinfo = S;
-    opts_use = struct();
-end
-if isempty(targinfo), targinfo = S; end
-opts_use.rep = 'nrccie-bc';
-Q = em3d.pec.get_quadrature_correction(S, eps, zk, alpha, targinfo, opts_use);
+if nargin < 5 || isempty(targinfo), targinfo = S; end
+if nargin < 6 || isempty(opts),     opts     = struct(); end
+opts.rep = 'nrccie-bc';
+Q = em3d.pec.get_quadrature_correction(S, eps, zk, alpha, targinfo, opts);
 end
 
-function p = em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, args)
+function p = em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, opts)
 %EM3D_NRCCIE_BC_LAYER_EVAL  Layer-potential for nrccie-bc via em3d.pec.eval.
 %
 %  Uses the orthonormal-frame convention matching the Fortran routines and
@@ -189,13 +167,13 @@ function p = em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, args)
 %  em3d.pec.eval with rep='nrccie-bc' calls lpcomp_em_nrccie_pec_addsub_targ
 %  which expects and returns exactly this orthonormal-frame convention, so
 %  no frame conversion is needed here.
-if nargin < 7 || isempty(args), args = {}; end
+if nargin < 7 || isempty(opts), opts = struct(); end
+opts.rep = 'nrccie-bc';
 
 npts      = S.npts;
 densities = reshape(sigma, 3, npts);   % (3, npts) = [j_ru; j_rv; rho]
 
-opts_pe   = struct('rep', 'nrccie-bc');
-[E_pe, ~] = em3d.pec.eval(S, densities, targ, eps, zk, alpha, opts_pe);
+[E_pe, ~] = em3d.pec.eval(S, densities, targ, eps, zk, alpha, opts);
 % E_pe = (3, ntarg) = [pot_ru; pot_rv; pot_rho] in orthonormal target frame
 
 % Output interleaved: [pot_ru(1); pot_rv(1); pot_rho(1); pot_ru(2); ...]
@@ -206,34 +184,15 @@ end
 % NRCCIE-EVAL helpers
 % =========================================================================
 
-function Q = em3d_nrccie_eval_getquad(S, eps, zk, args)
+function Q = em3d_nrccie_eval_getquad(S, eps, zk, targinfo, opts)
 %EM3D_NRCCIE_EVAL_GETQUAD  Near-quadrature for nrccie-eval.
-if nargin < 4 || isempty(args), args = {}; end
-% Separate targinfo and opts
-if length(args) >= 2
-    targinfo = args{1};
-    opts_use = args{2};
-elseif length(args) == 1
-    if isstruct(args{1}) && isfield(args{1}, 'r')
-        targinfo = args{1};
-        opts_use = struct();
-    elseif isa(args{1}, 'surfer')
-        targinfo = args{1};
-        opts_use = struct();
-    else
-        targinfo = S;
-        opts_use = args{1};
-    end
-else
-    targinfo = S;
-    opts_use = struct();
-end
-if isempty(targinfo), targinfo = S; end
-opts_use.rep = 'nrccie-eval';
-Q = em3d.pec.get_quadrature_correction(S, eps, zk, [], targinfo, opts_use);
+if nargin < 4 || isempty(targinfo), targinfo = S; end
+if nargin < 5 || isempty(opts),     opts     = struct(); end
+opts.rep = 'nrccie-eval';
+Q = em3d.pec.get_quadrature_correction(S, eps, zk, [], targinfo, opts);
 end
 
-function p = em3d_nrccie_eval_layer_eval(S, sigma, targ, eps, zk, args)
+function p = em3d_nrccie_eval_layer_eval(S, sigma, targ, eps, zk, opts)
 %EM3D_NRCCIE_EVAL_LAYER_EVAL  FMM layer-potential for nrccie-eval.
 %
 %  sigma : (4, npts) or (4*npts, 1) density [Jx; Jy; Jz; rho].
@@ -241,12 +200,12 @@ function p = em3d_nrccie_eval_layer_eval(S, sigma, targ, eps, zk, args)
 %
 %  Delegates to em3d.pec.eval with rep='nrccie'.
 %  densities expected as (4, npts): rows = [Jx; Jy; Jz; rho].
-if nargin < 6 || isempty(args), args = {}; end
+if nargin < 6 || isempty(opts), opts = struct(); end
+opts.rep = 'nrccie';
 
 npts      = S.npts;
 densities = reshape(sigma, 4, npts);   % (4, npts)
 
-opts     = struct('rep', 'nrccie');
 [E, H]   = em3d.pec.eval(S, densities, targ, eps, zk, 0, opts);
 % E, H are each (3, nt)
 
