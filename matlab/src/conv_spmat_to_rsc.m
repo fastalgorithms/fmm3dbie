@@ -19,18 +19,12 @@ function rsc = conv_spmat_to_rsc(S, spmat, ri)
 %    .nnz      scalar
 
     if nargin < 3 || isempty(ri)
-        ri = kernel3d.rsc_interleave_scalar();
+        ri = kernel3d.rsc_interleave_full(1, 1);
     end
 
-    nker   = ri.nker;
-    scalar = strcmp(ri.type, 'scalar');
-    basis  = strcmp(ri.type, 'basis');
-    if basis
-        m = ri.m;  n = ri.n;
-    else
-        m = max(ri.row_ids);
-        n = max(ri.col_ids);
-    end
+    m    = ri.m;
+    n    = ri.n;
+    nker = ri.nker;
 
     ixyzs    = S.ixyzs(:);
     npatches = S.npatches;
@@ -59,43 +53,30 @@ function rsc = conv_spmat_to_rsc(S, spmat, ri)
     iquad = [1; 1 + cumsum(block_sizes)];
     nquad = iquad(end) - 1;
 
-    % Extract wnear: for each (targ, patch) pair and each kernel component
-    % read the appropriate block row/col out of spmat.
+    % Extract wnear: for each (targ, patch) pair, invert the entries map.
+    % For each ker_id, find the first entry with nonzero coef and read back
+    % wnear(ker_id) = spmat(block_row, block_cols) / coef.
+    % This handles all cases uniformly: scalar (coef=1), full (coef=1),
+    % symmetric (coef=1), and basis (complex coefs such as Maxwell nrccie-eval).
     wnear = complex(zeros(nker, nquad));
-    if basis
-        % Basis type: invert the linear combination B(r,c) = sum_e coef_e * w(ker_e).
-        % We use the first listed entry for each ker_id to recover wnear(ker_id).
-        for k = 1:nnz_pairs
-            t        = targ_inds(k);
-            p        = patch_inds(k);
-            src_cols = ixyzs(p):(ixyzs(p+1)-1);
-            wstart   = iquad(k);
-            wend     = iquad(k+1) - 1;
-            seen_ker = false(nker, 1);
-            for ei = 1:numel(ri.entries)
-                e  = ri.entries(ei);
-                if seen_ker(e.ker_id), continue; end
-                seen_ker(e.ker_id) = true;
-                wnear(e.ker_id, wstart:wend) = ...
-                    spmat(m*(t-1)+e.row_id, n*(src_cols-1)+e.col_id) / e.coef;
-            end
-        end
-    else
-        kr = ri.row_ids(:);
-        kc = ri.col_ids(:);
-        for k = 1:nnz_pairs
-            t        = targ_inds(k);
-            p        = patch_inds(k);
-            src_cols = ixyzs(p):(ixyzs(p+1)-1);
-            wstart   = iquad(k);
-            wend     = iquad(k+1) - 1;
-            for ki = 1:nker
-                wnear(ki, wstart:wend) = spmat(m*(t-1)+kr(ki), n*(src_cols-1)+kc(ki));
-            end
+    for k = 1:nnz_pairs
+        t        = targ_inds(k);
+        p        = patch_inds(k);
+        src_cols = ixyzs(p):(ixyzs(p+1)-1);
+        wstart   = iquad(k);
+        wend     = iquad(k+1) - 1;
+        seen_ker = false(nker, 1);
+        for ei = 1:numel(ri.entries)
+            e = ri.entries(ei);
+            if seen_ker(e.ker_id) || e.coef == 0, continue; end
+            seen_ker(e.ker_id) = true;
+            wnear(e.ker_id, wstart:wend) = ...
+                spmat(m*(t-1)+e.row_id, n*(src_cols-1)+e.col_id) / e.coef;
         end
     end
 
-    if scalar
+    % Scalar kernels return a column vector rather than a (1, nquad) row.
+    if nker == 1 && m == 1 && n == 1
         wnear = wnear(1,:).';
     end
 

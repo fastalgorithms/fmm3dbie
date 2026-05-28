@@ -168,7 +168,9 @@ switch lower(type)
 
 end
 
-obj.rsc_to_interleave = kernel3d.rsc_interleave_scalar();
+if isempty(obj.rsc_to_interleave)
+    obj.rsc_to_interleave = kernel3d.rsc_interleave_full(obj.opdims(1), obj.opdims(2));
+end
 
 end
 

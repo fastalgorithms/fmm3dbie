@@ -5,26 +5,23 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
 %    spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear)
 %    spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
 %
-%  For scalar kernels (ri omitted or ri.type == 'scalar'):
-%    wnear is (nquad,) or (1,nquad).  Returns sparse(ntarg, S.npts).
-%
+%  For scalar kernels (ri omitted): wnear is (nquad,) or (1,nquad).
 %  For vector/tensor kernels pass the kernel's rsc_to_interleave struct as ri:
 %    wnear is (nker, nquad).
-%    Returns sparse(m*ntarg, n*S.npts) where the block layout is read from ri.
+%  Returns sparse(m*ntarg, n*S.npts) where m,n come from ri.
 %
 %  ri fields used:
-%    .type     - 'scalar', 'full', or 'symmetric'
+%    .m, .n    - block opdims
 %    .nker     - number of rows in wnear
-%    .row_ids  - (nker,1) row index within the opdims block for each wnear row
-%    .col_ids  - (nker,1) col index within the opdims block for each wnear row
-%    For 'symmetric' only:
-%    .sym_row_ids - row indices of off-diagonal reflected entries
-%    .sym_col_ids - col indices of off-diagonal reflected entries
-%    .sym_ker_ids - which wnear row each reflected entry mirrors
+%    .entries  - struct array, each with:
+%                  .ker_id  (1-based index into wnear rows)
+%                  .row_id  (1-based block row)
+%                  .col_id  (1-based block col)
+%                  .coef    (scalar coefficient, may be complex)
 
     % Default ri: scalar
     if nargin < 5 || isempty(ri)
-        ri = kernel3d.rsc_interleave_scalar();
+        ri = kernel3d.rsc_interleave_full(1, 1);
     end
 
     sz = size(wnear);
@@ -35,12 +32,13 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
         wnear = reshape(wnear, 1, nquad);
     end
 
-    nker = ri.nker;
+    m    = ri.m;
+    n    = ri.n;
+    npts = S.npts;
 
     ixyzs    = S.ixyzs(:);
     npatches = S.npatches;
     npols    = ixyzs(2:end) - ixyzs(1:end-1);   % points per patch
-    npts     = S.npts;
 
     npts_col = npols(col_ind);
 
@@ -68,89 +66,19 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
         istart = istart + nelem;
     end
 
-    if strcmp(ri.type, 'scalar')
-        % ----- Scalar kernel -----
-        spmat = sparse(irow_ind_scalar, icol_ind, wnear(1,:).', ntarg, npts);
-        return
-    end
-
-    if strcmp(ri.type, 'basis')
-        % ----- Basis kernel -----
-        % Each wnear row is a scalar basis kernel that contributes to one or
-        % more block entries with a (possibly complex) scalar coefficient.
-        % ri.m, ri.n   : block opdims
-        % ri.entries   : struct array, each with fields:
-        %   .ker_id  (1-based index into wnear rows)
-        %   .row_id  (1-based block row)
-        %   .col_id  (1-based block col)
-        %   .coef    (scalar coefficient, may be complex)
-        m = ri.m;
-        n = ri.n;
-        ne = numel(ri.entries);
-        np = numel(icol_ind);
-        NZ = np * ne;
-        II = zeros(NZ, 1);
-        JJ = zeros(NZ, 1);
-        VV = complex(zeros(NZ, 1));
-        off = 0;
-        for ei = 1:ne
-            e  = ri.entries(ei);
-            II(off+1:off+np) = m*(irow_ind_scalar-1) + e.row_id;
-            JJ(off+1:off+np) = n*(icol_ind-1) + e.col_id;
-            VV(off+1:off+np) = e.coef * wnear(e.ker_id, :).';
-            off = off + np;
-        end
-        spmat = sparse(II, JJ, VV, m*ntarg, n*npts);
-        return
-    end
-
-    % ----- Vector / tensor kernel -----
-    % Infer opdims from the block indices stored in ri.
-    m = max(ri.row_ids);
-    n = max(ri.col_ids);
-
-    kr = ri.row_ids(:).';   % (1, nker)
-    kc = ri.col_ids(:).';   % (1, nker)
-
-    sym = strcmp(ri.type, 'symmetric');
-    if sym
-        n_entries_per_pair = nker + numel(ri.sym_ker_ids);
-    else
-        n_entries_per_pair = nker;
-    end
-
-    np = numel(icol_ind);   % total scalar (targ, src) pairs
-    NZ = np * n_entries_per_pair;
+    ne = numel(ri.entries);
+    np = numel(icol_ind);
+    NZ = np * ne;
     II = zeros(NZ, 1);
     JJ = zeros(NZ, 1);
-    VV = zeros(NZ, 1);
-
-    if ~isempty(wnear)
+    VV = complex(zeros(NZ, 1));
     off = 0;
-    for ki = 1:nker
-        ir = kr(ki);
-        ic = kc(ki);
-        II(off+1:off+np) = m*(irow_ind_scalar-1) + ir;
-        JJ(off+1:off+np) = n*(icol_ind-1) + ic;
-        VV(off+1:off+np) = wnear(ki, :).';
+    for ei = 1:ne
+        e = ri.entries(ei);
+        II(off+1:off+np) = m*(irow_ind_scalar-1) + e.row_id;
+        JJ(off+1:off+np) = n*(icol_ind-1)        + e.col_id;
+        VV(off+1:off+np) = e.coef * wnear(e.ker_id, :).';
         off = off + np;
     end
-
-    if sym
-        sym_kr = ri.sym_row_ids(:).';
-        sym_kc = ri.sym_col_ids(:).';
-        sym_ki = ri.sym_ker_ids(:).';
-        for si = 1:numel(sym_ki)
-            ki_src = sym_ki(si);
-            ir = sym_kr(si);
-            ic = sym_kc(si);
-            II(off+1:off+np) = m*(irow_ind_scalar-1) + ir;
-            JJ(off+1:off+np) = n*(icol_ind-1) + ic;
-            VV(off+1:off+np) = wnear(ki_src, :).';
-            off = off + np;
-        end
-    end
-    end
-
     spmat = sparse(II, JJ, VV, m*ntarg, n*npts);
 end

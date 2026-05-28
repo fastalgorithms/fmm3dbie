@@ -43,7 +43,7 @@ if isfield(opts,'unif_novers'), unif_nover = opts.unif_novers; end
 
 
 if isempty(cors)
-    warning('surfermatapply is inefficient with empty corrections')
+    % warning('surfermatapply is inefficient with empty corrections')
     coropts = opts;
     if usematlab
         coropts.corrections = 1;

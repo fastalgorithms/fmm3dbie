@@ -138,13 +138,14 @@ end
 
 function p = stok_layer_eval(S, sigma, targ, eps, dpars, args)
 %STOK_LAYER_EVAL  Wrap stok3d.velocity.eval.
+%  sigma may arrive as (3*npts,1) flat or already (3,npts); reshape to (3,npts).
 if nargin < 6 || isempty(args), args = {}; end
 if ~isempty(args) && isstruct(args{end})
     opts = args{end};
 else
     opts = struct();
 end
-ntarg = size(targ.r, 2);
+sigma = reshape(sigma, 3, []);
 p_mat = stok3d.velocity.eval(S, sigma, targ, eps, dpars, opts);
 p = p_mat(:);
 end
@@ -176,6 +177,7 @@ if ~isempty(args) && isstruct(args{end})
 else
     opts = struct();
 end
+sigma = reshape(sigma, 3, []);
 p_mat = stok3d.traction.eval(S, sigma, targ, eps, opts);
 p = p_mat(:);
 end

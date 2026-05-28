@@ -94,19 +94,19 @@ switch lower(type)
     % FMM A: H = curl S_k[J]  (used for n_t x H term)
     src_A = struct('sources', src, 'h_current', J);
     U_A   = emfmm3d(eps, zk, src_A, targ, 1, 0, 0);
-    H     = U_A.E;   % (3, nt)
+    H     = reshape(U_A.E, 3, nt);   % (3, nt)
 
     % FMM B: S_k[J] (vector) and div S_k[J]
     src_B  = struct('sources', src, 'e_current', J);
     U_B    = emfmm3d(eps, zk, src_B, targ, 1, 0, 1);
-    SkJ    = U_B.E;      % (3, nt)
-    divSkJ = U_B.divE;   % (1, nt)
+    SkJ    = reshape(U_B.E,    3, nt);   % (3, nt)
+    divSkJ = reshape(U_B.divE, 1, nt);  % (1, nt)
 
     % FMM C: S_k[rho] and grad_x S_k[rho]
     src_C     = struct('sources', src, 'charges', rho);
     U_C       = hfmm3d(eps, zk, src_C, 0, targ, 2);
-    SkRho     = U_C.pottarg(:).';    % (1, nt)
-    gradSkRho = U_C.gradtarg;        % (3, nt)
+    SkRho     = reshape(U_C.pottarg,  1, nt);   % (1, nt)
+    gradSkRho = reshape(U_C.gradtarg, 3, nt);   % (3, nt)
 
     % Build orthonormal target frame: ru_t = du_t/|du_t|,  rv_t = n_t x ru_t
     du_t = targinfo.du;   % (3, nt)
@@ -158,11 +158,11 @@ switch lower(type)
     % Two separate emfmm3d calls
     src_H = struct('sources', src, 'h_current', J);
     U_H   = emfmm3d(eps, zk, src_H, targ, 1, 0, 0);
-    H     = U_H.E;   % (3, nt)
+    H     = reshape(U_H.E, 3, nt);   % (3, nt)
 
     src_E = struct('sources', src, 'e_current', (1i*zk)*J, 'e_charge', -rho);
     U_E   = emfmm3d(eps, zk, src_E, targ, 1, 0, 0);
-    E     = U_E.E;   % (3, nt)
+    E     = reshape(U_E.E, 3, nt);   % (3, nt)
 
     % Interleaved output: [Ex(1);Ey(1);Ez(1);Hx(1);Hy(1);Hz(1); Ex(2);...]
     EH  = [E; H];    % (6, nt)

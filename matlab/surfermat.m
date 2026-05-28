@@ -116,7 +116,7 @@ if unif_nover
     end
 end
 
-for i = 1:nsurfers
+ for i = 1:nsurfers
     assert(all(opdims_mat(1,i,:) == opdims_mat(1,i,1)), ...
         'SURFERMAT: opdims(1) is not constant across block-row %d', i);
 end

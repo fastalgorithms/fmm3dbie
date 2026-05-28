@@ -68,26 +68,20 @@ classdef kernel3d
         rsc_to_interleave  % Struct describing how to map wnear(nker,nquad) to the
                            % (opdims(1)*nt, opdims(2)*ns) sparse matrix.
                            %
-                           % Fields:
-                           %   .type     - 'scalar'    : nker=1, trivial 1-to-1 mapping
-                           %               'full'      : nker = opdims(1)*opdims(2),
-                           %                             column-major layout within block
-                           %               'symmetric' : nker = m*(m+1)/2 for an m x m
-                           %                             symmetric block; upper triangle
-                           %                             stored in column-major order
-                           %               'basis'     : nker independent scalar kernels
-                           %                             combined via a coefficient matrix
-                           %                             to fill the opdims(1) x opdims(2) block
-                           %   .nker     - number of rows in wnear (must match Fortran)
-                           %   .row_ids  - (nker,1) row index within block for each wnear row
-                           %   .col_ids  - (nker,1) col index within block for each wnear row
-                           %   For 'symmetric' only:
-                           %   .sym_row_ids - row indices of off-diagonal reflected entries
-                           %   .sym_col_ids - col indices of off-diagonal reflected entries
-                           %   .sym_ker_ids - which wnear row each reflected entry mirrors
-                           %   For 'basis' only:
-                           %   .coef_mat - (opdims(1)*opdims(2), nker) coefficient matrix
-                           %               such that vec(A_block) = coef_mat * wnear(:,q)
+                           % All kernels use the same canonical form (see rsc_interleave_full):
+                           %   .m       - block row dimension (opdims(1))
+                           %   .n       - block col dimension (opdims(2))
+                           %   .nker    - number of rows in wnear (must match Fortran)
+                           %   .entries - struct array, one element per (wnear row, block position)
+                           %              pair.  Each element has:
+                           %                .ker_id  1-based index into wnear rows
+                           %                .row_id  1-based block row
+                           %                .col_id  1-based block col
+                           %                .coef    scalar coefficient (may be complex)
+                           %
+                           %   Block assembly:  B(row_id, col_id) += coef * wnear(ker_id, :)
+                           %   Inversion:       wnear(ker_id, :)   = B(row_id, col_id) / coef
+                           %                    (using the first nonzero-coef entry per ker_id)
 
     end
 
@@ -167,10 +161,8 @@ classdef kernel3d
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
         Q      = addquad(Qf,Qg,S,sign,ri);
         Q      = scalequad(Qf,S,c,ri);
-        ri     = rsc_interleave_scalar();
-        ri     = rsc_interleave_full(m, n);
+        ri     = rsc_interleave_full(m, n, nker, entries);
         ri     = rsc_interleave_symmetric3();
-        ri     = rsc_interleave_basis(m, n, nker, entries);
         ri     = rsc_interleave_nrccie_eval(zk);
         obj    = tangent_kern(kernin, ids, jds);
 

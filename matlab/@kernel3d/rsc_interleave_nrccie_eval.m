@@ -46,6 +46,6 @@ e(end+1) = struct('ker_id',4,'row_id',3,'col_id',4,'coef',-1);   % E_z from rho
 e(end+1) = struct('ker_id',4,'row_id',4,'col_id',2,'coef',-1);   % H_x from J_y: -gz
 e(end+1) = struct('ker_id',4,'row_id',5,'col_id',1,'coef', 1);   % H_y from J_x: +gz
 
-ri = kernel3d.rsc_interleave_basis(6, 4, 4, e);
+ri = kernel3d.rsc_interleave_full(6, 4, 4, e);
 
 end

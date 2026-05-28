@@ -44,8 +44,7 @@ obj.getquad = @(S,eps,varargin) build_empty_quad(S, varargin);
 
 obj.get_overs_orders = @(S,t,eps) S.norders(:);
 
-% Zero kernels produce scalar (nker=1) zero wnear regardless of opdims.
-obj.rsc_to_interleave = kernel3d.rsc_interleave_scalar();
+obj.rsc_to_interleave = kernel3d.rsc_interleave_full(m, n);
 
 end
 

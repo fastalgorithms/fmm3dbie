@@ -7,34 +7,34 @@ function ri = rsc_interleave_symmetric3()
 %   triangle of the symmetric block in column-major order (6 entries):
 %
 %     wnear(1,:) <-> (1,1)
-%     wnear(2,:) <-> (1,2)
-%     wnear(3,:) <-> (1,3)
+%     wnear(2,:) <-> (1,2) and reflected (2,1)
+%     wnear(3,:) <-> (1,3) and reflected (3,1)
 %     wnear(4,:) <-> (2,2)
-%     wnear(5,:) <-> (2,3)
+%     wnear(5,:) <-> (2,3) and reflected (3,2)
 %     wnear(6,:) <-> (3,3)
 %
 %   This matches the Stokes velocity kernel layout (stok_comb_vel.f90).
-%
-%   Returns a struct with fields:
-%     .type         = 'symmetric'
-%     .nker         = 6
-%     .row_ids      = (6,1) row index within block for each wnear row
-%     .col_ids      = (6,1) col index within block for each wnear row
-%     .sym_row_ids  = (3,1) row indices of the off-diagonal reflected entries
-%     .sym_col_ids  = (3,1) col indices of the off-diagonal reflected entries
-%     .sym_ker_ids  = (3,1) which wnear row each reflected entry mirrors
 
-% Upper triangle, column-major order (col varies slowest):
-% (1,1),(1,2),(1,3),(2,2),(2,3),(3,3)
-ri.type    = 'symmetric';
-ri.nker    = 6;
-ri.row_ids = [1; 1; 1; 2; 2; 3];
-ri.col_ids = [1; 2; 3; 2; 3; 3];
+% Upper triangle entries (column-major): (1,1),(1,2),(1,3),(2,2),(2,3),(3,3)
+upper_rows = [1; 1; 1; 2; 2; 3];
+upper_cols = [1; 2; 3; 2; 3; 3];
 
-% Off-diagonal reflected entries (lower triangle): (2,1),(3,1),(3,2)
-% Each mirrors wnear row 2, 3, 5 respectively
-ri.sym_row_ids = [2; 3; 3];
-ri.sym_col_ids = [1; 1; 2];
-ri.sym_ker_ids = [2; 3; 5];
+% Lower triangle reflections of the three off-diagonal entries:
+%   wnear(2) -> (2,1),  wnear(3) -> (3,1),  wnear(5) -> (3,2)
+refl_ker  = [2; 3; 5];
+refl_rows = [2; 3; 3];
+refl_cols = [1; 1; 2];
+
+nker = 6;
+ne   = nker + numel(refl_ker);   % 9 total entries
+e(ne) = struct('ker_id',[], 'row_id',[], 'col_id',[], 'coef',[]);
+for k = 1:nker
+    e(k) = struct('ker_id', k, 'row_id', upper_rows(k), 'col_id', upper_cols(k), 'coef', 1);
+end
+for s = 1:numel(refl_ker)
+    e(nker+s) = struct('ker_id', refl_ker(s), 'row_id', refl_rows(s), 'col_id', refl_cols(s), 'coef', 1);
+end
+
+ri = kernel3d.rsc_interleave_full(3, 3, nker, e);
 
 end

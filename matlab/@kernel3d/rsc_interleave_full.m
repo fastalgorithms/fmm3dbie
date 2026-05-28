@@ -1,26 +1,36 @@
-function ri = rsc_interleave_full(m, n)
-%RSC_INTERLEAVE_FULL  rsc_to_interleave descriptor for full m-by-n block kernels.
+function ri = rsc_interleave_full(m, n, nker, entries)
+%RSC_INTERLEAVE_FULL  rsc_to_interleave descriptor for kernel3d.
 %
 %   ri = kernel3d.rsc_interleave_full(m, n)
 %
-%   For kernels with opdims = [m, n]: wnear has nker = m*n rows stored in
-%   column-major order within the block, i.e.
-%     wnear(k, :)  <->  block entry (row, col)
-%   where k = row + m*(col-1),  row in 1..m,  col in 1..n.
+%     Full m-by-n block: wnear has nker = m*n rows in column-major order,
+%     each mapping 1-to-1 to a block entry with coefficient 1.
 %
-%   Returns a struct with fields:
-%     .type    = 'full'
-%     .nker    = m*n
-%     .row_ids = (m*n, 1) row index within block for each wnear row (1-based)
-%     .col_ids = (m*n, 1) col index within block for each wnear row (1-based)
+%   ri = kernel3d.rsc_interleave_full(m, n, nker, entries)
+%
+%     General form: wnear has nker rows; the block is assembled as
+%       B(row_id, col_id) += coef * wnear(ker_id, :)
+%     where entries is a struct array with fields ker_id, row_id, col_id, coef.
+%     Used for kernels with complex coefficients (e.g. Maxwell nrccie-eval)
+%     or symmetry (e.g. Stokes symmetric3).
+%
+%   All ri structs have fields: .m, .n, .nker, .entries
 
-nker = m * n;
-% Column-major ordering: row index varies fastest.
-% wnear(k) <-> block entry (mod(k-1, m)+1,  ceil(k/m))
-[rows, cols] = meshgrid(1:m, 1:n);   % rows(j,i)=i, cols(j,i)=j; (:) gives col-major
-ri.type    = 'full';
+if nargin == 2
+    % Full dense block, column-major, coefficient 1.
+    nker = m * n;
+    [rows, cols] = meshgrid(1:m, 1:n);   % column-major: row varies fastest
+    row_ids = rows(:);
+    col_ids = cols(:);
+    entries = struct('ker_id', num2cell(1:nker), ...
+                     'row_id', num2cell(row_ids.'), ...
+                     'col_id', num2cell(col_ids.'), ...
+                     'coef',   num2cell(ones(1,nker)));
+end
+
+ri.m       = m;
+ri.n       = n;
 ri.nker    = nker;
-ri.row_ids = rows(:);   % (m*n, 1)  — row index for wnear row k
-ri.col_ids = cols(:);   % (m*n, 1)  — col index for wnear row k
+ri.entries = entries;
 
 end
