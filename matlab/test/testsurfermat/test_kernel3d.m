@@ -273,8 +273,8 @@ K_d  = kernel3d('stok','d');
 % (targ needs .n for S'; src needs .n for D — both already populated)
 SP_mat   = K_sp.eval(src, targ);                 % (3*nt, 3*ns)
 D_swap   = K_d.eval(targ, src);                  % (3*ns, 3*nt)  [src<->targ]
-err_spdlp = norm(SP_mat + D_swap.', 'fro') / norm(SP_mat, 'fro');
-failures = report(failures, 'stok sp', 'eval == -D(targ,src)^T', err_spdlp, 1e-12);
+err_spdlp = norm(SP_mat - D_swap.', 'fro') / norm(SP_mat, 'fro');
+failures = report(failures, 'stok sp', 'eval == D(targ,src)^T', err_spdlp, 1e-12);
 
 % =========================================================================
 % Combined-layer checks: C.eval == coefs(1)*S.eval + coefs(2)*D.eval

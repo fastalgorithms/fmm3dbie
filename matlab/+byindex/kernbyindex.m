@@ -287,17 +287,16 @@ end
 
 % Apply singular quadrature corrections
 if ~isempty(Qsparse)
-    P = zeros(max(i), 1);
-    corr = spget_quadcorr(i(:), j(:), P, Qsparse);
+    [isp, jsp, vsp] = find(Qsparse(i(:), j(:)));
+    linsp = isp + (jsp - 1)*length(i(:));
     if replace_quadcorr
         % nonsmoothonly mode: Qsparse holds full near-singular values;
-        % replace smooth entries wherever Qsparse is nonzero
-        mask = (corr ~= 0);
-        mat(mask) = corr(mask);
+        % replace smooth entries wherever Qsparse is structurally nonzero.
+        mat(linsp) = vsp;
     else
         % corrections mode: Qsparse holds (near-singular - smooth);
-        % add to smooth entries
-        mat = mat + corr;
+        % add to smooth entries.
+        mat(linsp) = mat(linsp) + vsp;
     end
 end
 

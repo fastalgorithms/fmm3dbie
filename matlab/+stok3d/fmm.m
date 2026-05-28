@@ -59,12 +59,11 @@ switch lower(type)
         g31 = reshape(U_out.gradtarg(3,1,:), 1, nt);
         g32 = reshape(U_out.gradtarg(3,2,:), 1, nt);
         g33 = reshape(U_out.gradtarg(3,3,:), 1, nt);
-        % traction negated to match the double-negative sign convention of
-        % the DLP: kern_SP = -t(S), consistent with kern.m and the Fortran
+        % Physical traction: t_i = n_k(-p delta_ik + du_i/dx_k + du_k/dx_i)
         U = zeros(3, nt);
-        U(1,:) = -(n(1,:).*(-pre + 2*g11) + n(2,:).*(g12 + g21) + n(3,:).*(g13 + g31));
-        U(2,:) = -(n(1,:).*(g21 + g12)    + n(2,:).*(-pre + 2*g22) + n(3,:).*(g23 + g32));
-        U(3,:) = -(n(1,:).*(g31 + g13)    + n(2,:).*(g32 + g23) + n(3,:).*(-pre + 2*g33));
+        U(1,:) = n(1,:).*(-pre + 2*g11) + n(2,:).*(g12 + g21) + n(3,:).*(g13 + g31);
+        U(2,:) = n(1,:).*(g21 + g12)    + n(2,:).*(-pre + 2*g22) + n(3,:).*(g23 + g32);
+        U(3,:) = n(1,:).*(g31 + g13)    + n(2,:).*(g32 + g23) + n(3,:).*(-pre + 2*g33);
     case {'c', 'combined'}
         srcinfo = struct();
         srcinfo.sources = src.r;

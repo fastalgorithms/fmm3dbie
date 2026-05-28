@@ -25,7 +25,8 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
     end
 
     sz = size(wnear);
-    if numel(sz) == 2 && sz(1) > 1 && sz(2) > 1
+    if numel(sz) == 2 && sz(1) == ri.nker
+        % wnear is already (nker, nquad) — use as-is even if nquad == 0
         nquad = sz(2);
     else
         nquad = numel(wnear);

@@ -114,8 +114,8 @@ coefs_h   = [1i*zk; 1.0];
 % targets for hypersingular kernels; only test usematlab=1 for those.
 jump_tests = {
 %  label          kernel                              density      expected jump (at ic)  hypersingular
-  % 'lap  d',   kernel3d('l','d'),                sigma_r,    @(s)  s(ic),               false;
-  % 'lap  sp',  kernel3d('l','sp'),               sigma_r,    @(s) -s(ic),               false;
+  'lap  d',   kernel3d('l','d'),                sigma_r,    @(s)  s(ic),               false;
+  'lap  sp',  kernel3d('l','sp'),               sigma_r,    @(s) -s(ic),               false;
   'lap  dp',  kernel3d('l','dp'),               sigma_r,    @(s) 0*s,               false;
   'lap  c',   kernel3d('l','c',coefs_lap),      sigma_r,    @(s)  coefs_lap(2)*s(ic),  false;
   'lap  cp',  kernel3d('l','cp',coefs_lap),     sigma_r,    @(s) -coefs_lap(1)*s(ic),  true;

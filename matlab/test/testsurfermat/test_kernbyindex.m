@@ -88,21 +88,18 @@ fprintf('Scenario 3: two-surfer, 2x2 stok kernels + nonsmoothonly corrections ..
 % All stok kernels have opdims [3,3], so row/col opdims are consistent
 % across the 2x2 array: every row block has opdims(1)=3, every col block
 % has opdims(2)=3.
-S3a = geometries.ellipsoid([1,1,1], [2,2,2], [],      5);
-S3b = geometries.ellipsoid([1,1,1], [2,2,2], [3;0;0], 5);
+S3a = geometries.ellipsoid([1,1,1], [1,1,1], [],      5);
+S3b = geometries.ellipsoid([1,1,1], [1,1,1], [2.5;0;0], 5);
 srfrs3 = [S3a, S3b];
 
 kerns3(2,2) = kernel3d();
-kerns3(1,1) = kernel3d('l', 's');
-kerns3(2,1) = kernel3d('l', 'sp');
-kerns3(1,2) = kernel3d('l', 'd');
-kerns3(2,2) = kernel3d('l', 's');   % reuse s for (2,2) — opdims still [3,3]
+kerns3(1,1) = kernel3d('stok', 's');
+kerns3(2,1) = kernel3d('stok', 'sp');
+kerns3(1,2) = kernel3d('stok', 'd');
+kerns3(2,2) = kernel3d('stok', 's');   % reuse s for (2,2) — opdims still [3,3]
 
 % Full surfermat (default opts: selfquad on) as reference
 [Afull3,novers3] = surfermat(srfrs3, kerns3, eps);
-
-% % Smooth-only surfermat (no selfquad) to get novers
-% [Asmth3, novers3] = surfermat(srfrs3, kerns3, eps, opts_sm);
 
 % Nonsmoothonly sparse matrix: full near-singular quadrature values
 opts_ns = struct('nonsmoothonly', 1);
@@ -121,11 +118,11 @@ fprintf('  relative error with corrections: %.2e\n', err3);
 assert(err3 < tol, 'FAIL: %.2e', err3);
 fprintf('  PASS\n\n');
 
-%% Scenario 4: single surfer, stok s (vector-valued, opdims [3,3])
-fprintf('Scenario 4: single surfer, stok s (vector-valued) ...\n');
+%% Scenario 4: single surfer, lap s
+fprintf('Scenario 4: single surfer, lap s ...\n');
 
 S4   = geometries.ellipsoid([1,1,1], [3,3,3], [], 5);
-kern4   = kernel3d('stok', 's');
+kern4   = kernel3d('l', 's');
 opdims4 = kern4.opdims;   % [3, 3]
 
 [Asmth4, novers4] = surfermat(S4, kern4, eps, opts_sm);
