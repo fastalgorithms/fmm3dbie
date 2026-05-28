@@ -7,7 +7,7 @@ zk  = 5;
 eps = 1e-6;
 
 % reference ellipsoid
-S0 = geometries.ellipsoid([1, 1.2, 0.8], [2,2,2], [0;0;0], 8);
+S0 = geometries.ellipsoid([1, 1.2, 0.8], [3,3,3], [0;0;0], 8);
 
 % 6 copies in a ring with random rotations
 nobj   = 6;
@@ -42,10 +42,10 @@ for k = 1:nobj
     ii = (k-1)*n1 + (1:n1);
     cors(ii, ii) = cors_self;
 end
-cors = cors + 0.5*speye(ntot);
+cors = cors - 0.5*speye(ntot);
 
 Smerge = merge(Sarr);
-novers_merged = {repmat(novers_self{1}, nobj, 1)};
+novers_merged = {repmat(novers_self{1,1}, nobj, 1)};
 %%
 % RHS: -du_inc/dn for plane wave along x
 [uinc, gradu_inc] = helm3d.planewave(zk, [1;0;0], Smerge);
@@ -65,18 +65,14 @@ xx = linspace(-extent, extent, nplot);
 targs.r = [XX(:).'; YY(:).'; zeros(1, nplot^2)];
 
 Ks = kernel3d.helm3d('s', zk);
-tic;
-uscat = surferkerneval(Smerge, Ks, sig, targs, eps, []);
-toc;
+tic; uscat = surferkerneval(Smerge, Ks, sig, targs, eps, []); fprintf('uscat: '); toc;
 uscat = reshape(uscat, nplot, nplot);
 
 uinc_slice = reshape(helm3d.planewave(zk, [1;0;0], targs), nplot, nplot);
 utot = uinc_slice + uscat;
 
-tic;
 % Dirichlet trace on surface: u_tot = S_k[sigma] + u_inc
-usurf = surfermatapply(Smerge, Ks, sig, eps) + uinc;
-toc;
+tic; usurf = surfermatapply(Smerge, Ks, sig, eps) + uinc; fprintf('usurf: '); toc;
 
 figure(1); clf
 h = pcolor(XX, YY, real(utot));
@@ -85,3 +81,4 @@ colorbar;
 title('$\Re(u^{\rm tot})$','Interpreter','latex');
 set(gca,'fontsize',14); axis equal tight
 hold on; plot(Smerge, real(usurf(:))); hold off
+clim([-2,2])
