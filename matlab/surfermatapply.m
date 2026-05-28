@@ -158,13 +158,42 @@ for i = 1:nsurfers
             dens_j = wtsover(:).*(xinterp*dens_j);
             if usefmm && ~isempty(ktmp.fmm)
                 pot_ij = ktmp.fmm(eps,surferjover,surferi_targ,dens_j);
-            else
-                % zero out self entries
-                if i == j
-                    pot_ij = ktmp.eval_mask(surferjover,surferi_targ)*dens_j;
-                else
-                    pot_ij = ktmp.eval(surferjover,surferi_targ)*dens_j;
+            elseif i == j
+                % Loop over source patches: only the co-located patch needs
+                % eval_mask; all other target points use plain eval.
+                pot_ij = zeros(opdims(1)*surferi_targ.npts, 1);
+                for p = 1:surferjover.npatches
+                    src_inds = surferjover.ixyzs(p):(surferjover.ixyzs(p+1)-1);
+                    srcp = []; srcp.r = surferjover.r(:,src_inds);
+                    for field = ktmp.src_fields(:).'
+                        srcp.(field{1}) = surferjover.(field{1})(:,src_inds);
+                    end
+                    col_inds = (1:opdims(2)).' + opdims(2)*(src_inds-1);
+                    col_inds = col_inds(:);
+                    dens_p = dens_j(col_inds);
+
+                    targ_inds_self = surferi_targ.ixyzs(p):(surferi_targ.ixyzs(p+1)-1);
+                    row_inds_self  = (1:opdims(1)).' + opdims(1)*(targ_inds_self-1);
+                    row_inds_self  = row_inds_self(:);
+                    targp_self = []; targp_self.r = surferi_targ.r(:,targ_inds_self);
+                    for field = ktmp.targ_fields(:).'
+                        targp_self.(field{1}) = surferi_targ.(field{1})(:,targ_inds_self);
+                    end
+                    pot_ij(row_inds_self) = pot_ij(row_inds_self) + ktmp.eval_mask(srcp,targp_self)*dens_p;
+
+                    off_targ_inds = [1:targ_inds_self(1)-1, targ_inds_self(end)+1:surferi_targ.npts];
+                    if ~isempty(off_targ_inds)
+                        targp_off = []; targp_off.r = surferi_targ.r(:,off_targ_inds);
+                        for field = ktmp.targ_fields(:).'
+                            targp_off.(field{1}) = surferi_targ.(field{1})(:,off_targ_inds);
+                        end
+                        row_inds_off = (1:opdims(1)).' + opdims(1)*(off_targ_inds-1);
+                        row_inds_off = row_inds_off(:);
+                        pot_ij(row_inds_off) = pot_ij(row_inds_off) + ktmp.eval(srcp,targp_off)*dens_p;
+                    end
                 end
+            else
+                pot_ij = ktmp.eval(surferjover,surferi_targ)*dens_j;
             end
         else
             % Build a proper Q struct from the (i,j) block of cors

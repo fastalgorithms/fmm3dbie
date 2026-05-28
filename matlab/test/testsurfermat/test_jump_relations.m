@@ -159,10 +159,10 @@ for k = 1:size(jump_tests, 1)
     % if hypsing, um_vals = 1; end
     for usematlab = um_vals
         opts_ma  = struct('usematlab', usematlab);
-        pot_full = surfermatapply(S, kern, sigma(:), eps, [], [], opts_ma);
+        u_slf_full = surfermatapply(S, kern, sigma(:), eps, [], [], opts_ma);
         od       = kern.opdims(1);
-        pot_ic   = pot_full((ic-1)*od+1 : ic*od);
-        u_ext_pred = pot_ic(:) + exp_jump(:)/2;
+        u_slf   = u_slf_full((ic-1)*od+1 : ic*od);
+        u_ext_pred = u_slf(:) + exp_jump(:)/2;
         err_on = norm(u_ext(:) - u_ext_pred(:)) / (norm(u_ext(:)) + 1e-30);
         if err_on < tol, st = 'PASS'; else, st = 'FAIL'; nfail = nfail+1; end
         fprintf('  %-12s  one-sided err (usematlab=%d) = %.2e  [%s]\n', ...
@@ -191,9 +191,9 @@ u_ext3 = surferkerneval(S, kern_em3, sigma_em3(:), targ_ext, eps, struct('usemat
 
 for usematlab = [0, 1]
     opts_ma  = struct('usematlab', usematlab);
-    pot_full3 = surfermatapply(S, kern_em3, sigma_em3(:), eps, [], [], opts_ma);
-    pot_ic3   = pot_full3((ic-1)*3+1 : ic*3);
-    u_ext3_pred = pot_ic3(:) + exp_jump3(:)/2;
+    u_slf_full3 = surfermatapply(S, kern_em3, sigma_em3(:), eps, [], [], opts_ma);
+    u_slf3   = u_slf_full3((ic-1)*3+1 : ic*3);
+    u_ext3_pred = u_slf3(:) + exp_jump3(:)/2;
     err_on3 = norm(u_ext3(:) - u_ext3_pred(:)) / (norm(u_ext3(:)) + 1e-30);
     if err_on3 < tol, st = 'PASS'; else, st = 'FAIL'; nfail = nfail+1; end
     fprintf('  %-12s  one-sided err (usematlab=%d) = %.2e  [%s]\n', ...
@@ -216,7 +216,7 @@ for usematlab = [0, 1]
     dE = diff4(1:3);
     dH = diff4(4:6);
 
-    % n x [[E]] = 0
+    % n x [[E]] = 0p
     nxdE = cross(n0, dE);
     err_nxE = norm(nxdE) / (norm(dE) + norm(dH) + 1e-30);
     if err_nxE < tol, st = 'PASS'; else, st = 'FAIL'; nfail = nfail+1; end
@@ -248,9 +248,9 @@ diff4   = u_ext4 - u_int4;
 exp_jump4 = diff4;   % known jump at this single point
 for usematlab = [0, 1]
     opts_ma  = struct('usematlab', usematlab);
-    pot_full4 = surfermatapply(S, kern_em4, sigma_em4(:), eps, [], [], opts_ma);
-    pot_ic4   = pot_full4((ic-1)*6+1 : ic*6);
-    u_ext4_pred = pot_ic4(:) + exp_jump4(:)/2;
+    u_slf_full4 = surfermatapply(S, kern_em4, sigma_em4(:), eps, [], [], opts_ma);
+    u_slf4   = u_slf_full4((ic-1)*6+1 : ic*6);
+    u_ext4_pred = u_slf4(:) + exp_jump4(:)/2;
     err_on4 = norm(u_ext4(:) - u_ext4_pred(:)) / (norm(u_ext4(:)) + 1e-30);
     if err_on4 < tol, st = 'PASS'; else, st = 'FAIL'; nfail = nfail+1; end
     fprintf('  %-12s  one-sided err (usematlab=%d) = %.2e  [%s]\n', ...

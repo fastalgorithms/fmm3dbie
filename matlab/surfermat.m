@@ -192,6 +192,7 @@ for i = 1:nsurfers
         wtsover = repmat(surferjover.wts(:).', opdims(2), 1);
         wtsover = wtsover(:).';
 
+        sysmat_tmp = [];
         if (~nonsmoothonly)
             nrows = opdims(1)*size(surferi_targ.r(:,:),2);
             ncols = opdims(2)*size(surferjover.r(:,:),2);
@@ -239,7 +240,7 @@ for i = 1:nsurfers
             sysmat_tmp = (sysmat_tmp.*wtsover)*xinterp;
         end
 
-        if (adaptive_correction || (i==j)) && selfquad && ~isempty(ktmp.getquad)
+        if (adaptive_correction && (i~=j)) || ((i==j) && selfquad) && ~isempty(ktmp.getquad)
             Qj = ktmp.getquad(surferj,eps,surferi_targ);
             if isfield(Qj, 'row_ptr')
                 sysmat_quad = conv_rsc_to_spmat(surferj,Qj.row_ptr,Qj.col_ind,Qj.wnear,ktmp.rsc_to_interleave);
@@ -264,6 +265,8 @@ for i = 1:nsurfers
                 sysmat_tmp = sysmat_quad;
             end
         end
+
+        if isempty(sysmat_tmp), continue, end
 
         if l2scale
             wts = sqrt(wts); 
