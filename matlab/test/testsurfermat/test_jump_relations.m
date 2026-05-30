@@ -37,6 +37,8 @@ rng(42);
 % Geometry: one patch of a sphere, order 6
 % -----------------------------------------------------------------------
 S_full = geometries.sphere(1, 4, [0;0;0], 6, 1);
+S_full = geometries.disk();
+% S = S_full;
 S      = slicesurfer(S_full, 1);
 
 eps = 1e-5;
@@ -51,7 +53,7 @@ sigma_r = sigma_r / norm(sigma_r);
 
 zk      = 1.1 + 0.3i;
 sigma_c = (S.r(3,:).^2 + 1i*S.r(1,:)).';
-sigma_c = sigma_c / norm(sigma_c);
+sigma_c = 1+0*sigma_c / norm(sigma_c);
 
 zk_em = 1.3;
 

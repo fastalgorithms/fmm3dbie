@@ -1,5 +1,5 @@
 function ri = rsc_interleave_full(m, n, nker, entries)
-%RSC_INTERLEAVE_FULL  rsc_to_interleave descriptor for kernel3d.
+%RSC_INTERLEAVE_FULL default rsc_to_interleave descriptor for kernel3d.
 %
 %   ri = kernel3d.rsc_interleave_full(m, n)
 %

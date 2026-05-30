@@ -31,22 +31,6 @@ function obj = em3d(type, zk, rep_params)
 %     rep_params - for 'nrccie-bc': scalar alpha
 %                  for 'nrccie-eval': unused
 %
-%   Kernel evaluation  (K.eval(srcinfo, targinfo))
-%   ------------------------------------------------
-%     srcinfo / targinfo are structs with fields .r (3,ns/nt),
-%     .n (3,:), .du (3,:), .dv (3,:).
-%     Returns an (opdims(1)*nt) x (opdims(2)*ns) matrix.
-%
-%   FMM + quadrature layer-potential eval  (K.layer_eval)
-%   -------------------------------------------------------
-%     K.layer_eval(S, sigma, targinfo, eps)
-%     Delegates to em3d.pec.eval.
-%
-%   Quadrature corrections  (K.getquad)
-%   --------------------------------------
-%     K.getquad(S, eps, varargin)
-%     Delegates to em3d.pec.get_quadrature_correction.
-%
 % See also EM3D.PEC.EVAL, EM3D.PEC.GET_QUADRATURE_CORRECTION
 
 if nargin < 2
@@ -95,7 +79,7 @@ switch lower(type)
         obj.get_overs_orders = @(S,t,eps) ...
             kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
-        % wnear(9,nquad): full 3x3 in column-major order within block
+        % wnear(9,nquad): -> 3x3 spmat
         obj.rsc_to_interleave = kernel3d.rsc_interleave_full(3, 3);
 
         obj.src_fields = {'n', 'du', 'dv'};
@@ -129,7 +113,7 @@ switch lower(type)
         obj.src_fields = {'n', 'du', 'dv'};
         obj.targ_fields = {};
         % wnear(4,nquad) stores scalar basis kernels [S_k, dx S_k, dy S_k, dz S_k]
-        % combined with frequency-dependent coefficients to fill the 6x4 block.
+        % combined to fill the 6x4 block.
         obj.rsc_to_interleave = kernel3d.rsc_interleave_nrccie_eval(zk);
 
     otherwise
@@ -153,8 +137,7 @@ end
 function p = em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, opts)
 %EM3D_NRCCIE_BC_LAYER_EVAL  Layer-potential for nrccie-bc via em3d.pec.eval.
 %
-%  Uses the orthonormal-frame convention matching the Fortran routines and
-%  em3d.kern 'nrccie-bc'.
+%  Uses the orthonormal-frame convention like em3d.kern 'nrccie-bc'.
 %
 %  sigma : (3, npts) or (3*npts, 1) density [j_ru; j_rv; rho]
 %    j_ru = coefficient of ru_s = du_s / |du_s|
@@ -165,8 +148,6 @@ function p = em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, opts)
 %    where ru_t = du_t/|du_t|,  rv_t = n_t x ru_t
 %
 %  em3d.pec.eval with rep='nrccie-bc' calls lpcomp_em_nrccie_pec_addsub_targ
-%  which expects and returns exactly this orthonormal-frame convention, so
-%  no frame conversion is needed here.
 if nargin < 7 || isempty(opts), opts = struct(); end
 opts.rep = 'nrccie-bc';
 
@@ -174,9 +155,6 @@ npts      = S.npts;
 densities = reshape(sigma, 3, npts);   % (3, npts) = [j_ru; j_rv; rho]
 
 [E_pe, ~] = em3d.pec.eval(S, densities, targ, eps, zk, alpha, opts);
-% E_pe = (3, ntarg) = [pot_ru; pot_rv; pot_rho] in orthonormal target frame
-
-% Output interleaved: [pot_ru(1); pot_rv(1); pot_rho(1); pot_ru(2); ...]
 p = E_pe(:);
 end
 

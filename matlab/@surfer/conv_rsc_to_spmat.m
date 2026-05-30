@@ -62,7 +62,7 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
         if istarts(i) > iends(i), continue; end
         iinds  = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
         nelem  = numel(iinds);
-        icol_ind(istart:istart+nelem-1)       = iinds;
+        icol_ind(istart:istart+nelem-1)        = iinds;
         irow_ind_scalar(istart:istart+nelem-1) = i;
         istart = istart + nelem;
     end

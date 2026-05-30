@@ -45,14 +45,6 @@ function obj = helm3d(type,zk, coefs)
 %      'c2trans_diff'   - [2x1]  [c_diff; cp_diff],
 %                         coefs=[comb_alpha;comb_beta;a0;a1] default [1;1;1;1]
 %
-% Kernel evaluation:
-%   obj.eval(srcinfo, targinfo)
-%      Returns an (opdims(1)*nt) x (opdims(2)*ns) matrix.
-%
-% FMM + quadrature layer-potential eval (where available):
-%   obj.layer_eval(S, sigma, targinfo, eps)
-%   obj.getquad(S, eps, varargin)
-%
 % See also HELM3D.KERN, HELM3D.DIRICHLET.EVAL, HELM3D.TRANSMISSION.EVAL
 
 if ( nargin < 2 )

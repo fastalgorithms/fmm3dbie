@@ -29,27 +29,30 @@ classdef kernel3d
 %
 %      K.eval(srcinfo, targinfo)
 %         Function handle.  Evaluates the kernel matrix between sources
-%         and targets.  srcinfo / targinfo are structs 
-%         Returns an (opdims(1)*nt) x (opdims(2)*ns) matrix.
+%         and targets. Returns an (opdims(1)*nt) x (opdims(2)*ns) matrix.
 %
 %      K.getquads(S, eps, dpars, targinfo, opts)
-%         Function handle.  Returns the near-quadrature struct
-%         Q used by the layer-potential evaluator.
+%         Function handle.  Returns the near-quadrature struct Q.
 %
 %      K.layer_eval(S, sigma, targinfo, eps, dpars)
 %         Function handle.  Evaluates the layer potential via the
-%         FMM-accelerated evaluator.
+%         FMM-accelerated Fortran evaluator.
 %
 %      K.fmm(eps, s, t, sigma)
-%         Function handle.  Evaluates the FMM for the corresponding
-%         kernel with density sigma from sources s to targets t with
-%         accuracy eps.
+%         Function handle.  K.fmm(eps, s, t, sigma) evaluates the FMM for
+%         the corresponding kernel with density sigma from sources s to
+%         targets t with accuracy eps.
 %
-%      K.kernel_order - kernel order: -1 (single layer), 0 (double layer), 1 (derivative of double layer)
+%      K.kernel_order - kernel order, used to get oversampling orders. 
+%         Options are  -1 (single layer), 0 (double layer), 1 (derivative
+%         of double layer).
 %      K.zk        - wavenumber
 %      K.ifcomplex - 0 if kernel is real-valued, 1 if complex-valued
 %      K.opdims    - [m n], operator dimensions (scalar kernels: [1 1])
 %      K.params    - struct of kernel parameters (e.g. coefs)
+%
+%      K.src_fields  - source fields expected by K.eval. ('r' is assumed)
+%      K.targ_fields - target fields expected by K.eval. ('r' is assumed)
 %
     properties
 
@@ -57,7 +60,7 @@ classdef kernel3d
         type           % Type of the kernel
         eval           % Function handle for kernel evaluation
         getquad        % Function handle to get quadrature corrections
-        fmm            % Function handle for raw FMM call
+        fmm            % Function handle for FMM call
         kernel_order   % Kernel order: -1 (single layer), 0 (double layer), 1 (derivative of double layer)
         opdims = [0 0] % Dimension of the operator [m n]
         src_fields     % Ptinfo fields required at sources, i.e. {'n'} for double layer
@@ -71,7 +74,7 @@ classdef kernel3d
                            % All kernels use the same canonical form (see rsc_interleave_full):
                            %   .m       - block row dimension (opdims(1))
                            %   .n       - block col dimension (opdims(2))
-                           %   .nker    - number of rows in wnear (must match Fortran)
+                           %   .nker    - number of rows in wnear
                            %   .entries - struct array, one element per (wnear row, block position)
                            %              pair.  Each element has:
                            %                .ker_id  1-based index into wnear rows
@@ -79,8 +82,8 @@ classdef kernel3d
                            %                .col_id  1-based block col
                            %                .coef    scalar coefficient (may be complex)
                            %
-                           %   Block assembly:  B(row_id, col_id) += coef * wnear(ker_id, :)
-                           %   Inversion:       wnear(ker_id, :)   = B(row_id, col_id) / coef
+                           %   Sparse assembly:  B(row_id, col_id) += coef * wnear(ker_id, :)
+                           %   Inversion:        wnear(ker_id, :)   = B(row_id, col_id) / coef
                            %                    (using the first nonzero-coef entry per ker_id)
 
     end

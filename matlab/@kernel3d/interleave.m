@@ -115,9 +115,6 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
                 end
                 % Qkl is (opdims_kl(1)*nt x opdims_kl(2)*ns); embed it into
                 % the full (opdims(1)*nt x opdims(2)*ns) sparse matrix.
-                % We do this by building the permutation from the sub-block
-                % indices.  Since nt and ns come from the quad correction
-                % size, infer them.
                 [nrows_kl, ncols_kl] = size(Qkl);
                 nt_kl = nrows_kl / rowdims(k);
                 ns_kl = ncols_kl / coldims(l);

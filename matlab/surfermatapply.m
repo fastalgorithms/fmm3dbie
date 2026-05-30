@@ -132,6 +132,13 @@ for i = 1:nsurfers
             surferi_targ.(field{1}) = surferi.(field{1})(:,:);
         end
 
+        if i==j
+            surferi_targ.patch_id = surferi.patch_id;
+            surferi_targ.uvs_targ = surferi.uvs_targ;
+            surferi_targ.npts = surferi.npts;
+            surferi_targ.ixyzs = surferi.ixyzs;
+        end
+
         if (numel(kern) == 1)
             ktmp = kern;
         else
@@ -161,19 +168,19 @@ for i = 1:nsurfers
             elseif i == j
                 % Loop over source patches: only the co-located patch needs
                 % eval_mask; all other target points use plain eval.
-                pot_ij = zeros(opdims(1)*surferi_targ.npts, 1);
+                pot_ij = zeros(ktmp.opdims(1)*surferi_targ.npts, 1);
                 for p = 1:surferjover.npatches
                     src_inds = surferjover.ixyzs(p):(surferjover.ixyzs(p+1)-1);
                     srcp = []; srcp.r = surferjover.r(:,src_inds);
                     for field = ktmp.src_fields(:).'
                         srcp.(field{1}) = surferjover.(field{1})(:,src_inds);
                     end
-                    col_inds = (1:opdims(2)).' + opdims(2)*(src_inds-1);
+                    col_inds = (1:ktmp.opdims(2)).' + ktmp.opdims(2)*(src_inds-1);
                     col_inds = col_inds(:);
                     dens_p = dens_j(col_inds);
 
                     targ_inds_self = surferi_targ.ixyzs(p):(surferi_targ.ixyzs(p+1)-1);
-                    row_inds_self  = (1:opdims(1)).' + opdims(1)*(targ_inds_self-1);
+                    row_inds_self  = (1:ktmp.opdims(1)).' + ktmp.opdims(1)*(targ_inds_self-1);
                     row_inds_self  = row_inds_self(:);
                     targp_self = []; targp_self.r = surferi_targ.r(:,targ_inds_self);
                     for field = ktmp.targ_fields(:).'

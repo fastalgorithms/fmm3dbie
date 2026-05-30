@@ -7,34 +7,6 @@ function obj = lap3d(type, coefs)
 %      'sp' - sprime,         S'(x,y) = d/dn_x G(x,y)
 %      'c'  - combined layer, coefs(1)*S + coefs(2)*D  (default coefs=[1 1])
 %
-% Kernel evaluation:
-%   obj.eval(srcinfo, targinfo)
-%      srcinfo / targinfo are structs with fields .r (3,:) and .n (3,:).
-%      Returns an (nt x ns) matrix.
-%
-% Raw FMM call:
-%   obj.fmm(eps, srcinfo, targinfo, sigma)
-%      Calls lap3d.fmm directly (no quadrature corrections).
-%
-% FMM + quadrature layer-potential eval:
-%   obj.layer_eval(S, sigma, targinfo, eps)
-%   obj.layer_eval(S, sigma, targinfo, eps, opts)
-%      Calls lap3d.dirichlet.eval or lap3d.neumann.eval (FMM + near
-%      corrections) with dpars baked in from the kernel object.
-%
-% Quadrature corrections:
-%   obj.getquad(S, eps, varargin)
-%      Calls lap3d.dirichlet.get_quadrature_correction or
-%      lap3d.neumann.get_quadrature_correction.
-%
-% Kernel orders (obj.kernel_order):  s -> -1,  d -> 0,  sp -> 0,  dp -> 1,  c -> 0,  cp -> 1
-%
-% Oversampling orders:
-%   obj.get_overs_orders(S, t, eps)
-%      Returns novers, the per-patch oversampling orders needed for
-%      accurate near-field quadrature.  Wraps get_oversampling_parameters,
-%      using getnear(S,t) to build the required rsc struct.
-%
 % See also LAP3D.KERN, LAP3D.DIRICHLET.EVAL, LAP3D.NEUMANN.EVAL
 
 if ( nargin < 1 )
@@ -87,7 +59,7 @@ switch lower(type)
         obj.eval = @(s,t) lap3d.kern(s, t, 'sprime');
 
         % sprime is the normal-derivative of S at the target: use
-        % neumann eval with dpars = [1, 0] (S only, no D)
+        % neumann eval with dpars = [1, 0]
         dpars_sp = [1.0; 0.0];
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'sp', sigma);
         obj.layer_eval = @(S,sigma,targ,eps,varargin) ...

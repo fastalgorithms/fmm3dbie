@@ -5,13 +5,13 @@ function rsc = conv_spmat_to_rsc(S, spmat, ri)
 %    rsc = conv_spmat_to_rsc(S, spmat)
 %    rsc = conv_spmat_to_rsc(S, spmat, ri)
 %
-%  For scalar kernels (ri omitted): spmat is (ntarg, S.npts), wnear is
-%  returned as (nquad,1).  For vector/tensor kernels pass the kernel's
-%  rsc_to_interleave struct as ri: spmat is (m*ntarg, n*S.npts) and
-%  wnear is returned as (nker, nquad).
+%  For scalar kernels (ri omitted): spmat (ntarg, S.npts) is mapped to
+%  wnear of size (nquad,1).  For vector/tensor kernels the kernel's
+%  rsc_to_interleave struct is use to map an spmat (m*ntarg, n*S.npts) to a
+%  wnear of size(nker, nquad).
 %
 %  Output rsc fields:
-%    .row_ptr  (ntarg+1, 1)  CSR row pointer
+%    .row_ptr  (ntarg+1, 1)  rsc row pointer
 %    .col_ind  (nnz, 1)      patch indices (1-based)
 %    .iquad    (nnz+1, 1)    start of each patch block in wnear
 %    .wnear    (nker, nquad) quadrature weights
@@ -53,11 +53,9 @@ function rsc = conv_spmat_to_rsc(S, spmat, ri)
     iquad = [1; 1 + cumsum(block_sizes)];
     nquad = iquad(end) - 1;
 
-    % Extract wnear: for each (targ, patch) pair, invert the entries map.
+    % Extract wnear:
     % For each ker_id, find the first entry with nonzero coef and read back
-    % wnear(ker_id) = spmat(block_row, block_cols) / coef.
-    % This handles all cases uniformly: scalar (coef=1), full (coef=1),
-    % symmetric (coef=1), and basis (complex coefs such as Maxwell nrccie-eval).
+    % wnear(ker_id,:) = spmat(block_row, block_cols) / coef.
     wnear = complex(zeros(nker, nquad));
     for k = 1:nnz_pairs
         t        = targ_inds(k);
