@@ -1,43 +1,26 @@
-function [sysmat,novers] = surferkernevalmat(surferobj,kern, targobj, eps,opts)
-%SURFERKERNEVALMAT build evaluation matrix for given kernel, surfer description
-% of boundary, and off-surface target points. This is a wrapper for various
-% quadrature routines. Optionally, return only those interactions which do
-% not use the smooth integration rule in the sparse matrix format.
+function [sysmat,novers,rfac] = surferkernevalmat(surferobj,kern, targobj, eps,opts)
+%SURFERKERNEVALMAT build evaluation matrix for given kernel, surfer
+% description of boundary, and off-surface target points.
 %
-% Syntax: sysmat = surferkernevalmat(S,kern,targinfo,opts)
+% Syntax: [sysmat, novers, rfac] = surferkernevalmat(S, kern, targobj, eps, opts)
 %
 % Input:
-%   Surferobj - array of surfer objects describing boundary
-%   kern  - kernel function. By default, this should be a function handle
-%           accepting input of the form kern(srcinfo,targinfo), where srcinfo
-%           and targinfo are in the ptinfo struct format, i.e.
-%                ptinfo.r - positions (3,:) array
-%                ptinfo.n - unit normals (3,:)
-%   targinfo - target point info struct
-%                targinfo.r - positions (3,:) array
-%                targinfo.n - unit normals (3,:) (if needed by kernel)
+%   surferobj - array of surfer objects describing boundary
+%   kern      - kernel3d object or vector of kernel3d objects (one per surfer)
+%   targobj   - target point description: surfer object, struct with field
+%               .r (and optionally .du, .dv, .n), or numeric (3,:) array
+%   eps       - quadrature tolerance
 %
 % Optional input:
-%   opts  - options structure. available options (default settings)
-%
-%           opts.nonsmoothonly = boolean (false), if true, only compute the
-%                         entries for which a special quadrature is used
-%                         (e.g. self and neighbor interactions) and return
-%                         in a sparse array.
-%           opts.corrections = boolean (false), if true, only compute the
-%                         corrections to the smooth quadrature rule and
-%                         return in a sparse array, see opts.nonsmoothonly
-%           opts.quad = quad type 'kern' to call kern.get_quad, or 'native'
-%               to use the smooth rule
+%   opts  - options structure
+%           opts.nonsmoothonly = (false) return only near-field entries as sparse
+%           opts.corrections   = (false) return corrections to smooth rule as sparse
 %
 % Output:
-%   sysmat - the evaluation matrix mapping densities on the boundary
-%            defined by S to values at targinfo
-%
-%
-% Examples:
-%   sysmat = surferevalmat(S,kern,targinfo); % standard options
-%   sysmat = surferevalmat(S,kern,targinfo,opts);
+%   sysmat - evaluation matrix (dense, or sparse if nonsmoothonly/corrections)
+%   novers - cell(nsurfers,1) of per-patch oversampling order vectors
+%   rfac   - cell(nsurfers,1) of rfac scalars from getquad;
+%            NaN for blocks where getquad is not called or does not store rfac
 %
 % Author: Tristan Goodwill
 
@@ -76,6 +59,7 @@ lsurfer    = zeros(nsurfers,1);
 
 
 novers = cell(nsurfers, 1);
+rfac   = cell(nsurfers, 1);
 
 for j=1:nsurfers
     lsurfer(j) = surfers{j}.npts;
@@ -86,11 +70,12 @@ for j=1:nsurfers
         ktmp = kern(j);
     end
     opdims_mat(:,j) = ktmp.opdims;
-    if ismethod(surfers{j},'oversample') 
+    if ismethod(surfers{j},'oversample')
         novers{j} = ktmp.get_overs_orders(surfers{j},targobj,eps);
     else
         novers{j} = NaN;
     end
+    rfac{j} = NaN;
 end
 
 % Assert that opdims(1) is constant across all source blocks (all kernels
@@ -162,6 +147,7 @@ for j = 1:nsurfers
 
     if adaptive_correction
         Qj = ktmp.getquad(surferj,eps,targinfo);
+        if isfield(Qj, 'rfac'), rfac{j} = Qj.rfac; end
         if isfield(Qj, 'row_ptr')
             sysmat_quad = conv_rsc_to_spmat(surferj,Qj.row_ptr,Qj.col_ind,Qj.wnear, ktmp.rsc_to_interleave);
         else

@@ -9,9 +9,23 @@ function pot = surfermatapply(surferobj, kern, dens, eps, novers, cors, opts)
 %   surferobj - array of surfer objects describing boundary
 %   kern  - kernel3d object or matrix of kernel3d objects
 %   dens  - density vector, length ncols (consistent with surferobj and kern)
+%   eps   - quadrature tolerance
+%   novers - cell array of oversampling orders, as returned by surfermat;
+%            pass [] to recompute
 %   cors  - sparse matrix of near-field quadrature corrections,
 %           as returned by surfermat(S,kern,opts) with nonsmoothonly=true,
 %           or as assembled by the user.  cors*dens is added to the output.
+%           pass [] to recompute via surfermat.
+%
+% Optional input:
+%   opts  - options structure
+%           opts.usematlab  = (1) use matlab smooth quadrature + cors;
+%                             0 uses layer_eval (Fortran) path instead
+%           opts.usefmm     = (1) use FMM for smooth quadrature (usematlab=1 only)
+%           opts.unif_nover = (0) if nonzero, enforce uniform oversampling
+%           opts.rfac       - rfac scalar or cell(nsurfers,nsurfers) as
+%                             returned by surfermat; used when usematlab=0.
+%                             Ignored (or treated as NaN) if not provided.
 %
 % Output:
 %   pot  - result of applying the operator to dens, length nrows
@@ -40,6 +54,9 @@ if isfield(opts,'usefmm'), usefmm = opts.usefmm; end
 unif_nover = 0;
 if isfield(opts,'unif_nover'), unif_nover = opts.unif_nover; end
 if isfield(opts,'unif_novers'), unif_nover = opts.unif_novers; end
+
+rfac_in = [];
+if isfield(opts,'rfac'), rfac_in = opts.rfac; end
 
 
 if isempty(cors)
@@ -207,16 +224,29 @@ for i = 1:nsurfers
             cors_ij = cors(irowinds, icolinds);
             rsc_ij  = conv_spmat_to_rsc(surferj, cors_ij, ktmp.rsc_to_interleave);
 
-            % TODO we could get rfac faster than this
-            rsc_near = getnear(surferj, surferi_targ);
+            % Use provided rfac if available, otherwise call getnear
+            rfac_ij = NaN;
+            if ~isempty(rfac_in)
+                if iscell(rfac_in)
+                    rfac_ij = rfac_in{i,j};
+                else
+                    rfac_ij = rfac_in;
+                end
+            end
+            if isscalar(rfac_ij) && ~isnan(rfac_ij)
+                rfac_use = rfac_ij;
+            else
+                rsc_near = getnear(surferj, surferi_targ);
+                rfac_use = rsc_near.rfac;
+            end
 
             Q = [];
             Q.targinfo     = surferi_targ;
             Q.format       = 'rsc';  Q.wavenumber = ktmp.zk;
-            Q.kernel_order = ktmp.kernel_order; 
+            Q.kernel_order = ktmp.kernel_order;
             Q.nquad   = rsc_ij.nquad;   Q.row_ptr = rsc_ij.row_ptr;
             Q.col_ind = rsc_ij.col_ind; Q.iquad   = rsc_ij.iquad;
-            Q.wnear   = rsc_ij.wnear;   Q.rfac    = rsc_near.rfac;
+            Q.wnear   = rsc_ij.wnear;   Q.rfac    = rfac_use;
 
             opts_eval = [];
             opts_eval.precomp_quadrature = Q;

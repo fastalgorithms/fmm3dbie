@@ -1,28 +1,33 @@
 function pot = surferkerneval(surferobj, kern, dens, targobj, eps, opts)
-%SURFERKERNEVAL apply the evaluation operator for given kernel, surfer
-% description of boundary, and off-surface target points to a density,
-% using the FMM-accelerated smooth quadrature rule and adding a precomputed
-% sparse correction.
+%SURFERKERNEVAL evaluate layer potential for given kernel, surfer description
+% of boundary, and off-surface target points.
 %
-% Syntax: pot = surferkerneval(S, kern, dens, targobj, cors, opts)
+% Syntax: pot = surferkerneval(S, kern, dens, targobj, eps, opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary
-%   kern  - kernel3d object or vector of kernel3d objects (one per surfer)
+%   kern      - kernel3d object or vector of kernel3d objects (one per surfer)
+%   dens      - density vector, length ncols (consistent with surferobj and kern)
 %   targobj   - target point description: surfer object, struct with field
 %               .r (and optionally .du, .dv, .n), or numeric (3,:) array
-%   dens  - density vector, length ncols (consistent with surferobj and kern)
-%   cors  - sparse matrix of near-field quadrature corrections,
-%           as returned by surferkernevalmat(S,kern,targobj,opts) with
-%           nonsmoothonly=true, or as assembled by the user.
-%           cors*dens is added to the output.
-%   opts  - options structure (optional)
-%           opts.eps = (1e-10) tolerance for FMM / oversampling
-%           opts.corrections = [];
+%   eps       - quadrature tolerance
+%
+% Optional input:
+%   opts  - options structure
+%           opts.corrections = sparse correction matrix as returned by
+%                              surferkernevalmat with nonsmoothonly/corrections;
+%                              recomputed if empty
+%           opts.novers      = cell(nsurfers,1) of oversampling orders;
+%                              recomputed if empty
+%           opts.usematlab   = (1) use matlab smooth quadrature + corrections;
+%                              0 uses layer_eval (Fortran) path instead
+%           opts.usefmm      = (1) use FMM for smooth quadrature (usematlab=1 only)
+%           opts.rfac        - rfac scalar or cell(nsurfers,1) as returned by
+%                              surferkernevalmat; used when usematlab=0.
+%                              Ignored (or treated as NaN) if not provided.
 %
 % Output:
-%   pot  - result of applying the operator to dens, length nrows
-%          (= ntarg * opdims(1))
+%   pot  - result of applying the operator to dens, length ntarg*opdims(1)
 %
 % Author: Tristan Goodwill
 
@@ -46,6 +51,8 @@ usematlab = 1;
 if isfield(opts,'usematlab'), usematlab = opts.usematlab; end
 usefmm = 1;
 if isfield(opts,'usefmm'), usefmm = opts.usefmm; end
+rfac_in = [];
+if isfield(opts,'rfac'), rfac_in = opts.rfac; end
 
 
 if usematlab && isempty(cors)
@@ -174,16 +181,29 @@ for j = 1:nsurfers
             cors_ij = cors(:, icolinds);
             rsc_ij  = conv_spmat_to_rsc(surferj, cors_ij, ktmp.rsc_to_interleave);
 
-            % TODO we could get rfac faster than this
-            rsc_near = getnear(surferj, targinfosuse);
+            % Use provided rfac if available, otherwise call getnear
+            rfac_j = NaN;
+            if ~isempty(rfac_in)
+                if iscell(rfac_in)
+                    rfac_j = rfac_in{j};
+                else
+                    rfac_j = rfac_in;
+                end
+            end
+            if isscalar(rfac_j) && ~isnan(rfac_j)
+                rfac_use = rfac_j;
+            else
+                rsc_near = getnear(surferj, targinfosuse);
+                rfac_use = rsc_near.rfac;
+            end
 
             Q = [];
             Q.targinfo     = targinfosuse;
             Q.format       = 'rsc';  Q.wavenumber = ktmp.zk;
-            Q.kernel_order = ktmp.kernel_order; 
+            Q.kernel_order = ktmp.kernel_order;
             Q.nquad   = rsc_ij.nquad;   Q.row_ptr = rsc_ij.row_ptr;
             Q.col_ind = rsc_ij.col_ind; Q.iquad   = rsc_ij.iquad;
-            Q.wnear   = rsc_ij.wnear;   Q.rfac    = rsc_near.rfac;
+            Q.wnear   = rsc_ij.wnear;   Q.rfac    = rfac_use;
 
             opts_eval.precomp_quadrature = Q;
         end

@@ -1,46 +1,26 @@
-function [sysmat,novers] = surfermat(surferobj,kern,eps,opts)
-% [sysmat, novers] = surfermat(...)
-%   novers_out is a cell(nsurfers,nsurfers) of per-patch oversampling order
-%   vectors, one per block, as returned by kern.get_overs_orders.
-%SURFERERMAT build matrix for given kernel and surfer description of 
-% boundary. This is a wrapper for various quadrature routines. Optionally,
-% return only those interactions which do not use the smooth integration
-% rule in the sparse matrix format.
+function [sysmat,novers,rfac] = surfermat(surferobj,kern,eps,opts)
+%SURFERMAT build matrix for given kernel and surfer description of boundary.
 %
-% Syntax: sysmat = surverermat(S,kern,opts)
+% Syntax: [sysmat, novers, rfac] = surfermat(S, kern, eps, opts)
 %
 % Input:
-%   Surferobj - array of surfer objects describing boundary
-%   kern  - kernel function. By default, this should be a function handle
-%           accepting input of the form kern(srcinfo,targinfo), where srcinfo
-%           and targinfo are in the ptinfo struct format, i.e.
-%                ptinfo.r - positions (2,:) array
-%                ptinfo.n - unit normals (2,:)
+%   surferobj - array of surfer objects describing boundary
+%   kern      - kernel3d object or matrix of kernel3d objects
+%   eps       - quadrature tolerance
 %
 % Optional input:
-%   opts  - options structure. available options (default settings)%           
-%
-%           opts.nonsmoothonly = boolean (false), if true, only compute the
-%                         entries for which a special quadrature is used
-%                         (e.g. self and neighbor interactions) and return
-%                         in a sparse array.
-%           opts.corrections = boolean (false), if true, only compute the
-%                         corrections to the smooth quadrature rule and 
-%                         return in a sparse array, see opts.nonsmoothonly
-%           opts.l2scale = boolean (false), if true scale rows by 
-%                           sqrt(whts) and columns by 1/sqrt(whts)
-%           opts.quad = quad type 'kern' to call kern.get_quad, or 'native'
-%               to use the smooth rule
-%           opts.eps = (1e-10) tolerance for adaptive quadrature
+%   opts  - options structure
+%           opts.nonsmoothonly = (false) return only near-field entries as sparse
+%           opts.corrections   = (false) return corrections to smooth rule as sparse
+%           opts.l2scale       = (false) scale rows by sqrt(wts), cols by 1/sqrt(wts)
+%           opts.unif_nover    = (0) if nonzero, enforce uniform oversampling order
+%           opts.ifoversamp    = (1) if 0, skip oversampling (set novers=NaN)
 %
 % Output:
-%   sysmat - the system matrix for discretizing integral operator whose kernel 
-%            is defined by kern with a density on the domain defined by S
-%
-%
-% Examples:
-%   sysmat = surfermat(S,kern); % standard options
-%   sysmat = surfermat(S,kern,opts);
+%   sysmat - system matrix (dense, or sparse if nonsmoothonly/corrections)
+%   novers - cell(nsurfers,nsurfers) of per-patch oversampling order vectors
+%   rfac   - cell(nsurfers,nsurfers) of rfac scalars from getquad;
+%            NaN for blocks where getquad is not called or does not store rfac
 %
 % Author: Tristan Goodwill
 
@@ -80,6 +60,9 @@ if forcesmooth, adaptive_correction = false; selfquad = false; end
 unif_nover = 0;
 if isfield(opts,'unif_nover'), unif_nover = opts.unif_nover; end
 if isfield(opts,'unif_novers'), unif_nover = opts.unif_novers; end
+
+ifoversamp = 1;
+if isfield(opts,'ifoversamp'), ifoversamp = opts.ifoversamp; end
 nsurfers = length(surfers);
 
 lsurfer    = zeros(nsurfers,1);
@@ -94,6 +77,7 @@ else
 end
 
 novers = cell(nsurfers, nsurfers);
+rfac   = cell(nsurfers, nsurfers);
 for i=1:nsurfers
     for j=1:nsurfers
         if numel(kern) == 1
@@ -106,6 +90,7 @@ for i=1:nsurfers
         else
             novers{i,j} = NaN;
         end
+        rfac{i,j} = NaN;
     end
 end
 if unif_nover
@@ -113,6 +98,13 @@ if unif_nover
         noversj = cell2mat(novers(:,j).');
         noversj = repmat(max(noversj,[],2),1,nsurfers);
         novers(:,j) = mat2cell(noversj,size(noversj,1),ones(nsurfers,1));
+    end
+end
+if ~ifoversamp
+    for i=1:nsurfers
+        for j=1:nsurfers
+            novers{i,j} = NaN*novers{i,j};
+        end
     end
 end
 
@@ -242,6 +234,7 @@ for i = 1:nsurfers
 
         if (adaptive_correction && (i~=j)) || ((i==j) && selfquad) && ~isempty(ktmp.getquad)
             Qj = ktmp.getquad(surferj,eps,surferi_targ);
+            if isfield(Qj, 'rfac'), rfac{i,j} = Qj.rfac; end
             if isfield(Qj, 'row_ptr')
                 sysmat_quad = conv_rsc_to_spmat(surferj,Qj.row_ptr,Qj.col_ind,Qj.wnear,ktmp.rsc_to_interleave);
             else

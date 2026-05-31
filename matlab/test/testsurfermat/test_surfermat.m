@@ -11,6 +11,11 @@
 %   uscat2   - corrections-path apply
 %   uscat4   - layer_eval apply  (also used as reference for the rest)
 %   uscat5   - nonsmoothonly-path apply
+%
+% rfac passthrough is also tested:
+%   surfermat and surferkernevalmat return rfac; passing it back via
+%   opts.rfac to surfermatapply / surferkerneval must give identical results
+%   to the default path (which calls getnear internally).
 
 tol_apply = 1e-6;   % relative tolerance for apply consistency checks
 tol_eval  = 1e-6;   % relative tolerance for evaluation consistency checks
@@ -30,12 +35,19 @@ tic
 Smat = surfermat(srfrs, kerns, eps);
 Smat = Smat - 0.5*eye(size(Smat));
 
-[syscors, novers]  = surfermat(srfrs, kerns, eps, struct('corrections',   1));
+[syscors, novers, rfac_sys]  = surfermat(srfrs, kerns, eps, struct('corrections',   1));
 syscors = syscors - 0.5*speye(size(syscors));
 
 [sysnsmth, novers2] = surfermat(srfrs, kerns, eps, struct('nonsmoothonly', 1));
 sysnsmth = sysnsmth - 0.5*speye(size(sysnsmth));
 toc
+
+% Verify rfac output: must be a cell of the right shape; diagonal entries
+% (same-surfer block) should be non-NaN scalars since getquad is called there.
+assert(iscell(rfac_sys) && isequal(size(rfac_sys), [numel(srfrs), numel(srfrs)]), ...
+    'surfermat rfac output must be a cell of size (nsurfers x nsurfers)');
+assert(~isnan(rfac_sys{1,1}), ...
+    'surfermat rfac{1,1} should be non-NaN (diagonal block uses getquad)');
 
 % RHS: exterior Helmholtz point-source
 
@@ -60,6 +72,22 @@ assert(matlabapply_err < tol_apply, ...
 assert(layerapply_err < tol_apply, ...
     'nonsmoothonly apply error %.2e exceeds tolerance %.2e', layerapply_err, tol_apply);
 
+% rfac passthrough: passing the rfac returned by surfermat back via opts.rfac
+% must give bit-identical results to the default path (no getnear call inside).
+% rfac passthrough only applies to the usematlab=0 (layer_eval) path.
+% Compare against sysapply2, which is the layer_eval reference.
+ref_apply2 = sysapply2(rhs);
+
+opts_rfac = struct('usematlab', 0, 'rfac', rfac_sys);
+rfac_apply_err = norm(surfermatapply(srfrs, kerns, rhs, eps, novers2, sysnsmth, opts_rfac) - ref_apply2) / norm(ref_apply2);
+assert(rfac_apply_err == 0, ...
+    'surfermatapply with opts.rfac gave different result (err %.2e)', rfac_apply_err);
+
+opts_rfac_scalar = struct('usematlab', 0, 'rfac', rfac_sys{1,1});
+rfac_scalar_err = norm(surfermatapply(srfrs, kerns, rhs, eps, novers2, sysnsmth, opts_rfac_scalar) - ref_apply2) / norm(ref_apply2);
+assert(rfac_scalar_err == 0, ...
+    'surfermatapply with scalar opts.rfac gave different result (err %.2e)', rfac_scalar_err);
+
 %% Build off-surface evaluation matrices and compare all eval paths
 
 kernseval = kerns(1,:);
@@ -76,7 +104,7 @@ uscat_smth = surferkerneval(srfrs, kernseval, rhs, targs, eps);
 
 % Corrections sparse mat path
 opts_cor = []; opts_cor.corrections = 1;
-[evalcors, novers_eval] = surferkernevalmat(srfrs, kernseval, targs, eps, opts_cor);
+[evalcors, novers_eval, rfac_eval] = surferkernevalmat(srfrs, kernseval, targs, eps, opts_cor);
 opts_cor.corrections = evalcors;  opts_cor.novers = novers_eval;
 uscat_cor = surferkerneval(srfrs, kernseval, rhs, targs, eps, opts_cor);
 
@@ -110,6 +138,26 @@ assert(eval_err_dense < tol_eval, ...
     'dense evalmat error %.2e exceeds tolerance %.2e', eval_err_dense, tol_eval);
 assert(eval_err_nsmth < tol_eval, ...
     'nonsmoothonly eval error %.2e exceeds tolerance %.2e', eval_err_nsmth, tol_eval);
+
+% rfac output from surferkernevalmat: cell of length nsurfers, non-NaN.
+assert(iscell(rfac_eval) && numel(rfac_eval) == numel(srfrs), ...
+    'surferkernevalmat rfac output must be a cell of length nsurfers');
+assert(~isnan(rfac_eval{1}), ...
+    'surferkernevalmat rfac{1} should be non-NaN');
+
+% rfac passthrough for surferkerneval: only applies to usematlab=0 path.
+% Compare against uscat_nsmth, which is the layer_eval reference.
+opts_ns_rfac = struct('usematlab', 0, 'corrections', nsmth, 'novers', novers_ns, 'rfac', rfac_eval);
+uscat_ns_rfac = surferkerneval(srfrs, kernseval, rhs, targs, eps, opts_ns_rfac);
+rfac_eval_err = norm(uscat_ns_rfac - uscat_nsmth) / norm(uscat_nsmth);
+assert(rfac_eval_err == 0, ...
+    'surferkerneval with cell opts.rfac gave different result (err %.2e)', rfac_eval_err);
+
+opts_ns_rfac_scalar = struct('usematlab', 0, 'corrections', nsmth, 'novers', novers_ns, 'rfac', rfac_eval{1});
+uscat_ns_rfac_scalar = surferkerneval(srfrs, kernseval, rhs, targs, eps, opts_ns_rfac_scalar);
+rfac_eval_scalar_err = norm(uscat_ns_rfac_scalar - uscat_nsmth) / norm(uscat_nsmth);
+assert(rfac_eval_scalar_err == 0, ...
+    'surferkerneval with scalar opts.rfac gave different result (err %.2e)', rfac_eval_scalar_err);
 
 
 %%

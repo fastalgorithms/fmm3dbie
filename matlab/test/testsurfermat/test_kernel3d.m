@@ -25,10 +25,12 @@ ns  = 500;
 nt  = 300;
 
 % Sources inside unit ball, targets in annulus [2,3] — no singularities.
+src = [];
 src.r = randn(3,ns);  src.r = src.r ./ vecnorm(src.r) .* rand(1,ns);
 src.n = randn(3,ns);  src.n = src.n ./ vecnorm(src.n);
 src.du = randn(3,ns); src.dv = randn(3,ns);  % tangent vectors for EM kernels
 
+targ = [];
 targ.r = randn(3,nt);  targ.r = targ.r ./ vecnorm(targ.r) .* (2 + rand(1,nt));
 targ.n = randn(3,nt);  targ.n = targ.n ./ vecnorm(targ.n);
 targ.du = randn(3,nt); targ.dv = randn(3,nt);

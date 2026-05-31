@@ -1,125 +1,119 @@
-%TEST_PROXYFUN  Test byindex.proxyfun by checking it gives a low-rank
-% factorization of a well-separated source-to-target block via an ID.
+%TEST_PROXYFUN  Test byindex.proxyfun.
+% Scenario 1: single surfer, ifaddtrans=false. Proxy-based ID should give
+%   low-rank approximation of the true src->targ block.
+% Scenario 2: single surfer, kern=SLP forward, kern2=DLP transpose, ifaddtrans=true.
+%   The stacked [forward; trans] block finds a skeleton that compresses both.
+%   Negative test: ifaddtrans=false fails to compress the DLP targ->src block.
+% Scenario 3: two surfers, transmission kernel (mixed opdims), ifaddtrans=false.
 
 run ../../startup.m
 
 rng(42);
-zk = 1.3 + 0.1i;
 eps = 1e-10;
 tol = 1e-9;
 
 fprintf('=== test_proxyfun ===\n\n');
 
-% Single sphere surfer. Sources are points near ctr on one side of the sphere,
-% targets are points far from ctr on the other side.
+novers1 = {@(S) NaN*zeros(S.npatches,1)};
+
+% proxy surface (unit-scale sphere, GL x equispaced)
+ntheta = 10; nphi = 10; r_sep = 2.0;
+[ct, wt] = polytens.lege.pts(ntheta);
+theta = acos(ct(:)); phi = (0:nphi-1).' * (2*pi/nphi);
+[TH, PH] = meshgrid(theta, phi); TH = TH(:); PH = PH(:);
+[~, WT] = meshgrid(wt(:), ones(nphi,1)); WT = WT(:);
+pw  = WT * (2*pi/nphi);
+pr  = r_sep * [sin(TH).*cos(PH), sin(TH).*sin(PH), cos(TH)].';
+pn  = pr ./ vecnorm(pr);
+pin = @(dr) vecnorm(dr) < r_sep;
+
+function check_lr(label, src2targ, Kpxy, tol)
+    [~, R, jpvt] = qr(Kpxy, 'vector');
+    d = abs(diag(R));
+    k = max(sum(d > tol * d(1)), 1);
+    skel = jpvt(1:k);
+    A = src2targ(:, skel);
+    src2targ_lr = A * (A \ src2targ);
+    err = norm(src2targ_lr - src2targ, 'fro') / norm(src2targ, 'fro');
+    fprintf('%s: rank = %d,  err = %.2e\n', label, k, err);
+    assert(err < tol, 'FAIL: %s err %.2e > tol %.2e', label, err, tol);
+end
+
+%% Scenario 1: single surfer, ifaddtrans=false
+fprintf('Scenario 1: single surfer, ifaddtrans=false ...\n');
+
 S    = geometries.sphere(2, 10, [0;0;0], 6, 1);
 kern = kernel3d('l', 's');
-
-ctr    = [2; 0; 0];   % near one pole of the sphere
-r_src  = 0.5;         % sources within this radius of ctr
-r_targ = 2.0;         % targets beyond this radius from ctr
-l      = 2*r_src;     % box half-length = 0.6
-r_sep  = 2.0;         % proxy sphere unit-scale radius
-                       % physical proxy radius = r_sep*l = 1.2
-                       % source-to-proxy gap = 1.2 - 0.3 = 0.9  (ratio 4:1)
-                       % target-to-proxy gap = 2.0 - 1.2 = 0.8
+ctr  = [2; 0; 0]; r_src = 0.5; r_targ = 2.0; l = 2*r_src;
 
 srcids  = find(vecnorm(S.r - ctr) < r_src).';
 targids = find(vecnorm(S.r - ctr) > r_targ).';
+novers  = {NaN*zeros(S.npatches,1)};
+src2targ = byindex.kernbyindex(targids, srcids, S, kern, eps, novers);
 
-assert(~isempty(srcids),  'No source points found in inner ball');
-assert(~isempty(targids), 'No target points found outside outer ball');
+[Kpxy, ~] = byindex.proxyfun(srcids, targids, l, ctr, S, kern, [], ...
+    pr, pn, pw, pin, false);
+check_lr('Scenario 1', src2targ, Kpxy, tol);
 
-% True src->targ block
-src2targ = byindex.kernbyindex(targids, srcids, S, kern, eps);
+%% Scenario 2: single surfer, kern=SLP forward, kern2=DLP transpose, ifaddtrans=true
+fprintf('Scenario 2: single surfer, kern=SLP, kern2=DLP, ifaddtrans=true ...\n');
 
-% --- scatter plot: sources, targets, proxy sphere ---
-figure(1); clf;
-scatter3(S.r(1,srcids),  S.r(2,srcids),  S.r(3,srcids),  20, 'r', 'filled'); hold on;
-scatter3(S.r(1,targids), S.r(2,targids), S.r(3,targids), 10, 'b', 'filled');
-scatter3(ctr(1), ctr(2), ctr(3), 100, 'k', 'p', 'filled');  % box center
-legend('sources','targets','ctr');
-axis equal; grid on;
-title(sprintf('r\\_src=%.2f  r\\_sep*l=%.2f  r\\_targ=%.2f', r_src, r_sep*l, r_targ));
-drawnow;
+kern2 = kernel3d('l', 'd');
+targ2src_dlp = byindex.kernbyindex(srcids, targids, S, kern2, eps, novers);
 
-% Proxy surface: GL in cos(theta) x equispaced in phi on sphere of radius r_sep
-ntheta = 20;
-nphi   = 40;
-[ct, wt] = polytens.lege.pts(ntheta);   % ntheta GL nodes on [-1,1] for cos(theta)
-theta = acos(ct(:));                     % (ntheta,1)
-phi   = (0:nphi-1).' * (2*pi/nphi);     % (nphi,1), equispaced
-wphi  = 2*pi/nphi;                       % scalar weight per phi point
+[Kpxy2, ~] = byindex.proxyfun(srcids, targids, l, ctr, S, kern, kern2, ...
+    pr, pn, pw, pin, true);
 
-% Tensor product: (ntheta*nphi) proxy points
-[TH, PH] = meshgrid(theta, phi);         % (nphi,ntheta) each
-TH = TH(:); PH = PH(:);
+[~, R, jpvt] = qr(Kpxy2, 'vector');
+d = abs(diag(R)); k = max(sum(d > tol * d(1)), 1);
+skel2 = jpvt(1:k);
 
-% Weights: w_theta * w_phi, with sin(theta) already in GL weight (integrating
-% over cos(theta) absorbs the Jacobian: int f dOmega = int_{-1}^{1} int_0^{2pi} f dphi d(cos theta))
-[~, WT] = meshgrid(wt(:), ones(nphi,1));
-WT = WT(:);                              % (ntheta*nphi,1), GL weights
-pw = WT * wphi;                          % (ntheta*nphi,1), solid-angle weights
+A = src2targ(:, skel2);
+err_fwd = norm(A*(A\src2targ) - src2targ, 'fro') / norm(src2targ, 'fro');
+fprintf('Scenario 2 forward: rank = %d,  err = %.2e\n', k, err_fwd);
+assert(err_fwd < tol, 'FAIL: Scenario 2 forward err %.2e > tol %.2e', err_fwd, tol);
 
-% pr in unit scale: proxyfun does pxy = pr*l + ctr internally,
-% so pass points at radius r_sep (no /l factor here)
-pr = r_sep * [sin(TH).*cos(PH), sin(TH).*sin(PH), cos(TH)].';  % (3,nproxy)
-pn = pr ./ vecnorm(pr);                   % outward normals
+B = targ2src_dlp(skel2, :);
+targ2src_lr = B.' * (B.' \ targ2src_dlp.');
+err_trans = norm(targ2src_lr.' - targ2src_dlp, 'fro') / norm(targ2src_dlp, 'fro');
+fprintf('Scenario 2 trans:   rank = %d,  err = %.2e\n', k, err_trans);
+assert(err_trans < tol, 'FAIL: Scenario 2 trans err %.2e > tol %.2e', err_trans, tol);
 
-% Add physical proxy points to scatter plot
-pxy_phys = pr * l + ctr;
-figure(1);
-scatter3(pxy_phys(1,:), pxy_phys(2,:), pxy_phys(3,:), 5, 'g', 'filled');
-legend('sources','targets','ctr','proxy');
-drawnow;
+% Structural test: ifaddtrans=false gives npxy rows, ifaddtrans=true gives 2*npxy.
+[Kpxy2_notrans, ~] = byindex.proxyfun(srcids, targids, l, ctr, S, kern, kern2, ...
+    pr, pn, pw, pin, false);
+npxy = size(pr, 2);
+assert(size(Kpxy2_notrans, 1) == npxy,   'FAIL: ifaddtrans=false should have %d rows, got %d', npxy,   size(Kpxy2_notrans,1));
+assert(size(Kpxy2,         1) == 2*npxy, 'FAIL: ifaddtrans=true  should have %d rows, got %d', 2*npxy, size(Kpxy2,        1));
+fprintf('Scenario 2 structural: ifaddtrans=false rows=%d, ifaddtrans=true rows=%d  [correct]\n', size(Kpxy2_notrans,1), size(Kpxy2,1));
 
-% pin: unit-scale test — a point dr (already divided by l) is inside
-% the proxy sphere if its unit-scale radius < r_sep
-pin = @(dr) vecnorm(dr) < r_sep;
+%% Scenario 3: two surfers, transmission kernel (mixed opdims), ifaddtrans=false
+% S1 carries the [2,2]-opdim transmission representation
+% S2 carries a Helmholtz single layer
+fprintf('Scenario 3: two surfers, transmission kernel, ifaddtrans=false ...\n');
 
-slf = srcids;
-nbr = targids;
+zk3 = 1.3 + 0.1i;
+S1 = geometries.sphere(2, 8, [0;0;0], 4, 1);
+S2 = geometries.sphere(2, 8, [8;0;0], 4, 1);
+kern3 = [kernel3d('h', 'trans_rep', zk3), kernel3d('h', 's',      zk3); ...
+         kernel3d('h', 'trans',     zk3), kernel3d('h', 's2trans', zk3)];
 
-ifaddtrans = false;
+ctr3 = [2; 0; 0]; r_src3 = 0.5; r_targ3 = 2.0; l3 = 2*r_src3;
 
-% [Kpxy, nbr_filt] = byindex.proxyfun(slf, nbr, l, ctr, S, kern, [], ...
-%     pr, pn, pw, pin, ifaddtrans);
+% Column layout: [1..2*S1.npts | 2*S1.npts+1..2*S1.npts+S2.npts]  (opdim 2,1)
+% Row layout:    [1..S1.npts   | S1.npts+1..S1.npts+2*S2.npts]    (opdim 1,2)
+s1_pts = find(vecnorm(S1.r - ctr3) < r_src3).';
+s2_pts = find(vecnorm(S2.r - ctr3) > r_targ3).';
+srcids3  = reshape([2*s1_pts-1; 2*s1_pts], 1, []);           % opdim-2 cols on S1
+targids3 = S1.npts + reshape([2*s2_pts-1; 2*s2_pts], 1, []); % opdim-2 rows on S2
 
-srcs = []; srcs.r = S.r(:,slf);
-Kpxy = kern.eval(srcs,struct('r',pr+ctr)).*S.wts(slf).';
+surfers3 = [S1, S2];
+novers3  = {NaN*zeros(S1.npatches,1), NaN*zeros(S1.npatches,1); ...
+            NaN*zeros(S2.npatches,1), NaN*zeros(S2.npatches,1)};
+src2targ3 = byindex.kernbyindex(targids3, srcids3, surfers3, kern3, eps, novers3);
 
+[Kpxy3, ~] = byindex.proxyfun(srcids3, targids3, l3, ctr3, surfers3, kern3, [], ...
+    pr, pn, pw, pin, false);
+check_lr('Scenario 3', src2targ3, Kpxy3, tol);
 
-% Kpxy = sqrt(pw).*Kpxy./sqrt(S.wts(slf)).';
-% src2targ = sqrt(S.wts(targids)).*src2targ./sqrt(S.wts(slf)).';
-% % Interpolative decomposition of src2proxy via pivoted QR
-% [~, R, jpvt] = qr(Kpxy.', 'vector');
-% d = abs(diag(R));
-% k = max(sum(d > tol * d(1)), 1);
-% skel = jpvt(1:k);
-% 
-% 
-% % Check that src2targ columns live in span of skeleton columns
-% src2tarag_skel = src2targ(:, skel);
-% coeffs = src2targ_skel \ src2targ;
-% src2targ_lr = src2targ_skel * coeffs;
-
-[skel,rem,T] = id(Kpxy,tol);
-errpxy = norm(Kpxy(:,rem) - Kpxy(:,skel)*T,'fro')/norm(Kpxy,'fro')
-err = norm(src2targ(:,rem) - src2targ(:,skel)*T,'fro')/norm(src2targ,'fro')
-
-% Color targets by per-row residual norm
-resid   = src2targ(:,rem) - src2targ(:,skel)*T;  % ntarg x nrem
-row_err = vecnorm(resid, 2, 2);                   % ntarg x 1
-
-figure(2); clf;
-scatter3(S.r(1,targids), S.r(2,targids), S.r(3,targids), 20, row_err, 'filled'); hold on;
-scatter3(S.r(1,srcids),  S.r(2,srcids),  S.r(3,srcids),  30, 'r', 'filled');
-scatter3(pxy_phys(1,:),  pxy_phys(2,:),  pxy_phys(3,:),   5, 'g', 'filled');
-scatter3(ctr(1), ctr(2), ctr(3), 100, 'k', 'p', 'filled');
-colorbar; colormap(hot);
-legend('targets (colored by row residual)','sources','proxy','ctr');
-axis equal; grid on;
-title('per-target residual norm  ||resid(i,:)||');
-drawnow;
-
-assert(err < tol, 'FAIL: low-rank error %.2e exceeds tol %.2e', err, tol);
+fprintf('\nAll tests passed.\n');

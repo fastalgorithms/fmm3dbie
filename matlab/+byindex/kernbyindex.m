@@ -20,11 +20,9 @@ function mat = kernbyindex(i, j, surfers, kern, eps, novers, Qsparse, opts)
 %               Two modes, selected by opts.replace_quadcorr:
 %                 true (default): replacement, i.e. overwrite smooth entries
 %                   with Qsparse values where nonzero.  Use with nonsmoothonly=1
-%                   output from surfermat, which stores the full near-singular
-%                   quadrature values directly.
+%                   output from surfermat.
 %                 false: additive, i.e. mat += Qsparse.  Use with corrections=1
-%                   output from surfermat, which stores (near-singular - smooth)
-%                   so that smooth + correction = full.
+%                   output from surfermat, which stores (near-singular - smooth). 
 %   opts      - options struct
 %     opts.replace_quadcorr - logical (default true), see Qsparse above
 %

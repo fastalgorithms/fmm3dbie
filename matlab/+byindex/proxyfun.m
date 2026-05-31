@@ -23,18 +23,6 @@ else
     opdims_mat = reshape([kern.opdims], 2, nsurfers, nsurfers);
 end
 
-
-% if ~(ndims(opdims_mat) == 3 && isequal(size(opdims_mat), [2, nsurfers, nsurfers]))
-%     v = opdims_mat(:);
-%     tmp = zeros(2, nsurfers, nsurfers);
-%     for ii_ = 1:nsurfers
-%         for jj_ = 1:nsurfers
-%             tmp(1,ii_,jj_) = v(1); tmp(2,ii_,jj_) = v(2);
-%         end
-%     end
-%     opdims_mat = tmp;
-% end
-
 % Column (source) offsets
 icollocs = zeros(nsurfers+1, 1); icollocs(1) = 1;
 for k = 1:nsurfers
