@@ -29,7 +29,7 @@ end
 %% Scenario 1: single surfer, Laplace SLP
 fprintf('Scenario 1: single surfer, Laplace SLP ...\n');
 
-S    = geometries.sphere(2, 2, [0;0;0], 4, 1);
+S    = geometries.sphere(2, 1, [0;0;0], 4, 1);
 kern = kernel3d('l', 's');
 
 rng(1);
@@ -45,8 +45,8 @@ check_eval('Scenario 1', i1, j1, S, kern, targs, eps, tol, 0);
 fprintf('Scenario 2: two surfers, Helmholtz ...\n');
 
 zk = 1.3 + 0.1i;
-S1 = geometries.sphere(2, 2, [0;0;0], 3, 1);
-S2 = geometries.sphere(2, 2, [6;0;0], 3, 1);
+S1 = geometries.sphere(2, 1, [0;0;0], 3, 1);
+S2 = geometries.sphere(2, 1, [6;0;0], 3, 1);
 kern2 = [kernel3d('h', 's', zk), kernel3d('h', 'd', zk)];
 
 rng(2);
@@ -61,7 +61,7 @@ check_eval('Scenario 2', i2, j2, [S1,S2], kern2, targs2, eps, tol, 1);
 %% Scenario 3: proxyfuneval low-rank test
 fprintf('Scenario 3: proxyfuneval low-rank factorization ...\n');
 
-S3    = geometries.sphere(2, 2, [0;0;0], 6, 1);
+S3    = geometries.sphere(2, 1, [0;0;0], 6, 1);
 kern3 = kernel3d('l', 's');
 ctr3  = [2; 0; 0]; r_src = 0.5; r_targ = 2.0; l3 = 2*r_src;
 

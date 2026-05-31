@@ -1,3 +1,4 @@
+% Two boundaries, one Dirichlet, one transmission. Currently fails.
 ctr1 = [0;0;0];
 ctr2 = [3;0;0];
 

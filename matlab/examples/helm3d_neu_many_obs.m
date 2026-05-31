@@ -1,15 +1,13 @@
 % HELM3D_NEU  Sound-hard scattering from a ring of ellipsoids.
 %
-% Single-layer representation: u = S_k[sigma]
-% Boundary operator: (1/2 I + S'_k)[sigma] = -du_inc/dn
 
 zk  = 5;
 eps = 1e-6;
 
-% reference ellipsoid
+% reference obstacle
 S0 = geometries.ellipsoid([1, 1.2, 0.8], [3,3,3], [0;0;0], 8);
 
-% 6 copies in a ring with random rotations
+% 6 obstacles in a ring with random rotations
 nobj   = 6;
 R_ring = 4;
 rng(42);
@@ -46,8 +44,8 @@ cors = cors - 0.5*speye(ntot);
 
 Smerge = merge(Sarr);
 novers_merged = {repmat(novers_self{1,1}, nobj, 1)};
-%%
-% RHS: -du_inc/dn for plane wave along x
+
+%% Get rhs and solve
 [uinc, gradu_inc] = helm3d.planewave(zk, [1;0;0], Smerge);
 dudn_inc = sum(Smerge.n(:,:) .* gradu_inc, 1).';
 rhs = -dudn_inc;
@@ -72,7 +70,7 @@ uinc_slice = reshape(helm3d.planewave(zk, [1;0;0], targs), nplot, nplot);
 utot = uinc_slice + uscat;
 
 % Dirichlet trace on surface: u_tot = S_k[sigma] + u_inc
-tic; usurf = surfermatapply(Smerge, Ks, sig, eps) + uinc; fprintf('usurf: '); toc;
+tic; usurf = surferkerneval(Smerge, Ks, sig, Smerge, eps) + uinc; fprintf('usurf: '); toc;
 
 figure(1); clf
 h = pcolor(XX, YY, real(utot));

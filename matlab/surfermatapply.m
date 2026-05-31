@@ -183,8 +183,8 @@ for i = 1:nsurfers
             if usefmm && ~isempty(ktmp.fmm)
                 pot_ij = ktmp.fmm(eps,surferjover,surferi_targ,dens_j);
             elseif i == j
-                % Loop over source patches: only the co-located patch needs
-                % eval_mask; all other target points use plain eval.
+                % Loop over source patches: only the self patch needs
+                % eval_mask; all other target points use eval.
                 pot_ij = zeros(ktmp.opdims(1)*surferi_targ.npts, 1);
                 for p = 1:surferjover.npatches
                     src_inds = surferjover.ixyzs(p):(surferjover.ixyzs(p+1)-1);

@@ -1,3 +1,7 @@
+% Solve a scattering problem with a Dirichlet obstacle and a Neumann
+% obstacle
+
+%% Setup geometries and system matrix
 ctr1 = [0;0;0];
 ctr2 = [3;0;0];
 
@@ -18,13 +22,13 @@ Smat = surfermat(srfrs,kerns,eps);
 Smat = Smat+eye(size(Smat));
 tbuild = toc
 
+%% Get right hand side and solve
+
 rhskerns(2,1) = kernel3d();
 rhskerns(1) = kernel3d('l','s');
 rhskerns(2) = kernel3d('l','sp');
-%%
-src = []; src.r = ctr1;
+
 src = []; src.r = ctr2;
-% src = []; src.r = [1;2;0.5];
 rhs = zeros(size(Smat,1),1);
 inds1 = surferids(srfrs,1);
 rhs(inds1) = -rhskerns(1).eval(src,S1);
@@ -36,7 +40,6 @@ sol = Smat\rhs;
 tsolve = toc
 
 kernseval = kerns(1,:);
-% %%
 nplot = 100;
 xx = linspace(-2,6,nplot)+1e-2;  yy = 2*linspace(-2,2,nplot)+3e-2;
 [XX,YY] = meshgrid(xx,yy);
@@ -47,7 +50,8 @@ skern = kernel3d('l','s');
 uin = skern.eval(src,targs);
 uscat = surferkerneval(srfrs,kernseval,sol,targs,eps);
 tplot = toc
-%%
+
+%% Plot
 
 figure(1);clf
 h = pcolor(XX,YY,reshape(log10(abs(uin+uscat)),size(XX))); h.EdgeColor = 'none';
@@ -55,27 +59,3 @@ hold on
 plot(srfrs,zeros(size(rhs,1),1))
 hold off
 colorbar
-
-figure(2);clf
-subplot(1,2,1)
-h = pcolor(XX,YY,reshape(real(uin),size(XX))); h.EdgeColor = 'none';
-colorbar
-clim([0,0.1])
-subplot(1,2,2)
-h = pcolor(XX,YY,reshape(real(-uscat),size(XX))); h.EdgeColor = 'none';
-colorbar
-clim([0,0.1])
-% 
-% figure(3);clf
-% h = pcolor(XX,YY,reshape(real(uin+uscat),size(XX))); h.EdgeColor = 'none';
-% clim([0,0.1])
-% colorbar
-% hold on
-% h = plot(srfrs,ones(size(rhs,1),1));
-% h.FaceColor = 0.8*[1,1,1];
-% hold off
-
-figure(4);clf
-% plot(srfrs,rhs);colorbar
-plot(merge(srfrs),log10(surf_fun_error(merge(srfrs),rhs)));colorbar
-
