@@ -15,6 +15,7 @@ function [sysmat,novers,rfac] = surferkernevalmat(surferobj,kern, targobj, eps,o
 %   opts  - options structure
 %           opts.nonsmoothonly = (false) return only near-field entries as sparse
 %           opts.corrections   = (false) return corrections to smooth rule as sparse
+%           opts.ifoversamp    = (1) if 0, skip oversampling (set novers=NaN)
 %
 % Output:
 %   sysmat - evaluation matrix (dense, or sparse if nonsmoothonly/corrections)
@@ -51,6 +52,8 @@ if isfield(opts,'corrections'), corrections = opts.corrections; end
 if corrections, nonsmoothonly = true; end
 adaptive_correction = true;
 if isfield(opts,'adaptive_correction'), adaptive_correction = opts.adaptive_correction; end
+ifoversamp = 1;
+if isfield(opts,'ifoversamp'), ifoversamp = opts.ifoversamp; end
 
 nsurfers = length(surfers);
 
@@ -76,6 +79,11 @@ for j=1:nsurfers
         novers{j} = NaN;
     end
     rfac{j} = NaN;
+end
+if ~ifoversamp
+    for j = 1:nsurfers
+        novers{j} = NaN*novers{j};
+    end
 end
 
 % Assert that opdims(1) is constant across all source blocks (all kernels
