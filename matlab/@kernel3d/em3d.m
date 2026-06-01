@@ -70,17 +70,11 @@ switch lower(type)
 
         obj.fmm = @(eps,src,targ,sigma) em3d.fmm(eps, zk, src, targ, 'nrccie-bc', sigma, alpha);
 
-        obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-            em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, varargin{:});
-
-        obj.getquad = @(S,eps,varargin) ...
-            em3d_nrccie_bc_getquad(S, eps, zk, alpha, varargin{:});
+        obj.getquad = @(S,eps,varargin) rsc_to_sparse_bc( ...
+            em3d_nrccie_bc_getquad(S, eps, zk, alpha, varargin{:}), S);
 
         obj.get_overs_orders = @(S,t,eps) ...
             kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
-
-        % wnear(9,nquad): -> 3x3 spmat
-        obj.rsc_to_interleave = kernel3d.rsc_interleave_full(3, 3);
 
         obj.src_fields = {'n', 'du', 'dv'};
         obj.targ_fields = {'n', 'du', 'dv'};
@@ -101,20 +95,14 @@ switch lower(type)
 
         obj.fmm = @(eps,src,targ,sigma) em3d.fmm(eps, zk, src, targ, 'nrccie-eval', sigma);
 
-        obj.layer_eval = @(S,sigma,targ,eps,varargin) ...
-            em3d_nrccie_eval_layer_eval(S, sigma, targ, eps, zk, varargin{:});
-
-        obj.getquad = @(S,eps,varargin) ...
-            em3d_nrccie_eval_getquad(S, eps, zk, varargin{:});
+        obj.getquad = @(S,eps,varargin) rsc_to_sparse_eval( ...
+            em3d_nrccie_eval_getquad(S, eps, zk, varargin{:}), S, zk);
 
         obj.get_overs_orders = @(S,t,eps) ...
             kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
         obj.src_fields = {'n', 'du', 'dv'};
         obj.targ_fields = {};
-        % wnear(4,nquad) stores scalar basis kernels [S_k, dx S_k, dy S_k, dz S_k]
-        % combined to fill the 6x4 block.
-        obj.rsc_to_interleave = kernel3d.rsc_interleave_nrccie_eval(zk);
 
     otherwise
         error('KERNEL3D.EM3D: unknown kernel type ''%s''.', type);
@@ -123,7 +111,7 @@ end
 end
 
 % =========================================================================
-% NRCCIE-BC helpers
+% NRCCIE-BC helper
 % =========================================================================
 
 function Q = em3d_nrccie_bc_getquad(S, eps, zk, alpha, targinfo, opts)
@@ -134,32 +122,8 @@ opts.rep = 'nrccie-bc';
 Q = em3d.pec.get_quadrature_correction(S, eps, zk, alpha, targinfo, opts);
 end
 
-function p = em3d_nrccie_bc_layer_eval(S, sigma, targ, eps, zk, alpha, opts)
-%EM3D_NRCCIE_BC_LAYER_EVAL  Layer-potential for nrccie-bc via em3d.pec.eval.
-%
-%  Uses the orthonormal-frame convention like em3d.kern 'nrccie-bc'.
-%
-%  sigma : (3, npts) or (3*npts, 1) density [j_ru; j_rv; rho]
-%    j_ru = coefficient of ru_s = du_s / |du_s|
-%    j_rv = coefficient of rv_s = n_s x ru_s
-%
-%  Output: (3*nt, 1) interleaved [pot_ru(1); pot_rv(1); pot_rho(1); ...]
-%    pot_ru = zvec3 . ru_t,  pot_rv = zvec3 . rv_t
-%    where ru_t = du_t/|du_t|,  rv_t = n_t x ru_t
-%
-%  em3d.pec.eval with rep='nrccie-bc' calls lpcomp_em_nrccie_pec_addsub_targ
-if nargin < 7 || isempty(opts), opts = struct(); end
-opts.rep = 'nrccie-bc';
-
-npts      = S.npts;
-densities = reshape(sigma, 3, npts);   % (3, npts) = [j_ru; j_rv; rho]
-
-[E_pe, ~] = em3d.pec.eval(S, densities, targ, eps, zk, alpha, opts);
-p = E_pe(:);
-end
-
 % =========================================================================
-% NRCCIE-EVAL helpers
+% NRCCIE-EVAL helper
 % =========================================================================
 
 function Q = em3d_nrccie_eval_getquad(S, eps, zk, targinfo, opts)
@@ -170,24 +134,19 @@ opts.rep = 'nrccie-eval';
 Q = em3d.pec.get_quadrature_correction(S, eps, zk, [], targinfo, opts);
 end
 
-function p = em3d_nrccie_eval_layer_eval(S, sigma, targ, eps, zk, opts)
-%EM3D_NRCCIE_EVAL_LAYER_EVAL  FMM layer-potential for nrccie-eval.
-%
-%  sigma : (4, npts) or (4*npts, 1) density [Jx; Jy; Jz; rho].
-%  Output: (6*nt, 1) interleaved [Ex(1);Ey(1);Ez(1);Hx(1);Hy(1);Hz(1); Ex(2);...].
-%
-%  Delegates to em3d.pec.eval with rep='nrccie'.
-%  densities expected as (4, npts): rows = [Jx; Jy; Jz; rho].
-if nargin < 6 || isempty(opts), opts = struct(); end
-opts.rep = 'nrccie';
-
-npts      = S.npts;
-densities = reshape(sigma, 4, npts);   % (4, npts)
-
-[E, H]   = em3d.pec.eval(S, densities, targ, eps, zk, 0, opts);
-% E, H are each (3, nt)
-
-EH = [E; H];   % (6, nt): rows = Ex,Ey,Ez,Hx,Hy,Hz
-p  = EH(:);    % (6*nt, 1) interleaved
+function spmat = rsc_to_sparse_bc(Q, S)
+%RSC_TO_SPARSE_BC  Convert nrccie-bc getquad RSC output to sparse.
+% wnear(9,nquad) -> 3x3 block spmat.
+spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear, ...
+    kernel3d.rsc_interleave_full(3, 3));
 end
+
+function spmat = rsc_to_sparse_eval(Q, S, zk)
+%RSC_TO_SPARSE_EVAL  Convert nrccie-eval getquad RSC output to sparse.
+% wnear(4,nquad) -> 6x4 block spmat.
+spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear, ...
+    kernel3d.rsc_interleave_nrccie_eval(zk));
+end
+
+
 

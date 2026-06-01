@@ -34,10 +34,6 @@ classdef kernel3d
 %      K.getquads(S, eps, dpars, targinfo, opts)
 %         Function handle.  Returns the near-quadrature struct Q.
 %
-%      K.layer_eval(S, sigma, targinfo, eps, dpars)
-%         Function handle.  Evaluates the layer potential via the
-%         FMM-accelerated Fortran evaluator.
-%
 %      K.fmm(eps, s, t, sigma)
 %         Function handle.  K.fmm(eps, s, t, sigma) evaluates the FMM for
 %         the corresponding kernel with density sigma from sources s to
@@ -68,30 +64,11 @@ classdef kernel3d
         targ_fields    % Ptinfo fields required at targets
                        % the location 'r' is implicitly added
 
-        rsc_to_interleave  % Struct describing how to map wnear(nker,nquad) to the
-                           % (opdims(1)*nt, opdims(2)*ns) sparse matrix.
-                           %
-                           % All kernels use the same canonical form (see rsc_interleave_full):
-                           %   .m       - block row dimension (opdims(1))
-                           %   .n       - block col dimension (opdims(2))
-                           %   .nker    - number of rows in wnear
-                           %   .entries - struct array, one element per (wnear row, block position)
-                           %              pair.  Each element has:
-                           %                .ker_id  1-based index into wnear rows
-                           %                .row_id  1-based block row
-                           %                .col_id  1-based block col
-                           %                .coef    scalar coefficient (may be complex)
-                           %
-                           %   Sparse assembly:  B(row_id, col_id) += coef * wnear(ker_id, :)
-                           %   Inversion:        wnear(ker_id, :)   = B(row_id, col_id) / coef
-                           %                    (using the first nonzero-coef entry per ker_id)
-
     end
 
     properties (Hidden = true)
         zk      = 0    % Wavenumber for oversampling purposes (largest wavenumber in the probelm)
         ifcomplex = 0  % 0 = real-valued kernel, 1 = complex-valued kernel
-        layer_eval       % Function handle for FMM + quadrature layer-potential eval
         get_overs_orders % Function handle to get oversampling orders
         isnan  = false % Boolean, true for NaN kernels
         iszero = false % Boolean, true for zero kernels
@@ -162,8 +139,8 @@ classdef kernel3d
         obj    = zeros(opdims);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
-        Q      = addquad(Qf,Qg,S,sign,ri);
-        Q      = scalequad(Qf,S,c,ri);
+        Q      = addquad(Qa,Qb,c);
+        Q      = scalequad(Q,c);
         ri     = rsc_interleave_full(m, n, nker, entries);
         ri     = rsc_interleave_symmetric3();
         ri     = rsc_interleave_nrccie_eval(zk);

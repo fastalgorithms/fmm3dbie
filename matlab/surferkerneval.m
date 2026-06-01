@@ -24,12 +24,7 @@ function pot = surferkerneval(surferobj, kern, dens, targobj, eps, opts)
 %                              {surfers_over, xinterps}  precomputed objects,
 %                                as returned by surferkernevalmat with
 %                                opts.ifreturnovers=1
-%           opts.usematlab   = (1) use matlab smooth quadrature + corrections;
-%                              0 uses layer_eval (Fortran) path instead
-%           opts.usefmm      = (1) use FMM for smooth quadrature (usematlab=1 only)
-%           opts.rfac        - rfac scalar or cell(nsurfers,1) as returned by
-%                              surferkernevalmat; used when usematlab=0.
-%                              Ignored (or treated as NaN) if not provided.
+%           opts.usefmm      = (1) use FMM for smooth quadrature
 %
 % Output:
 %   pot  - result of applying the operator to dens, length ntarg*opdims(1)
@@ -52,15 +47,10 @@ cors = [];
 if isfield(opts,'corrections'), cors = opts.corrections; end
 objover = [];
 if isfield(opts,'objover'), objover = opts.objover; end
-usematlab = 1;
-if isfield(opts,'usematlab'), usematlab = opts.usematlab; end
 usefmm = 1;
 if isfield(opts,'usefmm'), usefmm = opts.usefmm; end
-rfac_in = [];
-if isfield(opts,'rfac'), rfac_in = opts.rfac; end
 
-
-if usematlab && isempty(cors)
+if isempty(cors)
     coropts = opts;
     coropts.corrections = 1;
     [cors,objover] = surferkernevalmat(surferobj,kern, targobj, eps,coropts);
@@ -179,8 +169,6 @@ ncols = icollocs(end)-1;
 
 pot = zeros(nrows, 1);
 
-%% Apply smooth part via layer_eval with nonsmoothonly = true
-
 for j = 1:nsurfers
     surferj = surfers{j};
     if (surferj.npts < 1 || ntarg < 1)
@@ -196,8 +184,7 @@ for j = 1:nsurfers
     icolinds = icollocs(j):(icollocs(j+1)-1);
     dens_j = dens(icolinds);
 
-    if usematlab
-        if objover_mode
+    if objover_mode
             surferjover = surfers_over{j};
             xinterp     = kron(xinterps{j}, eye(ktmp.opdims(2)));
         else
@@ -217,51 +204,11 @@ for j = 1:nsurfers
         else
             pot_j = ktmp.eval(surferjover,targinfo)*dens_j;
         end
-    else
-        opts_eval = [];
-        if ~isempty(cors)
-            targinfosuse = []; targinfosuse.r = targinfo.r(:,:);
-            for field = ktmp.targ_fields(:).'
-                targinfosuse.(field{1}) = targinfo.(field{1})(:,:);
-            end
-            
-            % Build a proper Q struct from the (i,j) block of cors
-            cors_ij = cors(:, icolinds);
-            rsc_ij  = conv_spmat_to_rsc(surferj, cors_ij, ktmp.rsc_to_interleave);
-
-            % Use provided rfac if available, otherwise call getnear
-            rfac_j = NaN;
-            if ~isempty(rfac_in)
-                if iscell(rfac_in)
-                    rfac_j = rfac_in{j};
-                else
-                    rfac_j = rfac_in;
-                end
-            end
-            if isscalar(rfac_j) && ~isnan(rfac_j)
-                rfac_use = rfac_j;
-            else
-                rsc_near = getnear(surferj, targinfosuse);
-                rfac_use = rsc_near.rfac;
-            end
-
-            Q = [];
-            Q.targinfo     = targinfosuse;
-            Q.format       = 'rsc';  Q.wavenumber = ktmp.zk;
-            Q.kernel_order = ktmp.kernel_order;
-            Q.nquad   = rsc_ij.nquad;   Q.row_ptr = rsc_ij.row_ptr;
-            Q.col_ind = rsc_ij.col_ind; Q.iquad   = rsc_ij.iquad;
-            Q.wnear   = rsc_ij.wnear;   Q.rfac    = rfac_use;
-
-            opts_eval.precomp_quadrature = Q;
-        end
-        pot_j = ktmp.layer_eval(surferj, dens_j, targinfo, eps, opts_eval);
-    end
     pot = pot + pot_j(:);
 end
 
 %% Add near-field correction
-if ~isempty(cors) && usematlab
-pot = pot + cors * dens;
+if ~isempty(cors)
+    pot = pot + cors * dens;
 end
 end

@@ -9,17 +9,10 @@ else
     f.fmm = [];
 end
 
-if (isa(f.layer_eval, 'function_handle'))
-    f.layer_eval = @(varargin) -f.layer_eval(varargin{:});
-else
-    f.layer_eval = [];
-end
-
 if (isa(f.getquad, 'function_handle'))
     fgetquad = f.getquad;
-    fri = f.rsc_to_interleave;
     f.getquad = @(S, eps, varargin) kernel3d.scalequad( ...
-        fgetquad(S, eps, varargin{:}), S, -1, fri);
+        fgetquad(S, eps, varargin{:}), -1);
 else
     f.getquad = [];
 end

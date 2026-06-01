@@ -86,23 +86,18 @@ for k = 1:size(jump_tests, 1)
     sigma    = jump_tests{k,3};
     exp_jump = jump_tests{k,4}(sigma);
 
-    for usematlab = [0, 1]
-        u_ext = surferkerneval(S, kern, sigma(:), te, eps, struct('usematlab', usematlab));
-        u_int = surferkerneval(S, kern, sigma(:), ti, eps, struct('usematlab', usematlab));
-        err   = norm((u_ext-u_int) - exp_jump) / norm(abs(u_ext(:)));
-        nfail = nfail + (err >= tol);
-        fprintf('  %-10s  jump      (usematlab=%d) err=%.2e  [%s]\n', label, usematlab, err, pf(err,tol));
-    end
+    u_ext = surferkerneval(S, kern, sigma(:), te, eps);
+    u_int = surferkerneval(S, kern, sigma(:), ti, eps);
+    err   = norm((u_ext-u_int) - exp_jump) / norm(abs(u_ext(:)));
+    nfail = nfail + (err >= tol);
+    fprintf('  %-10s  jump      err=%.2e  [%s]\n', label, err, pf(err,tol));
 
-    u_ext = surferkerneval(S, kern, sigma(:), te, eps, struct('usematlab', 1));
-    for usematlab = [0, 1]
-        u_pv = surfermatapply(S, kern, sigma(:), eps, [], [], struct('usematlab', usematlab));
-        od   = kern.opdims(1);
-        u_pv = u_pv((ic-1)*od+1 : ic*od);
-        err  = norm(u_ext(:) - (u_pv(:)+exp_jump(:)/2)) / (norm(u_ext(:))+1e-30);
-        nfail = nfail + (err >= tol);
-        fprintf('  %-10s  one-sided (usematlab=%d) err=%.2e  [%s]\n', label, usematlab, err, pf(err,tol));
-    end
+    u_pv = surfermatapply(S, kern, sigma(:), eps, [], []);
+    od   = kern.opdims(1);
+    u_pv = u_pv((ic-1)*od+1 : ic*od);
+    err  = norm(u_ext(:) - (u_pv(:)+exp_jump(:)/2)) / (norm(u_ext(:))+1e-30);
+    nfail = nfail + (err >= tol);
+    fprintf('  %-10s  one-sided err=%.2e  [%s]\n', label, err, pf(err,tol));
 end
 
 end
@@ -114,22 +109,17 @@ function nfail = test_nrccie_bc(nfail, S, eps, tol, zk_em, ic, ~, te, ti, sigma_
 kern      = kernel3d('em', 'nrccie-bc', zk_em, 0.5);
 exp_jump  = -sigma_em3(:, ic);
 
-for usematlab = [0, 1]
-    u_ext = surferkerneval(S, kern, sigma_em3(:), te, eps, struct('usematlab', usematlab));
-    u_int = surferkerneval(S, kern, sigma_em3(:), ti, eps, struct('usematlab', usematlab));
-    err   = norm((u_ext-u_int) - exp_jump) / norm(exp_jump);
-    nfail = nfail + (err >= tol);
-    fprintf('  %-12s  jump      (usematlab=%d) err=%.2e  [%s]\n', 'em nrccie-bc', usematlab, err, pf(err,tol));
-end
+u_ext = surferkerneval(S, kern, sigma_em3(:), te, eps);
+u_int = surferkerneval(S, kern, sigma_em3(:), ti, eps);
+err   = norm((u_ext-u_int) - exp_jump) / norm(exp_jump);
+nfail = nfail + (err >= tol);
+fprintf('  %-12s  jump      err=%.2e  [%s]\n', 'em nrccie-bc', err, pf(err,tol));
 
-u_ext = surferkerneval(S, kern, sigma_em3(:), te, eps, struct('usematlab', 1));
-for usematlab = [0, 1]
-    u_pv = surfermatapply(S, kern, sigma_em3(:), eps, [], [], struct('usematlab', usematlab));
-    u_pv = u_pv((ic-1)*3+1 : ic*3);
-    err  = norm(u_ext(:) - (u_pv(:)+exp_jump(:)/2)) / (norm(u_ext(:))+1e-30);
-    nfail = nfail + (err >= tol);
-    fprintf('  %-12s  one-sided (usematlab=%d) err=%.2e  [%s]\n', 'em nrccie-bc', usematlab, err, pf(err,tol));
-end
+u_pv = surfermatapply(S, kern, sigma_em3(:), eps, [], []);
+u_pv = u_pv((ic-1)*3+1 : ic*3);
+err  = norm(u_ext(:) - (u_pv(:)+exp_jump(:)/2)) / (norm(u_ext(:))+1e-30);
+nfail = nfail + (err >= tol);
+fprintf('  %-12s  one-sided err=%.2e  [%s]\n', 'em nrccie-bc', err, pf(err,tol));
 
 end
 
@@ -140,36 +130,30 @@ function nfail = test_nrccie_eval(nfail, S, eps, tol, zk_em, ic, n0, te, ti, sig
 kern = kernel3d('em', 'nrccie-eval', zk_em);
 J    = sigma_em4(1:3, ic);
 
-for usematlab = [0, 1]
-    u_ext = surferkerneval(S, kern, sigma_em4(:), te, eps, struct('usematlab', usematlab));
-    u_int = surferkerneval(S, kern, sigma_em4(:), ti, eps, struct('usematlab', usematlab));
-    dE = u_ext(1:3) - u_int(1:3);
-    dH = u_ext(4:6) - u_int(4:6);
-    denom = norm(dE) + norm(dH) + 1e-30;
+u_ext = surferkerneval(S, kern, sigma_em4(:), te, eps);
+u_int = surferkerneval(S, kern, sigma_em4(:), ti, eps);
+dE = u_ext(1:3) - u_int(1:3);
+dH = u_ext(4:6) - u_int(4:6);
+denom = norm(dE) + norm(dH) + 1e-30;
 
-    e1 = norm(cross(n0,dE))  / denom;
-    e2 = norm(cross(n0,dH) - J(:)) / norm(J(:));
-    e3 = abs(dot(n0,dH))     / (norm(dH)+1e-30);
-    e4 = abs(dot(n0,dE) - sigma_em4(4,ic)) / abs(sigma_em4(4,ic));
+e1 = norm(cross(n0,dE))  / denom;
+e2 = norm(cross(n0,dH) - J(:)) / norm(J(:));
+e3 = abs(dot(n0,dH))     / (norm(dH)+1e-30);
+e4 = abs(dot(n0,dE) - sigma_em4(4,ic)) / abs(sigma_em4(4,ic));
 
-    nfail = nfail + (e1>=tol) + (e2>=tol) + (e3>=tol) + (e4>=tol);
-    fprintf('  %-12s  n x [[E]]    (usematlab=%d) err=%.2e  [%s]\n', 'em nrccie-ev', usematlab, e1, pf(e1,tol));
-    fprintf('  %-12s  n x [[H]]-J  (usematlab=%d) err=%.2e  [%s]\n', 'em nrccie-ev', usematlab, e2, pf(e2,tol));
-    fprintf('  %-12s  n . [[H]]    (usematlab=%d) err=%.2e  [%s]\n', 'em nrccie-ev', usematlab, e3, pf(e3,tol));
-    fprintf('  %-12s  n . [[E]]-rho(usematlab=%d) err=%.2e  [%s]\n', 'em nrccie-ev', usematlab, e4, pf(e4,tol));
-end
+nfail = nfail + (e1>=tol) + (e2>=tol) + (e3>=tol) + (e4>=tol);
+fprintf('  %-12s  n x [[E]]    err=%.2e  [%s]\n', 'em nrccie-ev', e1, pf(e1,tol));
+fprintf('  %-12s  n x [[H]]-J  err=%.2e  [%s]\n', 'em nrccie-ev', e2, pf(e2,tol));
+fprintf('  %-12s  n . [[H]]    err=%.2e  [%s]\n', 'em nrccie-ev', e3, pf(e3,tol));
+fprintf('  %-12s  n . [[E]]-rho err=%.2e  [%s]\n', 'em nrccie-ev', e4, pf(e4,tol));
 
-u_ext = surferkerneval(S, kern, sigma_em4(:), te, eps, struct('usematlab', 1));
-u_int = surferkerneval(S, kern, sigma_em4(:), ti, eps, struct('usematlab', 1));
 exp_jump4 = u_ext - u_int;
 
-for usematlab = [0, 1]
-    u_pv = surfermatapply(S, kern, sigma_em4(:), eps, [], [], struct('usematlab', usematlab));
-    u_pv = u_pv((ic-1)*6+1 : ic*6);
-    err  = norm(u_ext(:) - (u_pv(:)+exp_jump4(:)/2)) / (norm(u_ext(:))+1e-30);
-    nfail = nfail + (err >= tol);
-    fprintf('  %-12s  one-sided (usematlab=%d) err=%.2e  [%s]\n', 'em nrccie-ev', usematlab, err, pf(err,tol));
-end
+u_pv = surfermatapply(S, kern, sigma_em4(:), eps, [], []);
+u_pv = u_pv((ic-1)*6+1 : ic*6);
+err  = norm(u_ext(:) - (u_pv(:)+exp_jump4(:)/2)) / (norm(u_ext(:))+1e-30);
+nfail = nfail + (err >= tol);
+fprintf('  %-12s  one-sided err=%.2e  [%s]\n', 'em nrccie-ev', err, pf(err,tol));
 
 end
 

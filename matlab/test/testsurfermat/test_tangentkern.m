@@ -1,6 +1,6 @@
 % Test kernel3d.tangent_kern and kernel3d/times matrix-fn multiply.
 % Checks stok s (full projection), chained multiply, nrccie-eval (partial
-% ids/jds), and n-dot left multiply across eval, fmm, and layer_eval.
+% ids/jds), and n-dot left multiply across eval and fmm.
 
 run ../../startup.m
 
@@ -35,7 +35,7 @@ end
 
 function failures = test_stok_projection(failures, S, ns, wts, src_s, targ, eps)
 % stok s, full 3->2 tangent projection on both src and targ:
-% eval (tangent_kern and direct .* construction), fmm, layer_eval, on-surface PV.
+% eval (tangent_kern and direct .* construction), fmm, on-surface PV.
 
 K_cart = kernel3d('stok', 's');
 ids = [1;2;3];  jds = [1;2;3];
@@ -58,23 +58,13 @@ failures = report(failures, 'stok eval vs manual',        norm(K_tan.eval(src_s,
 failures = report(failures, 'stok direct times vs manual', norm(K_tan_direct.eval(src_s,targ)*sigma_tan - pot_ref)/norm(pot_ref), 1e-13);
 failures = report(failures, 'stok fmm vs eval',           norm(K_tan.fmm(eps,src_s,targ,sigma_tan) - K_tan.eval(src_s,targ)*sigma_tan)/norm(K_tan.eval(src_s,targ)*sigma_tan), 1e-5);
 
-sigma_wt = repmat(wts, 2, 1) .* reshape(sigma_tan, 2, ns);
-pot_le   = K_tan.layer_eval(S, sigma_tan, targ, eps);
-pot_le_ref = K_tan.eval(src_s, targ) * sigma_wt(:);
-failures = report(failures, 'stok layer_eval vs smooth quad', norm(pot_le(:)-pot_le_ref(:))/norm(pot_le_ref(:)), 1e-4);
-
-Q = K_tan.getquad(S, eps, targ);
-pot_precomp = K_tan.layer_eval(S, sigma_tan, targ, eps, struct('precomp_quadrature', Q));
-failures = report(failures, 'stok layer_eval precomp vs plain', norm(pot_precomp(:)-pot_le(:))/norm(pot_le(:)), 1e-10);
-
 % on-surface: stok s has no jump, so PV value = avg of one-sided limits
 h = 1e-4;  tol_jump = 0.05;
 [~, ic] = min(vecnorm(S.r - mean(S.r,2)));
 n0 = S.n(:,ic)/norm(S.n(:,ic));  r0 = S.r(:,ic);  du0 = S.du(:,ic);  dv0 = S.dv(:,ic);
 te.r = r0+h*n0; te.n = n0; te.du = du0; te.dv = dv0;
 ti.r = r0-h*n0; ti.n = n0; ti.du = du0; ti.dv = dv0;
-sigma_tan2 = reshape(sigma_tan, 2, ns);
-u_avg      = (K_tan.layer_eval(S,sigma_tan2,te,eps) + K_tan.layer_eval(S,sigma_tan2,ti,eps)) / 2;
+u_avg      = (surferkerneval(S,K_tan,sigma_tan,te,eps) + surferkerneval(S,K_tan,sigma_tan,ti,eps)) / 2;
 pot_pv_full = surfermatapply(S, K_tan, sigma_tan, eps);
 od = K_tan.opdims(1);
 u_pv = pot_pv_full((ic-1)*od+1 : ic*od);
@@ -84,7 +74,7 @@ end
 
 
 function failures = test_chained_multiply(failures, S, ns, wts, src_s, targ, eps)
-% Chained multiply A.*((C.*K).*B): eval and layer_eval match manual reference.
+% Chained multiply A.*((C.*K).*B): eval and fmm match manual reference.
 
 K_cart = kernel3d('stok', 's');
 rng(7);
@@ -101,21 +91,16 @@ Bblk        = kron(speye(ns), B_mat);
 ACblk       = kron(speye(nt), AC);
 pot_ref     = ACblk * K_cart.eval(src_s, targ) * Bblk * sigma_chain;
 
-failures = report(failures, 'chain eval vs manual',         norm(K_chain.eval(src_s,targ)*sigma_chain - pot_ref)/norm(pot_ref), 1e-13);
+failures = report(failures, 'chain eval vs manual', norm(K_chain.eval(src_s,targ)*sigma_chain - pot_ref)/norm(pot_ref), 1e-13);
 
-pot_le     = K_chain.layer_eval(S, reshape(sigma_chain, 4, ns), targ, eps);
-pot_le_ref = K_chain.eval(src_s, targ) * (wts4(:) .* sigma_chain);
-failures = report(failures, 'chain layer_eval vs smooth quad', norm(pot_le(:)-pot_le_ref(:))/norm(pot_le_ref(:)), 1e-4);
-
-Q           = K_chain.getquad(S, eps, targ);
-pot_precomp = K_chain.layer_eval(S, reshape(sigma_chain, 4, ns), targ, eps, struct('precomp_quadrature', Q));
-failures = report(failures, 'chain layer_eval precomp vs plain', norm(pot_precomp(:)-pot_le(:))/norm(pot_le(:)), 1e-10);
+pot_fmm    = K_chain.fmm(eps, src_s, targ, sigma_chain);
+failures = report(failures, 'chain fmm vs eval', norm(pot_fmm(:)-pot_ref(:))/norm(pot_ref(:)), 1e-4);
 
 end
 
 
 function failures = test_nrccie_projection(failures, S, ns, wts, src_s, targ, eps, zk)
-% nrccie-eval, partial src ids + multi-column tgt jds: eval and layer_eval.
+% nrccie-eval, partial src ids + multi-column tgt jds: eval and fmm.
 
 K_em     = kernel3d('em', 'nrccie-eval', zk);
 ids_em   = [1;2;3];
@@ -132,19 +117,15 @@ pot_em_ref = reshape(pagemtimes(Pt_em, reshape(K_em.eval(src_s,targ)*Ps_sig_em, 
 
 failures = report(failures, 'nrccie eval vs manual', norm(K_em_tan.eval(src_s,targ)*sigma_em - pot_em_ref)/norm(pot_em_ref), 1e-13);
 
-sigma_em_wt = repmat(wts, 3, 1) .* reshape(sigma_em, 3, ns);
-pot_em_le   = K_em_tan.layer_eval(S, sigma_em, targ, eps);
-failures = report(failures, 'nrccie layer_eval vs smooth', norm(pot_em_le(:) - K_em_tan.eval(src_s,targ)*sigma_em_wt(:))/norm(K_em_tan.eval(src_s,targ)*sigma_em_wt(:)), 1e-4);
-
-Q_em        = K_em_tan.getquad(S, eps, targ);
-pot_em_pre  = K_em_tan.layer_eval(S, sigma_em, targ, eps, struct('precomp_quadrature', Q_em));
-failures = report(failures, 'nrccie layer_eval precomp vs plain', norm(pot_em_pre(:)-pot_em_le(:))/norm(pot_em_le(:)), 1e-4);
+pot_em_fmm  = K_em_tan.fmm(eps, src_s, targ, sigma_em);
+pot_em_eval = K_em_tan.eval(src_s, targ) * sigma_em;
+failures = report(failures, 'nrccie fmm vs eval', norm(pot_em_fmm(:) - pot_em_eval(:))/norm(pot_em_eval(:)), 1e-4);
 
 end
 
 
 function failures = test_ndot_multiply(failures, S, ns, wts, src_s, targ, eps)
-% n-dot left multiply f(t)=n(t).': eval, fmm, layer_eval match manual reference.
+% n-dot left multiply f(t)=n(t).': eval and fmm match manual reference.
 
 K_cart = kernel3d('stok', 's');
 f_ndot = @(t) reshape(t.n, 1, 3, size(t.r,2));
@@ -159,16 +140,12 @@ for ii = 1:nt
     pot_ref(ii) = targ.n(:,ii).' * K_mat((ii-1)*3+(1:3), :) * sigma_3;
 end
 
-failures = report(failures, 'n-dot eval vs manual',       norm(K_ndot.eval(src_s,targ)*sigma_3 - pot_ref)/norm(pot_ref), 1e-13);
-failures = report(failures, 'n-dot fmm vs eval',          norm(K_ndot.fmm(eps,src_s,targ,sigma_3) - K_ndot.eval(src_s,targ)*sigma_3)/norm(K_ndot.eval(src_s,targ)*sigma_3), 1e-5);
+failures = report(failures, 'n-dot eval vs manual', norm(K_ndot.eval(src_s,targ)*sigma_3 - pot_ref)/norm(pot_ref), 1e-13);
+failures = report(failures, 'n-dot fmm vs eval',    norm(K_ndot.fmm(eps,src_s,targ,sigma_3) - K_ndot.eval(src_s,targ)*sigma_3)/norm(K_ndot.eval(src_s,targ)*sigma_3), 1e-5);
 
-pot_le     = K_ndot.layer_eval(S, sigma_3, targ, eps);
-pot_le_ref = K_ndot.eval(src_s, targ) * (wts3(:) .* sigma_3);
-failures = report(failures, 'n-dot layer_eval vs smooth quad', norm(pot_le(:)-pot_le_ref(:))/norm(pot_le_ref(:)), 1e-4);
-
-Q           = K_ndot.getquad(S, eps, targ);
-pot_precomp = K_ndot.layer_eval(S, sigma_3, targ, eps, struct('precomp_quadrature', Q));
-failures = report(failures, 'n-dot layer_eval precomp vs plain', norm(pot_precomp(:)-pot_le(:))/norm(pot_le(:)), 1e-10);
+pot_fmm_wt = K_ndot.fmm(eps, src_s, targ, wts3(:) .* sigma_3);
+pot_ref_wt  = K_ndot.eval(src_s, targ) * (wts3(:) .* sigma_3);
+failures = report(failures, 'n-dot fmm vs smooth quad', norm(pot_fmm_wt(:)-pot_ref_wt(:))/norm(pot_ref_wt(:)), 1e-4);
 
 end
 

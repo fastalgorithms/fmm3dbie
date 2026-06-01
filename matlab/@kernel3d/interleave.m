@@ -8,7 +8,7 @@ function K = interleave(kerns)
 %   so that:
 %     - K.eval(s,t) returns the (opdims(1)*nt) x (opdims(2)*ns) matrix with
 %       each (k,l) block placed at the interleaved row/column indices.
-%     - K.fmm, K.layer_eval, K.getquad are wired analogously.
+%     - K.fmm, K.getquad are wired analogously.
 %
 %   See also KERNEL3D.PLUS, KERNEL3D.TIMES
 
@@ -81,38 +81,11 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
         end
     end
 
-    function out = layer_eval_(S, sigma, targinfo, eps, varargin)
-        if isstruct(targinfo)
-            nt = size(targinfo.r, 2);
-        else
-            nt = size(targinfo, 2);
-        end
-        ns = size(sigma, 2);
-
-        [ridx, cidx] = make_idx(nt, ns);
-
-        out = zeros(opdims(1)*nt, 1);
-        for k = 1:m
-            for l = 1:n
-                sig_l = sigma(cidx{l});
-                p = kerns(k,l).layer_eval(S, sig_l, targinfo, eps, varargin{:});
-                out(ridx{k}) = out(ridx{k}) + p(:);
-            end
-        end
-    end
-
     function Q = getquad_(S, eps, varargin)
         Q = sparse(0);
         for k = 1:m
             for l = 1:n
-                Qkl_raw = kerns(k,l).getquad(S, eps, varargin{:});
-                % Convert rsc struct to sparse if needed
-                if isstruct(Qkl_raw) && isfield(Qkl_raw, 'row_ptr')
-                    ri = kerns(k,l).rsc_to_interleave;
-                    Qkl = conv_rsc_to_spmat(S, Qkl_raw.row_ptr, Qkl_raw.col_ind, Qkl_raw.wnear, ri);
-                else
-                    Qkl = Qkl_raw;
-                end
+                Qkl = kerns(k,l).getquad(S, eps, varargin{:});
                 % Qkl is (opdims_kl(1)*nt x opdims_kl(2)*ns); embed it into
                 % the full (opdims(1)*nt x opdims(2)*ns) sparse matrix.
                 [nrows_kl, ncols_kl] = size(Qkl);
@@ -171,12 +144,6 @@ if all(arrayfun(@(k) isa(kerns(k).fmm, 'function_handle'), 1:numel(kerns)))
     K.fmm = @fmm_;
 else
     K.fmm = [];
-end
-
-if all(arrayfun(@(k) isa(kerns(k).layer_eval, 'function_handle'), 1:numel(kerns)))
-    K.layer_eval = @layer_eval_;
-else
-    K.layer_eval = [];
 end
 
 if all(arrayfun(@(k) isa(kerns(k).getquad, 'function_handle'), 1:numel(kerns)))

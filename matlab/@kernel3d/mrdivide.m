@@ -15,17 +15,10 @@ if (isnumeric(g) && isscalar(g))
         f.fmm = [];
     end
 
-    if (isa(f.layer_eval, 'function_handle'))
-        f.layer_eval = @(varargin) f.layer_eval(varargin{:}) / g;
-    else
-        f.layer_eval = [];
-    end
-
     if (isa(f.getquad, 'function_handle'))
         fgetquad = f.getquad;
-        fri = f.rsc_to_interleave;
         f.getquad = @(S, eps, varargin) kernel3d.scalequad( ...
-            fgetquad(S, eps, varargin{:}), S, 1/g, fri);
+            fgetquad(S, eps, varargin{:}), 1/g);
     else
         f.getquad = [];
     end

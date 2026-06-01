@@ -243,20 +243,9 @@ for i = 1:nsurfers
         end
 
         if (adaptive_correction && (i~=j)) || ((i==j) && selfquad) && ~isempty(ktmp.getquad)
-            Qj = ktmp.getquad(surferj,eps,surferi_targ);
-            if isfield(Qj, 'rfac'), rfac{i,j} = Qj.rfac; end
-            if isfield(Qj, 'row_ptr')
-                sysmat_quad = conv_rsc_to_spmat(surferj,Qj.row_ptr,Qj.col_ind,Qj.wnear,ktmp.rsc_to_interleave);
-            else
-                sysmat_quad = Qj;
-            end
+            sysmat_quad = ktmp.getquad(surferj,eps,surferi_targ);
             if corrections
-                if isfield(Qj, 'row_ptr')
-                    rp = Qj.row_ptr;
-                    ci = Qj.col_ind;
-                else
-                    [rp, ci] = get_rsc_pattern(surferj, Qj, opdims);
-                end
+                [rp, ci] = get_rsc_pattern(surferj, sysmat_quad, opdims);
                 sysmat_smth = smooth_sparse_quad(ktmp, surferi_targ, surferj, rp, ci, noversj);
                 sysmat_quad = sysmat_quad-sysmat_smth;
             end

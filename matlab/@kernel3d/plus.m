@@ -18,18 +18,11 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
         f.fmm = [];
     end
 
-    if (isa(f.layer_eval, 'function_handle') && isa(g.layer_eval, 'function_handle'))
-        f.layer_eval = @(varargin) f.layer_eval(varargin{:}) + g.layer_eval(varargin{:});
-    else
-        f.layer_eval = [];
-    end
-
     if (isa(f.getquad, 'function_handle') && isa(g.getquad, 'function_handle'))
         fgetquad = f.getquad;
         ggetquad = g.getquad;
-        fri = f.rsc_to_interleave;
         f.getquad = @(S, eps, varargin) kernel3d.addquad( ...
-            fgetquad(S, eps, varargin{:}), ggetquad(S, eps, varargin{:}), S, 1, fri);
+            fgetquad(S, eps, varargin{:}), ggetquad(S, eps, varargin{:}));
     else
         f.getquad = [];
     end

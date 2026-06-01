@@ -73,10 +73,8 @@ switch lower(type)
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 's');
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 's', sigma);
         rep_pars         = [1.0; 0.0];
-        obj.layer_eval   = @(S,sigma,targ,eps,varargin) ...
-                               helm3d.dirichlet.eval(S, sigma, targ, eps, zk, rep_pars, varargin{:});
-        obj.getquad      = @(S,eps,varargin) ...
-                               helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, varargin{:});
+        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
+                               helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
     case {'d', 'double'}
@@ -85,10 +83,8 @@ switch lower(type)
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'd');
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'd', sigma);
         rep_pars         = [0.0; 1.0];
-        obj.layer_eval   = @(S,sigma,targ,eps,varargin) ...
-                               helm3d.dirichlet.eval(S, sigma, targ, eps, zk, rep_pars, varargin{:});
-        obj.getquad      = @(S,eps,varargin) ...
-                               helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, varargin{:});
+        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
+                               helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
 
@@ -98,10 +94,8 @@ switch lower(type)
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'sprime');
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'sp', sigma);
         rep_pars         = [1.0; 0.0];
-        obj.layer_eval   = @(S,sigma,targ,eps,varargin) ...
-                               helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, varargin{:});
-        obj.getquad      = @(S,eps,varargin) ...
-                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:});
+        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
+                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields  = {'n'};
 
@@ -110,10 +104,8 @@ switch lower(type)
         obj.kernel_order = 1;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'dprime');
         rep_pars         = [0.0; 1.0];
-        obj.layer_eval   = @(S,sigma,targ,eps,varargin) ...
-                               helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, varargin{:});
-        obj.getquad      = @(S,eps,varargin) ...
-                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:});
+        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
+                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
         obj.targ_fields  = {'n'};
@@ -126,10 +118,8 @@ switch lower(type)
         obj.params.coefs = coefs;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'c', coefs);
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'c', sigma, coefs);
-        obj.layer_eval   = @(S,sigma,targ,eps,varargin) ...
-                               helm3d.dirichlet.eval(S, sigma, targ, eps, zk, coefs, varargin{:});
-        obj.getquad      = @(S,eps,varargin) ...
-                               helm3d.dirichlet.get_quadrature_correction(S, eps, zk, coefs, varargin{:});
+        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
+                               helm3d.dirichlet.get_quadrature_correction(S, eps, zk, coefs, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
 
@@ -140,10 +130,8 @@ switch lower(type)
         obj.kernel_order = 1;
         obj.params.coefs = coefs;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'cprime', coefs);
-        obj.layer_eval   = @(S,sigma,targ,eps,varargin) ...
-                               helm_combprime_eval(S, sigma, targ, eps, zk, coefs, varargin{:});
-        obj.getquad      = @(S,eps,varargin) ...
-                               helm_combprime_getquad(S, eps, zk, coefs, varargin{:});
+        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
+                               helm_combprime_getquad(S, eps, zk, coefs, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
         obj.targ_fields  = {'n'};
@@ -152,8 +140,7 @@ switch lower(type)
     %  Two-wavenumber difference scalar kernels
     %  zk = [zk0; zk1],  coefs = [a0; a1]  (default [1;1])
     %  Result: a0*K_{k0} - a1*K_{k1}
-    %  Built via kernel arithmetic — inherits layer_eval/getquad from
-    %  the two single-wavenumber sub-kernels where available.
+    %  Built via kernel arithmetic.
     % ----------------------------------------------------------------
 
     case {'s_diff'}
@@ -197,7 +184,7 @@ switch lower(type)
     %     (2,1) = coefs(2,1) * D'
     %     (2,2) = coefs(2,2) * S'
     %
-    %  Built via interleave — inherits layer_eval/getquad from sub-kernels.
+    %  Built via interleave.
     % ----------------------------------------------------------------
     case {'trans_sys', 'transmission_sys', 'trans', 'transmission'}
         if nargin < 3 || isempty(coefs), coefs = ones(2,2); end
@@ -307,11 +294,13 @@ switch lower(type)
 
 end
 
-if isempty(obj.rsc_to_interleave)
-    obj.rsc_to_interleave = kernel3d.rsc_interleave_full(obj.opdims(1), obj.opdims(2));
-end
-
 end % function helm3d
+
+function spmat = rsc_to_sparse(Q, S)
+%RSC_TO_SPARSE  Convert Helmholtz getquad RSC output to a sparse matrix.
+% Helmholtz kernels are scalar (opdims=[1,1]); no ri argument needed.
+spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear);
+end
 
 % =========================================================================
 %  Local helpers

@@ -23,35 +23,17 @@ tic
 Smat = surfermat(srfrs, kerns, eps);
 Smat = Smat - 0.5*eye(size(Smat));
 
-[syscors, novers, rfac_sys] = surfermat(srfrs, kerns, eps, struct('corrections',  1));
+[syscors, novers] = surfermat(srfrs, kerns, eps, struct('corrections',  1));
 syscors  = syscors  - 0.5*speye(size(syscors));
-
-[sysnsmth, novers2]         = surfermat(srfrs, kerns, eps, struct('nonsmoothonly', 1));
-sysnsmth = sysnsmth - 0.5*speye(size(sysnsmth));
 toc
 
 skern = kernel3d('h','s',zk);
 src   = []; src.r = [2;0;1];
 rhs   = -skern.eval(src, merge(srfrs));
 
-assert(iscell(rfac_sys) && isequal(size(rfac_sys), [numel(srfrs), numel(srfrs)]), ...
-    'surfermat rfac must be a cell of size (nsurfers x nsurfers)');
-assert(~isnan(rfac_sys{1,1}), 'surfermat rfac{1,1} should be non-NaN');
+sysapply = @(d) surfermatapply(srfrs, kerns, d, eps, novers, syscors);
 
-sysapply  = @(d) surfermatapply(srfrs, kerns, d, eps, novers,  syscors);
-sysapply2 = @(d) surfermatapply(srfrs, kerns, d, eps, novers2, sysnsmth, struct('usematlab',0));
-
-assert(norm(sysapply(rhs)  - Smat*rhs) / norm(Smat*rhs) < tol_apply, 'corrections apply error');
-assert(norm(sysapply2(rhs) - Smat*rhs) / norm(Smat*rhs) < tol_apply, 'nonsmoothonly apply error');
-
-ref_apply2       = sysapply2(rhs);
-opts_rfac        = struct('usematlab', 0, 'rfac', rfac_sys);
-opts_rfac_scalar = struct('usematlab', 0, 'rfac', rfac_sys{1,1});
-
-assert(norm(surfermatapply(srfrs, kerns, rhs, eps, novers2, sysnsmth, opts_rfac)        - ref_apply2) == 0, ...
-    'surfermatapply with cell opts.rfac gave different result');
-assert(norm(surfermatapply(srfrs, kerns, rhs, eps, novers2, sysnsmth, opts_rfac_scalar) - ref_apply2) == 0, ...
-    'surfermatapply with scalar opts.rfac gave different result');
+assert(norm(sysapply(rhs) - Smat*rhs) / norm(Smat*rhs) < tol_apply, 'corrections apply error');
 
 end
 
@@ -83,39 +65,17 @@ tic
 uscat_smth  = surferkerneval(srfrs, kernseval, rhs, targs, eps);
 
 opts_cor = []; opts_cor.corrections = 1;
-[evalcors, novers_eval, rfac_eval] = surferkernevalmat(srfrs, kernseval, targs, eps, opts_cor);
+[evalcors, novers_eval] = surferkernevalmat(srfrs, kernseval, targs, eps, opts_cor);
 opts_cor.corrections = evalcors;  opts_cor.objover = novers_eval;
 uscat_cor   = surferkerneval(srfrs, kernseval, rhs, targs, eps, opts_cor);
 
 evalmat     = surferkernevalmat(srfrs, kernseval, targs, eps);
 uscat_dense = evalmat * rhs;
-
-uscat_fmm   = surferkerneval(srfrs, kernseval, rhs, targs, eps, struct('usematlab',0));
-
-opts_ns = []; opts_ns.nonsmoothonly = 1;
-[nsmth, novers_ns] = surferkernevalmat(srfrs, kernseval, targs, eps, opts_ns);
-opts_ns2 = []; opts_ns2.usematlab = 0;
-opts_ns2.corrections = nsmth;  opts_ns2.objover = novers_ns;
-uscat_nsmth = surferkerneval(srfrs, kernseval, rhs, targs, eps, opts_ns2);
 toc
 
-uref = uscat_fmm;
-assert(norm(uref - uscat_smth)  / norm(uref) < tol_eval, 'smooth-only eval error');
+uref = uscat_smth;
 assert(norm(uref - uscat_cor)   / norm(uref) < tol_eval, 'corrections eval error');
 assert(norm(uref - uscat_dense) / norm(uref) < tol_eval, 'dense evalmat error');
-assert(norm(uref - uscat_nsmth) / norm(uref) < tol_eval, 'nonsmoothonly eval error');
-
-assert(iscell(rfac_eval) && numel(rfac_eval) == numel(srfrs), ...
-    'surferkernevalmat rfac must be a cell of length nsurfers');
-assert(~isnan(rfac_eval{1}), 'surferkernevalmat rfac{1} should be non-NaN');
-
-opts_ns_rfac        = struct('usematlab', 0, 'corrections', nsmth, 'objover', novers_ns, 'rfac', rfac_eval);
-opts_ns_rfac_scalar = struct('usematlab', 0, 'corrections', nsmth, 'objover', novers_ns, 'rfac', rfac_eval{1});
-
-assert(norm(surferkerneval(srfrs, kernseval, rhs, targs, eps, opts_ns_rfac)        - uscat_nsmth) == 0, ...
-    'surferkerneval with cell opts.rfac gave different result');
-assert(norm(surferkerneval(srfrs, kernseval, rhs, targs, eps, opts_ns_rfac_scalar) - uscat_nsmth) == 0, ...
-    'surferkerneval with scalar opts.rfac gave different result');
 
 end
 

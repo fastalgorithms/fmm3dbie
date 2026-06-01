@@ -1,4 +1,4 @@
-% Verify kernel3d eval, layer_eval, fmm, arithmetic operators, and zeros
+% Verify kernel3d eval, fmm, arithmetic operators, and zeros
 % for all implemented kernels. Failures accumulate; one assert at the end.
 
 run ../../startup.m
@@ -47,7 +47,7 @@ end
 % =========================================================================
 
 function failures = test_per_kernel(failures, zk, eps, ~, ~, src, targ, S, targ_off)
-% layer_eval, FD-prime, and FMM checks for all basic kernels.
+% FD-prime and FMM checks for all basic kernels.
 
 sigma_r  = randn(S.npts, 1);
 sigma_s  = randn(S.npts, 1) + 1i*randn(S.npts, 1);
@@ -61,7 +61,7 @@ sigma_stok_pt = randn(3*size(src.r,2), 1);
 sigma_em3_pt  = randn(3*size(src.r,2), 1) + 1i*randn(3*size(src.r,2), 1);
 sigma_em4_pt  = randn(4*size(src.r,2), 1) + 1i*randn(4*size(src.r,2), 1);
 
-tol_leval = 1e-4;  tol_fd = 1e-3;  tol_fmm = 1e-5;  h_fd = 1e-5;
+tol_fd = 1e-3;  tol_fmm = 1e-5;  h_fd = 1e-5;
 coefs_lap  = [0.7; 1.3];
 coefs_h    = [1i*zk; 1.0];
 coefs_ct   = [1i*zk; 1.0];
@@ -108,7 +108,6 @@ for k = 1:size(kernels, 1)
         end
         failures = check_x2trans(failures, K, K_aux, K_bot, src, targ, label);
     else
-        failures = check_layer(failures, K, S, sig_s, targ_off, eps, tol_leval, label);
         if ~isempty(K_aux)
             failures = check_fd_targ(failures, K, K_aux, src, targ, h_fd, tol_fd, label);
         end
@@ -124,7 +123,6 @@ end
 function failures = test_transmission(failures, zk, eps, ~, ~, src, targ, S, targ_off)
 % Scalar diff kernels, trans_rep, trans_sys, trans_sys_diff, x2trans_diff.
 
-tol_leval = 1e-4;
 zk1        = 0.3 + 0.15i;
 diff_coefs = [1.2; 0.8];
 coefs_ct   = [1i*zk; 1.0];
@@ -168,7 +166,6 @@ e = max([norm(M_ts(1:2:end,1:2:end)-coe_22(1,1)*M_D, 'fro')/norm(coe_22(1,1)*M_D
          norm(M_ts(2:2:end,1:2:end)-coe_22(2,1)*M_Dp,'fro')/norm(coe_22(2,1)*M_Dp,'fro'), ...
          norm(M_ts(2:2:end,2:2:end)-coe_22(2,2)*M_Sp,'fro')/norm(coe_22(2,2)*M_Sp,'fro')]);
 failures = report(failures, 'helm trans_sys', 'eval 2x2 blocks', e, 1e-13);
-failures = check_layer(failures, Kts, S, reshape(sigma_2d,2,S.npts), targ_off, eps, tol_leval, 'helm trans_sys');
 
 % trans_sys_diff
 Ktsd = kernel3d('h','trans_sys_diff',zks,coe_222);
@@ -231,14 +228,13 @@ end
 end
 
 
-function failures = test_arithmetic(failures, zk, eps, src, targ, S, targ_off)
-% Composite kernel expression tests eval, layer_eval, and fmm.
+function failures = test_arithmetic(failures, zk, eps, src, targ, ~, ~)
+% Composite kernel expression tests eval and fmm.
 
-tol_fmm = 1e-5;  tol_leval = 1e-4;
+tol_fmm = 1e-5;
 coefs_h  = [1i*zk; 1.0];
 ns       = size(src.r, 2);
 sigma_r  = randn(ns, 1);
-sigma_sr = randn(S.npts, 1);
 
 K_hs = kernel3d('h','s',zk);  K_hd = kernel3d('h','d',zk);
 K_ls = kernel3d('l','s');      K_hc = kernel3d('h','c',zk,coefs_h);
@@ -250,11 +246,6 @@ pot_expr = Kexpr.eval(src,targ)*sigma_r;
 pot_ref  = ((-c1)*K_hs.eval(src,targ)*sigma_r + K_hd.eval(src,targ)*sigma_r ...
            - (K_ls.eval(src,targ)*sigma_r + K_hc.eval(src,targ)*sigma_r)/3) / c2;
 failures = report(failures, 'arithmetic', 'composite eval',       norm(pot_expr-pot_ref)/norm(pot_ref), 1e-13);
-
-pot_leval = Kexpr.layer_eval(S, sigma_sr, targ_off, eps);
-pot_lref  = ((-c1)*K_hs.layer_eval(S,sigma_sr,targ_off,eps) + K_hd.layer_eval(S,sigma_sr,targ_off,eps) ...
-           - (K_ls.layer_eval(S,sigma_sr,targ_off,eps) + K_hc.layer_eval(S,sigma_sr,targ_off,eps))/3) / c2;
-failures = report(failures, 'arithmetic', 'composite layer_eval', norm(pot_leval-pot_lref)/norm(pot_lref), tol_leval);
 
 sigma_r_pt = randn(size(src.r,2), 1);
 pot_fmm  = Kexpr.fmm(eps,src,targ,sigma_r_pt);
@@ -282,28 +273,6 @@ end
 % =========================================================================
 % Helpers
 % =========================================================================
-
-function failures = check_layer(failures, K, S, sigma_s, targ_off, eps, tol, label)
-% Compare layer_eval against smooth-quadrature reference.
-if isempty(K.layer_eval)
-    return
-end
-try
-    pot_leval = K.layer_eval(S, sigma_s, targ_off, eps);
-catch ME
-    failures{end+1} = sprintf('%s: layer_eval threw: %s', label, ME.message);
-    return
-end
-src_s.r = S.r(:,:);  src_s.n = S.n(:,:);  src_s.du = S.du(:,:);  src_s.dv = S.dv(:,:);
-wts = S.wts(:).';  m = K.opdims(2);
-if m > 1
-    sig_flat = repmat(wts, m, 1) .* sigma_s(:,:);
-    pot_ref  = K.eval(src_s, targ_off) * sig_flat(:);
-else
-    pot_ref = K.eval(src_s, targ_off) * (wts(:) .* sigma_s(:));
-end
-failures = report(failures, label, 'layer_eval vs eval', norm(pot_leval(:)-pot_ref(:))/norm(pot_ref(:)), tol);
-end
 
 function failures = check_fmm(failures, K, src, targ, sigma, eps, tol, label)
 % Compare K.fmm against K.eval.
