@@ -23,15 +23,13 @@ function [sysmat,objover,rfac] = surfermat(surferobj,kern,eps,opts)
 %   sysmat - system matrix (dense, or sparse if nonsmoothonly/corrections)
 %   objover - by default, cell(nsurfers,nsurfers) of per-patch oversampling
 %             order vectors; if opts.ifreturnovers=1, a 2-element cell
-%             {surfers_over, xinterps} of precomputed oversampled objects,
-%             suitable for passing directly to surfermatapply.
+%             {surfers_over, xinterps} of precomputed oversampled objects.
 %   rfac   - cell(nsurfers,nsurfers) of rfac scalars from getquad;
 %            NaN for blocks where getquad is not called or does not store rfac
 %
 % Author: Tristan Goodwill
 
 % Accept either an array of surfers or a cell array of surfers.
-% Convert arrays to cell arrays for uniform indexing below.
 if iscell(surferobj)
     surfers = surferobj;
 else
@@ -211,8 +209,8 @@ for i = 1:nsurfers
                 col_inds = (1:opdims(2)).' + opdims(2)*(src_inds-1);
                 col_inds = col_inds(:);
                 if i == j
-                    % Only this patch can have coincident source/target points;
-                    % use eval_mask to zero them out, plain eval for all others.
+                    % Only this patch can have coincident source/target points.
+                    % Use eval_mask to zero them out.
                     targ_inds_self = surferi_targ.ixyzs(p):(surferi_targ.ixyzs(p+1)-1);
                     row_inds_self  = (1:opdims(1)).' + opdims(1)*(targ_inds_self-1);
                     row_inds_self  = row_inds_self(:);

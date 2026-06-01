@@ -12,19 +12,14 @@ function pot = surfermatapply(surferobj, kern, dens, eps, objover, cors, opts)
 %   eps   - quadrature tolerance
 %   objover - oversampling specification; one of:
 %     []                    recompute from scratch
-%     vector                broadcast to all (i,j) pairs
+%     vector                oversampling orders, broadcast to all (i,j) pairs
 %     nsurf x nsurf cell    per-pair order vectors, as returned by surfermat
-%     {surfers_over, xinterps}  precomputed oversampled objects (see below)
-%
-%     In the 2-element cell form, surfers_over is either a length-nsurfers
-%     cell/array (broadcast across target rows) or an nsurfers x nsurfers
-%     cell; xinterps has the same shape.  As returned by surfermat with
-%     opts.ifreturnovers=1.
+%     {surfers_over, xinterps}  precomputed oversampled objects, returned 
+%                               by surfermat with opts.ifreturnovers=1.
 %
 %   cors  - sparse matrix of near-field quadrature corrections,
 %           as returned by surfermat(S,kern,opts) with nonsmoothonly=true,
-%           or as assembled by the user.  cors*dens is added to the output.
-%           pass [] to recompute via surfermat.
+%           or corrections=true. If empty, start by calling surfermat.
 %
 % Optional input:
 %   opts  - options structure

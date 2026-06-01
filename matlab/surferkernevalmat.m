@@ -2,30 +2,24 @@ function [sysmat,objover,rfac] = surferkernevalmat(surferobj,kern, targobj, eps,
 %SURFERKERNEVALMAT build evaluation matrix for given kernel, surfer
 % description of boundary, and off-surface target points.
 %
-% Syntax: [sysmat, objover, rfac] = surferkernevalmat(S, kern, targobj, eps, opts)
+% Syntax: [sysmat, novers, rfac] = surferkernevalmat(S, kern, targobj, eps, opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary
 %   kern      - kernel3d object or vector of kernel3d objects (one per surfer)
 %   targobj   - target point description: surfer object, struct with field
-%               .r (and optionally .du, .dv, .n), or numeric (3,:) array
+%               .r or numeric (3,:) array
 %   eps       - quadrature tolerance
 %
 % Optional input:
 %   opts  - options structure
-%           opts.nonsmoothonly  = (false) return only near-field entries as sparse
-%           opts.corrections    = (false) return corrections to smooth rule as sparse
-%           opts.ifoversamp     = (1) if 0, skip oversampling (set novers=NaN)
-%           opts.ifreturnovers  = (0) if 1, second output is {surfers_over, xinterps}
-%                                 (a 2-element cell of length-nsurfers cells)
-%                                 instead of the cell array of oversampling orders
+%           opts.nonsmoothonly = (false) return only near-field entries as sparse
+%           opts.corrections   = (false) return corrections to smooth rule as sparse
+%           opts.ifoversamp    = (1) if 0, skip oversampling (set novers=NaN)
 %
 % Output:
 %   sysmat - evaluation matrix (dense, or sparse if nonsmoothonly/corrections)
-%   objover - by default, cell(nsurfers,1) of per-patch oversampling order
-%             vectors; if opts.ifreturnovers=1, a 2-element cell
-%             {surfers_over, xinterps} of precomputed oversampled objects,
-%             suitable for passing directly to surferkerneval via opts.objover.
+%   novers - cell(nsurfers,1) of per-patch oversampling order vectors
 %   rfac   - cell(nsurfers,1) of rfac scalars from getquad;
 %            NaN for blocks where getquad is not called or does not store rfac
 %
@@ -84,7 +78,7 @@ for j=1:nsurfers
     end
     opdims_mat(:,j) = ktmp.opdims;
     if ismethod(surfers{j},'oversample')
-        novers{j} = ktmp.get_overs_orders(surfers{j},targinfo,eps);
+        novers{j} = ktmp.get_overs_orders(surfers{j},targobj,eps);
     else
         novers{j} = NaN;
     end
@@ -96,9 +90,8 @@ if ~ifoversamp
     end
 end
 
-% Assert that opdims(1) is constant across all source blocks (all kernels
-% map to the same number of output components per target point), and that
-% opdims(2) is consistent for each block-column j.
+% Assert that opdims(1) is constant across all source blocks and that
+% opdims(2) is consistent for each target block.
 assert(all(opdims_mat(1,:) == opdims_mat(1,1)), ...
     'SURFEREVALMAT: opdims(1) is not constant across all source blocks');
 for j = 1:nsurfers

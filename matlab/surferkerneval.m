@@ -9,7 +9,7 @@ function pot = surferkerneval(surferobj, kern, dens, targobj, eps, opts)
 %   kern      - kernel3d object or vector of kernel3d objects (one per surfer)
 %   dens      - density vector, length ncols (consistent with surferobj and kern)
 %   targobj   - target point description: surfer object, struct with field
-%               .r (and optionally .du, .dv, .n), or numeric (3,:) array
+%               .r or numeric (3,:) array
 %   eps       - quadrature tolerance
 %
 % Optional input:
@@ -19,7 +19,7 @@ function pot = surferkerneval(surferobj, kern, dens, targobj, eps, opts)
 %                              recomputed if empty
 %           opts.objover     = oversampling specification; one of:
 %                              []               recompute from scratch
-%                              vector           broadcast to all surfers
+%                              vector           oversampling orders, broadcast to all surfers
 %                              cell(nsurfers,1) per-surfer order vectors
 %                              {surfers_over, xinterps}  precomputed objects,
 %                                as returned by surferkernevalmat with
@@ -52,8 +52,6 @@ cors = [];
 if isfield(opts,'corrections'), cors = opts.corrections; end
 objover = [];
 if isfield(opts,'objover'), objover = opts.objover; end
-% backwards-compat alias
-if isfield(opts,'novers') && isempty(objover), objover = opts.novers; end
 usematlab = 1;
 if isfield(opts,'usematlab'), usematlab = opts.usematlab; end
 usefmm = 1;
