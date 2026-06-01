@@ -89,6 +89,10 @@ end
 if ~isa(h, 'function_handle')
     error('KERNEL3D:times:invalid', ...
         'Argument must be a scalar, matrix, or function handle.');
+else
+    nargfunc = nargin(h);
+    assert(nargfunc==2, 'KERNEL3D:times h must be a function of source or target, not both')
+
 end
 
 Keval       = K.eval;
