@@ -1,4 +1,4 @@
-function pot = surfermatapply(surferobj, kern, dens, eps, novers, cors, opts)
+function pot = surfermatapply(surferobj, kern, dens, eps, objover, cors, opts)
 %SURFERMATAPPLY apply the integral operator for given kernel and surfer
 % description of boundary to a density, using the FMM-accelerated smooth
 % quadrature rule and adding a precomputed sparse correction.
@@ -10,8 +10,17 @@ function pot = surfermatapply(surferobj, kern, dens, eps, novers, cors, opts)
 %   kern  - kernel3d object or matrix of kernel3d objects
 %   dens  - density vector, length ncols (consistent with surferobj and kern)
 %   eps   - quadrature tolerance
-%   novers - cell array of oversampling orders, as returned by surfermat;
-%            pass [] to recompute
+%   objover - oversampling specification; one of:
+%     []                    recompute from scratch
+%     vector                broadcast to all (i,j) pairs
+%     nsurf x nsurf cell    per-pair order vectors, as returned by surfermat
+%     {surfers_over, xinterps}  precomputed oversampled objects (see below)
+%
+%     In the 2-element cell form, surfers_over is either a length-nsurfers
+%     cell/array (broadcast across target rows) or an nsurfers x nsurfers
+%     cell; xinterps has the same shape.  As returned by surfermat with
+%     opts.ifreturnovers=1.
+%
 %   cors  - sparse matrix of near-field quadrature corrections,
 %           as returned by surfermat(S,kern,opts) with nonsmoothonly=true,
 %           or as assembled by the user.  cors*dens is added to the output.
@@ -42,7 +51,7 @@ if ~isa(kern, 'kernel3d')
     error('SURFERMATAPPLY: second input kern not of supported type');
 end
 
-if nargin < 5, novers = []; end
+if nargin < 5, objover = []; end
 if nargin < 6, cors = []; end
 if nargin < 7, opts = []; end
 
@@ -67,7 +76,7 @@ if isempty(cors)
     else
         coropts.nonsmoothonly = 1;
     end
-    [cors,novers] = surfermat(surferobj,kern,eps,coropts);
+    [cors,objover] = surfermat(surferobj,kern,eps,coropts);
 end
 
 
@@ -84,32 +93,95 @@ else
     opdims_mat = reshape([kern.opdims], 2, nsurfers, nsurfers);
 end
 
-novers_tmp = cell(nsurfers, nsurfers);
-for i=1:nsurfers
-    for j=1:nsurfers
-        if numel(kern) == 1
-            ktmp = kern;
-        else
-            ktmp = kern(i,j);
-        end
-        if isempty(novers)
-            if ismethod(surfers{j},'oversample')
-                novers_tmp{i,j} = ktmp.get_overs_orders(surfers{j},surfers{i},eps);
-            else
-                novers_tmp{i,j} = NaN;
+% --- Parse objover into a canonical form ---
+%
+% objover_mode == false : objover is an nsurfers x nsurfers cell of order vectors
+% objover_mode == true  : surfers_over and xinterps are precomputed;
+%                         surfers_over{i,j} / xinterps{i,j} used directly.
+
+objover_mode = false;
+surfers_over = [];
+xinterps     = [];
+
+if iscell(objover) && numel(objover) == 2 && iscell(objover{1})
+    % 2-element cell: {surfers_over, xinterps}
+    objover_mode = true;
+    surfers_over_in = objover{1};
+    xinterps_in     = objover{2};
+
+    % Normalise surfers_over to an nsurfers x nsurfers cell
+    if ~iscell(surfers_over_in)
+        % Array of surfer objects — one per source column
+        surfers_over = cell(nsurfers, nsurfers);
+        for j = 1:nsurfers
+            for i = 1:nsurfers
+                surfers_over{i,j} = surfers_over_in(j);
             end
+        end
+    elseif numel(surfers_over_in) == nsurfers
+        % Cell vector of surfer objects — one per source column
+        surfers_over = cell(nsurfers, nsurfers);
+        for j = 1:nsurfers
+            for i = 1:nsurfers
+                surfers_over{i,j} = surfers_over_in{j};
+            end
+        end
+    else
+        surfers_over = surfers_over_in;
+    end
+
+    % Normalise xinterps to an nsurfers x nsurfers cell
+    if numel(xinterps_in) == nsurfers && (isvector(xinterps_in) || iscell(xinterps_in))
+        xinterps = cell(nsurfers, nsurfers);
+        for j = 1:nsurfers
+            for i = 1:nsurfers
+                xinterps{i,j} = xinterps_in{j};
+            end
+        end
+    else
+        xinterps = xinterps_in;
+    end
+
+elseif ~isempty(objover) && ~iscell(objover)
+    % Plain vector: broadcast to all (i,j) pairs
+    novers_vec = objover(:);
+    objover = cell(nsurfers, nsurfers);
+    for i = 1:nsurfers
+        for j = 1:nsurfers
+            objover{i,j} = novers_vec;
         end
     end
 end
-if isempty(novers)
-    if unif_nover
+
+% If still empty (or a standard nsurf x nsurf cell), compute orders as needed
+if ~objover_mode
+    novers_tmp = cell(nsurfers, nsurfers);
+    for i=1:nsurfers
         for j=1:nsurfers
-            noversj = cell2mat(novers_tmp(:,j).');
-            noversj = repmat(max(noversj,[],2),1,nsurfers);
-            novers_tmp(:,j) = mat2cell(noversj,size(noversj,1),2);
+            if numel(kern) == 1
+                ktmp = kern;
+            else
+                ktmp = kern(i,j);
+            end
+            if isempty(objover)
+                if ismethod(surfers{j},'oversample')
+                    novers_tmp{i,j} = ktmp.get_overs_orders(surfers{j},surfers{i},eps);
+                else
+                    novers_tmp{i,j} = NaN;
+                end
+            end
         end
     end
-    novers = novers_tmp;
+    if isempty(objover)
+        if unif_nover
+            for j=1:nsurfers
+                noversj = cell2mat(novers_tmp(:,j).');
+                noversj = repmat(max(noversj,[],2),1,nsurfers);
+                novers_tmp(:,j) = mat2cell(noversj,size(noversj,1),2);
+            end
+        end
+        objover = novers_tmp;
+    end
 end
 
 for i = 1:nsurfers
@@ -144,6 +216,12 @@ for i = 1:nsurfers
             continue
         end
 
+        if (numel(kern) == 1)
+            ktmp = kern;
+        else
+            ktmp = kern(i,j);
+        end
+
         surferi_targ = []; surferi_targ.r = surferi.r(:,:);
         for field = ktmp.targ_fields(:).'
             surferi_targ.(field{1}) = surferi.(field{1})(:,:);
@@ -156,12 +234,6 @@ for i = 1:nsurfers
             surferi_targ.ixyzs = surferi.ixyzs;
         end
 
-        if (numel(kern) == 1)
-            ktmp = kern;
-        else
-            ktmp = kern(i,j);
-        end
-
         icolinds = icollocs(j):(icollocs(j+1)-1);
         irowinds = irowlocs(i):(irowlocs(i+1)-1);
 
@@ -169,14 +241,18 @@ for i = 1:nsurfers
 
         % call layer eval or handle things in matlab
         if usematlab
-            noversj = novers{i,j};
-
-            if ismethod(surferj,'oversample') && ~any(isnan(noversj))
-                [surferjover, xinterp] = surferj.oversample(noversj);
-                xinterp = kron(xinterp, eye(ktmp.opdims(2)));
+            if objover_mode
+                surferjover = surfers_over{i,j};
+                xinterp     = xinterps{i,j};
             else
-                surferjover = surferj;
-                xinterp = eye(numel(wts));
+                noversj = objover{i,j};
+                if ismethod(surferj,'oversample') && ~any(isnan(noversj))
+                    [surferjover, xinterp] = surferj.oversample(noversj);
+                    xinterp = kron(xinterp, eye(ktmp.opdims(2)));
+                else
+                    surferjover = surferj;
+                    xinterp = eye(numel(wts));
+                end
             end
             wtsover = repmat(surferjover.wts(:).', ktmp.opdims(2), 1);
             dens_j = wtsover(:).*(xinterp*dens_j);

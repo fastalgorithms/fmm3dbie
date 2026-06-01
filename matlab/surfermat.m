@@ -1,7 +1,7 @@
-function [sysmat,novers,rfac] = surfermat(surferobj,kern,eps,opts)
+function [sysmat,objover,rfac] = surfermat(surferobj,kern,eps,opts)
 %SURFERMAT build matrix for given kernel and surfer description of boundary.
 %
-% Syntax: [sysmat, novers, rfac] = surfermat(S, kern, eps, opts)
+% Syntax: [sysmat, objover, rfac] = surfermat(S, kern, eps, opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary
@@ -10,15 +10,21 @@ function [sysmat,novers,rfac] = surfermat(surferobj,kern,eps,opts)
 %
 % Optional input:
 %   opts  - options structure
-%           opts.nonsmoothonly = (false) return only near-field entries as sparse
-%           opts.corrections   = (false) return corrections to smooth rule as sparse
-%           opts.l2scale       = (false) scale rows by sqrt(wts), cols by 1/sqrt(wts)
-%           opts.unif_nover    = (0) if nonzero, enforce uniform oversampling order
-%           opts.ifoversamp    = (1) if 0, skip oversampling (set novers=NaN)
+%           opts.nonsmoothonly  = (false) return only near-field entries as sparse
+%           opts.corrections    = (false) return corrections to smooth rule as sparse
+%           opts.l2scale        = (false) scale rows by sqrt(wts), cols by 1/sqrt(wts)
+%           opts.unif_nover     = (0) if nonzero, enforce uniform oversampling order
+%           opts.ifoversamp     = (1) if 0, skip oversampling (set novers=NaN)
+%           opts.ifreturnovers  = (0) if 1, second output is {surfers_over, xinterps}
+%                                 (a 2-element cell of nsurfers x nsurfers cells)
+%                                 instead of the cell array of oversampling orders
 %
 % Output:
 %   sysmat - system matrix (dense, or sparse if nonsmoothonly/corrections)
-%   novers - cell(nsurfers,nsurfers) of per-patch oversampling order vectors
+%   objover - by default, cell(nsurfers,nsurfers) of per-patch oversampling
+%             order vectors; if opts.ifreturnovers=1, a 2-element cell
+%             {surfers_over, xinterps} of precomputed oversampled objects,
+%             suitable for passing directly to surfermatapply.
 %   rfac   - cell(nsurfers,nsurfers) of rfac scalars from getquad;
 %            NaN for blocks where getquad is not called or does not store rfac
 %
@@ -63,6 +69,8 @@ if isfield(opts,'unif_novers'), unif_nover = opts.unif_novers; end
 
 ifoversamp = 1;
 if isfield(opts,'ifoversamp'), ifoversamp = opts.ifoversamp; end
+ifreturnovers = 0;
+if isfield(opts,'ifreturnovers'), ifreturnovers = opts.ifreturnovers; end
 nsurfers = length(surfers);
 
 lsurfer    = zeros(nsurfers,1);
@@ -76,8 +84,10 @@ else
     opdims_mat = reshape([kern.opdims], 2, nsurfers, nsurfers);
 end
 
-novers = cell(nsurfers, nsurfers);
-rfac   = cell(nsurfers, nsurfers);
+novers       = cell(nsurfers, nsurfers);
+surfers_over = cell(nsurfers, nsurfers);
+xinterps     = cell(nsurfers, nsurfers);
+rfac         = cell(nsurfers, nsurfers);
 for i=1:nsurfers
     for j=1:nsurfers
         if numel(kern) == 1
@@ -180,6 +190,8 @@ for i = 1:nsurfers
             surferjover = surferj;
             xinterp = eye(numel(wts));
         end
+        surfers_over{i,j} = surferjover;
+        xinterps{i,j}     = xinterp;
 
         wtsover = repmat(surferjover.wts(:).', opdims(2), 1);
         wtsover = wtsover(:).';
@@ -286,5 +298,11 @@ end
 
 if (nonsmoothonly)
     sysmat = sparse(isysmat,jsysmat,vsysmat,nrows,ncols);
+end
+
+if ifreturnovers
+    objover = {surfers_over, xinterps};
+else
+    objover = novers;
 end
 end
