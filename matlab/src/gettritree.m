@@ -61,7 +61,7 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     ntri = 0;
     nlev = 0;
     mex_id_ = 'gettritree(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c io int64_t[x], c io int64_t[x], c io int64_t[x], c io double[x], c io double[xx], c io double[x], c io double[xx], c io int64_t[xx], c io int64_t[x])';
-[ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier] = kern_routs(mex_id_, npatches, norder, npols, srccoefs, ntarg, targs, itargptr, ntargptr, ntrimax, nlevmax, rfac, ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier, 1, 1, 1, 9, npols, 1, 3, ntarg, 1, 1, 1, 1, 1, 1, 1, ntrimax, ntrimax, 3, ntrimax, ntrimax, 6, ntrimax, ntarg, ntrimax, 1);
+[ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier] = fmm3dbie_routs(mex_id_, npatches, norder, npols, srccoefs, ntarg, targs, itargptr, ntargptr, ntrimax, nlevmax, rfac, ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier, 1, 1, 1, 9, npols, 1, 3, ntarg, 1, 1, 1, 1, 1, 1, 1, ntrimax, ntrimax, 3, ntrimax, ntrimax, 6, ntrimax, ntarg, ntrimax, 1);
    
     tritree = [];
     if ier > 0

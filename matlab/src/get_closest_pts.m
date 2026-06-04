@@ -1,4 +1,4 @@
-function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo)
+function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo, opts)
 %
 %  get_closest_pts
 %    This subroutine takes in a surface (S) and collection of target points
@@ -7,20 +7,47 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo)
 %    point (dists), and flags which indicate whether Newton method was
 %    successful.
 %
+%  For efficiency reasons, this routine only returns the closest 
+%  points for targets that lie in a tubular neighborhood of the surface. 
+%  In particular, suppose c_{j} is the centroid of a patch and r_{j}
+%  the radius of the bounding sphere. Then the tubular neighborhood is
+%  the union of the spheres centered at c_{j} with radius rfac*r_{j}
+%  where rfac is a user defined (default value of 1.25)
+%
 %  Syntax
 %   [sxyz, uvsloc, dists, flags] = get_closest_pts(S,targinfo)
+%   [sxyz, uvsloc, dists, flags] = get_closest_pts(S,targinfo,opts)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * targinfo: target info
+%    * opts: options struct
+%        opts.tol - tolerance to be used for Newton (1e-10)
+%        opts.maxiter - maximum number of iterations for Newton (10)
+%        opts.rfac - rfac*r_{j} is the radius of the bounding sphere
+%         centered at the patch centroid. Closest points will
+%         be determined for only targets that lie in the 
+%         union of these spheres (1.25)
+
 %
 %  Output arguments:
-%    * sxyz: closest point
-%    * uvsloc: local (u,v) coordinates of closest point on each patch
-%    * dists: distance between target point and closest point
+%    * sxyz: closest point (only relevant if flags(i) = 0)
+%    * patchinds: patch number of closest point (only relevant if flags(i) = 0)
+%    * uvsloc: local (u,v) coordinates of closest point (only relevant if flags(i) = 0)
+%    * dists: distance between target point and closest point (only relevant if flags(i) = 0)
 %    * flags: whether or not Newton method succeeded
+%        flags(i) = -1, if target not in tubular neighborhood
+%        flags(i) = 0, if target in tubular neighborhood and newton for closest
+%                      patch succeeded
+%        flags(i) = 1, if target in tubular neighborhood and newton for closest
+%                      patch failed
 
+    if (nargin < 3)
+        opts = [];
+    end
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    patch_id = S.patch_id;
+    uvs_src = S.uvs_src;
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
@@ -28,78 +55,21 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo)
     npp1 = npatches+1;
     n3 = 3;
 
-    cms = zeros(3,npatches);
-    rads = zeros(npatches,1);
-mex_id_ = 'get_centroid_rads(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c io double[xx], c io double[x])';
-[cms, rads] = kern_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, cms, rads, 1, npatches, npatp1, npatches, 1, n9, npts, n3, npatches, npatches);
-
     targs = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
 
-    nnz = 0;
-mex_id_ = 'findnearmem(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x])';
-[nnz] = kern_routs(mex_id_, cms, npatches, rads, ndtarg, targs, ntarg, nnz, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, 1);
-
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    mex_id_ = 'findnear(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x], c io int64_t[x])';
-[row_ptr, col_ind] = kern_routs(mex_id_, cms, npatches, rads, ndtarg, targs, ntarg, row_ptr, col_ind, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, ntp1, nnz);
-
-    istarts = row_ptr(1:end-1);
-    iends = row_ptr(2:end)-1;
-    isrcinds = cell(npatches,1);
-    for i=1:npatches
-        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
-    end
-
-    patch_inds = zeros(ntarg,1);
-    local_inds = zeros(ntarg,1);
-
     sxyz = zeros(ndtarg,ntarg);
+    patch_inds = zeros(ntarg,1);
     uvsloc = zeros(2,ntarg);
     dists = inf*ones(ntarg,1);
     flags = zeros(ntarg,1);
 
-    for i=1:ntarg
-        for j = 1:(iends(i) - istarts(i) + 1)
-            jpatch = col_ind(j + istarts(i) - 1);
-            iinds = isrcinds{jpatch};
-            dr2 = (targs(1,i) - S.r(1,iinds)).^2 + (targs(2,i) - S.r(2,iinds)).^2 + (targs(3,i) - S.r(3,iinds)).^2;
-            [~,mind] = min(dr2);
-            glob_ind = iinds(mind);
-            local_inds(i) = glob_ind - ixyzs(S.patch_id(glob_ind)) + 1;
+    tol = 1e-10;    if isfield(opts, 'tol'), tol = opts.tol; end
+    maxiter = 20;   if isfield(opts, 'maxiter'), maxiter = opts.maxiter; end
+    rfac = 1.25;    if isfield(opts, 'rfac'), rfac = opts.rfac; end
 
-            porder = S.norders(1);
-            snpols = ixyzs(2) - ixyzs(1);
-            maxiter = 10;
-            tol = 1e-8;
-            lpatchidxvec = local_inds(i);
-            itvec = ixyzs(jpatch);
-
-            sxyz_ij = zeros(ndtarg,1);
-            uvsloc_ij = zeros(2,1);
-            dists_ij = 0;
-            flags_ij = 0;
-
-            ntarg_i = 1;
-            targ_i = targs(:,i);
-
-            mex_id_ = 'findnearsrfcpnt(c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c io double[xx], c io double[xx], c io double[x], c io int64_t[x])';
-[sxyz_ij, uvsloc_ij, dists_ij, flags_ij] = kern_routs(mex_id_, ntarg_i, targ_i, npts, porder, snpols, maxiter, srcvals, srccoefs, tol, lpatchidxvec, itvec, sxyz_ij, uvsloc_ij, dists_ij, flags_ij, 1, ndtarg, ntarg_i, 1, 1, 1, 1, n12, npts, n9, npts, 1, ntarg_i, ntarg_i, ndtarg, ntarg_i, 2, ntarg_i, ntarg_i, ntarg_i);
-
-
-            if dists_ij < dists(i)
-                dists(i) = dists_ij;
-                sxyz(:,i) = sxyz_ij;
-                uvsloc(:,i) = uvsloc_ij;
-                flags(i) = flags_ij;
-                patch_inds(i) = jpatch;
-            end
-        end
-    end
-
-
+    mex_id_ = 'get_closest_points(c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[x], c i double[x], c io double[xx], c io int64_t[x], c io double[xx], c io double[x], c io double[x])';
+[sxyz, patch_inds, uvsloc, dists, flags] = fmm3dbie_routs(mex_id_, ndtarg, ntarg, targs, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ipatch_id, uvs_src, maxiter, tol, rfac, sxyz, patch_inds, uvsloc, dists, flags, 1, 1, ndtarg, ntarg, 1, npatches, npatp1, npatches, 1, 9, npts, 12, npts, npts, 2, npts, 1, 1, 1, 3, ntarg, ntarg, 2, ntarg, ntarg, ntarg);
 
 end
 %

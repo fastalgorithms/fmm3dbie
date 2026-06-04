@@ -116,7 +116,6 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/common_Maxwell.o \
 	$(COM)/rigidbodies.o $(COM)/polytens.o \
 	$(COM)/chebexps.o $(COM)/gmres_routs.o \
-	$(COM)/dgecoall_standalone.o
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
@@ -149,7 +148,7 @@ KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o \
 	$(KER)/hank101.o \
 	$(KER)/hank103.o $(KER)/helmdiffgreen.o \
-	$(KER)/hankdiff.o $(KER)/vpp.o
+	$(KER)/hankdiff.o 
 
 # Quadrature wrappers
 QUAD = src/quadratures
@@ -345,17 +344,13 @@ surf-smooth-objs: surf-smooth-mod-objs  $(SURFSMOBJS)
 #
 MWDIR = matlab
 MWF = fmm3dbie_routs
-MWFK = kern_routs
 GW = $(MWF)
-GWK = $(MWFK)
 
 
 
-matlab:	$(MSTATICLIB) $(MWDIR)/$(GW).c $(MWDIR)/$(GWK).c
+matlab:	$(MSTATICLIB) $(MWDIR)/$(GW).c 
 	$(MEX) $(MWDIR)/$(GW).c lib-static/$(MSTATICLIB) $(MFLAGS) \
 	-output $(MWDIR)/$(GW) $(MEXLIBS) 
-	$(MEX) $(MWDIR)/$(GWK).c lib-static/$(MSTATICLIB) $(MFLAGS) \
-	-output $(MWDIR)/$(GWK) $(MEXLIBS) 
 
 
 matlab-dyn:	$(MDYNAMICLIB) $(MWDIR)/$(GW).c
@@ -367,12 +362,6 @@ mex: $(MSTATICLIB)
 	$(MWRAP) $(MWFLAGS) -mex $(GW) -c $(GW).c $(MWF).mw;\
 	$(MEX) $(GW).c ../lib-static/$(MSTATICLIB) $(MFLAGS) \
 	-output $(GW) $(MEXLIBS) ;
-	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GWK) -mb $(MWFK).mw;\
-	$(MWRAP) $(MWFLAGS) -mex $(GWK) -c $(GWK).c $(MWFK).mw;\
-	$(MEX) $(GWK).c ../lib-static/$(MSTATICLIB) $(MFLAGS) \
-	-output $(GWK) $(MEXLIBS) ;
-
-
 
 mex-dyn: $(MDYNAMICLIB)
 	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GW) -mb $(MWF).mw;\

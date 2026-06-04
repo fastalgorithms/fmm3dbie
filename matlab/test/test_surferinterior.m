@@ -16,7 +16,7 @@ in = surferinterior(S,targs);
 figure(3);clf
 wireframe(S,struct('wfill',0))
 hold on
-scatter3(targs.r(1,:),targs.r(2,:),targs.r(3,:),[],in,'.');colorbar
+scatter3(targs.r(1,:),targs.r(2,:),targs.r(3,:),[],in,'.'); colorbar()
 hold off
 
 hs = 10.^(-3:-1);
