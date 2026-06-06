@@ -177,6 +177,7 @@ C$OMP$PRIVATE(uvsloc_tmp)
              sxyz(1:3,i) = sxyz_tmp(1:3)
              uvsloc(1:2,i) = uvsloc_tmp(1:2)
              flags(i) = flags_tmp
+             ipatch_id_targ(i) = ipatch
            endif
         enddo
       enddo

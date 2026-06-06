@@ -73,8 +73,11 @@ assert(max(dists)<10*tol)
 assert(norm(rs - sxyz)<10*tol*norm(rs))
 
 abc = [1,1.2,0.8];
-S = geometries.ellipsoid(abc,4*[1,1,1],[],6);
-
+S1 = geometries.ellipsoid(abc,4*[1,1,1],[],6);
+S2 = geometries.ellipsoid(abc,4*[1,1,1],[],8);
+S1 = slicesurfer(S1,find(S1.cms(3,:)>0));
+S2 = slicesurfer(S2,find(S2.cms(3,:)<0));
+S = merge([S1,S2]);
 
 rs = randn(3,ntarg);
 
@@ -98,8 +101,8 @@ r_check = NaN*rs;
 for p = 1:S.npatches
     idx = find(patch_inds == p);
     if isempty(idx), continue; end
-    pols_p = koorn.pols(S.norders, uvsloc(:,idx));
+    pols_p = koorn.pols(S.norders(p), uvsloc(:,idx));
     r_check(:,idx) = S.srccoefs{p}(1:3,:) * pols_p;
 end
-assert(norm(r_check - sxyz)<1e-14)
+assert(norm(r_check - sxyz)<1e-14*norm(r_check))
 end
