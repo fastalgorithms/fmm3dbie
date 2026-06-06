@@ -7,7 +7,7 @@ function [xintmatu,xintmatv,xinterp] = int_mat(uvs,norder,nleg,pt)
     amat = koorn.vals2coefs(norder,uvskoorn);
     np = size(uvs,2);
 
-    [xlege,wlege] = lege.exps(nleg);
+    [xlege,wlege] = polytens.lege.rts(nleg);
 
     for ii=1:np
 

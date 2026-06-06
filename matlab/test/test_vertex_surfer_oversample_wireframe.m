@@ -26,7 +26,7 @@ assert(rerr < 1e-12, 'oversample nover==norder quad: val2over should be identity
 
 %% vertex_surfer
 
-S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S = geometries.sphere(1, 2, [0;0;0], 6, 1);
 vert = S.end_pt_verts{1}(:,1);
 
 % Auto-detect patches sharing vert
@@ -57,7 +57,7 @@ assert(isempty(Sout_notol), 'vertex_surfer: tight tol should find no patches');
 S = geometries.sphere(1, 2, [0;0;0], 4, 1);
 fig = figure('Visible','off');
 wireframe(S);
-wireframe(S, struct('nsign', -1, 'wfill', true));
+wireframe(S, struct('nfac', -1, 'wfill', true));
 close(fig);
 
 S = geometries.sphere(1, 2, [0;0;0], 4, 11);

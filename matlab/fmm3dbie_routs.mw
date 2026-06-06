@@ -694,10 +694,9 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
 %
 %  For efficiency reasons, this routine only returns the closest 
 %  points for targets that lie in a tubular neighborhood of the surface. 
-%  In particular, suppose c_{j} is the centroid of a patch and r_{j}
-%  the radius of the bounding sphere. Then the tubular neighborhood is
-%  the union of the spheres centered at c_{j} with radius rfac*r_{j}
-%  where rfac is a user defined (default value of 1.25)
+%  In particular, suppose c_{j} and r_{j} are the centroid and radius of 
+%  patch j, then the tubular neighborhood is the union of the spheres 
+%  centered at c_{j} with radius opts.rfac*r_{j}.
 %
 %  Syntax
 %   [sxyz, uvsloc, dists, flags] = get_closest_pts(S,targinfo)
@@ -732,7 +731,7 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
     end
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     patch_id = S.patch_id;
-    uvs_src = S.uvs_src;
+    uvs_src = S.uvs_targ;
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
@@ -740,7 +739,11 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
     npp1 = npatches+1;
     n3 = 3;
 
-    targs = extract_targ_array(targinfo);
+    if numel(targinfo) == 1
+        targs = extract_targ_array(targinfo);
+    else
+        targs = targinfo;
+    end
     [ndtarg,ntarg] = size(targs);
 
     sxyz = zeros(ndtarg,ntarg);
@@ -753,7 +756,7 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
     maxiter = 20;   if isfield(opts, 'maxiter'), maxiter = opts.maxiter; end
     rfac = 1.25;    if isfield(opts, 'rfac'), rfac = opts.rfac; end
 
-    # FORTRAN get_closest_points(int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double [9,npts] srccoefs, double[12,npts] srcvals, int[npts] ipatch_id, double[2,npts] uvs_src, int[1] maxiter, double[1] tol, double[1] rfac, inout double[3,ntarg] sxyz, inout int[ntarg] patch_inds, inout double[2,ntarg] uvsloc, inout double[ntarg] dists, inout double[ntarg] flags);
+    # FORTRAN get_closest_points(int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double [9,npts] srccoefs, double[12,npts] srcvals, int[npts] patch_id, double[2,npts] uvs_src, int[1] maxiter, double[1] tol, double[1] rfac, inout double[3,ntarg] sxyz, inout int[ntarg] patch_inds, inout double[2,ntarg] uvsloc, inout double[ntarg] dists, inout double[ntarg] flags);
 
 end
 %

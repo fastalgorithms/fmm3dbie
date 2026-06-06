@@ -5,7 +5,7 @@ function wireframe(S,opts)
 %
 % wireframe(S,opts) where opts is a struct with options
 %
-%   opts.nsign - plot edges at location r + 5e-3 * nsign * n. (default 1)
+%   opts.nfac - plot edges at location r + 5e-3 * nfac * n. (default 1)
 %       to avoid z fighting. 
 %   opts.wfill - if true, also plot surface in white
 %       (default false)
@@ -70,9 +70,9 @@ end
 
 end
 
-nsign = 1;
-if isfield(opts, 'nsign')
-    nsign = opts.nsign;
+nfac = 1;
+if isfield(opts, 'nfac')
+    nfac = opts.nfac;
 end
 
 rwire_plot = [];
@@ -80,7 +80,7 @@ for i = 1:S.npatches
     iinds = S.ixyzs(i):S.ixyzs(i+1)-1;
 rwire = xinterp{iuni(i)}*S.r(:,iinds).';
 nwire = xinterp{iuni(i)}*S.n(:,iinds).';
-rwire = rwire + nsign*5e-3*nwire;
+rwire = rwire + nfac*5e-3*nwire;
 rwire = [rwire;NaN*ones(3,size(rwire,2))];
 rwire = reshape(rwire,[],3).';
 rwire_plot = [rwire_plot,rwire];

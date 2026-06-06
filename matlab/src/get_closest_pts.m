@@ -9,10 +9,9 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
 %
 %  For efficiency reasons, this routine only returns the closest 
 %  points for targets that lie in a tubular neighborhood of the surface. 
-%  In particular, suppose c_{j} is the centroid of a patch and r_{j}
-%  the radius of the bounding sphere. Then the tubular neighborhood is
-%  the union of the spheres centered at c_{j} with radius rfac*r_{j}
-%  where rfac is a user defined (default value of 1.25)
+%  In particular, suppose c_{j} and r_{j} are the centroid and radius of 
+%  patch j, then the tubular neighborhood is the union of the spheres 
+%  centered at c_{j} with radius opts.rfac*r_{j}.
 %
 %  Syntax
 %   [sxyz, uvsloc, dists, flags] = get_closest_pts(S,targinfo)
@@ -47,7 +46,7 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
     end
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     patch_id = S.patch_id;
-    uvs_src = S.uvs_src;
+    uvs_src = S.uvs_targ;
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);
     [npatches,~] = size(norders);
@@ -55,7 +54,11 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
     npp1 = npatches+1;
     n3 = 3;
 
-    targs = extract_targ_array(targinfo);
+    if numel(targinfo) == 1
+        targs = extract_targ_array(targinfo);
+    else
+        targs = targinfo;
+    end
     [ndtarg,ntarg] = size(targs);
 
     sxyz = zeros(ndtarg,ntarg);
@@ -69,7 +72,7 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
     rfac = 1.25;    if isfield(opts, 'rfac'), rfac = opts.rfac; end
 
     mex_id_ = 'get_closest_points(c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[x], c i double[x], c io double[xx], c io int64_t[x], c io double[xx], c io double[x], c io double[x])';
-[sxyz, patch_inds, uvsloc, dists, flags] = fmm3dbie_routs(mex_id_, ndtarg, ntarg, targs, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ipatch_id, uvs_src, maxiter, tol, rfac, sxyz, patch_inds, uvsloc, dists, flags, 1, 1, ndtarg, ntarg, 1, npatches, npatp1, npatches, 1, 9, npts, 12, npts, npts, 2, npts, 1, 1, 1, 3, ntarg, ntarg, 2, ntarg, ntarg, ntarg);
+[sxyz, patch_inds, uvsloc, dists, flags] = fmm3dbie_routs(mex_id_, ndtarg, ntarg, targs, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, patch_id, uvs_src, maxiter, tol, rfac, sxyz, patch_inds, uvsloc, dists, flags, 1, 1, ndtarg, ntarg, 1, npatches, npatp1, npatches, 1, 9, npts, 12, npts, npts, 2, npts, 1, 1, 1, 3, ntarg, ntarg, 2, ntarg, ntarg, ntarg);
 
 end
 %
