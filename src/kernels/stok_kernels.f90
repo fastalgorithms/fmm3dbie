@@ -512,3 +512,88 @@ subroutine st3d_strac(srcinfo,ndt,targinfo,ndd,dpars, &
 end subroutine st3d_strac
 
 
+subroutine st3d_combtrac(srcinfo,ndt,targinfo,ndd,dpars, &
+     ndz,zk,ndi,ipars,val)
+!f2py intent(in) srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: srcinfo(12), targinfo(12), dpars(ndd)
+  integer *8 ipars(ndi)
+  complex *16 :: zk
+  real *8 :: val
+
+  real *8 :: src(3), srcnorm(3), targ(3), targnorm(3), dr(3), over4pi
+  data over4pi/0.07957747154594767d0/
+
+  ! Extract component indices
+  i = ipars(1)
+  j = ipars(2)
+
+  ! Extract scaling parameters
+  alpha = dpars(1)
+  beta = dpars(2)
+
+  ! Extract coordinates and normal vectors
+  src(1) = srcinfo(1)
+  src(2) = srcinfo(2)
+  src(3) = srcinfo(3)
+  srcnorm(1) = srcinfo(10)
+  srcnorm(2) = srcinfo(11)
+  srcnorm(3) = srcinfo(12)
+
+  targ(1) = targinfo(1)
+  targ(2) = targinfo(2)
+  targ(3) = targinfo(3)
+  targnorm(1) = targinfo(10)
+  targnorm(2) = targinfo(11)
+  targnorm(3) = targinfo(12)
+
+  ! Displacement vector: dr = targ - src
+  dx = targ(1) - src(1)
+  dy = targ(2) - src(2)
+  dz = targ(3) - src(3)
+
+  dr(1) = dx
+  dr(2) = dy
+  dr(3) = dz
+
+  ! Geometric dot products
+  r2 = dx**2 + dy**2 + dz**2
+  r = sqrt(r2)
+  
+  rinv = 1.0d0/r
+  rinv2 = rinv*rinv
+  rinv3 = rinv2*rinv
+  rinv5 = rinv3*rinv2
+  rinv7 = rinv5*rinv2
+
+  dprod_src  = dx*srcnorm(1)  + dy*srcnorm(2)  + dz*srcnorm(3)
+  dprod_targ = dx*targnorm(1) + dy*targnorm(2) + dz*targnorm(3)
+  snorm_tnorm = srcnorm(1)*targnorm(1) + srcnorm(2)*targnorm(2) + srcnorm(3)*targnorm(3)
+
+  dxi = dr(i)
+  dxj = dr(j)
+  sni = srcnorm(i)
+  snj = srcnorm(j)
+
+  ! --- 1. Stokeslet Contribution ---
+  val_stok = -3.0d0 * dxi * dxj * dprod_targ * rinv5
+
+  ! --- 2. Stresslet Contribution ---
+  ! Term A: -15 * dx_i * dx_j * (dr . srcnorm) * (dr . targnorm) / r^7
+  termA = -15.0d0 * dxi * dxj * dprod_src * dprod_targ * rinv7
+
+  ! Term B: 3 * [ srcnorm_i * dx_j * (dr . targnorm) + 
+  !               dx_i * srcnorm_j * (dr . targnorm) + 
+  !               dx_i * dx_j * (srcnorm . targnorm) ] / r^5
+  termB = 3.0d0 * (sni*dxj*dprod_targ + dxi*snj*dprod_targ + dxi*dxj*snorm_tnorm) * rinv5
+
+  val_stress = termA + termB
+
+  ! --- 3. Combined Result ---
+  val = (alpha * val_stok + beta * val_stress) * over4pi
+
+  return
+end subroutine st3d_combtrac
+

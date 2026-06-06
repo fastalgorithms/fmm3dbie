@@ -4381,7 +4381,7 @@ function p = eval(S, sigma, targinfo, eps, varargin)
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
-        [Q] = stok3d.traction.get_quadrature_correction(S,eps,targinfo,opts_quad);
+        [Q] = stok3d.traction.get_quadrature_correction(S,eps,[],targinfo,opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'double';
@@ -4429,17 +4429,17 @@ end
 %
 
 @ +stok3d/+traction/get_quadrature_correction.m
-function Q = get_quadrature_correction(S, eps, targinfo, opts)
+function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %
 %  stok3d.traction.get_quadrature_correction
 %    Returns the near quadrature correction for the traction of the
-%    Stokes single layer (S' kernel) with density on surface S
-%    and targets given by targinfo, in rsc / csc / sparse format.
+%    Stokes single layer (S' kernel) or combined field with density on 
+%    surface S and targets given by targinfo, in rsc / csc / sparse format.
 %
 %  Syntax
-%   Q = stok3d.traction.get_quadrature_correction(S, eps)
-%   Q = stok3d.traction.get_quadrature_correction(S, eps, targinfo)
-%   Q = stok3d.traction.get_quadrature_correction(S, eps, targinfo, opts)
+%   Q = stok3d.traction.get_quadrature_correction(S, eps, dpars)
+%   Q = stok3d.traction.get_quadrature_correction(S, eps, dpars, targinfo)
+%   Q = stok3d.traction.get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %
 %  Operator:
 %     pot = S'_{stok}[\sigma]
@@ -4469,7 +4469,7 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
     n3 = 3;
 
 
-    if nargin < 3
+    if nargin < 4
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
@@ -4480,9 +4480,15 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
       opts = [];
     end
 
-    if nargin < 4
+    if nargin < 5
       opts = [];
 
+    end
+
+    qtype = 's';
+
+    if isfield(opts, 'rep')
+      qtype = opts.rep;
     end
 
     ff = 'rsc';
@@ -4558,8 +4564,12 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
         iquadtype = 1;
       end
     end
-    # FORTRAN getnearquad_stok_sprime(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
 
+    if strcmp(qtype,'s')
+    # FORTRAN getnearquad_stok_sprime(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
+    else
+    # FORTRAN getnearquad_stok_combtrac(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps, double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
+    end
     Q = [];
     Q.targinfo = targinfo;
     Q.ifcomplex = 0;

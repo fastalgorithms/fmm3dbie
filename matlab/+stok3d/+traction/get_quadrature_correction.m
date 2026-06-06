@@ -1,14 +1,14 @@
-function Q = get_quadrature_correction(S, eps, targinfo, opts)
+function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %
 %  stok3d.traction.get_quadrature_correction
 %    Returns the near quadrature correction for the traction of the
-%    Stokes single layer (S' kernel) with density on surface S
-%    and targets given by targinfo, in rsc / csc / sparse format.
+%    Stokes single layer (S' kernel) or combined field with density on 
+%    surface S and targets given by targinfo, in rsc / csc / sparse format.
 %
 %  Syntax
-%   Q = stok3d.traction.get_quadrature_correction(S, eps)
-%   Q = stok3d.traction.get_quadrature_correction(S, eps, targinfo)
-%   Q = stok3d.traction.get_quadrature_correction(S, eps, targinfo, opts)
+%   Q = stok3d.traction.get_quadrature_correction(S, eps, dpars)
+%   Q = stok3d.traction.get_quadrature_correction(S, eps, dpars, targinfo)
+%   Q = stok3d.traction.get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %
 %  Operator:
 %     pot = S'_{stok}[\sigma]
@@ -38,7 +38,7 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
     n3 = 3;
 
 
-    if nargin < 3
+    if nargin < 4
       targinfo = [];
       targinfo.r = S.r;
       targinfo.du = S.du;
@@ -49,9 +49,15 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
       opts = [];
     end
 
-    if nargin < 4
+    if nargin < 5
       opts = [];
 
+    end
+
+    qtype = 's';
+
+    if isfield(opts, 'rep')
+      qtype = opts.rep;
     end
 
     ff = 'rsc';
@@ -131,9 +137,14 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
         iquadtype = 1;
       end
     end
+
+    if strcmp(qtype,'s')
     mex_id_ = 'getnearquad_stok_sprime(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[xx])';
 [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
-
+    else
+    mex_id_ = 'getnearquad_stok_combtrac(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+    end
     Q = [];
     Q.targinfo = targinfo;
     Q.ifcomplex = 0;

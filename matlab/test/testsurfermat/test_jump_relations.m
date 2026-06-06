@@ -78,6 +78,7 @@ jump_tests = {
   'stok d',  kernel3d('stok','d'),             sigma_stok, @(s)  s(:,ic);
   'stok sp', kernel3d('stok','sp'),            sigma_stok, @(s) -s(:,ic);
   'stok c',  kernel3d('stok','c',coefs_stok), sigma_stok, @(s)  coefs_stok(2)*s(:,ic);
+  'stok cp', kernel3d('stok','cp',coefs_stok), sigma_stok, @(s) -coefs_stok(1)*s(:,ic);
 };
 
 for k = 1:size(jump_tests, 1)

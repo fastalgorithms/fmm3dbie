@@ -78,7 +78,7 @@ function p = eval(S, sigma, targinfo, eps, varargin)
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
-        [Q] = stok3d.traction.get_quadrature_correction(S,eps,targinfo,opts_quad);
+        [Q] = stok3d.traction.get_quadrature_correction(S,eps,[],targinfo,opts_quad);
       else
         opts_qcorr = [];
         opts_qcorr.type = 'double';

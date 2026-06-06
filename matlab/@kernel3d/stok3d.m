@@ -61,8 +61,8 @@ switch lower(type)
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
 
-    case {'sp', 'sprime'}
-        obj.type         = 'sp';
+    case {'sp', 'sprime', 'strac'}
+        obj.type         = 'strac';
         obj.kernel_order = 0;
 
         obj.eval = @(s,t) stok_eval_reshape(stok3d.kern(s, t, 'sprime'));
@@ -70,7 +70,7 @@ switch lower(type)
         obj.fmm = @(eps,src,targ,sigma) stok3d.fmm(eps, src, targ, 'sp', sigma);
 
         obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
-                          stok_sprime_getquad(S, eps, varargin{:}), S);
+                          stok_strac_getquad(S, eps, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields = {'n'};
 
@@ -94,6 +94,25 @@ switch lower(type)
                           stok_getquad(S, eps, dpars_c, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
+
+    case {'cp', 'cprime', 'ctrac'}
+        if nargin < 2
+            warning('KERNEL3D.STOK3D: missing coefs for combined layer. Defaulting to [1 1].');
+            coefs = [1; 1];
+        end
+        obj.type         = 'ctrac';
+        obj.kernel_order = 1;
+        dpars_c = coefs;
+
+        obj.eval = @(s,t) stok_eval_reshape(stok3d.kern(s, t, 'cprime', coefs(1), coefs(2)));
+
+        obj.fmm = @(eps,src,targ,sigma) stok3d.fmm(eps, src, targ, 'cp', sigma,coefs);
+
+        obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
+                          stok_combtrac_getquad(S, eps, dpars_c, varargin{:}), S);
+        obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
+        obj.src_fields = {'n'};
+        obj.targ_fields = {'n'};
 
     otherwise
         error('KERNEL3D.STOK3D: unknown Stokes kernel type ''%s''.', type);
@@ -133,9 +152,17 @@ if nargin < 5 || isempty(opts),     opts     = struct(); end
 Q = stok3d.velocity.get_quadrature_correction(S, eps, dpars, targinfo, opts);
 end
 
-function Q = stok_sprime_getquad(S, eps, targinfo, opts)
+function Q = stok_strac_getquad(S, eps, targinfo, opts)
 %STOK_SPRIME_GETQUAD  Wrap stok3d.traction.get_quadrature_correction.
 if nargin < 3 || isempty(targinfo), targinfo = S; end
 if nargin < 4 || isempty(opts),     opts     = struct(); end
-Q = stok3d.traction.get_quadrature_correction(S, eps, targinfo, opts);
+Q = stok3d.traction.get_quadrature_correction(S, eps,[], targinfo, opts);
+end
+
+function Q = stok_combtrac_getquad(S, eps, coefs, targinfo,opts)
+%STOK_SPRIME_GETQUAD  Wrap stok3d.traction.get_quadrature_correction.
+if nargin < 4 || isempty(targinfo), targinfo = S; end
+if nargin < 5 || isempty(opts),     opts     = struct(); end
+opts.rep = 'c';
+Q = stok3d.traction.get_quadrature_correction(S, eps, coefs,targinfo, opts);
 end
