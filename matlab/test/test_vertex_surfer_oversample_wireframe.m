@@ -1,7 +1,7 @@
 % Tests for vertex_surfer, oversample (nover == norder), wireframe, and split_patches
 % assumes pwd is the directory this script is in
 
-addpath '../';
+run('../startup.m');
 
 %% oversample with nover == norder
 

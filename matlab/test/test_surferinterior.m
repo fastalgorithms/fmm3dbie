@@ -1,4 +1,6 @@
 
+run('../startup.m');
+
 test_surferinterior0()
 test_surferinterior1()
 function test_surferinterior0()

@@ -7,7 +7,7 @@ function objout = minus(obj, v)
 
 if ~isa(obj, 'surfer')
     % v - S: treat as -(S - v)
-    objout = affine_transf(v, -eye(3), -obj(:));
+    objout = affine_transf(v, -eye(3), obj(:));
     return
 end
 

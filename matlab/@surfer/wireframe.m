@@ -88,7 +88,7 @@ end
 
 plot3(rwire_plot(1,:),rwire_plot(2,:),rwire_plot(3,:),'k-',LineWidth=1)
 
-if norm(S.r(3,:)) == 0
+if norm(S.r(3,:),inf) <= 1e-14*max(1,norm(S.r(:),inf))
     view(0,90)
 else
     view(3)

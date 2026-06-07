@@ -756,7 +756,7 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
     maxiter = 20;   if isfield(opts, 'maxiter'), maxiter = opts.maxiter; end
     rfac = 1.25;    if isfield(opts, 'rfac'), rfac = opts.rfac; end
 
-    # FORTRAN get_closest_points(int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double [9,npts] srccoefs, double[12,npts] srcvals, int[npts] patch_id, double[2,npts] uvs_src, int[1] maxiter, double[1] tol, double[1] rfac, inout double[3,ntarg] sxyz, inout int[ntarg] patch_inds, inout double[2,ntarg] uvsloc, inout double[ntarg] dists, inout double[ntarg] flags);
+    # FORTRAN get_closest_points(int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double [9,npts] srccoefs, double[12,npts] srcvals, int[npts] patch_id, double[2,npts] uvs_src, int[1] maxiter, double[1] tol, double[1] rfac, inout double[3,ntarg] sxyz, inout int[ntarg] patch_inds, inout double[2,ntarg] uvsloc, inout double[ntarg] dists, inout int[ntarg] flags);
 
 end
 %
@@ -801,8 +801,15 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     ntrimax = 3000;    if isfield(opts, 'ntrimax'), ntrimax = opts.ntrimax; end
     nlevmax = 8;       if isfield(opts, 'nlevmax'), nlevmax = opts.nlevmax; end
 
-    npols = size(srccoefs, 2);
-    npatches = 1;
+    if ndims(srccoefs) == 2
+        [ndsc, npols] = size(srccoefs);
+        npatches = 1;
+    else
+        ndsc = size(srccoefs, 1);
+        npols = size(srccoefs, 2);
+        npatches = size(srccoefs, 3);
+        srccoefs = reshape(srccoefs, ndsc, npols*npatches);
+    end
     norder = (-3 + sqrt(8*npols + 1))/2;
     
     if isa(targinfo, 'struct')
@@ -813,20 +820,22 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
 
     ntarg = size(targs, 2);
     
-    itargptr = 1;
-    ntargptr = ntarg;
+    itargptr = ones(npatches,1);
+    ntargptr = ntarg*ones(npatches,1);
+    ncoef = npols*npatches;
+    ntrimaxp = ntrimax*npatches;
 
     ichild_start = zeros(ntrimax,1);
     da = zeros(ntrimax,1);
-    tricm = zeros(3,ntrimax);
-    trirad = zeros(ntrimax,1);
+    tricm = zeros(3,ntrimaxp);
+    trirad = zeros(npatches,ntrimax);
     tverts = zeros(6,ntrimax);
     itrirel = zeros(ntarg,ntrimax);
 
     ier = 0;
     ntri = 0;
     nlev = 0;
-    # FORTRAN gettritree(int[1] npatches, int[1] norder, int[1] npols, double[9,npols] srccoefs, int[1] ntarg, double[3,ntarg] targs, int[1] itargptr, int[1] ntargptr, int[1] ntrimax, int[1] nlevmax, double[1] rfac, inout int[1] ntri, inout int[1] nlev, inout int[ntrimax] ichild_start, inout double[ntrimax] da, inout double[3,ntrimax] tricm, inout double[ntrimax] trirad, inout double[6,ntrimax] tverts, inout int[ntarg,ntrimax] itrirel, inout int[1] ier);
+    # FORTRAN gettritree(int[1] npatches, int[1] norder, int[1] npols, int[1] ndsc, double[ndsc,ncoef] srccoefs, int[1] ntarg, double[3,ntarg] targs, int[npatches] itargptr, int[npatches] ntargptr, int[1] ntrimax, int[1] nlevmax, double[1] rfac, inout int[1] ntri, inout int[1] nlev, inout int[ntrimax] ichild_start, inout double[ntrimax] da, inout double[3,ntrimaxp] tricm, inout double[npatches,ntrimax] trirad, inout double[6,ntrimax] tverts, inout int[ntarg,ntrimax] itrirel, inout int[1] ier);
    
     tritree = [];
     if ier > 0
@@ -835,8 +844,10 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     else
       tritree.ichild_start = ichild_start(1:ntri);
       tritree.da = da(1:ntri);
-      tritree.tricm = tricm(:,1:ntri);
-      tritree.trirad = trirad(1:ntri);
+      tritree.tricm = reshape(tricm(:,1:(npatches*ntri)), [3,npatches,ntri]);
+      if npatches == 1, tritree.tricm = reshape(tritree.tricm, [3,ntri]); end
+      tritree.trirad = trirad(:,1:ntri);
+      if npatches == 1, tritree.trirad = tritree.trirad(:); end
       tritree.tverts = reshape(tverts(:,1:ntri), [2,3,ntri]);
       tritree.itrirel = itrirel(:,1:ntri);
     end
@@ -1377,7 +1388,6 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %  Syntax
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps)
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
-%   [pot,grad] = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
 %
 %  Integral representation
 %     pot = S_{0} [\sigma]
@@ -1416,6 +1426,10 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
       opts = varargin{1};
     end
 
+    if nargout > 1
+      error('LAP3D:neumann:unsupportedOutput', ...
+        'lap3d.neumann.eval currently returns potential only.');
+    end
 
     nonsmoothonly = false;
     if(isfield(opts,'nonsmoothonly'))
@@ -5613,6 +5627,8 @@ function [rsc] = getnear(S, targinfo, rfac)
         rfac = 0;
         rfac0 = 0;
         # FORTRAN get_rfacs(int[1] norder_avg, int[1] iptype_avg, inout double[1] rfac, inout double[1] rfac0);
+    else
+        rfac0 = rfac;
     end
     
     cms = S.cms;

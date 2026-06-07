@@ -292,7 +292,6 @@ c     List of local variables
       real *8 sxyz0(3),bs,uv0(2)
       real *8, allocatable :: pols(:)
 
-      call prini(6,13)
       nomax = maxval(norders)
       npmax = (nomax+1)*(nomax+1)
       allocate(pols(npmax))
@@ -522,7 +521,7 @@ c
 
          uv0(1) = uvs(1)
          uv0(2) = uvs(2)
-         if (err.le.tol**2. or. descent.le.tol) then
+         if (err.le.tol**2. or. descent.le.tol**2) then
            flag = 0
          else
            flag = 1

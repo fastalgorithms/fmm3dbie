@@ -17,9 +17,9 @@ function S = align_patches(S, distmin, normals, align_type, align_id)
 %                Vertex ordering within each patch:
 %                  iptype=1  (triangle): 3 Rokhlin-Vioreanu vertices are
 %                  ordered as
-%                       (0,0), (1,0), (0,1).
+%                       (0,0), (0,1), (1,0).
 %                  iptype=11/12 (quad):  4 corners are ordered as
-%                       (-1,-1), (+1,-1), (-1,+1), (+1,+1)
+%                       (-1,-1), (+1,-1), (+1,+1), (-1,+1)
 %
 %   normals    - (2, npatches) or (3, npatches) a representative boundary
 %                pseudo normal for each patch. Currently unused.
@@ -123,7 +123,7 @@ for i = 1:npatches
 
     % --- determine irot ---
     if align_type_i == 101
-        % Triangle edge alignment. Vertices: 1:(0,0), 2:(1,0), 3:(0,1).
+        % Triangle edge alignment. Vertices: 1:(0,0), 2:(0,1), 3:(1,0).
         % Rotate so the near edge (opposite the far vertex) is leading.
         irot = mod(find(distmin_i > 1e-8) + 1, 3);
         if isempty(irot)
@@ -134,7 +134,7 @@ for i = 1:npatches
         irot = mod(irot + align_id(1), 3);
 
     elseif align_type_i == 102
-        % Triangle vertex alignment. Vertices: 1:(0,0), 2:(1,0), 3:(0,1).
+        % Triangle vertex alignment. Vertices: 1:(0,0), 2:(0,1), 3:(1,0).
         % Rotate the nearest vertex to position 1 (0,1).
         [~, k] = min(distmin_i);
         irot = mod(k+1, 3);
@@ -147,16 +147,16 @@ for i = 1:npatches
         if numel(small) >= 2
             s = sort(small(1:2))';
             if     isequal(s, [1 2]),  irot = 0;
-            elseif isequal(s, [1 3]),  irot = 1;
-            elseif isequal(s, [2 4]),  irot = 2;
-            elseif isequal(s, [3 4]),  irot = 3;
+            elseif isequal(s, [1 4]),  irot = 1;
+            elseif isequal(s, [3 4]),  irot = 2;
+            elseif isequal(s, [2 3]),  irot = 3;
             else  % diagonal pair, fall back to nearest vertex
                 [~, k] = min(distmin_i);
-                corner_to_irot = [0, 3, 1, 2];
+                corner_to_irot = [0, 3, 2, 1];
                 irot = corner_to_irot(k);
             end
         else
-            corner_to_irot = [0, 3, 1, 2];
+            corner_to_irot = [0, 3, 2, 1];
             irot = corner_to_irot(small(1));
         end
         irot = mod(irot + align_id(3), 4);

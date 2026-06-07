@@ -71,7 +71,7 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
     maxiter = 20;   if isfield(opts, 'maxiter'), maxiter = opts.maxiter; end
     rfac = 1.25;    if isfield(opts, 'rfac'), rfac = opts.rfac; end
 
-    mex_id_ = 'get_closest_points(c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[x], c i double[x], c io double[xx], c io int64_t[x], c io double[xx], c io double[x], c io double[x])';
+    mex_id_ = 'get_closest_points(c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[x], c i double[x], c io double[xx], c io int64_t[x], c io double[xx], c io double[x], c io int64_t[x])';
 [sxyz, patch_inds, uvsloc, dists, flags] = fmm3dbie_routs(mex_id_, ndtarg, ntarg, targs, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, patch_id, uvs_src, maxiter, tol, rfac, sxyz, patch_inds, uvsloc, dists, flags, 1, 1, ndtarg, ntarg, 1, npatches, npatp1, npatches, 1, 9, npts, 12, npts, npts, 2, npts, 1, 1, 1, 3, ntarg, ntarg, 2, ntarg, ntarg, ntarg);
 
 end

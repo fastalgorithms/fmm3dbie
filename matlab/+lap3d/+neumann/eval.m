@@ -7,7 +7,6 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %  Syntax
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps)
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
-%   [pot,grad] = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
 %
 %  Integral representation
 %     pot = S_{0} [\sigma]
@@ -46,6 +45,10 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
       opts = varargin{1};
     end
 
+    if nargout > 1
+      error('LAP3D:neumann:unsupportedOutput', ...
+        'lap3d.neumann.eval currently returns potential only.');
+    end
 
     nonsmoothonly = false;
     if(isfield(opts,'nonsmoothonly'))

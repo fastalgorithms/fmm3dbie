@@ -18,6 +18,7 @@ function [objout,varargout] = oversample(obj,nover)
         fprintf('Incorrect size of npatches, returning same obj\n');
         objout = obj;
         varargout{1} = speye(npts);
+        return
     end
     
     ntmp = zeros(npatches,3);
@@ -113,8 +114,10 @@ function [objout,varargout] = oversample(obj,nover)
         for i=1:nuni
             xinterpmat{i} = vmats{i}*umats{i};
             if(~isempty(ispl{i}))
+                i1 = ispl{i}(:,1);
+                i2 = ispl{i}(:,2);
                 xinterpmat{i}(i2,:) = 0;
-                xinterpmat{i}(i2,i1) = 1;
+                xinterpmat{i}(sub2ind(size(xinterpmat{i}),i2,i1)) = 1;
             end   
             if ntmp_uni(i,1) == ntmp_uni(i,2)
                 xinterpmat{i} = speye(size(vmats{i},1),size(vmats{i},2));

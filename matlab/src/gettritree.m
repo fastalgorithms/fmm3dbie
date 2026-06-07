@@ -35,8 +35,15 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     ntrimax = 3000;    if isfield(opts, 'ntrimax'), ntrimax = opts.ntrimax; end
     nlevmax = 8;       if isfield(opts, 'nlevmax'), nlevmax = opts.nlevmax; end
 
-    npols = size(srccoefs, 2);
-    npatches = 1;
+    if ndims(srccoefs) == 2
+        [ndsc, npols] = size(srccoefs);
+        npatches = 1;
+    else
+        ndsc = size(srccoefs, 1);
+        npols = size(srccoefs, 2);
+        npatches = size(srccoefs, 3);
+        srccoefs = reshape(srccoefs, ndsc, npols*npatches);
+    end
     norder = (-3 + sqrt(8*npols + 1))/2;
     
     if isa(targinfo, 'struct')
@@ -47,21 +54,23 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
 
     ntarg = size(targs, 2);
     
-    itargptr = 1;
-    ntargptr = ntarg;
+    itargptr = ones(npatches,1);
+    ntargptr = ntarg*ones(npatches,1);
+    ncoef = npols*npatches;
+    ntrimaxp = ntrimax*npatches;
 
     ichild_start = zeros(ntrimax,1);
     da = zeros(ntrimax,1);
-    tricm = zeros(3,ntrimax);
-    trirad = zeros(ntrimax,1);
+    tricm = zeros(3,ntrimaxp);
+    trirad = zeros(npatches,ntrimax);
     tverts = zeros(6,ntrimax);
     itrirel = zeros(ntarg,ntrimax);
 
     ier = 0;
     ntri = 0;
     nlev = 0;
-    mex_id_ = 'gettritree(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c io int64_t[x], c io int64_t[x], c io int64_t[x], c io double[x], c io double[xx], c io double[x], c io double[xx], c io int64_t[xx], c io int64_t[x])';
-[ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier] = fmm3dbie_routs(mex_id_, npatches, norder, npols, srccoefs, ntarg, targs, itargptr, ntargptr, ntrimax, nlevmax, rfac, ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier, 1, 1, 1, 9, npols, 1, 3, ntarg, 1, 1, 1, 1, 1, 1, 1, ntrimax, ntrimax, 3, ntrimax, ntrimax, 6, ntrimax, ntarg, ntrimax, 1);
+    mex_id_ = 'gettritree(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c io int64_t[x], c io int64_t[x], c io int64_t[x], c io double[x], c io double[xx], c io double[xx], c io double[xx], c io int64_t[xx], c io int64_t[x])';
+[ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier] = fmm3dbie_routs(mex_id_, npatches, norder, npols, ndsc, srccoefs, ntarg, targs, itargptr, ntargptr, ntrimax, nlevmax, rfac, ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier, 1, 1, 1, 1, ndsc, ncoef, 1, 3, ntarg, npatches, npatches, 1, 1, 1, 1, 1, ntrimax, ntrimax, 3, ntrimaxp, npatches, ntrimax, 6, ntrimax, ntarg, ntrimax, 1);
    
     tritree = [];
     if ier > 0
@@ -70,8 +79,10 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     else
       tritree.ichild_start = ichild_start(1:ntri);
       tritree.da = da(1:ntri);
-      tritree.tricm = tricm(:,1:ntri);
-      tritree.trirad = trirad(1:ntri);
+      tritree.tricm = reshape(tricm(:,1:(npatches*ntri)), [3,npatches,ntri]);
+      if npatches == 1, tritree.tricm = reshape(tritree.tricm, [3,ntri]); end
+      tritree.trirad = trirad(:,1:ntri);
+      if npatches == 1, tritree.trirad = tritree.trirad(:); end
       tritree.tverts = reshape(tverts(:,1:ntri), [2,3,ntri]);
       tritree.itrirel = itrirel(:,1:ntri);
     end

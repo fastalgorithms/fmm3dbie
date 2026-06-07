@@ -1,3 +1,5 @@
+run('../startup.m');
+
 test_resolve_fun0();
 test_slicesurfer0();
 test_patch_max0();

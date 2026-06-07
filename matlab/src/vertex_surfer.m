@@ -61,9 +61,9 @@ function [Sout,islice,Sshift] = vertex_surfer(S,vert,idvertpatch,tol)
 
         if iptype == 1
             norder = S.norders(i);
-            if dists(1) < tol, pt = [0;0]; end
-            if dists(2) < tol, pt = [0;1]; end
-            if dists(3) < tol, pt = [1;0]; end
+            epts = [0,0,1;0,1,0];
+            [~,ivert] = min(dists);
+            pt = epts(:,ivert);
             uvs = koorn.rv_nodes(norder);
             [xintmatu,xintmatv,~] = koorn.int_mat(uvs,norder,nleg,pt);
         elseif iptype == 11

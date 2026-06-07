@@ -11,7 +11,12 @@ if isfield(opts,'quadrature')
     quadrature = opts.quadrature;
 end
 
-targ = targs.r;
+if isstruct(targs) || isa(targs,'surfer')
+    targ = targs.r;
+else
+    targ = targs;
+    targs = struct('r',targ);
+end
 
 eps = 1e-4;
 
@@ -31,7 +36,7 @@ if any(ifix)
 
 
     ns = 0*targfix.r;
-    for i = 1:length(targfix)
+    for i = 1:size(targfix.r,2)
         ipatch = patch_inds(i);
         iptype = S.iptype(ipatch);
         if iptype == 1
@@ -52,7 +57,8 @@ if any(ifix)
  d = targfix.r - sxyz;
  signs = sign(dot(d,ns));
  in(ifix) = (1-signs)/2;
- in(ibad) = -1;
+ ifixind = find(ifix);
+ in(ifixind(ibad)) = -1;
 end
 in = logical(round(in));
 end

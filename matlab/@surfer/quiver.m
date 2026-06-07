@@ -38,7 +38,7 @@ w = vover(3,:);
 
 h = quiver3(x, y, z, u, vv, w, varargin{:});
 
-if norm(Sover.r(3,:)) == 0
+if norm(Sover.r(3,:),inf) <= 1e-14*max(1,norm(Sover.r(:),inf))
     view(0,90)
 else
     view(3)

@@ -132,5 +132,5 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,lbat)
 
    Asmth = sparse(irow_indopdim,icol_indopdim, vals, opdims(1)*ntarg, opdims(2)*S_over.npts);
 
-   Asmth = Asmth*val2over;
+   Asmth = Asmth*kron(val2over, speye(opdims(2)));
 end

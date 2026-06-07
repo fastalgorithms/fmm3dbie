@@ -21,6 +21,9 @@ if nargin < 6
 end
 
 nordcheck = round(mean(nordcheck));
+if nrefmax == 0
+    return
+end
 
 srcvals_g = [];
 norders_g = [];

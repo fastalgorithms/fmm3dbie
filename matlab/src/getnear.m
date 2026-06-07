@@ -85,6 +85,8 @@ function [rsc] = getnear(S, targinfo, rfac)
         rfac0 = 0;
         mex_id_ = 'get_rfacs(c i int64_t[x], c i int64_t[x], c io double[x], c io double[x])';
 [rfac, rfac0] = fmm3dbie_routs(mex_id_, norder_avg, iptype_avg, rfac, rfac0, 1, 1, 1, 1);
+    else
+        rfac0 = rfac;
     end
     
     cms = S.cms;
