@@ -24,6 +24,40 @@ rerr = norm(val2over - speye(S.npts), 'fro') / S.npts;
 assert(rerr < 1e-12, 'oversample nover==norder quad: val2over should be identity');
 
 
+%% triangle endpoint order and alignment
+
+uvs = koorn.rv_nodes(1);
+r = [uvs; zeros(1,size(uvs,2))];
+du = repmat([1;0;0], 1, size(uvs,2));
+dv = repmat([0;1;0], 1, size(uvs,2));
+n = repmat([0;0;1], 1, size(uvs,2));
+Slin = surfer(1, 1, [r;du;dv;n], 1);
+
+tri_verts = [0 1 0; 0 0 1; 0 0 0];
+assert(norm(Slin.end_pt_verts{1} - tri_verts, 'fro') < 1e-12, ...
+    'surfer: triangle end_pt_verts should use Fortran vertex order');
+
+for k = 1:3
+    distmin = ones(3,1);
+    distmin(k) = 0;
+    Svert = align_patches(Slin, distmin, zeros(2,1), 102);
+    assert(norm(Svert.end_pt_verts{1}(:,3) - tri_verts(:,k)) < 1e-12, ...
+        'align_patches: nearest triangle vertex should rotate to (0,1)');
+end
+
+near_edges = [1 2; 1 3; 2 3];
+edge_dists = [0 0 1; 0 1 0; 1 0 0];
+for k = 1:3
+    Sedge = align_patches(Slin, edge_dists(k,:).', zeros(2,1), 101);
+    edge_got = Sedge.end_pt_verts{1}(:,1:2);
+    edge_exp = tri_verts(:,near_edges(k,:));
+    err = min(norm(edge_got - edge_exp, 'fro'), ...
+              norm(edge_got - fliplr(edge_exp), 'fro'));
+    assert(err < 1e-12, ...
+        'align_patches: near triangle edge should rotate to leading edge');
+end
+
+
 %% vertex_surfer
 
 S = geometries.sphere(1, 2, [0;0;0], 6, 1);

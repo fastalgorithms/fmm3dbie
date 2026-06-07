@@ -61,7 +61,7 @@ function [Sout,islice,Sshift] = vertex_surfer(S,vert,idvertpatch,tol)
 
         if iptype == 1
             norder = S.norders(i);
-            epts = [0,0,1;0,1,0];
+            epts = [0,1,0;0,0,1];
             [~,ivert] = min(dists);
             pt = epts(:,ivert);
             uvs = koorn.rv_nodes(norder);

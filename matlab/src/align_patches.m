@@ -17,7 +17,7 @@ function S = align_patches(S, distmin, normals, align_type, align_id)
 %                Vertex ordering within each patch:
 %                  iptype=1  (triangle): 3 Rokhlin-Vioreanu vertices are
 %                  ordered as
-%                       (0,0), (0,1), (1,0).
+%                       (0,0), (1,0), (0,1).
 %                  iptype=11/12 (quad):  4 corners are ordered as
 %                       (-1,-1), (+1,-1), (+1,+1), (-1,+1)
 %
@@ -123,21 +123,23 @@ for i = 1:npatches
 
     % --- determine irot ---
     if align_type_i == 101
-        % Triangle edge alignment. Vertices: 1:(0,0), 2:(0,1), 3:(1,0).
+        % Triangle edge alignment. Vertices: 1:(0,0), 2:(1,0), 3:(0,1).
         % Rotate so the near edge (opposite the far vertex) is leading.
-        irot = mod(find(distmin_i > 1e-8) + 1, 3);
-        if isempty(irot)
+        far_vertex = find(distmin_i > 1e-8);
+        if isempty(far_vertex)
             irot = 0;
         else
-            irot = irot(1);
+            tri_vertex_to_irot = [2, 1, 0];
+            irot = tri_vertex_to_irot(far_vertex(1));
         end
         irot = mod(irot + align_id(1), 3);
 
     elseif align_type_i == 102
-        % Triangle vertex alignment. Vertices: 1:(0,0), 2:(0,1), 3:(1,0).
-        % Rotate the nearest vertex to position 1 (0,1).
+        % Triangle vertex alignment. Vertices: 1:(0,0), 2:(1,0), 3:(0,1).
+        % Rotate the nearest vertex to the (0,1) corner.
         [~, k] = min(distmin_i);
-        irot = mod(k+1, 3);
+        tri_vertex_to_irot = [2, 1, 0];
+        irot = tri_vertex_to_irot(k);
         irot = mod(irot + align_id(2), 3);
 
     elseif align_type_i == 201

@@ -194,7 +194,7 @@ classdef surfer
                     umats{i} = koorn.vals2coefs(no_ip_uni(i,1),rnodes{i});
                     [~, dumats{i}, dvmats{i}] = koorn.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
-                    epts = [0,0,1;0,1,0];
+                    epts = [0,1,0;0,0,1];
                     p_vert_mats{i} = koorn.pols(no_ip_uni(i,1), epts);
                 elseif(ip0 == 11)
                     rnodes{i} = polytens.lege.nodes(no_ip_uni(i,1));
