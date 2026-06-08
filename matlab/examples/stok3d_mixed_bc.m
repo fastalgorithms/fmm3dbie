@@ -33,7 +33,8 @@ fprintf('Building quadrature corrections...\n'); tic;
 opts_build = struct; opts_build.corrections = 1; opts_build.unif_nover = 1;
 n1 = 3*S1.npts;  n2 = 3*S2.npts;  npts_tot = n1 + n2;
 [Qcor, Sovers] = surfermat(srfrs, kerns, eps, opts_build);
-Qcor = Qcor + 0.5*speye(npts_tot);
+Qcor(1:n1,1:n1) = Qcor(1:n1,1:n1) - 0.5*speye(n1);
+Qcor(n1+(1:n2),n1+(1:n2)) = Qcor(n1+(1:n2),n1+(1:n2)) + 0.5*speye(n2);
 fprintf('  t = %.2f s\n', toc);
 
 matvec = @(x) stok3d.mixed_matvec(x, srfrs, alpha, eps, Qcor, Sovers, ...

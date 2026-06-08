@@ -68,7 +68,7 @@ kerns_strac = kernel3d('stokes', 'strac');
 fprintf('Building strac quadrature correction...\n'); tic;
 opts_build = struct; opts_build.corrections = 1;
 [Qstrac, Sovers_strac] = surfermat(S, kerns_strac, eps, opts_build);
-Qstrac = Qstrac + 0.5*speye(3*npts);
+Qstrac = Qstrac - 0.5*speye(3*npts);
 fprintf('  t = %.2f s\n', toc);
 
 %% RHS: -(1/2 sigma_0 + S'[sigma_0])
