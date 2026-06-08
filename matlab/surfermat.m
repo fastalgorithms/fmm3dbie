@@ -15,7 +15,7 @@ function [sysmat,objover,rfac] = surfermat(surferobj,kern,eps,opts)
 %           opts.l2scale        = (false) scale rows by sqrt(wts), cols by 1/sqrt(wts)
 %           opts.unif_nover     = (0) if nonzero, enforce uniform oversampling order
 %           opts.ifoversamp     = (1) if 0, skip oversampling (set novers=NaN)
-%           opts.ifreturnovers  = (0) if 1, second output is {surfers_over, xinterps}
+%           opts.ifreturnovers  = (1) if 1, second output is {surfers_over, xinterps}
 %                                 (a 2-element cell of nsurfers x nsurfers cells)
 %                                 instead of the cell array of oversampling orders
 %
@@ -67,7 +67,7 @@ if isfield(opts,'unif_novers'), unif_nover = opts.unif_novers; end
 
 ifoversamp = 1;
 if isfield(opts,'ifoversamp'), ifoversamp = opts.ifoversamp; end
-ifreturnovers = 0;
+ifreturnovers = 1;
 if isfield(opts,'ifreturnovers'), ifreturnovers = opts.ifreturnovers; end
 nsurfers = length(surfers);
 

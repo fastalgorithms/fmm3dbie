@@ -186,7 +186,7 @@ for j = 1:nsurfers
 
     if objover_mode
             surferjover = surfers_over{j};
-            xinterp     = kron(xinterps{j}, eye(ktmp.opdims(2)));
+            xinterp     = xinterps{j};
         else
             noversj = objover{j};
             if ismethod(surferj,'oversample') && ~any(isnan(noversj))

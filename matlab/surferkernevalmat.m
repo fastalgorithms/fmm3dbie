@@ -54,7 +54,7 @@ adaptive_correction = true;
 if isfield(opts,'adaptive_correction'), adaptive_correction = opts.adaptive_correction; end
 ifoversamp = 1;
 if isfield(opts,'ifoversamp'), ifoversamp = opts.ifoversamp; end
-ifreturnovers = 0;
+ifreturnovers = 1;
 if isfield(opts,'ifreturnovers'), ifreturnovers = opts.ifreturnovers; end
 
 nsurfers = length(surfers);
