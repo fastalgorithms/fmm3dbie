@@ -46,7 +46,7 @@ function S = align_patches(S, distmin, normals, align_type, align_id)
 %   nsmall == 1  =>  vertex alignment (one corner touching the feature)
 %   nsmall == 2  =>  edge alignment   (one edge touching the feature)
 %   nsmall >= 3  =>  no rotation needed (patch is on the feature)
-THRESH = 1e-7;
+THRESH = 1e-6;
 
 npatches = S.npatches;
 
@@ -125,7 +125,7 @@ for i = 1:npatches
     if align_type_i == 101
         % Triangle edge alignment. Vertices: 1:(0,0), 2:(1,0), 3:(0,1).
         % Rotate so the near edge (opposite the far vertex) is leading.
-        far_vertex = find(distmin_i > 1e-8);
+        far_vertex = find(distmin_i > 1e-6);
         if isempty(far_vertex)
             irot = 0;
         else
@@ -161,7 +161,7 @@ for i = 1:npatches
             corner_to_irot = [0, 3, 2, 1];
             irot = corner_to_irot(small(1));
         end
-        irot = mod(irot + align_id(3), 4);
+        irot = mod(irot + align_id(3)+2, 4);
 
     else
         irot = 0;

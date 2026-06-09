@@ -14,8 +14,8 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
 %  centered at c_{j} with radius opts.rfac*r_{j}.
 %
 %  Syntax
-%   [sxyz, uvsloc, dists, flags] = get_closest_pts(S,targinfo)
-%   [sxyz, uvsloc, dists, flags] = get_closest_pts(S,targinfo,opts)
+%   [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S,targinfo)
+%   [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S,targinfo,opts)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details

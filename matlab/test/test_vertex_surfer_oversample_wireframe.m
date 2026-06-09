@@ -127,3 +127,62 @@ assert(rerr < 1e-12, 'split_patches: Ssplit.r should equal S.r * val2split.''');
 Sout = split_patches(S, 1:npatches0);
 assert(Sout.npatches == 4*npatches0, 'split_patches: splitting all patches should quadruple npatches');
 assert(Sout.npts == 4*S.npts,        'split_patches: splitting all patches should quadruple npts');
+
+
+%% edge alignment
+
+
+S = geometries.disk([1,1,1],[],[],8);
+
+figure(10);clf
+subplot(1,2,1)
+plot(S,S.uvs_targ(2,:));colorbar
+
+vs = cell2mat(S.end_pt_verts(:).');
+ds = 1-vecnorm(vs);
+
+S_rot = align_patches(S,ds,[]);
+subplot(1,2,2)
+plot(S_rot,S_rot.uvs_targ(2,:));colorbar
+
+% test alignment
+% TODO test vertex-on patches
+thetas = 2*pi*rand(1,100);
+[~,~,uvs,dist,flag] = get_closest_pts(S_rot,[cos(thetas);sin(thetas);0*thetas]);
+
+assert(norm(uvs(2,:))<1e-4)
+assert(max(dist)<1e-4)
+assert(max(flag)==0)
+
+S = geometries.disk([1,1,1],[],[],8,11);
+
+dstemp = ones(1,S.npatches*4);
+dstemp(1:4:end) = 0;
+dstemp(2:4:end) = 0;
+S = align_patches(S,dstemp,[],[],[2,3,1]);
+
+figure(11);clf
+subplot(1,2,1)
+plot(S,S.uvs_targ(2,:));colorbar
+
+vs = cell2mat(S.end_pt_verts(:).');
+ds = 1-vecnorm(vs);
+
+S_rot = align_patches(S,ds,[]);
+subplot(1,2,2)
+plot(S_rot,S_rot.uvs_targ(2,:));colorbar
+
+% test alignment
+thetas = 2*pi*rand(1,100);
+[~,~,uvs,dist,flag] = get_closest_pts(S_rot,[cos(thetas);sin(thetas);0*thetas]);
+assert(norm(uvs(2,:)+1)<1e-4)
+assert(max(dist)<1e-4)
+assert(max(flag)==0)
+
+
+
+
+
+
+
+
