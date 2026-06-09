@@ -149,9 +149,9 @@ for i = 1:npatches
         if numel(small) >= 2
             s = sort(small(1:2))';
             if     isequal(s, [1 2]),  irot = 0;
-            elseif isequal(s, [1 4]),  irot = 1;
+            elseif isequal(s, [1 4]),  irot = 3;
             elseif isequal(s, [3 4]),  irot = 2;
-            elseif isequal(s, [2 3]),  irot = 3;
+            elseif isequal(s, [2 3]),  irot = 1;
             else  % diagonal pair, fall back to nearest vertex
                 [~, k] = min(distmin_i);
                 corner_to_irot = [0, 3, 2, 1];
@@ -161,7 +161,7 @@ for i = 1:npatches
             corner_to_irot = [0, 3, 2, 1];
             irot = corner_to_irot(small(1));
         end
-        irot = mod(irot + align_id(3)+2, 4);
+        irot = mod(irot + align_id(3), 4);
 
     else
         irot = 0;

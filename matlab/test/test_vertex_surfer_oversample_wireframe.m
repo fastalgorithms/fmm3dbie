@@ -133,6 +133,14 @@ assert(Sout.npts == 4*S.npts,        'split_patches: splitting all patches shoul
 
 
 S = geometries.disk([1,1,1],[],[],8);
+% scramble rotations
+dstemp = ones(1,S.npatches*3);
+for i = 1:S.npatches
+    istart = 3*(i-1) + randi(3);
+dstemp(istart) = 0;
+dstemp(istart+1) = 0;
+end
+S = align_patches(S,dstemp,[],[],[2,3,1]);
 
 figure(10);clf
 subplot(1,2,1)
@@ -155,10 +163,13 @@ assert(max(dist)<1e-4)
 assert(max(flag)==0)
 
 S = geometries.disk([1,1,1],[],[],8,11);
-
+% scramble rotations
 dstemp = ones(1,S.npatches*4);
-dstemp(1:4:end) = 0;
-dstemp(2:4:end) = 0;
+for i = 1:S.npatches
+    istart = 4*(i-1) + randi(4);
+dstemp(istart) = 0;
+dstemp(istart+1) = 0;
+end
 S = align_patches(S,dstemp,[],[],[2,3,1]);
 
 figure(11);clf
