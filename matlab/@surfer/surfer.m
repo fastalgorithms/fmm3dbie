@@ -54,6 +54,8 @@ classdef surfer
 %                              srccoefs, norders, ixyzs, iptype, and wts
 %   oversample(obj, novers)  - oversample patch(i) on the surface
 %                              to expansion order novers(i)
+%   split_patches(obj, ids)  - split listed patches into four sub-patches
+%   wireframe(obj, opts)     - plot surface patch edges in current figure
 %   affine_transf(obj,mat,s) - apply affine transformation, and translation
 %   conv_rsc_spmat(obj, ...) - convert row sparse representation of 
 %                              near quadrature to sparse matrix
@@ -64,11 +66,17 @@ classdef surfer
 %                              patch_ids
 %   translate(obj, r)        - translate object
 %   merge([array of objs])   - merge an array of surface objects
+%   slicesurfer(obj,ipatch)  - extract a subset of patches by index
 %   area(obj)                - compute the surface area of object
-%   surf_fun_error(obj,f,p)  - estimate error in function approximation
+%   patch_area(obj)          - compute the surface area of each patch
+%   volume(obj)              - compute the signed enclosed volume of object
+%   surf_fun_error(obj,f,...)  - estimate error in function approximation
 %                              on surface via basis expansion tails
 %   vals2coefs(obj, vals)    - construct basis function expansions
 %                              of function on surface
+%   mtimes(A, obj)           - apply 3x3 matrix transformation: r -> A*r
+%   plus(obj, v)             - translate surface: r -> r + v
+%   minus(obj, v)            - translate surface: r -> r - v
 % author:
     
     properties
@@ -187,7 +195,7 @@ classdef surfer
                     umats{i} = koorn.vals2coefs(no_ip_uni(i,1),rnodes{i});
                     [~, dumats{i}, dvmats{i}] = koorn.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
-                    epts = [0,0,1;0,1,0];
+                    epts = [0,1,0;0,0,1];
                     p_vert_mats{i} = koorn.pols(no_ip_uni(i,1), epts);
                 elseif(ip0 == 11)
                     rnodes{i} = polytens.lege.nodes(no_ip_uni(i,1));
@@ -340,21 +348,27 @@ classdef surfer
         
          [varargout] = plot(obj,varargin);
          a = area(obj);
+         as = patch_area(obj);
          [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(obj);
          [objout,varargout] = oversample(obj,novers);
+         [objout,varargout] = split_patches(obj,isplit);
          dens_int = interpolate_data(obj, dens, ipatch_ids, uvs_targ);
          [objout,varargout] = affine_transf(obj,mat,shift);
          [varargout] = scatter(obj,varargin);
          [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear,ri);
          [objout,varargout] = rotate(obj, eul);
          [varargout] = plot_nodes(S, v, varargin);
+         wireframe(obj, opts);
          [objout,varargout] = scale(obj,sf);
          [objout,varargout] = translate(obj, r);
          [objout] = merge(Sarray);
          [obj2] = slicesurfer(obj, ipatchkeep);
          [coefs] = vals2coefs(obj,vals);
-         [errps] = surf_fun_error(obj,fun,p);    
-        
+         [errps] = surf_fun_error(obj,fun,p,nordcheck);
+         [objout] = mtimes(A, obj);
+         [objout] = plus(obj, v);
+         [objout] = minus(obj, v);
+
     end
 
     methods(Static)

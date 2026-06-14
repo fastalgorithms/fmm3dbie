@@ -468,3 +468,80 @@ c
       return
       end
 
+
+
+
+      subroutine get_iuni2(n, a, b, nuni, iuni, iuniind)
+c
+c  Given integer arrays a and b, find the set of unique pairs
+c  (a(i), b(i)) and a mapping from each index to its unique pair
+c
+c  Input arguments:
+c    - n: integer *8
+c        length of arrays a and b
+c    - a: integer *8(n)
+c        first column of pairs (norder)
+c    - b: integer *8(n)
+c        second column of pairs (iptype), used as primary sort key
+c  Output arguments:
+c    - nuni: integer *8
+c        number of unique pairs
+c    - iuni: integer *8(2,n)
+c        the unique pairs, iuni(1:2,1:nuni)
+c    - iuniind: integer *8(n)
+c        iuniind(i) = j such that iuni(1:2,j) = (a(i), b(i))
+c
+      implicit integer *8 (i-n)
+      integer *8 n, a(n), b(n), nuni, iuni(2,n), iuniind(n)
+      integer *8, allocatable :: iind(:), asort(:), bsort(:)
+      integer *8, allocatable :: iunisort(:)
+
+      if (n.eq.0) then
+        nuni = 0
+        return
+      endif
+
+      allocate(iind(n), asort(n), bsort(n), iunisort(n))
+      call sorti(n, b, iind)
+
+      do i=1,n
+        asort(i) = a(iind(i))
+        bsort(i) = b(iind(i))
+      enddo
+
+      nuni = 1
+      iuni(1,1) = asort(1)
+      iuni(2,1) = bsort(1)
+      iunisort(1) = 1
+
+      nuni0 = 1
+      do i=2,n
+        if (bsort(i).gt.iuni(2,nuni)) then
+          nuni = nuni + 1
+          iuni(1,nuni) = asort(i)
+          iuni(2,nuni) = bsort(i)
+          iunisort(i) = nuni
+          nuni0 = nuni
+        else
+          do j=nuni,nuni0,-1
+            if (asort(i).eq.iuni(1,j).and.
+     1          bsort(i).eq.iuni(2,j)) then
+              iunisort(i) = j
+              goto 2222
+            endif
+          enddo
+          nuni = nuni + 1
+          iuni(1,nuni) = asort(i)
+          iuni(2,nuni) = bsort(i)
+          iunisort(i) = nuni
+        endif
+ 2222   continue
+      enddo
+
+      do i=1,n
+        iuniind(iind(i)) = iunisort(i)
+      enddo
+
+      return
+      end
+

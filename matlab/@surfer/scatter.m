@@ -51,6 +51,12 @@ else
     scatter3(x,y,z,s,c,varargin{:});
 end
 
+if norm(obj.r(3,:)) == 0
+    view(0,90)
+else
+    view(3)
+end
+
 hold off
 
 if ifhold

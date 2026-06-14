@@ -678,6 +678,206 @@ function [surf_grad] = get_surface_grad(S,p,varargin)
         surf_grad = repmat(dp(1,1:npts),[3,1]).*srcvals(4:6,1:npts) + repmat(dp(2,1:npts),[3,1]).*srcvals(7:9,1:npts);
     end
 end
+%
+%
+%
+%-------------------------------------------------------------
+@ src/get_closest_pts.m
+function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo, opts)
+%
+%  get_closest_pts
+%    This subroutine takes in a surface (S) and collection of target points
+%    (targinfo) and returns the closest point on the surface (sxyz), the
+%    local uv coordinates of that point (uvsloc), the distance of that
+%    point (dists), and flags which indicate whether Newton method was
+%    successful.
+%
+%  For efficiency reasons, this routine only returns the closest 
+%  points for targets that lie in a tubular neighborhood of the surface. 
+%  In particular, suppose c_{j} and r_{j} are the centroid and radius of 
+%  patch j, then the tubular neighborhood is the union of the spheres 
+%  centered at c_{j} with radius opts.rfac*r_{j}.
+%
+%  Syntax
+%   [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S,targinfo)
+%   [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S,targinfo,opts)
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * targinfo: target info
+%    * opts: options struct
+%        opts.tol - tolerance to be used for Newton (1e-10)
+%        opts.maxiter - maximum number of iterations for Newton (10)
+%        opts.rfac - rfac*r_{j} is the radius of the bounding sphere
+%         centered at the patch centroid. Closest points will
+%         be determined for only targets that lie in the 
+%         union of these spheres (1.25)
+
+%
+%  Output arguments:
+%    * sxyz: closest point (only relevant if flags(i) = 0)
+%    * patchinds: patch number of closest point (only relevant if flags(i) = 0)
+%    * uvsloc: local (u,v) coordinates of closest point (only relevant if flags(i) = 0)
+%    * dists: distance between target point and closest point (only relevant if flags(i) = 0)
+%    * flags: whether or not Newton method succeeded
+%        flags(i) = -1, if target not in tubular neighborhood
+%        flags(i) = 0, if target in tubular neighborhood and newton for closest
+%                      patch succeeded
+%        flags(i) = 1, if target in tubular neighborhood and newton for closest
+%                      patch failed
+
+    if (nargin < 3)
+        opts = [];
+    end
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    patch_id = S.patch_id;
+    uvs_src = S.uvs_targ;
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+
+    if numel(targinfo) == 1
+        targs = extract_targ_array(targinfo);
+    else
+        targs = targinfo;
+    end
+    [ndtarg,ntarg] = size(targs);
+
+    sxyz = zeros(ndtarg,ntarg);
+    patch_inds = zeros(ntarg,1);
+    uvsloc = zeros(2,ntarg);
+    dists = inf*ones(ntarg,1);
+    flags = zeros(ntarg,1);
+
+    tol = 1e-10;    if isfield(opts, 'tol'), tol = opts.tol; end
+    maxiter = 20;   if isfield(opts, 'maxiter'), maxiter = opts.maxiter; end
+    rfac = 1.25;    if isfield(opts, 'rfac'), rfac = opts.rfac; end
+
+    # FORTRAN get_closest_points(int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double [9,npts] srccoefs, double[12,npts] srcvals, int[npts] patch_id, double[2,npts] uvs_src, int[1] maxiter, double[1] tol, double[1] rfac, inout double[3,ntarg] sxyz, inout int[ntarg] patch_inds, inout double[2,ntarg] uvsloc, inout double[ntarg] dists, inout int[ntarg] flags);
+
+end
+%
+%
+%
+%
+@ src/gettritree.m
+function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
+%
+%  tritree = gettritree(srccoefs, targinfo, rfac, opts)
+%
+%  Syntax: 
+%   [tritree] = gettritree(srccoefs, targinfo) 
+%   [tritree] = gettritree(srccoefs, targinfo, rfac) 
+%   [tritree] = gettritree(srccoefs, targinfo, rfac, opts) 
+%
+%  This subroutine constructs a tree on the standard simplex
+%  T_{0} = {(u,v): 0<u<1, 0<v<1, u+v<1}
+%
+%  such that for the all targets, there exists a sub-partition of
+%  the triangle satisfying T_{0} = \cup_{j=1}^{N_{i}} T_{j,i}
+%
+%  with each d(t_{i},T_{j,i})>=rfac*R_{j,i} where R_{j,i} is the radius
+%  of the bounding sphere centered at the centroid of T_{j,i}
+%
+%  Input arguments:
+%    srccoefs: (9,npols) koornwinder polynomial coefficients of
+%                        [r; du; dv]
+%    * targinfo: target info  
+%       targinfo.r = (3,nt) target locations
+%    * rfac: radius defining the target specific partition (optional)
+%       default, rfac = 3
+%    * opts: options struct
+%        opts.ntrimax - maximum number of triangles in the partition (3000)
+%        opts.nlevmax - maximum depth of tree (6)
+%    
+%
+   
+    if (nargin < 3), rfac = 3; end
+    if (nargin < 4), opts = []; end
+
+    ntrimax = 3000;    if isfield(opts, 'ntrimax'), ntrimax = opts.ntrimax; end
+    nlevmax = 8;       if isfield(opts, 'nlevmax'), nlevmax = opts.nlevmax; end
+
+    if ndims(srccoefs) == 2
+        [ndsc, npols] = size(srccoefs);
+        npatches = 1;
+    else
+        ndsc = size(srccoefs, 1);
+        npols = size(srccoefs, 2);
+        npatches = size(srccoefs, 3);
+        srccoefs = reshape(srccoefs, ndsc, npols*npatches);
+    end
+    norder = (-3 + sqrt(8*npols + 1))/2;
+    
+    if isa(targinfo, 'struct')
+        targs = targinfo.r;
+    else
+        targs = targinfo;
+    end
+
+    ntarg = size(targs, 2);
+    
+    itargptr = ones(npatches,1);
+    ntargptr = ntarg*ones(npatches,1);
+    ncoef = npols*npatches;
+    ntrimaxp = ntrimax*npatches;
+
+    ichild_start = zeros(ntrimax,1);
+    da = zeros(ntrimax,1);
+    tricm = zeros(3,ntrimaxp);
+    trirad = zeros(npatches,ntrimax);
+    tverts = zeros(6,ntrimax);
+    itrirel = zeros(ntarg,ntrimax);
+
+    ier = 0;
+    ntri = 0;
+    nlev = 0;
+    # FORTRAN gettritree(int[1] npatches, int[1] norder, int[1] npols, int[1] ndsc, double[ndsc,ncoef] srccoefs, int[1] ntarg, double[3,ntarg] targs, int[npatches] itargptr, int[npatches] ntargptr, int[1] ntrimax, int[1] nlevmax, double[1] rfac, inout int[1] ntri, inout int[1] nlev, inout int[ntrimax] ichild_start, inout double[ntrimax] da, inout double[3,ntrimaxp] tricm, inout double[npatches,ntrimax] trirad, inout double[6,ntrimax] tverts, inout int[ntarg,ntrimax] itrirel, inout int[1] ier);
+   
+    tritree = [];
+    if ier > 0
+       warning('FMM3DBIE.GETTRITREE: too few triangles allocated, tritree not formed');
+       return;
+    else
+      tritree.ichild_start = ichild_start(1:ntri);
+      tritree.da = da(1:ntri);
+      tritree.tricm = reshape(tricm(:,1:(npatches*ntri)), [3,npatches,ntri]);
+      if npatches == 1, tritree.tricm = reshape(tritree.tricm, [3,ntri]); end
+      tritree.trirad = trirad(:,1:ntri);
+      if npatches == 1, tritree.trirad = tritree.trirad(:); end
+      tritree.tverts = reshape(tverts(:,1:ntri), [2,3,ntri]);
+      tritree.itrirel = itrirel(:,1:ntri);
+    end
+end
+
+
+%
+%
+@ src/self_quadrature.m
+function [xs, ys, ws] = self_quadrature(norder, ipv, verts, x0, y0, dr)
+% return the self quadrature nodes for the patch with vertices in verts 
+% and singularity at (x0,y0). dr is the surface Jacobian at (x0,y0)
+    nmax = 50000;
+    xs = zeros(nmax,1);
+    ys = zeros(nmax,1);
+    ws = zeros(nmax,1);
+    [~, nv] = size(verts);
+    druse = reshape(dr, [3,2]);
+    nquad = 0;
+    ier = 0;
+
+    # FORTRAN self_quadrature(int[1] norder, int[1] ipv, double[2,nv] verts, int[1] nv, double[1] x0, double[1] y0, double[3,2] druse, inout int[1] nquad, inout double[nmax] xs, inout double[nmax] ys, inout double[nmax] ws, inout int[1] ier);
+
+    xs = xs(1:nquad);
+    ys = ys(1:nquad);
+    ws = ws(1:nquad);
+end
+%
+%
+%
 
 %
 %
@@ -1206,7 +1406,7 @@ end
 %-------------------------------------------------
 
 @ +lap3d/+neumann/eval.m 
-function p = eval(S,sigma,targinfo,eps,varargin)
+function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %
 %  lap3d.neumann.eval
 %    Evaluates the Laplace neumann layer potential at a collection 
@@ -1217,35 +1417,45 @@ function p = eval(S,sigma,targinfo,eps,varargin)
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
 %
 %  Integral representation
+%     pot = S_{0} [\sigma]
 %     pot = S_{0} [\sigma] 
 %
 %  S_{0}: Laplace single layer potential
-%  
+%
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
+%    * targinfo: target info
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %    * eps: precision requested
+%    * opts: options struct (optional)
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
-%        opts.precomp_quadrature: precomputed quadrature corrections 
+%        opts.precomp_quadrature: precomputed quadrature corrections
 %           struct currently only supports quadrature corrections
-%           computed in rsc format 
-%    
+%           computed in rsc format
+%
+%  Output arguments:
+%    * pot: (nt,1) potential values, or [] if opts.eval_pot=0
 
     if(nargin < 5) 
       opts = [];
     else
       opts = varargin{1};
+    end
+
+    if nargout > 1
+      error('LAP3D:neumann:unsupportedOutput', ...
+        'lap3d.neumann.eval currently returns potential only.');
     end
 
     nonsmoothonly = false;
@@ -1339,6 +1549,7 @@ function p = eval(S,sigma,targinfo,eps,varargin)
     ipotflag = 1;
 % Call the layer potential evaluator
     # FORTRAN lap_s_neu_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, double[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout double[ntarg] p);   
+
 end    
 %
 %
@@ -1701,7 +1912,8 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
 end    
 %
 %
-
+%
+%
 %-------------------------------------------------
 %
 %%
@@ -5798,11 +6010,14 @@ function [rsc] = getnear(S, targinfo, rfac)
     else
         if isempty(targinfo)
             targs = S.r;
-        elseif isa(S, 'struct') || isa(S,'surfer')
+        elseif isa(targinfo, 'struct') || isa(targinfo,'surfer')
             targs = targinfo.r;
+        elseif isa(targinfo, 'chunker') || isa(targinfo,'chunkgraph')
+            targs = targinfo.r(:,:);
         else
             targs = targinfo;
         end
+        targs = [targs;zeros(max(3-size(targs,1),0),size(targs,2))];
     end
     ndtarg = size(targs,1); 
     ntarg = size(targs,2); 
@@ -5820,6 +6035,8 @@ function [rsc] = getnear(S, targinfo, rfac)
         rfac = 0;
         rfac0 = 0;
         # FORTRAN get_rfacs(int[1] norder_avg, int[1] iptype_avg, inout double[1] rfac, inout double[1] rfac0);
+    else
+        rfac0 = rfac;
     end
     
     cms = S.cms;
@@ -5852,5 +6069,4 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc.rfac0   = rfac0;
     rsc.nnz     = length(col_ind);
     rsc.nquad   = iquad(nnz+1)-1;
-
 end

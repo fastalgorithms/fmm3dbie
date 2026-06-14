@@ -210,6 +210,7 @@ c    dmat: real *8(3,3)
 c      the corresponding rotation matrix 
 c
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 deul(3), dmat(3,3)
 
       psi = deul(1)

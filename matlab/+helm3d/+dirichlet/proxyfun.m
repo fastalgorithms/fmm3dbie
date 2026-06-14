@@ -16,10 +16,10 @@ function [Kpxy,lst] = proxyfun(x,slf,lst,proxy_dict,l,ctr,zpars,rn,wts)
     targinfo.n = norms;
     
     Kpxy1 = bsxfun(@times,helm3d.kern(zpars(1),srcinfo, ...
-      targinfo,'s'),w_sqrt);
+      targinfo,'s'),w_sqrt); % incoming field
     Kpxy1 = bsxfun(@times, weigt.', Kpxy1);
     Kpxy2 = bsxfun(@times,helm3d.kern(zpars(1),srcinfo, ...
-      targinfo,'c',[zpars(2),zpars(3)]),w_sqrt);
+      targinfo,'c',[zpars(2),zpars(3)]),w_sqrt); %outgoing rep
     Kpxy2 = bsxfun(@times, weigt.', Kpxy2);
     
     Kpxy = [Kpxy1;Kpxy2];

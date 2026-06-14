@@ -37,88 +37,99 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 %  See also OVERSAMPLE, GETNEAR
 %
 
-    kern = kernel3d(kern);
-
-    ntarg = size(targs.r, 2);
-    
-    if ismethod(S,'oversample') && ~any(isnan(nover))
-        [S_over, val2over] = oversample(S, nover);
-    else
-        S_over = S; val2over = eye(size(S.r(:,:),2));
+    if nargin < 7
+        lbat = 1e3;
     end
-    
+    try
+        kernuse = kern.eval;
+    catch
+        kernuse = kern;
+    end
+    try
+        targs.r; 
+    catch 
+        targs = struct('r',targs(1:3,:)); 
+    end
+
+    [S_over,val2over] = oversample(S,nover);
+
     ixyzs = S_over.ixyzs;
-    opdims = kern.opdims;
-    val2over = kron(val2over,eye(opdims(2)));
+    npols = ixyzs(2:end)-ixyzs(1:end-1);
+    npts_col = npols(col_ind);
 
-    % Convert rsc -> csc so we can loop over patches (columns)
-    rsc = [];
-    rsc.row_ptr = row_ptr;
-    rsc.col_ind = col_ind;
-
-    npatches = S.npatches;
-    nnz_rsc  = length(col_ind);
-    npols = ixyzs(2:end) - ixyzs(1:end-1);  % pts per patch (oversampled)
-    rsc.iquad = [1; 1 + cumsum(npols(col_ind(:)))];
-    csc = conv_rsc_to_csc(npatches, rsc);
-
-    % Accumulate sparse entries patch by patch
-    irow_vals = [];
-    icol_vals = [];
-    vals      = [];
-
-    for p = 1:npatches
-        ptstart = csc.col_ptr(p);
-        ptend   = csc.col_ptr(p+1) - 1;
-        if ptstart > ptend
-            continue
-        end
-
-        % Targets interacting with patch p
-        targ_inds = csc.row_ind(ptstart:ptend);   % (ntarg_p,1)
-
-        % Oversampled source points on patch p
-        src_inds  = ixyzs(p):(ixyzs(p+1)-1);      % (npts_p,1)
-
-        % Extract source and target sub-structs
-        srcp = [];
-        srcp.r = S_over.r(:,src_inds);
-        for field = kern.src_fields(:).'
-            srcp.(field{1}) = S_over.(field{1})(:,src_inds);
-        end
-
-
-        targp = [];
-        targp.r = targs.r(:,targ_inds);
-        for field = kern.targ_fields(:).'
-            targp.(field{1}) = targs.(field{1})(:,targ_inds);
-        end
-
-        % Evaluate kernel. Use eval_mask to zero out self interactions
-        Kblock = kern.eval_mask(srcp, targp);
-
-        % Weight columns by quadrature weights of oversampled patch
-        wts_p = repmat(S_over.wts(src_inds).', opdims(2), 1);
-        wts_p = wts_p(:).';
-        Kblock = Kblock .* wts_p;
-
-        % Build global row/col indices (before val2over projection)
-        % rows: opdims(1) entries per target
-        irows_p = (1:opdims(1)).' + opdims(1)*(targ_inds(:).'-1);
-        irows_p = irows_p(:);  % (opdims(1)*ntarg_p, 1)
-        % cols: opdims(2) entries per oversampled source point
-        icols_p = (1:opdims(2)).' + opdims(2)*(src_inds(:).'-1);
-        icols_p = icols_p(:);  % (opdims(2)*npts_p, 1)
-
-        [ii, jj, vv] = find(sparse(Kblock));
-        irows_p = irows_p(ii);
-        irow_vals = [irow_vals; irows_p(:)];
-        icol_vals = [icol_vals; icols_p(jj)];
-        vals      = [vals;      vv(:)];
+    [nt,~] = size(row_ptr);
+    ntarg = nt-1;
+    nrep = zeros(ntarg,1);
+    istarts = row_ptr(1:end-1);
+    iends = row_ptr(2:end)-1;
+    icol_ind = zeros(sum(npts_col),1);
+    isrcinds = cell(S_over.npatches,1);
+    for i=1:S_over.npatches
+        isrcinds{i} = ixyzs(i):ixyzs(i+1)-1;
     end
 
-    Asmth = sparse(irow_vals, icol_vals, vals, ...
-        opdims(1)*ntarg, opdims(2)*S_over.npts);
+    istart = 1;
+    for i=1:ntarg
+        nrep(i) = sum(npts_col(istarts(i):iends(i))); 
+        iinds = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
+        nelem = length(iinds);
+        icol_ind(istart:istart+nelem-1) = iinds;
+        istart = istart+nelem;
+    end
+    irow_ind = repelem((1:ntarg)',nrep);
 
-    Asmth = Asmth * val2over;
+    nnz = length(irow_ind);
+    
+    nbat = ceil(nnz/lbat);
+    
+    loc_field = fieldnames(targs)';
+    loc_field_use = {};
+    for i = 1:length(loc_field)
+        if mod(size(targs.(loc_field{i})(:,:),2), size(targs.r(:,:),2)) == 0 && ~isempty(targs.(loc_field{i}))
+        loc_field_use{length(loc_field_use)+1} = loc_field{i};
+        end
+    end
+
+    targdim = [];
+    for field = loc_field_use
+        targdim.(field{1}) = targs.(field{1})(:,1);
+    end
+    tmp = kernuse(struct('r',[0;0;0]),targdim);
+    opdims = size(tmp);
+
+
+    irow_indopdim = (1:opdims(1)).' + opdims(1)*(irow_ind(:).'-1);
+    icol_indopdim = 0*(1:opdims(1)).' + (icol_ind.');
+    irow_indopdim = irow_indopdim(:);
+    icol_indopdim = icol_indopdim(:);
+    irow_indopdim = 0*(1:opdims(2)).' + (irow_indopdim.');
+    icol_indopdim = (1:opdims(2)).' + opdims(2)*(icol_indopdim.'-1);
+    irow_indopdim = irow_indopdim(:);
+    icol_indopdim = icol_indopdim(:);
+
+    vals = zeros(1, prod(opdims)*nnz);
+
+    for k = 1:nbat
+        ks = (lbat*(k-1)+1):min(lbat*k,nnz);
+        ksloc = (prod(opdims)*lbat*(k-1)+1):(prod(opdims)*min(lbat*k,nnz));
+        rsrc = S_over.r(:,icol_ind(ks));
+        targk = [];
+        for field = loc_field_use
+            targk.(field{1}) = targs.(field{1})(:,irow_ind(ks));
+        end
+        targk.r = [targk.r;zeros(3-size(targk.r,1),size(targk.r,2))];
+        targk.r = targk.r - rsrc;
+        kernvals = reshape(kernuse(struct('r',[0;0;0]),targk), opdims(1), length(ks), opdims(2)) ...
+                   .* reshape(S_over.wts(icol_ind(ks)), 1, length(ks), 1);
+        % Zero out entries where source and target coincide (relative norm < 1e-14)
+        src_norm = max(vecnorm(rsrc), 1);
+        self_mask = vecnorm(targk.r) < 1e-14 * src_norm;
+        kernvals(:, self_mask, :) = 0;
+        % Permute to (opdims(1), opdims(2), length(ks)) and flatten
+        vals(ksloc) = reshape(permute(kernvals, [1 3 2]), 1, []);
+    end
+
+   Asmth = sparse(irow_indopdim,icol_indopdim, vals, opdims(1)*ntarg, opdims(2)*S_over.npts);
+
+   Asmth = Asmth*kron(val2over, speye(opdims(2)));
 end
