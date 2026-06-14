@@ -34,3 +34,11 @@ S_scalar_scaled = S.scale(a);
 aerr_sphere_scaled = abs(4*pi*(R*a)^2-area(S_scalar_scaled));
 fprintf('Error in area after scalar scaling=%d\n',aerr_sphere_scaled);
 
+% Volume of a torus (rwave=0 gives standard torus, exact vol = 2*pi^2*rmajor*rminor^2)
+rmajor = 3.0; rminor = 1.0;
+T = geometries.startorus([rmajor, rminor, 0], 0, [], [8,8], 8, 11);
+vref = 2*pi^2*rmajor*rminor^2;
+verr = abs(vref - volume(T));
+fprintf('Error in volume of torus=%d\n', verr);
+assert(verr < 1e-10*vref);
+

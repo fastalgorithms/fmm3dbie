@@ -115,7 +115,7 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o \
 	$(COM)/rigidbodies.o $(COM)/polytens.o \
-	$(COM)/chebexps.o $(COM)/gmres_routs.o
+	$(COM)/chebexps.o $(COM)/gmres_routs.o \
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
@@ -145,7 +145,10 @@ STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_mob.o
 # Kernels
 KER = src/kernels
 KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
-	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o
+	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o \
+	$(KER)/hank101.o \
+	$(KER)/hank103.o $(KER)/helmdiffgreen.o \
+	$(KER)/hankdiff.o 
 
 # Quadrature wrappers
 QUAD = src/quadratures
@@ -162,6 +165,7 @@ SOBJS = $(SURF)/in_go3.o $(SURF)/surf_routs.o $(SURF)/vtk_routs.o \
 	$(SURF)/in_gmsh2.o $(SURF)/patch_basis_routs.o \
 	$(SURF)/analytic_geometry_routs.o $(SURF)/analytic_charts.o \
 	$(SURF)/xquad_parametrizations.o $(SURF)/circ_mesh.o \
+	$(SURF)/findnearpnt.o \
 
 # Triangle adaptive integration routines
 TRIA = src/tria_routs
@@ -344,7 +348,7 @@ GW = $(MWF)
 
 
 
-matlab:	$(MSTATICLIB) $(MWDIR)/$(GW).c
+matlab:	$(MSTATICLIB) $(MWDIR)/$(GW).c 
 	$(MEX) $(MWDIR)/$(GW).c lib-static/$(MSTATICLIB) $(MFLAGS) \
 	-output $(MWDIR)/$(GW) $(MEXLIBS) 
 
@@ -357,7 +361,7 @@ mex: $(MSTATICLIB)
 	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GW) -mb $(MWF).mw;\
 	$(MWRAP) $(MWFLAGS) -mex $(GW) -c $(GW).c $(MWF).mw;\
 	$(MEX) $(GW).c ../lib-static/$(MSTATICLIB) $(MFLAGS) \
-	-output $(GW) $(MEXLIBS) 
+	-output $(GW) $(MEXLIBS) ;
 
 mex-dyn: $(MDYNAMICLIB)
 	cd $(MWDIR); $(MWRAP) $(MWFLAGS) -list -mex $(GW) -mb $(MWF).mw;\
@@ -521,8 +525,8 @@ endif
 	rm -rf python/kexp*.so
 	rm -rf python/srout*.so
 
-objclean: 
-	rm -f $(OBJS) $(TTOBJS) $(QTOBJS) $(OBJS_64) $(SURFSMOBJS) $(SURFSM_MOD_OBJS) 
+objclean:
+	rm -f $(OBJS) $(TTOBJS) $(QTOBJS) $(OBJS_64) $(SURFSMOBJS) $(SURFSM_MOD_OBJS) $(QQOBJS)
 	rm -f test/helm_wrappers/*.o test/common/*.o 
 	rm -f test/tria_routs/*.o 
 	rm -f test/lap_wrappers/*.o

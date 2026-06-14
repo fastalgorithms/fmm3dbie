@@ -11,6 +11,7 @@
 !
 subroutine dcopy_guru(n,a,incx,b,incy)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
 
   integer *8 n,incx,incy
   integer n1,incx1,incy1
