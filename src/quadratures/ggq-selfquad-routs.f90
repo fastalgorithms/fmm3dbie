@@ -349,21 +349,38 @@
       real *8 xr(200), wr(200), xt(200), wt(200)
       real *8 xtmp, ytmp
       real *8 ct, st, t, twht, rwht, ruse, rsc, rr2, rl
-      
+      complex *16 z, w, ima
+      data ima/(0.0d0,1.0d0)/
+
       nquad = 0
       ier = 0
 
 !
 ! Test for collinearity
 !
-      xmeas = 1.0d0
-      if ((abs(v0(1)).gt.abs(v0(2))).and.(abs(v1(1)).gt.abs(v1(2)))) then
-        xmeas = abs(v0(2)/v0(1) - v1(2)/v1(1))
-      else
-        xmeas = abs(v0(1)/v0(2) - v1(1)/v1(2))
-      endif
+!      xmeas = 1.0d0
+!      if ((abs(v0(1)).gt.abs(v0(2))).and.(abs(v1(1)).gt.abs(v1(2)))) then
+!        xmeas = abs(v0(2)/v0(1) - v1(2)/v1(1))
+!      else
+!        xmeas = abs(v0(1)/v0(2) - v1(1)/v1(2))
+!      endif
+!
+!      if (xmeas.le.1.0d-8) return
+!
+!
+! New test for collinearity
+!    
+      r0 = sqrt(v0(1)**2 + v0(2)**2)
+      r1 = sqrt(v1(1)**2 + v1(2)**2)
 
-      if (xmeas.le.1.0d-8) return
+      if (r0.le.(1.0d-8*r1)) return
+      if (r1.le.(1.0d-8*r0)) return
+
+      z = exp(ima*atan2(v0(2),v0(1)))
+      w = exp(ima*atan2(v1(2),v1(1)))
+
+      if (abs(z-w).le.1.0d-8) return
+      if (abs(z+w).le.1.0d-8) return
 
 !
 !  Points are no longer collinear
