@@ -64,18 +64,7 @@ function [surf_grad] = get_surface_grad(S,p,varargin)
         surf_grad = repmat(dp(1,1:npts),[3,1]).*srcvals(4:6,1:npts) + repmat(dp(2,1:npts),[3,1]).*srcvals(7:9,1:npts);
     end
 end
-
 %
 %
 %
-%
-%
-
-%-------------------------------------------------
-%
-%%
-%%   Laplace dirichlet routines
-%
-%
-%-------------------------------------------------
-
+%-------------------------------------------------------------

@@ -2,7 +2,7 @@ c
 c
         real *8 function hkrand(iseed_hk)
         implicit real *8 (a-h,o-z)
-        dimension iseed(4)
+        integer iseed(4)
         data iseed/0,0,0,1/
         save
 c

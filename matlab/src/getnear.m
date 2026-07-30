@@ -59,11 +59,14 @@ function [rsc] = getnear(S, targinfo, rfac)
     else
         if isempty(targinfo)
             targs = S.r;
-        elseif isa(S, 'struct') || isa(S,'surfer')
+        elseif isa(targinfo, 'struct') || isa(targinfo,'surfer')
             targs = targinfo.r;
+        elseif isa(targinfo, 'chunker') || isa(targinfo,'chunkgraph')
+            targs = targinfo.r(:,:);
         else
             targs = targinfo;
         end
+        targs = [targs;zeros(max(3-size(targs,1),0),size(targs,2))];
     end
     ndtarg = size(targs,1); 
     ntarg = size(targs,2); 
@@ -82,6 +85,8 @@ function [rsc] = getnear(S, targinfo, rfac)
         rfac0 = 0;
         mex_id_ = 'get_rfacs(c i int64_t[x], c i int64_t[x], c io double[x], c io double[x])';
 [rfac, rfac0] = fmm3dbie_routs(mex_id_, norder_avg, iptype_avg, rfac, rfac0, 1, 1, 1, 1);
+    else
+        rfac0 = rfac;
     end
     
     cms = S.cms;
@@ -113,5 +118,7 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc.row_ptr = row_ptr;
     rsc.col_ind = col_ind;
     rsc.iquad = iquad;
+    rsc.rfac = rfac;
+    rsc.rfac0 = rfac0;
 
 end

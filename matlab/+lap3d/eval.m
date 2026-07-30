@@ -15,11 +15,10 @@ function [p, varargout] = eval(S, bc, densities, targinfo, eps, varargin)
 %   [p] = lap3d.eval(S, 'c', densities, targinfo, eps, rep_params,opts);
 %
 % Syntax for Neumann problems
-%   [densities] = lap3d.eval(S, 'neu', densities, targinfo, eps);
-%   [densities] = lap3d.eval(S, 'neu', densities, targinfo, eps, opts);
+%   [p] = lap3d.eval(S, 'neu', densities, targinfo, eps);
+%   [p] = lap3d.eval(S, 'neu', densities, targinfo, eps, opts);
 %
-%
-%  SEE ALSO: lap3d.solver, lap3d.dirichlet.eval, lap3d.neumann.eval 
+%  SEE ALSO: lap3d.solver, lap3d.dirichlet.eval, lap3d.neumann.eval
 %
     switch lower(bc)
       case {'dir', 'dirichlet'}

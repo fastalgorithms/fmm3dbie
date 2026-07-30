@@ -58,6 +58,7 @@ c        x \cdot y
 c
 c----------------
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         double precision, intent(in) :: x(3),y(3)
         double precision, intent(out) :: d
 
@@ -89,6 +90,7 @@ c        x \cdot y
 c
 c----------------
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         double complex, intent(in) :: x(3),y(3)
         double complex, intent(out) :: d
 
@@ -120,6 +122,7 @@ c        x \cdot y
 c
 c----------------
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         double precision, intent(in) :: x(3)
         double complex, intent(in) :: y(3)
         double complex, intent(out) :: d
@@ -151,6 +154,7 @@ c    - z: double precision(3)
 c        x \times y
 c---------------------
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         double precision, intent(in) :: x(3),y(3)
         double precision, intent(out) :: z(3)
 c
@@ -184,6 +188,7 @@ c    - z: double complex(3)
 c        x \times y
 c---------------------
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         complex *16, intent(in) :: x(3),y(3)
         complex *16, intent(out) :: z(3)
 c
@@ -218,6 +223,7 @@ c    - z: double complex(3)
 c        x \times y
 c---------------------
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         real *8, intent(in) :: x(3)
         complex *16, intent(in) :: y(3)
         complex *16, intent(out) :: z(3)
@@ -250,6 +256,7 @@ c    - d: double precision
 c        x \cdot (y \times z)
 c---------------------
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         dimension x(3),y(3),z(3),t(3)
 c
 c       d = x \dot (y \cross z)
@@ -283,6 +290,7 @@ c    - w: double precision(3)
 c        x \times (y \times z)
 c---------------------
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         double precision, intent(in) :: x(3),y(3),z(3)
         double precision, intent(out) :: w(3)
         double precision t(3)
@@ -318,6 +326,7 @@ c    - d: double precision(3)
 c        x \cdot (y \times (z \times w))
 c---------------------
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         double precision, intent(in) :: x(3),y(3),z(3),w(3)
         double precision, intent(out) :: d
         double precision t(3)

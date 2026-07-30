@@ -90,6 +90,7 @@ end subroutine st3d_slp_vec
 
 subroutine st3d_slp(src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt),dpars(ndd)
   integer *8 ipars(ndi)
 

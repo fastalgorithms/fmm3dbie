@@ -16,7 +16,7 @@
       write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
      1  ' out of ',ntests,' in common testing suite'
       close(33)
-      
+
 
       stop
       end
@@ -47,7 +47,7 @@
       do i=1,n
         r = hkrand(0)*nmax
         a(i) = (r+0.0d0)
-        r = hkrand(0) 
+        r = hkrand(0)
         b(i) = 0
         if(r.gt.0.8d0) b(i) = 1
         r = hkrand(0)
@@ -55,19 +55,19 @@
         if(r.gt.0.6d0) c(i) = 1
       enddo
 
-      if(ifprint.ge.1) call prinf('a=*',a,n)
+      if(ifprint.ge.1) call prinf('a=*',a,int(n,4))
       call get_iuni1_omp(n,a,nuni,iuni,iuniind)
 
       if(ifprint.ge.1) then
         call prinf('nuni=*',nuni,1)
-        call prinf('iuni=*',iuni,nuni)
-        call prinf('iuniind=*',iuniind,n)
+        call prinf('iuni=*',iuni,int(nuni,4))
+        call prinf('iuniind=*',iuniind,int(n,4))
       endif
 
 
       isuccess0=1
       do i=1,n
-        if(abs(a(i)-iuni(iuniind(i))).ge.1.0d-16) then 
+        if(abs(a(i)-iuni(iuniind(i))).ge.1.0d-16) then
           print *, "problem in iuni1 with index i=",i
           isuccess0 = 0
         endif
@@ -75,25 +75,25 @@
 
       ifprint = 0
       if(ifprint.ge.1) then
-        call prinf('a=*',a,n)
-        call prinf('b=*',b,n)
-        call prinf('c=*',c,n)
+        call prinf('a=*',a,int(n,4))
+        call prinf('b=*',b,int(n,4))
+        call prinf('c=*',c,int(n,4))
       endif
 
-      
+
       call get_iuni3(n,b,c,a,nuni,iuni3,iuniind)
 
       if(ifprint.ge.1) then
         call prinf('nuni=*',nuni,1)
-        call prinf('iuni3=*',iuni3,3*nuni)
-        call prinf('iuniind=*',iuniind,n)
+        call prinf('iuni3=*',iuni3,int(3*nuni,4))
+        call prinf('iuniind=*',iuniind,int(n,4))
       endif
 
       isuccess1 = 1
       do i=1,n
         if(abs(b(i)-iuni3(1,iuniind(i))).ge.1.0d-16.or.
      1     abs(c(i)-iuni3(2,iuniind(i))).ge.1.0d-16.or.
-     2     abs(a(i)-iuni3(3,iuniind(i))).ge.1.0d-16) then 
+     2     abs(a(i)-iuni3(3,iuniind(i))).ge.1.0d-16) then
           print *, "problem in iuni3 with index i=",i
           isuccess1 = 0
         endif
@@ -106,7 +106,7 @@
       end
 
 
-      
+
       subroutine test_setdecomp(isuccess)
 
       implicit real *8 (a-h,o-z)
@@ -167,9 +167,9 @@ c
 
       if(ifprint.ge.1) then
         call prinf('nauni=*',nauni,1)
-        call prinf('auni=*',auni,nauni)
+        call prinf('auni=*',auni,int(nauni,4))
         call prinf('nbuni=*',nbuni,1)
-        call prinf('buni=*',buni,nbuni)
+        call prinf('buni=*',buni,int(nbuni,4))
       endif
 
 
@@ -177,21 +177,21 @@ c
       allocate(iaintbb(nauni))
       call setdecomp(nauni,auni,nbuni,buni,naintb,aintb,iaintba,
      1     iaintbb,naintbc,aintbc,iaintbc)
-      
+
       if(ifprint.ge.1) then
         call prinf('naintb=*',naintb,1)
-        call prinf('aintb=*',aintb,naintb)
-        call prinf('iaintba=*',iaintba,naintb)
-        call prinf('iaintbb=*',iaintbb,naintb)
+        call prinf('aintb=*',aintb,int(naintb,4))
+        call prinf('iaintba=*',iaintba,int(naintb,4))
+        call prinf('iaintbb=*',iaintbb,int(naintb,4))
 
         call prinf('naintbc=*',naintbc,1)
-        call prinf('aintbc=*',aintbc,naintbc)
-        call prinf('iaintbc=*',iaintbc,naintbc)
+        call prinf('aintbc=*',aintbc,int(naintbc,4))
+        call prinf('iaintbc=*',iaintbc,int(naintbc,4))
       endif
 
       isuccess = 1
       do i=1,naintb
-         
+
 c
 c        first check location in a array
 c
@@ -208,7 +208,7 @@ c
       enddo
 
       do i=1,naintbc
-         
+
 c
 c        first check location in a array
 c
@@ -223,7 +223,7 @@ c
         enddo
 
         if(imatch.eq.1) then
-          print *, 'aintbc found in b for i=',i 
+          print *, 'aintbc found in b for i=',i
           isuccess = 2
         endif
       enddo
@@ -234,7 +234,7 @@ c
       end
 
 
-            
+
       subroutine test_cumsum(isuccess)
 c$    use omp_lib
       implicit real *8 (a-h,o-z)
@@ -250,7 +250,7 @@ c$    use omp_lib
       ns(4) = 1500000
       ns(5) = 10000000
       nn = 5
-      
+
       nmax = 0
       do i = 1,nn
          nmax = max(nmax,ns(i))
@@ -301,12 +301,12 @@ C$       t4 = omp_get_wtime()
 
 
       if(isuccess.eq.1) call prinf('test cumsum passed*',i,0)
-      
+
       return
       end
 
 
-      
+
       subroutine test_sort(isuccess)
 c$    use omp_lib
       implicit none
@@ -329,7 +329,7 @@ c$    use omp_lib
         n = ns(i)
         allocate(data(n),ind1(n),ind2(n))
         do j=1,n
-          data(n-j+1) = hkrand(0)*nmax 
+          data(n-j+1) = hkrand(0)*nmax
         enddo
         call cpu_time(t1)
 C$      t1 = omp_get_wtime()
@@ -391,12 +391,12 @@ c$    use omp_lib
         allocate(iind(nent),jind(nent),col_ptr1(m+1),row_ind1(nent))
         allocate(col_ptr2(m+1),row_ind2(nent))
 
-c        call srand(seed)
+        call srand(int(seed,4))
         do i=1,nent
           ii = hkrand(0)*m*2
           jj = hkrand(0)*m*2
-          iind(i) = mod(ii,m)
-          jind(i) = mod(jj,m)
+          iind(i) = mod(ii,m)+1
+          jind(i) = mod(jj,m)+1
         enddo
 
         call cpu_time(t1)
@@ -410,7 +410,7 @@ C$      t3 = omp_get_wtime()
         call conv_to_csc_para(nent,m,iind,jind,col_ptr2,row_ind2)
         call cpu_time(t4)
 C$      t4 = omp_get_wtime()
-         
+
         write(*,*) "serial time: ",t2-t1,"para time: ",t4-t3
         write(*,*) "speed up: ",(t2-t1)/(t4-t3),"nent=",nent,"m=",m
 
@@ -431,14 +431,13 @@ c
 c
 c
       subroutine test_findnear(isuccess)
-      implicit none
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8, allocatable :: src(:,:),targ(:,:),rads(:)
-      real *8 hkrand
       integer *8, allocatable :: row_ptr(:),row_ptr2(:)
       integer *8, allocatable :: col_ind(:),col_ind2(:)
       integer *8, allocatable :: isort(:),wsort(:),isort2(:),wsort2(:)
-      integer *8 n1, n2, isuccess, ns, nt, erra
-      integer *8 i, j, nnz, nnz2, ndt
+      integer *8 isuccess
 
       call prini(6,13)
 
@@ -446,7 +445,7 @@ c
       ns = 1001
       nt = 10000
       isuccess = 1
-      
+
       allocate(src(3,ns),targ(3,nt),rads(ns))
       allocate(row_ptr(nt+1),row_ptr2(nt+1))
       allocate(isort(nt),wsort(nt),isort2(nt),wsort2(nt))
@@ -503,13 +502,13 @@ c
 
         if(erra.ne.0) then
           call prinf('list of sources dont match for target i=*',i,1)
-          call prinf('correct sources=*',isort2,n2)
-          call prinf('computed sources=*',isort,n1)
+          call prinf('correct sources=*',isort2,int(n2,4))
+          call prinf('computed sources=*',isort,int(n1,4))
           isuccess = 0
           return
         endif
       enddo
-      
+
       print *, "find near test successfully completed"
 
 
@@ -526,19 +525,19 @@ c
      1   row_ind(:),iper(:)
       integer *8 ns, nt, nnz
 
-      
+
       ns = 301
       nt = 101
 
       isuccess = 1
 
       allocate(row_ptr(nt+1),col_ptr(ns+1))
-      
+
 
       nnz_max = ns*nt
       allocate(col_ind(nnz_max),iper(nnz_max),row_ind(nnz_max))
 
-      
+
       row_ptr(1) = 1
       do i=1,nt
         nrel = hkrand(0)*0.5*ns
@@ -578,4 +577,3 @@ c
 
       return
       end
-

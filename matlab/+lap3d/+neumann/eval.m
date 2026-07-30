@@ -1,4 +1,4 @@
-function p = eval(S,sigma,targinfo,eps,varargin)
+function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %
 %  lap3d.neumann.eval
 %    Evaluates the Laplace neumann layer potential at a collection 
@@ -9,35 +9,45 @@ function p = eval(S,sigma,targinfo,eps,varargin)
 %   pot = lap3d.neumann.eval(S,sigma,targinfo,eps,opts)
 %
 %  Integral representation
+%     pot = S_{0} [\sigma]
 %     pot = S_{0} [\sigma] 
 %
 %  S_{0}: Laplace single layer potential
-%  
+%
 %  Note: for targets on surface, only principal value part of the
 %    layer potential is returned
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
+%    * targinfo: target info
 %    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %    * eps: precision requested
+%    * opts: options struct (optional)
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
-%        opts.precomp_quadrature: precomputed quadrature corrections 
+%        opts.precomp_quadrature: precomputed quadrature corrections
 %           struct currently only supports quadrature corrections
-%           computed in rsc format 
-%    
+%           computed in rsc format
+%
+%  Output arguments:
+%    * pot: (nt,1) potential values, or [] if opts.eval_pot=0
 
     if(nargin < 5) 
       opts = [];
     else
       opts = varargin{1};
+    end
+
+    if nargout > 1
+      error('LAP3D:neumann:unsupportedOutput', ...
+        'lap3d.neumann.eval currently returns potential only.');
     end
 
     nonsmoothonly = false;
@@ -132,6 +142,7 @@ function p = eval(S,sigma,targinfo,eps,varargin)
 % Call the layer potential evaluator
     mex_id_ = 'lap_s_neu_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[x])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, sigma, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, npts, 1, 1, ntarg);
+
 end    
 %
 %

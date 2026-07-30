@@ -1,18 +1,224 @@
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
 
-      ntests = 3
+      ntests = 9
       nsuccess = 0
-      call test_surf_lap(nsuccess)
 
+      isuccess1 = 0
+      isuccess21 = 0
+      isuccess22 = 0
+      isuccess23 = 0
+      call test_surf_lap(isuccess1)
+
+      iptype0 = 1
+      call test_find_near_points(isuccess21, iptype0)
+
+      iptype0 = 11
+      call test_find_near_points(isuccess22, iptype0)
+
+      iptype0 = 12
+      call test_find_near_points(isuccess23, iptype0)
+      nsuccess = isuccess1 + isuccess21 + isuccess22 + isuccess23
 
       open(unit=33,file='../../print_testres.txt',access='append')
-      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
+      write(33,'(a,i2,a,i2,a)') 'Successfully completed ',nsuccess,
      1  ' out of ',ntests,' in surface routs testing suite'
       close(33)
 
       stop
       end
+
+      subroutine test_find_near_points(nsuccess, iptype0)
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, allocatable :: norders(:), ixyzs(:), iptype(:)
+      real *8, allocatable :: srcvals(:,:), srccoefs(:,:)
+      integer *8, allocatable :: ipatch_id(:)
+      real *8, allocatable :: uvs_src(:,:)
+      real *8, allocatable :: targs(:,:), dists_ex(:), dists(:)
+      integer *8, allocatable :: ipatch_id_targ(:)
+      real *8, allocatable :: sxyz(:,:), uvsloc(:,:)
+      real *8 sxyz_tmp(3), uvsloc_tmp(2)
+      real *8, allocatable :: sxyz_ex(:,:), uvs_ex(:,:)
+      real *8, allocatable :: cms(:,:), rads(:)
+      integer *8, allocatable :: row_ptr(:), col_ind(:)
+      integer *8, allocatable :: flags(:), iptsloc(:)
+      integer *8, allocatable :: ipatch_ex(:)
+      real *8 c0(3), uv_tmp(2), srctmp(9), rntmp(3)
+      real *8, allocatable :: pols(:)
+      integer *8 iptype0, flags_tmp
+
+      call prini(6,13)
+
+      done = 1.0d0
+      pi = atan(done)*4.0d0
+
+      a = 1.0d0
+      na = 10
+      norder = 7
+
+      if(iptype0.eq.1) npols = (norder+1)*(norder+2)/2
+      if(iptype0.eq.11.or.iptype0.eq.12) npols = (norder+1)*(norder+1)
+
+      allocate(pols(npols))
+      c0(1:3) = 0
+
+      npts = 0
+      npatches = 0
+      call get_sphere_npat_mem(a, na, c0, norder, iptype0, 
+     1   npatches, npts)
+      
+      allocate(norders(npatches), ixyzs(npatches+1), iptype(npatches))
+      allocate(srcvals(12,npts), srccoefs(9,npts))
+
+      call get_sphere_npat(a, na, c0, norder, iptype0, npatches, npts, 
+     1  norders, ixyzs, iptype, srccoefs, srcvals)
+      
+      allocate(ipatch_id(npts), uvs_src(2,npts))
+      
+      ntarg1 = 100
+      ntarg = 2*ntarg1
+      allocate(targs(3,ntarg))
+      allocate(dists_ex(ntarg), dists(ntarg))
+      allocate(sxyz_ex(3,ntarg), uvs_ex(2,ntarg))
+      allocate(sxyz(3,ntarg), uvsloc(2,ntarg))
+      allocate(ipatch_ex(ntarg))
+      
+      do i=1,ntarg1
+        rtmp = hkrand(0)
+        ipatch = 1 + floor(npatches*rtmp)
+        ipatch_ex(i) = ipatch
+        ipatch_ex(ntarg1+i) = ipatch
+
+        if (iptype0.eq.1) then
+          uv_tmp(1) = hkrand(0) 
+          uv_tmp(2) = hkrand(0)
+          uvs_ex(1:2,i) = (uv_tmp(1:2))/(uv_tmp(1) + uv_tmp(2))
+c          if (uv_tmp(1) + uv_tmp(2).gt.1)
+c     1    uvs_ex(1:2,i) = (uv_tmp(1:2))/(uv_tmp(1) + uv_tmp(2))
+        else
+          uvs_ex(1,i) = 2*hkrand(0) - 1.0d0
+          uvs_ex(2,i) = 2*hkrand(0) - 1.0d0
+        endif
+
+        uvs_ex(1:2,ntarg1+i) = uvs_ex(1:2,i)
+
+
+        call get_basis_pols(uvs_ex, norder, npols, iptype0, pols)
+
+        dists_ex(i) = hkrand(0)*0.05d0
+        dists_ex(ntarg1+i) = dists_ex(i)
+        srctmp(1:9) = 0
+        istart = ixyzs(ipatch) 
+        do l=1,npols
+          srctmp(1:9) = srctmp(1:9) + srccoefs(1:9,istart+l-1)*pols(l)
+        enddo
+        call cross_prod3d(srctmp(4), srctmp(7), rntmp)
+        rr = sqrt(rntmp(1)**2 + rntmp(2)**2 + rntmp(3)**2)
+        rntmp(1:3) = rntmp(1:3)/rr
+
+        targs(1:3,i) = srctmp(1:3) + dists_ex(i)*rntmp(1:3)
+        targs(1:3,ntarg1+i) = srctmp(1:3) - dists_ex(i)*rntmp(1:3)
+        sxyz_ex(1:3,i) = srctmp(1:3)
+        sxyz_ex(1:3,ntarg1+i) = srctmp(1:3)
+      enddo
+
+
+      call get_patch_id_uvs(npatches, norders, ixyzs, iptype, npts,
+     1  ipatch_id, uvs_src)
+      
+      allocate(cms(3,npatches), rads(npatches))
+      
+      call get_centroid_rads(npatches, norders, ixyzs, iptype, npts,
+     1  srccoefs, cms, rads)
+      do i=1,npatches
+        rads(i) = rads(i)*1.25d0
+      enddo
+      
+      ndt = 3
+      nnz = 0
+      call findnearmem(cms, npatches, rads, ndt, targs, ntarg, nnz)
+
+      allocate(row_ptr(ntarg+1), col_ind(nnz))
+      call findnear(cms, npatches, rads, ndt, targs, ntarg, row_ptr, 
+     1  col_ind)
+      
+c
+c  find the closest points
+c
+      do i=1,ntarg
+        dists(i) = 1.0d100 
+        do j=row_ptr(i),row_ptr(i+1)-1
+           ipatch = col_ind(j)
+           rmin = 1.0d100
+           ipts_init = 1
+           do l=ixyzs(ipatch),ixyzs(ipatch+1)-1
+             rr = (targs(1,i) - srcvals(1,l))**2 + 
+     1            (targs(2,i) - srcvals(2,l))**2 + 
+     2            (targs(3,i) - srcvals(3,l))**2
+             if(rr.le.rmin) then
+               rmin = rr
+               ipts_init = l
+             endif
+           enddo
+           ntarg_tmp = 1
+           maxiter = 20
+           tol = 1.0d-12
+           flags_tmp = 1
+           call findnear_surface_point(ntarg_tmp, ndt, targs(1,i),
+     1       npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+     2       ipatch_id, uvs_src, ipts_init, maxiter, tol, sxyz_tmp,
+     3       uvsloc_tmp, dist_tmp, flags_tmp)
+c           if (flags_tmp.eq.0.and.dist_tmp.le.dists(i)) then
+           if (dist_tmp.le.dists(i)) then
+             dists(i) = dist_tmp
+             sxyz(1:3,i) = sxyz_tmp(1:3)
+             uvsloc(1:2,i) = uvsloc_tmp(1:2)
+           endif
+        enddo
+      enddo
+
+      erra = 0.0d0
+      do i=1,ntarg
+        if(dists(i).lt.0.5d0) then
+          erra = erra + (dists(i) - dists_ex(i))**2
+        endif
+      enddo
+
+      erra = sqrt(erra/ntarg)
+      print *, "iptype=",iptype0," err in findnear_surface_point=",erra
+      if(erra.lt.1.0d-10) nsuccess = nsuccess + 1
+
+      allocate(ipatch_id_targ(ntarg), flags(ntarg))
+      rfac = 1.25d0
+
+c
+c  Now test directly using get_closest_points
+c
+      call get_closest_points(ndt, ntarg, targs, npatches, norders,
+     1  ixyzs, iptype, npts, srccoefs, srcvals, ipatch_id, uvs_src,
+     2  maxiter, tol, rfac, sxyz, ipatch_id_targ, uvsloc, dists, flags)
+      
+      erra = 0.0d0
+      do i=1,ntarg
+        if(dists(i).lt.0.5d0) then
+          erra = erra + (dists(i) - dists_ex(i))**2
+        endif
+      enddo
+
+      erra = sqrt(erra/ntarg)
+      print *, "iptype=",iptype0," err in findnear_surface_point=",erra
+      if(erra.lt.1.0d-10) nsuccess = nsuccess + 1
+
+
+
+      
+
+      return
+      end
+
+
+
 c
 c
 c

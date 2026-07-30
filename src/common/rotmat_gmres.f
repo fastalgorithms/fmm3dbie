@@ -37,6 +37,7 @@ c
 c-----------------------
 c
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 a,b,c,s
 
       if(a.eq.0) then
@@ -81,6 +82,7 @@ c
 c
 c-----------------------
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       complex *16 a,b,c,s,temp
 
       if(a.eq.0) then

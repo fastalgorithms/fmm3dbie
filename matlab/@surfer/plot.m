@@ -147,7 +147,11 @@ h = trisurf(Ttot, xall, yall, zall, fall,...
         'AmbientStrength', 0.6, 'DiffuseStrength', 0.4, ...
         'SpecularStrength', 0.3, varargin_use{:});
 
-view(3)
+if norm(obj.r(3,:)) == 0
+    view(0,90)
+else
+    view(3)
+end
 shading interp  % this doesn't display edges anyway
 axis equal
 % axis vis3d    % might be useful

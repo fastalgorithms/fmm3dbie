@@ -375,6 +375,7 @@ end subroutine plotsmoothgeometryvtk
 
 subroutine xtri_vtk_flat(ntri, xtri1s, title, filename)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xtri1s(3,3,ntri)
   character(len=*) :: title, filename
 
@@ -461,6 +462,7 @@ end subroutine xtri_vtk_flat
 
 subroutine xtri_vtk_quadratic(ntri, xtri1s, title, filename)
   implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
   real *8 :: xtri1s(3,6,ntri)
   character(len=*) :: title, filename
 

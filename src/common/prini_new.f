@@ -267,6 +267,7 @@ c
   
         subroutine fileflush(iw)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
 c
 ccc        call prinf('flushing unit',iw,1)
 c 
@@ -292,6 +293,7 @@ c
 c  
         subroutine mach_zero(zero_mach7)
         implicit real *8 (a-h,o-z)
+        implicit integer *8 (i-n)
         data isinit/-7/
         save
 
