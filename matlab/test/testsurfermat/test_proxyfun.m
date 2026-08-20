@@ -20,6 +20,7 @@ pin = @(dr) vecnorm(dr) < r_sep;
 test_single_surfer(pr, pn, pw, pin);
 test_with_transpose(pr, pn, pw, pin);
 test_transmission_kernel(pr, pn, pw, pin);
+test_proxyfuneval_offsurface(pr, pn, pw, pin);
 
 
 function test_single_surfer(pr, pn, pw, pin)
@@ -108,6 +109,31 @@ src2targ = byindex.kernbyindex(targids, srcids, surfers, kern, eps, novers);
 
 [Kpxy, ~] = byindex.proxyfun(srcids, targids, l, ctr, surfers, kern, [], pr, pn, pw, pin, false);
 check_lr('transmission kernel', src2targ, Kpxy, tol);
+
+end
+
+
+function test_proxyfuneval_offsurface(pr, pn, pw, pin)
+% Off-surface targets, Laplace SLP: proxyfuneval gives low-rank src->targ block.
+
+eps = 1e-10;  tol = 1e-9;
+
+S    = geometries.sphere(2, 8, [0;0;0], 6, 1);
+kern = kernel3d('l', 's');
+ctr  = [2; 0; 0];  r_src = 0.5;  r_targ = 2.0;  l = 2*r_src;
+
+srcids = find(vecnorm(S.r - ctr) < r_src).';
+
+rng(6);
+ntarg = 200;
+th = acos(2*rand(1,ntarg)-1);  ph = 2*pi*rand(1,ntarg);
+targr = ctr + (r_targ + rand(1,ntarg)) .* [sin(th).*cos(ph); sin(th).*sin(ph); cos(th)];
+
+novers   = {NaN*zeros(S.npatches,1)};
+src2targ = byindex.kernbyindexeval((1:ntarg).', srcids, S, kern, targr, eps, novers);
+
+[Kpxy, ~] = byindex.proxyfuneval(srcids, (1:ntarg).', l, ctr, S, kern, targr, pr, pn, pw, pin);
+check_lr('proxyfuneval off-surface', src2targ, Kpxy, tol);
 
 end
 

@@ -107,12 +107,16 @@ xx = linspace(-2,6,nplot);  yy = 2*linspace(-2,2,nplot);
 targs = []; targs.r = [XX(:).'; YY(:).'; zeros(1,nplot^2)];
 
 tic
-[syscors,  novers]         = surfermat(srfrs, kerns, eps, struct('corrections',1));
+% novers/novers_eval below are used as order-vector cells (novers{1,1},
+% novers_eval{1}, etc.), so request ifreturnovers=0 explicitly rather than
+% relying on surfermat/surferkernevalmat's ifreturnovers=1 default (which
+% would instead return the precomputed {surfers_over, xinterps} form).
+[syscors,  novers]         = surfermat(srfrs, kerns, eps, struct('corrections',1,'ifreturnovers',0));
 [syscors2, objover_precomp] = surfermat(srfrs, kerns, eps, struct('corrections',1,'ifreturnovers',1));
 syscors  = syscors  - 0.5*speye(size(syscors));
 syscors2 = syscors2 - 0.5*speye(size(syscors2));
 
-[evalcors,  novers_eval]         = surferkernevalmat(srfrs, kernseval, targs, eps, struct('corrections',1));
+[evalcors,  novers_eval]         = surferkernevalmat(srfrs, kernseval, targs, eps, struct('corrections',1,'ifreturnovers',0));
 [evalcors2, objover_eval_precomp] = surferkernevalmat(srfrs, kernseval, targs, eps, ...
     struct('corrections',1,'ifreturnovers',1));
 toc

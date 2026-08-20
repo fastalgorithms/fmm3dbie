@@ -43,9 +43,6 @@ function pot = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 %
 % See also: EM3D.KERN, KERNEL3D.EM3D, EMFMM3D
 
-% -------------------------------------------------------------------------
-% Extract geometry
-% -------------------------------------------------------------------------
 src  = srcinfo.r;
 [~, ns] = size(src);
 
@@ -56,17 +53,9 @@ catch
 end
 nt = size(targ, 2);
 
-% -------------------------------------------------------------------------
-% Dispatch on kernel type
-% -------------------------------------------------------------------------
 switch lower(type)
 
-    % ======================================================================
     case 'nrccie-bc'
-    % ======================================================================
-    %
-    %  Orthonormal-frame convention matching em3d.kern 'nrccie-bc' and Fortran.
-    %
     %  sigma (3*ns x 1): interleaved [j_ru(1);j_rv(1);rho(1); j_ru(2);...] (wt-scaled)
     %    j_ru = coefficient of ru_s = du_s/|du_s|
     %    j_rv = coefficient of rv_s = n_s x ru_s
@@ -144,8 +133,6 @@ switch lower(type)
     pot = reshape([pot_ru; pot_rv; pot_rho], 3*nt, 1);
 
     case 'nrccie-eval'
-    % ======================================================================
-    %
     %  sigma (4*ns x 1): interleaved [Jx(1);Jy(1);Jz(1);rho(1); Jx(2);...] (wt-scaled)
     %  pot   (6*nt x 1): interleaved [Ex(1);Ey(1);Ez(1);Hx(1);Hy(1);Hz(1); Ex(2);...]
     %

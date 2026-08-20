@@ -231,11 +231,9 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
       H = p(4:6,:);
     elseif strcmpi(rep, 'nrccie-bc')
       %
-      %  Off-surface: lpcomp_em_nrccie_pec_addsub_targ.  Takes explicit
-      %  target array; targets need not coincide with source points.
-      %  ndim = ndim_s = 3: density [j_ru; j_rv; rho] in orthonormal frame.
-      %  pot  = (3, ntarg): IE operator output in the target's local frame.
-      %  No identity term is added (zero off-surface).
+      %  Off-surface: lpcomp_em_nrccie_pec_addsub_targ. Density [j_ru; j_rv; rho] 
+      %  is in an orthonormal frame. pot  = (3, ntarg): IE operator output in the 
+      %  cartesian frame.
       %
       ndim_p = 3;
       p = complex(zeros(ndim_p,ntarg));

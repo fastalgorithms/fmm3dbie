@@ -15,15 +15,14 @@ function pot = surferkerneval(surferobj, kern, dens, targobj, eps, opts)
 % Optional input:
 %   opts  - options structure
 %           opts.corrections = sparse correction matrix as returned by
-%                              surferkernevalmat with nonsmoothonly/corrections;
+%                              surferkernevalmat with nonsmoothonly/corrections
 %                              recomputed if empty
-%           opts.objover     = oversampling specification; one of:
-%                              []               recompute from scratch
-%                              vector           oversampling orders, broadcast to all surfers
-%                              cell(nsurfers,1) per-surfer order vectors
-%                              {surfers_over, xinterps}  precomputed objects,
-%                                as returned by surferkernevalmat with
-%                                opts.ifreturnovers=1
+%           opts.objover     = oversampling specification, one of:
+%                              []       recompute from scratch
+%                              a vector or cell of oversampling orders,
+%                                broadcast as needed
+%                              the precomputed oversampling info returned
+%                                by surferkernevalmat
 %           opts.usefmm      = (1) use FMM for smooth quadrature
 %
 % Output:

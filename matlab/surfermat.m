@@ -14,17 +14,16 @@ function [sysmat,objover,rfac] = surfermat(surferobj,kern,eps,opts)
 %           opts.corrections    = (false) return corrections to smooth rule as sparse
 %           opts.l2scale        = (false) scale rows by sqrt(wts), cols by 1/sqrt(wts)
 %           opts.unif_nover     = (0) if nonzero, enforce uniform oversampling order
-%           opts.ifoversamp     = (1) if 0, skip oversampling (set novers=NaN)
-%           opts.ifreturnovers  = (1) if 1, second output is {surfers_over, xinterps}
-%                                 (a 2-element cell of nsurfers x nsurfers cells)
-%                                 instead of the cell array of oversampling orders
+%           opts.ifoversamp     = (1) if 0, skip oversampling
+%           opts.ifreturnovers  = (1) if 1, objover holds precomputed
+%                                 oversampled surfers, otherwise just the
+%                                 oversampling orders
 %
 % Output:
 %   sysmat - system matrix (dense, or sparse if nonsmoothonly/corrections)
-%   objover - by default, cell(nsurfers,nsurfers) of per-patch oversampling
-%             order vectors; if opts.ifreturnovers=1, a 2-element cell
-%             {surfers_over, xinterps} of precomputed oversampled objects.
-%   rfac   - cell(nsurfers,nsurfers) of rfac scalars from getquad;
+%   objover - oversampling info, shaped by opts.ifreturnovers, suitable
+%             for passing straight into surfermatapply
+%   rfac   - cell(nsurfers,nsurfers) of rfac scalars from getquad
 %            NaN for blocks where getquad is not called or does not store rfac
 %
 % Author: Tristan Goodwill

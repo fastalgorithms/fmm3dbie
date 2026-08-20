@@ -2,7 +2,7 @@ function [sysmat,objover,rfac] = surferkernevalmat(surferobj,kern, targobj, eps,
 %SURFERKERNEVALMAT build evaluation matrix for given kernel, surfer
 % description of boundary, and off-surface target points.
 %
-% Syntax: [sysmat, novers, rfac] = surferkernevalmat(S, kern, targobj, eps, opts)
+% Syntax: [sysmat, objover, rfac] = surferkernevalmat(S, kern, targobj, eps, opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary
@@ -15,12 +15,16 @@ function [sysmat,objover,rfac] = surferkernevalmat(surferobj,kern, targobj, eps,
 %   opts  - options structure
 %           opts.nonsmoothonly = (false) return only near-field entries as sparse
 %           opts.corrections   = (false) return corrections to smooth rule as sparse
-%           opts.ifoversamp    = (1) if 0, skip oversampling (set novers=NaN)
+%           opts.ifoversamp    = (1) if 0, skip oversampling
+%           opts.ifreturnovers = (1) if 1, objover holds precomputed
+%                                oversampled surfers, otherwise just the
+%                                oversampling orders
 %
 % Output:
 %   sysmat - evaluation matrix (dense, or sparse if nonsmoothonly/corrections)
-%   novers - cell(nsurfers,1) of per-patch oversampling order vectors
-%   rfac   - cell(nsurfers,1) of rfac scalars from getquad;
+%   objover - oversampling info, shaped by opts.ifreturnovers, suitable
+%             for passing straight into surferkerneval
+%   rfac   - cell(nsurfers,1) of rfac scalars from getquad
 %            NaN for blocks where getquad is not called or does not store rfac
 %
 % Author: Tristan Goodwill
