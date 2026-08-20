@@ -55,6 +55,7 @@ function [densities, varargout] = solver(S, einc, hinc, eps, zk, rep_params, opt
       rep = opts.rep;
     end
 
+    nker = 9;
     if strcmpi(rep, 'nrccie')
       nker = 9;
     end

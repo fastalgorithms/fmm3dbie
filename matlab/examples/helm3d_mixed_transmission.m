@@ -11,7 +11,7 @@ zks = [zk,0.5];
 kerns(2,2) = kernel3d();
 kerns(1,1) = 2*kernel3d('h','c',zk,[1,1]);
 kerns(1,2) = kernel3d('h','trans_rep',zk);
-kerns(2,1) = 2*kernel3d('h','c2trans',zks);
+kerns(2,1) = 2*kernel3d('h','c2trans',zk);
 kerns(2,2) = kernel3d('h','trans_sys_diff',zks);
 
 eps = 1e-10;
@@ -23,10 +23,10 @@ tbuild = toc
 
 rhskerns(2,1) = kernel3d();
 rhskerns(1) = kernel3d('h','s',zk);
-rhskerns(2) = kernel3d('h','s2trans',zks);
+rhskerns(2) = kernel3d('h','s2trans',zk);
 %%
 src = []; src.r = ctr1;
-% src = []; src.r = ctr2;
+src = []; src.r = ctr2;
 % src = []; src.r = [1;2;0.5];
 rhs = zeros(size(Smat,1),1);
 inds1 = surferids(srfrs,1);

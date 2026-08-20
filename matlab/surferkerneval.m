@@ -184,25 +184,25 @@ for j = 1:nsurfers
     dens_j = dens(icolinds);
 
     if objover_mode
-            surferjover = surfers_over{j};
-            xinterp     = xinterps{j};
+        surferjover = surfers_over{j};
+        xinterp     = xinterps{j};
+    else
+        noversj = objover{j};
+        if ismethod(surferj,'oversample') && ~any(isnan(noversj))
+            [surferjover, xinterp] = surferj.oversample(noversj);
+            xinterp = kron(xinterp, eye(ktmp.opdims(2)));
         else
-            noversj = objover{j};
-            if ismethod(surferj,'oversample') && ~any(isnan(noversj))
-                [surferjover, xinterp] = surferj.oversample(noversj);
-                xinterp = kron(xinterp, eye(ktmp.opdims(2)));
-            else
-                surferjover = surferj;
-                xinterp = eye(numel(wts));
-            end
+            surferjover = surferj;
+            xinterp = eye(numel(wts));
         end
-        wtsover = repmat(surferjover.wts(:).', ktmp.opdims(2), 1);
-        dens_j = wtsover(:).*(xinterp*dens_j);
-        if usefmm && ~isempty(ktmp.fmm)
-            pot_j = ktmp.fmm(eps,surferjover,targinfo,dens_j);
-        else
-            pot_j = ktmp.eval(surferjover,targinfo)*dens_j;
-        end
+    end
+    wtsover = repmat(surferjover.wts(:).', ktmp.opdims(2), 1);
+    dens_j = wtsover(:).*(xinterp*dens_j);
+    if usefmm && ~isempty(ktmp.fmm)
+        pot_j = ktmp.fmm(eps,surferjover,targinfo,dens_j);
+    else
+        pot_j = ktmp.eval(surferjover,targinfo)*dens_j;
+    end
     pot = pot + pot_j(:);
 end
 

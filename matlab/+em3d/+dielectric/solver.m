@@ -51,6 +51,7 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
       rep = opts.rep;
     end
 
+    nker = 16;
     if strcmpi(rep, 'muller')
       nker = 16;
     end

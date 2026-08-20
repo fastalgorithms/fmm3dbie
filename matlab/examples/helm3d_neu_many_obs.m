@@ -26,6 +26,7 @@ ntot = nobj * n1;
 % self-correction once, reused for all diagonal blocks
 tic;
 opts_self = []; opts_self.corrections = 1; opts_self.selfquad = 1;
+opts_self.ifreturnovers = 0;
 [cors_self, novers_self] = surfermat(S0, K, eps, opts_self);
 fprintf('Self-correction: '); toc;
 
@@ -43,7 +44,10 @@ end
 cors = cors - 0.5*speye(ntot);
 
 Smerge = merge(Sarr);
-novers_merged = {repmat(novers_self{1,1}, nobj, 1)};
+nover_merged = repmat(novers_self{1,1}, nobj, 1);
+[Smerge_over, xinterp_merged] = Smerge.oversample(nover_merged);
+xinterp_merged = kron(xinterp_merged, eye(K.opdims(2)));
+novers_merged = {{Smerge_over}, {xinterp_merged}};
 
 %% Get rhs and solve
 [uinc, gradu_inc] = helm3d.planewave(zk, [1;0;0], Smerge);

@@ -85,25 +85,6 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
       nonsmoothonly = opts.nonsmoothonly;
     end
 
-    isprecompq = false;
-    if isfield(opts, 'precomp_quadrature')
-      Q = opts.precomp_quadrature;
-      isprecompq = true;
-    end
-
-    if(isprecompq)
-      if ~(strcmpi(Q.format,'rsc'))
-        fprintf('Invalid precomputed quadrature format\n');
-        fprintf('Ignoring quadrature corrections\n');
-        opts_qcorr = [];
-        opts_qcorr.type = 'complex';
-
-        opts_qcorr.nker = nker;
-        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
-      end
-    end
-
-    
     rep = 'nrccie';
 
     if isfield(opts, 'rep')
@@ -124,19 +105,6 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     end
 
     if strcmpi(rep, 'nrccie-bc')
-%      nker = 9;
-%      ndim_s = 3;
-%      [nn, ~] = size(densities);
-%      zpars = complex(zeros(2,1));
-%      zpars(1) = zk;
-%      zpars(2) = rep_params;
-%
-%      if nn ~= ndim_s
-%        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n');
-%      end
-%    end
-%
-%    if strcmpi(rep, 'nrccie-bc-targ')
       nker = 9;
       ndim_s = 3;
       [nn, ~] = size(densities);
@@ -146,6 +114,24 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
 
       if nn ~= ndim_s
         error('EM3D.PEC.EVAL: number of densities not consistent with representation\n');
+      end
+    end
+
+    isprecompq = false;
+    if isfield(opts, 'precomp_quadrature')
+      Q = opts.precomp_quadrature;
+      isprecompq = true;
+    end
+
+    if(isprecompq)
+      if ~(strcmpi(Q.format,'rsc'))
+        fprintf('Invalid precomputed quadrature format\n');
+        fprintf('Ignoring quadrature corrections\n');
+        opts_qcorr = [];
+        opts_qcorr.type = 'complex';
+
+        opts_qcorr.nker = nker;
+        Q = init_empty_quadrature_correction(targinfo,opts_qcorr);
       end
     end
 
