@@ -8,6 +8,8 @@ rng(42);
 
 test_single_surfer_laplace();
 test_two_surfer_helmholtz();
+test_ordervec_mode_with_oversampling();
+test_recompute_on_the_fly();
 test_proxyfuneval_lowrank();
 
 
@@ -47,6 +49,76 @@ i = sort(randperm(ntarg,          15)).';
 j = sort(randperm(S1.npts+S2.npts, 25)).';
 
 check_eval('two-surfer Helmholtz', i, j, [S1,S2], kern, targs, eps, tol, 1);
+
+end
+
+
+function test_ordervec_mode_with_oversampling()
+% Force surferkernevalmat to return the numeric norders (opts.ifreturnovers=0).
+
+eps = 1e-10;  tol = 1e-9;
+
+S    = geometries.sphere(2, 1, [0;0;0], 4, 1);
+kern = kernel3d('l', 's');
+
+rng(4);
+ntarg = 40;
+% Targets close to the surface to force oversampling.
+th = acos(2*rand(1,ntarg)-1);  ph = 2*pi*rand(1,ntarg);
+targs.r = (1 + 0.05*rand(1,ntarg)) .* [sin(th).*cos(ph); sin(th).*sin(ph); cos(th)];
+
+opts = []; opts.ifreturnovers = 0;
+opts_ns = opts; opts_ns.nonsmoothonly = true;
+[Qns, novers] = surferkernevalmat(S, kern, targs, eps, opts_ns);
+Afull = surferkernevalmat(S, kern, targs, eps, opts);
+
+assert(iscell(novers) && isnumeric(novers{1}), ...
+    'expected order-vector form of objover');
+
+i = sort(randperm(ntarg,  15)).';
+j = sort(randperm(S.npts, 20)).';
+
+Atest = byindex.kernbyindexeval(i, j, S, kern, targs, eps, novers, Qns);
+err = norm(Atest - Afull(i,j), 'fro') / norm(Afull(i,j), 'fro');
+assert(err < tol, 'order-vector mode with oversampling: err %.2e > tol %.2e', err, tol);
+
+end
+
+
+function test_recompute_on_the_fly()
+% Passing objover=[] (or omitting it) make skernbyindexeval recompute oversampling orders on the fly.
+
+eps = 1e-10;  tol = 1e-9;
+
+S    = geometries.sphere(2, 1, [0;0;0], 4, 1);
+kern = kernel3d('l', 's');
+
+rng(5);
+ntarg = 40;
+th = acos(2*rand(1,ntarg)-1);  ph = 2*pi*rand(1,ntarg);
+targs.r = (1 + 0.05*rand(1,ntarg)) .* [sin(th).*cos(ph); sin(th).*sin(ph); cos(th)];
+
+opts = []; opts.ifreturnovers = 0;
+opts_ns = opts; opts_ns.nonsmoothonly = true;
+Qns   = surferkernevalmat(S, kern, targs, eps, opts_ns);
+Afull = surferkernevalmat(S, kern, targs, eps, opts);
+
+% kernbyindexeval without Qsparse evaluates the smooth rule
+opts_smooth = opts; opts_smooth.adaptive_correction = false;
+Afull_smooth = surferkernevalmat(S, kern, targs, eps, opts_smooth);
+
+i = sort(randperm(ntarg,  15)).';
+j = sort(randperm(S.npts, 20)).';
+
+% objover omitted entirely -> defaults to [] -> on-the-fly recomputation
+Atest = byindex.kernbyindexeval(i, j, S, kern, targs, eps);
+err = norm(Atest - Afull_smooth(i,j), 'fro') / (norm(Afull_smooth(i,j), 'fro') + eps);
+assert(err < tol, 'recompute on the fly (objover omitted): err %.2e > tol %.2e', err, tol);
+
+% objover explicitly [] with Qsparse corrections applied
+Atest2 = byindex.kernbyindexeval(i, j, S, kern, targs, eps, [], Qns);
+err2 = norm(Atest2 - Afull(i,j), 'fro') / norm(Afull(i,j), 'fro');
+assert(err2 < tol, 'recompute on the fly (objover=[], with Qsparse): err %.2e > tol %.2e', err2, tol);
 
 end
 

@@ -7,6 +7,8 @@ rng(42);
 %% Now run the tests
 
 test_two_surfer_lap();
+test_two_surfer_lap_ordervec_mode();
+test_recompute_on_the_fly();
 test_explicit_novers();
 test_stok_with_corrections();
 test_single_surfer_stok();
@@ -36,6 +38,80 @@ jj = randi(size(Asmth,2), 80, 1);
 err = norm(byindex.kernbyindex(ii, jj, srfrs, kerns, eps, novers) - Asmth(ii,jj), 'fro') ...
     / (norm(Asmth(ii,jj), 'fro') + eps);
 assert(err < tol, 'two-surfer lap: %.2e', err);
+
+end
+
+
+function test_two_surfer_lap_ordervec_mode()
+% Same two-surfer setup as test_two_surfer_lap, but forcing surfermat to
+% return the numeric norders (opts.ifreturnovers=0).
+
+eps = 1e-10;  tol = 1e-9;
+opts_sm = struct('selfquad', false, 'adaptive_correction', false, ...
+    'ifreturnovers', 0);
+
+S1a = geometries.ellipsoid([1,1,1], [3,3,3], [],      6);
+S1b = geometries.ellipsoid([1,1,1], [3,3,3], [4;0;0], 6);
+srfrs = [S1a, S1b];
+
+kerns(2,2) = kernel3d();
+kerns(1,1) = kernel3d('l', 's');
+kerns(2,1) = kernel3d('l', 'sp');
+kerns(1,2) = kernel3d('l', 'd');
+kerns(2,2) = kernel3d('l', 'dp');
+
+[Asmth, novers] = surfermat(srfrs, kerns, eps, opts_sm);
+
+% Confirm we actually got the order-vector form.
+assert(iscell(novers) && isnumeric(novers{1,1}), ...
+    'expected order-vector form of objover');
+has_oversamp = false;
+for k = 1:numel(novers)
+    if ~any(isnan(novers{k})) && ~isempty(novers{k})
+        has_oversamp = has_oversamp || any(novers{k} ~= 0);
+    end
+end
+
+ii = randi(size(Asmth,1), 80, 1);
+jj = randi(size(Asmth,2), 80, 1);
+
+err = norm(byindex.kernbyindex(ii, jj, srfrs, kerns, eps, novers) - Asmth(ii,jj), 'fro') ...
+    / (norm(Asmth(ii,jj), 'fro') + eps);
+assert(err < tol, 'two-surfer lap (order-vector mode): %.2e', err);
+
+end
+
+
+function test_recompute_on_the_fly()
+% Passing objover=[] (or omitting it) makes kernbyindex recompute
+% oversampling orders on the fly.
+
+eps = 1e-10;  tol = 1e-9;
+opts_sm = struct('selfquad', false, 'adaptive_correction', false);
+
+S1a = geometries.ellipsoid([1,1,1], [3,3,3], [],      6);
+S1b = geometries.ellipsoid([1,1,1], [3,3,3], [4;0;0], 6);
+srfrs = [S1a, S1b];
+
+kerns(2,2) = kernel3d();
+kerns(1,1) = kernel3d('l', 's');
+kerns(2,1) = kernel3d('l', 'sp');
+kerns(1,2) = kernel3d('l', 'd');
+kerns(2,2) = kernel3d('l', 'dp');
+
+Asmth = surfermat(srfrs, kerns, eps, opts_sm);
+ii = randi(size(Asmth,1), 80, 1);
+jj = randi(size(Asmth,2), 80, 1);
+
+% objover omitted entirely -> defaults to [] -> on-the-fly recomputation
+err = norm(byindex.kernbyindex(ii, jj, srfrs, kerns, eps) - Asmth(ii,jj), 'fro') ...
+    / (norm(Asmth(ii,jj), 'fro') + eps);
+assert(err < tol, 'recompute on the fly (objover omitted): %.2e', err);
+
+% objover explicitly [] -> same on-the-fly recomputation
+err2 = norm(byindex.kernbyindex(ii, jj, srfrs, kerns, eps, []) - Asmth(ii,jj), 'fro') ...
+    / (norm(Asmth(ii,jj), 'fro') + eps);
+assert(err2 < tol, 'recompute on the fly (objover=[]): %.2e', err2);
 
 end
 

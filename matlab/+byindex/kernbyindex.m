@@ -1,20 +1,19 @@
-function mat = kernbyindex(i, j, surfers, kern, eps, novers, Qsparse, opts)
+function mat = kernbyindex(i, j, surfers, kern, eps, objover, Qsparse, opts)
 %KERNBYINDEX  Evaluate smooth-rule matrix entries by index for surfer arrays.
 %
 % mat = byindex.kernbyindex(i, j, surfers, kern, eps)
-% mat = byindex.kernbyindex(i, j, surfers, kern, eps, novers)
-% mat = byindex.kernbyindex(i, j, surfers, kern, eps, novers, Qsparse)
-% mat = byindex.kernbyindex(i, j, surfers, kern, eps, novers, Qsparse, opts)
+% mat = byindex.kernbyindex(i, j, surfers, kern, eps, objover)
+% mat = byindex.kernbyindex(i, j, surfers, kern, eps, objover, Qsparse)
+% mat = byindex.kernbyindex(i, j, surfers, kern, eps, objover, Qsparse, opts)
 %
 % Input:
 %   i, j      - row/col indices to evaluate
 %   surfers   - surfer object or array of surfer objects
 %   kern      - kernel3d object (scalar or nsurfers x nsurfers)
 %   eps       - precision requested (e.g. 1e-10)
-%   novers    - (optional) cell(nsurfers,nsurfers) of per-patch oversampling
-%               order vectors, as returned by surfermat.  novers{itrg,isrc}
-%               is a vector of length surfers(isrc).npatches.
-%               If omitted or empty, kern.get_overs_orders is called per block.
+%   objover   - (optional) oversampling spec, as returned by surfermat: []
+%               to recompute on the fly, a collection of oversampling orders, or a
+%               pair of precomputed oversampled surfers/interpolation matrices.
 %   Qsparse   - (optional) sparse matrix of quadrature corrections
 %               (same size as the full matrix).  Pass [] to skip.
 %               Two modes, selected by opts.replace_quadcorr:
@@ -22,7 +21,7 @@ function mat = kernbyindex(i, j, surfers, kern, eps, novers, Qsparse, opts)
 %                   with Qsparse values where nonzero.  Use with nonsmoothonly=1
 %                   output from surfermat.
 %                 false: additive, i.e. mat += Qsparse.  Use with corrections=1
-%                   output from surfermat, which stores (near-singular - smooth). 
+%                   output from surfermat, which stores (near-singular - smooth).
 %   opts      - options struct
 %     opts.replace_quadcorr - logical (default true), see Qsparse above
 %
@@ -37,7 +36,7 @@ end
 if nargin < 5
     error('BYINDEX.KERNBYINDEX: eps is required');
 end
-if nargin < 6, novers  = []; end
+if nargin < 6, objover = []; end
 if nargin < 7, Qsparse = []; end
 if nargin < 8, opts    = []; end
 
@@ -57,7 +56,53 @@ else
     opdims_mat = reshape([kern.opdims], 2, nsurfers, nsurfers);
 end
 
-use_get_overs = isempty(novers);
+% objover_mode == false : objover is a collection of oversampling orders
+%                         (or empty, in which case orders are computed on the fly).
+% objover_mode == true  : objover is the oversampled surfers and xinterps
+
+objover_mode = false;
+surfers_over = [];
+xinterps     = [];
+novers       = [];
+
+if iscell(objover) && numel(objover) == 2 && iscell(objover{1})
+    objover_mode = true;
+    surfers_over_in = objover{1};
+    xinterps_in     = objover{2};
+
+    if ~iscell(surfers_over_in)
+        surfers_over = cell(nsurfers, nsurfers);
+        for k = 1:nsurfers
+            for l = 1:nsurfers
+                surfers_over{l,k} = surfers_over_in(k);
+            end
+        end
+    elseif numel(surfers_over_in) == nsurfers
+        surfers_over = cell(nsurfers, nsurfers);
+        for k = 1:nsurfers
+            for l = 1:nsurfers
+                surfers_over{l,k} = surfers_over_in{k};
+            end
+        end
+    else
+        surfers_over = surfers_over_in;
+    end
+
+    if numel(xinterps_in) == nsurfers && (isvector(xinterps_in) || iscell(xinterps_in))
+        xinterps = cell(nsurfers, nsurfers);
+        for k = 1:nsurfers
+            for l = 1:nsurfers
+                xinterps{l,k} = xinterps_in{k};
+            end
+        end
+    else
+        xinterps = xinterps_in;
+    end
+else
+    novers = objover;
+end
+
+use_get_overs = ~objover_mode && isempty(novers);
 
 % Build row/col offset tables
 irowlocs = zeros(nsurfers+1, 1);
@@ -126,159 +171,188 @@ for itrg = 1:nsurfers
         nsrc_uni = length(juni);
         ijuni2 = (ijuni - 1)*opdims_src + mod(mat_col_ind(:) - mat_col_start, opdims_src) + 1;
 
-        % Get per-patch oversampling orders for this block
-        if use_get_overs
-            if itrg == isrc
-                targ_for_overs = srfi;
-            else
-                targ_for_overs = targs_full;
-            end
-            novers_j = ktmp.get_overs_orders(srfj, targ_for_overs, quad_eps);
-        else
-            novers_j = novers{itrg, isrc}(:);
-        end
-        norders_j = srfj.norders(:);
+        if objover_mode
+            % --- Precomputed oversampled geometry / interpolation matrix ---
+            srfjover = surfers_over{itrg, isrc};
+            xinterp  = xinterps{itrg, isrc};
 
-        if all(novers_j == norders_j) || any(isnan(novers_j))
-            % No oversampling needed: evaluate at original nodes directly
-            srcp = slice_surfer(srfj, juni, ktmp.src_fields);
-            wts  = repmat(srfj.wts(juni(:)).', opdims_src, 1);
-            wts  = wts(:).';
-            matuni = ktmp.eval(srcp, targinfo) .* wts;
-
-            if itrg == isrc
-                for p = 1:srfj.npatches
-                    p_inds = srfj.ixyzs(p):(srfj.ixyzs(p+1)-1);
-                    src_in_p = find(ismember(juni, p_inds));
-                    trg_in_p = find(ismember(iuni, p_inds));
-                    if isempty(src_in_p) || isempty(trg_in_p), continue; end
-                    src_r_p = srfj.r(:, juni(src_in_p));
-                    trg_r_p = targinfo.r(:, trg_in_p);
-                    src_norm_p = max(vecnorm(src_r_p), 1);
-                    for q = 1:length(src_in_p)
-                        diff_norms = vecnorm(trg_r_p - src_r_p(:,q));
-                        self_mask = diff_norms < 1e-14 * src_norm_p(q);
-                        if any(self_mask)
-                            row_off = (1:opdims_row) + opdims_row*(trg_in_p(self_mask).' - 1);
-                            col_off = (1:opdims_src) + opdims_src*(src_in_p(q) - 1);
-                            matuni(row_off(:), col_off) = 0;
-                        end
-                    end
-                end
-            end
-
-            mat(flag_i, flag_j) = matuni(iiuni2, ijuni2);
-
-        else
-            % Oversampling: patchwise accumulation
-            matuni = zeros(ntrg_uni * opdims_row, nsrc_uni * opdims_src);
-
-            % Cache interp matrices per unique (norder, nover, iptype)
-            ntmp = [norders_j, novers_j, srfj.iptype(:)];
-            [ntmp_uni, ~, intmp] = unique(ntmp, 'rows');
-
-            vmat_cache    = cell(size(ntmp_uni, 1), 1);
-            xinterp_cache = cell(size(ntmp_uni, 1), 1);
-            wts_raw_cache = cell(size(ntmp_uni, 1), 1);
-
-            for tt = 1:size(ntmp_uni, 1)
-                norder = ntmp_uni(tt, 1);
-                nover  = ntmp_uni(tt, 2);
-                iptype = ntmp_uni(tt, 3);
-
-                if iptype == 1
-                    rnodes      = koorn.rv_nodes(norder);
-                    rnodes_over = koorn.rv_nodes(nover);
-                    vmat = koorn.coefs2vals(norder, rnodes_over);
-                    umat = koorn.vals2coefs(norder, rnodes);
-                    wts_raw_cache{tt} = koorn.rv_weights(nover);
-                elseif iptype == 11
-                    rnodes      = polytens.lege.nodes(norder);
-                    rnodes_over = polytens.lege.nodes(nover);
-                    vmat = polytens.lege.coefs2vals(norder, rnodes_over);
-                    umat = polytens.lege.vals2coefs(norder, rnodes);
-                    wts_raw_cache{tt} = polytens.lege.weights(nover);
-                elseif iptype == 12
-                    rnodes      = polytens.cheb.nodes(norder);
-                    rnodes_over = polytens.cheb.nodes(nover);
-                    vmat = polytens.cheb.coefs2vals(norder, rnodes_over);
-                    umat = polytens.cheb.vals2coefs(norder, rnodes);
-                    wts_raw_cache{tt} = polytens.cheb.weights(nover);
-                end
-
-                vmat_cache{tt} = vmat;
-                xi = vmat * umat;
-
-                if norder > nover
-                    [lia, iindb] = ismembertol(rnodes_over', rnodes', 1e-7, 'ByRows', true);
-                    isp = [iindb(lia), find(lia)];
-                else
-                    [lia, iindb] = ismembertol(rnodes', rnodes_over', 1e-7, 'ByRows', true);
-                    isp = [find(lia), iindb(lia)];
-                end
-                if ~isempty(isp)
-                    i1 = isp(:,1); i2 = isp(:,2);
-                    xi(i2, :) = 0;
-                    xi(i2, i1) = 1;
-                end
-                xinterp_cache{tt} = xi;
-            end
-
-            for p = 1:srfj.npatches
-                p_inds = srfj.ixyzs(p):(srfj.ixyzs(p+1)-1);
-                [tf, loc_in_juni] = ismember(juni, p_inds);
-                if ~any(tf), continue; end
-
-                loc_juni_p = find(tf);
-                loc_in_p   = loc_in_juni(tf);
-
-                tt   = intmp(p);
-                vmat = vmat_cache{tt};
-
-                srcover_vals = srfj.srccoefs{p} * vmat';
-                ru   = srcover_vals(4:6,:);
-                rv   = srcover_vals(7:9,:);
-                rtmp = cross(ru, rv);
-                jac  = vecnorm(rtmp, 2);
-                nhat = rtmp ./ jac;
-
-                srcp_over = [];
-                srcp_over.r  = srcover_vals(1:3,:);
-                srcp_over.du = srcover_vals(4:6,:);
-                srcp_over.dv = srcover_vals(7:9,:);
-                srcp_over.n  = nhat;
-
-                wts_over = wts_raw_cache{tt}(:) .* jac(:);
-                wts_over_rep = repmat(wts_over(:).', opdims_src, 1);
-                wts_over_rep = wts_over_rep(:).';
-
-                sub_kern_over = ktmp.eval(srcp_over, targinfo) .* wts_over_rep;
+            if isempty(srfjover) || srfjover.npts == srfj.npts
+                % No oversampling for this block: evaluate at original nodes.
+                srcp = slice_surfer(srfj, juni, ktmp.src_fields);
+                wts  = repmat(srfj.wts(juni(:)).', opdims_src, 1);
+                wts  = wts(:).';
+                matuni = ktmp.eval(srcp, targinfo) .* wts;
 
                 if itrg == isrc
-                    trg_in_p = find(ismember(iuni, p_inds));
-                    if ~isempty(trg_in_p)
-                        trg_r_p = targinfo.r(:, trg_in_p);
-                        src_norm_p = max(vecnorm(srcp_over.r), 1);
-                        for q = 1:size(srcp_over.r, 2)
-                            diff_norms = vecnorm(trg_r_p - srcp_over.r(:,q));
-                            self_mask = diff_norms < 1e-14 * src_norm_p(q);
-                            if any(self_mask)
-                                row_off = (1:opdims_row) + opdims_row*(trg_in_p(self_mask).' - 1);
-                                col_off = (1:opdims_src) + opdims_src*(q-1);
-                                sub_kern_over(row_off(:), col_off) = 0;
+                    matuni = zero_self_interactions(matuni, srfj, juni, iuni, ...
+                        targinfo.r, opdims_row, opdims_src);
+                end
+
+                mat(flag_i, flag_j) = matuni(iiuni2, ijuni2);
+            else
+                % Evaluate against the full oversampled source geometry,
+                % then map back to original-order columns via xinterp.
+                srcp_over = [];
+                srcp_over.r  = srfjover.r;
+                srcp_over.n  = srfjover.n;
+                srcp_over.du = srfjover.du;
+                srcp_over.dv = srfjover.dv;
+
+                wts_over = repmat(srfjover.wts(:).', opdims_src, 1);
+                wts_over = wts_over(:).';
+
+                sub_kern_over = ktmp.eval(srcp_over, targinfo) .* wts_over;
+
+                if itrg == isrc
+                    sub_kern_over = zero_self_interactions(sub_kern_over, srfjover, ...
+                        1:srfjover.npts, iuni, targinfo.r, opdims_row, opdims_src);
+                end
+
+                col_off_full = mat_col_ind(:) - mat_col_start + 1;
+                matuni = sub_kern_over * xinterp(:, col_off_full);
+
+                mat(flag_i, flag_j) = matuni(iiuni2, :);
+            end
+
+        else
+            % --- Oversampling order vector (or on-the-fly computation) ---
+            if use_get_overs
+                if itrg == isrc
+                    targ_for_overs = srfi;
+                else
+                    targ_for_overs = targs_full;
+                end
+                novers_j = ktmp.get_overs_orders(srfj, targ_for_overs, quad_eps);
+            else
+                novers_j = novers{itrg, isrc}(:);
+            end
+            norders_j = srfj.norders(:);
+
+            if all(novers_j == norders_j) || any(isnan(novers_j))
+                % No oversampling needed: evaluate at original nodes directly
+                srcp = slice_surfer(srfj, juni, ktmp.src_fields);
+                wts  = repmat(srfj.wts(juni(:)).', opdims_src, 1);
+                wts  = wts(:).';
+                matuni = ktmp.eval(srcp, targinfo) .* wts;
+
+                if itrg == isrc
+                    matuni = zero_self_interactions(matuni, srfj, juni, iuni, ...
+                        targinfo.r, opdims_row, opdims_src);
+                end
+
+                mat(flag_i, flag_j) = matuni(iiuni2, ijuni2);
+
+            else
+                % Oversampling: patchwise accumulation
+                matuni = zeros(ntrg_uni * opdims_row, nsrc_uni * opdims_src);
+
+                % Cache interp matrices per unique (norder, nover, iptype)
+                ntmp = [norders_j, novers_j, srfj.iptype(:)];
+                [ntmp_uni, ~, intmp] = unique(ntmp, 'rows');
+
+                vmat_cache    = cell(size(ntmp_uni, 1), 1);
+                xinterp_cache = cell(size(ntmp_uni, 1), 1);
+                wts_raw_cache = cell(size(ntmp_uni, 1), 1);
+
+                for tt = 1:size(ntmp_uni, 1)
+                    norder = ntmp_uni(tt, 1);
+                    nover  = ntmp_uni(tt, 2);
+                    iptype = ntmp_uni(tt, 3);
+
+                    if iptype == 1
+                        rnodes      = koorn.rv_nodes(norder);
+                        rnodes_over = koorn.rv_nodes(nover);
+                        vmat = koorn.coefs2vals(norder, rnodes_over);
+                        umat = koorn.vals2coefs(norder, rnodes);
+                        wts_raw_cache{tt} = koorn.rv_weights(nover);
+                    elseif iptype == 11
+                        rnodes      = polytens.lege.nodes(norder);
+                        rnodes_over = polytens.lege.nodes(nover);
+                        vmat = polytens.lege.coefs2vals(norder, rnodes_over);
+                        umat = polytens.lege.vals2coefs(norder, rnodes);
+                        wts_raw_cache{tt} = polytens.lege.weights(nover);
+                    elseif iptype == 12
+                        rnodes      = polytens.cheb.nodes(norder);
+                        rnodes_over = polytens.cheb.nodes(nover);
+                        vmat = polytens.cheb.coefs2vals(norder, rnodes_over);
+                        umat = polytens.cheb.vals2coefs(norder, rnodes);
+                        wts_raw_cache{tt} = polytens.cheb.weights(nover);
+                    end
+
+                    vmat_cache{tt} = vmat;
+                    xi = vmat * umat;
+
+                    if norder > nover
+                        [lia, iindb] = ismembertol(rnodes_over', rnodes', 1e-7, 'ByRows', true);
+                        isp = [iindb(lia), find(lia)];
+                    else
+                        [lia, iindb] = ismembertol(rnodes', rnodes_over', 1e-7, 'ByRows', true);
+                        isp = [find(lia), iindb(lia)];
+                    end
+                    if ~isempty(isp)
+                        i1 = isp(:,1); i2 = isp(:,2);
+                        xi(i2, :) = 0;
+                        xi(i2, i1) = 1;
+                    end
+                    xinterp_cache{tt} = xi;
+                end
+
+                for p = 1:srfj.npatches
+                    p_inds = srfj.ixyzs(p):(srfj.ixyzs(p+1)-1);
+                    [tf, loc_in_juni] = ismember(juni, p_inds);
+                    if ~any(tf), continue; end
+
+                    loc_juni_p = find(tf);
+                    loc_in_p   = loc_in_juni(tf);
+
+                    tt   = intmp(p);
+                    vmat = vmat_cache{tt};
+
+                    srcover_vals = srfj.srccoefs{p} * vmat';
+                    ru   = srcover_vals(4:6,:);
+                    rv   = srcover_vals(7:9,:);
+                    rtmp = cross(ru, rv);
+                    jac  = vecnorm(rtmp, 2);
+                    nhat = rtmp ./ jac;
+
+                    srcp_over = [];
+                    srcp_over.r  = srcover_vals(1:3,:);
+                    srcp_over.du = srcover_vals(4:6,:);
+                    srcp_over.dv = srcover_vals(7:9,:);
+                    srcp_over.n  = nhat;
+
+                    wts_over = wts_raw_cache{tt}(:) .* jac(:);
+                    wts_over_rep = repmat(wts_over(:).', opdims_src, 1);
+                    wts_over_rep = wts_over_rep(:).';
+
+                    sub_kern_over = ktmp.eval(srcp_over, targinfo) .* wts_over_rep;
+
+                    if itrg == isrc
+                        trg_in_p = find(ismember(iuni, p_inds));
+                        if ~isempty(trg_in_p)
+                            trg_r_p = targinfo.r(:, trg_in_p);
+                            src_norm_p = max(vecnorm(srcp_over.r), 1);
+                            for q = 1:size(srcp_over.r, 2)
+                                diff_norms = vecnorm(trg_r_p - srcp_over.r(:,q));
+                                self_mask = diff_norms < 1e-14 * src_norm_p(q);
+                                if any(self_mask)
+                                    row_off = (1:opdims_row) + opdims_row*(trg_in_p(self_mask).' - 1);
+                                    col_off = (1:opdims_src) + opdims_src*(q-1);
+                                    sub_kern_over(row_off(:), col_off) = 0;
+                                end
                             end
                         end
                     end
+
+                    xinterp_sub = xinterp_cache{tt}(:, loc_in_p);
+                    sub_kern_smth = sub_kern_over * kron(xinterp_sub, eye(opdims_src));
+
+                    col_inds = expand_cols(loc_juni_p, opdims_src);
+                    matuni(:, col_inds) = matuni(:, col_inds) + sub_kern_smth;
                 end
 
-                xinterp_sub = xinterp_cache{tt}(:, loc_in_p);
-                sub_kern_smth = sub_kern_over * kron(xinterp_sub, eye(opdims_src));
-
-                col_inds = expand_cols(loc_juni_p, opdims_src);
-                matuni(:, col_inds) = matuni(:, col_inds) + sub_kern_smth;
+                mat(flag_i, flag_j) = matuni(iiuni2, ijuni2);
             end
-
-            mat(flag_i, flag_j) = matuni(iiuni2, ijuni2);
         end
     end
 end
@@ -315,4 +389,28 @@ function col_inds = expand_cols(loc_juni_p, opdims_src)
     starts = (loc_juni_p(:) - 1) * opdims_src + 1;
     col_inds = cell2mat(arrayfun(@(s) s:(s+opdims_src-1), starts, ...
                                  'UniformOutput', false)');
+end
+
+
+function matuni = zero_self_interactions(matuni, srfsrc, src_pts, trg_pts, trg_r, opdims_row, opdims_src)
+% Zero out entries in matuni corresponding to coincident source/target
+% points (within a source surfer's own patches), patch by patch.
+    for p = 1:srfsrc.npatches
+        p_inds = srfsrc.ixyzs(p):(srfsrc.ixyzs(p+1)-1);
+        src_in_p = find(ismember(src_pts, p_inds));
+        trg_in_p = find(ismember(trg_pts, p_inds));
+        if isempty(src_in_p) || isempty(trg_in_p), continue; end
+        src_r_p = srfsrc.r(:, src_pts(src_in_p));
+        trg_r_p = trg_r(:, trg_in_p);
+        src_norm_p = max(vecnorm(src_r_p), 1);
+        for q = 1:length(src_in_p)
+            diff_norms = vecnorm(trg_r_p - src_r_p(:,q));
+            self_mask = diff_norms < 1e-14 * src_norm_p(q);
+            if any(self_mask)
+                row_off = (1:opdims_row) + opdims_row*(trg_in_p(self_mask).' - 1);
+                col_off = (1:opdims_src) + opdims_src*(src_in_p(q) - 1);
+                matuni(row_off(:), col_off) = 0;
+            end
+        end
+    end
 end

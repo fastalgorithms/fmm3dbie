@@ -24,7 +24,7 @@ function test_uniform_orders()
 % With unif_nover=1, novers{:,j} must all equal novers{j,j}.
 
 [S1, S2, ~, kern, eps] = make_setup();
-opts = struct('corrections', 1, 'unif_nover', 1);
+opts = struct('corrections', 1, 'unif_nover', 1,'ifreturnovers',0);
 [~, novers] = surfermat([S1, S2], kern, eps, opts);
 for j = 1:size(novers,2)
     assert(all(all([novers{:,j}] == [novers{j,j}], 2)), ...
@@ -38,7 +38,7 @@ function test_monotone_on_add()
 % Adding a third surfer must not decrease any existing oversampling order.
 
 [S1, S2, S3, kern, eps] = make_setup();
-opts = struct('corrections', 1, 'unif_nover', 1);
+opts = struct('corrections', 1, 'unif_nover', 1,'ifreturnovers',0);
 [~, novers]  = surfermat([S1, S2],     kern, eps, opts);
 [~, novers2] = surfermat([S1, S2, S3], kern, eps, opts);
 for j = 1:size(novers,2)
@@ -53,7 +53,7 @@ function test_nonuniform_without_flag()
 % Without unif_nover, at least one column must have non-uniform orders.
 
 [S1, S2, ~, kern, eps] = make_setup();
-[~, novers] = surfermat([S1, S2], kern, eps, struct('corrections', 1));
+[~, novers] = surfermat([S1, S2], kern, eps, struct('corrections', 1,'ifreturnovers',0));
 any_nonuniform = false;
 for j = 1:size(novers,2)
     if ~all(all([novers{:,j}] == [novers{j,j}], 2))
