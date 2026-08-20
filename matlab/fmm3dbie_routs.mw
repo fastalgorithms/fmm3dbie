@@ -2750,6 +2750,7 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
     rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
     nquad = rsc.nquad;
+    nnzp1 = nnz+1; 
 
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
@@ -2769,11 +2770,11 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     if strcmpi(qtype, 'rpcomb-bc')
       nker = 4;
       wnear = complex(zeros(nker,nquad));
-      # FORTRAN getnearquad_helm_rpcomb_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
+      # FORTRAN getnearquad_helm_rpcomb_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
     elseif strcmpi(qtype, 'rpcomb-eval')
       nker = 2;
       wnear = complex(zeros(nker,nquad));
-      # FORTRAN getnearquad_helm_rpcomb_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zkuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
+      # FORTRAN getnearquad_helm_rpcomb_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zkuse, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
     else
       error('HELM3D.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
     end
@@ -2798,7 +2799,7 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
         row_ind = zeros(nnz,1);
         iper = zeros(nnz,1);
         npatp1 = npatches+1;
-        # FORTRAN rsc_to_csc(int[1] npatches, int[1] ntarg, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, inout int[npatp1] col_ptr, inout int[nnz] row_ind, inout int[nnz] iper); 
+        # FORTRAN rsc_to_csc(int[1] npatches, int[1] ntarg, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, inout int[npatp1] col_ptr, inout int[nnz] row_ind, inout int[nnz] iper); 
         Q.iquad = iquad;
         Q.iper = iper;
         Q.wnear = wnear;
