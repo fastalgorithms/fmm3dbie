@@ -172,14 +172,15 @@
       nthet = 3*(norder+1) + 2
       nlege = (norder/2) + 1
       if(ipv.eq.1) then
+!
+!  principal value disk: legendre in r on [0,rcut], full angular
+!  range [0,2*pi). The 1/r singularity is integrable in polar
+!  coordinates thanks to the r Jacobian
+!
         ifwhts = 1
         call legewhts(nlege, xr, wr, ifwhts)
         nr = nlege
-      elseif (ipv.eq.2) then
-        call hs_disk_quad(nlege, xr, wr, nr)
-      endif
-      
-      if (ipv.eq.1.or.ipv.eq.2) then
+
         dd = (2*pi)/nthet
         do i = 1,nr
           r = rcut/2*xr(i) + rcut/2
@@ -191,6 +192,30 @@
             xs(iquad) = r*cos(t)
             ys(iquad) = r*sin(t)
             whts(iquad) = tw*r*w
+          enddo
+        enddo
+        nquad = nquad + nthet*nr
+      elseif (ipv.eq.2) then
+!
+!  hypersingular disk: hs_disk_quad returns a finite-part rule on
+!  [-1,1] with the singularity at 0 in the interior. It must be used
+!  along the full diameter r in [-rcut,rcut] with only half the
+!  angular range [0,pi) so that the disk is covered exactly once. The
+!  area Jacobian is abs(r) since r runs through negative values
+!
+        call hs_disk_quad(nlege, xr, wr, nr)
+
+        dd = pi/nthet
+        do i = 1,nr
+          r = rcut*xr(i)
+          w = rcut*wr(i)
+          do j = 1,nthet
+            iquad = nquad + (i-1)*nthet + j
+            t = dd*(j-1)
+            tw = dd
+            xs(iquad) = r*cos(t)
+            ys(iquad) = r*sin(t)
+            whts(iquad) = tw*abs(r)*w
           enddo
         enddo
         nquad = nquad + nthet*nr
