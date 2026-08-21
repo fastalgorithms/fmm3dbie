@@ -8,7 +8,7 @@ S2 = geometries.ellipsoid([1,1.5,1],3*[1,1,1],ctr2,6);
 zk = 0.1;
 zks = [zk,0.5];
 
-% S2 solves for lambda' = -lambda, flipping its Neumann-row identity to +1.
+% use the representation S[sigma]-D[mu] for transmission
 neg2 = diag([1,-1]);
 
 kerns(2,2) = kernel3d();
