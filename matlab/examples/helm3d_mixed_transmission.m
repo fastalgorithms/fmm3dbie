@@ -5,7 +5,7 @@ ctr2 = [3;0;0];
 S1 = geometries.ellipsoid([1,1,1.5],3*[1,1,1],ctr1,6);
 S2 = geometries.ellipsoid([1,1.5,1],3*[1,1,1],ctr2,6);
 
-zk = 0.1;
+zk = 2;
 zks = [zk,0.5];
 
 % use the representation S[sigma]-D[mu] for transmission
