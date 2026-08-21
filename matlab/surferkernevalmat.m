@@ -162,7 +162,7 @@ for j = 1:nsurfers
         sysmat_tmp = (ktmp.eval(surferjover,targinfo).*wtsover)*xinterp;
     end
 
-    if adaptive_correction
+    if adaptive_correction && ~isempty(ktmp.getquad)
         sysmat_quad = ktmp.getquad(surferj,eps,targinfo);
         if corrections
             [rp, ci] = get_rsc_pattern(surferj, sysmat_quad, opdims);
@@ -182,7 +182,7 @@ for j = 1:nsurfers
         icolinds = icollocs(j):(icollocs(j+1)-1);
         sysmat(1:nrows,icolinds) = sysmat_tmp;
     else
-        if adaptive_correction
+        if adaptive_correction && ~isempty(ktmp.getquad)
             [isys,jsys,vsys] = find(sysmat_tmp);
             isysmat = [isysmat;isys];
             jsysmat = [jsysmat;jsys+icollocs(j)-1];

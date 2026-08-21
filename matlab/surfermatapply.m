@@ -227,7 +227,7 @@ for i = 1:nsurfers
                     xinterp = kron(xinterp, eye(ktmp.opdims(2)));
                 else
                     surferjover = surferj;
-                    xinterp = eye(numel(wts));
+                    xinterp = eye(ktmp.opdims(2)*surferj.npts);
                 end
             end
             wtsover = repmat(surferjover.wts(:).', ktmp.opdims(2), 1);

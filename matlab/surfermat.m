@@ -157,7 +157,7 @@ for i = 1:nsurfers
             break
         end
 
-        if (size(kern) == 1)
+        if (numel(kern) == 1)
             ktmp = kern;
         else
             ktmp = kern(i,j);
@@ -241,7 +241,7 @@ for i = 1:nsurfers
             sysmat_tmp = (sysmat_tmp.*wtsover)*xinterp;
         end
 
-        if (adaptive_correction && (i~=j)) || ((i==j) && selfquad) && ~isempty(ktmp.getquad)
+        if ((adaptive_correction && (i~=j)) || ((i==j) && selfquad)) && ~isempty(ktmp.getquad)
             sysmat_quad = ktmp.getquad(surferj,eps,surferi_targ);
             if corrections
                 [rp, ci] = get_rsc_pattern(surferj, sysmat_quad, opdims);
