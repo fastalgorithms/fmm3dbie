@@ -217,7 +217,7 @@ for i = 1:nsurfers
 
         dens_j = dens(icolinds);
 
-        if objover_mode
+            if objover_mode
                 surferjover = surfers_over{i,j};
                 xinterp     = xinterps{i,j};
             else
@@ -247,7 +247,7 @@ for i = 1:nsurfers
                     col_inds = (1:ktmp.opdims(2)).' + ktmp.opdims(2)*(src_inds-1);
                     col_inds = col_inds(:);
                     dens_p = dens_j(col_inds);
-
+    
                     targ_inds_self = surferi_targ.ixyzs(p):(surferi_targ.ixyzs(p+1)-1);
                     row_inds_self  = (1:ktmp.opdims(1)).' + ktmp.opdims(1)*(targ_inds_self-1);
                     row_inds_self  = row_inds_self(:);
@@ -256,14 +256,14 @@ for i = 1:nsurfers
                         targp_self.(field{1}) = surferi_targ.(field{1})(:,targ_inds_self);
                     end
                     pot_ij(row_inds_self) = pot_ij(row_inds_self) + ktmp.eval_mask(srcp,targp_self)*dens_p;
-
+    
                     off_targ_inds = [1:targ_inds_self(1)-1, targ_inds_self(end)+1:surferi_targ.npts];
                     if ~isempty(off_targ_inds)
                         targp_off = []; targp_off.r = surferi_targ.r(:,off_targ_inds);
                         for field = ktmp.targ_fields(:).'
                             targp_off.(field{1}) = surferi_targ.(field{1})(:,off_targ_inds);
                         end
-                        row_inds_off = (1:opdims(1)).' + opdims(1)*(off_targ_inds-1);
+                        row_inds_off = (1:ktmp.opdims(1)).' + ktmp.opdims(1)*(off_targ_inds-1);
                         row_inds_off = row_inds_off(:);
                         pot_ij(row_inds_off) = pot_ij(row_inds_off) + ktmp.eval(srcp,targp_off)*dens_p;
                     end

@@ -7,9 +7,7 @@ function [row_ptr, col_ind] = get_rsc_pattern(S, spmat, opdims)
 %    [row_ptr, col_ind] = get_rsc_pattern(S, spmat, opdims)
 %
 %  Finds the set of (target, patch) pairs for which spmat has at least one
-%  nonzero entry, and returns them in CSR format.  For vector/tensor kernels
-%  with block size opdims = [m, n], only the (1,1) sub-block is examined
-%  (all block components share the same sparsity pattern).
+%  nonzero entry, and returns them in CSR format.
 %
 %  Input arguments:
 %    * S       : surfer object describing the source surface
@@ -31,10 +29,17 @@ function [row_ptr, col_ind] = get_rsc_pattern(S, spmat, opdims)
     npatches = S.npatches;
     ntarg    = size(spmat, 1) / m;
 
-    % Work on the (1,1)-block submatrix; sparsity pattern is the same for
-    % all block components.
-    spmat_11 = spmat(1:m:end, 1:n:end);
-    [row_s, col_s] = find(spmat_11);
+    % Union the nonzero pattern across every (block-row, block-col) sub-block.
+    row_s = [];
+    col_s = [];
+    for bi = 1:m
+        for bj = 1:n
+            spmat_bij = spmat(bi:m:end, bj:n:end);
+            [row_b, col_b] = find(spmat_bij);
+            row_s = [row_s; row_b]; %#ok<AGROW>
+            col_s = [col_s; col_b]; %#ok<AGROW>
+        end
+    end
 
     if isempty(row_s)
         row_ptr = ones(ntarg+1, 1);

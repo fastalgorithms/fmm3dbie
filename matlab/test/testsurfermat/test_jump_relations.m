@@ -64,6 +64,19 @@ coefs_lap  = [0.7; 1.3];
 coefs_h    = [1i*zk; 1.0];
 coefs_stok = [0.7; 1.3];
 
+sigma_c2 = (S.r(1,:).^2 + 1i*S.r(3,:)).';
+sigma_c2 = 1 + 0*sigma_c2 / norm(sigma_c2);
+
+zks_diff = [zk; 0.6+0.2i];
+sigma_rl = zeros(2*numel(sigma_c), 1);
+sigma_rl(1:2:end) = sigma_c;
+sigma_rl(2:2:end) = sigma_c2;
+
+diff_coefs = [1.4; 0.6];   % [a0; a1], a0 ~= a1 so the jump is nonzero
+da = diff_coefs(1) - diff_coefs(2);
+zks_diff2 = [zk; 0.6+0.2i];   % same two wavenumbers as trans_sys_diff above
+comb_diff = [1i*zk; 1.0];     % [alpha; beta] for c_diff/cp_diff, same style as coefs_h
+
 jump_tests = {
   'lap  d',  kernel3d('l','d'),               sigma_r,    @(s)  s(ic);
   'lap  sp', kernel3d('l','sp'),              sigma_r,    @(s) -s(ic);
@@ -75,6 +88,15 @@ jump_tests = {
   'helm dp', kernel3d('h','dp',zk),           sigma_c,    @(s) 0*s;
   'helm c',  kernel3d('h','c',zk,coefs_h),    sigma_c,    @(s)  coefs_h(2)*s(ic);
   'helm cp', kernel3d('h','cp',zk,coefs_h),   sigma_c,    @(s) -coefs_h(1)*s(ic);
+  'trans_sys',      kernel3d('h','trans_sys',zk), sigma_rl, @(s) [s(2*ic-1); -s(2*ic)];
+  'trans_sys_diff', kernel3d('h','trans_sys_diff',zks_diff), sigma_rl, @(s) [0;0];
+  'trans_rep',      kernel3d('h','trans_rep',zk), sigma_rl, @(s) s(2*ic-1);
+  's_diff',  kernel3d('h','s_diff', zks_diff2,diff_coefs), sigma_c, @(s) 0*s;
+  'd_diff',  kernel3d('h','d_diff', zks_diff2,diff_coefs), sigma_c, @(s)  da*s(ic);
+  'sp_diff', kernel3d('h','sp_diff',zks_diff2,diff_coefs), sigma_c, @(s) -da*s(ic);
+  'dp_diff', kernel3d('h','dp_diff',zks_diff2,diff_coefs), sigma_c, @(s) 0*s;
+  'c_diff',  kernel3d('h','c_diff', zks_diff2,[comb_diff;diff_coefs]), sigma_c, @(s)  da*comb_diff(2)*s(ic);
+  'cp_diff', kernel3d('h','cp_diff',zks_diff2,[comb_diff;diff_coefs]), sigma_c, @(s) -da*comb_diff(1)*s(ic);
   'stok d',  kernel3d('stok','d'),             sigma_stok, @(s)  s(:,ic);
   'stok sp', kernel3d('stok','sp'),            sigma_stok, @(s) -s(:,ic);
   'stok c',  kernel3d('stok','c',coefs_stok), sigma_stok, @(s)  coefs_stok(2)*s(:,ic);

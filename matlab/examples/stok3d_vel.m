@@ -52,10 +52,9 @@ uscat2 = reshape(uscat2,3,[]);
 figure(2);clf
 h = pcolor(XX,YY,reshape((vecnorm(uin2+uscat2)),size(XX))); h.EdgeColor = 'none';
 utots = uin2+uscat2;
-utotx = reshape(utots(1,:),size(XX,1),size(XX,2),1);
-utoty = reshape(utots(2,:),size(XX,1),size(XX,2),1);
-utotz = reshape(utots(3,:),size(XX,1),size(XX,2),1);
-streamslice(XX,YY,0*YY,utotx,utoty,utotz,[],[],0)
+utotx = reshape(utots(1,:),size(XX,1),size(XX,2));
+utoty = reshape(utots(2,:),size(XX,1),size(XX,2));
+streamslice(XX,YY,utotx,utoty)
 hold on
 plot(S,zeros(S.npts,1))
 hold off
