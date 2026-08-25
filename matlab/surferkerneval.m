@@ -2,7 +2,7 @@ function pot = surferkerneval(surferobj, kern, dens, targobj, eps, opts)
 %SURFERKERNEVAL evaluate layer potential for given kernel, surfer description
 % of boundary, and off-surface target points.
 %
-% Syntax: pot = surferkerneval(S, kern, dens, targobj, eps, opts)
+% Syntax: pot = surferkerneval(surferobj, kern, dens, targobj, eps, opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary

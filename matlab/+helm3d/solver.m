@@ -21,7 +21,7 @@ function [densities, varargout] = solver(S, bc, rhs, eps, varargin)
 %   [densities] = helm3d.solver(S, 'trans', rhs, eps, zk, rep_params, opts);
 %
 % 
-% SEE ALSO: helm3d.eval, helm3d.dirichlet.solver, helm3d.neumann.solver, helm3d.impendance.solver, 
+% SEE ALSO: helm3d.eval, helm3d.dirichlet.solver, helm3d.neumann.solver, helm3d.impedance.solver,
 %           helm3d.transmission.solver
 
 %--------------------

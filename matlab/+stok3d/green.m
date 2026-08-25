@@ -1,5 +1,5 @@
 function [val,grad,hess] = green(src,targ)
-%STOKES.GREEN evaluate the Stokes green's function
+%STOK3D.GREEN evaluate the Stokes green's function
 % for the given sources and targets
 %
 % Syntax: [val, grad, hess] = stok3d.green(src, targ)

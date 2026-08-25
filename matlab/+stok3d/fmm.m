@@ -3,7 +3,8 @@ function U = fmm(eps, src, targ, type, sigma, coefs)
 %   potentials in 3D.
 %
 % Syntax:
-%   U  = stok3d.fmm(eps, zk, srcinfo, targinfo, type, sigma, coefs)
+%   U  = stok3d.fmm(eps, src, targ, type, sigma)
+%   U  = stok3d.fmm(eps, src, targ, type, sigma, coefs)
 %
 % Input:
 %   eps      - precision requested
@@ -17,7 +18,7 @@ function U = fmm(eps, src, targ, type, sigma, coefs)
 %   coefs    - [alpha; beta] for combined layer (type 'c' only)
 %
 % Output:
-%   pot  - potential (3 x nt)
+%   U    - potential (3 x nt)
 
 sigma = reshape(sigma,3,[]);
 switch lower(type)

@@ -2,7 +2,7 @@
 function submat= kern(zk, srcinfo, targinfo, type, varargin)
 %HELM3D.KERN standard Helmholtz layer potential kernels in 3D
 % 
-% Syntax: submat = helm3d.kern(zk,srcinfo,targingo,type,varargin)
+% Syntax: submat = helm3d.kern(zk,srcinfo,targinfo,type,varargin)
 %
 % Let x be targets and y be sources for these formulas, with
 % n_x and n_y the corresponding unit normals at those points.

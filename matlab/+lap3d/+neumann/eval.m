@@ -21,13 +21,11 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
 %    * targinfo: target info
-%    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
-%    * opts: options struct
 %    * eps: precision requested
 %    * opts: options struct (optional)
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating

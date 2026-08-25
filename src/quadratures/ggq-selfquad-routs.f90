@@ -369,7 +369,7 @@
 !
       real *8 r0, r1, xmeas, rr, sina, cosa, xx, yy
       real *8 rcut_scaled, r, theta
-      integer *8 iquad, ier0
+      integer *8 iquad, ier0, ipv_t
       integer *8 ifreflect, irad, nr, nr0, nt, i, j, it, istart, ir
       real *8 xr(200), wr(200), xt(200), wt(200)
       real *8 xtmp, ytmp
@@ -461,13 +461,26 @@
 !
       ir = 0
       it = 0
-      call get_radfetch_param(ipv, irad, r, theta, nt, ir, it, ier)
+      ipv_t = ipv
+      call get_radfetch_param(ipv_t, irad, r, theta, nt, ir, it, ier)
+      if (ier.gt.0 .and. ipv_t.eq.2) then
+!
+!  the hypersingular transversal tables are tabulated only for
+!  r >= 1.5d-8; outside that range fall back to the principal value
+!  tables, which are tabulated down to r = 1d-15
+!
+        ipv_t = 1
+        ir = 0
+        it = 0
+        ier = 0
+        call get_radfetch_param(ipv_t, irad, r, theta, nt, ir, it, ier)
+      endif
       if (ier.gt.0) then
         print *, "Couldn't find theta quadratures"
         print *, "Returning without returning self quadrature"
         return
       endif
-      call radfetch(ipv, irad, ir, it, nt, xt, wt)
+      call radfetch(ipv_t, irad, ir, it, nt, xt, wt)
 !
 !  If ipv = 0, then the radial quadratures are indepdent of
 !  the transverse quadratures. Pregenerate them here
@@ -684,8 +697,8 @@
       real *8, intent(in) :: r,t
       integer *8, intent(out) :: n,ir,it,ier
 
-      real *8 rs(2,25),ts(2,25),eps
-      integer *8 nn(25,25),nrs,nts
+      real *8 rs(2,30),ts(2,30),eps
+      integer *8 nn(30,30),nrs,nts
       integer *8 i
 
       ier = 0

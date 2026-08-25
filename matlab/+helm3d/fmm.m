@@ -20,7 +20,7 @@ function varargout = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 %              'sp'/'sprime' normal deriv of S at target
 %              'c'           combined layer coefs(1)*S + coefs(2)*D
 %   sigma    - density (ns x 1), already scaled by quadrature weights
-%   varargin{1} - coefs [alpha; beta] for combined layer (type 'c' only)
+%   coefs    - (optional) [alpha; beta] for combined layer (type 'c' only)
 %
 % Output:
 %   pot  - potential (nt x 1)

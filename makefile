@@ -207,7 +207,7 @@ OBJS += $(COM)/lapack_wrap.o
 endif
 
 
-.PHONY: usage lib install test test-dyn python mex mex-dyn matlab-dyn matlab surf-smooth-objs mesh-test mesh-test-c
+.PHONY: usage lib install test test-dyn python mex mex-dyn matlab-dyn matlab surf-smooth-objs mesh-test mesh-test-c STATICLIBFMM MATLABFMM STATICLIBFMM3DBIE MSTATICLIBFMM3DBIE DYNAMICLIBFMM3DBIE
 
 default: usage
 
@@ -277,6 +277,13 @@ ifneq ($(wildcard ./FMM3D/src/.*),)
 	echo "$(LFMMSTATICLIB)"; 
 	$(eval LFMMSTATICLIB := $(shell pwd)/FMM3D/lib-static/libfmm3d.a) 
 	echo "$(LFMMSTATICLIB)"; 
+endif
+
+MATLABFMM:
+ifneq ($(wildcard ./FMM3D/src/.*),)
+	[ ! -f make.inc ] || cp make.inc ./FMM3D; 
+	cd FMM3D && make matlab;
+	echo "Done making fmm3d matlab"
 endif
 
 STATICLIBFMM3DBIE: $(OBJS)
@@ -350,7 +357,7 @@ GW = $(MWF)
 
 
 
-matlab:	$(MSTATICLIB) $(MWDIR)/$(GW).c 
+matlab:	$(MSTATICLIB) MATLABFMM $(MWDIR)/$(GW).c 
 	$(MEX) $(MWDIR)/$(GW).c lib-static/$(MSTATICLIB) $(MFLAGS) \
 	-output $(MWDIR)/$(GW) $(MEXLIBS) 
 

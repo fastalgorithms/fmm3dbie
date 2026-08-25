@@ -34,8 +34,8 @@ function [E, H] = eval(S, densities, targinfo, eps, om, rep_params, varargin)
 %  em3d.dielectric.Contents.m
 %
 %  Syntax
-%   [E, H] = em3d.dielectric.eval(S, densities, targinfo, eps, zk, rep_params)
-%   [E, H] = em3d.dielectric.eval(S, densities, targinfo, eps, zk, rep_params, opts)
+%   [E, H] = em3d.dielectric.eval(S, densities, targinfo, eps, om, rep_params)
+%   [E, H] = em3d.dielectric.eval(S, densities, targinfo, eps, om, rep_params, opts)
 %
 %  Note: No quadrature corrections are currently used 
 %
@@ -47,7 +47,7 @@ function [E, H] = eval(S, densities, targinfo, eps, om, rep_params, varargin)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * om : wave number

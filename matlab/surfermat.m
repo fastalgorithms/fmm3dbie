@@ -1,7 +1,7 @@
 function [sysmat,objover,rfac] = surfermat(surferobj,kern,eps,opts)
 %SURFERMAT build matrix for given kernel and surfer description of boundary.
 %
-% Syntax: [sysmat, objover, rfac] = surfermat(S, kern, eps, opts)
+% Syntax: [sysmat, objover, rfac] = surfermat(surferobj, kern, eps, opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary

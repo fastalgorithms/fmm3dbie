@@ -54,7 +54,7 @@ function [varargout] = eval_fields(S, pde, bc, densities, targinfo, eps, varargi
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %
 %  SEE ALSO: lap3d.eval, helm3d.eval, stok3d.eval, and em3d.eval 

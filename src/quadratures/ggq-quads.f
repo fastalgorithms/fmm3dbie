@@ -222,8 +222,10 @@ c
 
 c       use xiao gimbutas nodes      
       intype = 2
-c       use adaptive integration (see documentation of ctriaints)     
+c       use adaptive integration (see documentation of ctriaints)    
+     
       istrat = 2
+      if(ipv.eq.2) istrat = 1
 c       relevant parameter for istrat =1/3      
       ifp = 0
 c      number of source patches to be processed per batch      
@@ -234,7 +236,7 @@ c      number of source patches to be processed per batch
       norder_avg = floor(sum(norders)/(npatches+0.0d0))
       if(norder_avg.ge.8) npmax = 6000
 
-      rfac = 1.0d0
+      rfac = 2.0d0
 c
 c
 c    Near quadrature params
@@ -684,6 +686,7 @@ c       use xiao gimbutas nodes
       intype = 2
 c       use adaptive integration (see documentation of ctriaints)     
       istrat = 2
+      if(ipv.eq.2) istrat = 1
 c       relevant parameter for istrat =1/3      
       ifp = 0
 c      number of source patches to be processed per batch      
@@ -694,7 +697,7 @@ c      number of source patches to be processed per batch
       norder_avg = floor(sum(norders)/(npatches+0.0d0))
       if(norder_avg.ge.8) npmax = 6000
 
-      rfac = 1.0d0
+      rfac = 1.5d0
 c
 c
 c    Near quadrature params
@@ -1228,7 +1231,7 @@ c
       done = 1
       dzero = 0
 
-      nmax = 10000
+      nmax = 20000
       allocate(ws(nmax),xs(nmax),ys(nmax))
       allocate(fvals(npols))
       if(iptype.eq.1) then
@@ -1543,6 +1546,7 @@ c       use xiao gimbutas nodes
       intype = 2
 c       use adaptive integration (see documentation of ctriaints)     
       istrat = 2
+      if(ipv.eq.2) istrat = 1
 c       relevant parameter for istrat =1/3      
       ifp = 0
 c      number of source patches to be processed per batch      
@@ -1553,7 +1557,7 @@ c      number of source patches to be processed per batch
       norder_avg = floor(sum(norders)/(npatches+0.0d0))
       if(norder_avg.ge.8) npmax = 6000
 
-      rfac = 1.0d0
+      rfac = 1.5d0
 c
 c
 c    Near quadrature params
@@ -2014,6 +2018,7 @@ c       use xiao gimbutas nodes
       intype = 2
 c       use adaptive integration (see documentation of ctriaints)     
       istrat = 2
+      if(ipv.eq.2) istrat = 1
 c       relevant parameter for istrat =1/3      
       ifp = 0
 c      number of source patches to be processed per batch      
@@ -2024,7 +2029,7 @@ c      number of source patches to be processed per batch
       norder_avg = floor(sum(norders)/(npatches+0.0d0))
       if(norder_avg.ge.8) npmax = 6000
 
-      rfac = 1.0d0
+      rfac = 2.0d0
 c
 c
 c    Near quadrature params

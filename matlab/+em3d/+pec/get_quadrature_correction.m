@@ -5,12 +5,12 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
 %    for the chosen maxwell representation, with densities supported
 %    on the surface, and targets given by targinfo 
 %    as a cell array of sparse matrices or an array of matrices
-%    in the rsc format, where each folumn of the matrix is the
+%    in the rsc format, where each column of the matrix is the
 %    representation of the sparse matrix corresponding to one
 %    of the kernels
 %
 %  Syntax
-%   Q = em3d.pec.get_quadrature_correction(S,eps,zk)
+%   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params)
 %   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params,targinfo)
 %   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params,targinfo,opts)
 %
@@ -40,7 +40,7 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices

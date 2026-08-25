@@ -7,6 +7,7 @@ function fmax = patch_max(obj, f, p)
 %   the quadrature weights (obj.wts) over each patch.
 %
 % Input:
+%   obj  - surfer object
 %   f    - function values at obj's nodes, size [m, obj.npts] or [obj.npts, 1]
 %   p    - (optional) area scaling exponent
 %

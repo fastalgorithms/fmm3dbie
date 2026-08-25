@@ -32,7 +32,7 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
 %        opts.rep - integral representation being used
 %                         Supported representations
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * densities: layer potential density
 %    
 %

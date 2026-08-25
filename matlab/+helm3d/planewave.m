@@ -1,7 +1,7 @@
 function [u, gradu] = planewave(zk, dir, targinfo)
 %HELM3D.PLANEWAVE  Potential and gradient due to plane wave.
 %
-%  [u, gradu] = planewave(zk, dir, targinfo)
+%  [u, gradu] = helm3d.planewave(zk, dir, targinfo)
 %
 % Input arguments:
 %   zk - wave number

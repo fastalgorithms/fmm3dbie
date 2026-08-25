@@ -5,13 +5,19 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
 %     surface, and set of quadrature corrections stored in Q
 %  
 %  Syntax
-%    Q = get_oversampling_parameters(S,Q,eps)
+%    novers = get_oversampling_parameters(S,Q,eps)
+%    [novers,ixyzso] = get_oversampling_parameters(S,Q,eps)
 %
 %  Input arguments
 %    * S: surfer object, see README.md in matlab for details
 %    * Q: quadrature correction struct, necessary components are
 %            Q.targinfo, Q.rfac, Q.wavenumber, Q.row_ptr, Q.col_ind
 %    * eps: tolerance
+%
+%  Output arguments
+%    * novers: (npatches,1) oversampling order for each patch
+%    * ixyzso: (npatches+1,1) pointer to start of each patch in the
+%        oversampled discretization
 %
     
 %

@@ -26,8 +26,6 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 %        sorted by target number
 %    * nover: integer
 %        quadrature order to use when oversampling each source patch
-%    * lbat: integer (optional, default 1e3)
-%        batch size for kernel evaluations
 %
 %  Output arguments:
 %    * Asmth: sparse matrix of size (opdim(1)*ntarg, opdim(2)*S.npts)

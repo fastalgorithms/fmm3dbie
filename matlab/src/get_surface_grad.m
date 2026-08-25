@@ -2,7 +2,8 @@ function [surf_grad] = get_surface_grad(S,p,varargin)
 %
 %
 %
-%  surf_grad = get_surfgrad(S,p)
+%  surf_grad = get_surface_grad(S,p)
+%  surf_grad = get_surface_grad(S,p,opts)
 %     This subroutine evaluates the surface gradient of a given function
 %     p and returns the gradient in cartesian coordinates (default) or 
 %     in the dxyz/du, and dxyz/dv basis 
@@ -12,7 +13,7 @@ function [surf_grad] = get_surface_grad(S,p,varargin)
 %    * p: input function on surface
 %    * opts: options struct (optional)
 %        opts.iscartesian (true): return surface gradient in
-%           cartesian coordiantes if true, else return
+%           cartesian coordinates if true, else return
 %           and dxyz/du and dxyz/dv components
 %
 %  Output arguments:

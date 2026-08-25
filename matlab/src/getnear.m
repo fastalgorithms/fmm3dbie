@@ -1,12 +1,6 @@
 function [rsc] = getnear(S, targinfo, rfac)
 %
-%  getnear(S, varargin)
-%
-%  Syntax: 
-%   [rsc] = getnear(S) 
-%   [rsc] = getnear(S, targinfo)
-%   [rsc] = getnear(S, targinfo, rfac)
-%
+%  getnear
 %  This subroutine returns the row sparse compressed struct
 %  for near interactions between the surface S, and targets.
 %
@@ -15,6 +9,12 @@ function [rsc] = getnear(S, targinfo, rfac)
 %  It additionally includes an indexing array which points to where 
 %  quadrature corrections for interaction between target and patch
 %  are stored.
+%
+%
+%  Syntax:
+%   [rsc] = getnear(S) 
+%   [rsc] = getnear(S, targinfo)
+%   [rsc] = getnear(S, targinfo, rfac)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details

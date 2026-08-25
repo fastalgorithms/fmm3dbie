@@ -33,13 +33,13 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zk: wave number
 %    * rep_pars: kernel parameters
-%        zpars(1) - single layer strength
-%        zpars(2) - double layer strength
+%        rep_pars(1) - single layer strength
+%        rep_pars(2) - double layer strength
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)

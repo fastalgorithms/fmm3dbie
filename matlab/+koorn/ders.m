@@ -20,10 +20,13 @@ function [pols,dersu,dersv] = ders(norder, uv)
   %
   % See Koornwinder 1975 for details, or the NIST handbook.
   %
+  % Syntax:
+  %   [pols,dersu,dersv] = koorn.ders(norder, uv)
+  %
   % Input:
+  %   norder - maximum degree polynomials to compute, a total of
+  %       (norder+1)(norder+2)/2 values are returned
   %   uv - a point in the simplex (0,0), (1,0), (0,1)
-  %   nmax - maximum degree polynomials to compute, a total of
-  %       (nmax+1)(nmax+2)/2 values are returned
   %
   % Output:
   %   pols - values of all the polynomials, ordered in the following
@@ -31,7 +34,8 @@ function [pols,dersu,dersv] = ders(norder, uv)
   %
   %            (0,0), (1,0), (0,1), (2,0), (1,1), (0,2), etc.
   %
-  %   ders - partial derivatives with respect to u and v
+  %   dersu - partial derivatives with respect to u
+  %   dersv - partial derivatives with respect to v
   %
   %
 

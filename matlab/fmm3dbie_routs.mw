@@ -519,13 +519,19 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
 %     surface, and set of quadrature corrections stored in Q
 %  
 %  Syntax
-%    Q = get_oversampling_parameters(S,Q,eps)
+%    novers = get_oversampling_parameters(S,Q,eps)
+%    [novers,ixyzso] = get_oversampling_parameters(S,Q,eps)
 %
 %  Input arguments
 %    * S: surfer object, see README.md in matlab for details
 %    * Q: quadrature correction struct, necessary components are
 %            Q.targinfo, Q.rfac, Q.wavenumber, Q.row_ptr, Q.col_ind
 %    * eps: tolerance
+%
+%  Output arguments
+%    * novers: (npatches,1) oversampling order for each patch
+%    * ixyzso: (npatches+1,1) pointer to start of each patch in the
+%        oversampled discretization
 %
     
 %
@@ -617,7 +623,8 @@ function [surf_grad] = get_surface_grad(S,p,varargin)
 %
 %
 %
-%  surf_grad = get_surfgrad(S,p)
+%  surf_grad = get_surface_grad(S,p)
+%  surf_grad = get_surface_grad(S,p,opts)
 %     This subroutine evaluates the surface gradient of a given function
 %     p and returns the gradient in cartesian coordinates (default) or 
 %     in the dxyz/du, and dxyz/dv basis 
@@ -627,7 +634,7 @@ function [surf_grad] = get_surface_grad(S,p,varargin)
 %    * p: input function on surface
 %    * opts: options struct (optional)
 %        opts.iscartesian (true): return surface gradient in
-%           cartesian coordiantes if true, else return
+%           cartesian coordinates if true, else return
 %           and dxyz/du and dxyz/dv components
 %
 %  Output arguments:
@@ -928,7 +935,7 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * dpars: kernel parameters
@@ -1114,7 +1121,7 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices
@@ -1286,7 +1293,7 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * sigma: layer potential density
 %    
 %
@@ -1429,13 +1436,11 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
 %    * S: surfer object, see README.md in matlab for details
 %    * sigma: layer potential density
 %    * targinfo: target info
-%    * targinfo: target info (optional)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
-%    * opts: options struct
 %    * eps: precision requested
 %    * opts: options struct (optional)
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
@@ -1589,7 +1594,7 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices
@@ -1798,7 +1803,7 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * sigma: layer potential density
 %    
 %
@@ -1958,13 +1963,13 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zk: wave number
 %    * rep_pars: kernel parameters
-%        zpars(1) - single layer strength
-%        zpars(2) - double layer strength
+%        rep_pars(1) - single layer strength
+%        rep_pars(2) - double layer strength
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -2152,7 +2157,7 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices
@@ -2325,8 +2330,8 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
 %    * eps: precision requested
 %    * zk: wave number
 %    * rep_pars: kernel parameters
-%        zpars(1) - single layer strength
-%        zpars(2) - double layer strength
+%        rep_pars(1) - single layer strength
+%        rep_pars(2) - double layer strength
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -2337,7 +2342,7 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * sigma: layer potential density
 %    
 %
@@ -2496,7 +2501,7 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zk: wave number (k)
@@ -2650,7 +2655,7 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices
@@ -2848,7 +2853,7 @@ function [densities, varargout] = solver(S, rhs, eps, zk, alpha, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * densities: solution to integral equation
 %         densities(1,:) = sigma
 %         densities(2,:) = S_{i|k|} \sigma
@@ -3011,7 +3016,7 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zk: wave number
@@ -3164,7 +3169,7 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices
@@ -3368,6 +3373,8 @@ function [densities, varargout] = solver(S, zlams, rhs, eps, zk, alpha, opts)
 %  
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
+%    * zlams: impedance parameter, either a scalar, or an array of
+%             length S.npts giving the impedance at each surface node
 %    * rhs: boundary data 
 %    * eps: precision requested
 %    * zk: wave number
@@ -3382,7 +3389,7 @@ function [densities, varargout] = solver(S, zlams, rhs, eps, zk, alpha, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * sigma: layer potential density
 %    
 %
@@ -3563,7 +3570,7 @@ function p = eval(S,densities,targinfo,eps,zks,rep_params,varargin)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zks: wave numbers (k)
@@ -3670,7 +3677,7 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices
@@ -3892,7 +3899,7 @@ function [densities, varargout] = solver(S, rhs, eps, zks, rep_params, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * densities: solution to integral equation
 %         densities(1,:) = \rho 
 %         densities(2,:) = \sigma
@@ -4055,7 +4062,7 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * dpars: kernel parameters
@@ -4208,7 +4215,7 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices
@@ -4394,7 +4401,7 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * sigma: (3,npts) layer potential density
 %    
 %
@@ -4663,6 +4670,9 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %  Input arguments:
 %    * S: surfer object
 %    * eps: precision requested
+%    * dpars: kernel parameters
+%        dpars(1) - single layer strength
+%        dpars(2) - double layer strength
 %    * targinfo: target info (optional; defaults to on-surface nodes)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.n = (3,nt) unit outward normals at targets  [REQUIRED]
@@ -4885,7 +4895,7 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zk : wave number
@@ -5071,12 +5081,12 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
 %    for the chosen maxwell representation, with densities supported
 %    on the surface, and targets given by targinfo 
 %    as a cell array of sparse matrices or an array of matrices
-%    in the rsc format, where each folumn of the matrix is the
+%    in the rsc format, where each column of the matrix is the
 %    representation of the sparse matrix corresponding to one
 %    of the kernels
 %
 %  Syntax
-%   Q = em3d.pec.get_quadrature_correction(S,eps,zk)
+%   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params)
 %   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params,targinfo)
 %   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params,targinfo,opts)
 %
@@ -5106,7 +5116,7 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices
@@ -5321,7 +5331,7 @@ function [densities, varargout] = solver(S, einc, hinc, eps, zk, rep_params, opt
 %        opts.rep - integral representation being used
 %                         Supported representations
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * densities: layer potential density
 %    
 %
@@ -5494,8 +5504,8 @@ function [E, H] = eval(S, densities, targinfo, eps, om, rep_params, varargin)
 %  em3d.dielectric.Contents.m
 %
 %  Syntax
-%   [E, H] = em3d.dielectric.eval(S, densities, targinfo, eps, zk, rep_params)
-%   [E, H] = em3d.dielectric.eval(S, densities, targinfo, eps, zk, rep_params, opts)
+%   [E, H] = em3d.dielectric.eval(S, densities, targinfo, eps, om, rep_params)
+%   [E, H] = em3d.dielectric.eval(S, densities, targinfo, eps, om, rep_params, opts)
 %
 %  Note: No quadrature corrections are currently used 
 %
@@ -5507,7 +5517,7 @@ function [E, H] = eval(S, densities, targinfo, eps, om, rep_params, varargin)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv cordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * om : wave number
@@ -5622,7 +5632,7 @@ function Q = get_quadrature_correction(S, eps, om, rep_params)
 %    for the chosen maxwell representation, with densities supported
 %    on the surface, and targets given by targinfo 
 %    as a cell array of sparse matrices or an array of matrices
-%    in the rsc format, where each folumn of the matrix is the
+%    in the rsc format, where each column of the matrix is the
 %    representation of the sparse matrix corresponding to one
 %    of the kernels
 %
@@ -5646,7 +5656,7 @@ function Q = get_quadrature_correction(S, eps, om, rep_params)
 %  (E1, H1) are the fields in the interior
 %
 %  Syntax
-%   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params)
+%   Q = em3d.dielectric.get_quadrature_correction(S,eps,om,rep_params)
 %
 %
 %  Input arguments:
@@ -5793,7 +5803,7 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
 %        opts.rep - integral representation being used
 %                         Supported representations
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * densities: layer potential density
 %    
 %

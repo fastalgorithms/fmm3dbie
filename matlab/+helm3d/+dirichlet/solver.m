@@ -21,8 +21,8 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
 %    * eps: precision requested
 %    * zk: wave number
 %    * rep_pars: kernel parameters
-%        zpars(1) - single layer strength
-%        zpars(2) - double layer strength
+%        rep_pars(1) - single layer strength
+%        rep_pars(2) - double layer strength
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
@@ -33,7 +33,7 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * sigma: layer potential density
 %    
 %

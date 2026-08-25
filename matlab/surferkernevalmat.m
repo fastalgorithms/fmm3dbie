@@ -2,7 +2,7 @@ function [sysmat,objover,rfac] = surferkernevalmat(surferobj,kern, targobj, eps,
 %SURFERKERNEVALMAT build evaluation matrix for given kernel, surfer
 % description of boundary, and off-surface target points.
 %
-% Syntax: [sysmat, objover, rfac] = surferkernevalmat(S, kern, targobj, eps, opts)
+% Syntax: [sysmat, objover, rfac] = surferkernevalmat(surferobj, kern, targobj, eps, opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary

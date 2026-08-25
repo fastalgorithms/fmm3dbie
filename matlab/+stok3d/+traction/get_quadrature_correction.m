@@ -19,6 +19,9 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %  Input arguments:
 %    * S: surfer object
 %    * eps: precision requested
+%    * dpars: kernel parameters
+%        dpars(1) - single layer strength
+%        dpars(2) - double layer strength
 %    * targinfo: target info (optional; defaults to on-surface nodes)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.n = (3,nt) unit outward normals at targets  [REQUIRED]

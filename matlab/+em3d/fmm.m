@@ -31,7 +31,7 @@ function pot = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 %                               pot   (6*nt x 1): [E_x; E_y; E_z; H_x; H_y; H_z]
 %
 %   sigma    - density
-%   varargin{1} - alpha: CFIE regularisation parameter (only for 'nrccie-bc')
+%   alpha    - (optional) CFIE regularisation parameter (only for 'nrccie-bc')
 %
 % Output:
 %   pot - potential column vector:

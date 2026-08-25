@@ -13,9 +13,6 @@ function [ts,whts] = rts(n)
 %
 %                 Input parameters:
 %
-%  itype - the type of calculation desired: 
-%     itype=1 will cause both the roots and the weights to be returned
-%     itype=0 will cause only the roots to be returned
 %  n - the number of nodes to be returned
 %   
 %                 Output parameters:

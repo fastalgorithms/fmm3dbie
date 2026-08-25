@@ -22,7 +22,7 @@ function varargout = fmm(eps, srcinfo, targinfo, type, sigma, varargin)
 %              'c'      combined layer coefs(1)*S + coefs(2)*D
 %              'cp'/'cprime'  combined prime coefs(1)*S' + coefs(2)*D'
 %   sigma    - density (ns x 1), already scaled by quadrature weights
-%   varargin{1} - coefs [alpha; beta] for combined layer
+%   coefs    - (optional) [alpha; beta] for combined layer
 %
 % Output:
 %   pot  - potential (nt x 1)

@@ -1,8 +1,8 @@
 
 function submat= kern(srcinfo,targinfo,type,varargin)
-%STOKES.KERN standard Stokes layer potential kernels in 3D
+%STOK3D.KERN standard Stokes layer potential kernels in 3D
 %
-% Syntax: submat = stokes.kern(zk,srcinfo,targingo,type,varargin)
+% Syntax: submat = stok3d.kern(srcinfo,targinfo,type,varargin)
 %
 % Let x be targets and y be sources for these formulas, with
 % n_x and n_y the corresponding unit normals at those points.

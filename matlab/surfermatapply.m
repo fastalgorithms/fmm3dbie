@@ -3,7 +3,8 @@ function pot = surfermatapply(surferobj, kern, dens, eps, objover, cors, opts)
 % description of boundary to a density, using the FMM-accelerated smooth
 % quadrature rule and adding a precomputed sparse correction.
 %
-% Syntax: pot = surfermatapply(S, kern, dens, cors, opts)
+% Syntax: pot = surfermatapply(surferobj, kern, dens, eps, objover, cors)
+%         pot = surfermatapply(surferobj, kern, dens, eps, objover, cors, opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary
@@ -51,7 +52,6 @@ if isfield(opts,'unif_nover'), unif_nover = opts.unif_nover; end
 if isfield(opts,'unif_novers'), unif_nover = opts.unif_novers; end
 
 if isempty(cors)
-    % warning('surfermatapply is inefficient with empty corrections')
     coropts = opts;
     coropts.corrections = 1;
     [cors,objover] = surfermat(surferobj,kern,eps,coropts);
