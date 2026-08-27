@@ -10,6 +10,7 @@ test_single_surfer_laplace();
 test_two_surfer_helmholtz();
 test_ordervec_mode_with_oversampling();
 test_recompute_on_the_fly();
+test_extra_targ_field();
 test_proxyfuneval_lowrank();
 
 
@@ -122,6 +123,35 @@ assert(err2 < tol, 'recompute on the fly (objover=[], with Qsparse): err %.2e > 
 
 end
 
+
+function test_extra_targ_field()
+% Kernel declaring a target field beyond the geometry: the targets carry
+% mean_curv as an ntarg x 1 column, which must be sliced by point index.
+
+eps = 1e-10;  tol = 1e-9;
+
+S    = geometries.ellipsoid([1,1,1.2], [2,2,2], [], 5);
+kern = kernel3d('bel', 'rlb');
+
+ntarg = 120;
+th = acos(2*rand(1,ntarg)-1);  ph = 2*pi*rand(1,ntarg);
+targs = [];
+targs.r = (2 + rand(1,ntarg)) .* [sin(th).*cos(ph); sin(th).*sin(ph); cos(th)];
+targs.n = [sin(th).*cos(ph); sin(th).*sin(ph); cos(th)];
+targs.mean_curv = rand(ntarg,1);
+
+i = randi(ntarg, 60, 1);
+j = randi(S.npts, 60, 1);
+
+opts_ns = struct('nonsmoothonly', 1);
+[Qns, novers] = surferkernevalmat(S, kern, targs, eps, opts_ns);
+Afull = surferkernevalmat(S, kern, targs, eps);
+Atest = byindex.kernbyindexeval(i, j, S, kern, targs, eps, novers, Qns);
+
+err = norm(Atest - Afull(i,j), 'fro') / (norm(Afull(i,j), 'fro') + eps);
+assert(err < tol, 'extra targ field: %.2e', err);
+
+end
 
 function test_proxyfuneval_lowrank()
 % proxyfuneval gives a low-rank factorization of an off-surface src->targ block.

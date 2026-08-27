@@ -170,7 +170,7 @@ for i = 1:nsurfers
         else
             surferi_targ = []; surferi_targ.r = surferi.r(:,:);
             for field = ktmp.targ_fields(:).'
-                surferi_targ.(field{1}) = surferi.(field{1})(:,:);
+                surferi_targ.(field{1}) = slice_field(surferi.(field{1}), 1:surferi.npts);
             end
         end
 
@@ -203,7 +203,7 @@ for i = 1:nsurfers
                 srcp = [];
                 srcp.r = surferjover.r(:,src_inds);
                 for field = ktmp.src_fields(:).'
-                    srcp.(field{1}) = surferjover.(field{1})(:,src_inds);
+                    srcp.(field{1}) = slice_field(surferjover.(field{1}), src_inds);
                 end
                 col_inds = (1:opdims(2)).' + opdims(2)*(src_inds-1);
                 col_inds = col_inds(:);
@@ -216,7 +216,7 @@ for i = 1:nsurfers
 
                     targp_self = []; targp_self.r = surferi_targ.r(:,targ_inds_self);
                     for field = ktmp.targ_fields(:).'
-                        targp_self.(field{1}) = surferi_targ.(field{1})(:,targ_inds_self);
+                        targp_self.(field{1}) = slice_field(surferi_targ.(field{1}), targ_inds_self);
                     end
                     targp_self.uvs_targ = surferi_targ.uvs_targ(:,targ_inds_self);
                     targp_self.patch_id = surferi_targ.patch_id(targ_inds_self);
@@ -227,7 +227,7 @@ for i = 1:nsurfers
                     if ~isempty(off_targ_inds)
                         targp_off = []; targp_off.r = surferi_targ.r(:,off_targ_inds);
                         for field = ktmp.targ_fields(:).'
-                            targp_off.(field{1}) = surferi_targ.(field{1})(:,off_targ_inds);
+                            targp_off.(field{1}) = slice_field(surferi_targ.(field{1}), off_targ_inds);
                         end
                         row_inds_off = (1:opdims(1)).' + opdims(1)*(off_targ_inds-1);
                         row_inds_off = row_inds_off(:);
@@ -290,5 +290,14 @@ if ifreturnovers
     objover = {surfers_over, xinterps};
 else
     objover = novers;
+end
+end
+
+function v = slice_field(A, idx)
+% Slice a per-point field by point index, tolerating either orientation
+if isvector(A) && iscolumn(A)
+    v = A(idx).';
+else
+    v = A(:, idx);
 end
 end

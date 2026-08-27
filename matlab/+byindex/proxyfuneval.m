@@ -32,6 +32,9 @@ else
     opdims_mat = reshape([kern.opdims], 2, nsurfers);
 end
 
+assert(all(opdims_mat(1,:) == opdims_mat(1,1)), ...
+    'BYINDEX.PROXYFUNEVAL: opdims(1) must be constant across all source surfers');
+
 opdim1 = opdims_mat(1,1);
 
 % Column (source) offsets
@@ -80,11 +83,21 @@ end
 end
 
 
-function srcp = slice_surfer(srfj, pts, src_fields)
+function srcp = slice_surfer(srfj, pts, fields)
     srcp = [];
     srcp.r = srfj.r(:, pts);
-    for k = 1:length(src_fields)
-        f = src_fields{k};
-        srcp.(f) = srfj.(f)(:, pts);
+    for k = 1:length(fields)
+        f = fields{k};
+        srcp.(f) = slice_field(srfj.(f), pts);
+    end
+end
+
+
+function v = slice_field(A, idx)
+% Slice a per-point field by point index, tolerating either orientation
+    if isvector(A) && iscolumn(A)
+        v = A(idx).';
+    else
+        v = A(:, idx);
     end
 end

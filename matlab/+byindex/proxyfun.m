@@ -35,6 +35,25 @@ for k = 1:nsurfers
     irowlocs(k+1) = irowlocs(k) + surfers(k).npts * opdims_mat(1, k, 1);
 end
 
+% Check that the proxy kernels match the source/target dimensions of kern
+for k = 1:nsurfers
+    nsrc_k  = opdims_mat(2, 1, k);
+    ntrg_k  = opdims_mat(1, k, 1);
+    ktmp_k  = pick_kern(kern, k, k);
+    assert(ktmp_k.opdims(2) == nsrc_k, ...
+        'BYINDEX.PROXYFUN: kern opdims(2) = %d but surfer %d has %d source dims', ...
+        ktmp_k.opdims(2), k, nsrc_k);
+    assert(ktmp_k.opdims(1) == ntrg_k, ...
+        'BYINDEX.PROXYFUN: kern opdims(1) = %d but surfer %d has %d target dims', ...
+        ktmp_k.opdims(1), k, ntrg_k);
+    if ifaddtrans
+        ktmp2_k = pick_kern(kern2, k, k);
+        assert(ktmp2_k.opdims(1) == nsrc_k, ...
+            'BYINDEX.PROXYFUN: kern2 opdims(1) = %d but surfer %d has %d source dims', ...
+            ktmp2_k.opdims(1), k, nsrc_k);
+    end
+end
+
 % Scale proxy points/weights
 pxy = pr * l + ctr(:);
 pw  = pw  * l;
@@ -66,7 +85,8 @@ Kpxy = zeros(npxy_rows(end)-1, length(slf));
 if ifaddtrans
     npxy_rows2 = zeros(nsurfers+1,1); npxy_rows2(1) = 1;
     for k = 1:nsurfers
-        npxy_rows2(k+1) = npxy_rows2(k) + npxy * opdims_mat(2, k, 1);
+        ktmp2_k = pick_kern(kern2, k, 1);
+        npxy_rows2(k+1) = npxy_rows2(k) + npxy * ktmp2_k.opdims(2);
     end
     Ktrans = zeros(length(slf), npxy_rows2(end)-1);
 end
@@ -97,7 +117,7 @@ for isrc = 1:nsurfers
 
         if ifaddtrans
             if numel(kern2) == 1, ktmp2 = kern2; else, ktmp2 = kern2(isrc,itrg); end
-            wpxy = repmat(pw(:).', opdims_mat(2,isrc,itrg), 1);
+            wpxy = repmat(pw(:).', ktmp2.opdims(2), 1);
             wpxy = wpxy(:).';
             matuni2 = ktmp2.eval(srcinfo_pxy, srcp) .* wpxy;
             Ktrans(f_col, npxy_rows2(isrc):npxy_rows2(isrc+1)-1) = matuni2(ijuni2, :);
@@ -112,11 +132,31 @@ end
 end
 
 
-function srcp = slice_surfer(srfj, pts, src_fields)
+function srcp = slice_surfer(srfj, pts, fields)
     srcp = [];
     srcp.r = srfj.r(:, pts);
-    for k = 1:length(src_fields)
-        f = src_fields{k};
-        srcp.(f) = srfj.(f)(:, pts);
+    for k = 1:length(fields)
+        f = fields{k};
+        srcp.(f) = slice_field(srfj.(f), pts);
+    end
+end
+
+
+function v = slice_field(A, idx)
+% Slice a per-point field by point index, tolerating either orientation
+    if isvector(A) && iscolumn(A)
+        v = A(idx).';
+    else
+        v = A(:, idx);
+    end
+end
+
+
+function k = pick_kern(kernarr, i, j)
+%PICK_KERN  Index into a possibly-scalar kernel array as kernarr(i,j).
+    if numel(kernarr) == 1
+        k = kernarr;
+    else
+        k = kernarr(i, j);
     end
 end

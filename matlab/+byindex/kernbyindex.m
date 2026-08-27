@@ -134,20 +134,7 @@ for itrg = 1:nsurfers
     [iuni, ~, iiuni] = unique(ipts);
     iiuni2 = (iiuni - 1)*opdims_row + mod(mat_row_ind(:) - mat_row_start, opdims_row) + 1;
 
-    targinfo = [];
-    targinfo.r  = srfi.r(:, iuni);
-    targinfo.n  = srfi.n(:, iuni);
-    targinfo.du = srfi.du(:, iuni);
-    targinfo.dv = srfi.dv(:, iuni);
-
     ntrg_uni = length(iuni);
-
-    % Full target struct for get_overs_orders
-    targs_full = [];
-    targs_full.r  = srfi.r;
-    targs_full.n  = srfi.n;
-    targs_full.du = srfi.du;
-    targs_full.dv = srfi.dv;
 
     for isrc = 1:nsurfers
         srfj = surfers(isrc);
@@ -165,6 +152,11 @@ for itrg = 1:nsurfers
         else
             ktmp = kern(itrg, isrc);
         end
+
+        targinfo = slice_surfer(srfi, iuni, ktmp.targ_fields);
+
+        % Full target struct for get_overs_orders
+        targs_full = slice_surfer(srfi, 1:srfi.npts, ktmp.targ_fields);
 
         jpts = idivide(int64(mat_col_ind(:) - mat_col_start), int64(opdims_src)) + 1;
         [juni, ~, ijuni] = unique(jpts);
@@ -192,11 +184,7 @@ for itrg = 1:nsurfers
             else
                 % Evaluate against the full oversampled source geometry,
                 % then map back to original-order columns via xinterp.
-                srcp_over = [];
-                srcp_over.r  = srfjover.r;
-                srcp_over.n  = srfjover.n;
-                srcp_over.du = srfjover.du;
-                srcp_over.dv = srfjover.dv;
+                srcp_over = slice_surfer(srfjover, 1:srfjover.npts, ktmp.src_fields);
 
                 wts_over = repmat(srfjover.wts(:).', opdims_src, 1);
                 wts_over = wts_over(:).';
@@ -375,12 +363,22 @@ end
 end
 
 
-function srcp = slice_surfer(srfj, pts, src_fields)
+function srcp = slice_surfer(srfj, pts, fields)
     srcp = [];
     srcp.r = srfj.r(:, pts);
-    for k = 1:length(src_fields)
-        f = src_fields{k};
-        srcp.(f) = srfj.(f)(:, pts);
+    for k = 1:length(fields)
+        f = fields{k};
+        srcp.(f) = slice_field(srfj.(f), pts);
+    end
+end
+
+
+function v = slice_field(A, idx)
+% Slice a per-point field by point index, tolerating either orientation
+    if isvector(A) && iscolumn(A)
+        v = A(idx).';
+    else
+        v = A(:, idx);
     end
 end
 

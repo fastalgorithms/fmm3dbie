@@ -1,6 +1,12 @@
 function [rsc] = getnear(S, targinfo, rfac)
 %
-%  getnear
+%  getnear(S, varargin)
+%
+%  Syntax: 
+%   [rsc] = getnear(S) 
+%   [rsc] = getnear(S, targinfo)
+%   [rsc] = getnear(S, targinfo, rfac)
+%
 %  This subroutine returns the row sparse compressed struct
 %  for near interactions between the surface S, and targets.
 %
@@ -9,12 +15,6 @@ function [rsc] = getnear(S, targinfo, rfac)
 %  It additionally includes an indexing array which points to where 
 %  quadrature corrections for interaction between target and patch
 %  are stored.
-%
-%
-%  Syntax:
-%   [rsc] = getnear(S) 
-%   [rsc] = getnear(S, targinfo)
-%   [rsc] = getnear(S, targinfo, rfac)
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
@@ -72,11 +72,11 @@ function [rsc] = getnear(S, targinfo, rfac)
     ntarg = size(targs,2); 
 
     if nargin < 3
-        [iptype_c, iptype_n] = groupcounts(iptype);
+        [iptype_c, iptype_n] = groupcounts(iptype(:));
         [~, ind] = max(iptype_c);
         iptype_avg = iptype_n(ind);
 
-        [norder_c, norder_n] = groupcounts(norders);
+        [norder_c, norder_n] = groupcounts(norders(:));
         [~, ind] = max(norder_c);
         norder_avg = norder_n(ind);
 

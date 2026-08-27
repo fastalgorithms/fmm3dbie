@@ -85,11 +85,20 @@ ipts  = double(idivide(int64(i(:) - 1), int64(opdim1))) + 1;
 [iuni, ~, iiuni] = unique(ipts);
 iiuni2 = (iiuni - 1)*opdim1 + mod(i(:) - 1, opdim1) + 1;
 
+% Target fields required by any of the kernels
+targ_fields = {};
+for k = 1:numel(kern)
+    if ~isempty(kern(k).targ_fields)
+        targ_fields = union(targ_fields, kern(k).targ_fields);
+    end
+end
+
 targinfo = [];
 targinfo.r = targinfo_full.r(:, iuni);
-for f = {'n','du','dv'}
-    if isfield(targinfo_full, f{1})
-        targinfo.(f{1}) = targinfo_full.(f{1})(:, iuni);
+for k = 1:numel(targ_fields)
+    f = targ_fields{k};
+    if isfield(targinfo_full, f) || isprop(targinfo_full, f)
+        targinfo.(f) = slice_field(targinfo_full.(f), iuni);
     end
 end
 ntrg_uni = length(iuni);
@@ -126,11 +135,7 @@ for isrc = 1:nsurfers
             matuni = ktmp.eval(srcp, targinfo) .* wts;
             mat(true(size(i)), flag_j) = matuni(iiuni2, ijuni2);
         else
-            srcp_over = [];
-            srcp_over.r  = srfjover.r;
-            srcp_over.n  = srfjover.n;
-            srcp_over.du = srfjover.du;
-            srcp_over.dv = srfjover.dv;
+            srcp_over = slice_surfer(srfjover, 1:srfjover.npts, ktmp.src_fields);
 
             wts_over = repmat(srfjover.wts(:).', opdims_src, 1);
             wts_over = wts_over(:).';
@@ -253,12 +258,22 @@ end
 end
 
 
-function srcp = slice_surfer(srfj, pts, src_fields)
+function srcp = slice_surfer(srfj, pts, fields)
     srcp = [];
     srcp.r = srfj.r(:, pts);
-    for k = 1:length(src_fields)
-        f = src_fields{k};
-        srcp.(f) = srfj.(f)(:, pts);
+    for k = 1:length(fields)
+        f = fields{k};
+        srcp.(f) = slice_field(srfj.(f), pts);
+    end
+end
+
+
+function v = slice_field(A, idx)
+% Slice a per-point field by point index, tolerating either orientation
+    if isvector(A) && iscolumn(A)
+        v = A(idx).';
+    else
+        v = A(:, idx);
     end
 end
 

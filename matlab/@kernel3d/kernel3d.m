@@ -18,6 +18,7 @@ classdef kernel3d
 %                                        's2trans_diff', 'd2trans_diff', 'c2trans_diff'
 %      'maxwell'   ('em3d', 'em')        'nrccie-bc', 'nrccie-eval'
 %      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
+%      'beltrami'  ('belpde', 'bel')     'klb', 'rlb', 'khb', 'rhb'
 %      'zero'/'zeros'                    (no type needed)
 %
 %   Some kernels accept extra parameters as trailing arguments, e.g.
@@ -92,6 +93,8 @@ classdef kernel3d
                         obj = kernel3d.em3d(varargin{:});
                     case {'stokes', 'stok3d', 'stok'}
                         obj = kernel3d.stok3d(varargin{:});
+                    case {'beltrami', 'belpde', 'bel'}
+                        obj = kernel3d.belpde(varargin{:});
                     case {'z', 'zero', 'zeros'}
                         if ~isempty(varargin)
                             obj = kernel3d.zeros(varargin{1});
@@ -136,6 +139,7 @@ classdef kernel3d
         obj    = helm3d(varargin);
         obj    = em3d(varargin);
         obj    = stok3d(varargin);
+        obj    = belpde(varargin);
         obj    = zeros(opdims);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);

@@ -12,6 +12,7 @@ test_recompute_on_the_fly();
 test_explicit_novers();
 test_stok_with_corrections();
 test_single_surfer_stok();
+test_extra_targ_field();
 test_wrong_novers();
 
 
@@ -202,6 +203,35 @@ assert(err < tol, 'single-surfer stok: %.2e', err);
 
 end
 
+
+function test_extra_targ_field()
+% Kernel declaring a target field beyond the geometry (belpde reads
+% mean_curv, which the surfer stores as an npts x 1 column).
+
+eps = 1e-10;  tol = 1e-9;
+opts_sm = struct('selfquad', false, 'adaptive_correction', false);
+
+S1 = geometries.ellipsoid([1,1,1.2], [2,2,2], [],      5);
+S2 = geometries.ellipsoid([1,1,1],   [2,2,2], [4;0;0], 5);
+srfrs = [S1, S2];
+
+kern = kernel3d('bel', 'rlb');
+
+[Asmth, novers] = surfermat(srfrs, kern, eps, opts_sm);
+ii = randi(size(Asmth,1), 80, 1);
+jj = randi(size(Asmth,2), 80, 1);
+
+err = norm(byindex.kernbyindex(ii, jj, srfrs, kern, eps, novers) - Asmth(ii,jj), 'fro') ...
+    / (norm(Asmth(ii,jj), 'fro') + eps);
+assert(err < tol, 'extra targ field (objover): %.2e', err);
+
+[Asmth2, novers2] = surfermat(srfrs, kern, eps, ...
+    struct('selfquad', false, 'adaptive_correction', false, 'ifreturnovers', 0));
+err2 = norm(byindex.kernbyindex(ii, jj, srfrs, kern, eps, novers2) - Asmth2(ii,jj), 'fro') ...
+    / (norm(Asmth2(ii,jj), 'fro') + eps);
+assert(err2 < tol, 'extra targ field (order-vector mode): %.2e', err2);
+
+end
 
 function test_wrong_novers()
 % Wrong novers should give an error above tolerance (negative test).

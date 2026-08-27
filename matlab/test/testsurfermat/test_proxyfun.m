@@ -20,6 +20,8 @@ pin = @(dr) vecnorm(dr) < r_sep;
 test_single_surfer(pr, pn, pw, pin);
 test_with_transpose(pr, pn, pw, pin);
 test_transmission_kernel(pr, pn, pw, pin);
+test_transpose_mixed_opdims(pr, pn, pw, pin);
+test_opdims_mismatch(pr, pn, pw, pin);
 test_proxyfuneval_offsurface(pr, pn, pw, pin);
 
 
@@ -112,6 +114,66 @@ check_lr('transmission kernel', src2targ, Kpxy, tol);
 
 end
 
+
+function test_transpose_mixed_opdims(pr, pn, pw, pin)
+% ifaddtrans with a transpose kernel whose opdims differ from the forward
+% one: s2trans is [2 1] going out, trans_rep is [1 2] coming back, so the
+% transpose block is npxy*2 wide rather than npxy*1.
+
+eps = 1e-10;  tol = 1e-9;
+
+zk4  = 1.1;
+S    = geometries.sphere(2, 8, [0;0;0], 6, 1);
+kern  = kernel3d('h', 's2trans',   zk4);
+kern2 = kernel3d('h', 'trans_rep', zk4);
+ctr  = [2; 0; 0];  r_src = 0.5;  r_targ = 2.0;  l = 2*r_src;
+
+s_pts = find(vecnorm(S.r - ctr) < r_src).';
+t_pts = find(vecnorm(S.r - ctr) > r_targ).';
+srcids  = s_pts;
+targids = reshape([2*t_pts-1; 2*t_pts], 1, []);
+
+novers   = {NaN*zeros(S.npatches,1)};
+src2targ = byindex.kernbyindex(targids, srcids, S, kern, eps, novers);
+
+npxy = size(pr, 2);
+[Kpxy_notrans, ~] = byindex.proxyfun(srcids, targids, l, ctr, S, kern, kern2, ...
+    pr, pn, pw, pin, false);
+[Kpxy, ~] = byindex.proxyfun(srcids, targids, l, ctr, S, kern, kern2, ...
+    pr, pn, pw, pin, true);
+
+assert(size(Kpxy_notrans, 1) == 2*npxy, ...
+    'ifaddtrans=false should have %d rows, got %d', 2*npxy, size(Kpxy_notrans,1));
+assert(size(Kpxy, 1) == 4*npxy, ...
+    'ifaddtrans=true should have %d rows, got %d', 4*npxy, size(Kpxy,1));
+
+check_lr('mixed-opdims transpose', src2targ, Kpxy, tol);
+
+end
+
+
+function test_opdims_mismatch(pr, pn, pw, pin)
+% A transpose kernel whose opdims do not match the source dimension of kern
+% must be rejected rather than silently producing a mis-sized block.
+
+S     = geometries.sphere(2, 4, [0;0;0], 4, 1);
+kern  = kernel3d('stok', 's');   % opdims [3 3]
+kern2 = kernel3d('l',    's');   % opdims [1 1]
+ctr   = [2; 0; 0];  l = 1.0;
+
+srcids  = 1:9;
+targids = 10:18;
+
+caught = false;
+try
+    byindex.proxyfun(srcids, targids, l, ctr, S, kern, kern2, ...
+        pr, pn, pw, pin, true);
+catch
+    caught = true;
+end
+assert(caught, 'mismatched kern2 opdims should raise an error');
+
+end
 
 function test_proxyfuneval_offsurface(pr, pn, pw, pin)
 % Off-surface targets, Laplace SLP: proxyfuneval gives low-rank src->targ block.
