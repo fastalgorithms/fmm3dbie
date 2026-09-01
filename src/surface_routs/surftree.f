@@ -2179,6 +2179,8 @@ c     call fun_cruller(nd,xy,dpars,zpars,ipars,f)
          call funaxisymstar(nd,xy,dpars,zpars,ipars,f)
       elseif(igeom.eq.7) then
          call funaxisymsaw(nd,xy,dpars,zpars,ipars,f)
+      elseif(igeom.eq.8) then
+         call funwarpedtrefoil_mean(nd,xy,dpars,zpars,ipars,f,m)         
       else
 c         print *, "No geometry selected"
       endif
@@ -3127,6 +3129,382 @@ c      dxyzdst(3,2) = dhatxyzdt(3)*scales(3)
 
 c       deallocate(bis,bjs,bdis,bdjs,coefs)
        
+      end
+
+      subroutine funwarpedtrefoil_mean(nd,st,dpars,zpars,ipars,f)
+
+      implicit none
+
+      integer*8 nd,ipars(*)
+      integer i,j,k
+      real*8 st(2),dpars(*),f(nd),pi,u,v
+      complex*16 zpars(*)
+
+c     Geometry parameters.
+      real*8 scale,rad,fac,asha,bsha,csha,dsha
+      real*8 kx,ky,kz,phiy,phiz,hbump,sigma,sigma2,xc,yc
+
+c     Trigonometric quantities.
+      real*8 su,cu,s2u,c2u,s3u,c3u,sv,cv
+
+c     Centerline and its first four derivatives.
+      real*8 gam(3),g1(3),g2(3),g3(3),g4(3)
+
+c     Frenet frame and its first two derivatives.
+      real*8 craw(3),crawu(3),crawuu(3)
+      real*8 tvec(3),tvecu(3),tvecuu(3)
+      real*8 bvec(3),bvecu(3),bvecuu(3)
+      real*8 nvecj(3),nvecju(3),nvecjuu(3)
+      real*8 snrm,snrmu,snrmuu,bnrm,bnrmu,bnrmuu
+
+c     Base tube and its derivatives.
+      real*8 p0(3),p0u(3),p0v(3)
+      real*8 p0uu(3),p0uv(3),p0vv(3)
+
+c     Deformed coordinates and their derivatives.
+      real*8 x,xu,xv,xuu,xuv,xvv
+      real*8 y,yu,yv,yuu,yuv,yvv
+      real*8 z,zu,zv,zuu,zuv,zvv
+      real*8 qx,sqx,cqx,qy,sqy,cqy,qz,sqz,cqz
+      real*8 dx,dy,qb,qbu,qbv,qbuu,qbuv,qbvv
+      real*8 bump,bu,bv,buu,buv,bvv
+
+c     Fundamental forms and mean curvature.
+      real*8 xs(3),xt(3),xss(3),xst(3),xtt(3)
+      real*8 normal(3),nrm,e1,f1,g1m,e2,f2,g2m
+      real*8 denom,hmean
+
+      pi = 4.0d0*datan(1.0d0)
+
+c     Map [-1/2,1/2]^2 to [0,2*pi]^2.  The derivatives
+c     returned below are with respect to the angles u and v.
+      u = (st(1) + 0.5d0)*2.0d0*pi
+      v = (st(2) + 0.5d0)*2.0d0*pi
+
+      scale = 5.0d0
+      rad = 2.5d0
+      fac = 0.1d0
+
+      asha = 3.0d0
+      bsha = 2.0d0
+      csha = 2.6d0
+      dsha = 0.06d0
+
+      kx = 0.36d0
+      ky = 0.32d0
+      kz = 0.38d0
+      phiy = 0.5d0
+      phiz = -0.3d0
+
+      hbump = 3.0d0
+      sigma = 2.3d0
+      sigma2 = sigma*sigma
+      xc = 1.5d0
+      yc = -4.0d0
+
+      su = sin(u)
+      cu = cos(u)
+      s2u = sin(2.0d0*u)
+      c2u = cos(2.0d0*u)
+      s3u = sin(3.0d0*u)
+      c3u = cos(3.0d0*u)
+      sv = sin(v)
+      cv = cos(v)
+
+c     gamma(u).
+      gam(1) = s3u
+      gam(2) = su + 2.0d0*s2u
+      gam(3) = cu - 2.0d0*c2u
+
+c     gamma'(u).
+      g1(1) = 3.0d0*c3u
+      g1(2) = cu + 4.0d0*c2u
+      g1(3) = -su + 4.0d0*s2u
+
+c     gamma''(u).
+      g2(1) = -9.0d0*s3u
+      g2(2) = -su - 8.0d0*s2u
+      g2(3) = -cu + 8.0d0*c2u
+
+c     gamma'''(u).
+      g3(1) = -27.0d0*c3u
+      g3(2) = -cu - 16.0d0*c2u
+      g3(3) = su - 16.0d0*s2u
+
+c     gamma''''(u).
+      g4(1) = 81.0d0*s3u
+      g4(2) = su + 32.0d0*s2u
+      g4(3) = cu - 32.0d0*c2u
+
+c     T = gamma'/|gamma'| and its first two derivatives.
+      snrm = sqrt(g1(1)*g1(1) + g1(2)*g1(2) +
+     1   g1(3)*g1(3))
+
+      snrmu = (g1(1)*g2(1) + g1(2)*g2(2) +
+     1   g1(3)*g2(3))/snrm
+
+      snrmuu = (g2(1)*g2(1) + g2(2)*g2(2) +
+     1   g2(3)*g2(3) + g1(1)*g3(1) + g1(2)*g3(2) +
+     2   g1(3)*g3(3) - snrmu*snrmu)/snrm
+
+      do i=1,3
+         tvec(i) = g1(i)/snrm
+         tvecu(i) = g2(i)/snrm - g1(i)*snrmu/(snrm*snrm)
+         tvecuu(i) = g3(i)/snrm
+     1      - 2.0d0*g2(i)*snrmu/(snrm*snrm)
+     2      - g1(i)*snrmuu/(snrm*snrm)
+     3      + 2.0d0*g1(i)*snrmu*snrmu/(snrm**3)
+      enddo
+
+c     The unnormalized binormal is c = gamma' x gamma''.
+c     Its derivatives are c' = gamma' x gamma''' and
+c     c'' = gamma'' x gamma''' + gamma' x gamma''''.
+      do i=1,3
+         j = mod(i,3) + 1
+         k = mod(i+1,3) + 1
+
+         craw(i) = g1(j)*g2(k) - g1(k)*g2(j)
+         crawu(i) = g1(j)*g3(k) - g1(k)*g3(j)
+         crawuu(i) = g2(j)*g3(k) - g2(k)*g3(j)
+     1      + g1(j)*g4(k) - g1(k)*g4(j)
+      enddo
+
+c     B = c/|c| and its first two derivatives.
+      bnrm = sqrt(craw(1)*craw(1) + craw(2)*craw(2) +
+     1   craw(3)*craw(3))
+
+      bnrmu = (craw(1)*crawu(1) + craw(2)*crawu(2) +
+     1   craw(3)*crawu(3))/bnrm
+
+      bnrmuu = (crawu(1)*crawu(1) + crawu(2)*crawu(2) +
+     1   crawu(3)*crawu(3) + craw(1)*crawuu(1) +
+     2   craw(2)*crawuu(2) + craw(3)*crawuu(3) -
+     3   bnrmu*bnrmu)/bnrm
+
+      do i=1,3
+         bvec(i) = craw(i)/bnrm
+         bvecu(i) = crawu(i)/bnrm
+     1      - craw(i)*bnrmu/(bnrm*bnrm)
+         bvecuu(i) = crawuu(i)/bnrm
+     1      - 2.0d0*crawu(i)*bnrmu/(bnrm*bnrm)
+     2      - craw(i)*bnrmuu/(bnrm*bnrm)
+     3      + 2.0d0*craw(i)*bnrmu*bnrmu/(bnrm**3)
+      enddo
+
+c     N = B x T and its first two derivatives.
+      do i=1,3
+         j = mod(i,3) + 1
+         k = mod(i+1,3) + 1
+
+         nvecj(i) = bvec(j)*tvec(k) - bvec(k)*tvec(j)
+
+         nvecju(i) = bvecu(j)*tvec(k) -
+     1      bvecu(k)*tvec(j) + bvec(j)*tvecu(k) -
+     2      bvec(k)*tvecu(j)
+
+         nvecjuu(i) = bvecuu(j)*tvec(k) -
+     1      bvecuu(k)*tvec(j) +
+     2      2.0d0*(bvecu(j)*tvecu(k) -
+     3      bvecu(k)*tvecu(j)) + bvec(j)*tvecuu(k) -
+     4      bvec(k)*tvecuu(j)
+      enddo
+
+c     Base tube with outward orientation:
+c
+c     p0 = scale*gamma + rad*(cos(v)*N - sin(v)*B).
+      do i=1,3
+         p0(i) = scale*gam(i) + rad*(cv*nvecj(i) -
+     1      sv*bvec(i))
+
+         p0u(i) = scale*g1(i) + rad*(cv*nvecju(i) -
+     1      sv*bvecu(i))
+
+         p0v(i) = rad*(-sv*nvecj(i) - cv*bvec(i))
+
+         p0uu(i) = scale*g2(i) + rad*(cv*nvecjuu(i) -
+     1      sv*bvecuu(i))
+
+         p0uv(i) = rad*(-sv*nvecju(i) - cv*bvecu(i))
+
+         p0vv(i) = rad*(-cv*nvecj(i) + sv*bvec(i))
+      enddo
+
+c     x = x0 + A*sin(kx*y0).
+      qx = kx*p0(2)
+      sqx = sin(qx)
+      cqx = cos(qx)
+
+      x = p0(1) + asha*sqx
+      xu = p0u(1) + asha*cqx*kx*p0u(2)
+      xv = p0v(1) + asha*cqx*kx*p0v(2)
+
+      xuu = p0uu(1) + asha*(-sqx*kx*kx*p0u(2)*p0u(2)
+     1   + cqx*kx*p0uu(2))
+
+      xuv = p0uv(1) + asha*(-sqx*kx*kx*p0u(2)*p0v(2)
+     1   + cqx*kx*p0uv(2))
+
+      xvv = p0vv(1) + asha*(-sqx*kx*kx*p0v(2)*p0v(2)
+     1   + cqx*kx*p0vv(2))
+
+c     y = y0 + B*sin(ky*z0+phiy).
+      qy = ky*p0(3) + phiy
+      sqy = sin(qy)
+      cqy = cos(qy)
+
+      y = p0(2) + bsha*sqy
+      yu = p0u(2) + bsha*cqy*ky*p0u(3)
+      yv = p0v(2) + bsha*cqy*ky*p0v(3)
+
+      yuu = p0uu(2) + bsha*(-sqy*ky*ky*p0u(3)*p0u(3)
+     1   + cqy*ky*p0uu(3))
+
+      yuv = p0uv(2) + bsha*(-sqy*ky*ky*p0u(3)*p0v(3)
+     1   + cqy*ky*p0uv(3))
+
+      yvv = p0vv(2) + bsha*(-sqy*ky*ky*p0v(3)*p0v(3)
+     1   + cqy*ky*p0vv(3))
+
+c     Gaussian bump b(x,y).
+      dx = x - xc
+      dy = y - yc
+      qb = -(dx*dx + dy*dy)/sigma2
+      bump = hbump*exp(qb)
+
+      qbu = -2.0d0*(dx*xu + dy*yu)/sigma2
+      qbv = -2.0d0*(dx*xv + dy*yv)/sigma2
+
+      qbuu = -2.0d0*(xu*xu + dx*xuu + yu*yu +
+     1   dy*yuu)/sigma2
+
+      qbuv = -2.0d0*(xu*xv + dx*xuv + yu*yv +
+     1   dy*yuv)/sigma2
+
+      qbvv = -2.0d0*(xv*xv + dx*xvv + yv*yv +
+     1   dy*yvv)/sigma2
+
+      bu = bump*qbu
+      bv = bump*qbv
+      buu = bump*(qbu*qbu + qbuu)
+      buv = bump*(qbu*qbv + qbuv)
+      bvv = bump*(qbv*qbv + qbvv)
+
+c     z = z0 + C*sin(kz*x+phiz) + D*x*y + b(x,y).
+      qz = kz*x + phiz
+      sqz = sin(qz)
+      cqz = cos(qz)
+
+      z = p0(3) + csha*sqz + dsha*x*y + bump
+
+      zu = p0u(3) + csha*cqz*kz*xu +
+     1   dsha*(xu*y + x*yu) + bu
+
+      zv = p0v(3) + csha*cqz*kz*xv +
+     1   dsha*(xv*y + x*yv) + bv
+
+      zuu = p0uu(3) + csha*(-sqz*kz*kz*xu*xu +
+     1   cqz*kz*xuu) + dsha*(xuu*y + 2.0d0*xu*yu +
+     2   x*yuu) + buu
+
+      zuv = p0uv(3) + csha*(-sqz*kz*kz*xu*xv +
+     1   cqz*kz*xuv) + dsha*(xuv*y + xu*yv + xv*yu +
+     2   x*yuv) + buv
+
+      zvv = p0vv(3) + csha*(-sqz*kz*kz*xv*xv +
+     1   cqz*kz*xvv) + dsha*(xvv*y + 2.0d0*xv*yv +
+     2   x*yvv) + bvv
+
+
+c     Uniformly scale the complete surface and all derivatives.
+      x = fac*x
+      y = fac*y
+      z = fac*z
+
+      xu = fac*xu
+      yu = fac*yu
+      zu = fac*zu
+
+      xv = fac*xv
+      yv = fac*yv
+      zv = fac*zv
+
+      xuu = fac*xuu
+      yuu = fac*yuu
+      zuu = fac*zuu
+
+      xuv = fac*xuv
+      yuv = fac*yuv
+      zuv = fac*zuv
+
+      xvv = fac*xvv
+      yvv = fac*yvv
+      zvv = fac*zvv
+      
+      f(1) = x
+      f(2) = y
+      f(3) = z
+
+      if (nd.gt.3) then
+         f(4) = xu
+         f(5) = yu
+         f(6) = zu
+
+         f(7) = xv
+         f(8) = yv
+         f(9) = zv
+      endif
+
+      if (nd.gt.9) then
+         xs(1) = xu
+         xs(2) = yu
+         xs(3) = zu
+
+         xt(1) = xv
+         xt(2) = yv
+         xt(3) = zv
+
+         xss(1) = xuu
+         xss(2) = yuu
+         xss(3) = zuu
+
+         xst(1) = xuv
+         xst(2) = yuv
+         xst(3) = zuv
+
+         xtt(1) = xvv
+         xtt(2) = yvv
+         xtt(3) = zvv
+
+         e1 = xs(1)*xs(1) + xs(2)*xs(2) + xs(3)*xs(3)
+         f1 = xs(1)*xt(1) + xs(2)*xt(2) + xs(3)*xt(3)
+         g1m = xt(1)*xt(1) + xt(2)*xt(2) + xt(3)*xt(3)
+
+         normal(1) = xs(2)*xt(3) - xs(3)*xt(2)
+         normal(2) = xs(3)*xt(1) - xs(1)*xt(3)
+         normal(3) = xs(1)*xt(2) - xs(2)*xt(1)
+
+         nrm = sqrt(normal(1)*normal(1) +
+     1      normal(2)*normal(2) + normal(3)*normal(3))
+
+         normal(1) = normal(1)/nrm
+         normal(2) = normal(2)/nrm
+         normal(3) = normal(3)/nrm
+
+         e2 = xss(1)*normal(1) + xss(2)*normal(2) +
+     1      xss(3)*normal(3)
+
+         f2 = xst(1)*normal(1) + xst(2)*normal(2) +
+     1      xst(3)*normal(3)
+
+         g2m = xtt(1)*normal(1) + xtt(2)*normal(2) +
+     1      xtt(3)*normal(3)
+
+         denom = 2.0d0*(e1*g1m - f1*f1)
+         hmean = (e2*g1m - 2.0d0*f2*f1 + g2m*e1)/denom
+         f(10) = hmean
+      endif
+
+      return
       end
 
       

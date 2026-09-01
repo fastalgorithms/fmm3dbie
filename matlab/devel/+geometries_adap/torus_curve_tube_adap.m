@@ -1,5 +1,5 @@
 function S = torus_curve_tube_adap(radii,freq, nuv, norder, iptype,...
-    tol, eta)
+    tol, lptype, eta)
 % radii = [a,b,r]
 % !   a : major radius / offset from z-axis to center of torus tube
 % !   b : minor radius of the underlying torus
