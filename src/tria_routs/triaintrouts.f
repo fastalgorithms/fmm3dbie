@@ -1748,12 +1748,8 @@ c
       if(ier.ne.0) then
         call prinf('Could not allocate triangle tree*',i,0)
         call prinf('Exiting without computing anything*',i,0)
-        call prinf('Press 0 to continue*',i,0)
-        call prinf('Press 1 to exit routine and continue*',i,0)
-        call prinf('Press 2 to stop*',i,0)
-        read *, ier
-        if(ier.eq.2) stop
-        if(ier.eq.1) return
+        cintvals = 0
+        return
       endif
 
       allocate(itrirel(ntri0,ntarg),itrirelall(ntri0))
@@ -2404,12 +2400,8 @@ c
       if(ier.ne.0) then
         call prinf('Could not allocate triangle tree*',i,0)
         call prinf('Exiting without computing anything*',i,0)
-        call prinf('Press 0 to continue*',i,0)
-        call prinf('Press 1 to exit routine and continue*',i,0)
-        call prinf('Press 2 to stop*',i,0)
-        read *, ier
-        if(ier.eq.2) stop
-        if(ier.eq.1) return
+        cintvals = 0
+        return
       endif
 
       allocate(itrirel(ntri,ntarg),itrirelall(ntri))
@@ -3669,12 +3661,8 @@ c
       if(ier.ne.0) then
         call prinf('Could not allocate triangle tree*',i,0)
         call prinf('Exiting without computing anything*',i,0)
-        call prinf('Press 0 to continue*',i,0)
-        call prinf('Press 1 to exit routine and continue*',i,0)
-        call prinf('Press 2 to stop*',i,0)
-        read *, ier
-        if(ier.eq.2) stop
-        if(ier.eq.1) return
+        cintvals = 0
+        return
       endif
 
       allocate(itrirel(ntri0,ntarg),itrirelall(ntri0))

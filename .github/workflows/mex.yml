@@ -3,6 +3,7 @@ on: [push, pull_request]
 jobs:
   mex-ci:
     name: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -52,3 +53,4 @@ jobs:
       - name: Setup tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 10

@@ -42,7 +42,7 @@ switch lower(type)
 
     case {'rlb'}
         obj.type = 'rlb';
-        obj.kernel_order = 1;
+        obj.kernel_order = -1;
         obj.targ_fields = {'n', 'mean_curv'};
 
     case {'khb'}
@@ -51,7 +51,7 @@ switch lower(type)
 
     case {'rhb'}
         obj.type = 'rhb';
-        obj.kernel_order = 1;
+        obj.kernel_order = -1;
         obj.targ_fields = {'n', 'mean_curv'};
 
     otherwise

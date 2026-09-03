@@ -47,12 +47,17 @@ function [row_ptr, col_ind] = get_rsc_pattern(S, spmat, opdims)
         return
     end
 
-    % Map point column indices to patch indices.
-    patch_of_col = sum(bsxfun(@ge, col_s, ixyzs(1:end-1).'), 2);
+    % Map point column indices to patch indices via binary search on the
+    % sorted patch-start offsets (avoids materializing an O(nnz x npatches)
+    % dense array, which a naive bsxfun(@ge, col_s, ixyzs(1:end-1).')
+    % outer-product approach would do -- this blows up memory badly for
+    % large nnz and/or large npatches).
+    patch_of_col = discretize(col_s, [ixyzs; inf]);
 
-    pairs      = unique([row_s, patch_of_col], 'rows');
-    targ_inds  = pairs(:,1);
-    patch_inds = pairs(:,2);
+    % Deduplicate (target,patch) pairs by accumulating into a sparse
+    % ntarg x npatches indicator matrix.
+    T = sparse(row_s, patch_of_col, 1, ntarg, npatches);
+    [patch_inds, targ_inds] = find(T.');   % find on transpose -> sorted by target (col-major over T.')
 
     counts  = accumarray(targ_inds, 1, [ntarg, 1]);
     row_ptr = [1; 1 + cumsum(counts)];

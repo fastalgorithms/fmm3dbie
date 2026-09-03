@@ -50,11 +50,11 @@ function Q = get_quadrature_correction(S, type, zk, eps, targinfo, opts)
       case {'klb'}
         islap = true;  iktype = 2; kernel_order = -1;
       case {'rlb'}
-        islap = true;  iktype = 1; kernel_order = 1;
+        islap = true;  iktype = 1; kernel_order = -1;
       case {'khb'}
         islap = false; iktype = 2; kernel_order = -1;
       case {'rhb'}
-        islap = false; iktype = 1; kernel_order = 1;
+        islap = false; iktype = 1; kernel_order = -1;
       otherwise
         error('BELPDE.GET_QUADRATURE_CORRECTION: unknown type ''%s''.', type);
     end
@@ -115,7 +115,7 @@ function Q = get_quadrature_correction(S, type, zk, eps, targinfo, opts)
     end
     targinfo.kappa = reshape(kappa, 1, []);
 
-    targs = extract_targ_array(targinfo); 
+    targs = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
@@ -198,11 +198,10 @@ function Q = get_quadrature_correction(S, type, zk, eps, targinfo, opts)
         spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
         Q.spmat = spmat;
     end
-    
+
 end
 %
 %
 %
 %
 %-------------------------------------------------
-

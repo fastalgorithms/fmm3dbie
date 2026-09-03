@@ -212,6 +212,8 @@ c
 
       if(iquadtype.eq.1) then
         ipv = 2
+c       with beta = 0 the kernel is alpha*S'
+        if(beta.eq.(0.0d0,0.0d0)) ipv = 1
         fker => h3d_combprime
 
         call zgetnearquad_ggq_guru(npatches,norders,ixyzs,

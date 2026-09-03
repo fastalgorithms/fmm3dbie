@@ -204,6 +204,8 @@
       ndz = 0
       ndi = 0
       ipv = 2
+!     with beta = 0 the kernel is alpha*S'
+      if (dpars(2) .eq. 0) ipv = 1
       fker => l3d_combprime
 
       if (iquadtype .eq. 1) then

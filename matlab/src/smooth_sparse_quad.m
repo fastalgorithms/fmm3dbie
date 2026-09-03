@@ -38,13 +38,13 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
     kern = kernel3d(kern);
 
     ntarg = size(targs.r, 2);
-    
+
     if ismethod(S,'oversample') && ~any(isnan(nover))
         [S_over, val2over] = oversample(S, nover);
     else
         S_over = S; val2over = eye(size(S.r(:,:),2));
     end
-    
+
     ixyzs = S_over.ixyzs;
     opdims = kern.opdims;
     val2over = kron(val2over,eye(opdims(2)));
@@ -82,14 +82,14 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
         srcp = [];
         srcp.r = S_over.r(:,src_inds);
         for field = kern.src_fields(:).'
-            srcp.(field{1}) = S_over.(field{1})(:,src_inds);
+            srcp.(field{1}) = slice_field(S_over.(field{1}), src_inds);
         end
 
 
         targp = [];
         targp.r = targs.r(:,targ_inds);
         for field = kern.targ_fields(:).'
-            targp.(field{1}) = targs.(field{1})(:,targ_inds);
+            targp.(field{1}) = slice_field(targs.(field{1}), targ_inds);
         end
 
         % Evaluate kernel. Use eval_mask to zero out self interactions
@@ -119,4 +119,15 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
         opdims(1)*ntarg, opdims(2)*S_over.npts);
 
     Asmth = Asmth * val2over;
+end
+
+function v = slice_field(A, idx)
+% Slice a per-point field by point index, tolerating either orientation
+% (a (d,npts) array, or a plain column vector stored as (npts,1)).
+% Matches surfermat.m's slice_field helper.
+if isvector(A) && iscolumn(A)
+    v = A(idx).';
+else
+    v = A(:, idx);
+end
 end
