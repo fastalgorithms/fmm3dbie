@@ -1,6 +1,6 @@
 % Test byindex.kernbyindexeval and byindex.proxyfuneval.
 
-run ../../startup.m
+run ../startup.m
 
 rng(42);
 

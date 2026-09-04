@@ -1,7 +1,7 @@
 % Verify kernel3d eval, fmm, arithmetic operators, and zeros
 % for all implemented kernels. Failures accumulate; one assert at the end.
 
-run ../../startup.m
+run ../startup.m
 
 rng(42);
 

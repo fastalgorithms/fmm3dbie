@@ -2,7 +2,7 @@
 % Checks stok s (full projection), chained multiply, nrccie-eval (partial
 % ids/jds), and n-dot left multiply across eval and fmm.
 
-run ../../startup.m
+run ../startup.m
 
 rng(42);
 eps = 1e-6;

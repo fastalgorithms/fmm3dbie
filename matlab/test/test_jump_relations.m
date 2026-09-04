@@ -3,7 +3,7 @@
 % and check (1) u^+ - u^- matches the known discontinuity, and (2) the
 % one-sided limit u^+ = surfermatapply(PV) + jump/2.
 
-run ../../startup.m
+run ../startup.m
 
 rng(42);
 

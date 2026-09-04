@@ -1,6 +1,6 @@
 % Test byindex.proxyfun.
 
-run ../../startup.m
+run ../startup.m
 
 rng(42);
 

@@ -58,6 +58,8 @@ function [row_ptr, col_ind] = get_rsc_pattern(S, spmat, opdims)
     % ntarg x npatches indicator matrix.
     T = sparse(row_s, patch_of_col, 1, ntarg, npatches);
     [patch_inds, targ_inds] = find(T.');   % find on transpose -> sorted by target (col-major over T.')
+    patch_inds = patch_inds(:);
+    targ_inds  = targ_inds(:);
 
     counts  = accumarray(targ_inds, 1, [ntarg, 1]);
     row_ptr = [1; 1 + cumsum(counts)];

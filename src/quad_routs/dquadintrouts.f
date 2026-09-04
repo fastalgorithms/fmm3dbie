@@ -506,8 +506,12 @@ c
       if(ier.ne.0) then
         call prinf('Could not allocate quadrangle tree*',i,0)
         call prinf('Exiting without computing anything*',i,0)
-        cintvals = 0
-        return
+        call prinf('Press 0 to continue*',i,0)
+        call prinf('Press 1 to exit routine and continue*',i,0)
+        call prinf('Press 2 to stop*',i,0)
+        read *, ier0
+        if(ier0.eq.2) stop
+        if(ier0.eq.1) return
       endif
 
       allocate(iquadrel(nquad,ntarg),iquadrelall(nquad))
@@ -1852,8 +1856,12 @@ c
       if(ier.ne.0) then
         call prinf('Could not allocate quadrangle tree*',i,0)
         call prinf('Exiting without computing anything*',i,0)
-        cintvals = 0
-        return
+        call prinf('Press 0 to continue*',i,0)
+        call prinf('Press 1 to exit routine and continue*',i,0)
+        call prinf('Press 2 to stop*',i,0)
+        read *, ier
+        if(ier.eq.2) stop
+        if(ier.eq.1) return
       endif
 
       allocate(iquadrel(nquad0,ntarg),iquadrelall(nquad0))

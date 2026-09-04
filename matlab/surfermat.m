@@ -170,7 +170,7 @@ for i = 1:nsurfers
         else
             surferi_targ = []; surferi_targ.r = surferi.r(:,:);
             for field = ktmp.targ_fields(:).'
-                surferi_targ.(field{1}) = slice_field(surferi.(field{1}), 1:surferi.npts);
+                surferi_targ.(field{1}) = slice_field(surferi.(field{1}), 1:surferi.npts, surferi.npts);
             end
         end
 
@@ -203,7 +203,7 @@ for i = 1:nsurfers
                 srcp = [];
                 srcp.r = surferjover.r(:,src_inds);
                 for field = ktmp.src_fields(:).'
-                    srcp.(field{1}) = slice_field(surferjover.(field{1}), src_inds);
+                    srcp.(field{1}) = slice_field(surferjover.(field{1}), src_inds, surferjover.npts);
                 end
                 col_inds = (1:opdims(2)).' + opdims(2)*(src_inds-1);
                 col_inds = col_inds(:);
@@ -216,7 +216,7 @@ for i = 1:nsurfers
 
                     targp_self = []; targp_self.r = surferi_targ.r(:,targ_inds_self);
                     for field = ktmp.targ_fields(:).'
-                        targp_self.(field{1}) = slice_field(surferi_targ.(field{1}), targ_inds_self);
+                        targp_self.(field{1}) = slice_field(surferi_targ.(field{1}), targ_inds_self, surferi_targ.npts);
                     end
                     targp_self.uvs_targ = surferi_targ.uvs_targ(:,targ_inds_self);
                     targp_self.patch_id = surferi_targ.patch_id(targ_inds_self);
@@ -227,7 +227,7 @@ for i = 1:nsurfers
                     if ~isempty(off_targ_inds)
                         targp_off = []; targp_off.r = surferi_targ.r(:,off_targ_inds);
                         for field = ktmp.targ_fields(:).'
-                            targp_off.(field{1}) = slice_field(surferi_targ.(field{1}), off_targ_inds);
+                            targp_off.(field{1}) = slice_field(surferi_targ.(field{1}), off_targ_inds, surferi_targ.npts);
                         end
                         row_inds_off = (1:opdims(1)).' + opdims(1)*(off_targ_inds-1);
                         row_inds_off = row_inds_off(:);
@@ -293,11 +293,12 @@ else
 end
 end
 
-function v = slice_field(A, idx)
-% Slice a per-point field by point index, tolerating either orientation
-if isvector(A) && iscolumn(A)
-    v = A(idx).';
-else
+function v = slice_field(A, idx, npts)
+if size(A, 2) == npts
     v = A(:, idx);
+elseif size(A, 1) == npts
+    v = A(idx, :).';
+else
+    error('SLICE_FIELD: no dimension of A matches npts');
 end
 end

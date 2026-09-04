@@ -17,7 +17,7 @@ run ../startup.m
 
 eps    = 1e-7;
 norder = 8;
-na     = 3;
+na     = 2;
 zk     = 1.1;
 
 src = [];  src.r = [3.5; 2.1; -1.7];

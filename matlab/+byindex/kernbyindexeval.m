@@ -98,7 +98,7 @@ targinfo.r = targinfo_full.r(:, iuni);
 for k = 1:numel(targ_fields)
     f = targ_fields{k};
     if isfield(targinfo_full, f) || isprop(targinfo_full, f)
-        targinfo.(f) = slice_field(targinfo_full.(f), iuni);
+        targinfo.(f) = slice_field(targinfo_full.(f), iuni, ntarg);
     end
 end
 ntrg_uni = length(iuni);
@@ -263,18 +263,19 @@ function srcp = slice_surfer(srfj, pts, fields)
     srcp.r = srfj.r(:, pts);
     for k = 1:length(fields)
         f = fields{k};
-        srcp.(f) = slice_field(srfj.(f), pts);
+        srcp.(f) = slice_field(srfj.(f), pts, srfj.npts);
     end
 end
 
 
-function v = slice_field(A, idx)
-% Slice a per-point field by point index, tolerating either orientation
-    if isvector(A) && iscolumn(A)
-        v = A(idx).';
-    else
-        v = A(:, idx);
-    end
+function v = slice_field(A, idx, npts)
+if size(A, 2) == npts
+    v = A(:, idx);
+elseif size(A, 1) == npts
+    v = A(idx, :).';
+else
+    error('SLICE_FIELD: no dimension of A matches npts');
+end
 end
 
 function col_inds = expand_cols(loc_juni_p, opdims_src)

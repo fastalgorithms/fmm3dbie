@@ -1,6 +1,6 @@
 % Test byindex.kernbyindex entries against surfermat.
 
-run ../../startup.m
+run ../startup.m
 
 rng(42);
 
@@ -98,7 +98,7 @@ kerns(2,2) = kernel3d();
 kerns(1,1) = kernel3d('l', 's');
 kerns(2,1) = kernel3d('l', 'sp');
 kerns(1,2) = kernel3d('l', 'd');
-kerns(2,2) = kernel3d('l', 'dp');
+kerns(2,2) = 2*kernel3d('l', 'd');
 
 Asmth = surfermat(srfrs, kerns, eps, opts_sm);
 ii = randi(size(Asmth,1), 80, 1);

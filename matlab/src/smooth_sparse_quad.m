@@ -82,14 +82,14 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
         srcp = [];
         srcp.r = S_over.r(:,src_inds);
         for field = kern.src_fields(:).'
-            srcp.(field{1}) = slice_field(S_over.(field{1}), src_inds);
+            srcp.(field{1}) = slice_field(S_over.(field{1}), src_inds, S_over.npts);
         end
 
 
         targp = [];
         targp.r = targs.r(:,targ_inds);
         for field = kern.targ_fields(:).'
-            targp.(field{1}) = slice_field(targs.(field{1}), targ_inds);
+            targp.(field{1}) = slice_field(targs.(field{1}), targ_inds, ntarg);
         end
 
         % Evaluate kernel. Use eval_mask to zero out self interactions
@@ -121,13 +121,12 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
     Asmth = Asmth * val2over;
 end
 
-function v = slice_field(A, idx)
-% Slice a per-point field by point index, tolerating either orientation
-% (a (d,npts) array, or a plain column vector stored as (npts,1)).
-% Matches surfermat.m's slice_field helper.
-if isvector(A) && iscolumn(A)
-    v = A(idx).';
-else
+function v = slice_field(A, idx, npts)
+if size(A, 2) == npts
     v = A(:, idx);
+elseif size(A, 1) == npts
+    v = A(idx, :).';
+else
+    error('SLICE_FIELD: no dimension of A matches npts');
 end
 end

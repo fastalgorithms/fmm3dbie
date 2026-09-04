@@ -1,6 +1,6 @@
 % Test opts.unif_nover=1 in surfermat.
 
-run ../../startup.m
+run ../startup.m
 
 %% Now run the tests
 
