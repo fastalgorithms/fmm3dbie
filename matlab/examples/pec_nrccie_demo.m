@@ -7,7 +7,7 @@
 % Generate Geometry
 radii = [1,0.3,.3];
 S = geometries.wobbletorus(radii,5,[1,1,1],[8,10],7);
-
+S = geometries.ellipsoid([1,1,1.5],[1,1,1], [0;0;0], 8);
 [srcvals,~,~,~,~,wts] = extract_arrays(S);
 [~, npts] = size(srcvals);
 
@@ -24,6 +24,7 @@ dir = [pi/3,0]; pol = [1;0.2];
 zpars = complex([zk, alpha]);
 opts = [];
 opts.eps_gmres = 1e-10;
+tic;
 [densities] = em3d.pec.solver(S, Einc, Hinc, eps, zk, alpha, opts);
 
 % evaluate scattered field
@@ -67,5 +68,3 @@ colorbar
 title('$|E|$','Interpreter','latex')
 
 set(gca,'fontsize',14)
-
-

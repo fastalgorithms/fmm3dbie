@@ -172,14 +172,15 @@
       nthet = 3*(norder+1) + 2
       nlege = (norder/2) + 1
       if(ipv.eq.1) then
+!
+!  principal value disk: legendre in r on [0,rcut], full angular
+!  range [0,2*pi). The 1/r singularity is integrable in polar
+!  coordinates thanks to the r Jacobian
+!
         ifwhts = 1
         call legewhts(nlege, xr, wr, ifwhts)
         nr = nlege
-      elseif (ipv.eq.2) then
-        call hs_disk_quad(nlege, xr, wr, nr)
-      endif
-      
-      if (ipv.eq.1.or.ipv.eq.2) then
+
         dd = (2*pi)/nthet
         do i = 1,nr
           r = rcut/2*xr(i) + rcut/2
@@ -191,6 +192,30 @@
             xs(iquad) = r*cos(t)
             ys(iquad) = r*sin(t)
             whts(iquad) = tw*r*w
+          enddo
+        enddo
+        nquad = nquad + nthet*nr
+      elseif (ipv.eq.2) then
+!
+!  hypersingular disk: hs_disk_quad returns a finite-part rule on
+!  [-1,1] with the singularity at 0 in the interior. It must be used
+!  along the full diameter r in [-rcut,rcut] with only half the
+!  angular range [0,pi) so that the disk is covered exactly once. The
+!  area Jacobian is abs(r) since r runs through negative values
+!
+        call hs_disk_quad(nlege, xr, wr, nr)
+
+        dd = pi/nthet
+        do i = 1,nr
+          r = rcut*xr(i)
+          w = rcut*wr(i)
+          do j = 1,nthet
+            iquad = nquad + (i-1)*nthet + j
+            t = dd*(j-1)
+            tw = dd
+            xs(iquad) = r*cos(t)
+            ys(iquad) = r*sin(t)
+            whts(iquad) = tw*abs(r)*w
           enddo
         enddo
         nquad = nquad + nthet*nr
@@ -344,7 +369,7 @@
 !
       real *8 r0, r1, xmeas, rr, sina, cosa, xx, yy
       real *8 rcut_scaled, r, theta
-      integer *8 iquad, ier0
+      integer *8 iquad, ier0, ipv_t
       integer *8 ifreflect, irad, nr, nr0, nt, i, j, it, istart, ir
       real *8 xr(200), wr(200), xt(200), wt(200)
       real *8 xtmp, ytmp
@@ -453,13 +478,26 @@
 !
       ir = 0
       it = 0
-      call get_radfetch_param(ipv, irad, r, theta, nt, ir, it, ier)
+      ipv_t = ipv
+      call get_radfetch_param(ipv_t, irad, r, theta, nt, ir, it, ier)
+      if (ier.gt.0 .and. ipv_t.eq.2) then
+!
+!  the hypersingular transversal tables are tabulated only for
+!  r >= 1.5d-8; outside that range fall back to the principal value
+!  tables, which are tabulated down to r = 1d-15
+!
+        ipv_t = 1
+        ir = 0
+        it = 0
+        ier = 0
+        call get_radfetch_param(ipv_t, irad, r, theta, nt, ir, it, ier)
+      endif
       if (ier.gt.0) then
         print *, "Couldn't find theta quadratures"
         print *, "Returning without returning self quadrature"
         return
       endif
-      call radfetch(ipv, irad, ir, it, nt, xt, wt)
+      call radfetch(ipv_t, irad, ir, it, nt, xt, wt)
 !
 !  If ipv = 0, then the radial quadratures are indepdent of
 !  the transverse quadratures. Pregenerate them here
@@ -676,8 +714,8 @@
       real *8, intent(in) :: r,t
       integer *8, intent(out) :: n,ir,it,ier
 
-      real *8 rs(2,25),ts(2,25),eps
-      integer *8 nn(25,25),nrs,nts
+      real *8 rs(2,30),ts(2,30),eps
+      integer *8 nn(30,30),nrs,nts
       integer *8 i
 
       ier = 0

@@ -31,7 +31,7 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * sigma: layer potential density
 %    
 %

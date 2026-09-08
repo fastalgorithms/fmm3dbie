@@ -7,7 +7,7 @@ function [coefs] = vals2coefs(obj, vals)
 % Inputs: S is a surfer object
 %         vals is (n, S.npts) or (S.npts, n) array (n=1,2... is the number of scalar funcs)
 % Outputs:
-%         coeffs is array of coeffs, in the native patch ordering, same size of vals
+%         coefs is array of coeffs, in the native patch ordering, same size of vals
 %
 % *** to check this doc
     npatches = obj.npatches;

@@ -72,11 +72,11 @@ function [rsc] = getnear(S, targinfo, rfac)
     ntarg = size(targs,2); 
 
     if nargin < 3
-        [iptype_c, iptype_n] = groupcounts(iptype);
+        [iptype_c, iptype_n] = groupcounts(iptype(:));
         [~, ind] = max(iptype_c);
         iptype_avg = iptype_n(ind);
 
-        [norder_c, norder_n] = groupcounts(norders);
+        [norder_c, norder_n] = groupcounts(norders(:));
         [~, ind] = max(norder_c);
         norder_avg = norder_n(ind);
 
@@ -117,8 +117,9 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc = [];
     rsc.row_ptr = row_ptr;
     rsc.col_ind = col_ind;
-    rsc.iquad = iquad;
-    rsc.rfac = rfac;
-    rsc.rfac0 = rfac0;
-
+    rsc.iquad   = iquad;
+    rsc.rfac    = rfac;
+    rsc.rfac0   = rfac0;
+    rsc.nnz     = length(col_ind);
+    rsc.nquad   = iquad(nnz+1)-1;
 end

@@ -121,11 +121,16 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 HELM = src/helm_wrappers
 HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o \
 	$(HELM)/helm_comb_trans.o $(HELM)/helm_rpcomb_imp.o \
-	$(HELM)/helm_s_neu.o $(HELM)/helm_common_evaluators.o 
+	$(HELM)/helm_s_neu.o $(HELM)/helm_common_evaluators.o \
+	$(HELM)/helm_comb_cprime.o
 
 # Laplace wrappers
 LAP = src/lap_wrappers
-LOBJS = $(LAP)/lap_comb_dir.o $(LAP)/lap_s_neu.o
+LOBJS = $(LAP)/lap_comb_dir.o $(LAP)/lap_s_neu.o $(LAP)/lap_comb_cprime.o
+
+# Laplace/Helmholtz-Beltrami wrappers
+LAPBEL = src/lap_bel
+LBOBJS = $(LAPBEL)/lap_bel_routs.o
 
 # Maxwell wrappers
 EM = src/maxwell
@@ -140,12 +145,14 @@ EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 
 # Stokes wrappers
 STOK = src/stok_wrappers
-STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_mob.o
+STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_mob.o $(STOK)/stok_s_trac_eval.o \
+	$(STOK)/stok_comb_trac.o
 
 # Kernels
 KER = src/kernels
 KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o \
+	$(KER)/lap_bel_kernels.o \
 	$(KER)/hank101.o \
 	$(KER)/hank103.o $(KER)/helmdiffgreen.o \
 	$(KER)/hankdiff.o 
@@ -191,9 +198,9 @@ SURFSM_MOD_OBJS = $(SURFSM)/Mod_TreeLRD.o \
 # Add to FFLAGS so that modules get compiled in the .mod folder
 FFLAGS += -J .mod/
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
 
-OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
 OBJS_64 += $(COM)/lapack_wrap_64.o
 
 ifeq ($(BLAS_64),ON)
@@ -205,7 +212,7 @@ OBJS += $(COM)/lapack_wrap.o
 endif
 
 
-.PHONY: usage lib install test test-dyn python mex mex-dyn matlab-dyn matlab surf-smooth-objs mesh-test mesh-test-c
+.PHONY: usage lib install test test-dyn python mex mex-dyn matlab-dyn matlab surf-smooth-objs mesh-test mesh-test-c STATICLIBFMM MATLABFMM STATICLIBFMM3DBIE MSTATICLIBFMM3DBIE DYNAMICLIBFMM3DBIE
 
 default: usage
 
@@ -275,6 +282,13 @@ ifneq ($(wildcard ./FMM3D/src/.*),)
 	echo "$(LFMMSTATICLIB)"; 
 	$(eval LFMMSTATICLIB := $(shell pwd)/FMM3D/lib-static/libfmm3d.a) 
 	echo "$(LFMMSTATICLIB)"; 
+endif
+
+MATLABFMM:
+ifneq ($(wildcard ./FMM3D/src/.*),)
+	[ ! -f make.inc ] || cp make.inc ./FMM3D; 
+	cd FMM3D && make matlab;
+	echo "Done making fmm3d matlab"
 endif
 
 STATICLIBFMM3DBIE: $(OBJS)
@@ -348,7 +362,7 @@ GW = $(MWF)
 
 
 
-matlab:	$(MSTATICLIB) $(MWDIR)/$(GW).c 
+matlab:	$(MSTATICLIB) MATLABFMM $(MWDIR)/$(GW).c 
 	$(MEX) $(MWDIR)/$(GW).c lib-static/$(MSTATICLIB) $(MFLAGS) \
 	-output $(MWDIR)/$(GW) $(MEXLIBS) 
 

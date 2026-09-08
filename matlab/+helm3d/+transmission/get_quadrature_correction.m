@@ -42,7 +42,7 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices

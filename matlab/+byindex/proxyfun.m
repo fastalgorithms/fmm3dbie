@@ -1,0 +1,163 @@
+function [Kpxy, nbr] = proxyfun(slf, nbr, l, ctr, surfers, kern, kern2, ...
+    pr, pn, pw, pin, ifaddtrans)
+%PROXYFUN  Proxy function for rskelf, for kernels defined on arrays of surfers.
+%
+% [Kpxy, nbr] = byindex.proxyfun(slf, nbr, l, ctr, surfers, kern, kern2,
+%     opdims_mat, pr, pn, pw, pin, ifaddtrans)
+%
+% pr, pn, pw  - (3,npxy) proxy points/normals and (npxy,1) weights, unit-scale
+% pin         - function handle: logical mask for points inside proxy surface,
+%               called on (3,n) rescaled/recentered point array
+% kern        - kernel3d, sources on surfers -> proxy targets
+% kern2       - kernel3d, proxy sources -> targets on surfers (transpose block)
+%               pass [] or kern to use kern for both
+% ifaddtrans  - if true, append transpose block
+
+if isempty(kern2), kern2 = kern; end
+
+nsurfers = length(surfers);
+
+if numel(kern) == 1
+    opdims_mat = repmat(reshape(kern.opdims, 2, 1, 1), 1, nsurfers, nsurfers);
+else
+    opdims_mat = reshape([kern.opdims], 2, nsurfers, nsurfers);
+end
+
+% Column (source) offsets
+icollocs = zeros(nsurfers+1, 1); icollocs(1) = 1;
+for k = 1:nsurfers
+    icollocs(k+1) = icollocs(k) + surfers(k).npts * opdims_mat(2, 1, k);
+end
+
+% Row (target) offsets — used for nbr filtering
+irowlocs = zeros(nsurfers+1, 1); irowlocs(1) = 1;
+for k = 1:nsurfers
+    irowlocs(k+1) = irowlocs(k) + surfers(k).npts * opdims_mat(1, k, 1);
+end
+
+% Check that the proxy kernels match the source/target dimensions of kern
+for k = 1:nsurfers
+    nsrc_k  = opdims_mat(2, 1, k);
+    ntrg_k  = opdims_mat(1, k, 1);
+    ktmp_k  = pick_kern(kern, k, k);
+    assert(ktmp_k.opdims(2) == nsrc_k, ...
+        'BYINDEX.PROXYFUN: kern opdims(2) = %d but surfer %d has %d source dims', ...
+        ktmp_k.opdims(2), k, nsrc_k);
+    assert(ktmp_k.opdims(1) == ntrg_k, ...
+        'BYINDEX.PROXYFUN: kern opdims(1) = %d but surfer %d has %d target dims', ...
+        ktmp_k.opdims(1), k, ntrg_k);
+    if ifaddtrans
+        ktmp2_k = pick_kern(kern2, k, k);
+        assert(ktmp2_k.opdims(1) == nsrc_k, ...
+            'BYINDEX.PROXYFUN: kern2 opdims(1) = %d but surfer %d has %d source dims', ...
+            ktmp2_k.opdims(1), k, nsrc_k);
+    end
+end
+
+% Scale proxy points/weights
+pxy = pr * l + ctr(:);
+pw  = pw  * l;
+npxy = size(pxy, 2);
+
+targinfo_pxy = []; targinfo_pxy.r = pxy; targinfo_pxy.n = pn;
+srcinfo_pxy  = []; srcinfo_pxy.r  = pxy; srcinfo_pxy.n  = pn;
+
+% Filter nbr to points inside proxy surface
+new_nbr = [];
+for k = 1:nsurfers
+    opdim = opdims_mat(1, k, 1);
+    fnbr = nbr >= irowlocs(k) & nbr < irowlocs(k+1);
+    inbr = nbr(fnbr);
+    if isempty(inbr), continue; end
+    pts = idivide(int64(inbr(:) - irowlocs(k)), int64(opdim)) + 1;
+    dr  = (surfers(k).r(:, pts) - ctr(:)) / l;
+    new_nbr = [new_nbr, inbr(pin(dr))];
+end
+nbr = new_nbr;
+
+% Proxy row offsets
+npxy_rows = zeros(nsurfers+1, 1); npxy_rows(1) = 1;
+for k = 1:nsurfers
+    npxy_rows(k+1) = npxy_rows(k) + npxy * opdims_mat(1, k, 1);
+end
+Kpxy = zeros(npxy_rows(end)-1, length(slf));
+
+if ifaddtrans
+    npxy_rows2 = zeros(nsurfers+1,1); npxy_rows2(1) = 1;
+    for k = 1:nsurfers
+        ktmp2_k = pick_kern(kern2, k, 1);
+        npxy_rows2(k+1) = npxy_rows2(k) + npxy * ktmp2_k.opdims(2);
+    end
+    Ktrans = zeros(length(slf), npxy_rows2(end)-1);
+end
+
+for isrc = 1:nsurfers
+    srfj = surfers(isrc);
+    mat_col_start = icollocs(isrc);
+    mat_col_end   = icollocs(isrc+1) - 1;
+    f_col = slf >= mat_col_start & slf <= mat_col_end;
+    mat_col_ind = slf(f_col);
+    if isempty(mat_col_ind), continue; end
+
+    opdims_src = opdims_mat(2, 1, isrc);
+    jpts = idivide(int64(mat_col_ind(:) - mat_col_start), int64(opdims_src)) + 1;
+    [juni, ~, ijuni] = unique(jpts);
+    ijuni2 = (ijuni-1)*opdims_src + mod(mat_col_ind(:)-mat_col_start, opdims_src) + 1;
+
+    if numel(kern) == 1, ktmp_src = kern; else, ktmp_src = kern(1, isrc); end
+    srcp = slice_surfer(srfj, juni, ktmp_src.src_fields);
+    wsrc = repmat(srfj.wts(juni(:)).', opdims_src, 1);
+    wsrc = wsrc(:).';
+
+    for itrg = 1:nsurfers
+        if numel(kern) == 1, ktmp = kern; else, ktmp = kern(itrg,isrc); end
+
+        matuni = ktmp.eval(srcp, targinfo_pxy) .* wsrc;
+        Kpxy(npxy_rows(itrg):npxy_rows(itrg+1)-1, f_col) = matuni(:, ijuni2);
+
+        if ifaddtrans
+            if numel(kern2) == 1, ktmp2 = kern2; else, ktmp2 = kern2(isrc,itrg); end
+            wpxy = repmat(pw(:).', ktmp2.opdims(2), 1);
+            wpxy = wpxy(:).';
+            matuni2 = ktmp2.eval(srcinfo_pxy, srcp) .* wpxy;
+            Ktrans(f_col, npxy_rows2(isrc):npxy_rows2(isrc+1)-1) = matuni2(ijuni2, :);
+        end
+    end
+end
+
+if ifaddtrans
+    Kpxy = [Kpxy; Ktrans.'];
+end
+
+end
+
+
+function srcp = slice_surfer(srfj, pts, fields)
+    srcp = [];
+    srcp.r = srfj.r(:, pts);
+    for k = 1:length(fields)
+        f = fields{k};
+        srcp.(f) = slice_field(srfj.(f), pts, srfj.npts);
+    end
+end
+
+
+function v = slice_field(A, idx, npts)
+if size(A, 2) == npts
+    v = A(:, idx);
+elseif size(A, 1) == npts
+    v = A(idx, :).';
+else
+    error('SLICE_FIELD: no dimension of A matches npts');
+end
+end
+
+
+function k = pick_kern(kernarr, i, j)
+%PICK_KERN  Index into a possibly-scalar kernel array as kernarr(i,j).
+    if numel(kernarr) == 1
+        k = kernarr;
+    else
+        k = kernarr(i, j);
+    end
+end

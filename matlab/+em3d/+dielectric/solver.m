@@ -32,7 +32,7 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
 %        opts.rep - integral representation being used
 %                         Supported representations
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * densities: layer potential density
 %    
 %
@@ -51,6 +51,7 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
       rep = opts.rep;
     end
 
+    nker = 16;
     if strcmpi(rep, 'muller')
       nker = 16;
     end

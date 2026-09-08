@@ -5,7 +5,7 @@ function Q = get_quadrature_correction(S, eps, om, rep_params)
 %    for the chosen maxwell representation, with densities supported
 %    on the surface, and targets given by targinfo 
 %    as a cell array of sparse matrices or an array of matrices
-%    in the rsc format, where each folumn of the matrix is the
+%    in the rsc format, where each column of the matrix is the
 %    representation of the sparse matrix corresponding to one
 %    of the kernels
 %
@@ -29,7 +29,7 @@ function Q = get_quadrature_correction(S, eps, om, rep_params)
 %  (E1, H1) are the fields in the interior
 %
 %  Syntax
-%   Q = em3d.pec.get_quadrature_correction(S,eps,zk,rep_params)
+%   Q = em3d.dielectric.get_quadrature_correction(S,eps,om,rep_params)
 %
 %
 %  Input arguments:

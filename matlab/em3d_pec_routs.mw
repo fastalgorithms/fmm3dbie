@@ -110,9 +110,19 @@ function [E, H] = eval(S, zpars, densities, eps, varargin)
       nker = 4;
       ndim_s = 4;
       [nn, ~] = size(densities);
-      
+
       if nn ~= ndim_s
-        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n'); 
+        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n');
+      end
+    end
+
+    if strcmpi(rep, 'nrccie-bc')
+      nker = 9;
+      ndim_s = 3;
+      [nn, ~] = size(densities);
+
+      if nn ~= ndim_s
+        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n');
       end
     end
 
@@ -162,14 +172,18 @@ function [E, H] = eval(S, zpars, densities, eps, varargin)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-% Compute quadrature corrections   
+% Compute quadrature corrections
     if ~isprecompq
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
-        opts_quad.rep = [rep '-eval'];
+        if strcmpi(rep, 'nrccie-bc')
+          opts_quad.rep = 'nrccie-bc';
+        else
+          opts_quad.rep = [rep '-eval'];
+        end
 %
-%  For now Q is going to be a struct with 'quad_format', 
+%  For now Q is going to be a struct with 'quad_format',
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
 %  and either, 'wnear', 'row_ind', 'col_ptr', or
 %  with 'spmat' as a sparse matrix or a cell array of wnear/spmat
@@ -203,11 +217,6 @@ function [E, H] = eval(S, zpars, densities, eps, varargin)
     iquad = Q.iquad;
     wnear = Q.wnear;
 
-    p = complex(zeros(6,ntarg));
-
-    ipotflag = 3;
-
-
     ndd = 0;
     dpars = [];
     ndz = length(zpars);
@@ -215,15 +224,25 @@ function [E, H] = eval(S, zpars, densities, eps, varargin)
     ipars = [];
     lwork = 0;
     work = [];
-    ndim_p = 6;
     idensflag = 1;
 % Call the layer potential evaluator
-    
+
     if strcmpi(rep, 'nrccie')
-      # FORTRAN em_nrccie_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[ndim_s,npts] sigmause, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ndim_p,ntarg] p);   
+      ndim_p = 6;
+      ipotflag = 3;
+      p = complex(zeros(ndim_p,ntarg));
+      # FORTRAN em_nrccie_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[ndim_s,npts] sigmause, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ndim_p,ntarg] p);
+      E = p(1:3,:);
+      H = p(4:6,:);
     end
-    E = p(1:3,:);
-    H = p(4:6,:);
+
+    if strcmpi(rep, 'nrccie-bc')
+      ndim_p = 3;
+      p = complex(zeros(ndim_p,ntarg));
+      # FORTRAN lpcomp_em_nrccie_pec_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] ndim_s, dcomplex[ndim_s,npts] sigmause, inout dcomplex[ndim_p,ntarg] p);
+      E = p(1:3,:);
+      H = [];
+    end
 end    
 %
 %

@@ -461,7 +461,7 @@
                   wnear(2,jquadstart+l-1)*sigma(3,jstart+l-1))*zpars(7)
               pot(6,i) = pot(6,i) + &
                 (wnear(2,jquadstart+l-1)*sigma(2,jstart+l-1) - &
-                  wnear(3,jquadstart+l-1)*sigma(3,jstart+l-1))*zpars(7)
+                  wnear(3,jquadstart+l-1)*sigma(1,jstart+l-1))*zpars(7)
             endif
             if(i2.eq.1.and.iftau.eq.1) then
               pot(4:6,i) = pot(4:6,i) + &

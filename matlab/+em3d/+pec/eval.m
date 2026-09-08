@@ -54,7 +54,7 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
 %       targinfo.r = (3,nt) target locations
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zk : wave number
@@ -85,6 +85,38 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
       nonsmoothonly = opts.nonsmoothonly;
     end
 
+    rep = 'nrccie';
+
+    if isfield(opts, 'rep')
+      rep = opts.rep;
+    end
+
+    if strcmpi(rep, 'nrccie') || strcmpi(rep, 'nrccie-eval')
+      nker = 4;
+      ndim_s = 4;
+      [nn, ~] = size(densities);
+      zpars = complex(zeros(2,1));
+      zpars(1) = zk;
+      zpars(2) = rep_params;
+
+      if nn ~= ndim_s
+        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n');
+      end
+    end
+
+    if strcmpi(rep, 'nrccie-bc')
+      nker = 9;
+      ndim_s = 3;
+      [nn, ~] = size(densities);
+      zpars = complex(zeros(2,1));
+      zpars(1) = zk;
+      zpars(2) = rep_params;
+
+      if nn ~= ndim_s
+        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n');
+      end
+    end
+
     isprecompq = false;
     if isfield(opts, 'precomp_quadrature')
       Q = opts.precomp_quadrature;
@@ -103,26 +135,6 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
       end
     end
 
-    
-    rep = 'nrccie';
-
-    if isfield(opts, 'rep')
-      rep = opts.rep;
-    end
-
-    if strcmpi(rep, 'nrccie')
-      nker = 4;
-      ndim_s = 4;
-      [nn, ~] = size(densities);
-      zpars = complex(zeros(2,1));
-      zpars(1) = zk;
-      zpars(2) = rep_params;
-      
-      if nn ~= ndim_s
-        error('EM3D.PEC.EVAL: number of densities not consistent with representation\n'); 
-      end
-    end
-
 
 % Extract arrays
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -137,12 +149,19 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     [ndtarg,ntarg] = size(targs);
     ntargp1 = ntarg+1;
 
-% Compute quadrature corrections   
+
+% Compute quadrature corrections
     if ~isprecompq
       if ~nonsmoothonly
         opts_quad = [];
         opts_quad.format = 'rsc';
-        opts_quad.rep = [rep '-eval'];
+        if strcmpi(rep, 'nrccie-bc')
+          opts_quad.rep = 'nrccie-bc';
+        elseif strcmpi(rep, 'nrccie-eval')
+          opts_quad.rep = 'nrccie-eval';
+        else
+          opts_quad.rep = [rep '-eval'];
+        end
 %
 %  For now Q is going to be a struct with 'quad_format', 
 %  'nkernels', 'pde', 'bc', 'kernel', 'ker_order',
@@ -178,11 +197,6 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     iquad = Q.iquad;
     wnear = Q.wnear;
 
-    p = complex(zeros(6,ntarg));
-
-    ipotflag = 3;
-
-
     ndd = 0;
     dpars = [];
     ndz = length(zpars);
@@ -190,17 +204,31 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     ipars = [];
     lwork = 0;
     work = [];
-    ndim_p = 6;
     idensflag = 1;
 % Call the layer potential evaluator
-    
-    if strcmpi(rep, 'nrccie')
+
+    if strcmpi(rep, 'nrccie') || strcmpi(rep, 'nrccie-eval')
+      ndim_p = 6;
+      ipotflag = 3;
+      p = complex(zeros(ndim_p,ntarg));
       mex_id_ = 'em_nrccie_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c io dcomplex[xx])';
 [p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, densities, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, ndim_s, npts, 1, 1, ndim_p, ntarg);
+      E = p(1:3,:);
+      H = p(4:6,:);
+    elseif strcmpi(rep, 'nrccie-bc')
+      %
+      %  Off-surface: lpcomp_em_nrccie_pec_addsub_targ. Density [j_ru; j_rv; rho] 
+      %  is in an orthonormal frame. pot  = (3, ntarg): IE operator output in the 
+      %  cartesian frame.
+      %
+      ndim_p = 3;
+      p = complex(zeros(ndim_p,ntarg));
+      mex_id_ = 'lpcomp_em_nrccie_pec_addsub_targ(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[xx], c io dcomplex[xx])';
+[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, ndim_s, densities, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, ndim_s, npts, ndim_p, ntarg);
+      E = p(1:3,:);
+      H = [];
     end
-    E = p(1:3,:);
-    H = p(4:6,:);
-end    
+end
 %
 %
 %

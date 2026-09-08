@@ -39,7 +39,7 @@ function p = eval(S,densities,targinfo,eps,zks,rep_params,varargin)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * eps: precision requested
 %    * zks: wave numbers (k)

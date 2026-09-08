@@ -37,7 +37,7 @@ function [densities, varargout] = solver(S, rhs, eps, zks, rep_params, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * densities: solution to integral equation
 %         densities(1,:) = \rho 
 %         densities(2,:) = \sigma

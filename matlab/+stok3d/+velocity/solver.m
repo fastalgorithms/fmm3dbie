@@ -31,7 +31,7 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
+%  Output arguments:
 %    * sigma: (3,npts) layer potential density
 %    
 %
@@ -140,14 +140,14 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
     varargout{1} = errs;
     varargout{2} = rres;
     varargout{3} = Q;
-end  
+end
 %
 %
 %
 %
 %----------------------------------------
 %%
-%%   Maxwell pec routines
+%%   Stokes traction (S' kernel) routines
 %
 %
 %-------------------------------------------------

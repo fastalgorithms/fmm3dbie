@@ -32,7 +32,7 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 %       targinfo.n = normal info
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
-%       targinfo.uvs_targ (2,nt) local uv ccordinates of target on
+%       targinfo.uvs_targ (2,nt) local uv coordinates of target on
 %          patch if on-surface (optional)
 %    * opts: options struct
 %        opts.format - Storage format for sparse matrices
@@ -128,35 +128,12 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     end
 
 
-    
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    mex_id_ = 'get_rfacs(c i int64_t[x], c i int64_t[x], c io double[x], c io double[x])';
-[rfac, rfac0] = fmm3dbie_routs(mex_id_, norder0, iptype0, rfac, rfac0, 1, 1, 1, 1);
-    
+    rsc = getnear(S, targinfo);
+    row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
+    rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
+    nquad = rsc.nquad;
+    nnzp1 = nnz+1; 
 
-    cms = S.cms; 
-    rads = S.rads;
-
-    rad_near = rads*rfac;
-    nnz = 0;
-    mex_id_ = 'findnearmem(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x])';
-[nnz] = fmm3dbie_routs(mex_id_, cms, npatches, rad_near, ndtarg, targs, ntarg, nnz, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, 1);
-
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    mex_id_ = 'findnear(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x], c io int64_t[x])';
-[row_ptr, col_ind] = fmm3dbie_routs(mex_id_, cms, npatches, rad_near, ndtarg, targs, ntarg, row_ptr, col_ind, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, ntp1, nnz);
-
-    iquad = zeros(nnz+1,1);
-    mex_id_ = 'get_iquad_rsc(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io int64_t[x])';
-[iquad] = fmm3dbie_routs(mex_id_, npatches, ixyzs, npts, nnz, row_ptr, col_ind, iquad, 1, npp1, 1, 1, ntp1, nnz, nnzp1);
-
-    nquad = iquad(nnz+1)-1;
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -176,12 +153,12 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
       nker = 4;
       wnear = complex(zeros(nker,nquad));
       mex_id_ = 'getnearquad_helm_rpcomb_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad);
     elseif strcmpi(qtype, 'rpcomb-eval')
       nker = 2;
       wnear = complex(zeros(nker,nquad));
       mex_id_ = 'getnearquad_helm_rpcomb_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zkuse, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zkuse, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad);
     else
       error('HELM3D.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
     end
@@ -207,7 +184,7 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
         iper = zeros(nnz,1);
         npatp1 = npatches+1;
         mex_id_ = 'rsc_to_csc(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io int64_t[x], c io int64_t[x], c io int64_t[x])';
-[col_ptr, row_ind, iper] = fmm3dbie_routs(mex_id_, npatches, ntarg, nnz, row_ptr, col_ind, col_ptr, row_ind, iper, 1, 1, 1, ntp1, nnz, npatp1, nnz, nnz);
+[col_ptr, row_ind, iper] = fmm3dbie_routs(mex_id_, npatches, ntarg, nnz, row_ptr, col_ind, col_ptr, row_ind, iper, 1, 1, 1, ntargp1, nnz, npatp1, nnz, nnz);
         Q.iquad = iquad;
         Q.iper = iper;
         Q.wnear = wnear;

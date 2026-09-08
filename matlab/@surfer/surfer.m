@@ -99,6 +99,7 @@ classdef surfer
         patch_id      % which patch each node belongs to (npts*1)
         uvs_targ      % (u,v) param coords of nodes within own patch (2,npts)
         mean_curv     % mean curvatures at nodes (npts*1)
+        npts_per_patch% number of points per patch (npatches,1)
         ffform        % cell array of first fundamental forms at nodes (2,2,npts)
         sfform        % cell array of second fundamental forms at nodes (2,2,npts)
         ffforminv     % cell array of inverses of ffforms at nodes (2,2,npts)
@@ -223,6 +224,7 @@ classdef surfer
                 npts_per_patch(i) = npols{iuse(i)};
             end
             npts_per_patch = [1;npts_per_patch];
+            obj.npts_per_patch = npts_per_patch;
             obj.ixyzs = cumsum(npts_per_patch);
             
             obj.npts = obj.ixyzs(end)-1;
@@ -353,7 +355,7 @@ classdef surfer
          dens_int = interpolate_data(obj, dens, ipatch_ids, uvs_targ);
          [objout,varargout] = affine_transf(obj,mat,shift);
          [varargout] = scatter(obj,varargin);
-         [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear);
+         [spmat] = conv_rsc_to_spmat(obj,row_ptr,col_ind,wnear,ri);
          [objout,varargout] = rotate(obj, eul);
          [varargout] = plot_nodes(S, v, varargin);
          wireframe(obj, opts);

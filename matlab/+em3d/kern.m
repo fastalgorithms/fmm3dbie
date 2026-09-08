@@ -1,13 +1,13 @@
 
 function submat= kern(zk,srcinfo,targinfo,type,varargin)
-%EM3D.KERN standard vector Helmholtz layer potential kernels 
+%EM3D.KERN standard vector Helmholtz layer potential kernels
 %in 3D required for Maxwell potentials
-% 
+%
 % Syntax: submat = em3d.kern(zk,srcinfo,targinfo,type,varargin)
 %
 % Let x be targets and y be sources for these formulas, with
 % n_x and n_y the corresponding unit normals at those points.
-%  
+%
 % Kernels based on S:= G(x,y) = exp(i*k*|x-y|)/(4*pi*|x-y|)
 %
 %
@@ -24,9 +24,9 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %   zk - complex number, Maxwell wave number
 %   srcinfo - description of sources in ptinfo struct format, i.e.
 %                ptinfo.r - positions (3,:) array
-%                ptinfo.du - first derivative with respect to u in 
+%                ptinfo.du - first derivative with respect to u in
 %                     underlying parameterization (3,:)
-%                ptinfo.dv - first derivative with respect to u in 
+%                ptinfo.dv - first derivative with respect to u in
 %                     underlying parameterization (3,:)
 %                ptinfo.n - normals (3,:)
 %   targinfo - description of targets in ptinfo struct format,
@@ -46,23 +46,24 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %                type == 'NxCurlCurlS'
 %                type == 'NdotCurlCurlS'
 %                type == 'DeldotS'
-%   varargin{1} - alpha, beta in the combined layer formula, coef in eval 
+%   varargin{1} - alpha, beta in the combined layer formula, coef in eval
 %                and evalg, otherwise does nothing
 %
 % Output:
 %   submat - the evaluation of the selected kernel for the
 %            provided sources and targets. the number of
 %            rows equals the number of targets and the
-%            number of columns equals the number of sources  
+%            number of columns equals the number of sources
 %
-  
+
 src = srcinfo.r;
 targ = targinfo.r;
 
 [~,ns] = size(src);
 [~,nt] = size(targ);
 
-if strcmpi(type,'sdu')
+switch lower(type)
+case {'sdu'}
   du = targinfo.du;
   [~,grad] = helm3d.green(zk,src,targ);
   dx = repmat((du(1,:)).',1,ns);
@@ -71,9 +72,8 @@ if strcmpi(type,'sdu')
   dn = sqrt(dx.*dx+dy.*dy+dz.*dz);
   submat = (grad(:,:,1).*dx./dn + grad(:,:,2).*dy+...
       grad(:,:,3).*dz)./dn;
-end
 
-if strcmpi(type,'sdv')
+case {'sdv'}
   dv = targinfo.dv;
   [~,grad] = em3d.green(zk,src,targ);
   dx = repmat((dv(1,:)).',1,ns);
@@ -82,64 +82,60 @@ if strcmpi(type,'sdv')
   dn = sqrt(dx.*dx+dy.*dy+dz.*dz);
   submat = (grad(:,:,1).*dx./dn + grad(:,:,2).*dy+...
       grad(:,:,3).*dz)./dn;
-end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if strcmpi(type,'NxDelS')
+case {'nxdels'}
   targnorm = targinfo.n;
   [~,grad] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
-  
+
   drut = targinfo.dru;
   dxut = repmat((drut(1,:)).',1,ns);
   dyut = repmat((drut(2,:)).',1,ns);
   dzut = repmat((drut(3,:)).',1,ns);
-  
+
   drvt = targinfo.drv;
   dxvt = repmat((drvt(1,:)).',1,ns);
   dyvt = repmat((drvt(2,:)).',1,ns);
   dzvt = repmat((drvt(3,:)).',1,ns);
-  
+
   tmatx =                 -nz.*grad(:,:,2)+ny.*grad(:,:,3);
   tmaty =  nz.*grad(:,:,1)                -nx.*grad(:,:,3);
   tmatz = -ny.*grad(:,:,1)+nx.*grad(:,:,2);
-  
+
   submat = zeros(2,nt,ns);
   submat(1,:,:) = dxut.*tmatx+dyut.*tmaty+dzut.*tmatz;
   submat(2,:,:) = dxvt.*tmatx+dyvt.*tmaty+dzvt.*tmatz;
   submat = reshape(submat,2*nt,ns);
-end
 
-if strcmpi(type,'NxCurlS')
+case {'nxcurls'}
   targnorm = targinfo.n;
   [~,grad] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
-  
+
   drut = targinfo.dru;
   dxut = repmat((drut(1,:)).',1,ns);
   dyut = repmat((drut(2,:)).',1,ns);
   dzut = repmat((drut(3,:)).',1,ns);
-  
+
   drvt = targinfo.drv;
   dxvt = repmat((drvt(1,:)).',1,ns);
   dyvt = repmat((drvt(2,:)).',1,ns);
   dzvt = repmat((drvt(3,:)).',1,ns);
-  
+
   drus = srcinfo.dru;
   dxus = repmat((drus(1,:)),nt,1);
   dyus = repmat((drus(2,:)),nt,1);
   dzus = repmat((drus(3,:)),nt,1);
-  
+
   drvs = srcinfo.drv;
   dxvs = repmat((drvs(1,:)),nt,1);
   dyvs = repmat((drvs(2,:)),nt,1);
   dzvs = repmat((drvs(3,:)),nt,1);
-  
+
   gmat11 = -grad(:,:,3).*nz-grad(:,:,2).*ny;
   gmat12 =  grad(:,:,1).*ny;
   gmat13 =  grad(:,:,1).*nz;
@@ -149,90 +145,82 @@ if strcmpi(type,'NxCurlS')
   gmat31 =  grad(:,:,3).*nx;
   gmat32 =  grad(:,:,3).*ny;
   gmat33 = -grad(:,:,1).*nx-grad(:,:,2).*ny;
-  
+
   tmat11 = gmat11.*dxus + gmat12.*dyus + ...
       gmat13.*dzus;
   tmat21 = gmat21.*dxus + gmat22.*dyus + ...
       gmat23.*dzus;
   tmat31 = gmat31.*dxus + gmat32.*dyus + ...
       gmat33.*dzus;
-  
+
   tmat12 = gmat11.*dxvs + gmat12.*dyvs + ...
       gmat13.*dzvs;
   tmat22 = gmat21.*dxvs + gmat22.*dyvs + ...
       gmat23.*dzvs;
   tmat32 = gmat31.*dxvs + gmat32.*dyvs + ...
       gmat33.*dzvs;
-  
+
   submat = zeros(2,nt,2,ns);
   submat(1,:,1,:) = tmat11.*dxut + tmat21.*dyut + ...
       tmat31.*dzut;
   submat(1,:,2,:) = tmat12.*dxut + tmat22.*dyut + ...
       tmat32.*dzut;
-  
+
   submat(2,:,1,:) = tmat11.*dxvt + tmat21.*dyvt + ...
       tmat31.*dzvt;
   submat(2,:,2,:) = tmat12.*dxvt + tmat22.*dyvt + ...
       tmat32.*dzvt;
   submat = reshape(submat,2*nt,2*ns);
-  
-end
 
-if strcmpi(type,'NdotS')
+case {'ndots'}
   targnorm = targinfo.n;
   [gfun] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
-  
-%%%% extract and copy local dr vectors
 
   drus = srcinfo.dru;
   dxus = repmat((drus(1,:)),nt,1);
   dyus = repmat((drus(2,:)),nt,1);
   dzus = repmat((drus(3,:)),nt,1);
-  
+
   drvs = srcinfo.drv;
   dxvs = repmat((drvs(1,:)),nt,1);
   dyvs = repmat((drvs(2,:)),nt,1);
   dzvs = repmat((drvs(3,:)),nt,1);
-  
+
   submat = zeros(ns,2,nt);
   submat(:,1,:) = gfun.*(dxus.*nx+dyus.*ny+dzus.*nz);
   submat(:,2,:) = gfun.*(dxvs.*nx+dyvs.*ny+dzvs.*nz);
   submat = reshape(submat,[ns,2*nt]);
-  
-end
 
-
-if strcmpi(type,'NxS')
-    
+case {'nxs'}
   targnorm = targinfo.n;
   [gfun] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
-  
+
   drut = targinfo.dru;
   dxut = repmat((drut(1,:)).',1,ns);
   dyut = repmat((drut(2,:)).',1,ns);
   dzut = repmat((drut(3,:)).',1,ns);
-  
+
   drvt = targinfo.drv;
   dxvt = repmat((drvt(1,:)).',1,ns);
   dyvt = repmat((drvt(2,:)).',1,ns);
   dzvt = repmat((drvt(3,:)).',1,ns);
-  
+
   drus = srcinfo.dru;
   dxus = repmat((drus(1,:)),nt,1);
   dyus = repmat((drus(2,:)),nt,1);
   dzus = repmat((drus(3,:)),nt,1);
-  
+
   drvs = srcinfo.drv;
   dxvs = repmat((drvs(1,:)),nt,1);
   dyvs = repmat((drvs(2,:)),nt,1);
   dzvs = repmat((drvs(3,:)),nt,1);
-  
+
   submat = zeros(2,nt,2,ns);
   submat(1,:,1,:) = dxut.*(ny.*dzus-nz.*dyus)+dyut.*(nz.*dxus-nx.*dzus)+...
                     dzut.*(nx.*dyus-ny.*dxus);
@@ -241,43 +229,40 @@ if strcmpi(type,'NxS')
   submat(1,:,2,:) = dxut.*(ny.*dzvs-nz.*dyvs)+dyut.*(nz.*dxvs-nx.*dzvs)+...
                     dzut.*(nx.*dyvs-ny.*dxvs);
   submat(2,:,2,:) = dxvt.*(ny.*dzvs-nz.*dyvs)+dyvt.*(nz.*dxvs-nx.*dzvs)+...
-                    dzvt.*(nx.*dyvs-ny.*dxvs);                    
+                    dzvt.*(nx.*dyvs-ny.*dxvs);
   submat = reshape(submat,[2*nt,2*ns]);
-  
-end
 
-if strcmpi(type,'NxCurlCurlS')
-    
+case {'nxcurlcurls'}
   targnorm = targinfo.n;
   [gfun,~,hess] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
-  
+
   hess(:,:,1,1) = hess(:,:,1,1) + zk^2*gfun;
   hess(:,:,2,2) = hess(:,:,2,2) + zk^2*gfun;
   hess(:,:,3,3) = hess(:,:,3,3) + zk^2*gfun;
-  
+
   drut = targinfo.dru;
   dxut = repmat((drut(1,:)).',1,ns);
   dyut = repmat((drut(2,:)).',1,ns);
   dzut = repmat((drut(3,:)).',1,ns);
-  
+
   drvt = targinfo.drv;
   dxvt = repmat((drvt(1,:)).',1,ns);
   dyvt = repmat((drvt(2,:)).',1,ns);
   dzvt = repmat((drvt(3,:)).',1,ns);
-  
+
   drus = srcinfo.dru;
   dxus = repmat((drus(1,:)),nt,1);
   dyus = repmat((drus(2,:)),nt,1);
   dzus = repmat((drus(3,:)),nt,1);
-  
+
   drvs = srcinfo.drv;
   dxvs = repmat((drvs(1,:)),nt,1);
   dyvs = repmat((drvs(2,:)),nt,1);
   dzvs = repmat((drvs(3,:)),nt,1);
-  
+
   svec = zeros(3,2,nt,ns);
   svec(1,1,:,:) = dxus;
   svec(2,1,:,:) = dyus;
@@ -285,7 +270,7 @@ if strcmpi(type,'NxCurlCurlS')
   svec(1,2,:,:) = dxvs;
   svec(2,2,:,:) = dyvs;
   svec(3,2,:,:) = dzvs;
-  
+
   tvec = zeros(3,2,nt,ns);
   tvec(1,1,:,:) = dyut.*nz-dzut.*ny;
   tvec(2,1,:,:) = dzut.*nx-dxut.*nz;
@@ -293,7 +278,7 @@ if strcmpi(type,'NxCurlCurlS')
   tvec(1,2,:,:) = dyvt.*nz-dzvt.*ny;
   tvec(2,2,:,:) = dzvt.*nx-dxvt.*nz;
   tvec(3,2,:,:) = dxvt.*ny-dyvt.*nx;
-  
+
   submat = zeros(2,nt,2,ns);
   for ii=1:2
       for jj=1:2
@@ -305,43 +290,40 @@ if strcmpi(type,'NxCurlCurlS')
           end
       end
   end
-  
-  submat = reshape(submat,[2*nt,2*ns]);
-  
-end
 
-if strcmpi(type,'NdotCurlCurlS')
-    
+  submat = reshape(submat,[2*nt,2*ns]);
+
+case {'ndotcurlcurls'}
   targnorm = targinfo.n;
   [gfun,~,hess] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
-  
+
   hess(:,:,1,1) = hess(:,:,1,1) + zk^2*gfun;
   hess(:,:,2,2) = hess(:,:,2,2) + zk^2*gfun;
   hess(:,:,3,3) = hess(:,:,3,3) + zk^2*gfun;
-  
+
   drut = targinfo.dru;
   dxut = repmat((drut(1,:)).',1,ns);
   dyut = repmat((drut(2,:)).',1,ns);
   dzut = repmat((drut(3,:)).',1,ns);
-  
+
   drvt = targinfo.drv;
   dxvt = repmat((drvt(1,:)).',1,ns);
   dyvt = repmat((drvt(2,:)).',1,ns);
   dzvt = repmat((drvt(3,:)).',1,ns);
-  
+
   drus = srcinfo.dru;
   dxus = repmat((drus(1,:)),nt,1);
   dyus = repmat((drus(2,:)),nt,1);
   dzus = repmat((drus(3,:)),nt,1);
-  
+
   drvs = srcinfo.drv;
   dxvs = repmat((drvs(1,:)),nt,1);
   dyvs = repmat((drvs(2,:)),nt,1);
   dzvs = repmat((drvs(3,:)),nt,1);
-  
+
   svec = zeros(3,2,nt,ns);
   svec(1,1,:,:) = dxus;
   svec(2,1,:,:) = dyus;
@@ -349,13 +331,12 @@ if strcmpi(type,'NdotCurlCurlS')
   svec(1,2,:,:) = dxvs;
   svec(2,2,:,:) = dyvs;
   svec(3,2,:,:) = dzvs;
-  
+
   tvec = zeros(3,1,nt,ns);
   tvec(1,1,:,:) = nx;
   tvec(2,1,:,:) = ny;
   tvec(3,1,:,:) = nz;
 
-  
   submat = zeros(1,nt,2,ns);
   for ii=1:1
       for jj=1:2
@@ -367,20 +348,17 @@ if strcmpi(type,'NdotCurlCurlS')
           end
       end
   end
-  
+
   submat = reshape(submat,[nt,2*ns]);
-  
-end
 
-
-if strcmpi(type,'DeldotS')
+case {'deldots'}
   [~,grad] = helm3d.green(zk,src,targ);
-  
+
   drus = srcinfo.dru;
   dxus = repmat((drus(1,:)),nt,1);
   dyus = repmat((drus(2,:)),nt,1);
   dzus = repmat((drus(3,:)),nt,1);
-  
+
   drvs = srcinfo.drv;
   dxvs = repmat((drvs(1,:)),nt,1);
   dyvs = repmat((drvs(2,:)),nt,1);
@@ -389,45 +367,238 @@ if strcmpi(type,'DeldotS')
   submat(:,1,:) = dxus.*grad(:,:,1)+dyus.*grad(:,:,2)+dzus.*grad(:,:,3);
   submat(:,2,:) = dxvs.*grad(:,:,1)+dyvs.*grad(:,:,2)+dzvs.*grad(:,:,3);
   submat = reshape(submat,nt,2*ns);
-  
-end
 
-if strcmpi(type,'NdotCurlS')
-    
+case {'nrccie-bc'}
+%
+%  NRCCIE boundary-condition (system) kernel.
+%
+%  Density: [j_ru, j_rv, rho]   (3 components / source point)
+%    j_ru = coefficient of ru_s = du_s / |du_s|
+%    j_rv = coefficient of rv_s = n_s x ru_s
+%  Output:  [pot_ru, pot_rv, pot_rho]  (3 equations / target point)
+%    pot_ru = zvec3 . ru_t,  pot_rv = zvec3 . rv_t
+%    where ru_t = du_t/|du_t|,  rv_t = n_t x ru_t
+%  Matrix size: (3*nt) x (3*ns), component-fast row/col ordering.
+%
+%  For source orthonormal tangent vector ds (= ru_s or rv_s) and scalar rho:
+%
+%  zcurl   = grad_t G x ds          (curl of G*ds w.r.t. target)
+%  zvec    = n_t x zcurl            (= -M_k[J] term, magnetic BC)
+%  E       = ik*G*ds                (E from J; rho column adds -grad_t G)
+%  nxnxE   = (n_t . E)*n_t - E     (= n x n x E)
+%  zvec3   = alpha*nxnxE - zvec
+%  pot_ru  = zvec3 . ru_t
+%  pot_rv  = zvec3 . rv_t
+%  pot_rho = (grad_t G . n_t)*[rho col] - ik*G*(ru_s/rv_s . n_t)*[J cols]
+%          + alpha*(div G*J - ik*G*rho), all using target normal n_t
+%
+%  varargin{1} = alpha  (CFIE regularization parameter)
+
+  alpha = varargin{1};
+
+  targnorm = targinfo.n;
+  drut     = targinfo.du;
+  srcnorm  = srcinfo.n;
+  drus     = srcinfo.du;
+
+  [gfun, grad] = helm3d.green(zk, src, targ);
+  % gfun : (nt, ns)
+  % grad : (nt, ns, 3)  — gradient w.r.t. target x
+
+  gx = grad(:,:,1);  gy = grad(:,:,2);  gz = grad(:,:,3);
+
+  % Target orthonormal frame: ru_t = du_t/|du_t|,  rv_t = n_t x ru_t
+  rut = drut     ./ vecnorm(drut);                    % (3, nt)
+  rnt = targnorm ./ vecnorm(targnorm);                % (3, nt) unit normal
+  rvt = cross(rnt, rut, 1);                           % (3, nt)
+
+  nx   = repmat(rnt(1,:).', 1, ns);
+  ny   = repmat(rnt(2,:).', 1, ns);
+  nz   = repmat(rnt(3,:).', 1, ns);
+  rxut = repmat(rut(1,:).', 1, ns);
+  ryut = repmat(rut(2,:).', 1, ns);
+  rzut = repmat(rut(3,:).', 1, ns);
+  rxvt = repmat(rvt(1,:).', 1, ns);
+  ryvt = repmat(rvt(2,:).', 1, ns);
+  rzvt = repmat(rvt(3,:).', 1, ns);
+
+  % Source orthonormal frame: ru_s = du_s/|du_s|,  rv_s = n_s x ru_s
+  rus = drus    ./ vecnorm(drus);                     % (3, ns)
+  rns = srcnorm ./ vecnorm(srcnorm);                  % (3, ns) unit normal
+  rvs = cross(rns, rus, 1);                           % (3, ns)
+
+  rxus = repmat(rus(1,:), nt, 1);
+  ryus = repmat(rus(2,:), nt, 1);
+  rzus = repmat(rus(3,:), nt, 1);
+  rxvs = repmat(rvs(1,:), nt, 1);
+  ryvs = repmat(rvs(2,:), nt, 1);
+  rzvs = repmat(rvs(3,:), nt, 1);
+
+  % --- Column j_ru (density coefficient of ru_s) ---
+  % zcurl = grad_t G x ru_s
+  curl_x_u = gy.*rzus - gz.*ryus;
+  curl_y_u = gz.*rxus - gx.*rzus;
+  curl_z_u = gx.*ryus - gy.*rxus;
+  % zvec = n_t x zcurl
+  zvec_x_u = ny.*curl_z_u - nz.*curl_y_u;
+  zvec_y_u = nz.*curl_x_u - nx.*curl_z_u;
+  zvec_z_u = nx.*curl_y_u - ny.*curl_x_u;
+  % zvec3 = alpha*nxnxE - zvec,  E = ik*G*ru_s
+  ndotE_u  = 1i*zk*gfun .* (nx.*rxus + ny.*ryus + nz.*rzus);
+  v3x_u = alpha*(ndotE_u.*nx - 1i*zk*gfun.*rxus) - zvec_x_u;
+  v3y_u = alpha*(ndotE_u.*ny - 1i*zk*gfun.*ryus) - zvec_y_u;
+  v3z_u = alpha*(ndotE_u.*nz - 1i*zk*gfun.*rzus) - zvec_z_u;
+
+  K_uu = rxut.*v3x_u + ryut.*v3y_u + rzut.*v3z_u;
+  K_vu = rxvt.*v3x_u + ryvt.*v3y_u + rzvt.*v3z_u;
+  % pot(3) for j_ru col: ztmp=-ik*G*(ru_s.n_t), ztmp2=ru_s.grad_x G
+  K_ru = -1i*zk*gfun.*(rxus.*nx + ryus.*ny + rzus.*nz) ...
+         + alpha*(gx.*rxus + gy.*ryus + gz.*rzus);
+
+  % --- Column j_rv (density coefficient of rv_s) ---
+  curl_x_v = gy.*rzvs - gz.*ryvs;
+  curl_y_v = gz.*rxvs - gx.*rzvs;
+  curl_z_v = gx.*ryvs - gy.*rxvs;
+  zvec_x_v = ny.*curl_z_v - nz.*curl_y_v;
+  zvec_y_v = nz.*curl_x_v - nx.*curl_z_v;
+  zvec_z_v = nx.*curl_y_v - ny.*curl_x_v;
+  ndotE_v  = 1i*zk*gfun .* (nx.*rxvs + ny.*ryvs + nz.*rzvs);
+  v3x_v = alpha*(ndotE_v.*nx - 1i*zk*gfun.*rxvs) - zvec_x_v;
+  v3y_v = alpha*(ndotE_v.*ny - 1i*zk*gfun.*ryvs) - zvec_y_v;
+  v3z_v = alpha*(ndotE_v.*nz - 1i*zk*gfun.*rzvs) - zvec_z_v;
+
+  K_uv = rxut.*v3x_v + ryut.*v3y_v + rzut.*v3z_v;
+  K_vv = rxvt.*v3x_v + ryvt.*v3y_v + rzvt.*v3z_v;
+  % pot(3) for j_rv col: ztmp=-ik*G*(rv_s.n_t), ztmp2=rv_s.grad_x G
+  K_rv = -1i*zk*gfun.*(rxvs.*nx + ryvs.*ny + rzvs.*nz) ...
+         + alpha*(gx.*rxvs + gy.*ryvs + gz.*rzvs);
+
+  % --- Column rho ---
+  % E_rho = -grad_t G,  J=0
+  % nxnxE_rho = (n_t.E_rho)*n_t - E_rho = -(n_t.grad G)*n_t + grad G
+  % zvec3_rho = alpha*nxnxE_rho
+  ndotE_r = -(gx.*nx + gy.*ny + gz.*nz);
+  v3x_r = alpha*(ndotE_r.*nx + gx);
+  v3y_r = alpha*(ndotE_r.*ny + gy);
+  v3z_r = alpha*(ndotE_r.*nz + gz);
+
+  K_ur = rxut.*v3x_r + ryut.*v3y_r + rzut.*v3z_r;
+  K_vr = rxvt.*v3x_r + ryvt.*v3y_r + rzvt.*v3z_r;
+
+  % pot_rho row, rho column:
+  %   (grad_x G) . n_t - alpha*ik*G
+  K_rr = (nx.*gx + ny.*gy + nz.*gz) - alpha*1i*zk*gfun;
+
+  % --- Assemble (3*nt) x (3*ns) matrix, interleaved rows/cols ---
+  % Row ordering: [ru_t, rv_t, rho] x target points (interleaved)
+  % Col ordering: [j_ru, j_rv, rho] x source points (interleaved)
+  T = complex(zeros(3, nt, 3, ns));
+  T(1,:,1,:) = reshape(K_uu, [1,nt,1,ns]);
+  T(2,:,1,:) = reshape(K_vu, [1,nt,1,ns]);
+  T(3,:,1,:) = reshape(K_ru, [1,nt,1,ns]);
+  T(1,:,2,:) = reshape(K_uv, [1,nt,1,ns]);
+  T(2,:,2,:) = reshape(K_vv, [1,nt,1,ns]);
+  T(3,:,2,:) = reshape(K_rv, [1,nt,1,ns]);
+  T(1,:,3,:) = reshape(K_ur, [1,nt,1,ns]);
+  T(2,:,3,:) = reshape(K_vr, [1,nt,1,ns]);
+  T(3,:,3,:) = reshape(K_rr, [1,nt,1,ns]);
+  submat = reshape(T, [3*nt, 3*ns]);
+
+case {'nrccie-eval'}
+%
+%  NRCCIE field-evaluation kernel.
+%
+%  Representation:
+%    E = ik * S_k[J]  -  grad(S_k)[rho]
+%    H = curl(S_k[J]) = grad(S_k) x J
+%
+%  Density columns: [J_x, J_y, J_z, rho]  (4 Cartesian components / source)
+%  Output rows:     [E_x, E_y, E_z, H_x, H_y, H_z]  (6 / target)
+%  Matrix size: (6*nt) x (4*ns)
+%
+%  For a single (t,s) pair the 6x4 block is:
+%    [ik*G    0      0      -dGdx ]
+%    [0       ik*G   0      -dGdy ]
+%    [0       0      ik*G   -dGdz ]
+%    [0      -dGdz  +dGdy    0    ]
+%    [+dGdz   0     -dGdx    0    ]
+%    [-dGdy  +dGdx   0       0    ]
+%  where G = S_k(t,s), dGdx/y/z = d/dx G(t,s)  (w.r.t. target).
+
+  [G, gradG] = helm3d.green(zk, src, targ);
+  % G     : (nt, ns)
+  % gradG : (nt, ns, 3)
+
+  gx = gradG(:,:,1);   % (nt, ns)
+  gy = gradG(:,:,2);
+  gz = gradG(:,:,3);
+  ikG = 1i*zk*G;
+
+  % Build (6, nt, 4, ns) tensor.  Each (nt,ns) matrix reshaped to (1,nt,1,ns).
+  T = complex(zeros(6, nt, 4, ns));
+  r = @(M) reshape(M, [1,nt,1,ns]);
+
+  % col 1: J_x
+  T(1,:,1,:) = r(ikG);    % E_x
+  T(5,:,1,:) = r(gz);     % H_y = +dGdz * J_x
+  T(6,:,1,:) = r(-gy);    % H_z = -dGdy * J_x
+
+  % col 2: J_y
+  T(2,:,2,:) = r(ikG);    % E_y
+  T(4,:,2,:) = r(-gz);    % H_x = -dGdz * J_y
+  T(6,:,2,:) = r(gx);     % H_z = +dGdx * J_y
+
+  % col 3: J_z
+  T(3,:,3,:) = r(ikG);    % E_z
+  T(4,:,3,:) = r(gy);     % H_x = +dGdy * J_z
+  T(5,:,3,:) = r(-gx);    % H_y = -dGdx * J_z
+
+  % col 4: rho  ->  E = -gradG * rho,  H = 0
+  T(1,:,4,:) = r(-gx);
+  T(2,:,4,:) = r(-gy);
+  T(3,:,4,:) = r(-gz);
+
+  % row index: icomp_out + 6*(itarg-1)  (interleaved)
+  % col index: icomp_in  + 4*(isrc -1)  (interleaved)
+  % reshape(6,nt,4,ns) -> (6*nt, 4*ns) in column-major directly:
+  submat = reshape(T, [6*nt, 4*ns]);
+
+case {'ndotcurls'}
   targnorm = targinfo.n;
   [~,grad] = helm3d.green(zk,src,targ);
   nx = repmat((targnorm(1,:)).',1,ns);
   ny = repmat((targnorm(2,:)).',1,ns);
   nz = repmat((targnorm(3,:)).',1,ns);
-  
+
   drut = targinfo.dru;
   dxut = repmat((drut(1,:)).',1,ns);
   dyut = repmat((drut(2,:)).',1,ns);
   dzut = repmat((drut(3,:)).',1,ns);
-  
+
   drvt = targinfo.drv;
   dxvt = repmat((drvt(1,:)).',1,ns);
   dyvt = repmat((drvt(2,:)).',1,ns);
   dzvt = repmat((drvt(3,:)).',1,ns);
-  
+
   drus = srcinfo.dru;
   dxus = repmat((drus(1,:)),nt,1);
   dyus = repmat((drus(2,:)),nt,1);
   dzus = repmat((drus(3,:)),nt,1);
-  
+
   drvs = srcinfo.drv;
   dxvs = repmat((drvs(1,:)),nt,1);
   dyvs = repmat((drvs(2,:)),nt,1);
   dzvs = repmat((drvs(3,:)),nt,1);
-  
+
   t1 = ny.*grad(:,:,3)-nz.*grad(:,:,2);
   t2 = nz.*grad(:,:,1)-nx.*grad(:,:,3);
   t3 = nx.*grad(:,:,2)-ny.*grad(:,:,1);
-  
+
   submat = zeros(nt,2,ns);
   submat(:,1,:) = t1.*dxus+t2.*dyus+t3.*dzus;
   submat(:,2,:) = t1.*dxvs+t2.*dyvs+t3.*dzvs;
-           
+
   submat = reshape(submat,[nt,2*ns]);
-  
+
+end
 end

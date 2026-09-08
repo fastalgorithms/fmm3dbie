@@ -14,7 +14,9 @@ function [densities, varargout] = solver(S, zlams, rhs, eps, zk, alpha, opts)
 %  
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * rhs: boundary data 
+%    * zlams: impedance parameter, either a scalar, or an array of
+%             length S.npts giving the impedance at each surface node
+%    * rhs: boundary data
 %    * eps: precision requested
 %    * zk: wave number
 %    * alpha: alpha above
@@ -28,8 +30,8 @@ function [densities, varargout] = solver(S, zlams, rhs, eps, zk, alpha, opts)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
-%  Output arguemnts:
-%    * sigma: layer potential density
+%  Output arguments:
+%    * densities: layer potential density
 %    
 %
     
