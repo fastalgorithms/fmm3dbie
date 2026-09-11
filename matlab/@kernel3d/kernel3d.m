@@ -20,6 +20,7 @@ classdef kernel3d
 %      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
 %      'beltrami'  ('belpde', 'bel')     'klb', 'rlb', 'khb', 'rhb'
 %      'zero'/'zeros'                    (no type needed)
+%      'one'/'ones'                      (no type needed)
 %
 %   Some kernels accept extra parameters as trailing arguments, e.g.
 %   the combined-layer Laplace kernel:
@@ -101,6 +102,12 @@ classdef kernel3d
                         else
                             obj = kernel3d.zeros();
                         end
+                    case {'o', 'one', 'ones'}
+                        if ~isempty(varargin)
+                            obj = kernel3d.ones(varargin{1});
+                        else
+                            obj = kernel3d.ones();
+                        end
                     otherwise
                         error('KERNEL3D: kernel ''%s'' not found.', kern);
                 end
@@ -141,6 +148,7 @@ classdef kernel3d
         obj    = stok3d(varargin);
         obj    = belpde(varargin);
         obj    = zeros(opdims);
+        obj    = ones(A);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
         Q      = addquad(Qa,Qb,c);
