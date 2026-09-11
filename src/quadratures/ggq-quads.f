@@ -153,7 +153,12 @@ c
       real *8, allocatable :: cms(:,:),rads(:)
       real *8, allocatable :: targ_near(:,:),targ_far(:,:)
       integer *8, allocatable :: iind_near(:),iind_far(:)
-      real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
+c     cached vals-to-coefs matrices and quadrature weights, one entry per
+c     unique (norder,iptype) pair rather than one per patch
+      real *8, allocatable :: umats(:),wtss(:)
+      integer *8, allocatable :: iuse(:),nord_uni(:),ipt_uni(:)
+      integer *8, allocatable :: npols_uni(:),iumat_ptr(:),iwts_ptr(:)
+      integer *8 nuni,lumat,lwts,iu,iw,kuni
 
 c
 c        temporary variables
@@ -301,39 +306,46 @@ c
       t1 = second()
 C$        t1 = omp_get_wtime()
 
+      allocate(iuse(npatches),nord_uni(npatches),ipt_uni(npatches))
+      allocate(npols_uni(npatches),iumat_ptr(npatches+1))
+      allocate(iwts_ptr(npatches+1))
+      call get_ptype_uni(npatches,norders,ixyzs,iptype,nuni,iuse,
+     1   nord_uni,ipt_uni,npols_uni,iumat_ptr,iwts_ptr,lumat,lwts)
+      allocate(umats(lumat),wtss(lwts))
+      call fill_disc_exps_uni(nuni,nord_uni,ipt_uni,npols_uni,
+     1   iumat_ptr,iwts_ptr,lumat,lwts,umats,wtss)
+
 C$OMP PARALLEL DO DEFAULT(SHARED) SCHEDULE(DYNAMIC)
 C$OMP$PRIVATE(ipatch,ntarg2,xyztarg2,sints_n,sints_f,svtmp_n,svtmp_f)
 C$OMP$PRIVATE(ii,ii2,i,jpatch,svtmp2,iiif,l,ntarg2m)
 C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder)
-C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
+C$OMP$PRIVATE(kuni,iu,iw)
 C$OMP$PRIVATE(epsp,rsc,tmp,ipoly,ttype)
 
       do ipatch=1,npatches
-        
+
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
         norder = norders(ipatch)
-        allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-        allocate(wts(npols))
+        kuni = iuse(ipatch)
+        iu = iumat_ptr(kuni)
+        iw = iwts_ptr(kuni)
         if(iptype(ipatch).eq.11) ipoly = 0
         if(iptype(ipatch).eq.12) ipoly = 1
         ttype = "F"
 
-        call get_disc_exps(norder,npols,iptype(ipatch),uvs,
-     1     umatr,vmatr,wts)
-
 c
 c  estimate rescaling of epsp needed to account for the scale of the
-c    patch 
+c    patch
 c
 
         ii = ixyzs(ipatch)
         call cross_prod3d(srcvals(4,ii),srcvals(7,ii),tmp)
-        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(1)**2
+        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wtss(iw)**2
         do i=2,npols
           call cross_prod3d(srcvals(4,ii+i-1),srcvals(7,ii+i-1),tmp)
-          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(i)**2
+          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wtss(iw+i-1)**2
           if(rr.lt.rsc) rsc = rr
         enddo
         epsp = eps_adap*rsc**0.25d0
@@ -395,7 +407,7 @@ c
      1      rn1,n2)
         
 
-        call zrmatmatt(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
+        call zrmatmatt(ntarg_n,npols,sints_n,npols,umats(iu),svtmp_n)
 cc
 cc       fill out far part of layer potential
 c
@@ -411,7 +423,7 @@ c
      3      ndi,ipars,npts_f_quad,qnodes_quad,qwts_quad,sints_f)
         
         
-        call zrmatmatt(ntarg_f,npols,sints_f,npols,umatr,svtmp_f)
+        call zrmatmatt(ntarg_f,npols,sints_f,npols,umats(iu),svtmp_f)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
 c
@@ -444,7 +456,7 @@ c
           if(ipatch.eq.jpatch) then
             call zget_ggq_self_quad_pt(ipv,norder,npols,
      1      uvs_targ(1,jtarg),iptype(ipatch),
-     2      umatr,srccoefs(1,istart),ndtarg,
+     2      umats(iu),srccoefs(1,istart),ndtarg,
      2      targvals(1,jtarg),fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,wnear(iqstart+1))
           endif
@@ -459,7 +471,6 @@ c
 
         deallocate(xyztarg2,svtmp2,svtmp_f,svtmp_n,sints_f,sints_n)
         deallocate(targ_near,targ_far,iind_near,iind_far)
-        deallocate(uvs,umatr,vmatr,wts)
       enddo
 C$OMP END PARALLEL DO      
 
@@ -610,7 +621,12 @@ c
       real *8, allocatable :: cms(:,:),rads(:)
       real *8, allocatable :: targ_near(:,:),targ_far(:,:)
       integer *8, allocatable :: iind_near(:),iind_far(:)
-      real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
+c     cached vals-to-coefs matrices and quadrature weights, one entry per
+c     unique (norder,iptype) pair rather than one per patch
+      real *8, allocatable :: umats(:),wtss(:)
+      integer *8, allocatable :: iuse(:),nord_uni(:),ipt_uni(:)
+      integer *8, allocatable :: npols_uni(:),iumat_ptr(:),iwts_ptr(:)
+      integer *8 nuni,lumat,lwts,iu,iw,kuni
 
 c
 c        temporary variables
@@ -759,40 +775,46 @@ c
       t1 = second()
 C$        t1 = omp_get_wtime()
 
+      allocate(iuse(npatches),nord_uni(npatches),ipt_uni(npatches))
+      allocate(npols_uni(npatches),iumat_ptr(npatches+1))
+      allocate(iwts_ptr(npatches+1))
+      call get_ptype_uni(npatches,norders,ixyzs,iptype,nuni,iuse,
+     1   nord_uni,ipt_uni,npols_uni,iumat_ptr,iwts_ptr,lumat,lwts)
+      allocate(umats(lumat),wtss(lwts))
+      call fill_disc_exps_uni(nuni,nord_uni,ipt_uni,npols_uni,
+     1   iumat_ptr,iwts_ptr,lumat,lwts,umats,wtss)
+
 C$OMP PARALLEL DO DEFAULT(SHARED) SCHEDULE(DYNAMIC)
 C$OMP$PRIVATE(ipatch,ntarg2,xyztarg2,sints_n,sints_f,svtmp_n,svtmp_f)
 C$OMP$PRIVATE(ii,ii2,i,jpatch,svtmp2,iiif,l,ntarg2m)
 C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder)
-C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
+C$OMP$PRIVATE(kuni,iu,iw)
 C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
 
       do ipatch=1,npatches
-        
+
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
         norder = norders(ipatch)
-
-        allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-        allocate(wts(npols))
+        kuni = iuse(ipatch)
+        iu = iumat_ptr(kuni)
+        iw = iwts_ptr(kuni)
         if(iptype(ipatch).eq.11) ipoly = 0
         if(iptype(ipatch).eq.12) ipoly = 1
         ttype = "F"
 
-        call get_disc_exps(norder,npols,iptype(ipatch),uvs,
-     1     umatr,vmatr,wts)
-
 c
 c  estimate rescaling of epsp needed to account for the scale of the
-c    patch 
+c    patch
 c
 
         ii = ixyzs(ipatch)
         call cross_prod3d(srcvals(4,ii),srcvals(7,ii),tmp)
-        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(1)**2
+        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wtss(iw)**2
         do i=2,npols
           call cross_prod3d(srcvals(4,ii+i-1),srcvals(7,ii+i-1),tmp)
-          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(i)**2
+          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wtss(iw+i-1)**2
           if(rr.lt.rsc) rsc = rr
         enddo
         epsp = eps_adap*rsc**0.25d0
@@ -851,8 +873,8 @@ c
      1      rn1,n2)
         
 
-        call dgemm_guru('t','n',npols,ntarg_n,npols,done,umatr,npols,
-     1     sints_n,npols,dzero,svtmp_n,npols)
+        call dgemm_guru('t','n',npols,ntarg_n,npols,done,
+     1     umats(iu),npols,sints_n,npols,dzero,svtmp_n,npols)
 c
 c       fill out far part of layer potential
 c
@@ -867,8 +889,8 @@ c
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
      3      ndi,ipars,npts_f_quad,qnodes_quad,qwts_quad,sints_f)
         
-        call dgemm_guru('t','n',npols,ntarg_f,npols,done,umatr,npols,
-     1     sints_f,npols,dzero,svtmp_f,npols)
+        call dgemm_guru('t','n',npols,ntarg_f,npols,done,
+     1     umats(iu),npols,sints_f,npols,dzero,svtmp_f,npols)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
 c
@@ -899,9 +921,10 @@ c
 
           if(ipatch.eq.jpatch) then
             call dget_ggq_self_quad_pt(ipv,norder,npols,
-     1      uvs_targ(1,jtarg),iptype(ipatch),umatr,srccoefs(1,istart),
-     2      ndtarg,targvals(1,jtarg),fker,ndd,dpars,ndz,zpars,ndi,
-     3      ipars,wnear(iqstart+1))
+     1      uvs_targ(1,jtarg),iptype(ipatch),umats(iu),
+     2      srccoefs(1,istart),
+     3      ndtarg,targvals(1,jtarg),fker,ndd,dpars,ndz,zpars,ndi,
+     4      ipars,wnear(iqstart+1))
           endif
 
           if(ipatch.ne.jpatch) then
@@ -914,7 +937,6 @@ c
 
         deallocate(xyztarg2,svtmp2,svtmp_f,svtmp_n,sints_f,sints_n)
         deallocate(targ_near,targ_far,iind_near,iind_far)
-        deallocate(uvs,umatr,vmatr,wts)
       enddo
 C$OMP END PARALLEL DO      
 
@@ -1474,7 +1496,12 @@ c
       real *8, allocatable :: cms(:,:),rads(:)
       real *8, allocatable :: targ_near(:,:),targ_far(:,:)
       integer *8, allocatable :: iind_near(:),iind_far(:)
-      real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
+c     cached vals-to-coefs matrices and quadrature weights, one entry per
+c     unique (norder,iptype) pair rather than one per patch
+      real *8, allocatable :: umats(:),wtss(:)
+      integer *8, allocatable :: iuse(:),nord_uni(:),ipt_uni(:)
+      integer *8, allocatable :: npols_uni(:),iumat_ptr(:),iwts_ptr(:)
+      integer *8 nuni,lumat,lwts,iu,iw,kuni
 
 c
 c        temporary variables
@@ -1622,39 +1649,46 @@ c
       t1 = second()
 C$        t1 = omp_get_wtime()
 
+      allocate(iuse(npatches),nord_uni(npatches),ipt_uni(npatches))
+      allocate(npols_uni(npatches),iumat_ptr(npatches+1))
+      allocate(iwts_ptr(npatches+1))
+      call get_ptype_uni(npatches,norders,ixyzs,iptype,nuni,iuse,
+     1   nord_uni,ipt_uni,npols_uni,iumat_ptr,iwts_ptr,lumat,lwts)
+      allocate(umats(lumat),wtss(lwts))
+      call fill_disc_exps_uni(nuni,nord_uni,ipt_uni,npols_uni,
+     1   iumat_ptr,iwts_ptr,lumat,lwts,umats,wtss)
+
 C$OMP PARALLEL DO DEFAULT(SHARED) SCHEDULE(DYNAMIC)
 C$OMP$PRIVATE(ipatch,ntarg2,xyztarg2,sints_n,sints_f,svtmp_n,svtmp_f)
 C$OMP$PRIVATE(ii,ii2,i,jpatch,svtmp2,iiif,l,ntarg2m)
 C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder)
-C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
+C$OMP$PRIVATE(kuni,iu,iw)
 C$OMP$PRIVATE(epsp,rsc,tmp,ipoly,ttype)
 
       do ipatch=1,npatches
-        
+
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
         norder = norders(ipatch)
-        allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-        allocate(wts(npols))
+        kuni = iuse(ipatch)
+        iu = iumat_ptr(kuni)
+        iw = iwts_ptr(kuni)
         if(iptype(ipatch).eq.11) ipoly = 0
         if(iptype(ipatch).eq.12) ipoly = 1
         ttype = "F"
 
-        call get_disc_exps(norder,npols,iptype(ipatch),uvs,
-     1     umatr,vmatr,wts)
-
 c
 c  estimate rescaling of epsp needed to account for the scale of the
-c    patch 
+c    patch
 c
 
         ii = ixyzs(ipatch)
         call cross_prod3d(srcvals(4,ii),srcvals(7,ii),tmp)
-        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(1)**2
+        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wtss(iw)**2
         do i=2,npols
           call cross_prod3d(srcvals(4,ii+i-1),srcvals(7,ii+i-1),tmp)
-          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(i)**2
+          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wtss(iw+i-1)**2
           if(rr.lt.rsc) rsc = rr
         enddo
         epsp = eps_adap*rsc**0.25d0
@@ -1716,7 +1750,7 @@ c
      1      rn1,n2)
         
 
-        call zrmatmatt(ntarg_n,npols,sints_n,npols,umatr,svtmp_n)
+        call zrmatmatt(ntarg_n,npols,sints_n,npols,umats(iu),svtmp_n)
 cc
 cc       fill out far part of layer potential
 c
@@ -1732,7 +1766,7 @@ c
      3      ndi,ipars,npts_f_quad,qnodes_quad,qwts_quad,sints_f)
         
         
-        call zrmatmatt(ntarg_f,npols,sints_f,npols,umatr,svtmp_f)
+        call zrmatmatt(ntarg_f,npols,sints_f,npols,umats(iu),svtmp_f)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
 c
@@ -1765,7 +1799,7 @@ c
           if(ipatch.eq.jpatch) then
             call zget_ggq_self_quad_pt_sd(ipv,norder,npols,
      1      uvs_targ(1,jtarg),iptype(ipatch),
-     2      umatr,srccoefs(1,istart),ndtarg,
+     2      umats(iu),srccoefs(1,istart),ndtarg,
      2      targvals(1,jtarg),fker,ndd,dpars,ndz,zpars,ndi,
      3      ipars,wnear(iqstart+1))
           endif
@@ -1780,7 +1814,6 @@ c
 
         deallocate(xyztarg2,svtmp2,svtmp_f,svtmp_n,sints_f,sints_n)
         deallocate(targ_near,targ_far,iind_near,iind_far)
-        deallocate(uvs,umatr,vmatr,wts)
       enddo
 C$OMP END PARALLEL DO      
 
@@ -1941,7 +1974,12 @@ c
       real *8, allocatable :: cms(:,:),rads(:)
       real *8, allocatable :: targ_near(:,:),targ_far(:,:)
       integer *8, allocatable :: iind_near(:),iind_far(:)
-      real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
+c     cached vals-to-coefs matrices and quadrature weights, one entry per
+c     unique (norder,iptype) pair rather than one per patch
+      real *8, allocatable :: umats(:),wtss(:)
+      integer *8, allocatable :: iuse(:),nord_uni(:),ipt_uni(:)
+      integer *8, allocatable :: npols_uni(:),iumat_ptr(:),iwts_ptr(:)
+      integer *8 nuni,lumat,lwts,iu,iw,kuni
 
 c
 c        temporary variables
@@ -2091,40 +2129,46 @@ c
       t1 = second()
 C$        t1 = omp_get_wtime()
 
+      allocate(iuse(npatches),nord_uni(npatches),ipt_uni(npatches))
+      allocate(npols_uni(npatches),iumat_ptr(npatches+1))
+      allocate(iwts_ptr(npatches+1))
+      call get_ptype_uni(npatches,norders,ixyzs,iptype,nuni,iuse,
+     1   nord_uni,ipt_uni,npols_uni,iumat_ptr,iwts_ptr,lumat,lwts)
+      allocate(umats(lumat),wtss(lwts))
+      call fill_disc_exps_uni(nuni,nord_uni,ipt_uni,npols_uni,
+     1   iumat_ptr,iwts_ptr,lumat,lwts,umats,wtss)
+
 C$OMP PARALLEL DO DEFAULT(SHARED) SCHEDULE(DYNAMIC)
 C$OMP$PRIVATE(ipatch,ntarg2,xyztarg2,sints_n,sints_f,svtmp_n,svtmp_f)
 C$OMP$PRIVATE(ii,ii2,i,jpatch,svtmp2,iiif,l,ntarg2m)
 C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder)
-C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
+C$OMP$PRIVATE(kuni,iu,iw)
 C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
 
       do ipatch=1,npatches
-        
+
         npols = ixyzs(ipatch+1)-ixyzs(ipatch)
         norder = norders(ipatch)
-
-        allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
-        allocate(wts(npols))
+        kuni = iuse(ipatch)
+        iu = iumat_ptr(kuni)
+        iw = iwts_ptr(kuni)
         if(iptype(ipatch).eq.11) ipoly = 0
         if(iptype(ipatch).eq.12) ipoly = 1
         ttype = "F"
 
-        call get_disc_exps(norder,npols,iptype(ipatch),uvs,
-     1     umatr,vmatr,wts)
-
 c
 c  estimate rescaling of epsp needed to account for the scale of the
-c    patch 
+c    patch
 c
 
         ii = ixyzs(ipatch)
         call cross_prod3d(srcvals(4,ii),srcvals(7,ii),tmp)
-        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(1)**2
+        rsc = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wtss(iw)**2
         do i=2,npols
           call cross_prod3d(srcvals(4,ii+i-1),srcvals(7,ii+i-1),tmp)
-          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wts(i)**2
+          rr = (tmp(1)**2 + tmp(2)**2 + tmp(3)**2)*wtss(iw+i-1)**2
           if(rr.lt.rsc) rsc = rr
         enddo
         epsp = eps_adap*rsc**0.25d0
@@ -2183,8 +2227,8 @@ c
      1      rn1,n2)
         
 
-        call dgemm_guru('t','n',npols,ntarg_n,npols,done,umatr,npols,
-     1     sints_n,npols,dzero,svtmp_n,npols)
+        call dgemm_guru('t','n',npols,ntarg_n,npols,done,
+     1     umats(iu),npols,sints_n,npols,dzero,svtmp_n,npols)
 c
 c       fill out far part of layer potential
 c
@@ -2199,8 +2243,8 @@ c
      2      itargptr,ntarg_f,norder,npols,fker,ndd,dpars,ndz,zpars,
      3      ndi,ipars,npts_f_quad,qnodes_quad,qwts_quad,sints_f)
         
-        call dgemm_guru('t','n',npols,ntarg_f,npols,done,umatr,npols,
-     1     sints_f,npols,dzero,svtmp_f,npols)
+        call dgemm_guru('t','n',npols,ntarg_f,npols,done,
+     1     umats(iu),npols,sints_f,npols,dzero,svtmp_f,npols)
 c
 c       combine svtmp_f, svtmp_n to fill out svtmp2
 c
@@ -2231,9 +2275,10 @@ c
 
           if(ipatch.eq.jpatch) then
             call dget_ggq_self_quad_pt_sd(ipv,norder,npols,
-     1      uvs_targ(1,jtarg),iptype(ipatch),umatr,srccoefs(1,istart),
-     2      ndtarg,targvals(1,jtarg),fker,ndd,dpars,ndz,zpars,ndi,
-     3      ipars,wnear(iqstart+1))
+     1      uvs_targ(1,jtarg),iptype(ipatch),umats(iu),
+     2      srccoefs(1,istart),
+     3      ndtarg,targvals(1,jtarg),fker,ndd,dpars,ndz,zpars,ndi,
+     4      ipars,wnear(iqstart+1))
           endif
 
           if(ipatch.ne.jpatch) then
@@ -2246,7 +2291,6 @@ c
 
         deallocate(xyztarg2,svtmp2,svtmp_f,svtmp_n,sints_f,sints_n)
         deallocate(targ_near,targ_far,iind_near,iind_far)
-        deallocate(uvs,umatr,vmatr,wts)
       enddo
 C$OMP END PARALLEL DO      
 
@@ -2723,3 +2767,77 @@ c
 c
 c
 
+
+c-----------------------------------------------------------------------
+c  Build the table of unique (norder,iptype) patch types and the flat
+c  offsets used to cache one umatr/wts pair per type.
+c-----------------------------------------------------------------------
+      subroutine get_ptype_uni(npatches,norders,ixyzs,iptype,nuni,
+     1   iuse,nord_uni,ipt_uni,npols_uni,iumat_ptr,iwts_ptr,lumat,lwts)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: npatches,norders(npatches)
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      integer *8, intent(out) :: nuni,iuse(npatches)
+      integer *8, intent(out) :: nord_uni(npatches),ipt_uni(npatches)
+      integer *8, intent(out) :: npols_uni(npatches)
+      integer *8, intent(out) :: iumat_ptr(npatches+1)
+      integer *8, intent(out) :: iwts_ptr(npatches+1),lumat,lwts
+
+      nuni = 0
+      do i=1,npatches
+        iuse(i) = 0
+        do k=1,nuni
+          if(norders(i).eq.nord_uni(k).and.
+     1       iptype(i).eq.ipt_uni(k)) then
+            iuse(i) = k
+            exit
+          endif
+        enddo
+        if(iuse(i).eq.0) then
+          nuni = nuni + 1
+          nord_uni(nuni) = norders(i)
+          ipt_uni(nuni) = iptype(i)
+          npols_uni(nuni) = ixyzs(i+1)-ixyzs(i)
+          iuse(i) = nuni
+        endif
+      enddo
+
+      iumat_ptr(1) = 1
+      iwts_ptr(1) = 1
+      do k=1,nuni
+        iumat_ptr(k+1) = iumat_ptr(k) + npols_uni(k)**2
+        iwts_ptr(k+1) = iwts_ptr(k) + npols_uni(k)
+      enddo
+      lumat = iumat_ptr(nuni+1)-1
+      lwts = iwts_ptr(nuni+1)-1
+
+      return
+      end
+c
+c
+c-----------------------------------------------------------------------
+c  Fill the cached umatr/wts tables laid out by get_ptype_uni.
+c-----------------------------------------------------------------------
+      subroutine fill_disc_exps_uni(nuni,nord_uni,ipt_uni,npols_uni,
+     1   iumat_ptr,iwts_ptr,lumat,lwts,umats,wtss)
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: nuni,nord_uni(nuni),ipt_uni(nuni)
+      integer *8, intent(in) :: npols_uni(nuni)
+      integer *8, intent(in) :: iumat_ptr(nuni+1),iwts_ptr(nuni+1)
+      integer *8, intent(in) :: lumat,lwts
+      real *8, intent(out) :: umats(lumat),wtss(lwts)
+      real *8, allocatable :: uvs(:,:),vmatr(:,:)
+
+      do k=1,nuni
+        npols = npols_uni(k)
+        allocate(uvs(2,npols),vmatr(npols,npols))
+        call get_disc_exps(nord_uni(k),npols,ipt_uni(k),uvs,
+     1     umats(iumat_ptr(k)),vmatr,wtss(iwts_ptr(k)))
+        deallocate(uvs,vmatr)
+      enddo
+
+      return
+      end
+c
+c
