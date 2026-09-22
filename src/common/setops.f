@@ -18,6 +18,10 @@ c    - get_iuni1_omp:
 c        open mp version of get_iuni1 (note the
 c        sorting routine needs to be updated to be openmped)
 c
+c    - get_iuni2: 
+c        compute list of unique integer *8 pairs
+c        from a given collection of 2 integer *8 arrays
+c
 c    - get_iuni3: 
 c        compute list of unique integer *8 triplets
 c        from a given collection of 3 integer *8 arrays

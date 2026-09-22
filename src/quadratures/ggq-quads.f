@@ -2782,24 +2782,19 @@ c-----------------------------------------------------------------------
       integer *8, intent(out) :: npols_uni(npatches)
       integer *8, intent(out) :: iumat_ptr(npatches+1)
       integer *8, intent(out) :: iwts_ptr(npatches+1),lumat,lwts
+      integer *8, allocatable :: iuni(:,:)
 
-      nuni = 0
+      allocate(iuni(2,npatches))
+      call get_iuni2(npatches,norders,iptype,nuni,iuni,iuse)
+
+      do k=1,nuni
+        nord_uni(k) = iuni(1,k)
+        ipt_uni(k) = iuni(2,k)
+      enddo
+      deallocate(iuni)
+
       do i=1,npatches
-        iuse(i) = 0
-        do k=1,nuni
-          if(norders(i).eq.nord_uni(k).and.
-     1       iptype(i).eq.ipt_uni(k)) then
-            iuse(i) = k
-            exit
-          endif
-        enddo
-        if(iuse(i).eq.0) then
-          nuni = nuni + 1
-          nord_uni(nuni) = norders(i)
-          ipt_uni(nuni) = iptype(i)
-          npols_uni(nuni) = ixyzs(i+1)-ixyzs(i)
-          iuse(i) = nuni
-        endif
+        npols_uni(iuse(i)) = ixyzs(i+1)-ixyzs(i)
       enddo
 
       iumat_ptr(1) = 1
