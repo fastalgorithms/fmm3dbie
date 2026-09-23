@@ -5,11 +5,13 @@ function out = times(f, g)
 %   Scales eval, fmm, getquad by c.
 %
 % Left (target) multiply:   f .* K
-%   f(t) returns (p x m x nt) or (1 x 1 x nt) for pointwise scaling.
+%   f(t) returns (p x m x nt), or a 2D array of shape
+%   (nt x p*m) or (p*m x nt)
 %   Output opdims = [p, K.opdims(2)].
 %
 % Right (source) multiply:  K .* f
-%   f(s) returns (q x p x ns) or (1 x 1 x ns), q = K.opdims(2).
+%   f(s) returns (K.opdims(2) x p x ns), or a 2D array of shape
+%   (ns x K.opdims(2)*p) or (K.opdims(2)*p x ns).
 %   Output opdims = [K.opdims(1), p].
 %
 % Constant matrix:  A .* K  or  K .* A  where A is numeric (not scalar)
@@ -19,7 +21,7 @@ function out = times(f, g)
 %
 % Note: src_fields/targ_fields are inherited from K. If f requires
 % additional geometry fields (e.g. 'n'), add them to out.src_fields or
-% out.targ_fields after calling times.
+% out.targ_fields.
 
 if isa(f, 'kernel3d') && isa(g, 'kernel3d')
     error('KERNEL3D:times:invalid', ...
@@ -95,10 +97,22 @@ if ~exist('p', 'var')
         probe.r  = randn(3,1); probe.n  = randn(3,1);
         probe.du = randn(3,1); probe.dv = randn(3,1);
         hval = h(probe);
+        rc = size(hval,1)*size(hval,2)*size(hval,3);
         if strcmp(side, 'left')
-            p = size(hval, 1);
+            mq = m;
         else
-            p = size(hval, 2);
+            mq = q;
+        end
+        if ndims(hval) == 3 || rc == 1
+            % genuine 3D tensor, or an unambiguous scalar
+            if strcmp(side, 'left')
+                p = size(hval, 1);
+            else
+                p = size(hval, 2);
+            end
+        else
+            % 2D output
+            p = rc / mq;
         end
     catch
         error('KERNEL3D:times:probe', ...
@@ -138,12 +152,36 @@ end
         end
     end
 
+    function fval3 = to3d(fval, rows, cols, npts)
+        % Handle h's that output a (rows x cols x npts) tensor,
+        % or as npts x (rows*cols) or (rows*cols) x npts matrices
+        if ndims(fval) == 3 && size(fval,3) == npts
+            fval3 = fval;
+            return
+        end
+        assert(ismatrix(fval), ...
+            'KERNEL3D:times: h output must be 2D or 3D.');
+        rc = rows*cols;
+        if isequal(size(fval), [npts, rc])
+            fval3 = permute(reshape(fval, npts, rows, cols), [2 3 1]);
+        elseif isequal(size(fval), [rc, npts])
+            fval3 = reshape(fval, rows, cols, npts);
+        elseif npts == 1 && numel(fval) == rc
+            fval3 = reshape(fval, rows, cols, 1);
+        else
+            error('KERNEL3D:times:shape', ...
+                ['h output has shape %s, expected (%d x %d x %d), ', ...
+                 '(%d x %d), or (%d x %d)'], ...
+                mat2str(size(fval)), rows, cols, npts, npts, rc, rc, npts);
+        end
+    end
+
 % Left-multiply  (h(t) post-multiplies the output)
 
     function vals = eval_left(s, t)
         nt   = size(t.r, 2);
         ns   = size(s.r, 2);
-        fval = h(t);                               % (p x m x nt)
+        fval = to3d(h(t), p, m, nt);                % (p x m x nt)
         Kmat = Keval(s, t);                        % (m*nt x q*ns)
         K3   = permute(reshape(Kmat, m, nt, q*ns), [1 3 2]);  % (m x q*ns x nt)
         out3 = apply_left(fval, K3);               % (p x q*ns x nt)
@@ -152,7 +190,7 @@ end
 
     function out = fmm_left(eps, s, t, sigma)
         nt    = size(t.r, 2);
-        fval  = h(t);                              % (p x m x nt)
+        fval  = to3d(h(t), p, m, nt);               % (p x m x nt)
         inner = Kfmm(eps, s, t, sigma);            % (m*nt x 1)
         out   = reshape(apply_left(fval, reshape(inner, m, 1, nt)), p*nt, 1);
     end
@@ -165,7 +203,7 @@ end
             targ = S;
         end
         nt   = size(targ.r, 2);
-        fval = h(targ);                            % (p x m x nt)
+        fval = to3d(h(targ), p, m, nt);             % (p x m x nt)
         Q3   = permute(reshape(full(Qinner), m, nt, q*S.npts), [1 3 2]);
         Q    = sparse(reshape(permute(apply_left(fval, Q3), [1 3 2]), p*nt, q*S.npts));
     end
@@ -175,7 +213,7 @@ end
     function vals = eval_right(s, t)
         ns   = size(s.r, 2);
         nt   = size(t.r, 2);
-        fval = h(s);                               % (q x p x ns)
+        fval = to3d(h(s), q, p, ns);                % (q x p x ns)
         Kmat = Keval(s, t);                        % (m*nt x q*ns)
         K3   = reshape(Kmat, m*nt, q, ns);
         vals = reshape(apply_right(K3, fval), m*nt, p*ns);
@@ -183,7 +221,7 @@ end
 
     function out = fmm_right(eps, s, t, sigma)
         ns     = size(s.r, 2);
-        fval   = h(s);                             % (q x p x ns)
+        fval   = to3d(h(s), q, p, ns);              % (q x p x ns)
         sig_in = reshape(apply_left(fval, reshape(sigma, p, 1, ns)), q, ns);
         out    = Kfmm(eps, s, t, sig_in);
     end
@@ -191,7 +229,7 @@ end
     function Q = getquad_right(S, eps, varargin)
         Qinner = Kgetquad(S, eps, varargin{:});
         ns   = S.npts;
-        fval = h(S);                               % (q x p x ns)
+        fval = to3d(h(S), q, p, ns);                % (q x p x ns)
         if ~isempty(varargin) && isstruct(varargin{1})
             nt = size(varargin{1}.r, 2);
         else
