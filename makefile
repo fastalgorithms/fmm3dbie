@@ -153,7 +153,6 @@ KER = src/kernels
 KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 	$(KER)/yuk_kernels.o $(KER)/stok_kernels.o $(KER)/em_kernels.o \
 	$(KER)/lap_bel_kernels.o \
-	$(KER)/hank101.o \
 	$(KER)/hank103.o $(KER)/helmdiffgreen.o \
 	$(KER)/hankdiff.o 
 
