@@ -140,7 +140,11 @@ function Q = get_quadrature_correction(S, type, zk, eps, targinfo, opts)
       fprintf('Incorrect size of uvs_targ array in targinfo struct. Aborting! \n');
     end
 
-    rsc = getnear(S, targinfo);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+    else
+        rsc = getnear(S, targinfo);
+    end
     row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
     rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
     nquad   = rsc.nquad;

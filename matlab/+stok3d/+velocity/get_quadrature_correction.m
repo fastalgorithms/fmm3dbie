@@ -107,33 +107,45 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 
 
     
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    mex_id_ = 'get_rfacs(c i int64_t[x], c i int64_t[x], c io double[x], c io double[x])';
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+        row_ptr = rsc.row_ptr;
+        col_ind = rsc.col_ind;
+        iquad   = rsc.iquad;
+        rfac    = rsc.rfac;
+        rfac0   = rsc.rfac0;
+        nnz     = rsc.nnz;
+        ntp1    = ntarg+1;
+        nnzp1   = nnz+1;
+    else
+        iptype0 = iptype(1);
+        norder0 = norders(1);
+        rfac = 0.0;
+        rfac0 = 0.0;
+        mex_id_ = 'get_rfacs(c i int64_t[x], c i int64_t[x], c io double[x], c io double[x])';
 [rfac, rfac0] = fmm3dbie_routs(mex_id_, norder0, iptype0, rfac, rfac0, 1, 1, 1, 1);
     
 
-    cms = S.cms;
-    rads = S.rads; 
+        cms = S.cms;
+        rads = S.rads; 
 
-    rad_near = rads*rfac;
-    nnz = 0;
-    mex_id_ = 'findnearmem(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x])';
+        rad_near = rads*rfac;
+        nnz = 0;
+        mex_id_ = 'findnearmem(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x])';
 [nnz] = fmm3dbie_routs(mex_id_, cms, npatches, rad_near, ndtarg, targs, ntarg, nnz, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, 1);
 
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    mex_id_ = 'findnear(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x], c io int64_t[x])';
+        row_ptr = zeros(ntarg+1,1);
+        col_ind = zeros(nnz,1);
+        ntp1 = ntarg+1;
+        nnzp1 = nnz+1;
+        mex_id_ = 'findnear(c i double[xx], c i int64_t[x], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c io int64_t[x], c io int64_t[x])';
 [row_ptr, col_ind] = fmm3dbie_routs(mex_id_, cms, npatches, rad_near, ndtarg, targs, ntarg, row_ptr, col_ind, n3, npatches, 1, npatches, 1, ndtarg, ntarg, 1, ntp1, nnz);
 
-    iquad = zeros(nnz+1,1);
-    mex_id_ = 'get_iquad_rsc(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io int64_t[x])';
+        iquad = zeros(nnz+1,1);
+        mex_id_ = 'get_iquad_rsc(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io int64_t[x])';
 [iquad] = fmm3dbie_routs(mex_id_, npatches, ixyzs, npts, nnz, row_ptr, col_ind, iquad, 1, npp1, 1, 1, ntp1, nnz, nnzp1);
 
+    end
     nquad = iquad(nnz+1)-1;
     nker = 6;
     wnear = zeros(nker,nquad);

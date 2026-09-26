@@ -738,6 +738,643 @@
 !
 !
       
+      subroutine self_quadrature_split(norder, ipv, ifar, verts, nv, &
+         x0, y0, dr, nquad, xs, ys, whts, ier)
+!
+!  Self quadrature as in self_quadrature, with the radial rule on each
+!  ray split into a near part, singular at the origin, and a far part
+!  that also resolves a log(r), 1/r singularity of the density at the
+!  far end of the ray. Only ipv = 0 and ipv = 1 are supported.
+!
+!  If ipv = 0, then
+!       K(x,y) = log(|x-y|) smooth + 1/|x-y| smooth + smooth
+!  If ipv = 1
+!       K(x,y) = 1/|x-y| smooth + p.v. 1/|x-y|^2*smooth
+!
+!  Here S is a convex polygon in R^2 whose boundary is defined
+!  by an ordered set of vertices
+!
+!  Input arguments:
+!    - norder: integer *8
+!        order of polynomials for representing sigma on S
+!    - ipv: integer *8
+!        nature of singularity of the kernel K (see above)
+!        * ipv = 0, single layer like + log singular kernels
+!        * ipv = 1, p.v. integrals
+!        (ipv = 2 is not supported)
+!    - ifar: integer *8
+!        selects the rule used on the far part of the radial
+!        interval (see rquads_rlogr_rinv_split and
+!        rquads_pv_hs_split for the list of supported values)
+!        * ifar = 0, mirror image of the near-half (singular) rule,
+!          reflected so that the singularity sits at r=1 instead of
+!          r=0. Use this when there is a second singularity of the
+!          same type at the far end of the ray
+!    - verts: real *8(2,nv)
+!        coordinates defining the convex polygon
+!    - nv: integer *8
+!        number of vertices
+!    - x0: real *8
+!        x coordinate of target point on the polygon S
+!    - y0: real *8
+!        y coordiante of target point on the polygon S
+!    - dr: real *8(3,2)
+!        u and v derivatives of the surface parametrization
+!        at \rho(x0, y0) where \rho: S\to \Gamma
+!        is a parametrization of the surface
+!
+!  Output arguments:
+!    - nquad: integer *8
+!        number of nodes in the final quadrature rule
+!    - xs: real *8(nquad)
+!        x coordinates of quadrature nodes on S
+!    - ys: real *8(nquad)
+!        y coordinates of quadrature nodes on S
+!    - whts: real *8(nquad)
+!        quadrature weights on S
+!    - ier: integer *8
+!        error code
+!        * ier = 0 => successful execution
+!        * ier = 8 => unsupported ipv (must be 0 or 1)
+!
+      implicit none
+      integer *8, intent(in) :: norder
+      integer *8, intent(in) :: ipv, ifar
+      integer *8, intent(in) :: nv
+      real *8, intent(in) :: verts(2,nv), x0, y0
+      real *8, intent(in) :: dr(3,2)
+      integer *8, intent(out) :: nquad, ier
+      real *8, intent(out) :: xs(*), ys(*), whts(*)
+
+!
+!  temporary variables
+!
+      real *8 qdr(3,2), rdr(2,2), drdetinv
+      real *8 vtransf(2,nv+1), projs(2,nv), thetas(nv)
+      real *8 hdis(nv)
+      real *8 rtmp1, rtmp2, vtmp(2)
+      real *8 rcut, rcmin, xtmp, ytmp
+      real *8 r, w, t, tw, dd, pi
+      real *8 xr(150), wr(150)
+      integer *8 i, j, nq1, nlege, ifwhts, nthet, iquad, nr
+      integer *8 ier0
+      data pi/3.14159265358979323846264338327950288d0/
+
+      nquad = 0
+      ier = 0
+
+      if (ipv.lt.0 .or. ipv.gt.1) then
+        ier = 8
+        print *, "self_quadrature_split: ipv must be 0 or 1"
+        print *, "(ipv=2 is unsupported; use self_quadrature)"
+        print *, "Returning without returning self quadrature"
+        return
+      endif
+
+!
+!  compute qr decomposition of jacobian vector.
+!  The jacobian tends to be reasonably conditioned, i.e.
+!  better than 1/sqrt(machine precision), so classical
+!  Gram-Schmidt suffices
+!
+      qdr(1:3,1:2) = dr(1:3,1:2)
+      rdr(1,1) = sqrt(qdr(1,1)**2 + qdr(2,1)**2 + qdr(3,1)**2)
+      qdr(1:3,1) = qdr(1:3,1)/rdr(1,1)
+
+      rdr(1,2) = qdr(1,1)*qdr(1,2) + qdr(2,1)*qdr(2,2) + &
+        qdr(3,1)*qdr(3,2)
+      qdr(1:3,2) = qdr(1:3,2) - rdr(1,2)*qdr(1:3,1)
+
+      rdr(2,2) = sqrt(qdr(1,2)**2 + qdr(2,2)**2 + qdr(3,2)**2)
+      qdr(1:3,2) = qdr(1:3,2)/rdr(2,2)
+
+      drdetinv = 1.0d0/abs(rdr(1,1)*rdr(2,2))
+
+!
+!  compute vertices in conformal coordinates, i.e.
+!  in basis vectors given by q
+!
+
+      do i=1,nv
+        rtmp1 = verts(1,i) - x0
+        rtmp2 = verts(2,i) - y0
+
+        vtransf(1,i) = rdr(1,1)*rtmp1 + rdr(1,2)*rtmp2
+        vtransf(2,i) = rdr(2,2)*rtmp2
+      enddo
+      vtransf(1:2,nv+1) = vtransf(1:2,1)
+
+!
+!  find projections to the sides and the cut-out radius
+!  for principal value and hypersingular quadratures
+!
+      vtmp(1) = 0
+      vtmp(2) = 0
+      do i=1,nv
+        call comp_projs_selfquad(vtmp, vtransf(1,i), vtransf(1,i+1), &
+          hdis(i), projs(1,i), thetas(i))
+      enddo
+      rcmin = minval(hdis)
+      rcut = rcmin/2
+
+!
+!  Now start assembling on the triangles. Ignore almost collinear triangles,
+!  for compact quadratures, this can then inturn be used to evaluate
+!  layer potentials on the boundary of the triangle
+!
+!
+      nquad = 0
+      ier = 0
+      nq1 = 0
+      do i = 1,nv
+        if(abs(thetas(i)).gt.3.11d0) then
+          call get_ggq_triangle_origin_quadrature_split(norder, ipv, &
+            ifar, rcut, vtransf(1,i), projs(1,i), xs(1+nquad), &
+            ys(1+nquad), whts(1+nquad), nq1, ier0)
+          nquad = nquad + nq1
+          ier = max(ier, ier0)
+
+          call get_ggq_triangle_origin_quadrature_split(norder, ipv, &
+            ifar, rcut, projs(1,i), vtransf(1,i+1), xs(1+nquad), &
+            ys(1+nquad), whts(1+nquad), nq1, ier0)
+          nquad = nquad + nq1
+          ier = max(ier, ier0)
+        else
+          call get_ggq_triangle_origin_quadrature_split(norder, ipv, &
+            ifar, rcut, vtransf(1,i), vtransf(1,i+1), xs(1+nquad), &
+            ys(1+nquad), whts(1+nquad), nq1, ier0)
+          nquad = nquad + nq1
+          ier = max(ier, ier0)
+        endif
+      enddo
+!
+!  Add in tensor product quadrature on the cut out disk.
+!
+      nthet = 3*(norder+1) + 2
+      nlege = (norder/2) + 1
+      if(ipv.eq.1) then
+!
+!  principal value disk: legendre in r on [0,rcut], full angular
+!  range [0,2*pi). The 1/r singularity is integrable in polar
+!  coordinates thanks to the r Jacobian
+!
+        ifwhts = 1
+        call legewhts(nlege, xr, wr, ifwhts)
+        nr = nlege
+
+        dd = (2*pi)/nthet
+        do i = 1,nr
+          r = rcut/2*xr(i) + rcut/2
+          w = rcut/2*wr(i)
+          do j = 1,nthet
+            iquad = nquad + (i-1)*nthet + j
+            t = dd*(j-1)
+            tw = dd
+            xs(iquad) = r*cos(t)
+            ys(iquad) = r*sin(t)
+            whts(iquad) = tw*r*w
+          enddo
+        enddo
+        nquad = nquad + nthet*nr
+      endif
+!
+!  Inverse qr mapping to all the quadrature nodes
+!
+!
+      do i = 1,nquad
+        ytmp = ys(i)/rdr(2,2)
+        xtmp = xs(i) - rdr(1,2)*ytmp
+        xtmp = xtmp/rdr(1,1)
+
+        xs(i) = xtmp + x0
+        ys(i) = ytmp + y0
+        whts(i) = whts(i)*drdetinv
+      enddo
+
+
+      return
+      end subroutine
+
+
+
+      subroutine get_ggq_triangle_origin_quadrature_split(norder, &
+        ipv, ifar, rcut, v0, v1, xs, ys, ws, nquad, ier)
+!
+!  get_ggq_triangle_origin_quadrature with the split radial rules
+!  rquads_rlogr_rinv_split (ipv = 0) and rquads_pv_hs_split (ipv = 1).
+!
+!  Here T is a triangle with vertices (0,0), v0, v1.
+!
+!  Input arguments:
+!    - norder: integer *8
+!        order of polynomials for representing sigma on S
+!    - ipv: integer *8
+!        nature of singularity of the kernel K
+!        * ipv = 0, single layer like + log singular kernels
+!        * ipv = 1, p.v. integrals
+!        (ipv = 2 is not supported here)
+!    - ifar: integer *8
+!        far-part radial rule selector, passed to
+!        rquads_rlogr_rinv_split / rquads_pv_hs_split
+!    - rcut: real *8
+!        radius of the disk around the origin handled separately by
+!        the caller (only applicable for ipv=1; unused for ipv=0)
+!    - v0: real *8(2)
+!        vertex of the triangle
+!    - v1: real *8(2)
+!        the other vertex of the triangle
+!
+!  Output arguments:
+!    - xs: real *8(nquad)
+!        x coordinates of quadrature nodes on the triangle
+!    - ys: real *8(nquad)
+!        y coordinates of quadrature nodes on the triangle
+!    - ws: real *8(nquad)
+!        quadrature weights
+!    - ier: integer *8
+!        error code
+!        * ier = 0 => successful execution
+!        * ier = 4 => couldn't fetch theta quadratures
+!        * ier = 8 => unsupported ipv (must be 0 or 1)
+!
+!
+      implicit none
+      integer *8, intent(in) :: norder, ipv, ifar
+      real *8, intent(in) :: rcut, v0(2), v1(2)
+      integer *8, intent(out) :: nquad, ier
+      real *8, intent(out) :: xs(*), ys(*), ws(*)
+!
+! Temporary variables
+!
+      real *8 r0, r1, xmeas, rr, sina, cosa, xx, yy
+      real *8 rcut_scaled, r, theta
+      integer *8 ier0, ipv_t
+      integer *8 ifreflect, irad, nr, nr0, nt, i, j, it, istart, ir
+      real *8 xr(400), wr(400), xt(200), wt(200)
+      real *8 xtmp, ytmp
+      real *8 ct, st, t, twht, rwht, ruse, rsc, rr2, rl
+      integer *8 iquad
+
+      nquad = 0
+      ier = 0
+
+      if (ipv.lt.0 .or. ipv.gt.1) then
+        ier = 8
+        print *, "get_ggq_triangle_origin_quadrature_split: "// &
+          "ipv must be 0 or 1"
+        return
+      endif
+
+!
+! Test for collinearity
+!
+      xmeas = 1.0d0
+      if ((abs(v0(1)).gt.abs(v0(2))).and.(abs(v1(1)).gt.abs(v1(2)))) then
+        xmeas = abs(v0(2)/v0(1) - v1(2)/v1(1))
+      else
+        xmeas = abs(v0(1)/v0(2) - v1(1)/v1(2))
+      endif
+
+      if (xmeas.le.1.0d-8) return
+
+!
+!  Points are no longer collinear
+!
+      r0 = sqrt(v0(1)**2 + v0(2)**2)
+      r1 = sqrt(v1(1)**2 + v1(2)**2)
+!
+!  Place the longer edge on the y=0 axis, rotate and
+!  reflect about y=0 axis if needed
+!
+      if (r0.gt.r1) then
+        rr = r0
+        sina = v0(2)/r0
+        cosa = v0(1)/r0
+        xx = cosa*v1(1) + sina*v1(2)
+        yy = -sina*v1(1) + cosa*v1(2)
+      else
+        rr = r1
+        sina = v1(2)/r1
+        cosa = v1(1)/r1
+        xx = cosa*v0(1) + sina*v0(2)
+        yy = -sina*v0(1) + cosa*v0(2)
+      endif
+
+      ifreflect = 0
+      if (yy.lt.0) then
+        yy = -yy
+        ifreflect = 1
+      endif
+!
+!  normalize
+!
+      xx = xx/rr
+      yy = yy/rr
+      rcut_scaled = rcut/rr
+      if (ipv.eq.0) rcut_scaled = 0
+
+      r = sqrt(xx**2 + yy**2)
+      theta = atan2(yy, xx)
+
+!
+!  get which theta quadratures to fetch
+!  determine irad, based on norder
+!
+      if (norder.lt.2) then
+        irad = 1
+      elseif (norder.lt.4.and.norder.ge.2) then
+        irad = 2
+      elseif (norder.lt.6.and.norder.ge.4) then
+        irad = 3
+      elseif (norder.lt.8.and.norder.ge.6) then
+        irad = 4
+      elseif (norder.lt.10.and.norder.ge.8) then
+        irad = 5
+      elseif (norder.lt.12.and.norder.ge.10) then
+        irad = 6
+      elseif (norder.lt.16.and.norder.ge.12) then
+        irad = 7
+      elseif (norder.lt.20.and.norder.ge.16) then
+        irad = 8
+      else
+        ier = 4
+        print *, "norder too high for theta quadratures"
+        print *, "Returning without returning self quadrature"
+        return
+      endif
+
+!
+!
+      ir = 0
+      it = 0
+      ipv_t = ipv
+      call get_radfetch_param(ipv_t, irad, r, theta, nt, ir, it, ier)
+      if (ier.gt.0) then
+        print *, "Couldn't find theta quadratures"
+        print *, "Returning without returning self quadrature"
+        return
+      endif
+      call radfetch(ipv_t, irad, ir, it, nt, xt, wt)
+!
+!  for ipv = 1 the radial rule depends on the ray and is built in the
+!  theta loop
+!
+      if (ipv.eq.0) then
+        nr0 = norder + 4
+        call rquads_rlogr_rinv_split(nr0, ifar, xr, wr, nr)
+      endif
+
+      istart = 0
+      do j = 1,nt
+        t = xt(j)*theta
+        twht = wt(j)*theta
+        ct = cos(t)
+        st = sin(t)
+
+        ruse = r*sin(theta)/(r*sin(theta-t) + st)
+        rl = ruse - rcut_scaled
+
+        if (ipv.eq.1) then
+          call rquads_pv_hs_split(norder, ipv, ifar, rcut_scaled, rl, &
+              xr, wr, nr, ier)
+          if (ier.gt.0) then
+            print *, "Failed to extract radial quadratures"
+            print *, "Returning without returning self quadrature"
+            return
+          endif
+        endif
+!
+!  Now construct the tensor product quadrature
+!
+        do i = 1,nr
+          iquad = istart + i
+          rsc = rcut_scaled + xr(i)*rl
+          rwht = wr(i)*rl
+          xs(iquad) = rsc*ct
+          ys(iquad) = rsc*st
+          ws(iquad) = rsc*rwht*twht
+        enddo
+        istart = istart + nr
+      enddo
+
+      nquad = istart
+!
+!  Now undo the scaling and the transformations at the top
+!
+      rr2 = rr*rr
+      do i = 1,nquad
+        xs(i) = xs(i)*rr
+        ys(i) = ys(i)*rr
+        ws(i) = ws(i)*rr2
+
+        if (ifreflect .eq. 1) ys(i) = -ys(i)
+        xtmp = cosa*xs(i) - sina*ys(i)
+        ytmp = sina*xs(i) + cosa*ys(i)
+        xs(i) = xtmp
+        ys(i) = ytmp
+      enddo
+
+      return
+      end subroutine
+
+
+
+      subroutine rquads_rlogr_rinv_split(norder, ifar, xs, ws, nr)
+!
+!  Radial quadrature on [0,1] for phi(x) + psi(x)*log(x) + chi(x)/x.
+!  The near half [0,1/2] uses the rquads_rlogr_rinv rule; the far half
+!  [1/2,1] is selected by ifar:
+!    - ifar = 0: rquads_rlogr_rinv reflected so that it is singular
+!      at x = 1
+!
+!  Input arguments:
+!    - norder: integer *8
+!        order parameter forwarded to rquads_rlogr_rinv (number of
+!        nodes in each half is norder; total returned is 2*norder)
+!    - ifar: integer *8
+!        selects the far-half rule, see above
+!
+!  Output arguments:
+!    - xs: real *8(nr)
+!        quadrature nodes on [0,1], nodes 1:norder are the near half,
+!        nodes norder+1:2*norder are the far half
+!    - ws: real *8(nr)
+!        quadrature weights
+!    - nr: integer *8
+!        number of quadrature nodes/weights (= 2*norder, or 0 on
+!        failure)
+!
+      implicit none
+      integer *8, intent(in) :: norder, ifar
+      real *8, intent(out) :: xs(*), ws(*)
+      integer *8, intent(out) :: nr
+
+      real *8 xs0(150), ws0(150)
+      integer *8 nr0, i
+
+      call rquads_rlogr_rinv(norder, xs0, ws0, nr0)
+      if (nr0.eq.0) then
+        nr = 0
+        return
+      endif
+
+!
+!  near half: [0,1] -> [0,1/2], singularity stays at x=0
+!
+      do i = 1,nr0
+        xs(i) = 0.5d0*xs0(i)
+        ws(i) = 0.5d0*ws0(i)
+      enddo
+
+!
+!  far half: selected by ifar
+!
+      if (ifar.eq.0) then
+!
+!  mirror the near-half table: reflect x0 in [0,1] to 1-x0, then
+!  rescale [0,1] -> [1/2,1]; the composition is
+!       x_far = 1 - 0.5*xs0,   w_far = 0.5*ws0
+!  which places the singularity at x=1
+!
+        do i = 1,nr0
+          xs(nr0+i) = 1.0d0 - 0.5d0*xs0(i)
+          ws(nr0+i) = 0.5d0*ws0(i)
+        enddo
+      else
+        print *, "rquads_rlogr_rinv_split: unsupported ifar=", ifar
+        nr = 0
+        return
+      endif
+
+      nr = 2*nr0
+
+      return
+      end
+
+
+
+      subroutine rquads_pv_hs_split(norder, ipv, ifar, a, b, xr, wr, &
+        nr, ier)
+!
+!  Radial quadrature on [0,1] in u, r = a + u*b, for
+!     f(r) = phi(r) + 1/(r+a)
+!  as in rquads_pv_hs, that also resolves a log(u), 1/u singularity of
+!  the density at u = 1. The near part [0,1/2] uses rquads_pv_hs and the
+!  far part is selected by ifar (ifar = 0: rquads_rlogr_rinv reflected
+!  so that it is singular at u = 1). Rays too short to split use the
+!  unsplit rquads_pv_hs rule.
+!
+!  Input arguments:
+!    - norder: integer *8
+!        order of polynomials for representing sigma
+!    - ipv: integer *8
+!        must be 1 (p.v.); ipv = 2 is not supported
+!    - ifar: integer *8
+!        selects the far-part rule (only ifar = 0 supported)
+!    - a: real *8
+!        offset of the origin singularity below the interval start
+!    - b: real *8
+!        length of the radial interval
+!
+!  Output arguments:
+!    - xr: real *8(nr)
+!        quadrature nodes in the normalized variable u in [0,1]
+!    - wr: real *8(nr)
+!        quadrature weights in u
+!    - nr: integer *8
+!        number of nodes (0 on failure)
+!    - ier: integer *8
+!        error code, 0 on success
+!
+      implicit none
+      integer *8, intent(in) :: norder, ipv, ifar
+      real *8, intent(in) :: a, b
+      real *8, intent(out) :: xr(*), wr(*)
+      integer *8, intent(out) :: nr, ier
+
+      real *8 xs0(200), ws0(200), xs1(150), ws1(150)
+      real *8 fsplit, delta, dmax
+      integer *8 nr0, nr1, i
+
+      nr = 0
+      ier = 0
+
+      if (ipv.ne.1) then
+        ier = 8
+        print *, "rquads_pv_hs_split: ipv must be 1"
+        return
+      endif
+
+      if (b.le.0) then
+        ier = 4
+        return
+      endif
+
+!
+!  largest delta = a/b for the rquads_pv_hs table lookup
+!
+      dmax = 0.8d0
+
+      delta = a/b
+      fsplit = 0.5d0
+
+      if (delta/fsplit .gt. dmax) then
+!
+!  ray too short to split: fall back to the unsplit rule
+!
+        call rquads_pv_hs(norder, ipv, a, b, xr, wr, nr, ier)
+        return
+      endif
+
+!
+!  near part: [a, a+fsplit*b], same offset a
+!
+      call rquads_pv_hs(norder, ipv, a, fsplit*b, xs0, ws0, nr0, ier)
+      if (ier.gt.0 .or. nr0.eq.0) then
+        nr = 0
+        if (ier.eq.0) ier = 4
+        return
+      endif
+
+      do i = 1,nr0
+        xr(i) = fsplit*xs0(i)
+        wr(i) = fsplit*ws0(i)
+      enddo
+
+!
+!  far part: selected by ifar
+!
+      if (ifar.eq.0) then
+!
+!  mirror the rlogr_rinv table: reflect u0 in [0,1] to 1-u0, then
+!  rescale [0,1] -> [fsplit,1]; the composition is
+!       u_far = 1 - (1-fsplit)*u0,   w_far = (1-fsplit)*w0
+!  which places the singularity at u=1
+!
+        call rquads_rlogr_rinv(norder + 4, xs1, ws1, nr1)
+        if (nr1.eq.0) then
+          nr = 0
+          ier = 4
+          return
+        endif
+        do i = 1,nr1
+          xr(nr0+i) = 1.0d0 - (1.0d0 - fsplit)*xs1(i)
+          wr(nr0+i) = (1.0d0 - fsplit)*ws1(i)
+        enddo
+      else
+        print *, "rquads_pv_hs_split: unsupported ifar=", ifar
+        nr = 0
+        ier = 8
+        return
+      endif
+
+      nr = nr0 + nr1
+
+      return
+      end
+
+
+
       subroutine radfetch(ipv, irad, ir, it, nt, ts, wts)
 !---------------------
 !

@@ -128,7 +128,11 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     end
 
 
-    rsc = getnear(S, targinfo);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+    else
+        rsc = getnear(S, targinfo);
+    end
     row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
     rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
     nquad = rsc.nquad;

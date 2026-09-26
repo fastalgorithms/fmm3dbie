@@ -1,4 +1,4 @@
-function S = align_patches(S, distmin, normals, align_type, align_id)
+function [S, binfo] = align_patches(S, distmin, normals, align_type, align_id)
 % ALIGN_PATCHES  Rotate patch parametric coordinates so that a specified
 %   edge or vertex aligns with the singular direction.
 %
@@ -40,6 +40,18 @@ function S = align_patches(S, distmin, normals, align_type, align_id)
 %
 % Output:
 %   S          - aligned surfer object
+%   binfo      - boundary patches, those with 1 or 2 vertices on the
+%                feature:
+%                  .ids        - (1,nb) patch indices
+%                  .align_type - (1,nb) alignment applied (codes above)
+%                  .isedge     - (1,nb) true for edge-on, false for vertex-on
+%                  .irot       - (1,nb) rotation applied
+%                  .nsmall     - (1,npatches) vertices of each patch on the
+%                                feature
+%                  .align_type_all - (1,npatches) alignment per patch, 0 if
+%                                none
+%                  .idegen     - patches with 3 or more vertices on the
+%                                feature, left unrotated
 
 % Threshold for counting "small" distances: a vertex distance is considered
 % near-zero if it is less than THRESH * max(distmin_i).
@@ -68,6 +80,11 @@ nv_per_patch(S.iptype == 11 | S.iptype == 12) = 4;
 distmin_ptr = [1; cumsum(nv_per_patch) + 1];   % length npatches+1
 
 distmin = distmin(:);   % ensure column vector
+
+% --- boundary classification ---
+nsmall_all         = zeros(1, npatches);
+align_type_all     = zeros(1, npatches);
+irot_all           = zeros(1, npatches);
 
 % --- allocate output arrays (same size as input) ---
 npts = S.npts;
@@ -110,6 +127,9 @@ for i = 1:npatches
     else
         align_type_i = align_type(i);
     end
+
+    nsmall_all(i)     = nsmall;
+    align_type_all(i) = align_type_i;
 
     do_rotate = (nsmall > 0) && (nsmall < 3) && (align_type_i > 0);
 
@@ -167,6 +187,8 @@ for i = 1:npatches
         irot = 0;
     end
 
+    irot_all(i) = irot;
+
     % --- apply rotation or copy ---
     if irot > 0
         uvs_use = S.uvs_targ(:, iinds);
@@ -182,6 +204,25 @@ for i = 1:npatches
         dvnew(:,iinds) = S.dv(:,iinds);
         nnew(:,iinds)  = S.n(:,iinds);
     end
+end
+
+% --- boundary patch summary ---
+ibdry = find(nsmall_all == 1 | nsmall_all == 2);
+
+binfo               = struct();
+binfo.ids           = ibdry;
+binfo.align_type    = align_type_all(ibdry);
+binfo.isedge        = (nsmall_all(ibdry) == 2);
+binfo.irot          = irot_all(ibdry);
+binfo.nsmall        = nsmall_all;
+binfo.align_type_all = align_type_all;
+binfo.idegen        = find(nsmall_all >= 3);
+
+if ~isempty(binfo.idegen)
+    warning('align_patches:degeneratePatches', ...
+        ['%d patch(es) have >= 3 vertices on the feature and were left ' ...
+         'unrotated; they are excluded from binfo.ids.'], ...
+        numel(binfo.idegen));
 end
 
 % --- reconstruct surfer with same iptype and norders ---

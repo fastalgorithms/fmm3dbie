@@ -1409,3 +1409,88 @@
       return
       end
 
+!
+!
+!
+!
+!
+      subroutine getnearquad_lap_grad_s_neu_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, &
+        targs, ipatch_id, uvs_targ, eps, iquadtype, nnz, &
+        row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+!
+!  This subroutine generates the near field quadrature for the TARGET
+!  Cartesian gradient (d/dx, d/dy) of the representation:
+!
+!  u = S_{0}[\sigma]
+!
+!  i.e. grad(u) = grad(S_{0})[\sigma], using the l3d_sgradx/l3d_sgrady
+!  kernels directly via dgetnearquad_ggq_guru (the generic real-valued
+!  GGQ near-quadrature routine), called once per Cartesian component.
+!
+!  The quadrature is computed by the following strategy
+!  targets within a sphere of radius rfac0*rs
+!  of a patch centroid is handled using adaptive integration
+!  where rs is the radius of the bounding sphere
+!  for the patch
+!
+!  All other targets in the near field are handled via
+!  oversampled quadrature
+!
+!  The recommended parameter for rfac0 is 1.25d0
+!
+!  Input arguments: same as getnearquad_lap_s_neu_eval
+!
+!  Output arguments
+!    - wnear: real *8(2,nquad)
+!        The desired near field quadrature for grad(S_{0}),
+!        wnear(1,:) = d/dx, wnear(2,:) = d/dy
+!
+!
+      implicit none
+      integer, intent(in) :: npatches, norders(npatches), npts, nquad
+      integer, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
+      real *8, intent(in) :: rfac0
+      integer, intent(in) :: iquadtype
+      integer, intent(in) :: nnz
+      integer, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg, ntarg)
+      integer, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      integer, intent(in) :: row_ptr(ntarg+1), col_ind(nnz), iquad(nnz+1)
+      real *8, intent(out) :: wnear(2,nquad)
+
+      real *8 dpars(1)
+      complex *16 zpars(1)
+      integer ipars(1)
+      integer ndd, ndz, ndi, ipv
+
+      real *8, allocatable :: wneartmp(:)
+
+      procedure (), pointer :: fker
+      external l3d_sgradx, l3d_sgrady
+
+      ndd = 0
+      ndz = 0
+      ndi = 0
+      ipv = 0
+
+      allocate(wneartmp(nquad))
+
+      fker => l3d_sgradx
+      call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wneartmp)
+      wnear(1,:) = wneartmp
+
+      fker => l3d_sgrady
+      call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wneartmp)
+      wnear(2,:) = wneartmp
+
+      return
+      end subroutine getnearquad_lap_grad_s_neu_eval

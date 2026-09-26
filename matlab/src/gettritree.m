@@ -25,7 +25,7 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
 %       default, rfac = 3
 %    * opts: options struct
 %        opts.ntrimax - maximum number of triangles in the partition (3000)
-%        opts.nlevmax - maximum depth of tree (6)
+%        opts.nlevmax - maximum depth of tree (8)
 %    
 %
    
@@ -64,6 +64,14 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     tricm = zeros(3,ntrimaxp);
     trirad = zeros(npatches,ntrimax);
     tverts = zeros(6,ntrimax);
+
+    % Guard the size of itrirel. 
+    nbytes_itrirel = ntarg*ntrimax*8;
+    if nbytes_itrirel > 4e9
+        error('FMM3DBIE:GETTRITREE:itrirelTooLarge', ...
+            ['itrirel would be %d x %d (%.1f GB)'], ...
+            ntarg, ntrimax, nbytes_itrirel/1e9, ntrimax);
+    end
     itrirel = zeros(ntarg,ntrimax);
 
     ier = 0;

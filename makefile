@@ -115,7 +115,7 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o \
 	$(COM)/rigidbodies.o $(COM)/polytens.o \
-	$(COM)/chebexps.o $(COM)/gmres_routs.o \
+	$(COM)/chebexps.o $(COM)/gmres_routs.o 
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
@@ -155,7 +155,10 @@ KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 	$(KER)/lap_bel_kernels.o \
 	$(KER)/hank101.o \
 	$(KER)/hank103.o $(KER)/helmdiffgreen.o \
-	$(KER)/hankdiff.o 
+	$(KER)/hankdiff.o $(KER)/struve102.o $(KER)/vpp.o \
+	$(KER)/radcheb_quad.o \
+	$(KER)/surfwave_kernels_helm.o $(KER)/surfwave_kernels_flex.o \
+	$(KER)/surfwave_kernels_grav.o 
 
 # Quadrature wrappers
 QUAD = src/quadratures
@@ -195,12 +198,25 @@ SURFSM_MOD_OBJS = $(SURFSM)/Mod_TreeLRD.o \
 	$(SURFSM)/ModType_Smooth_Surface.o $(SURFSM)/Mod_Fast_Sigma.o \
 	$(SURFSM)/Mod_Plot_Tools_sigma.o $(SURFSM)/Mod_Feval.o $(SURFSM)/Mod_Smooth_Surface.o
 
+# 2D flexural kernels
+KER2 = src/kernels_2d
+KOBJS2 = $(KER2)/flexural_kernels_2d.o
+
+# Flexural 2D wrappers
+FX2 = src/flexural_2d_wrappers
+FXOBJS = $(FX2)/flexural_2d_wrappers.o
+
+# Surface wave wrappers
+SURFWAVE = src/surfwave_wrappers
+SURFWAVEOBJS = $(SURFWAVE)/capillary_all.o $(SURFWAVE)/flexural_all.o \
+	$(SURFWAVE)/flex_rep_bcs.o $(SURFWAVE)/gravity_all.o
+
 # Add to FFLAGS so that modules get compiled in the .mod folder
 FFLAGS += -J .mod/
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(KOBJS2) $(FXOBJS) $(SURFWAVEOBJS)
 
-OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(KOBJS2) $(FXOBJS) $(SURFWAVEOBJS)
 OBJS_64 += $(COM)/lapack_wrap_64.o
 
 ifeq ($(BLAS_64),ON)

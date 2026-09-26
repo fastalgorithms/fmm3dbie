@@ -19,6 +19,15 @@ classdef kernel3d
 %      'maxwell'   ('em3d', 'em')        'nrccie-bc', 'nrccie-eval'
 %      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
 %      'beltrami'  ('belpde', 'bel')     'klb', 'rlb', 'khb', 'rhb'
+%      'capillary' ('cap')               's', 'lap', 's3d', 's3d_lap',
+%                                        's3d_sum', 'sp', 'd', 'dp'
+%      'iceflex'   ('ice_flex')          'gs', 'gphi', 'gphi_bilap', 's3d',
+%                                        's3d_gphi', 's3d_sum',
+%                                        'gs_v2b', 'gphi_v2b'
+%      'flex2d'    ('plate')             's', 'free_plate_bcs'
+%      'gravity'   ('grav')              's', 'grad', 'free_plate_bcs', 'vol'
+%      'radcheb'                         (adaptive Chebyshev interpolant of a
+%                                         radial kernel, see KERNEL3D.RADCHEB)
 %      'zero'/'zeros'                    (no type needed)
 %
 %   Some kernels accept extra parameters as trailing arguments, e.g.
@@ -95,6 +104,16 @@ classdef kernel3d
                         obj = kernel3d.stok3d(varargin{:});
                     case {'beltrami', 'belpde', 'bel'}
                         obj = kernel3d.belpde(varargin{:});
+                    case {'capillary', 'cap'}
+                        obj = kernel3d.capillary(varargin{:});
+                    case {'iceflex', 'ice_flex'}
+                        obj = kernel3d.iceflex(varargin{:});
+                    case {'flex2d', 'plate'}
+                        obj = kernel3d.flex2d(varargin{:});
+                    case {'gravity', 'grav'}
+                        obj = kernel3d.gravity(varargin{:});
+                    case {'radcheb'}
+                        obj = kernel3d.radcheb(varargin{:});
                     case {'z', 'zero', 'zeros'}
                         if ~isempty(varargin)
                             obj = kernel3d.zeros(varargin{1});
@@ -140,6 +159,11 @@ classdef kernel3d
         obj    = em3d(varargin);
         obj    = stok3d(varargin);
         obj    = belpde(varargin);
+        obj    = capillary(varargin);
+        obj    = iceflex(varargin);
+        obj    = flex2d(varargin);
+        obj    = gravity(varargin);
+        obj    = radcheb(varargin);
         obj    = zeros(opdims);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);

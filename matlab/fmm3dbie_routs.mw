@@ -752,7 +752,8 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
         targs = targinfo;
     end
     [ndtarg,ntarg] = size(targs);
-
+    targs = targs(1:3,:);
+    ndtarg = 3;
     sxyz = zeros(ndtarg,ntarg);
     patch_inds = zeros(ntarg,1);
     uvsloc = zeros(2,ntarg);
@@ -798,7 +799,7 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
 %       default, rfac = 3
 %    * opts: options struct
 %        opts.ntrimax - maximum number of triangles in the partition (3000)
-%        opts.nlevmax - maximum depth of tree (6)
+%        opts.nlevmax - maximum depth of tree (8)
 %    
 %
    
@@ -837,6 +838,14 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     tricm = zeros(3,ntrimaxp);
     trirad = zeros(npatches,ntrimax);
     tverts = zeros(6,ntrimax);
+
+    % Guard the size of itrirel. 
+    nbytes_itrirel = ntarg*ntrimax*8;
+    if nbytes_itrirel > 4e9
+        error('FMM3DBIE:GETTRITREE:itrirelTooLarge', ...
+            ['itrirel would be %d x %d (%.1f GB)'], ...
+            ntarg, ntrimax, nbytes_itrirel/1e9, ntrimax);
+    end
     itrirel = zeros(ntarg,ntrimax);
 
     ier = 0;
@@ -877,6 +886,53 @@ function [xs, ys, ws] = self_quadrature(norder, ipv, verts, x0, y0, dr)
     ier = 0;
 
     # FORTRAN self_quadrature(int[1] norder, int[1] ipv, double[2,nv] verts, int[1] nv, double[1] x0, double[1] y0, double[3,2] druse, inout int[1] nquad, inout double[nmax] xs, inout double[nmax] ys, inout double[nmax] ws, inout int[1] ier);
+
+    xs = xs(1:nquad);
+    ys = ys(1:nquad);
+    ws = ws(1:nquad);
+end
+%
+%
+%
+
+@ src/self_quadrature_split.m
+function [xs, ys, ws] = self_quadrature_split(norder, ipv, ifar, verts, x0, y0, dr)
+% SELF_QUADRATURE_SPLIT self quadrature as in SELF_QUADRATURE, with
+%   the radial rule split so that it also resolves a singularity of the
+%   density at the far end of each ray.
+%
+%   Syntax
+%     [xs, ys, ws] = self_quadrature_split(norder, ipv, ifar, verts, x0, y0, dr)
+%
+%   Input arguments:
+%     * norder: order of polynomials for representing the density
+%     * ipv: nature of the kernel singularity, 0 or 1
+%     * ifar: rule on the far part of each ray
+%         - ifar = 0: the near rule reflected to be singular at the
+%           far end
+%     * verts: (2,nv) coordinates defining the convex polygon patch
+%     * x0, y0: coordinates of the target/singularity on the patch
+%     * dr: (3,2) surface Jacobian at (x0,y0)
+%
+%   Output arguments:
+%     * xs, ys: quadrature node coordinates on the patch
+%     * ws: quadrature weights
+%
+    nmax = 50000;
+    xs = zeros(nmax,1);
+    ys = zeros(nmax,1);
+    ws = zeros(nmax,1);
+    [~, nv] = size(verts);
+    druse = reshape(dr, [3,2]);
+    nquad = 0;
+    ier = 0;
+
+    # FORTRAN self_quadrature_split(int[1] norder, int[1] ipv, int[1] ifar, double[2,nv] verts, int[1] nv, double[1] x0, double[1] y0, double[3,2] druse, inout int[1] nquad, inout double[nmax] xs, inout double[nmax] ys, inout double[nmax] ws, inout int[1] ier);
+
+    if ier == 8
+        error('FMM3DBIE:self_quadrature_split:unsupported_ipv', ...
+            'self_quadrature_split supports ipv = 0 or 1 (got ipv=%d)', ipv);
+    end
 
     xs = xs(1:nquad);
     ys = ys(1:nquad);
@@ -1195,7 +1251,11 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     if(n1 ~=2 && n2 ~=ntarg)
       fprintf('Incorrect size of uvs_targ array in targinfo struct. Aborting! \n');
     end
-    rsc = getnear(S, targinfo);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+    else
+        rsc = getnear(S, targinfo);
+    end
     row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
     rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
     nquad   = rsc.nquad;
@@ -1691,29 +1751,41 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
 
 
     
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+        row_ptr = rsc.row_ptr;
+        col_ind = rsc.col_ind;
+        iquad   = rsc.iquad;
+        rfac    = rsc.rfac;
+        rfac0   = rsc.rfac0;
+        nnz     = rsc.nnz;
+        ntp1    = ntarg+1;
+        nnzp1   = nnz+1;
+    else
+        iptype0 = iptype(1);
+        norder0 = norders(1);
+        rfac = 0.0;
+        rfac0 = 0.0;
+        # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = S.cms;
-    rads = S.rads; 
+        cms = S.cms;
+        rads = S.rads; 
 
-    rad_near = rads*rfac;
-    nnz = 0;
-    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+        rad_near = rads*rfac;
+        nnz = 0;
+        # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
 
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
+        row_ptr = zeros(ntarg+1,1);
+        col_ind = zeros(nnz,1);
+        ntp1 = ntarg+1;
+        nnzp1 = nnz+1;
+        # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
 
-    iquad = zeros(nnz+1,1);
-    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+        iquad = zeros(nnz+1,1);
+        # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
+    end
     nquad = iquad(nnz+1)-1;
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
@@ -2232,7 +2304,11 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     iprime = 0;
     if isfield(opts,'iprime'); iprime = opts.iprime; end
 
-    rsc = getnear(S, targinfo);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+    else
+        rsc = getnear(S, targinfo);
+    end
     row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
     rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
     ntp1    = ntarg+1;
@@ -2751,7 +2827,11 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     end
 
 
-    rsc = getnear(S, targinfo);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+    else
+        rsc = getnear(S, targinfo);
+    end
     row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
     rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
     nquad = rsc.nquad;
@@ -3266,29 +3346,41 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 
 
     
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+        row_ptr = rsc.row_ptr;
+        col_ind = rsc.col_ind;
+        iquad   = rsc.iquad;
+        rfac    = rsc.rfac;
+        rfac0   = rsc.rfac0;
+        nnz     = rsc.nnz;
+        ntp1    = ntarg+1;
+        nnzp1   = nnz+1;
+    else
+        iptype0 = iptype(1);
+        norder0 = norders(1);
+        rfac = 0.0;
+        rfac0 = 0.0;
+        # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = S.cms;
-    rads = S.rads; 
+        cms = S.cms;
+        rads = S.rads; 
 
-    rad_near = rads*rfac;
-    nnz = 0;
-    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+        rad_near = rads*rfac;
+        nnz = 0;
+        # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
 
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
+        row_ptr = zeros(ntarg+1,1);
+        col_ind = zeros(nnz,1);
+        ntp1 = ntarg+1;
+        nnzp1 = nnz+1;
+        # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
 
-    iquad = zeros(nnz+1,1);
-    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+        iquad = zeros(nnz+1,1);
+        # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
+    end
     nquad = iquad(nnz+1)-1;
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
@@ -3773,29 +3865,41 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
 
 
     
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+        row_ptr = rsc.row_ptr;
+        col_ind = rsc.col_ind;
+        iquad   = rsc.iquad;
+        rfac    = rsc.rfac;
+        rfac0   = rsc.rfac0;
+        nnz     = rsc.nnz;
+        ntp1    = ntarg+1;
+        nnzp1   = nnz+1;
+    else
+        iptype0 = iptype(1);
+        norder0 = norders(1);
+        rfac = 0.0;
+        rfac0 = 0.0;
+        # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = S.cms;
-    rads = S.rads; 
+        cms = S.cms;
+        rads = S.rads; 
 
-    rad_near = rads*rfac;
-    nnz = 0;
-    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+        rad_near = rads*rfac;
+        nnz = 0;
+        # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
 
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
+        row_ptr = zeros(ntarg+1,1);
+        col_ind = zeros(nnz,1);
+        ntp1 = ntarg+1;
+        nnzp1 = nnz+1;
+        # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
 
-    iquad = zeros(nnz+1,1);
-    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+        iquad = zeros(nnz+1,1);
+        # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
+    end
     nquad = iquad(nnz+1)-1;
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
@@ -4288,29 +4392,41 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 
 
     
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+        row_ptr = rsc.row_ptr;
+        col_ind = rsc.col_ind;
+        iquad   = rsc.iquad;
+        rfac    = rsc.rfac;
+        rfac0   = rsc.rfac0;
+        nnz     = rsc.nnz;
+        ntp1    = ntarg+1;
+        nnzp1   = nnz+1;
+    else
+        iptype0 = iptype(1);
+        norder0 = norders(1);
+        rfac = 0.0;
+        rfac0 = 0.0;
+        # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = S.cms;
-    rads = S.rads; 
+        cms = S.cms;
+        rads = S.rads; 
 
-    rad_near = rads*rfac;
-    nnz = 0;
-    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+        rad_near = rads*rfac;
+        nnz = 0;
+        # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
 
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
+        row_ptr = zeros(ntarg+1,1);
+        col_ind = zeros(nnz,1);
+        ntp1 = ntarg+1;
+        nnzp1 = nnz+1;
+        # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
 
-    iquad = zeros(nnz+1,1);
-    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+        iquad = zeros(nnz+1,1);
+        # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
+    end
     nquad = iquad(nnz+1)-1;
     nker = 6;
     wnear = zeros(nker,nquad);
@@ -4752,29 +4868,41 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 
 
 
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+        row_ptr = rsc.row_ptr;
+        col_ind = rsc.col_ind;
+        iquad   = rsc.iquad;
+        rfac    = rsc.rfac;
+        rfac0   = rsc.rfac0;
+        nnz     = rsc.nnz;
+        ntp1    = ntarg+1;
+        nnzp1   = nnz+1;
+    else
+        iptype0 = iptype(1);
+        norder0 = norders(1);
+        rfac = 0.0;
+        rfac0 = 0.0;
+        # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
 
 
-    cms = S.cms;
-    rads = S.rads;
+        cms = S.cms;
+        rads = S.rads;
 
-    rad_near = rads*rfac;
-    nnz = 0;
-    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+        rad_near = rads*rfac;
+        nnz = 0;
+        # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
 
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind);
+        row_ptr = zeros(ntarg+1,1);
+        col_ind = zeros(nnz,1);
+        ntp1 = ntarg+1;
+        nnzp1 = nnz+1;
+        # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind);
 
-    iquad = zeros(nnz+1,1);
-    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+        iquad = zeros(nnz+1,1);
+        # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
+    end
     nquad = iquad(nnz+1)-1;
     nker = 6;
     wnear = zeros(nker,nquad);
@@ -5201,29 +5329,41 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
 
 
     
-    iptype0 = iptype(1);
-    norder0 = norders(1);
-    rfac = 0.0;
-    rfac0 = 0.0;
-    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+        row_ptr = rsc.row_ptr;
+        col_ind = rsc.col_ind;
+        iquad   = rsc.iquad;
+        rfac    = rsc.rfac;
+        rfac0   = rsc.rfac0;
+        nnz     = rsc.nnz;
+        ntp1    = ntarg+1;
+        nnzp1   = nnz+1;
+    else
+        iptype0 = iptype(1);
+        norder0 = norders(1);
+        rfac = 0.0;
+        rfac0 = 0.0;
+        # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
     
 
-    cms = S.cms; 
-    rads = S.rads; 
+        cms = S.cms; 
+        rads = S.rads; 
 
-    rad_near = rads*rfac;
-    nnz = 0;
-    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+        rad_near = rads*rfac;
+        nnz = 0;
+        # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
 
-    row_ptr = zeros(ntarg+1,1);
-    col_ind = zeros(nnz,1);
-    ntp1 = ntarg+1;
-    nnzp1 = nnz+1;
-    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
+        row_ptr = zeros(ntarg+1,1);
+        col_ind = zeros(nnz,1);
+        ntp1 = ntarg+1;
+        nnzp1 = nnz+1;
+        # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
 
-    iquad = zeros(nnz+1,1);
-    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+        iquad = zeros(nnz+1,1);
+        # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
+    end
     nquad = iquad(nnz+1)-1;
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
@@ -6069,7 +6209,11 @@ function Q = get_quadrature_correction(S, type, zk, eps, targinfo, opts)
       fprintf('Incorrect size of uvs_targ array in targinfo struct. Aborting! \n');
     end
 
-    rsc = getnear(S, targinfo);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+    else
+        rsc = getnear(S, targinfo);
+    end
     row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
     rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
     nquad   = rsc.nquad;
@@ -6254,3 +6398,341 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc.nnz     = length(col_ind);
     rsc.nquad   = iquad(nnz+1)-1;
 end
+
+%
+%%  Surface wave near-field quadrature (capillary / flexural / gravity)
+%%
+%
+
+@ +surfwave/+capillary/getnearquad_capillary.m
+function wnear = getnearquad_capillary(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
+          iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker)
+%
+%  surfwave.capillary.getnearquad_capillary
+%    Near-field quadrature correction for the capillary surface wave
+%    kernels, at an arbitrary target array.
+%
+%    iker selects the kernel:
+%      0 = G_S            1 = G_phi        3 = lap G_phi
+%      5 = S3d G_phi      6 = Laplace S3d  7 = 5 + 6
+%      8 = S'_S           9 = S'_phi
+%
+%    Targets on the source surface carry their patch id in ipatch_id and
+%    local coordinates in uvs_targ; off-surface targets pass -1.
+%
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    if ~isnumeric(targs)   % may already be a flattened array (recursive calls)
+        targs = extract_targ_array(targs);
+    end
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+
+    wnear = zeros(1,nquad,'like',1i);
+
+    if iker < 6
+
+        # FORTRAN getnearquad_capillary_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] wnear);
+
+    elseif iker == 6
+
+        wnear_lap = zeros(1,nquad);
+        # FORTRAN getnearquad_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear_lap);
+        wnear = wnear_lap;
+
+    elseif iker == 7
+
+        wnear1 = surfwave.capillary.getnearquad_capillary(npatches,norders, ...
+            ixyzs,iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ, ...
+            eps,iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,zpars,nquad,5);
+        wnear2 = surfwave.capillary.getnearquad_capillary(npatches,norders, ...
+            ixyzs,iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ, ...
+            eps,iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,zpars,nquad,6);
+        wnear = wnear1 + wnear2;
+
+    else
+        % iker 8, 9: S' kernels.  S' depends on the target normal, so it
+        % is not radial and is handled by the direct routine only.
+        # FORTRAN getnearquad_capillary_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] wnear);
+
+    end
+
+end
+
+@ +surfwave/+flex/getnearquad_flex.m
+function wnear = getnearquad_flex(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    %if isfield(targs,'r') || isprop(targs,'r')
+    if ~isfloat(targs)
+        targs = targs.r;
+    end
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    wnear = zeros(1,nquad,'like',1i);
+
+    if iker < 7
+
+    if iker < 6
+        # FORTRAN getnearquad_flex_all_targ(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[13] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[nquad] wnear);
+    else
+        wnear_lap = zeros(1,nquad);    
+        # FORTRAN getnearquad_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear_lap);
+        wnear = wnear_lap;
+    end
+
+
+    else
+    wnear1 = surfwave.flex.getnearquad_flex(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,5);
+    wnear2 = surfwave.flex.getnearquad_flex(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,6);    
+    wnear = wnear1 + wnear2;
+    end
+    wnear = wnear(:);
+end
+
+@ +surfwave/+flex/getnearquad_v2b_flex.m
+function wnear = getnearquad_v2b_flex(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targ,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    
+    rx = targ.r(1,:); 
+    ry = targ.r(2,:); 
+    
+    nx = targ.n(1,:); 
+    ny = targ.n(2,:);
+    
+    dx = targ.d(1,:);
+    dy = targ.d(2,:);
+    
+    ds = sqrt(dx.*dx+dy.*dy);
+    taux = (dx./ds); % normalization
+    tauy = (dy./ds);
+    
+    targs = zeros(13,length(targ.r(1,:)));
+    targs(1:2,:) = [rx; ry];
+    targs(4:5,:) = [taux; tauy];
+    targs(10:11,:) = [nx; ny];
+    targs(13,:) = targ.kappa(:);
+
+    [ndtarg,ntarg] = size(targs);
+    ntp1 = ntarg+1;
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   compute near quadrature correction
+
+    nquad = iquad(nnz+1)-1;
+
+    iquadtype = 1;
+
+    wnear = zeros(2,nquad,'like',1i);
+
+
+# FORTRAN getnearquad_flex_bcs(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[13] zpars, int[1] iquadtype,       int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[2,nquad] wnear);
+end
+
+
+%
+%
+
+@ src/getnearquad_radcheb.m
+function wnear = getnearquad_radcheb(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
+          iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,nquad, ...
+          dpars,ipars,ifcomplex)
+%
+%  getnearquad_radcheb
+%
+%  Near field quadrature for a radial kernel given by the piecewise
+%  polynomial expansion (dpars,ipars) built by radcheb_fit.
+%
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    if ~isnumeric(targs)   % may already be a flattened array (recursive calls)
+        targs = targs.r;
+    end
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndd = length(dpars);
+    ndi = length(ipars);
+
+    if ifcomplex
+        wnear = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_radcheb(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, inout dcomplex[1,nquad] wnear);
+    else
+        wnear = zeros(1,nquad);
+        # FORTRAN getnearquad_radcheb_real(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, inout double[1,nquad] wnear);
+    end
+    wnear = wnear(:);
+end
+
+%
+%
+
+@ +surfwave/+gravity/getnearquad_gravity.m
+function wnear = getnearquad_gravity(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker,S3d_scal)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    if ~isnumeric(targs)   % may already be a flattened array (recursive calls)
+        targs = targs.r;
+    end
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    wnear = zeros(1,nquad,'like',1i);
+
+    # FORTRAN getnearquad_gravity_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[ndz] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[1,nquad] wnear);
+    wnear_lap = zeros(1,nquad);
+
+    # FORTRAN getnearquad_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear_lap);
+    wnear = wnear(:) + S3d_scal*wnear_lap(:);
+end
+%
+%
+
+@ +surfwave/+gravity/getnearquad_gravity_grad.m
+function wnear = getnearquad_gravity_grad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,zpars,nquad,iker,S3d_scal)
+%
+%  surfwave.gravity.getnearquad_gravity_grad
+%
+%  Near field quadrature for the TARGET Cartesian gradient (d/dx, d/dy)
+%  of gsgrav (iker=0) or gphigrav (iker=1), with the same calling
+%  convention as getnearquad_gravity.m, returning a 2-row wnear
+%  (x-component, y-component). getnearquad_gravity_grad_all returns the
+%  bulk part only; the gradient of the algebraic 1/r term,
+%  S3d_scal*d/dx[1/(4*pi*r)], is added here via
+%  getnearquad_lap_grad_s_neu_eval.
+%
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    if ~isnumeric(targs)   % may already be a flattened array (recursive calls)
+        targs = targs.r;
+    end
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    wnear = zeros(2,nquad,'like',1i);
+
+    # FORTRAN getnearquad_gravity_grad_all(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[ndz] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] iker, inout dcomplex[2,nquad] wnear);
+
+    wnear_lap_grad = zeros(2,nquad);
+
+    # FORTRAN getnearquad_lap_grad_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[2,nquad] wnear_lap_grad);
+
+    wnear = wnear + S3d_scal*wnear_lap_grad;
+end
+%
+%
+
+
+%
+%%  Flexural 2D near-field quadrature
+%%
+%
+
+@ +flex2d/getnearquad.m
+function A = getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,type)
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+
+    [targs] = extract_targ_array(targinfo);
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndz = length(zpars);
+
+    A = zeros(1,nquad,'like',1i);
+
+    if strcmp(type, 'v2v') || strcmp(type, 'v2bd') || strcmp(type, 'dir')
+            # FORTRAN getnearquad_flex2d_dir(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+    elseif strcmp(type, 'v2bn') || strcmp(type, 'neu')
+            # FORTRAN getnearquad_flex2d_neu(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+    elseif strcmp(type, 'v2bs') || strcmp(type, 'supp2') || strcmp(type, 'free1')
+            # FORTRAN getnearquad_flex2d_supp2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+    elseif strcmp(type, 'v2bf') || strcmp(type, 'free2')
+            # FORTRAN getnearquad_flex2d_free2(int[1] npatches,int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1]  eps, double[1]  dpars, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] A);
+    elseif strcmp(type,'free')
+        A1 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'free1');
+        A2 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'free2');
+        A = [A1,A2];
+    elseif strcmp(type,'supported')
+        A1 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'dir');
+        A2 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'supp2');
+        A = [A1,A2];
+    elseif strcmp(type,'clamped')
+        A1 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'dir');
+        A2 = flex2d.getnearquad(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targinfo,ipatch_id, uvs_targ, eps,...
+            iquadtype,nnz, ...
+          row_ptr,col_ind,iquad,rfac0,dpars,zpars,nquad,'neu');
+        A = [A1,A2];
+    end
+
+end
+%
+%
+
+%
+%
+%
+%
+%
+%
+
