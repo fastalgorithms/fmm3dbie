@@ -424,6 +424,7 @@ c
 
       integer *8 nquad,nquadmax,nlev,iquad,istart,i,j
       integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 nqmaxuse
       integer *8 iqquad,ii
 
       integer *8 npmax
@@ -461,12 +462,14 @@ c
 cc      max number of levels
 c
       nlmax = 20
-      allocate(quadcm(3,npatches,nquadmax),quadrad(npatches,nquadmax))
-      allocate(qverts(2,3,nquadmax))
-      allocate(iquadreltmp(ntarg,nquadmax))
-      allocate(da(nquadmax),ichild_start(nquadmax))
+      nqmaxuse = nquadmax
+ 1110 continue
+      allocate(quadcm(3,npatches,nqmaxuse),quadrad(npatches,nqmaxuse))
+      allocate(qverts(2,3,nqmaxuse))
+      allocate(iquadreltmp(ntarg,nqmaxuse))
+      allocate(da(nqmaxuse),ichild_start(nqmaxuse))
 
-      do i=1,nquadmax
+      do i=1,nqmaxuse
         do j=1,ntarg
           iquadreltmp(j,i) = 0
         enddo
@@ -476,7 +479,7 @@ c
       nlev = 0
       ier = 0
 
-      do i=1,nquadmax
+      do i=1,nqmaxuse
         ichild_start(i) = -1
       enddo
 
@@ -484,7 +487,7 @@ c
 
       if(ifp.eq.1) then
         call getquadtree(npatches,norder,ipoly,ttype,npols,srccoefs,
-     1    ntarg,xyzproxy,itargptr,ntargptr,nquadmax,nlmax,rfac,
+     1    ntarg,xyzproxy,itargptr,ntargptr,nqmaxuse,nlmax,rfac,
      2     nquad,nlev,ichild_start,da,quadcm,quadrad,qverts,
      3     iquadreltmp,ier)
       else
@@ -496,7 +499,7 @@ c
           enddo
         enddo
         call getquadtree(npatches,norder,ipoly,ttype,npols,srccoefs,
-     1    ntarg,xyztargtmp,itargptr,ntargptr,nquadmax,nlmax,rfac,nquad,
+     1    ntarg,xyztargtmp,itargptr,ntargptr,nqmaxuse,nlmax,rfac,nquad,
      2    nlev,ichild_start,da,quadcm,quadrad,qverts,iquadreltmp,ier)
         deallocate(xyztargtmp)
       endif
@@ -506,14 +509,12 @@ c
       
 
       if(ier.ne.0) then
-        call prinf('Could not allocate quadrangle tree*',i,0)
-        call prinf('Exiting without computing anything*',i,0)
-        call prinf('Press 0 to continue*',i,0)
-        call prinf('Press 1 to exit routine and continue*',i,0)
-        call prinf('Press 2 to stop*',i,0)
-        read *, ier0
-        if(ier0.eq.2) stop
-        if(ier0.eq.1) return
+        deallocate(quadcm,quadrad,qverts,iquadreltmp,da,ichild_start)
+        nqmaxuse = nqmaxuse*4
+        call prinf('restarting tree construction with nquad=*',
+     1       nqmaxuse,1)
+        ier = 0
+        goto 1110
       endif
 
       allocate(iquadrel(nquad,ntarg),iquadrelall(nquad))
@@ -1754,6 +1755,11 @@ c
 
       integer *8 nquad,nquadmax,nlev,iquad,istart,i,j
       integer *8 ier,itarg,jj,jstart,nlmax,npts
+      real *8, allocatable :: tverts2(:,:,:),da2(:)
+      integer *8, allocatable :: ichild_start2(:)
+      real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
+      real *8, allocatable :: srcvals2(:,:),qwts2(:)
+      integer *8 nn1,nn2,nn3,nn4,npmax0,nqmaxuse,nqmaxuse0
       integer *8 iqquad,ii
 
       integer *8 npmax,itype
@@ -1793,8 +1799,6 @@ c
       int8_9 = 9
       int8_2 = 2
       int8_1 = 1
-      allocate(cvals(nppols,nquadmax))
-      allocate(istack(2*nquadmax))
 
 
 
@@ -1803,13 +1807,15 @@ c
 cc      max number of levels
 c
       nlmax = 20
-      allocate(quadcm(3,npatches,nquadmax),
-     1   quadrad(npatches,nquadmax),tverts(2,3,nquadmax))
-      allocate(iquadreltmp(ntarg,nquadmax))
-      allocate(da(nquadmax),ichild_start(nquadmax))
-      allocate(ichild_start0(nquadmax))
+      nqmaxuse = nquadmax
+ 1110 continue
+      allocate(quadcm(3,npatches,nqmaxuse),
+     1   quadrad(npatches,nqmaxuse),tverts(2,3,nqmaxuse))
+      allocate(iquadreltmp(ntarg,nqmaxuse))
+      allocate(da(nqmaxuse),ichild_start(nqmaxuse))
+      allocate(ichild_start0(nqmaxuse))
 
-      do i=1,nquadmax
+      do i=1,nqmaxuse
         do j=1,ntarg
           iquadreltmp(j,i) = 0
         enddo
@@ -1820,7 +1826,7 @@ c
       nlev = 0
       ier = 0
 
-      do i=1,nquadmax
+      do i=1,nqmaxuse
         ichild_start(i) = -1
       enddo
 
@@ -1829,7 +1835,7 @@ c
       if(ifp.eq.1) then
         call getquadtree(npatches,norder,ipoly,ttype,npols,srccoefs,
      1     ntarg,xyzproxy,
-     1     itargptr,ntargptr,nquadmax,nlmax,rfac,nquad,nlev,
+     1     itargptr,ntargptr,nqmaxuse,nlmax,rfac,nquad,nlev,
      2     ichild_start,da,quadcm,quadrad,tverts,iquadreltmp,ier)
       else
         allocate(xyztargtmp(3,ntarg))
@@ -1839,7 +1845,7 @@ c
           enddo
         enddo
         call getquadtree(npatches,norder,ipoly,ttype,npols,srccoefs,
-     1    ntarg,xyztargtmp,itargptr,ntargptr,nquadmax,nlmax,rfac,
+     1    ntarg,xyztargtmp,itargptr,ntargptr,nqmaxuse,nlmax,rfac,
      2     nquad,nlev,ichild_start,da,quadcm,quadrad,tverts,
      3     iquadreltmp,ier)
         deallocate(xyztargtmp)
@@ -1855,15 +1861,16 @@ c
       
 
       if(ier.ne.0) then
-        call prinf('Could not allocate quadrangle tree*',i,0)
-        call prinf('Exiting without computing anything*',i,0)
-        call prinf('Press 0 to continue*',i,0)
-        call prinf('Press 1 to exit routine and continue*',i,0)
-        call prinf('Press 2 to stop*',i,0)
-        read *, ier
-        if(ier.eq.2) stop
-        if(ier.eq.1) return
+        deallocate(quadcm,quadrad,tverts,iquadreltmp,da,ichild_start,
+     1    ichild_start0)
+        nqmaxuse = nqmaxuse*4
+        call prinf('restarting tree construction with nquad=*',
+     1       nqmaxuse,1)
+        ier = 0
+        goto 1110
       endif
+      allocate(cvals(nppols,nqmaxuse))
+      allocate(istack(2*nqmaxuse))
 
       allocate(iquadrel(nquad0,ntarg),iquadrelall(nquad0))
 
@@ -1903,7 +1910,7 @@ c
       endif
 
       npts0 = nquad0*nqpols
-      npmax = nquadmax*nqpols
+      npmax = nqmaxuse*nqpols
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
       allocate(srcvals(12,npmax),qwts(npmax))
@@ -1956,6 +1963,7 @@ c
         enddo
 
         do itarg=itargptr(iquad),itargptr(iquad)+ntargptr(iquad)-1
+ 1111     continue
           do i=1,nppols
             cintvals(i,itarg) = 0
           enddo
@@ -1996,13 +2004,76 @@ c           done with initial computation of
 c
 
           ier = 0
-          call quadadap_main(eps,nqpols,nlmax,nquadmax,nquad,
+          call quadadap_main(eps,nqpols,nlmax,nqmaxuse,nquad,
      1      ichild_start,tverts,da,uvsq,wts,norder,ipoly,ttype,
      1      npols,srccoefs(1,1,iquad),
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3      ndtarg,xyztarg(1,itarg),
      3      fker,ndd,dpars,ndz,zpars,ndi,ipars,cvals,istack,nproclist0,
      4      xkernvals,cintvals(1,itarg),ier)
+           if(ier.eq.4) then
+             nqmaxuse0 = nqmaxuse*4
+             npmax0 = nqmaxuse0*nqpols
+             allocate(sigvals2(npols,npmax))
+             allocate(sigvalsdens2(nppols,npmax))
+             allocate(srcvals2(12,npmax),qwts2(npmax))
+             allocate(ichild_start2(nqmaxuse),tverts2(2,3,nqmaxuse))
+             allocate(da2(nqmaxuse))
+             nn1 = npols*npmax
+             nn2 = nppols*npmax
+             nn3 = 12*npmax
+             nn4 = nquad0*6
+             call dcopy_guru(nn1, sigvals, int8_1, sigvals2, int8_1)
+             call dcopy_guru(nn2, sigvalsdens, int8_1, sigvalsdens2,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals, int8_1, srcvals2, int8_1)
+             call dcopy_guru(npmax, qwts, int8_1, qwts2, int8_1)
+             do ii=1,nquad0
+               ichild_start2(ii) = ichild_start0(ii)
+             enddo
+             call dcopy_guru(nn4, tverts, int8_1, tverts2, int8_1)
+             call dcopy_guru(nquad0, da, int8_1, da2, int8_1)
+
+             deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
+             deallocate(ichild_start0,tverts,da)
+             deallocate(cvals,istack,xkernvals)
+
+             allocate(sigvals(npols,npmax0))
+             allocate(sigvalsdens(nppols,npmax0))
+             allocate(srcvals(12,npmax0),qwts(npmax0))
+             allocate(ichild_start(nqmaxuse0),tverts(2,3,nqmaxuse0))
+             allocate(ichild_start0(nqmaxuse0),da(nqmaxuse0))
+             allocate(cvals(nppols,nqmaxuse0))
+             allocate(istack(2*nqmaxuse0))
+             allocate(xkernvals(npmax0))
+
+             do ii=1,nqmaxuse0
+               ichild_start(ii) = -1
+             enddo
+
+             call dcopy_guru(nn1, sigvals2, int8_1, sigvals, int8_1)
+             call dcopy_guru(nn2, sigvalsdens2, int8_1, sigvalsdens,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals2, int8_1, srcvals, int8_1)
+             call dcopy_guru(npmax, qwts2, int8_1, qwts, int8_1)
+             do ii=1,nquad0
+               ichild_start0(ii) = ichild_start2(ii)
+               ichild_start(ii) = ichild_start2(ii)
+             enddo
+             call dcopy_guru(nn4, tverts2, int8_1, tverts, int8_1)
+             call dcopy_guru(nquad0, da2, int8_1, da, int8_1)
+
+             nquad = nquad0
+             npmax = npmax0
+             nqmaxuse = nqmaxuse0
+             call prinf('restarting adaptive inetgration with nquad=*',
+     1             nqmaxuse,1)
+
+
+             deallocate(sigvals2,sigvalsdens2,srcvals2,ichild_start2)
+             deallocate(tverts2,da2,qwts2)
+             goto 1111
+           endif
 
       
         enddo
