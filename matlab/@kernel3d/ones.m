@@ -1,25 +1,30 @@
-function obj = ones(A)
+function obj = ones(m, n)
 %KERNEL3D.ONES   Construct a constant kernel.
 %
-%   K = KERNEL3D.ONES() constructs a [1 1] kernel with value 1.
-%   K = KERNEL3D.ONES(A) constructs an m x n constant block kernel, A, an
-%   m x n matrix.
+%   K = KERNEL3D.ONES() constructs a 1 x 1 kernel with value 1, i.e.
+%   K(x,y) = 1 for all targets x and sources y. Applied to a density this
+%   gives the integral of the density: (K sigma)(x) = int sigma dS.
 %
-%   The returned kernel has:
-%     K.eval(srcinfo, targinfo)  - returns repmat(A, nt, ns)
-%     K.fmm                      - sums the density and broadcasts A*sum
-%     K.getquad                  - returns the correct quadratures for 
-%                                  near-field points
+%   K = KERNEL3D.ONES(M) constructs an M x M constant block kernel with
+%   K(x,y) = ones(M).
+%
+%   K = KERNEL3D.ONES(M, N) constructs an M x N constant block kernel with
+%   K(x,y) = ones(M, N).
 %
 %   See also KERNEL3D, KERNEL3D.ZEROS.
 
-if nargin < 1 || isempty(A)
-    A = 1;
+if nargin < 1 || isempty(m)
+    m = 1;
 end
-assert(isnumeric(A) && ismatrix(A), 'KERNEL3D.ONES: A must be a numeric 2D matrix.');
+if nargin < 2 || isempty(n)
+    n = m;
+end
+assert(isnumeric(m) && isscalar(m) && m == round(m) && m > 0, ...
+    'KERNEL3D:ones', 'M must be a positive integer.');
+assert(isnumeric(n) && isscalar(n) && n == round(n) && n > 0, ...
+    'KERNEL3D:ones', 'N must be a positive integer.');
 
-m = size(A, 1);
-n = size(A, 2);
+A = builtin('ones', m, n);
 opdims = [m n];
 
 obj           = kernel3d();
@@ -33,11 +38,11 @@ obj.iszero    = false;
 obj.src_fields  = {};
 obj.targ_fields = {};
 
-obj.eval = @(s,t) repmat(A, size(t.r,2), size(s.r,2));
+obj.eval = @(s,t) repmat(A, size(t.r(:,:),2), size(s.r(:,:),2));
 
 obj.fmm = @fmm_;
     function varargout = fmm_(eps, s, t, sigma) %#ok<INUSL>
-        if isstruct(t), nt = size(t.r,2); else, nt = size(t,2); end
+        if isstruct(t), nt = size(t.r(:,:),2); else, nt = size(t(:,:),2); end
         blk = A * sum(reshape(sigma, n, []), 2);
         pot = repmat(blk, nt, 1);
         if nargout > 0, varargout{1} = pot; end

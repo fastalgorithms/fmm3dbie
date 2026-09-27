@@ -104,7 +104,7 @@ classdef kernel3d
                         end
                     case {'o', 'one', 'ones'}
                         if ~isempty(varargin)
-                            obj = kernel3d.ones(varargin{1});
+                            obj = kernel3d.ones(varargin{:});
                         else
                             obj = kernel3d.ones();
                         end
@@ -148,7 +148,7 @@ classdef kernel3d
         obj    = stok3d(varargin);
         obj    = belpde(varargin);
         obj    = zeros(opdims);
-        obj    = ones(A);
+        obj    = ones(m, n);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
         Q      = addquad(Qa,Qb,c);
