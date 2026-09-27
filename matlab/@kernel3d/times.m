@@ -1,216 +1,172 @@
-function out = times(f, g)
-% .* Multiplication for kernel3d objects.
+function f = times(f, g)
+% .* Pointwise (elementwise) multiplication for kernel3d class
 %
-% Scalar:   c .* K  or  K .* c
-%   Scales eval, fmm, getquad by c.
+% K.*A and A.*K (equivalent) where A is numeric and K is a kernel3d with
+% opdims [m q]. The product is taken elementwise on each source-target
+% pair. A may be
+%   - a scalar,
+%   - a column vector (m x 1),
+%   - a row vector (1 x q),
+%   - an m x q matrix.
 %
-% Left (target) multiply:   f .* K
-%   f(t) returns (p x m x nt) or (1 x 1 x nt) for pointwise scaling.
-%   Output opdims = [p, K.opdims(2)].
+% Singleton dimensions of either A or K.opdims are expanded, just like the
+% usual .* for matrices.
 %
-% Right (source) multiply:  K .* f
-%   f(s) returns (q x p x ns) or (1 x 1 x ns), q = K.opdims(2).
-%   Output opdims = [K.opdims(1), p].
-%
-% Constant matrix:  A .* K  or  K .* A  where A is numeric (not scalar)
-%   Wrapped as a constant function handle.
-%
-% getquad returns the outer sparse matrix (F*Q_inner or Q_inner*F).
-%
-% Note: src_fields/targ_fields are inherited from K. If f requires
-% additional geometry fields (e.g. 'n'), add them to out.src_fields or
-% out.targ_fields after calling times.
-
-if isa(f, 'kernel3d') && isa(g, 'kernel3d')
-    error('KERNEL3D:times:invalid', ...
-        'Cannot .* two kernel3d objects; use + to combine.');
-end
+% eval and getquad are always adjusted. The fmm is adjusted when A is a
+% scalar, a column vector or a row vector; it is set to [] if A is a
+% general matrix.
 
 if ~isa(f, 'kernel3d')
-    [f, g] = deal(g, f);
-    side = 'left';
-elseif ~isa(g, 'kernel3d')
-    side = 'right';
-else
-    error('KERNEL3D:times:invalid', 'Unexpected argument types.');
+    f = times(g, f);
+    return
 end
 
-K = f;
-h = g;
-
-% Scalar
-if isnumeric(h) && isscalar(h)
-    out = K;
-    if isa(out.eval, 'function_handle')
-        out.eval = @(varargin) h * out.eval(varargin{:});
-    end
-    if isa(out.fmm, 'function_handle')
-        out.fmm = @(varargin) h * out.fmm(varargin{:});
-    else
-        out.fmm = [];
-    end
-    if isa(out.getquad, 'function_handle')
-        Kgetquad = out.getquad;
-        out.getquad = @(S, eps, varargin) kernel3d.scalequad( ...
-            Kgetquad(S, eps, varargin{:}), h);
-    else
-        out.getquad = [];
-    end
-    return;
+if isa(g, 'kernel3d')
+    error('KERNEL3D:times:invalid', 'Cannot .* two kernel3d objects');
 end
 
-% Constant matrix: wrap as a constant function handle.
-if isnumeric(h) && ~isscalar(h)
-    A = h;
-    if strcmp(side, 'left')
-        assert(size(A,2) == K.opdims(1), ...
-            'KERNEL3D:times: left matrix must have %d columns', K.opdims(1));
-        p = size(A, 1);
-    else
-        assert(size(A,1) == K.opdims(2), ...
-            'KERNEL3D:times: right matrix must have %d rows', K.opdims(2));
-        p = size(A, 2);
-    end
-    h = @(pts) repmat(A, 1, 1, size(pts.r, 2));
-end
-
-% Function handle
-if ~isa(h, 'function_handle')
+if ~isnumeric(g)
     error('KERNEL3D:times:invalid', ...
-        'Argument must be a scalar, matrix, or function handle.');
+        'F or G must be numeric and the other a kernel3d class object');
+end
+
+if ~ismatrix(g)
+    error('KERNEL3D:times:invalid', 'numeric factor must be a 2D array');
+end
+
+if isscalar(g)
+    f = times_scalar(f, g);
+    return
+end
+
+A = g;
+m = f.opdims(1); q = f.opdims(2);
+[a1, a2] = size(A);
+if ~((a1 == m || a1 == 1 || m == 1) && (a2 == q || a2 == 1 || q == 1))
+    error('KERNEL3D:times:dims', ...
+        'KERNEL3D:times: size of A (%d x %d) incompatible with kernel opdims (%d x %d)', ...
+        a1, a2, m, q);
+end
+P = max(a1, m); Q = max(a2, q);
+
+if f.iszero || all(A(:) == 0)
+    f = kernel3d.zeros([P, Q]);
+    return
+end
+
+Keval    = f.eval;
+Kfmm     = f.fmm;
+Kgetquad = f.getquad;
+A4 = reshape(A, a1, 1, a2, 1);
+
+    function vals = apply_mat(Kmat)
+        % Kmat is (m*nt) x (q*n); apply A blockwise with expansion
+        nt = size(Kmat,1)/m;
+        n  = size(Kmat,2)/q;
+        K4 = reshape(full(Kmat), m, nt, q, n);
+        vals = reshape(A4 .* K4, P*nt, Q*n);
+    end
+
+    function vals = apply_sparse(Kmat)
+        % sparse version of apply_mat, only touches the nonzeros
+        nt = size(Kmat,1)/m;
+        n  = size(Kmat,2)/q;
+        [i, j, v] = find(Kmat);
+        it = floor((i-1)/m); ik = i - it*m;
+        jt = floor((j-1)/q); jk = j - jt*q;
+        I = []; J = []; V = [];
+        for pp = 1:P
+            if m == 1, sel_r = true(size(ik)); else, sel_r = (ik == pp); end
+            for qq = 1:Q
+                if q == 1, sel = sel_r; else, sel = sel_r & (jk == qq); end
+                aval = A(min(pp, a1), min(qq, a2));
+                I = [I; it(sel)*P + pp]; %#ok<AGROW>
+                J = [J; jt(sel)*Q + qq]; %#ok<AGROW>
+                V = [V; aval * v(sel)];  %#ok<AGROW>
+            end
+        end
+        vals = sparse(I, J, V, P*nt, Q*n);
+    end
+
+    function vals = eval_(s, t)
+        vals = apply_mat(Keval(s, t));
+    end
+
+    function out = fmm_col(eps, s, t, sigma)
+        % A is a column vector: post-multiply the fmm output
+        u  = Kfmm(eps, s, t, sigma);
+        nt = numel(u)/m;
+        out = reshape(A(:) .* reshape(u, m, nt), P*nt, 1);
+    end
+
+    function out = fmm_row(eps, s, t, sigma)
+        % A is a row vector: pre-multiply the density
+        ns  = numel(sigma)/Q;
+        sig = A(:) .* reshape(sigma, Q, ns);
+        if q == 1 && Q > 1
+            % K has a single input channel: [a1 K, a2 K, ...] sigma
+            sig = sum(sig, 1);
+        end
+        out = Kfmm(eps, s, t, reshape(sig, q*ns, 1));
+    end
+
+    function Qm = getquad_(S, eps, varargin)
+        Qm = apply_sparse(sparse(Kgetquad(S, eps, varargin{:})));
+    end
+
+if isa(Keval, 'function_handle')
+    f.eval = @eval_;
 else
-    nargfunc = nargin(h);
-    assert(nargfunc==1, 'KERNEL3D:times h must be a function of source or target, not both')
+    f.eval = [];
 end
-
-Keval    = K.eval;
-Kfmm     = K.fmm;
-Kgetquad = K.getquad;
-m        = K.opdims(1);
-q        = K.opdims(2);
-
-% Probe h to determine output dimension p (skipped if already set above).
-if ~exist('p', 'var')
-    try
-        probe.r  = randn(3,1); probe.n  = randn(3,1);
-        probe.du = randn(3,1); probe.dv = randn(3,1);
-        hval = h(probe);
-        if strcmp(side, 'left')
-            p = size(hval, 1);
-        else
-            p = size(hval, 2);
-        end
-    catch
-        error('KERNEL3D:times:probe', ...
-            'Could not probe function handle to determine output dimension.');
-    end
-end
-
-out      = K;
-out.type = ['custom_', K.type];
-out.name = ['custom ', K.name];
-
-if strcmp(side, 'left')
-    out.opdims  = [p, q];
-    out.eval    = @eval_left;
-    out.fmm     = set_if_exist(Kfmm,     @fmm_left);
-    out.getquad = set_if_exist(Kgetquad, @getquad_left);
+if isa(Kfmm, 'function_handle') && a2 == 1
+    f.fmm = @fmm_col;
+elseif isa(Kfmm, 'function_handle') && a1 == 1
+    f.fmm = @fmm_row;
 else
-    out.opdims  = [m, p];
-    out.eval    = @eval_right;
-    out.fmm     = set_if_exist(Kfmm,     @fmm_right);
-    out.getquad = set_if_exist(Kgetquad, @getquad_right);
+    f.fmm = [];
 end
-
-    function out = apply_left(fval, X)
-        if size(fval,1) == 1 && size(fval,2) == 1
-            out = fval .* X;
-        else
-            out = pagemtimes(fval, X);
-        end
-    end
-
-    function out = apply_right(X, fval)
-        if size(fval,1) == 1 && size(fval,2) == 1
-            out = X .* fval;
-        else
-            out = pagemtimes(X, fval);
-        end
-    end
-
-% Left-multiply  (h(t) post-multiplies the output)
-
-    function vals = eval_left(s, t)
-        nt   = size(t.r, 2);
-        ns   = size(s.r, 2);
-        fval = h(t);                               % (p x m x nt)
-        Kmat = Keval(s, t);                        % (m*nt x q*ns)
-        K3   = permute(reshape(Kmat, m, nt, q*ns), [1 3 2]);  % (m x q*ns x nt)
-        out3 = apply_left(fval, K3);               % (p x q*ns x nt)
-        vals = reshape(permute(out3, [1 3 2]), p*nt, q*ns);
-    end
-
-    function out = fmm_left(eps, s, t, sigma)
-        nt    = size(t.r, 2);
-        fval  = h(t);                              % (p x m x nt)
-        inner = Kfmm(eps, s, t, sigma);            % (m*nt x 1)
-        out   = reshape(apply_left(fval, reshape(inner, m, 1, nt)), p*nt, 1);
-    end
-
-    function Q = getquad_left(S, eps, varargin)
-        Qinner = Kgetquad(S, eps, varargin{:});
-        if ~isempty(varargin) && isstruct(varargin{1})
-            targ = varargin{1};
-        else
-            targ = S;
-        end
-        nt   = size(targ.r, 2);
-        fval = h(targ);                            % (p x m x nt)
-        Q3   = permute(reshape(full(Qinner), m, nt, q*S.npts), [1 3 2]);
-        Q    = sparse(reshape(permute(apply_left(fval, Q3), [1 3 2]), p*nt, q*S.npts));
-    end
-
-% Right-multiply  (h(s) pre-multiplies the density)
-
-    function vals = eval_right(s, t)
-        ns   = size(s.r, 2);
-        nt   = size(t.r, 2);
-        fval = h(s);                               % (q x p x ns)
-        Kmat = Keval(s, t);                        % (m*nt x q*ns)
-        K3   = reshape(Kmat, m*nt, q, ns);
-        vals = reshape(apply_right(K3, fval), m*nt, p*ns);
-    end
-
-    function out = fmm_right(eps, s, t, sigma)
-        ns     = size(s.r, 2);
-        fval   = h(s);                             % (q x p x ns)
-        sig_in = reshape(apply_left(fval, reshape(sigma, p, 1, ns)), q, ns);
-        out    = Kfmm(eps, s, t, sig_in);
-    end
-
-    function Q = getquad_right(S, eps, varargin)
-        Qinner = Kgetquad(S, eps, varargin{:});
-        ns   = S.npts;
-        fval = h(S);                               % (q x p x ns)
-        if ~isempty(varargin) && isstruct(varargin{1})
-            nt = size(varargin{1}.r, 2);
-        else
-            nt = ns;
-        end
-        Q3 = reshape(full(Qinner), m*nt, q, ns);
-        Q  = sparse(reshape(apply_right(Q3, fval), m*nt, p*ns));
-    end
-
-end
-
-% --------------------------------------------------------------------------
-% Helper
-% --------------------------------------------------------------------------
-
-function out = set_if_exist(cond, val)
-if isa(cond, 'function_handle')
-    out = val;
+if isa(Kgetquad, 'function_handle')
+    f.getquad = @getquad_;
 else
-    out = [];
+    f.getquad = [];
+end
+
+f.opdims = [P, Q];
+f.type = ['custom_', f.type];
+f.name = ['custom ', f.name];
+
+end
+
+function f = times_scalar(f, g)
+if f.iszero || g == 0
+    f = kernel3d.zeros(f.opdims);
+    return
+end
+
+if isa(f.eval, 'function_handle')
+    Keval = f.eval;
+    f.eval = @(varargin) g * Keval(varargin{:});
+else
+    f.eval = [];
+end
+
+if isa(f.fmm, 'function_handle')
+    Kfmm = f.fmm;
+    f.fmm = @(varargin) g * Kfmm(varargin{:});
+else
+    f.fmm = [];
+end
+
+if isa(f.getquad, 'function_handle')
+    Kgetquad = f.getquad;
+    f.getquad = @(S, eps, varargin) kernel3d.scalequad( ...
+        Kgetquad(S, eps, varargin{:}), g);
+else
+    f.getquad = [];
+end
+
+if isnan(g)
+    f.isnan = true;
 end
 end

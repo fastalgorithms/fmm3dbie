@@ -36,6 +36,7 @@ failures = test_stok_sp_identity(failures, src, targ);
 failures = test_combined_layer(failures, zk, ns, src, targ);
 failures = test_arithmetic(failures, zk, eps, src, targ, S, targ_off);
 failures = test_zeros(failures, eps, ns, nt, src, targ);
+failures = test_times(failures, eps, ns, nt, src, targ);
 
 nfail = numel(failures);
 if nfail > 0
@@ -267,6 +268,42 @@ for od = {[1 1], [3 3], [2 3]}
     assert(isequal(size(Kz.eval(src,targ)),         [opdims(1)*nt, opdims(2)*ns]));
     assert(isequal(size(Kz.fmm(eps,src,targ,zeros(opdims(2)*ns,1))), [opdims(1)*nt, 1]));
 end
+
+end
+
+
+function failures = test_times(failures, eps, ns, nt, src, targ)
+% Elementwise .* with scalar/row/col/matrix, and * with a matrix.
+
+Ks = kernel3d('stok', 's');
+M  = Ks.eval(src, targ);
+sig3 = randn(3*ns, 1);
+for c = {2.5, randn(3,1), randn(1,3), randn(3,3)}
+    A = c{1};
+    Kt = Ks .* A;  Kt2 = A .* Ks;
+    ref = M .* repmat(A .* ones(3), nt, ns);
+    lbl = sprintf('.* %dx%d', size(A,1), size(A,2));
+    failures = report(failures, 'times', [lbl ' eval'], norm(Kt.eval(src,targ)-ref,'fro')/norm(ref,'fro'), 1e-14);
+    failures = report(failures, 'times', [lbl ' commutes'], norm(Kt2.eval(src,targ)-ref,'fro')/norm(ref,'fro'), 1e-14);
+    if ~isempty(Kt.fmm)
+        u = Kt.fmm(eps,src,targ,sig3);
+        failures = report(failures, 'times', [lbl ' fmm'], ...
+            norm(u(:)-ref*sig3)/norm(ref*sig3), 1e-5);
+    end
+end
+
+% singleton expansion: 1x1 kernel .* 2x3 matrix
+Kl = kernel3d('l', 's');  A = randn(2, 3);
+Ke = Kl .* A;
+assert(isequal(Ke.opdims, [2 3]));
+ref = kron(Kl.eval(src,targ), A);
+failures = report(failures, 'times', 'expand eval', norm(Ke.eval(src,targ)-ref,'fro')/norm(ref,'fro'), 1e-14);
+
+% mtimes with constant matrix equals block matrix product
+B = randn(3, 2);
+Km = Ks * B;
+ref = M * kron(speye(ns), B);
+failures = report(failures, 'mtimes', 'K*B eval', norm(Km.eval(src,targ)-ref,'fro')/norm(ref,'fro'), 1e-13);
 
 end
 

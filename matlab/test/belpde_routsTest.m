@@ -54,7 +54,7 @@ zk2fun = @(x) 4 + x(3,:).^2;
 kparam = kernel3d('bel','klb');
 zk2f = @(t) reshape(zk2fun(t.r), 1, 1, []);
 
-Amat = surfermat(S, kernel3d('bel','rlb') + zk2f.*kparam, eps);
+Amat = surfermat(S, kernel3d('bel','rlb') + zk2f*kparam, eps);
 Amat = Amat + eye(size(Amat));
 Kmat = surfermat(S, kparam, eps);
 

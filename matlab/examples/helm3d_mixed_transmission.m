@@ -13,9 +13,9 @@ neg2 = diag([1,-1]);
 
 kerns(2,2) = kernel3d();
 kerns(1,1) = 2*kernel3d('h','c',zk,[1,1]);
-kerns(1,2) = kernel3d('h','trans_rep',zk) .* neg2;
+kerns(1,2) = kernel3d('h','trans_rep',zk) * neg2;
 kerns(2,1) = 2*kernel3d('h','c2trans',zk,[1,1]);
-kerns(2,2) = kernel3d('h','trans_sys_diff',zks) .* neg2;
+kerns(2,2) = kernel3d('h','trans_sys_diff',zks) * neg2;
 
 eps = 1e-10;
 srfrs = [S1,S2];
@@ -55,7 +55,7 @@ kernseval = kerns(1,:);
 % Evaluation kernel for targets interior to S2
 kernseval2(1,2) = kernel3d();
 kernseval2(1) = kernel3d('z');
-kernseval2(2) = kernel3d('h','trans_rep',zks(2)) .* neg2;
+kernseval2(2) = kernel3d('h','trans_rep',zks(2)) * neg2;
 
 %%
 nplot = 100;

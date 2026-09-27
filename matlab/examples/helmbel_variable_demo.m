@@ -20,7 +20,7 @@ kparam  = kernel3d('bel','klb');
 krem    = kernel3d('bel','rlb');
 
 zk2f = @(t) reshape(zk2fun(t.r), 1, 1, []);
-kvar = krem + zk2f.*kparam;
+kvar = krem + zk2f*kparam;
 
 eps = 1e-9;
 
