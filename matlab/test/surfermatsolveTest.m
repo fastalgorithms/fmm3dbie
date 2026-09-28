@@ -47,9 +47,9 @@ pot = surferkerneval(srfrs, kerns(1,:), sigma, targ1, eps);
 pot_ex = skern.eval(srcs, targ1);
 
 err = abs(pot - pot_ex)./abs(pot_ex);
-fprintf('Error in exterior Dirichlet solve = %d\n', err(1));
+fprintf('Error in exterior mixed bc solve = %d\n', err(1));
 assert(err(1) < 1e-6, 'src 1 error too large');
-fprintf('Error in exterior Dirichlet solve = %d\n', err(2));
+fprintf('Error in exterior mixed bc solve = %d\n', err(2));
 assert(err(2) < 1e-6, 'src 2 error too large');
 % check the cors warning, turned into an error so the solve stops early
 wid = 'surfermatsolve:cors';
