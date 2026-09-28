@@ -29,7 +29,7 @@ xx = linspace(-3, 3, nplot);
 targs.r = [XX(:).'; YY(:).'; zeros(1, nplot^2)];
 
 % Wrap nrccie-eval to accept orthonormal density [j_ru; j_rv; rho] directly.
-Keval = kernel3d.em3d('nrccie-eval', zk) .* @ortho_to_cart;
+Keval = kernel3d.em3d('nrccie-eval', zk) * @ortho_to_cart;
 Keval.src_fields = union(Keval.src_fields, {'du', 'dv', 'n'});
 tic;
 Escat = surferkerneval(S, Keval, sol(:), targs, eps, []);
