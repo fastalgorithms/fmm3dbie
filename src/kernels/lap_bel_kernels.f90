@@ -117,7 +117,8 @@ subroutine helm_bel_res(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,zval)
   r2=dx**2+dy**2+dz**2
   r=sqrt(r2)
 
-  call hank101(zk*r,h0,h1)
+  ifexpon = 1
+  call hank103(zk*r,h0,h1,ifexpon)
   h2 = 2*h1/zk/r - h0
 
   rn = dx*targ(10) + dy*targ(11) + dz*targ(12)
@@ -156,7 +157,8 @@ subroutine helm_bel_hank(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,zval)
 
   r=sqrt(dx**2+dy**2+dz**2)
 
-  call hank101(zk*r,h0,h1)
+  ifexpon = 1
+  call hank103(zk*r,h0,h1,ifexpon)
 
   zval = h0/4/ima
 

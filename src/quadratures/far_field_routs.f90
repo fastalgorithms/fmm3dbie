@@ -254,7 +254,8 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   real *8, allocatable :: targtest(:,:),dd(:)
   integer *8, allocatable :: indd(:)
   real *8 phi,thet,pi,done
-  real *8 alpha,beta,err,errl2,errmax,rr,rsc,hkrand
+  real *8 alpha,beta,err,errl2,errmax,rr,rsc,dlaran
+  integer iseedloc(4)
   integer *8 i,ii,ikerorder,npolsf,i0,iistart,itarg
   integer *8 j,jpt,l,nnn,nomax,npmax
 
@@ -336,14 +337,19 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
    do i=1,i0
      ii = indd(ntarg-i+1)
 
-     do j=1,ndtarg
+     do j=1,3
        targtest(j,i) = targvals(j,ii)
      enddo
    enddo
 
    do i=i0+1,nmax
-     phi = hkrand(iseed1+i)*2*pi
-     thet = hkrand(iseed2+i)*pi
+! Use a thread-specific seed
+     iseedloc(1:3) = 0
+     iseedloc(4) = mod(2*(iseed1+i)+1,4096)
+     phi = dlaran(iseedloc)*2*pi
+     iseedloc(1:3) = 0
+     iseedloc(4) = mod(2*(iseed2+i)+1,4096)
+     thet = dlaran(iseedloc)*pi
      targtest(1,i) = cm(1) + rad*sin(thet)*cos(phi)
      targtest(2,i) = cm(2) + rad*sin(thet)*sin(phi)
      targtest(3,i) = cm(3) + rad*cos(thet)

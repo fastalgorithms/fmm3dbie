@@ -1,6 +1,6 @@
 
       subroutine dquadintrouts_testing(istrat,ifp,intype,ipoly,ttype,
-     1   isuccess)
+     1   nquadmax,isuccess)
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
       real *8 xyztarg(3,3),xyztarg0(3,3)
@@ -142,7 +142,6 @@ c
 
       eps = 1.0d-7
       nqorder = 20
-      nquadmax = 5000
       nn = norder + 2
 c
 c  fix exact integrals
