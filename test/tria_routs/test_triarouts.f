@@ -2,17 +2,17 @@
       implicit integer *8 (i-n)
 
 
-      ntests = 7
+      ntests = 8
       call test_triarouts(i1)
 
-      ntests = ntests + 6
+      ntests = ntests + 7
       call test_triarouts_vec(i2)
       nsuccess = i1+i2
 
-      ntests = ntests+ 7
+      ntests = ntests+ 8
       call test_dtriarouts(i1)
 
-      ntests = ntests + 6
+      ntests = ntests + 7
       call test_dtriarouts_vec(i2)
 
       nsuccess = nsuccess + i1+i2
