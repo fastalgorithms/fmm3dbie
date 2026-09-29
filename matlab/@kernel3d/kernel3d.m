@@ -52,6 +52,15 @@ classdef kernel3d
 %      K.src_fields  - source fields expected by K.eval. ('r' is assumed)
 %      K.targ_fields - target fields expected by K.eval. ('r' is assumed)
 %
+%      K.diag - identity/self ("Dirac delta") term. [] means none.
+%         Otherwise a function handle @(t) returning an
+%         (opdims(1)*nt) x opdims(2) array, the per-point blocks D(x)
+%         stacked by target, giving the operator
+%           (D*sigma)(x) = D(x) * sigma(x),
+%         i.e. the multiplier on delta(x-y). With diag set,
+%           surfermat(S, kern) == D + surfermat(S, kern_without_diag)
+%         Build with KERNEL3D.EYE, e.g. K = kernel3d('l','d') + kernel3d.eye(-0.5)
+%
     properties
 
         name           % Name of the kernel
@@ -65,6 +74,7 @@ classdef kernel3d
                        % the location 'r' is implicitly added
         targ_fields    % Ptinfo fields required at targets
                        % the location 'r' is implicitly added
+        diag = []      % Identity/self term: @(t) -> (opdims(1)*nt x opdims(2)), or []
 
     end
 
@@ -149,6 +159,7 @@ classdef kernel3d
         obj    = belpde(varargin);
         obj    = zeros(opdims);
         obj    = ones(m, n);
+        obj    = eye(dvals);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
         Q      = addquad(Qa,Qb,c);

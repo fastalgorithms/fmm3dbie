@@ -13,6 +13,10 @@ function obj = belpde(type, zk)
 %   The remainder kernels depend on the mean curvature at the target, which
 %   is read from targinfo.mean_curv.
 %
+%   The remainder kernels carry the identity term of the second kind
+%   equation in obj.diag, so surfermat(S, kernel3d('bel','rlb')) builds
+%   I + R directly.
+%
 % See also BELPDE.KERN, BELPDE.GET_QUADRATURE_CORRECTION, KERNEL3D
 
 if ( nargin < 1 )
@@ -44,6 +48,7 @@ switch lower(type)
         obj.type = 'rlb';
         obj.kernel_order = -1;
         obj.targ_fields = {'n', 'mean_curv'};
+        obj.diag = @(t) ones(size(t.r(:,:),2), 1);
 
     case {'khb'}
         obj.type = 'khb';
@@ -53,6 +58,7 @@ switch lower(type)
         obj.type = 'rhb';
         obj.kernel_order = -1;
         obj.targ_fields = {'n', 'mean_curv'};
+        obj.diag = @(t) ones(size(t.r(:,:),2), 1);
 
     otherwise
         error('KERNEL3D.BELPDE: unknown Beltrami kernel type ''%s''.', type);

@@ -18,7 +18,6 @@ eps = 1e-9;
 [uex, rhs] = belpde.belpde_source(S, x_source, charge, 0);
 
 Amat = surfermat(S, kernel3d('bel','rlb'), eps);
-Amat = Amat + eye(size(Amat));
 Kmat = surfermat(S, kernel3d('bel','klb'), eps);
 
 sigma = gmres(Amat, rhs, [], 1e-12, 200);
@@ -35,7 +34,6 @@ zk = 2.1;
 [uex, rhs] = belpde.belpde_source(S, x_source, charge, zk);
 
 Amat = surfermat(S, kernel3d('bel','rhb',zk), eps);
-Amat = Amat + eye(size(Amat));
 Kmat = surfermat(S, kernel3d('bel','khb',zk), eps);
 
 sigma = gmres(Amat, rhs, [], 1e-12, 200);
@@ -55,7 +53,6 @@ kparam = kernel3d('bel','klb');
 zk2f = @(t) reshape(zk2fun(t.r), 1, 1, []);
 
 Amat = surfermat(S, kernel3d('bel','rlb') + zk2f*kparam, eps);
-Amat = Amat + eye(size(Amat));
 Kmat = surfermat(S, kparam, eps);
 
 sigma = gmres(Amat, rhs, [], 1e-12, 200);
