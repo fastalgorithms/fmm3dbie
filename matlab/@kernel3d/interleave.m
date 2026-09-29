@@ -9,6 +9,8 @@ function K = interleave(kerns)
 %     - K.eval(s,t) returns the (opdims(1)*nt) x (opdims(2)*ns) matrix with
 %       each (k,l) block placed at the interleaved row/column indices.
 %     - K.fmm, K.getquad are wired analogously.
+%     - K.diag is the interleaved combination of the sub-kernel diags
+%       (if any sub-kernel has one).
 %
 %   See also KERNEL3D.PLUS, KERNEL3D.TIMES
 
@@ -108,6 +110,25 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
         end
     end
 
+    function D = diag_(t)
+        % assemble the interleaved (opdims(1)*nt x opdims(2)) stacked diag
+        nt = size(t.r, 2);
+        D  = zeros(opdims(1)*nt, opdims(2));
+        for k = 1:m
+            for l = 1:n
+                if isa(kerns(k,l).diag, 'function_handle')
+                    Dkl = kerns(k,l).diag(t);
+                    Dkl = reshape(Dkl, rowdims(k), nt, coldims(l));
+                    rr  = rowstarts(k)+1:rowstarts(k+1);
+                    cc  = colstarts(l)+1:colstarts(l+1);
+                    D3  = reshape(D, opdims(1), nt, opdims(2));
+                    D3(rr, :, cc) = Dkl;
+                    D   = reshape(D3, opdims(1)*nt, opdims(2));
+                end
+            end
+        end
+    end
+
     function novers = get_overs_orders_(S, t, eps)
         novers = [];
         for k = 1:numel(kerns)
@@ -156,6 +177,10 @@ if all(arrayfun(@(k) isa(kerns(k).get_overs_orders, 'function_handle'), 1:numel(
     K.get_overs_orders = @get_overs_orders_;
 else
     K.get_overs_orders = [];
+end
+
+if any(arrayfun(@(k) isa(kerns(k).diag, 'function_handle'), 1:numel(kerns)))
+    K.diag = @diag_;
 end
 
 end

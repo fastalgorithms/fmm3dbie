@@ -10,16 +10,15 @@ S2 = geometries.ellipsoid([1,1.5,1],3*[1,1,1],ctr2,6);
 
 zk = 0.1;
 kerns(2,2) = kernel3d();
-kerns(1,1) = 2*kernel3d('l','c',[1,1]);
-kerns(1,2) = -2*kernel3d('l','s');
-kerns(2,1) = 2*kernel3d('l','cp',[1,1]);
-kerns(2,2) = -2*kernel3d('l','sp');
+kerns(1,1) = kernel3d('l','c',[1,1]) + kernel3d.eye();
+kerns(1,2) = kernel3d('l','s');
+kerns(2,1) = kernel3d('l','cp',[1,1]);
+kerns(2,2) = kernel3d('l','sp') - kernel3d.eye();
 
 eps = 1e-10;
 srfrs = [S1,S2];
 tic;
 Smat = surfermat(srfrs,kerns,eps);
-Smat = Smat+eye(size(Smat));
 tbuild = toc
 
 %% Get right hand side and solve

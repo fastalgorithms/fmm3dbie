@@ -23,6 +23,11 @@ if (isnumeric(g) && isscalar(g))
         f.getquad = [];
     end
 
+    if (isa(f.diag, 'function_handle'))
+        fdiag = f.diag;
+        f.diag = @(t) fdiag(t) / g;
+    end
+
 else
     error('KERNEL3D:mrdivide:invalid', ...
         'F must be a kernel3d class object and G a scalar');

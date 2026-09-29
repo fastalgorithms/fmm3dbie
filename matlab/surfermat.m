@@ -5,7 +5,9 @@ function [sysmat,objover,rfac] = surfermat(surferobj,kern,eps,opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary
-%   kern      - kernel3d object or matrix of kernel3d objects
+%   kern      - kernel3d object or matrix of kernel3d objects. If
+%               kern.diag is set (see KERNEL3D.EYE), its identity term
+%               is added to the diagonal blocks of the matrix
 %   eps       - quadrature tolerance
 %
 % Optional input:
@@ -257,6 +259,11 @@ for i = 1:nsurfers
             end
         end
 
+        if isempty(sysmat_tmp) && i == j && isa(ktmp.diag, 'function_handle')
+            % no quadrature was built, but the identity term is still needed
+            sysmat_tmp = sparse(opdims(1)*surferi.npts, opdims(2)*surferj.npts);
+        end
+
         if isempty(sysmat_tmp), continue, end
 
         if l2scale
@@ -264,6 +271,12 @@ for i = 1:nsurfers
             wtsrow = surferi.wts; wtsrow = sqrt(wtsrow(:))';
             wtsrow = repmat(wtsrow,opdims(1),1); wtsrow = wtsrow(:);
             sysmat_tmp = wtsrow.*sysmat_tmp./wts;
+        end
+
+        % identity/self ("delta") term
+        if i == j && isa(ktmp.diag, 'function_handle')
+            Dvals = ktmp.diag(diag_ptinfo(surferi));
+            sysmat_tmp = add_delta_block(sysmat_tmp, Dvals, opdims(1), opdims(2));
         end
         
         if (~nonsmoothonly)
@@ -291,6 +304,24 @@ if ifreturnovers
 else
     objover = novers;
 end
+end
+
+function p = diag_ptinfo(S)
+% Point struct passed to a kernel's diag(t) handle
+p = []; p.r = S.r(:,:);
+for f = {'n','du','dv'}
+    p.(f{1}) = S.(f{1})(:,:);
+end
+end
+
+function M = add_delta_block(M, D, m, n)
+% Add the (m*nt x n) stacked per-point blocks D onto the block diagonal of M
+nt = size(D,1)/m;
+Dp = permute(reshape(D, m, nt, n), [1 3 2]);
+[A, B, P] = ndgrid(1:m, 1:n, 1:nt);
+rows = (P(:)-1)*m + A(:);
+cols = (P(:)-1)*n + B(:);
+M = M + sparse(rows, cols, Dp(:), size(M,1), size(M,2));
 end
 
 function v = slice_field(A, idx, npts)
