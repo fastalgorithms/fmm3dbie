@@ -34,8 +34,9 @@ end
 
 
 function test_eye_block()
-% Block identity terms: a 3x3 Stokes jump and an interleaved matrix of
-% kernels with an off-diagonal identity block.
+% Block identity terms: a 3x3 Stokes jump, a 3x3 matrix valued function
+% handle (pages and stacked), and a matrix of kernels with an off-diagonal
+% identity block.
 
 tol = 1e-12;
 
@@ -47,6 +48,25 @@ kstok = kernel3d('stok','d');
 A1 = surfermat(S, kstok, eps) + 0.5*eye(3*n);
 A2 = surfermat(S, kstok + kernel3d.eye(0.5*eye(3)), eps);
 assert(norm(A1 - A2, 'fro') < tol*norm(A1, 'fro'), 'eye: stokes block mismatch');
+
+% matrix valued function handle: tangential projector P(x) = I - n n^T,
+% returned as [3 x 3 x nt] pages, and as (3*nt x 3) stacked by target
+Pfun   = @(t) eye(3) - pagemtimes(reshape(t.n(:,:),3,1,[]), 'none', ...
+                                  reshape(t.n(:,:),3,1,[]), 'transpose');
+Pstack = @(t) reshape(permute(Pfun(t), [1 3 2]), [], 3);
+
+nrm  = S.n(:,:);
+Pref = zeros(3*n);
+for k = 1:n
+    ii = 3*(k-1) + (1:3);
+    Pref(ii,ii) = eye(3) - nrm(:,k)*nrm(:,k).';
+end
+Aref = surfermat(S, kstok, eps) + Pref;
+
+A3 = surfermat(S, kstok + kernel3d.eye(Pfun), eps);
+A4 = surfermat(S, kstok + kernel3d.eye(Pstack), eps);
+assert(norm(A3 - Aref, 'fro') < tol*norm(Aref, 'fro'), 'eye: matrix handle (pages) mismatch');
+assert(norm(A4 - Aref, 'fro') < tol*norm(Aref, 'fro'), 'eye: matrix handle (stacked) mismatch');
 
 a = 0.5; c = 0.3;
 kd = kernel3d('l','d');
