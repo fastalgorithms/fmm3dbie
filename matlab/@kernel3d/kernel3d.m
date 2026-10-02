@@ -20,6 +20,12 @@ classdef kernel3d
 %      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
 %      'beltrami'  ('belpde', 'bel')     'klb', 'rlb', 'khb', 'rhb'
 %      'zero'/'zeros'                    (no type needed)
+%      'lap2d'                           's', 'sp', 'sg' (2D, surfer in z = 0)
+%      'helm2d'                          's', 'sp', 'sg', 's2trans' (2D, surfer in z = 0)
+%      'flex2d'    ('plate')             's', 'clamped_plate_bcs',
+%                                        'supported_plate_bcs', 'free_plate_bcs',
+%                                        'varcoef'
+%                                        (2D, surfer in z = 0)
 %      'one'/'ones'                      (no type needed)
 %
 %   Some kernels accept extra parameters as trailing arguments, e.g.
@@ -102,6 +108,12 @@ classdef kernel3d
                         else
                             obj = kernel3d.zeros();
                         end
+                    case {'lap2d'}
+                        obj = kernel3d.lap2d(varargin{:});
+                    case {'helm2d'}
+                        obj = kernel3d.helm2d(varargin{:});
+                    case {'flex2d', 'plate'}
+                        obj = kernel3d.flex2d(varargin{:});
                     case {'o', 'one', 'ones'}
                         if ~isempty(varargin)
                             obj = kernel3d.ones(varargin{:});
@@ -148,6 +160,9 @@ classdef kernel3d
         obj    = stok3d(varargin);
         obj    = belpde(varargin);
         obj    = zeros(opdims);
+        obj    = lap2d(varargin);
+        obj    = helm2d(varargin);
+        obj    = flex2d(varargin);
         obj    = ones(m, n);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
