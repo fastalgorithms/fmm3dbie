@@ -6671,6 +6671,9 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
 %     type = 'clamped_plate_bcs':    [G; \nabla_{n_x} G]
 %     type = 'supported_plate_bcs':  [G; G_{nn} + nu G_{tt}]
 %     type = 'free_plate_bcs':       [G_{nn} + nu G_{tt}; free-plate shear]
+%     type = 'varcoef':              kernel of the variable coefficient
+%                                    plate operator, see FLEX2D.PLATE_COEFS.
+%                                    Needs nu and opts.pfun.
 %  The two-row kernels return Q.wnear of size (2,nquad).
 %
 %  Input arguments:
@@ -6695,6 +6698,8 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
 %        opts.rsc - precomputed near-field structure from getnear
 %          (optional)
+%        opts.pfun - for 'varcoef', function handle of the target struct
+%          returning the plate coefficients, see FLEX2D.PLATE_COEFS
 %
 %       targinfo.kappa (nt,) signed curvature of the boundary at the
 %          target, needed for 'free_plate_bcs'; computed from
@@ -6711,6 +6716,8 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
 
     switch lower(type)
       case {'s', 'single'}
+        kernel_order = -1;
+      case {'varcoef'}
         kernel_order = -1;
       case {'clamped_plate_bcs'}
         kernel_order = -1;
@@ -6767,6 +6774,17 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
           sqrt(d(1,:).^2 + d(2,:).^2).^3;
     end
 
+    if strcmpi(type,'varcoef')
+      % pack the seven target coefficients of the variable coefficient
+      % plate operator into targinfo.data: real parts, then imaginary
+      if ~isfield(opts,'pfun') || isempty(opts.pfun) || isempty(nu)
+        error(['FLEX2D.GET_QUADRATURE_CORRECTION: ''varcoef'' needs nu ' ...
+               'and the plate coefficient function opts.pfun.']);
+      end
+      cf = flex2d.plate_coefs(opts.pfun(targinfo), nu, zk);
+      targinfo.data = [real(cf); imag(cf)];
+    end
+
     targs = extract_targ_array(targinfo);
     [ndtarg,ntarg] = size(targs);
 
@@ -6817,6 +6835,10 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
     switch lower(type)
       case {'s', 'single'}
         # FORTRAN getnearquad_flex2d_dir(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[2] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] w1);
+        wnear = w1;
+        nker = 1;
+      case {'varcoef'}
+        # FORTRAN getnearquad_flex2d_var(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[2] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] w1);
         wnear = w1;
         nker = 1;
       case {'clamped_plate_bcs'}

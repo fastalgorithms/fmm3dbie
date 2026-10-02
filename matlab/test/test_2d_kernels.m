@@ -24,6 +24,7 @@
 test_lap2d_volume();
 test_helm2d_volume();
 test_flex2d_volume();
+test_flex2d_varcoef();
 test_helm2d_lippmann_schwinger();
 test_fmm();
 
@@ -192,6 +193,76 @@ end
 end
 
 
+function p = plate_pfun(t)
+% smooth plate coefficients alpha, beta and the derivatives of alpha
+x = t.r(1,:); y = t.r(2,:);
+g = 0.3*exp(-(x.^2 + y.^2));
+p = [];
+p.alpha   = 1 + g;
+p.dalpha  = [-2*x.*g; -2*y.*g];
+p.d2alpha = [(4*x.^2 - 2).*g; 4*x.*y.*g; (4*y.^2 - 2).*g];
+p.beta    = 2 + 0.5*x.*y;
+end
+
+
+function test_flex2d_varcoef()
+% Variable coefficient plate kernel K, defined by
+%
+%   L V[f] = alpha f + K[f],
+%   L u = Delta(alpha Delta u) - beta u
+%         - (1-nu)(alpha_xx u_yy - 2 alpha_xy u_xy + alpha_yy u_xx),
+%
+% checked on-surface against L0 = Delta^2 + b0 Delta + c0 and the
+% derivatives of the analytic potential u = V[f]:
+%
+%   K[f] = 2 grad(alpha).grad(Lap u) + (Lap alpha - b0 alpha) Lap u
+%          - (1-nu)(alpha_xx u_yy - 2 alpha_xy u_xy + alpha_yy u_xx)
+%          - (c0 alpha + beta) u
+
+tol = 1e-5;
+eps = 1e-8;
+nu  = 0.3;
+[n, kap] = density_mode();
+
+% flexural (scalar), general pair, pair with a zero, biharmonic
+zks  = {1.7, [1.7, 0.5i], [1.7, 0], 0};
+zkps = {[1.7, 1.7i], [1.7, 0.5i], [1.7, 0], [0, 0]};
+
+S = disk_and_boundary(8);
+x = S.r(1,:).'; y = S.r(2,:).';
+f = density(x, y);
+
+p = plate_pfun(S);
+al  = p.alpha(:);
+ax  = p.dalpha(1,:).';  ay  = p.dalpha(2,:).';
+axx = p.d2alpha(1,:).'; axy = p.d2alpha(2,:).'; ayy = p.d2alpha(3,:).';
+be  = p.beta(:);
+
+for iz = 1:numel(zks)
+    zk = zks{iz};
+    T  = flex_terms(zk, n, kap);
+    b0 = zkps{iz}(1)^2 + zkps{iz}(2)^2;
+    c0 = zkps{iz}(1)^2*zkps{iz}(2)^2;
+
+    u    = dxy(T, 0, 0, x, y);
+    uxx  = dxy(T, 2, 0, x, y);
+    uxy  = dxy(T, 1, 1, x, y);
+    uyy  = dxy(T, 0, 2, x, y);
+    lapu = uxx + uyy;
+    lapux = dxy(T, 3, 0, x, y) + dxy(T, 1, 2, x, y);
+    lapuy = dxy(T, 2, 1, x, y) + dxy(T, 0, 3, x, y);
+
+    ex = 2*(ax.*lapux + ay.*lapuy) + (axx + ayy - b0*al).*lapu ...
+        - (1-nu)*(axx.*uyy - 2*axy.*uxy + ayy.*uxx) - (c0*al + be).*u;
+
+    K = kernel3d('flex2d', 'varcoef', zk, nu, @plate_pfun);
+    A = surfermat(S, K, eps);
+    check(['flex2d varcoef (v2v), zk = ' mat2str(zk)], A*f, ex, tol);
+end
+
+end
+
+
 function test_helm2d_lippmann_schwinger()
 % Adjoint Lippmann-Schwinger solve, as in helm2d_lippmann_schwinger_demo,
 %
@@ -262,7 +333,11 @@ kerns = {kernel3d('lap2d', 's'), kernel3d('lap2d', 'sp'), ...
          kernel3d('flex2d', 'clamped_plate_bcs', [1.7, 0]), ...
          kernel3d('flex2d', 's', 0), ...
          kernel3d('flex2d', 'clamped_plate_bcs', 0), ...
-         kernel3d('flex2d', 'supported_plate_bcs', 0, 0.3)};
+         kernel3d('flex2d', 'supported_plate_bcs', 0, 0.3), ...
+         kernel3d('flex2d', 'varcoef', 1.7, 0.3, @plate_pfun), ...
+         kernel3d('flex2d', 'varcoef', [1.7, 0.5i], 0.3, @plate_pfun), ...
+         kernel3d('flex2d', 'varcoef', [1.7, 0], 0.3, @plate_pfun), ...
+         kernel3d('flex2d', 'varcoef', 0, 0.3, @plate_pfun)};
 
 for i = 1:numel(kerns)
     K = kerns{i};

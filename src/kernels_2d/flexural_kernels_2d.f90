@@ -213,3 +213,44 @@ subroutine flex2d_gfree2(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
 
   return
 end subroutine flex2d_gfree2
+!
+!
+!
+!
+!
+subroutine flex2d_gvar(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk, &
+   ndi,ipars,val)
+  implicit none
+  integer *8 ndt, ndd, ndz, ndi
+  real *8 :: srcinfo(*),targinfo(ndt),dpars(ndd)
+  integer *8 ipars(ndi)
+  real *8 :: dx, dy
+  complex *16 :: zk(2), c(7)
+  complex *16 :: val, g, gx, gy, gxx, gxy, gyy
+  complex *16 :: gxxx, gxxy, gxyy, gyyy
+  integer *8 j
+  !
+  ! returns the kernel of the variable coefficient plate operator,
+  !
+  !   c1 d_x Lap G + c2 d_y Lap G + c3 Lap G + c4 G_yy + c5 G_xx
+  !      + c6 G_xy + c7 G
+  !
+  ! with G the flexural Green's function of flex2d_gders, derivatives
+  ! taken in the target, and the target coefficients
+  ! c_j = targinfo(13+j) + i targinfo(20+j), j = 1,...,7
+  !
+
+  dx = targinfo(1) - srcinfo(1)
+  dy = targinfo(2) - srcinfo(2)
+
+  do j = 1,7
+    c(j) = dcmplx(targinfo(13+j), targinfo(20+j))
+  enddo
+
+  call flex2d_gders(zk,dx,dy,g,gx,gy,gxx,gxy,gyy,gxxx,gxxy,gxyy,gyyy)
+
+  val = c(1)*(gxxx + gxyy) + c(2)*(gxxy + gyyy) + c(3)*(gxx + gyy) + &
+      c(4)*gyy + c(5)*gxx + c(6)*gxy + c(7)*g
+
+  return
+end subroutine flex2d_gvar

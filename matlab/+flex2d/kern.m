@@ -21,6 +21,12 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %               to G. Requires n, d and d2.
 %        type == 'supported_plate_bcs', supported plate boundary
 %               conditions applied to G. Requires n and d.
+%        type == 'varcoef', kernel of the variable coefficient plate
+%               operator, sum_j c_j(x) D_j G(x,y), with the target
+%               coefficients c_j and derivatives D_j of
+%               FLEX2D.PLATE_COEFS. Requires nu and pfun.
+%   varargin{2} - pfun: function handle of the target struct returning the
+%        plate coefficients, needed for 'varcoef', see FLEX2D.PLATE_COEFS
 %   varargin{1} - nu: Poisson's ratio, needed for the free and supported
 %        plate kernels
 %
@@ -120,6 +126,21 @@ case {'supported_plate_bcs'}
 
     submat(1:2:end,:) = firstbc;
     submat(2:2:end,:) = secondbc;
+
+case {'varcoef'}
+    nu   = varargin{1};
+    pfun = varargin{2};
+    cf = flex2d.plate_coefs(pfun(targinfo), nu, zk);
+
+    [val, ~, hess, third] = flex2d.green(zk,src,targ);
+
+    submat = cf(1,:).'.*(third(:,:,1) + third(:,:,3)) + ...
+             cf(2,:).'.*(third(:,:,2) + third(:,:,4)) + ...
+             cf(3,:).'.*(hess(:,:,1) + hess(:,:,3)) + ...
+             cf(4,:).'.*hess(:,:,3) + ...
+             cf(5,:).'.*hess(:,:,1) + ...
+             cf(6,:).'.*hess(:,:,2) + ...
+             cf(7,:).'.*val;
 
 otherwise
     error('FLEX2D.KERN: unknown kernel type ''%s''.', type);

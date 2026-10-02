@@ -1,4 +1,4 @@
-function varargout = fmm(eps, zk, srcinfo, targinfo, type, sigma, nu)
+function varargout = fmm(eps, zk, srcinfo, targinfo, type, sigma, nu, pfun)
 %FLEX2D.FMM   Fast multipole evaluation of the 2D flexural kernels.
 %
 % Syntax: pot = flex2d.fmm(eps, zk, srcinfo, targinfo, type, sigma, nu)
@@ -24,6 +24,7 @@ function varargout = fmm(eps, zk, srcinfo, targinfo, type, sigma, nu)
 %                type == 's'
 %                type == 'clamped_plate_bcs'
 %                type == 'supported_plate_bcs'
+%                type == 'varcoef', needs nu and pfun, see FLEX2D.KERN
 %   sigma - (ns,1) density, already multiplied by quadrature weights
 %   nu - Poisson's ratio, needed for 'supported_plate_bcs'
 %
@@ -57,6 +58,8 @@ switch lower(type)
     case {'clamped_plate_bcs'}
         pgt = 2;
     case {'supported_plate_bcs'}
+        pgt = 3;
+    case {'varcoef'}
         pgt = 3;
     otherwise
         error('FLEX2D:fmm:type', 'Unsupported kernel type ''%s''.', type);
@@ -97,6 +100,33 @@ else
     val = U.pottarg - U2.pottarg;
     if ( pgt > 1 ), grad = U.gradtarg - U2.gradtarg; end
     if ( pgt > 2 ), hess = U.hesstarg - U2.hesstarg; end
+
+    % grad Lap G, using Lap G_k = -k^2 G_k away from the source
+    if ( strcmpi(type, 'varcoef') )
+        gradlap = -zk1^2*U.gradtarg + zk2^2*U2.gradtarg;
+    end
+end
+
+if ( strcmpi(type, 'varcoef') )
+    if ( isbh )
+        % Lap G = (log r + 1)/(2 pi), so grad Lap G = grad log r/(2 pi)
+        srcuse = [];
+        srcuse.sources = srcinfo.r(1:2,:);
+        srcuse.nd = 2;
+        srcuse.charges = [real(sigma(:).'); imag(sigma(:).')]/(2*pi);
+        U = rfmm2d(eps, srcuse, 0, targuse, 2);
+        nt = size(targuse, 2);
+        gl = reshape(U.gradtarg, 2, 2, nt);
+        gradlap = reshape(gl(1,:,:) + 1i*gl(2,:,:), 2, nt);
+    end
+    t = targinfo;
+    if ( isnumeric(t) ), t = []; t.r = targinfo; end
+    cf = flex2d.plate_coefs(pfun(t), nu, zk);
+    pot = cf(1,:).*gradlap(1,:) + cf(2,:).*gradlap(2,:) + ...
+        cf(3,:).*(hess(1,:) + hess(3,:)) + cf(4,:).*hess(3,:) + ...
+        cf(5,:).*hess(1,:) + cf(6,:).*hess(2,:) + cf(7,:).*val(:).';
+    varargout{1} = pot(:);
+    return
 end
 
 switch lower(type)
