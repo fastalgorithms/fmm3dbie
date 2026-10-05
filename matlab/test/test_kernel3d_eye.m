@@ -117,4 +117,9 @@ h = 1 + S.r(1,:).^2;
 Aref = h(:).*(Km + diag(S.r(3,:)));
 assert(norm(A - Aref, 'fro') < tol*norm(Aref, 'fro'), 'eye: variable coefficient mismatch');
 
+% diag handle using other fields
+A = surfermat(S, kern + kernel3d.eye(@(t) 1 + t.mean_curv(:)), eps);
+Aref = Km + I + diag(S.mean_curv(:));
+assert(norm(A - Aref, 'fro') < tol*norm(Aref, 'fro'), 'eye: mean curvature diag mismatch');
+
 end

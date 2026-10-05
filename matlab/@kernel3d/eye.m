@@ -95,6 +95,7 @@ function D0 = probe_handle(h)
 % Evaluate h at a single random point to determine opdims.
 p = []; p.r = randn(3,1); p.n = randn(3,1);
 p.du = randn(3,1); p.dv = randn(3,1);
+p.mean_curv = randn(1,1);
 try
     D0 = h(p);
 catch
