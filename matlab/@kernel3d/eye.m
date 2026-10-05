@@ -10,7 +10,8 @@ function obj = eye(dvals)
 %                             the Stokes jump)
 %   K = KERNEL3D.EYE(h)    -> h(t) * delta(t-s), where h(t) returns the
 %                             diagonal blocks as (m*nt x n) stacked by
-%                             target, or as (m x n x nt) pages
+%                             target, (m x n*nt) side by side, or as
+%                             (m x n x nt) pages
 %
 %   Typical use is to add the jump term to a kernel, e.g.
 %
@@ -80,22 +81,25 @@ end
 
 function D = coerce_diag(D, m, n, nt)
 % Reshape D into the (m*nt x n) stacked convention.
-if ismatrix(D) && size(D,1) == m*nt && size(D,2) == n
+if m == 1 && n == 1 && numel(D) == nt
+    D = D(:);                                  % scalar diag: any orientation
+elseif ismatrix(D) && size(D,1) == m*nt && size(D,2) == n
     return                                     % already stacked
+elseif ismatrix(D) && size(D,1) == m && size(D,2) == n*nt
+    % [m x n*nt] blocks side by side -> stacked
+    D = reshape(permute(reshape(D, m, n, nt), [1 3 2]), m*nt, n);
 elseif size(D,1) == m && size(D,2) == n && size(D,3) == nt
     D = reshape(permute(D, [1 3 2]), m*nt, n); % [m n nt] pages -> stacked
 else
-    error(['KERNEL3D.EYE: diag handle must return (%d*nt x %d) stacked ', ...
-           'or [%d x %d x nt] pages; got size [%s].'], ...
-           m, n, m, n, num2str(size(D)));
+    error(['KERNEL3D.EYE: diag handle must return (%d*nt x %d) stacked, ', ...
+           '(%d x %d*nt) side by side, or [%d x %d x nt] pages; ', ...
+           'got size [%s].'], m, n, m, n, m, n, num2str(size(D)));
 end
 end
 
 function D0 = probe_handle(h)
 % Evaluate h at a single random point to determine opdims.
-p = []; p.r = randn(3,1); p.n = randn(3,1);
-p.du = randn(3,1); p.dv = randn(3,1);
-p.mean_curv = randn(1,1);
+p = probe_ptinfo();
 try
     D0 = h(p);
 catch
