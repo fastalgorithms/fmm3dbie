@@ -7,6 +7,8 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
     assert(all(f.opdims == g.opdims), ...
         'kernel3d dimensions must agree to subtract');
 
+    fdiag = f.diag; gdiag = g.diag;
+
     f.name = ['custom ', f.name, ' ', g.name];
     f.type = 'custom';
 
@@ -35,6 +37,13 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
     if isempty(targ), targ = []; end
     f.src_fields  = src;
     f.targ_fields = targ;
+
+    % identity/self ("delta") terms subtract
+    if isempty(fdiag) && ~isempty(gdiag)
+        f.diag = @(t) -gdiag(t);
+    elseif ~isempty(fdiag) && ~isempty(gdiag)
+        f.diag = @(t) fdiag(t) - gdiag(t);
+    end
 
 else
     error('KERNEL3D:minus:invalid', ...

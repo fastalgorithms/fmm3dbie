@@ -12,8 +12,8 @@ function f = times(f, g)
 % Singleton dimensions of either A or K.opdims are expanded, just like the
 % usual .* for matrices.
 %
-% eval and getquad are always adjusted. The fmm is adjusted when A is a
-% scalar, a column vector or a row vector; it is set to [] if A is a
+% eval, getquad and diag are always adjusted. The fmm is adjusted when A
+% is a scalar, a column vector or a row vector; it is set to [] if A is a
 % general matrix.
 
 if ~isa(f, 'kernel3d')
@@ -57,6 +57,7 @@ end
 Keval    = f.eval;
 Kfmm     = f.fmm;
 Kgetquad = f.getquad;
+Kdiag    = f.diag;
 A4 = reshape(A, a1, 1, a2, 1);
 
     function vals = apply_mat(Kmat)
@@ -132,6 +133,18 @@ else
     f.getquad = [];
 end
 
+if isa(Kdiag, 'function_handle')
+    f.diag = @diag_;
+end
+
+    function D = diag_(t)
+        % apply A to each (m x q) point block of the stacked diag
+        Dm = Kdiag(t);
+        nt = size(Dm,1)/m;
+        D3 = A .* permute(reshape(Dm, m, nt, q), [1 3 2]);
+        D  = reshape(permute(D3, [1 3 2]), P*nt, Q);
+    end
+
 f.opdims = [P, Q];
 f.type = ['custom_', f.type];
 f.name = ['custom ', f.name];
@@ -164,6 +177,11 @@ if isa(f.getquad, 'function_handle')
         Kgetquad(S, eps, varargin{:}), g);
 else
     f.getquad = [];
+end
+
+if isa(f.diag, 'function_handle')
+    Kdiag = f.diag;
+    f.diag = @(t) g * Kdiag(t);
 end
 
 if isnan(g)

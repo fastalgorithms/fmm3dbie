@@ -13,7 +13,8 @@ function out = mtimes(f, g)
 %   M(t): (p*nt x m) or N(s): (q x p*ns)
 % or a (1 x 1 x n) array, which is treated as a pointwise scalar multiplier.
 %
-% getquad returns the transformed sparse matrix (M*Q or Q*N).
+% getquad returns the transformed sparse matrix (M*Q or Q*N), and the
+% identity/self term diag is transformed to M(t)*D(t) or D(t)*N(t).
 %
 % src_fields/targ_fields are inherited from K. If M or N requires
 % additional geometry fields (e.g. 'n'), add them to out.src_fields or
@@ -69,6 +70,7 @@ end
 Keval    = K.eval;
 Kfmm     = K.fmm;
 Kgetquad = K.getquad;
+Kdiag    = K.diag;
 m        = K.opdims(1);
 q        = K.opdims(2);
 
@@ -115,11 +117,13 @@ if strcmp(side, 'left')
     out.eval    = @eval_left;
     out.fmm     = set_if_exist(Kfmm,     @fmm_left);
     out.getquad = set_if_exist(Kgetquad, @getquad_left);
+    out.diag    = set_if_exist(Kdiag,    @diag_left);
 else
     out.opdims  = [m, p];
     out.eval    = @eval_right;
     out.fmm     = set_if_exist(Kfmm,     @fmm_right);
     out.getquad = set_if_exist(Kgetquad, @getquad_right);
+    out.diag    = set_if_exist(Kdiag,    @diag_right);
 end
 
     function out = apply_left(fval, X)
@@ -170,6 +174,13 @@ end
         Q    = sparse(reshape(permute(apply_left(fval, Q3), [1 3 2]), p*nt, q*S.npts));
     end
 
+    function D = diag_left(t)
+        % stacked (m*nt x q) diag -> pages, left-multiply, restack
+        nt = size(t.r, 2);
+        D3 = permute(reshape(Kdiag(t), m, nt, q), [1 3 2]);
+        D  = reshape(permute(apply_left(h(t), D3), [1 3 2]), p*nt, q);
+    end
+
 % right-multiply: K(s,t) * h(s)
 
     function vals = eval_right(s, t)
@@ -199,6 +210,13 @@ end
         end
         Q3 = reshape(full(Qinner), m*nt, q, ns);
         Q  = sparse(reshape(apply_right(Q3, fval), m*nt, p*ns));
+    end
+
+    function D = diag_right(t)
+        % the delta term has s = t, so h is evaluated at the targets
+        nt = size(t.r, 2);
+        D3 = permute(reshape(Kdiag(t), m, nt, q), [1 3 2]);
+        D  = reshape(permute(apply_right(D3, h(t)), [1 3 2]), m*nt, p);
     end
 
 end

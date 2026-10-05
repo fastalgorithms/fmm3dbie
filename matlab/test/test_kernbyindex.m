@@ -216,6 +216,7 @@ S2 = geometries.ellipsoid([1,1,1],   [2,2,2], [4;0;0], 5);
 srfrs = [S1, S2];
 
 kern = kernel3d('bel', 'rlb');
+kern.diag = [];   % compare smooth rule only; identity term is tested in test_kernel3d_eye
 
 [Asmth, novers] = surfermat(srfrs, kern, eps, opts_sm);
 ii = randi(size(Asmth,1), 80, 1);

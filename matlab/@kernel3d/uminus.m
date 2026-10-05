@@ -17,4 +17,9 @@ else
     f.getquad = [];
 end
 
+if isa(f.diag, 'function_handle')
+    fdiag = f.diag;
+    f.diag = @(t) -fdiag(t);
+end
+
 end

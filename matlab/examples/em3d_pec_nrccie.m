@@ -7,12 +7,12 @@ eps   = 1e-6;
 
 S = geometries.ellipsoid([1,1,1.5],[2,2,2], [0;0;0], 8);
 K = kernel3d.em3d('nrccie-bc', zk, alpha);
+K = K + kernel3d.eye(0.5*eye(3));
 
 % corrections and solve
 tic;
 opts_self = []; opts_self.corrections = 1; opts_self.selfquad = 1; opts_self.ifreturnovers = 1;
 [cors, objover] = surfermat(S, K, eps, opts_self);
-cors = cors + 0.5*speye(size(cors));
 fprintf('Corrections: '); toc;
 
 [einc, hinc] = em3d.planewave(zk, [pi/3; pi/4], [1; 0], S);

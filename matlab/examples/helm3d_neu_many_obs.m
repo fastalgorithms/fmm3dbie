@@ -19,7 +19,7 @@ for k = 1:nobj
     Sarr(k) = affine_transf(rotate(S0, 2*pi*rand(3,1)), eye(3), centres(:,k));
 end
 
-K  = kernel3d.helm3d('sp', zk);
+K  = kernel3d.helm3d('sp', zk) + kernel3d.eye(-0.5);
 n1   = S0.npts;
 ntot = nobj * n1;
 
@@ -41,7 +41,6 @@ for k = 1:nobj
     ii = (k-1)*n1 + (1:n1);
     cors(ii, ii) = cors_self;
 end
-cors = cors - 0.5*speye(ntot);
 
 Smerge = merge(Sarr);
 nover_merged = repmat(novers_self{1,1}, nobj, 1);
