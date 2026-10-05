@@ -60,7 +60,8 @@ function [sxyz, patch_inds, uvsloc, dists, flags] = get_closest_pts(S, targinfo,
         targs = targinfo;
     end
     [ndtarg,ntarg] = size(targs);
-
+    targs = targs(1:3,:);
+    ndtarg = 3;
     sxyz = zeros(ndtarg,ntarg);
     patch_inds = zeros(ntarg,1);
     uvsloc = zeros(2,ntarg);
