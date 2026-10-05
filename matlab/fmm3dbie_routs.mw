@@ -6254,3 +6254,39 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc.nnz     = length(col_ind);
     rsc.nquad   = iquad(nnz+1)-1;
 end
+
+%
+%
+
+@ src/getnearquad_radcheb.m
+function wnear = getnearquad_radcheb(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
+          iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,nquad, ...
+          dpars,ipars,ifcomplex)
+%
+%  getnearquad_radcheb
+%
+%  Near field quadrature for a radial kernel given by the piecewise
+%  polynomial expansion (dpars,ipars) built by radcheb_fit.
+%
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    if ~isnumeric(targs)   % may already be a flattened array (recursive calls)
+        targs = targs.r;
+    end
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    ndd = length(dpars);
+    ndi = length(ipars);
+
+    if ifcomplex
+        wnear = zeros(1,nquad,'like',1i);
+        # FORTRAN getnearquad_radcheb(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, inout dcomplex[1,nquad] wnear);
+    else
+        wnear = zeros(1,nquad);
+        # FORTRAN getnearquad_radcheb_real(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, inout double[1,nquad] wnear);
+    end
+    wnear = wnear(:);
+end
