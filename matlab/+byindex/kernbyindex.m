@@ -14,8 +14,8 @@ function mat = kernbyindex(i, j, surfers, kern, eps, objover, Qsparse, opts)
 %   objover   - (optional) oversampling spec, as returned by surfermat: []
 %               to recompute on the fly, a collection of oversampling orders, or a
 %               pair of precomputed oversampled surfers/interpolation matrices.
-%   Qsparse   - (optional) sparse matrix of quadrature corrections
-%               (same size as the full matrix).  Pass [] to skip.
+%   Qsparse   - (optional) sparse matrix of quadrature corrections and
+%               identity terms (same size as the full matrix).  Pass [] to skip.
 %               Two modes, selected by opts.replace_quadcorr:
 %                 true (default): replacement, i.e. overwrite smooth entries
 %                   with Qsparse values where nonzero.  Use with nonsmoothonly=1

@@ -11,14 +11,16 @@ function out = mtimes(f, g)
 %
 % A function handle may alternatively return the matrix forms
 %   M(t): (p*nt x m) or N(s): (q x p*ns)
-% or a (1 x 1 x n) array, which is treated as a pointwise scalar multiplier.
+% or, for a pointwise scalar multiplier, its n values as a row, a column
+% or a (1 x 1 x n) array.
 %
 % getquad returns the transformed sparse matrix (M*Q or Q*N), and the
 % identity/self term diag is transformed to M(t)*D(t) or D(t)*N(t).
 %
 % src_fields/targ_fields are inherited from K. If M or N requires
 % additional geometry fields (e.g. 'n'), add them to out.src_fields or
-% out.targ_fields after calling mtimes.
+% out.targ_fields after calling mtimes. The handle is probed at a single
+% point carrying every per-point surfer field to find its dimensions.
 
 if isa(f, 'kernel3d') && isa(g, 'kernel3d')
     error('KERNEL3D:mtimes:invalid', ...
@@ -80,9 +82,7 @@ q        = K.opdims(2);
 % pointwise scalar multiplier
 if ~exist('p', 'var')
     try
-        probe.r  = randn(3,1); probe.n  = randn(3,1);
-        probe.du = randn(3,1); probe.dv = randn(3,1);
-        hval = h(probe);
+        hval = h(probe_ptinfo());
         hr = size(hval, 1); hc = size(hval, 2);
     catch
         error('KERNEL3D:mtimes:probe', ...
@@ -230,6 +230,11 @@ function hn = normalize_handle(h, hr, hc, side)
     function fval = hwrap(pts)
         fval = h(pts);
         n = size(pts.r, 2);
+        if hr == 1 && hc == 1 && numel(fval) == n
+            % pointwise scalar: row, column or pages
+            fval = reshape(fval, 1, 1, n);
+            return
+        end
         if n <= 1 || size(fval, 3) ~= 1
             return
         end
