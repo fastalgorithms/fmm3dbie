@@ -633,7 +633,9 @@
       do i = 1,28
         if( delta .ge. rs(i) .and. delta .le. rs(i+1) ) n = i
       enddo
-
+      !  delta is at most 1 in exact arithmetic, allow for rounding
+      if (delta .gt. 1.0d0 .and. delta .le. 1.0d0 + 1.0d-8) n = 28
+      
       if (n.eq.0) then
         nr = 0
         ier = 4
