@@ -105,7 +105,7 @@ subroutine open_gmsh2_geometry(filename,npatches,norders,ixyzs, &
     do j=1,npols
       call koorn_pols(uv0all(1,j,i),norder,npols,pols)
       do l=1,npols
-        vmat(j,l) = pols(j)
+        vmat(j,l) = pols(l)
       enddo
     enddo
     call dinverse(npols,vmat,info,umat)
@@ -118,7 +118,7 @@ subroutine open_gmsh2_geometry(filename,npatches,norders,ixyzs, &
     do j=1,npols
       call koorn_pols(uvvrall(1,j,i),norder,npols,pols)
       do l=1,npols
-        vmat(j,l) = pols(j)
+        vmat(j,l) = pols(l)
       enddo
     enddo
     call dinverse(npols,vmat,info,umat)
@@ -127,6 +127,7 @@ subroutine open_gmsh2_geometry(filename,npatches,norders,ixyzs, &
         umatvrall(l,j,i) = umat(l,j)
       enddo
     enddo
+    deallocate(umat,vmat)
   enddo
 
   allocate(pmatall(nmax,nmax,nomax),dmatall(2,nmax,nmax,nomax))
@@ -207,7 +208,6 @@ subroutine open_gmsh2_geometry(filename,npatches,norders,ixyzs, &
 
         if (norder .gt. 0) then
 
-          ntri = ntri + 1
           npols = (norder+1)*(norder+2)/2
           nel = npols
 
@@ -245,11 +245,11 @@ subroutine open_gmsh2_geometry(filename,npatches,norders,ixyzs, &
             srcvals(1:9,istart+l-1) = 0
             do m=1,npols
               srcvals(1:3,istart+l-1) = srcvals(1:3,istart+l-1) + &
-                pmatall(m,l,norder)*srccoefs(1:3,istart+l-1)
+                pmatall(m,l,norder)*srccoefs(1:3,istart+m-1)
               srcvals(4:6,istart+l-1) = srcvals(4:6,istart+l-1) + &
-                dmatall(1,m,l,norder)*srccoefs(1:3,istart+l-1)
+                dmatall(1,m,l,norder)*srccoefs(1:3,istart+m-1)
               srcvals(7:9,istart+l-1) = srcvals(7:9,istart+l-1) + &
-                dmatall(2,m,l,norder)*srccoefs(1:3,istart+l-1)
+                dmatall(2,m,l,norder)*srccoefs(1:3,istart+m-1)
             enddo
           enddo
     
@@ -305,6 +305,8 @@ subroutine open_gmsh2_geometry_mem(filename,ntri,npoints)
 
   iunit = 18
   open(UNIT=18, FILE=filename, STATUS='OLD', ACTION='READ', IOSTAT=ierror)
+  ntri = 0
+  npoints = 0
   do
     read(iunit, *, iostat=io) cline
 

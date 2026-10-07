@@ -1,5 +1,6 @@
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
+      complex *16 zk
       real *8, allocatable :: srcvals(:,:),srccoefs(:,:)
       real *8, allocatable :: wts(:),rsigma(:)
       integer *8 ipars(2)
