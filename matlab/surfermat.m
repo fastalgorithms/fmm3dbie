@@ -275,7 +275,7 @@ for i = 1:nsurfers
 
         % identity/self ("delta") term
         if i == j && isa(ktmp.diag, 'function_handle')
-            Dvals = ktmp.diag(diag_ptinfo(surferi));
+            Dvals = ktmp.diag(surferi);
             sysmat_tmp = add_delta_block(sysmat_tmp, Dvals, opdims(1), opdims(2));
         end
         
@@ -303,14 +303,6 @@ if ifreturnovers
     objover = {surfers_over, xinterps};
 else
     objover = novers;
-end
-end
-
-function p = diag_ptinfo(S)
-% Point struct passed to a kernel's diag(t) handle
-p = []; p.r = S.r(:,:);
-for f = {'n','du','dv'}
-    p.(f{1}) = S.(f{1})(:,:);
 end
 end
 

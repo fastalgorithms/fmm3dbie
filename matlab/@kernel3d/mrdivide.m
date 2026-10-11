@@ -3,30 +3,11 @@ function f = mrdivide(f, g)
 %
 % Currently only supports scalars: returns F/g for kernel F and scalar g.
 
-if (isnumeric(g) && isscalar(g))
+if (isa(f, 'kernel3d') && isnumeric(g) && isscalar(g))
 
-    if (isa(f.eval, 'function_handle'))
-        f.eval = @(varargin) f.eval(varargin{:}) / g;
-    end
-
-    if (isa(f.fmm, 'function_handle'))
-        f.fmm = @(varargin) f.fmm(varargin{:}) / g;
-    else
-        f.fmm = [];
-    end
-
-    if (isa(f.getquad, 'function_handle'))
-        fgetquad = f.getquad;
-        f.getquad = @(S, eps, varargin) kernel3d.scalequad( ...
-            fgetquad(S, eps, varargin{:}), 1/g);
-    else
-        f.getquad = [];
-    end
-
-    if (isa(f.diag, 'function_handle'))
-        fdiag = f.diag;
-        f.diag = @(t) fdiag(t) / g;
-    end
+    % same as scalar times, so eval, fmm, getquad, diag and the
+    % iszero/isnan flags are all handled in one place
+    f = times(f, 1/g);
 
 else
     error('KERNEL3D:mrdivide:invalid', ...
