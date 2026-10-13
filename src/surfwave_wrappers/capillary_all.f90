@@ -66,11 +66,10 @@
         elseif (iker.eq.5) then
           fker => s3dgphihelmkern
         elseif (iker.eq.8) then
+!         S' kernels are weakly singular on the surface (ipv = 0)
           fker => gshelm_sp_kern
-          ipv = 1
         elseif (iker.eq.9) then
           fker => gphihelm_sp_kern
-          ipv = 1
         endif
 
         call zgetnearquad_ggq_guru(npatches, norders, ixyzs, &

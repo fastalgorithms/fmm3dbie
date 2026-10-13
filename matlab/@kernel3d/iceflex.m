@@ -19,6 +19,15 @@ function obj = iceflex(type, nu, rts, ejs, opts)
 %
 %      'gs_v2b'      - G_S traces on the boundary
 %      'gphi_v2b'    - G_phi traces on the boundary
+%      'v2b'         - -gamma/4*gs_v2b + 1/2*gphi_v2b, the combined field of
+%                      the polynya solve (one Fortran near-quadrature call)
+%
+%   The Fortran near quadrature (getnearquad_flex_bcs) integrates
+%   Q(g) = -g/4*G_S + 1/2*G_phi for the gamma g stored in zpars(12). Each
+%   v2b type gets its own weights from this by linearity: c_s*G_S + c_p*G_phi
+%   is 2*c_p*Q(-2*c_s/c_p) for c_p ~= 0 (one call), and G_S alone is
+%   2*(Q(-2) - Q(0)) (two calls). So scaling and adding the types gives
+%   correct near weights.
 %
 % See also SURFWAVE.FLEX.KERN, KERNEL3D.GRAVITY, KERNEL3D.CAPILLARY
 
@@ -70,14 +79,24 @@ switch lower(type)
 
     case {'gs_v2b'}
         obj = eval_kern(obj, 'gs_v2b',   K('gs_v2b'),   [2 1], 1);
-        obj.getquad = v2b_getquad_handle(zpars, kernel3d.rsc_interleave_full(2,1));
+        obj.getquad = v2b_getquad_handle(zpars, kernel3d.rsc_interleave_full(2,1), 1, 0);
         obj.src_fields = [];
         obj.kernel_order = -1;
+        obj.targ_fields  = {'n', 'd', 'd2', 'kappa'};
     case {'gphi_v2b'}
         obj = eval_kern(obj, 'gphi_v2b', K('gphi_v2b'), [2 1], 1);
-        obj.getquad = v2b_getquad_handle(zpars, kernel3d.rsc_interleave_full(2,1));
+        obj.getquad = v2b_getquad_handle(zpars, kernel3d.rsc_interleave_full(2,1), 0, 1);
         obj.src_fields = [];
         obj.kernel_order = -1;
+        obj.targ_fields  = {'n', 'd', 'd2', 'kappa'};
+    case {'v2b'}
+        Kgs_v2b = K('gs_v2b');  Kgp_v2b = K('gphi_v2b');
+        obj = eval_kern(obj, 'v2b', ...
+                  @(s,t) (-gamma/4)*Kgs_v2b(s,t) + (1/2)*Kgp_v2b(s,t), [2 1], 1);
+        obj.getquad = v2b_getquad_handle(zpars, kernel3d.rsc_interleave_full(2,1), -gamma/4, 1/2);
+        obj.src_fields = [];
+        obj.kernel_order = -1;
+        obj.targ_fields  = {'n', 'd', 'd2', 'kappa'};
     otherwise
         error('KERNEL3D.ICEFLEX: unknown flexural kernel type ''%s''.', type);
 
@@ -110,8 +129,9 @@ obj.targ_fields  = {'n', 'd', 'd2'};
 end
 
 
-function h = v2b_getquad_handle(zpars, ri)
-h = @(S,eps,varargin) flex_v2b_getquad(S, eps, zpars, ri, varargin{:});
+function h = v2b_getquad_handle(zpars, ri, cs, cp)
+% near quadrature for cs*gs_v2b + cp*gphi_v2b
+h = @(S,eps,varargin) flex_v2b_getquad(S, eps, zpars, ri, cs, cp, varargin{:});
 end
 
 
@@ -138,12 +158,14 @@ spmat = pack(S, rsc, wnear, nquad, ri);
 end
 
 
-function spmat = flex_v2b_getquad(S, eps, zpars, ri, targinfo, opts)
-%FLEX_V2B_GETQUAD  Near-quadrature for the flexural volume-to-boundary traces.
-if ( nargin < 5 || isempty(targinfo) )
+function spmat = flex_v2b_getquad(S, eps, zpars, ri, cs, cp, targinfo, opts)
+%FLEX_V2B_GETQUAD  Near-quadrature for cs*gs_v2b + cp*gphi_v2b.
+%  The Fortran routine integrates Q(g) = -g/4*G_S + 1/2*G_phi, g = zpars(12);
+%  the requested combination is built from Q by linearity (see header).
+if ( nargin < 7 || isempty(targinfo) )
     error('KERNEL3D.ICEFLEX: v2b kernels require a boundary targinfo.');
 end
-if ( nargin < 6 || isempty(opts) ), opts = struct(); end
+if ( nargin < 8 || isempty(opts) ), opts = struct(); end
 
 [srcvals, srccoefs, norders, ixyzs, iptype, ~] = extract_arrays(S);
 if ( isfield(opts, 'rsc') && ~isempty(opts.rsc) )
@@ -154,9 +176,15 @@ end
 nquad = rsc.iquad(end) - 1;
 [patch_id, uvs_targ] = targ_ids(targinfo);
 
-wnear = surfwave.flex.getnearquad_v2b_flex(S.npatches, norders, ixyzs, ...
+Q = @(g) surfwave.flex.getnearquad_v2b_flex(S.npatches, norders, ixyzs, ...
     iptype, S.npts, srccoefs, srcvals, targinfo, patch_id, uvs_targ, eps, ...
-    1, rsc.nnz, rsc.row_ptr, rsc.col_ind, rsc.iquad, rsc.rfac0, zpars, nquad);
+    1, rsc.nnz, rsc.row_ptr, rsc.col_ind, rsc.iquad, rsc.rfac0, ...
+    [zpars(1:11); g; zpars(13:end)], nquad);
+if ( cp ~= 0 )
+    wnear = (2*cp) * Q(-2*cs/cp);
+else
+    wnear = (2*cs) * (Q(-2) - Q(0));
+end
 
 spmat = pack(S, rsc, wnear, nquad, ri);
 end

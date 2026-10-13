@@ -38,56 +38,17 @@ targ = targinfo.r;
 [~,ns] = size(src);
 [~,nt] = size(targ);
 
-if isscalar(zk)
-    if abs(zk) < 1e-6 % biharmonic (\Delta^2 u) 
-        gfunc1 = @(s,t) surfwave.flex.bhgreen(s,t);
-        gfunc2 = @(s,t) dumfunc(s,t,ns,nt);
-
-        zk1 = 1;
-        zk2 = 0;
-    else % flexural (\Delta^2 u - k^4 u) 
-        zk1 = zk;
-        zk2 = 1i*zk;
-
-        gfunc1 = @(s,t) surfwave.flex.helmdiffgreen(zk1,s,t);
-        gfunc2 = @(s,t) surfwave.flex.helmdiffgreen(zk2,s,t);
-    end
-elseif length(zk) == 2
-    if any(abs(zk) < 1e-6) % Stokes (\Delta^2 u + k^2 \Delta u) 
-        zk1 = zk(abs(zk) >= 1e-6);
-        zk2 = 0;
-
-        gfunc1 = @(s,t) surfwave.flex.helmdiffgreen(zk1,s,t);
-        gfunc2 = @(s,t) dumfunc(s,t,ns,nt);
-    else % modified flexural (a \Delta^2 u - b \Delta u - c u) 
-        zk1 = zk(1);
-        zk2 = zk(2);
-    
-        gfunc1 = @(s,t) surfwave.flex.helmdiffgreen(zk1,s,t);
-        gfunc2 = @(s,t) surfwave.flex.helmdiffgreen(zk2,s,t);
-    end
-end
-
 switch lower(type)
 case {'s', 'single'}
 
-   val1 = gfunc1(src,targ);
-   val2 = gfunc2(src,targ);
-
-   val = 1/(zk1^2-zk2^2)*(val1-val2);
-
-   submat = val;
+   submat = flex2d.green(zk,src,targ);
 
 case {'clamped_plate_bcs'}
     nxtarg = targinfo.n(1,:).'; 
     nytarg = targinfo.n(2,:).';  
     submat = zeros(2*nt,ns);
     
-    [val1, grad1] = gfunc1(src,targ);
-    [val2, grad2] = gfunc2(src,targ);
-
-    val = 1/(zk1^2-zk2^2)*(val1-val2);
-    grad = 1/(zk1^2-zk2^2)*(grad1-grad2);
+    [val, grad] = flex2d.green(zk,src,targ);
 
     firstbc = val ;
     secondbc = grad(:, :, 1).*nxtarg + grad(:, :, 2).*nytarg;
@@ -101,11 +62,7 @@ case {'free_plate_bcs'}
     targd2 = targinfo.d2;
     nu = varargin{1};
 
-    [~, ~, hess1, third1] = gfunc1(src,targ);
-    [~, ~, hess2, third2] = gfunc2(src,targ);
-
-    hess = 1/(zk1^2-zk2^2)*(hess1 - hess2);
-    third = 1/(zk1^2-zk2^2)*(third1 - third2);
+    [~, ~, hess, third] = flex2d.green(zk,src,targ);
 
     nxtarg = repmat((targnorm(1,:)).',1,ns);
     nytarg = repmat((targnorm(2,:)).',1,ns);
@@ -152,11 +109,7 @@ case {'supported_plate_bcs'}
 
     nu = varargin{1};
 
-    [val1, ~, hess1] = gfunc1(src,targ);    
-    [val2, ~, hess2] = gfunc2(src,targ);  
-
-    val = 1/(zk1^2-zk2^2)*(val1 - val2);
-    hess = 1/(zk1^2-zk2^2)*(hess1 - hess2);
+    [val, ~, hess] = flex2d.green(zk,src,targ);
     
     firstbc = val ;
     
@@ -172,32 +125,4 @@ otherwise
     error('FLEX2D.KERN: unknown kernel type ''%s''.', type);
 end
 
-function varargout = dumfunc(src,targ,ns,nt)
-
-    out1 = zeros(nt,ns,1);
-    out2 = zeros(nt,ns,2);
-    out3 = zeros(nt,ns,3);
-    out4 = zeros(nt,ns,4);
-    out5 = zeros(nt,ns,5);
-    out6 = zeros(nt,ns,6);
-
-    switch nargout
-        case 0
-            return
-        case 1 
-            varargout = {out1};
-        case 2
-            varargout = {out1, out2};
-        case 3
-            varargout = {out1, out2, out3};
-        case 4
-            varargout = {out1, out2, out3, out4};
-        case 5
-            varargout = {out1, out2, out3, out4, out5};
-        case 6
-            varargout = {out1, out2, out3, out4, out5, out6};
-    end
 end
-
-end
-

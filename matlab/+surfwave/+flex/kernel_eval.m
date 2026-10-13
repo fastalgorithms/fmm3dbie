@@ -1,4 +1,4 @@
-function obj = kernel_eval(type, nu, rts, ejs)
+function obj = kernel_eval(type, nu, rts, ejs, opts)
 %SURFWAVE.FLEX.KERNEL_EVAL  Chunkie kernel object (with splitinfo) for the
 %   surfwave.flex boundary-to-volume free-plate evaluation kernels.
 %
@@ -8,6 +8,14 @@ function obj = kernel_eval(type, nu, rts, ejs)
 %   [1 3] kernel, columns [G_ny, (1+nu)/2*G_tauy, G]. By the moment
 %   conditions on (rts,ejs) (sum ejs.*rts.^q = 0 for q < 4, = 1/alpha at
 %   q = 4). Only 'free_plate_gs_eval' gets a splitinfo.
+%
+%   obj = surfwave.flex.kernel_eval(type, nu, rts, ejs, opts)
+%      opts.rmax    - build a radial Chebyshev representation of G and its
+%                     gradient (surfwave.radcheb_green) and evaluate through
+%                     it; rmax is the largest source-target distance (or
+%                     [rmin rmax]). No splitinfo is attached in that case.
+%      opts.radcheb - options passed to kernel3d.radcheb (eps default 1e-13)
+%      opts.R       - alternatively a prebuilt surfwave.radcheb_green struct
 
 if ~any(strcmpi(type, {'free_plate_gs_eval', 'free_plate_gphi_eval'}))
     error('surfwave:flex:kernel_eval', 'unknown type ''%s''', type);
@@ -17,16 +25,33 @@ obj = kernel();
 obj.name       = 'flexural';
 obj.type       = type;
 obj.opdims     = [1 3];
-obj.eval       = @(s,t) surfwave.flex.kern(s, t, type, nu, rts, ejs);
+if nargin < 5, opts = []; end
+R = [];
+if isfield(opts, 'R') && ~isempty(opts.R)
+    R = opts.R;
+elseif isfield(opts, 'rmax') && ~isempty(opts.rmax)
+    ro = struct('eps', 1e-13);
+    if isfield(opts, 'radcheb'), ro = opts.radcheb; end
+    if strcmpi(type, 'free_plate_gs_eval')
+        vg = @(s,t) surfwave.flex.gsflex(rts, ejs, s, t);
+    else
+        vg = @(s,t) surfwave.flex.gphiflex(rts, ejs, s, t);
+    end
+    R = surfwave.radcheb_green(vg, opts.rmax, ro);
+end
+obj.params.R   = R;
+obj.eval       = @(s,t) surfwave.flex.kern(s, t, type, nu, rts, ejs, R);
 % obj.src_fields = {'n', 'd'};
 
-if strcmpi(type, 'free_plate_gs_eval')
+if strcmpi(type, 'free_plate_gs_eval') && isempty(R)
     alpha = 1/sum(ejs(:).*rts(:).^4);
     obj.sing = 'log';
     obj.splitinfo = [];
     obj.splitinfo.type     = {[0 0 0 0], [1 0 0 0]};
     obj.splitinfo.action   = {'r', 'r'};
     obj.splitinfo.functions = @(s, t) gs_eval_split(s, t, nu, rts, ejs, alpha);
+elseif strcmpi(type, 'free_plate_gs_eval')
+    obj.sing = 'log';          % radcheb evaluation: no splitinfo
 else
     obj.sing = 'smooth';
 end

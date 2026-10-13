@@ -200,7 +200,16 @@ SURFSM_MOD_OBJS = $(SURFSM)/Mod_TreeLRD.o \
 
 # 2D flexural kernels
 KER2 = src/kernels_2d
-KOBJS2 = $(KER2)/flexural_kernels_2d.o
+KOBJS2 = $(KER2)/flexural_kernels_2d.o $(KER2)/lap_kernels_2d.o \
+	$(KER2)/helm_kernels_2d.o
+
+# Laplace 2D wrappers
+LAP2 = src/lap_2d_wrappers
+LOBJS2 = $(LAP2)/lap2d_wrappers.o
+
+# Helmholtz 2D wrappers
+HELM2 = src/helm_2d_wrappers
+HOBJS2 = $(HELM2)/helm2d_wrappers.o
 
 # Flexural 2D wrappers
 FX2 = src/flexural_2d_wrappers
@@ -214,9 +223,9 @@ SURFWAVEOBJS = $(SURFWAVE)/capillary_all.o $(SURFWAVE)/flexural_all.o \
 # Add to FFLAGS so that modules get compiled in the .mod folder
 FFLAGS += -J .mod/
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(KOBJS2) $(FXOBJS) $(SURFWAVEOBJS)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(KOBJS2) $(LOBJS2) $(HOBJS2) $(FXOBJS) $(SURFWAVEOBJS)
 
-OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(KOBJS2) $(FXOBJS) $(SURFWAVEOBJS)
+OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(KOBJS2) $(LOBJS2) $(HOBJS2) $(FXOBJS) $(SURFWAVEOBJS)
 OBJS_64 += $(COM)/lapack_wrap_64.o
 
 ifeq ($(BLAS_64),ON)

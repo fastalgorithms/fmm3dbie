@@ -367,7 +367,7 @@
 !
 ! Temporary variables
 !
-      real *8 r0, r1, xmeas, rr, sina, cosa, xx, yy
+      real *8 r0, r1, rr, sina, cosa, xx, yy
       real *8 rcut_scaled, r, theta
       integer *8 iquad, ier0, ipv_t
       integer *8 ifreflect, irad, nr, nr0, nt, i, j, it, istart, ir
@@ -379,22 +379,13 @@
       ier = 0
 
 !
-! Test for collinearity
-!
-      xmeas = 1.0d0
-      if ((abs(v0(1)).gt.abs(v0(2))).and.(abs(v1(1)).gt.abs(v1(2)))) then
-        xmeas = abs(v0(2)/v0(1) - v1(2)/v1(1))
-      else
-        xmeas = abs(v0(1)/v0(2) - v1(1)/v1(2))
-      endif
-
-      if (xmeas.le.1.0d-8) return
-
-!
-!  Points are no longer collinear
+! Skip degenerate pieces (target on an edge or at a vertex)
 !
       r0 = sqrt(v0(1)**2 + v0(2)**2)
       r1 = sqrt(v1(1)**2 + v1(2)**2)
+      if (max(r0, r1) .eq. 0) return
+      if (abs(v0(1)*v1(2) - v0(2)*v1(1)) .le. &
+          1.0d-15*max(r0, r1)**2) return
 !
 !  Place the longer edge on the y=0 axis, rotate and
 !  reflect about y=0 axis if needed
@@ -545,6 +536,44 @@
 
 
 
+      subroutine graded_far_half(xs, ws, nr)
+!
+!  TEMPORARY (ifar = 1): nodes/weights on [1/2,1], geometrically graded
+!  toward x = 1.  Integrates phi(x) + sum_k psi_k(x) log(1-x)**k.
+!
+      implicit none
+      real *8, intent(out) :: xs(*), ws(*)
+      integer *8, intent(out) :: nr
+      integer *8, parameter :: nlev = 15, ng = 12
+      real *8, parameter :: sigma = 0.15d0
+      real *8 tg(ng), wg(ng), a, b, dk, dk1
+      integer *8 k, i, ifw
+
+      ifw = 1
+      call legewhts(ng, tg, wg, ifw)
+      nr = 0
+      dk = 0.5d0
+      do k = 0,nlev
+        if (k.lt.nlev) then
+          dk1 = dk*sigma
+        else
+          dk1 = 0.0d0
+        endif
+        a = 1.0d0 - dk
+        b = 1.0d0 - dk1
+        do i = 1,ng
+          nr = nr + 1
+          xs(nr) = a + (b-a)*(tg(i)+1.0d0)/2.0d0
+          ws(nr) = (b-a)/2.0d0*wg(i)
+        enddo
+        dk = dk1
+      enddo
+
+      return
+      end
+!
+!
+!
       subroutine rquads_rlogr_rinv(norder, xs, ws, nr)
       implicit none
       integer *8 norder, nr
@@ -797,6 +826,14 @@
 !        * ier = 0 => successful execution
 !        * ier = 8 => unsupported ipv (must be 0 or 1)
 !
+!  Note: ipv = 2 (hypersingular) is not supported here, so callers fall back
+!  to self_quadrature, whose radial rule is not split and does not resolve a
+!  density singular at the far end of each ray (e.g. surferfun 131/132
+!  patches: D' self quadrature ~3e-7 relative). An ipv = 2 branch would pair
+!  hs_disk_quad and the finite-part radial rule (rquads_pv_hs) on the near
+!  part with the reflected rquads_rlogr_rinv rule on the far part, as the
+!  ipv = 0/1 branches do.
+!
       implicit none
       integer *8, intent(in) :: norder
       integer *8, intent(in) :: ipv, ifar
@@ -1006,7 +1043,7 @@
 !
 ! Temporary variables
 !
-      real *8 r0, r1, xmeas, rr, sina, cosa, xx, yy
+      real *8 r0, r1, rr, sina, cosa, xx, yy
       real *8 rcut_scaled, r, theta
       integer *8 ier0, ipv_t
       integer *8 ifreflect, irad, nr, nr0, nt, i, j, it, istart, ir
@@ -1026,22 +1063,13 @@
       endif
 
 !
-! Test for collinearity
-!
-      xmeas = 1.0d0
-      if ((abs(v0(1)).gt.abs(v0(2))).and.(abs(v1(1)).gt.abs(v1(2)))) then
-        xmeas = abs(v0(2)/v0(1) - v1(2)/v1(1))
-      else
-        xmeas = abs(v0(1)/v0(2) - v1(1)/v1(2))
-      endif
-
-      if (xmeas.le.1.0d-8) return
-
-!
-!  Points are no longer collinear
+! Skip degenerate pieces (target on an edge or at a vertex)
 !
       r0 = sqrt(v0(1)**2 + v0(2)**2)
       r1 = sqrt(v1(1)**2 + v1(2)**2)
+      if (max(r0, r1) .eq. 0) return
+      if (abs(v0(1)*v1(2) - v0(2)*v1(1)) .le. &
+          1.0d-15*max(r0, r1)**2) return
 !
 !  Place the longer edge on the y=0 axis, rotate and
 !  reflect about y=0 axis if needed
@@ -1210,7 +1238,7 @@
       integer *8, intent(out) :: nr
 
       real *8 xs0(150), ws0(150)
-      integer *8 nr0, i
+      integer *8 nr0, i, nr1g
 
       call rquads_rlogr_rinv(norder, xs0, ws0, nr0)
       if (nr0.eq.0) then
@@ -1240,6 +1268,22 @@
           xs(nr0+i) = 1.0d0 - 0.5d0*xs0(i)
           ws(nr0+i) = 0.5d0*ws0(i)
         enddo
+      elseif (ifar.eq.1) then
+!
+!  TEMPORARY: geometrically graded Gauss-Legendre on [1/2,1], for
+!  densities with log(1-x)**k, k >= 1, at the far end (polylog).
+!  Panels [1-d_k, 1-d_{k+1}], d_k = 0.5*sigma**k, k = 0..nlev-1, plus
+!  the last panel [1-d_nlev, 1]; ng GL nodes on each.  The last panel
+!  is where the log**k mass is not resolved; its size d_nlev sets the
+!  error, ~ d_nlev*|log d_nlev|**k.  sigma = 0.15, ng = 12,
+!  nlev = 15: d_nlev = 0.5*0.15**15 ~ 2e-13.  Deeper levels are
+!  meaningless in double: the nodes are stored as x in [0,1], so the
+!  innermost node 1 - d_nlev*(1-t_ng)/2 (t_ng ~ 1 - 1.8e-2) must stay
+!  well above eps; at nlev = 20 it rounded past x = 1 (v < 0).
+!
+        call graded_far_half(xs(nr0+1), ws(nr0+1), nr1g)
+        nr = nr0 + nr1g
+        return
       else
         print *, "rquads_rlogr_rinv_split: unsupported ifar=", ifar
         nr = 0

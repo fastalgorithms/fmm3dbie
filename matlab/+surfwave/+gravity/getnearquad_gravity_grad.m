@@ -41,7 +41,7 @@ end
 
 
 %
-%%  Flexural 2D near-field quadrature
+%%  2D volume potentials: Laplace, Helmholtz, flexural
 %%
 %
 

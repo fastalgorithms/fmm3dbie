@@ -24,7 +24,11 @@ classdef kernel3d
 %      'iceflex'   ('ice_flex')          'gs', 'gphi', 'gphi_bilap', 's3d',
 %                                        's3d_gphi', 's3d_sum',
 %                                        'gs_v2b', 'gphi_v2b'
-%      'flex2d'    ('plate')             's', 'free_plate_bcs'
+%      'lap2d'                           's', 'sp'   (2D, surfer in z = 0)
+%      'helm2d'                          's', 'sp', 's2trans' (2D, surfer in z = 0)
+%      'flex2d'    ('plate')             's', 'clamped_plate_bcs',
+%                                        'supported_plate_bcs', 'free_plate_bcs'
+%                                        (2D, surfer in z = 0)
 %      'gravity'   ('grav')              's', 'grad', 'free_plate_bcs', 'vol'
 %      'radcheb'                         (adaptive Chebyshev interpolant of a
 %                                         radial kernel, see KERNEL3D.RADCHEB)
@@ -108,6 +112,10 @@ classdef kernel3d
                         obj = kernel3d.capillary(varargin{:});
                     case {'iceflex', 'ice_flex'}
                         obj = kernel3d.iceflex(varargin{:});
+                    case {'lap2d'}
+                        obj = kernel3d.lap2d(varargin{:});
+                    case {'helm2d'}
+                        obj = kernel3d.helm2d(varargin{:});
                     case {'flex2d', 'plate'}
                         obj = kernel3d.flex2d(varargin{:});
                     case {'gravity', 'grav'}
@@ -161,6 +169,8 @@ classdef kernel3d
         obj    = belpde(varargin);
         obj    = capillary(varargin);
         obj    = iceflex(varargin);
+        obj    = lap2d(varargin);
+        obj    = helm2d(varargin);
         obj    = flex2d(varargin);
         obj    = gravity(varargin);
         obj    = radcheb(varargin);

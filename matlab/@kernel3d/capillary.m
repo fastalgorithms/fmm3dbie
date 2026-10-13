@@ -105,7 +105,10 @@ switch lower(type)
         obj.src_fields = {'n'};
 
     case {'sp', 'sprime'}
-        obj = cap_evalonly(obj, rts, ejs, [green '_sprime'], 'sp', [1 1], 0);
+        % G' ~ grad of a log / 1/r kernel: weakly singular on the surface
+        % (ipv = 0, as iceflex v2b); ipv = 1 cannot take targets on a
+        % patch edge
+        obj = cap_evalonly(obj, rts, ejs, [green '_sprime'], 'sp', [1 1], -1);
         obj.targ_fields = {'n'};
         obj.getquad = cap_getquad_handle(zpars, ikers_sp.(green), 1, 1);
 
@@ -149,8 +152,8 @@ function spmat = cap_getquad(S, eps, zpars, iker, ri, targinfo, opts)
 %   should carry .patch_id / .uvs_targ; anything else is treated as
 %   off-surface.
 
-if ( nargin < 7 || isempty(targinfo) ), targinfo = S;        end
-if ( nargin < 8 || isempty(opts) ),     opts     = struct(); end
+if ( nargin < 6 || isempty(targinfo) ), targinfo = S;        end
+if ( nargin < 7 || isempty(opts) ),     opts     = struct(); end
 
 [srcvals, srccoefs, norders, ixyzs, iptype, ~] = extract_arrays(S);
 

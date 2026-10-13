@@ -32,6 +32,10 @@ function [xs, ys, ws] = self_quadrature_split(norder, ipv, ifar, verts, x0, y0, 
     mex_id_ = 'self_quadrature_split(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[x], c i double[x], c i double[xx], c io int64_t[x], c io double[x], c io double[x], c io double[x], c io int64_t[x])';
 [nquad, xs, ys, ws, ier] = fmm3dbie_routs(mex_id_, norder, ipv, ifar, verts, nv, x0, y0, druse, nquad, xs, ys, ws, ier, 1, 1, 1, 2, nv, 1, 1, 1, 3, 2, 1, nmax, nmax, nmax, 1);
 
+    if ier ~= 0 && ier ~= 8   % self-quadrature failures are otherwise silent
+        warning('FMM3DBIE:self_quadrature_split:ier', ...
+            'ier=%d at (x0,y0)=(%.17g, %.17g), nquad=%d', ier, x0, y0, nquad);
+    end
     if ier == 8
         error('FMM3DBIE:self_quadrature_split:unsupported_ipv', ...
             'self_quadrature_split supports ipv = 0 or 1 (got ipv=%d)', ipv);

@@ -1427,6 +1427,8 @@
 !  i.e. grad(u) = grad(S_{0})[\sigma], using the l3d_sgradx/l3d_sgrady
 !  kernels directly via dgetnearquad_ggq_guru (the generic real-valued
 !  GGQ near-quadrature routine), called once per Cartesian component.
+!  On-surface (self) targets use the principal-value self rule (ipv = 1):
+!  the tangential gradient of S_0 is a PV integral there.
 !
 !  The quadrature is computed by the following strategy
 !  targets within a sphere of radius rfac0*rs
@@ -1474,7 +1476,7 @@
       ndd = 0
       ndz = 0
       ndi = 0
-      ipv = 0
+      ipv = 1
 
       allocate(wneartmp(nquad))
 

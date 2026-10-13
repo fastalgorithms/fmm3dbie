@@ -10,6 +10,8 @@ function submat= kern(srcinfo,targinfo,type,varargin)
 % Input:
 %   srcinfo, targinfo - ptinfo structs; boundary points carry n, d, d2
 %   type - string, determines kernel type
+%   (free_plate_*_eval accept an optional 4th extra argument after nu,rts,ejs:
+%   a surfwave.radcheb_green struct, used in place of gsflex/gphiflex)
 %     volume kernels:
 %        'gs_s', 'gphi_s'         - G_S, G_phi
 %        's3d_gphi'               - 3D single layer applied to G_phi
@@ -441,7 +443,11 @@ if strcmpi(type, 'free_plate_gs_eval')                                          
    srcnorm = srcinfo.n;
    srctang = srcinfo.d;
 
-   [val,grad] = surfwave.flex.gsflex(rts,ejs,src,targ);
+   if numel(varargin) >= 4 && ~isempty(varargin{4})
+      [val,grad] = varargin{4}.eval(src,targ);      % surfwave.radcheb_green struct
+   else
+      [val,grad] = surfwave.flex.gsflex(rts,ejs,src,targ);
+   end
    zk = 1/sqrt(2);
    grad = 2*zk^2*grad;
 
@@ -473,7 +479,11 @@ if strcmpi(type, 'free_plate_gphi_eval')                                        
    srcnorm = srcinfo.n;
    srctang = srcinfo.d;
 
-   [val,grad] = surfwave.flex.gphiflex(rts,ejs,src,targ);
+   if numel(varargin) >= 4 && ~isempty(varargin{4})
+      [val,grad] = varargin{4}.eval(src,targ);      % surfwave.radcheb_green struct
+   else
+      [val,grad] = surfwave.flex.gphiflex(rts,ejs,src,targ);
+   end
    zk = 1/sqrt(2);
    grad = 2*zk^2*grad;
 
