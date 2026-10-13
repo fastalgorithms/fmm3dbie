@@ -17,6 +17,8 @@ function obj = capillary(type, rts, ejs, opts)
 %      's3d_lap' - the Laplace 3D single layer.
 %      's3d_sum' - s3d_lap + s3d.
 %      'sp'      - target normal derivative of the single layer.
+%      'v2b'     - cs*S'_S + cp*S'_phi, the combined capillary v2b
+%                  operator; weights in opts.cs, opts.cp.
 %      'd'       - source normal derivative of the single layer (no
 %                  near quadrature).
 %      'dp'      - target normal derivative of 'd' for G_S (no near
@@ -111,6 +113,21 @@ switch lower(type)
         obj = cap_evalonly(obj, rts, ejs, [green '_sprime'], 'sp', [1 1], -1);
         obj.targ_fields = {'n'};
         obj.getquad = cap_getquad_handle(zpars, ikers_sp.(green), 1, 1);
+
+    case {'v2b'}
+        % combined capillary v2b: cs*S'_S + cp*S'_phi
+        if ~(isfield(opts, 'cs') && isfield(opts, 'cp'))
+            error('KERNEL3D.CAPILLARY: ''v2b'' needs opts.cs and opts.cp.');
+        end
+        cs = opts.cs;  cp = opts.cp;
+        obj = cap_evalonly(obj, rts, ejs, 'gs_sprime', 'v2b', [1 1], -1);
+        obj.eval = @(s,t) cs*surfwave.capillary.kern(rts, ejs, s, t, 'gs_sprime') ...
+                        + cp*surfwave.capillary.kern(rts, ejs, s, t, 'gphi_sprime');
+        obj.targ_fields = {'n'};
+        obj.getquad = @(S,eps,varargin) cs*cap_getquad(S, eps, zpars, 8, ...
+                kernel3d.rsc_interleave_full(1,1), varargin{:}) ...
+              + cp*cap_getquad(S, eps, zpars, 9, ...
+                kernel3d.rsc_interleave_full(1,1), varargin{:});
 
     case {'dp', 'dprime'}
         obj = cap_evalonly(obj, rts, ejs, 'gs_dprime', 'dp', [1 1], 1);

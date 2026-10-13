@@ -156,7 +156,7 @@ KOBJS = $(KER)/helm_kernels.o $(KER)/lap_kernels.o $(KER)/DPIE_kernels.o \
 	$(KER)/hank101.o \
 	$(KER)/hank103.o $(KER)/helmdiffgreen.o \
 	$(KER)/hankdiff.o $(KER)/struve102.o $(KER)/vpp.o \
-	$(KER)/radcheb_quad.o \
+	$(KER)/radpp.o \
 	$(KER)/surfwave_kernels_helm.o $(KER)/surfwave_kernels_flex.o \
 	$(KER)/surfwave_kernels_grav.o 
 
@@ -218,7 +218,8 @@ FXOBJS = $(FX2)/flexural_2d_wrappers.o
 # Surface wave wrappers
 SURFWAVE = src/surfwave_wrappers
 SURFWAVEOBJS = $(SURFWAVE)/capillary_all.o $(SURFWAVE)/flexural_all.o \
-	$(SURFWAVE)/flex_rep_bcs.o $(SURFWAVE)/gravity_all.o
+	$(SURFWAVE)/flex_rep_bcs.o \
+	$(SURFWAVE)/gravity_all.o
 
 # Add to FFLAGS so that modules get compiled in the .mod folder
 FFLAGS += -J .mod/

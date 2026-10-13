@@ -1,7 +1,7 @@
-function obj = iceflex(type, nu, rts, ejs, opts)
+function obj = iceflex(type, nu, rts, ejs)
 %KERNEL3D.ICEFLEX   Construct a flexural surface wave kernel in 3D.
 %
-%   KERNEL3D.ICEFLEX(type, nu, rts, ejs) or KERNEL3D.ICEFLEX(type, nu, rts, ejs, opts)
+%   KERNEL3D.ICEFLEX(type, nu, rts, ejs)
 %
 %   NU is the Poisson ratio; RTS and EJS are the dispersion roots and their
 %   partial fraction residues from SURFWAVE.FLEX.FIND_ROOTS_FLEX.
@@ -29,12 +29,12 @@ function obj = iceflex(type, nu, rts, ejs, opts)
 %   2*(Q(-2) - Q(0)) (two calls). So scaling and adding the types gives
 %   correct near weights.
 %
+%
 % See also SURFWAVE.FLEX.KERN, KERNEL3D.GRAVITY, KERNEL3D.CAPILLARY
 
 if ( nargin < 4 )
     error('KERNEL3D.ICEFLEX: need type, nu, rts and ejs.');
 end
-if ( nargin < 5 || isempty(opts) ), opts = struct(); end
 
 rts = rts(:);  ejs = ejs(:);
 

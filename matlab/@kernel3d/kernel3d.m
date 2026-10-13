@@ -30,8 +30,9 @@ classdef kernel3d
 %                                        'supported_plate_bcs', 'free_plate_bcs'
 %                                        (2D, surfer in z = 0)
 %      'gravity'   ('grav')              's', 'grad', 'free_plate_bcs', 'vol'
-%      'radcheb'                         (adaptive Chebyshev interpolant of a
-%                                         radial kernel, see KERNEL3D.RADCHEB)
+%      'radpp'                           (kernels from a piecewise polynomial
+%                                         fit of a radial Green's function,
+%                                         see KERNEL3D.RADPP)
 %      'zero'/'zeros'                    (no type needed)
 %
 %   Some kernels accept extra parameters as trailing arguments, e.g.
@@ -120,8 +121,8 @@ classdef kernel3d
                         obj = kernel3d.flex2d(varargin{:});
                     case {'gravity', 'grav'}
                         obj = kernel3d.gravity(varargin{:});
-                    case {'radcheb'}
-                        obj = kernel3d.radcheb(varargin{:});
+                    case {'radpp'}
+                        obj = kernel3d.radpp(varargin{:});
                     case {'z', 'zero', 'zeros'}
                         if ~isempty(varargin)
                             obj = kernel3d.zeros(varargin{1});
@@ -173,7 +174,7 @@ classdef kernel3d
         obj    = helm2d(varargin);
         obj    = flex2d(varargin);
         obj    = gravity(varargin);
-        obj    = radcheb(varargin);
+        obj    = radpp(green, rmax, type, varargin);
         obj    = zeros(opdims);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
