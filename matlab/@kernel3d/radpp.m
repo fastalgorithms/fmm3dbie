@@ -11,12 +11,8 @@ function obj = radpp(green, rmax, type, varargin)
 %   In the last form OPTS holds the fit options of RADPP_FIT and may also
 %   set rmin, zk and kernel_order (the old KERNEL3D.RADCHEB interface).
 %
-%   GREEN is a function handle with the usual calling sequence
-%
-%      [val, grad, hess, third] = green(src, targ)
-%
-%   for src (dim,ns) and targ (dim,nt). G must be radial; it is only
-%   sampled on the x axis. Sums can be formed with RADPP_SUM.
+%   GREEN is a radial function handle in the helm3d.green format, or the
+%   equivalent 2D format. Sums can be formed with RADPP_SUM.
 %
 %   GREEN may also be a scalar kernel3d object. Its zk and kernel_order are
 %   then used unless given.
@@ -30,7 +26,7 @@ function obj = radpp(green, rmax, type, varargin)
 %
 %   for j = 1...opdims(1), with weights w, v that depend only on the target
 %   (v only for kernels with source derivatives) and the derivative tensor
-%   components D_c G (see RADPP_TENSORS), for 'dim' = 3
+%   components D_c G (see RADPP_ROTATE), for 'dim' = 3
 %
 %      [G | G_x G_y G_z | H_xx H_xy H_xz H_yy H_yz H_zz |
 %       T_xxx T_xxy T_xxz T_xyy T_xyz T_xzz T_yyy T_yyz T_yzz T_zzz]
@@ -42,8 +38,8 @@ function obj = radpp(green, rmax, type, varargin)
 %   Each row is computed by its own call to the GGQ near quadrature, with
 %   the contraction inside the integrand.
 %
-%   Built-in types (names as in helm3d; targinfo fields n, d, d2 as in
-%   chunkie; srcinfo field n), with c = 'coefs' = [alpha beta]:
+%   Built-in types (names as in helm3d; targinfo fields n and, for the
+%   plate kernels, d, d2; srcinfo field n), with c = 'coefs' = [alpha beta]:
 %      's'            ('single', 'slp')            G
 %      'd'            ('double', 'dlp')            G_{n_y}
 %      'c'            ('comb', 'combined')         alpha G + beta G_{n_y}
@@ -58,6 +54,9 @@ function obj = radpp(green, rmax, type, varargin)
 %                                                  [c11 D, c12 S; c21 D', c22 S'],
 %                                                  coefs 2x2 (default ones)
 %      'trans_rep'    ('transmission_rep')         [c1 D, c2 S]
+%   dim = 3 only, on Cartesian vector densities, opdims [3 3]:
+%      'mfie'         ('nxcurls', 'n_cross_curl_s') n_x x curl S[J]
+%      'curls'                                     curl S[J] = grad G x J
 %      'clamped_bc'   ('clamped', 'clamped_plate_bcs', 's2trans')
 %                                                  [G; G_{n_x}]
 %      'd2trans'                                   [G_{n_y}; G_{n_x n_y}]
@@ -65,8 +64,7 @@ function obj = radpp(green, rmax, type, varargin)
 %   dim = 2 only:
 %      'supported_bc' ('supported', 'supported_plate_bcs')
 %                                                  [G; G_{n_x n_x} + nu G_{t_x t_x}]
-%      'free_bc'      ('free', 'free_plate_bcs')   [moment; shear], as in
-%                                                  chnk.flex2d.kern 'free_plate_bcs'
+%      'free_bc'      ('free', 'free_plate_bcs')   [moment; shear]
 %
 %   Custom kernels: pass a function handle WFUN in place of TYPE,
 %
@@ -98,19 +96,26 @@ function obj = radpp(green, rmax, type, varargin)
 %                       (default true)
 %
 %   Example:
-%      green = @(s,t) chnk.flex2d.hkdiffgreen(zk, s, t);
-%      K = kernel3d.radpp(green, 10, 'free_bc', 'nu', 0.3, 'dim', 2);
+%      green = @(s,t) helm3d.green(zk, s, t);
+%      K = kernel3d.radpp(green, 10, 'cp', 'coefs', [1 1i]);
 %
-% See also RADPP_FIT, RADPP_TENSORS
+% See also RADPP_FIT, RADPP_ROTATE
 
-if nargin < 2 || isempty(rmax)
+% green mode (from KERNEL3D.RADGREEN): green is a struct with the exact
+% profiles, eval is exact and the fit is built in getquad
+gmode = isstruct(green) && isfield(green, 'profiles');
+
+if nargin < 2 || (isempty(rmax) && ~gmode)
     error('KERNEL3D.RADPP: need green and rmax.');
 end
 if nargin < 3 || isempty(type), type = 's'; end
 
+% a prebuilt kernel spec (from kernel arithmetic on green kernels)
+isspec = isstruct(type) && isfield(type, 'wfun');
+
 % radcheb-style call: radpp(green, rmax, opts) with an options struct
 % (fit options plus rmin, zk, kernel_order) and type 's'
-if isstruct(type)
+if isstruct(type) && ~isspec
     fo = type;
     type = 's';
     if isfield(fo, 'rmin') && numel(rmax) == 1, rmax = [fo.rmin rmax]; end
@@ -136,13 +141,16 @@ end
 if isempty(o.zk), o.zk = 0; end
 
 rmin = 1e-12;
+if gmode, rmin = []; end
 if numel(rmax) == 2
     rmin = rmax(1);
     rmax = rmax(2);
 end
 
 % the kernel: weights, derivative order, shape
-if isa(type, 'function_handle')
+if isspec
+    spec = type;
+elseif isa(type, 'function_handle')
     if isempty(o.nderiv)
         error('KERNEL3D.RADPP: custom kernels need ''nderiv''.');
     end
@@ -161,18 +169,44 @@ end
 if valueonly && nfit > 0
     error('KERNEL3D.RADPP: a kernel3d green only gives values, no derivatives.');
 end
-if ~any(o.dim == [2 3])
+if ~any(o.dim == [2 3 13])          % 13: tensor green, from radgreen
     error('KERNEL3D.RADPP: dim must be 2 or 3.');
+end
+if o.dim == 13 && isrc
+    error('KERNEL3D.RADPP: no source derivatives with a tensor green.');
+end
+if gmode
+    green.check(nfit, spec.name);
 end
 if o.dim == 3
     ncomp = [1 4 10 20];
+elseif o.dim == 13
+    ncomp = [6 24];
 else
     ncomp = [1 3 6 10];
 end
 ncomp  = ncomp(nderiv+1);
 
 ipv = o.ipv(:).';
-if isempty(ipv)
+if isempty(ipv) && gmode
+    % 3D: from the behaviour of each entry on a curved test surface.
+    % 2D (in-plane kernels): from the singularity of the green and the
+    % derivatives of each entry
+    p0 = struct('nderiv', nderiv, 'isrc', isrc, 'dim', o.dim, ...
+                'gmode', true, 'profun', @(r) green.profiles(r, nfit), ...
+                'wfun', spec.wfun, 'vfun', spec.vfun, 'opdims', spec.opdims, ...
+                'ent', spec.ent, 'ncomp', ncomp);
+    if o.dim == 3 || o.dim == 13
+        ipv = surface_ipv(p0, spec.targ_fields);
+    else
+        try
+            nd = entry_derivs(spec, nderiv, ncomp, o.dim);
+        catch
+            nd = repmat(nfit, 1, nrow);      % weights could not be probed
+        end
+        ipv = min(max(green.sing + nd - 1, 0), 2);
+    end
+elseif isempty(ipv)
     ipv = spec.ipv;
     if o.dim == 2 && ~isempty(spec.ipv2), ipv = spec.ipv2; end
 end
@@ -182,24 +216,40 @@ if numel(ipv) ~= nrow
 end
 
 kernel_order = o.kernel_order;
-if isempty(kernel_order), kernel_order = min(nfit, 2) - 1; end
+if gmode
+    if ~isempty(kernel_order)
+        error('KERNEL3D.RADGREEN: kernel_order follows ipv; set ''ipv'' instead.');
+    end
+    kernel_order = max(ipv) - 1;
+elseif isempty(kernel_order)
+    kernel_order = min(nfit, 2) - 1;
+    if o.dim == 13, kernel_order = nfit + 1; end  % dyadic: G ~ 1/r^3
+end
 
-% fit the on-axis profiles
+% fit the on-axis profiles (in green mode, at getquad time)
 fitopts = o.opts;
 if ~isfield(fitopts, 'eps'), fitopts.eps = 1e-13; end
-[ipars, dpars, info] = radpp_fit(@(r) profiles(green, r, nfit), ...
-                                 rmin, rmax, fitopts);
-ipars = [ipars; nderiv; ncomp; o.dim; isrc];
+ipost = [nderiv; ncomp; o.dim; isrc];
+if gmode
+    profun = @(r) green.profiles(r, nfit);
+    ipars = [];  dpars = [];
+    info = struct('breaks', [], 'coefs', profun([0.5; 1; 2]), 'err', []);
+else
+    profun = @(r) profiles(green, r, nfit);
+    [ipars, dpars, info] = radpp_fit(profun, rmin, rmax, fitopts);
+    ipars = [ipars; ipost];
+end
 
 obj              = kernel3d();
 obj.name         = 'radpp';
+if gmode, obj.name = 'radgreen'; end
 obj.type         = spec.name;
 obj.opdims       = spec.opdims;
 obj.zk           = o.zk;
 obj.kernel_order = kernel_order;
 obj.ifcomplex    = ~isreal(info.coefs) || ~isreal(o.nu) || ...
                    ~isreal(o.coefs) || ...
-                   (isa(type, 'function_handle') && o.ifcomplex);
+                   ((isa(type, 'function_handle') || isspec) && o.ifcomplex);
 obj.targ_fields  = spec.targ_fields;
 obj.src_fields   = {};
 if isrc, obj.src_fields = {'n'}; end
@@ -210,7 +260,9 @@ obj.params = struct('green', green, 'rmin', rmin, 'rmax', rmax, ...
     'wfun', spec.wfun, 'vfun', spec.vfun, 'opdims', spec.opdims, ...
     'ent', spec.ent, 'ipars', ipars, 'dpars', dpars, ...
     'breaks', info.breaks, 'coefs', info.coefs, 'err', info.err, ...
-    'fitopts', fitopts);
+    'fitopts', fitopts, 'spec', spec, 'gmode', gmode, ...
+    'profun', [], 'ipost', ipost, 'kernel_order', kernel_order);
+if gmode, obj.params.profun = profun; end
 
 obj.params.targs = @(t) radpp_targs(t, spec.wfun, spec.vfun);  % for radpp_kern
 
@@ -224,8 +276,13 @@ ri = kernel3d.rsc_interleave_full(spec.opdims(1), spec.opdims(2), nrow, ...
                'col_id', num2cell(spec.ent(:,2).'), ...
                'coef',   num2cell(ones(1,nrow))));
 ifcomplex = obj.ifcomplex;
-obj.getquad = @(S, eps, varargin) radpp_getquad(S, eps, p, ifcomplex, ...
-                                                ri, varargin{:});
+if gmode
+    obj.getquad = @(S, eps, varargin) radgreen_getquad(S, eps, p, ...
+                                          ifcomplex, ri, varargin{:});
+else
+    obj.getquad = @(S, eps, varargin) radpp_getquad(S, eps, p, ifcomplex, ...
+                                                    ri, varargin{:});
+end
 obj.get_overs_orders = @(S, t, eps) kernel3d.kernel3d_getnear_overs(S, ...
                            t, eps, obj.zk, obj.kernel_order);
 
@@ -235,6 +292,11 @@ end
 %%% built-in kernels
 
 function spec = builtin_kernel(type, nu, dim, coefs)
+
+if dim == 13
+    spec = dyad_kernel(type);
+    return
+end
 
 needs_nu = {'supported_bc', 'supported', 'supported_plate_bcs', ...
             'free_bc', 'free', 'free_plate_bcs'};
@@ -300,6 +362,12 @@ switch lower(type)
         spec = kspec('c2trans', 1, 2, {'n'}, ...
                      @(t) al*cat(3, [one(t), zeros(size(t.r,2), dim)], dn(t)), ...
                      @(t) be*cat(3, [one(t), zeros(size(t.r,2), dim)], dn(t)), [ipvc ipvcp]);
+    case {'mfie', 'nxcurls', 'n_cross_curl_s'}
+        if dim ~= 3, error('KERNEL3D.RADPP: ''mfie'' needs dim = 3.'); end
+        spec = kspec('mfie', 1, [3 3], {'n'}, @w_mfie, [], 1);
+    case {'curls'}
+        if dim ~= 3, error('KERNEL3D.RADPP: ''curls'' needs dim = 3.'); end
+        spec = kspec('curls', 1, [3 3], {}, @w_curls, [], 1);
     case {'supported_bc', 'supported', 'supported_plate_bcs'}
         spec = kspec('supported_bc', 2, 2, {'n', 'd'}, ...
                      @(t) w_supported(t, nu), [], 0);
@@ -339,6 +407,182 @@ end
 end
 
 
+function ipv = surface_ipv(p, targ_fields)
+% ipv per block entry from the kernel on the paraboloid z = (x^2+3y^2)/2,
+% target at the origin: |K| ~ rho^-q in the geodesic distance rho (log
+% or bounded: q = 0) gives ipv 0 for q = 0, for q = 1 0 if isotropic and
+% 1 if not, 1 for q = 2 and 2 for q >= 3. Target fields other than n
+% and mean_curv are filled with random values.
+a = 1;  b = 3;
+% a generic orientation, so fixed-axis weights (grad, hess) are not
+% aligned with the normal
+c1 = cos(0.7);  s1 = sin(0.7);  c2 = cos(1.1);  s2 = sin(1.1);
+Q = [1 0 0; 0 c1 -s1; 0 s1 c1]*[c2 0 s2; 0 1 0; -s2 0 c2];
+targ = struct('r', [0;0;0], 'n', Q*[0;0;1], 'mean_curv', -(a+b)/2);
+fs = setdiff(targ_fields, fieldnames(targ));
+for i = 1:numel(fs)
+    targ.(fs{i}) = randn(3, 1);
+end
+rho = 10.^-(2:0.5:5);  th = 0.1 + (0:11)*pi/6;
+[T, R] = ndgrid(th, rho);
+x = R(:).'.*cos(T(:).');  y = R(:).'.*sin(T(:).');
+src.r = Q*[x; y; (a*x.^2 + b*y.^2)/2];
+src.n = [-a*x; -b*y; ones(size(x))];  src.n = Q*(src.n./vecnorm(src.n));
+
+try
+    A = radpp_eval_kern(src, targ, p);          % (m, n*ns)
+catch ME
+    error(['KERNEL3D.RADGREEN: could not evaluate the kernel on the test ' ...
+           'surface to choose ipv (%s); pass ''ipv''.'], ME.message);
+end
+m = p.opdims(1);  n = p.opdims(2);
+ne = size(p.ent, 1);
+ipv = zeros(1, ne);
+% largest entry at each distance: an entry below 1e-10 of it everywhere
+% is zero up to rounding (e.g. the curl of a gradient)
+big = max(reshape(abs(A), m*n*numel(th), numel(rho)), [], 1);
+for e = 1:ne
+    v = abs(A(p.ent(e,1), p.ent(e,2):n:end));
+    v = reshape(v, numel(th), numel(rho));
+    mx = max(v, [], 1);
+    if all(mx <= 1e-10*big), continue; end
+    sl = diff(log(mx + realmin))./diff(log(rho));
+    q = max(0, ceil(-median(sl(end-2:end)) - 0.25));
+    if q == 1
+        w = v(:,end)*rho(end);
+        ipv(e) = (max(w) - min(w)) > 0.05*max(w);
+    else
+        ipv(e) = min(max(q - 1, 0), 2);
+    end
+end
+end
+
+
+function nd = entry_derivs(spec, nderiv, ncomp, dim)
+% derivatives used by each block entry: the highest order of its nonzero
+% target weights, or of its source weights plus one
+t.r = randn(3, 5);  t.n = randn(3, 5);  t.n = t.n./vecnorm(t.n);
+t.d = randn(3, 5);  t.d2 = randn(3, 5);
+fs = setdiff(spec.targ_fields, fieldnames(t));     % e.g. mean_curv
+for i = 1:numel(fs)
+    t.(fs{i}) = randn(5, 1);
+end
+nh = dim*(dim+1)/2;  n3 = nh*(dim+2)/3;
+ord = [0, ones(1,dim), 2*ones(1,nh), 3*ones(1,n3)];
+ord = ord(1:ncomp);
+ne = size(spec.ent, 1);
+nd = zeros(1, ne);
+W = spec.wfun(t);
+V = [];
+if ~isempty(spec.vfun), V = spec.vfun(t); end
+for e = 1:ne
+    nzw = any(W(:,:,e) ~= 0, 1);
+    if any(nzw), nd(e) = max(ord(nzw)); end
+    if ~isempty(V)
+        nzv = any(V(:,:,e) ~= 0, 1);
+        if any(nzv), nd(e) = max(nd(e), max(ord(nzv)) + 1); end
+    end
+end
+end
+
+
+function spec = dyad_kernel(type)
+% kernels of an isotropic tensor green G_ij on Cartesian densities,
+% opdims [3 3]; components G_ij then d_k G_ij (see RADPP_ROTATE)
+switch lower(type)
+    case {'s', 'single'}
+        spec = kspec('s', 0, [3 3], {}, @(t) w_dyad(t, 's'), [], 0);
+    case {'efie', 'nxs'}
+        spec = kspec('efie', 0, [3 3], {'n'}, @(t) w_dyad(t, 'efie'), [], 0);
+    case {'curl', 'curls'}
+        spec = kspec('curl', 1, [3 3], {}, @(t) w_dyad(t, 'curl'), [], 0);
+    case {'mfie', 'nxcurls', 'n_cross_curl_s'}
+        spec = kspec('mfie', 1, [3 3], {'n'}, @(t) w_dyad(t, 'mfie'), [], 0);
+    otherwise
+        error('KERNEL3D.RADPP: unknown type ''%s'' for a tensor green.', type);
+end
+end
+
+
+function W = w_dyad(t, type)
+% (G J)_i = G_ij J_j, (n x G J)_i = eps_iab n_a G_bj,
+% (curl G J)_i = eps_iab d_a G_bj, (n x curl G J)_i = eps_icd n_c eps_dab d_a G_bj
+sidx = [1 2 3; 2 4 5; 3 5 6];
+gidx = @(b, j, a) 6 + 3*(sidx(b,j) - 1) + a;
+nt = size(t.r, 2);
+nd = 0;  if any(strcmp(type, {'curl', 'mfie'})), nd = 1; end
+W = zeros(nt, 6 + 18*nd, 9);
+if isfield(t, 'n') || isprop(t, 'n'), n = t.n(1:3,:).'; end
+for j = 1:3
+    for i = 1:3
+        e = i + 3*(j-1);
+        switch type
+            case 's'
+                W(:, sidx(i,j), e) = 1;
+            case 'efie'
+                for a = 1:3, for b = 1:3
+                    if levi(i,a,b) ~= 0
+                        W(:, sidx(b,j), e) = W(:, sidx(b,j), e) + levi(i,a,b)*n(:,a);
+                    end
+                end, end
+            case 'curl'
+                for a = 1:3, for b = 1:3
+                    if levi(i,a,b) ~= 0
+                        W(:, gidx(b,j,a), e) = W(:, gidx(b,j,a), e) + levi(i,a,b);
+                    end
+                end, end
+            case 'mfie'
+                for c = 1:3, for d = 1:3
+                    if levi(i,c,d) == 0, continue; end
+                    for a = 1:3, for b = 1:3
+                        if levi(d,a,b) ~= 0
+                            W(:, gidx(b,j,a), e) = W(:, gidx(b,j,a), e) ...
+                                + levi(i,c,d)*levi(d,a,b)*n(:,c);
+                        end
+                    end, end
+                end, end
+        end
+    end
+end
+end
+
+
+function W = w_mfie(t)
+% (n x (grad G x J))_i = sum_c (n_c G_i - d_ic n.grad G) J_c, entries
+% (i,c) in column-major order, weights on [G | G_x G_y G_z]
+n = t.n(1:3,:).';
+nt = size(n, 1);
+W = zeros(nt, 4, 9);
+for c = 1:3
+    for i = 1:3
+        e = i + 3*(c-1);
+        W(:, 1+i, e) = n(:, c);
+        if i == c, W(:, 2:4, e) = W(:, 2:4, e) - n; end
+    end
+end
+end
+
+
+function W = w_curls(t)
+% (grad G x J)_i = sum_c eps_ibc G_b J_c, entries (i,c) column-major
+nt = size(t.r, 2);
+W = zeros(nt, 4, 9);
+for c = 1:3
+    for i = 1:3
+        b = 6 - i - c;
+        if i ~= c && b >= 1 && b <= 3
+            W(:, 1+b, i + 3*(c-1)) = levi(i, b, c);
+        end
+    end
+end
+end
+
+
+function s = levi(i, j, k)
+s = (j - i)*(k - i)*(k - j)/2;
+end
+
+
 function W = w_grad(t, dim)
 % grad_x: row j has weight 1 on G_{x_j}, (nt, 1+dim, dim)
 nt = size(t.r, 2);
@@ -367,7 +611,7 @@ end
 
 
 function W = w_free(t, nu)
-% chnk.flex2d.kern 'free_plate_bcs'
+% free plate boundary conditions
 %   moment = G_{nn} + nu G_{tt}
 %   shear  = G_{nnn} + (2-nu) G_{ntt} + (1-nu) kappa (G_{tt} - G_{nn})
 [n, tau, kappa] = frame(t);
@@ -381,7 +625,7 @@ end
 
 function [n, tau, kappa] = frame(t)
 % unit normal, unit tangent (nt,2) and signed curvature (nt,1) at the
-% targets, from chunkie fields n, d, d2
+% targets, from the target fields n, d, d2
 n = t.n(1:2,:).';
 tau = [];  kappa = [];
 if isfield(t, 'd') || isprop(t, 'd')
@@ -434,16 +678,34 @@ end
 
 
 function f = profiles(green, r, nderiv)
-% on-axis profiles [G | G_x | G_xx G_yy | G_xxx G_xyy], (numel(r), *)
+% on-axis profiles [G | G_x | G_xx G_yy | G_xxx G_xyy], (numel(r), *).
+% green is called with points (3,n), or (2,n) if that fails; hess and
+% third may be full, (nt,ns,dim,dim) and (nt,ns,dim,dim,dim) for dim 2
+% or 3, or packed, (nt,ns,3) = xx xy yy and (nt,ns,4) = xxx xxy xyy yyy
 r = r(:);
-src  = [0; 0];
-targ = [r.'; zeros(1, numel(r))];
+n = numel(r);
 out = cell(1, nderiv+1);
-[out{:}] = green(src, targ);
+try
+    [out{:}] = green(zeros(3,1), [r.'; zeros(2, n)]);
+catch
+    [out{:}] = green(zeros(2,1), [r.'; zeros(1, n)]);
+end
 f = out{1}(:);
 if nderiv >= 1, f = [f, out{2}(:,1,1)]; end
-if nderiv >= 2, f = [f, out{3}(:,1,1), out{3}(:,1,3)]; end
-if nderiv >= 3, f = [f, out{4}(:,1,1), out{4}(:,1,3)]; end
+if nderiv >= 2
+    if size(out{3}, 4) > 1                        % full (nt,ns,dim,dim)
+        f = [f, out{3}(:,1,1,1), out{3}(:,1,2,2)];
+    else                                          % packed (nt,ns,3)
+        f = [f, out{3}(:,1,1), out{3}(:,1,3)];
+    end
+end
+if nderiv >= 3
+    if size(out{4}, 5) > 1                        % full (nt,ns,dim,dim,dim)
+        f = [f, out{4}(:,1,1,1,1), out{4}(:,1,1,2,2)];
+    else                                          % packed (nt,ns,4)
+        f = [f, out{4}(:,1,1), out{4}(:,1,3)];
+    end
+end
 end
 
 
@@ -462,7 +724,14 @@ end
 dz = dz + zeros(nt, ns);
 
 nfit = p.nderiv + p.isrc;
-comps = radpp_tensors(dx, dy, dz, p.breaks, p.coefs, nfit, p.dim);
+if p.gmode
+    % exact profiles from the green
+    r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
+    comps = radpp_rotate(dx, dy, dz, p.profun(r), nfit, p.dim);
+else
+    r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
+    comps = radpp_rotate(dx, dy, dz, radpp_eval(r, p.breaks, p.coefs), nfit, p.dim);
+end
 comps = reshape(comps, nt, ns, []);
 
 W = p.wfun(targinfo);
@@ -501,7 +770,7 @@ end
 
 function up = radpp_up(dim)
 % up(c,i): index of D_c G differentiated once more along x_i, for the
-% components of order 0...2 in the order of RADPP_TENSORS
+% components of order 0...2 in the order of RADPP_ROTATE
 idx = {zeros(1,0)};
 for ord = 1:3
     for c = 1:numel(idx)
@@ -562,6 +831,53 @@ end
 
 spmat = conv_rsc_to_spmat(S, rsc.row_ptr, rsc.col_ind, wnear, ri);
 
+end
+
+
+function spmat = radgreen_getquad(S, eps, p, ifcomplex, ri, targinfo, opts)
+% fit the profiles over the distances this near quadrature needs, then
+% use the radpp quadrature
+
+if nargin < 6 || isempty(targinfo), targinfo = S;        end
+if nargin < 7 || isempty(opts),     opts     = struct(); end
+if ~isfield(opts, 'rsc') || isempty(opts.rsc)
+    opts.rsc = getnear(S, targinfo);
+end
+
+[rmin, rmax] = radgreen_range(S, targinfo, opts.rsc);
+[ipars, dpars] = radpp_fit(p.profun, rmin, rmax, p.fitopts);
+p.ipars = [ipars; p.ipost];
+p.dpars = dpars;
+
+spmat = radpp_getquad(S, eps, p, ifcomplex, ri, targinfo, opts);
+end
+
+
+function [rmin, rmax] = radgreen_range(S, targinfo, rsc)
+% distances from each target to its near patches: rmax bounds them with
+% the patch radii, rmin is a small fraction of the smallest patch
+[~, ~, ~, ixyzs] = extract_arrays(S);
+np  = numel(ixyzs) - 1;
+pid = reshape(repelem((1:np).', diff(double(ixyzs(:)))), [], 1);
+c = zeros(3, np);
+for k = 1:3
+    c(k,:) = accumarray(pid, S.r(k,:).', [np 1], @mean).';
+end
+R = accumarray(pid, vecnorm(S.r - c(:,pid)).', [np 1], @max).';
+
+tr = zeros(3, size(targinfo.r, 2));
+tr(1:size(targinfo.r,1), :) = targinfo.r;
+rp  = double(rsc.row_ptr(:));
+ci  = double(rsc.col_ind(:));
+tid = reshape(repelem((1:numel(rp)-1).', diff(rp)), [], 1);
+
+rmin = 1e-10*min(R);
+rmax = 1;
+if ~isempty(ci)
+    d = vecnorm(tr(:,tid) - c(:,ci)) + reshape(R(ci), 1, []);
+    rmax = 1.1*max(d);
+end
+rmax = max(rmax, 10*rmin);
 end
 
 

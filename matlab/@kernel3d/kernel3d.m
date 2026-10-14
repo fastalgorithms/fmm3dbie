@@ -19,6 +19,8 @@ classdef kernel3d
 %      'maxwell'   ('em3d', 'em')        'nrccie-bc', 'nrccie-eval'
 %      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
 %      'beltrami'  ('belpde', 'bel')     'klb', 'rlb', 'khb', 'rhb'
+%      kernel3d(@green, type, ...)       (radial Green's function with exact
+%                                         eval, see KERNEL3D.RADGREEN)
 %      'radpp'                           (kernels from a piecewise polynomial
 %                                         fit of a radial Green's function,
 %                                         see KERNEL3D.RADPP)
@@ -126,6 +128,9 @@ classdef kernel3d
                     otherwise
                         error('KERNEL3D: kernel ''%s'' not found.', kern);
                 end
+            elseif ( isa(kern, 'function_handle') && ~isempty(varargin) )
+                % radial Green's function and a type, see KERNEL3D.RADGREEN
+                obj = kernel3d.radgreen(kern, varargin{:});
             elseif ( isa(kern, 'function_handle') )
                 obj.eval = kern;
                 try
@@ -163,6 +168,8 @@ classdef kernel3d
         obj    = stok3d(varargin);
         obj    = belpde(varargin);
         obj    = radpp(green, rmax, type, varargin);
+        obj    = radgreen(green, type, varargin);
+        [err, Q, Qs] = check_quad(K, eps, opts);
         obj    = zeros(opdims);
         obj    = ones(m, n);
         obj    = eye(dvals);

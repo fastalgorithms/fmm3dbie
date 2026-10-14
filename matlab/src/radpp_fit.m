@@ -17,7 +17,7 @@ function [ipars,dpars,info] = radpp_fit(f,rmin,rmax,opts)
 %
 %  info: nbin, nlev, err, breaks (nbin+1,1), coefs (nbin,norder,m)
 %
-%  See also RADPP_EVAL, RADPP_TENSORS, KERNEL3D.RADPP
+%  See also RADPP_EVAL, RADPP_ROTATE, KERNEL3D.RADPP
 
 if nargin < 4 || isempty(opts), opts = struct(); end
 

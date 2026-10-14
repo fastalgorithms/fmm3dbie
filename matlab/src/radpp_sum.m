@@ -1,6 +1,5 @@
 function g = radpp_sum(coefs, varargin)
-%RADPP_SUM linear combination of Green's functions in the chunkie calling
-%  sequence, for kernel3d.radpp.
+%RADPP_SUM linear combination of Green's functions, for kernel3d.radpp.
 %
 %  g = radpp_sum(coefs, g1, g2, ...)
 %
@@ -12,11 +11,10 @@ function g = radpp_sum(coefs, varargin)
 %  outputs as are requested are computed, so value-only Green's
 %  functions may be combined for kernels that need no derivatives.
 %
-%  Example:
-%     gs   = @(s,t) surfwave.flex.gsflex(rts, ejs, s, t);
-%     gphi = @(s,t) surfwave.flex.gphiflex(rts, ejs, s, t);
-%     K = kernel3d.radpp(radpp_sum([-gamma/4 1/2], gs, gphi), rmax, ...
-%                        'free_bc', 'nu', nu);
+%  Example: a two-wavenumber difference, fitted as one profile
+%     g0 = @(s,t) helm3d.green(1.1, s, t);
+%     g1 = @(s,t) helm3d.green(2.3, s, t);
+%     K = kernel3d.radpp(radpp_sum([1 -1], g0, g1), 4, 'dp');
 %
 %  See also KERNEL3D.RADPP
 

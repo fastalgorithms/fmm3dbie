@@ -4,6 +4,10 @@ function f = minus(f, g)
 % Currently only supported for subtracting two kernel3d class objects.
 
 if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
+    if kernel3d.radgreen('compatible', {f, g})
+        f = kernel3d.radgreen('sum', f, 1, g, -1);
+        return
+    end
     assert(all(f.opdims == g.opdims), ...
         'kernel3d dimensions must agree to subtract');
 

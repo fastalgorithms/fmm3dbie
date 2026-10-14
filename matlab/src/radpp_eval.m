@@ -5,7 +5,7 @@ function val = radpp_eval(r,breaks,coefs)
 %  (nbin,n,m) from the info output of RADPP_FIT. r is any array; val is
 %  (numel(r),m). Radii outside [breaks(1),breaks(end)] give NaN.
 %
-%  See also RADPP_FIT, RADPP_TENSORS
+%  See also RADPP_FIT, RADPP_ROTATE
 
 [~,n,m] = size(coefs);
 r = r(:);

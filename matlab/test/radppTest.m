@@ -10,6 +10,7 @@ test_fit_limits();
 test_tensors_2d();
 test_builtins_2d(@gauss, 1e-11);
 test_builtins_2d(@(s,t) helmgreen(1.1, s, t), 1e-10);
+test_full_2d_format();
 test_helm_sp_eval_2d();
 test_src_eval_2d();
 test_getquad_rows(2);
@@ -32,6 +33,24 @@ test_kernel3d_getquad_helm();
 test_radcheb_interface();
 test_aliases();
 test_bad_inputs();
+
+% kernel3d(@green, type): exact eval, radpp quadrature
+test_radgreen_checks();
+test_radgreen_ipv();
+test_radgreen_order();
+test_radgreen_eval();
+test_radgreen_arith();
+test_radgreen_getquad();
+test_radgreen_rlb_getquad();
+test_radgreen_mfie();
+test_radgreen_fmm();
+
+% beyond helmholtz on one surface: laplace, yukawa, two surfers, custom
+% source weights
+test_real_and_decaying();
+test_two_surfers();
+test_srcwfun();
+
 
 
 function test_fit_limits()
@@ -68,7 +87,7 @@ p = K.params;
 ns = 20;  nt = 30;
 s = randn(2, ns);  t = randn(2, nt);
 dx = t(1,:).' - s(1,:);  dy = t(2,:).' - s(2,:);
-C = radpp_tensors(dx, dy, 0*dx, p.breaks, p.coefs, 3, 2);
+C = tens(dx, dy, 0*dx, p, 3, 2);
 
 [v, g, h, th] = gauss(s, t);
 D = [v(:), reshape(g, [], 2), reshape(h, [], 3), reshape(th, [], 4)];
@@ -90,7 +109,7 @@ assert(p.ncomp == 20 && p.dim == 3, 'radpp: 3d default not used');
 
 n = 500;
 X = 1.5*randn(n, 3);
-C = radpp_tensors(X(:,1), X(:,2), X(:,3), p.breaks, p.coefs, 3);
+C = tens(X(:,1), X(:,2), X(:,3), p, 3);
 
 G = exp(-sum(X.^2, 2)/2);
 D = [G, -X.*G];
@@ -107,9 +126,8 @@ assert(err < 1e-11, 'radpp tensors 3d: %.2e', err);
 % the plane z = 0 agrees with the 2D tensors
 K2 = kernel3d.radpp(@gauss, [1e-6 6], @(t) ones(size(t.r,2), 10), ...
                     'nderiv', 3, 'dim', 2);
-C3 = radpp_tensors(X(:,1), X(:,2), 0*X(:,1), p.breaks, p.coefs, 3, 3);
-C2 = radpp_tensors(X(:,1), X(:,2), 0*X(:,1), K2.params.breaks, ...
-                   K2.params.coefs, 3, 2);
+C3 = tens(X(:,1), X(:,2), 0*X(:,1), p, 3, 3);
+C2 = tens(X(:,1), X(:,2), 0*X(:,1), K2.params, 3, 2);
 i2 = [1 2 3 5 6 8 11 12 14 17];      % x,y-only components of the 3D list
 err = max(abs(C3(:,i2) - C2), [], 'all');
 assert(err < 1e-11, 'radpp tensors 3d vs 2d: %.2e', err);
@@ -193,7 +211,7 @@ function test_getquad_lap()
 % 's' with the 3D Laplace Green's function matches lap3d on a sphere.
 
 eps = 1e-7;
-S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S = neighbours(geometries.sphere(1, 1, [0;0;0], 4, 1), 3);
 
 lap = @(s,t) 1./(4*pi*sqrt((t(1,:).' - s(1,:)).^2 + (t(2,:).' - s(2,:)).^2));
 K = kernel3d.radpp(lap, [1e-9 4], 's');
@@ -215,7 +233,7 @@ function test_getquad_rows(dim)
 % the adaptive integration refines on an absolute tolerance.)
 
 eps = 1e-7;
-S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S = neighbours(geometries.sphere(1, 1, [0;0;0], 4, 1), 3);
 targ.r = 1.5*randn(3, 40);
 targ.r = targ.r./vecnorm(targ.r)*1.05;
 targ.n = targ.r./vecnorm(targ.r);
@@ -264,6 +282,14 @@ err = norm(A - Ae, 'fro')/norm(Ae, 'fro');
 assert(isequal(size(A), [nt ns]), 'radpp eval: wrong size');
 assert(err < 1e-10, 'radpp kernel3d eval: %.2e', err);
 
+% a green in the helm3d.green format, full hess
+K3 = kernel3d.radpp(@(s,t) helm3d.green(zk, s, t), [1e-2 6], 'cp');
+src.n = randn(3, ns);  src.n = src.n./vecnorm(src.n);
+targ.n = randn(3, nt);  targ.n = targ.n./vecnorm(targ.n);
+B = kernel3d.helm3d('cp', zk, [1; 1]).eval(src, targ);
+err = norm(K3.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+assert(err < 1e-10, 'radpp helm3d.green format: %.2e', err);
+
 % laplace is real
 Kl = kernel3d.radpp(kernel3d.lap3d('s'), [1e-2 6]);
 assert(~Kl.ifcomplex, 'radpp: laplace kernel3d flagged complex');
@@ -277,7 +303,7 @@ function test_kernel3d_getquad_helm()
 
 zk = 1.0;
 eps = 1e-7;
-S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S = neighbours(geometries.sphere(1, 1, [0;0;0], 4, 1), 3);
 fk = kernel3d.helm3d('s', zk);
 K = kernel3d.radpp(fk, [1e-9 4], 's', 'opts', struct('eps', 1e-13));
 
@@ -432,7 +458,7 @@ function test_getquad_src_3d()
 
 zk = 1.1;  coefs = [0.7 -1.3];
 eps = 1e-7;
-S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S = neighbours(geometries.sphere(1, 1, [0;0;0], 4, 1), 3);
 helm = @(s,t) helmgreen(zk, s, t);
 
 types = {'d', 'c', 'dp', 'cp', 'c2trans'};
@@ -525,7 +551,7 @@ src.n  = randn(3, 30);  src.n  = src.n./vecnorm(src.n);
 targ.r = randn(3, 35);  targ.r = targ.r./vecnorm(targ.r)*1.7;
 targ.n = randn(3, 35);  targ.n = targ.n./vecnorm(targ.n);
 
-S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S = neighbours(geometries.sphere(1, 1, [0;0;0], 4, 1), 3);
 cases = {{'trans_sys', C}, {'trans_rep', c}};
 for k = 1:numel(cases)
     [type, cf] = cases{k}{:};
@@ -542,6 +568,419 @@ for k = 1:numel(cases)
     assert(err < 1e-6, 'radpp getquad %s: %.2e', type, err);
 end
 
+end
+
+
+function test_radgreen_checks()
+% Declare time errors: too few derivatives, not radial, wrong derivative.
+
+zk = 1.1;
+g = @(s,t) helm3d.green(zk, s, t);
+bad = {@() kernel3d(@(s,t) helm3d.green(zk,s,t) + 0, 'sp'), ...   % 1 output
+       @() kernel3d(@(s,t) notradial(s, t), 's'), ...
+       @() kernel3d(@(s,t) wronghess(zk, s, t), 'dp')};
+for k = 1:numel(bad)
+    caught = false;
+    try
+        bad{k}();
+    catch
+        caught = true;
+    end
+    assert(caught, 'radgreen: bad green %d not rejected', k);
+end
+
+% kernel_order = max(ipv)-1
+assert(kernel3d(g, 's').kernel_order == -1, 'radgreen: kernel_order s');
+assert(kernel3d(g, 'cp').kernel_order == 1, 'radgreen: kernel_order cp');
+assert(kernel3d(g, 'cp', 'ipv', 0).kernel_order == -1, ...
+       'radgreen: kernel_order from ipv');
+
+end
+
+
+function test_radgreen_ipv()
+% ipv from the detected singularity: helmholtz gives the helm3d choices,
+% log r is weakly singular, overrides win.
+
+zk = 1.1;
+g = @(s,t) helm3d.green(zk, s, t);
+cases = {'s', 0; 'sp', 1; 'd', 1; 'c', 1; 'dp', 2; 'cp', 2; ...
+         'clamped_bc', [0 1]; 'trans_sys', [1 2 0 1]; 'hess', 2};
+for k = 1:size(cases, 1)
+    K = kernel3d(g, cases{k,1});
+    assert(K.params.green.sing == 1, 'radgreen: helm singularity');
+    assert(isequal(K.params.ipv, repmat(cases{k,2}, 1, ...
+           numel(K.params.ipv)/numel(cases{k,2}))), ...
+           'radgreen ipv %s: %s', cases{k,1}, mat2str(K.params.ipv));
+end
+
+% log r: weakly singular
+assert(kernel3d(@logg, 's').params.green.sing == 0, 'radgreen: log sing');
+assert(kernel3d(@logg, 's').params.ipv == 0, 'radgreen: log s');
+assert(kernel3d(@logg, 'sp').params.ipv == 0, 'radgreen: log sp');
+assert(kernel3d(@logg, 'dp').params.ipv == 1, 'radgreen: log dp');
+assert(kernel3d(@logg, 'dp', 'dim', 2).params.ipv == 1, 'radgreen: log dp 2d');
+
+% 1/r^2, smooth, and a two-wavenumber difference (bounded at 0)
+inv2 = @(s,t) 1./((t(1,:).'-s(1,:)).^2 + (t(2,:).'-s(2,:)).^2 + ...
+                  (t(3,:).'-s(3,:)).^2);
+assert(kernel3d(inv2, 's').params.ipv == 1, 'radgreen: 1/r^2 s');
+assert(kernel3d(@gaussg, 'dp').params.ipv == 0, 'radgreen: smooth dp');
+assert(kernel3d(@gaussg, 's').params.green.sing == 0, 'radgreen: smooth');
+gd = @(s,t) helm3d.green(1.1, s, t) - helm3d.green(2.3, s, t);
+assert(kernel3d(gd, 's').params.green.sing == 0, 'radgreen: diff sing');
+
+% overrides
+assert(kernel3d(g, 's', 'singularity', 2, 'dim', 2).params.ipv == 1, ...
+       'radgreen: singularity override');
+assert(kernel3d(@logg, 'dp', 'singularity', 'log', 'dim', 2).params.ipv == 1, ...
+       'radgreen: log override');
+assert(kernel3d(g, 'sp', 'ipv', 0).params.ipv == 0, 'radgreen: ipv override');
+
+end
+
+
+function test_radgreen_order()
+% Singularity detection and ipv at build time for differences of
+% helmholtz kernels (bounded at 0) and the Laplace- and Helmholtz-
+% Beltrami kernels (log), with eval checked against helm3d and belpde.
+
+k0 = 1.1;  k1 = 2.3;
+src.r  = randn(3, 30);  src.n  = randn(3, 30);  src.n  = src.n./vecnorm(src.n);
+targ.r = randn(3, 20) + [3;0;0];
+targ.n = randn(3, 20);  targ.n = targ.n./vecnorm(targ.n);
+targ.mean_curv = randn(20, 1);
+
+% differences: G_k0 - G_k1 is bounded, so one order weaker than helm3d
+gd = @(s,t) diffg(k0, k1, s, t);
+cases = {'s', 0; 'sp', 0; 'd', 0; 'dp', 0};    % dp_diff ~ 1/r, isotropic
+for k = 1:size(cases, 1)
+    type = cases{k,1};
+    K = kernel3d(gd, type);
+    assert(K.params.green.sing == 0, 'radgreen: %s_diff singularity', type);
+    assert(K.params.ipv == cases{k,2}, 'radgreen ipv %s_diff: %d', type, ...
+           K.params.ipv);
+    B = kernel3d.helm3d([type '_diff'], [k0; k1]).eval(src, targ);
+    err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+    assert(err < 1e-12, 'radgreen %s_diff eval: %.2e', type, err);
+end
+
+% klb and khb: log singular, weakly singular for 's'
+kb = 1.3;
+klb = @(s,t) belpde.kern(0, struct('r', s), struct('r', t), 'klb');
+khb = @(s,t) belpde.kern(kb^2, struct('r', s), struct('r', t), 'khb');
+for c = {{klb, kernel3d.belpde('klb')}, {khb, kernel3d.belpde('khb', kb)}}
+    [g, Kb] = c{1}{:};
+    K = kernel3d(g, 's');
+    assert(K.params.green.sing == 0 && K.params.ipv == 0, ...
+           'radgreen: %s not weakly singular', Kb.type);
+    B = Kb.eval(src, targ);
+    err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+    assert(err < 1e-13, 'radgreen %s eval: %.2e', Kb.type, err);
+end
+
+% rlb = (Laplacian - d_nn - 2 H d_n) klb, as custom weights on klb
+K = kernel3d(@klbg, @w_rlb, 'nderiv', 2, 'targ_fields', {'n', 'mean_curv'});
+assert(K.params.green.sing == 0 && K.params.ipv == 0, ...
+       'radgreen: rlb ipv %d', K.params.ipv);     % bounded on the surface
+assert(K.kernel_order == -1, 'radgreen: rlb kernel_order');
+B = kernel3d.belpde('rlb').eval(src, targ);
+err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+assert(err < 1e-12, 'radgreen rlb eval: %.2e', err);
+
+end
+
+
+function varargout = diffg(k0, k1, s, t)
+% G_k0 - G_k1 and its derivatives, helm3d.green format
+a = cell(1, nargout);  b = a;
+[a{:}] = helm3d.green(k0, s, t);
+[b{:}] = helm3d.green(k1, s, t);
+varargout = cellfun(@minus, a, b, 'UniformOutput', false);
+end
+
+
+function varargout = klbg(s, t)
+% klb = log(r^2)/(4 pi) with derivatives, helm3d.green format
+x = t(1,:).' - s(1,:);  y = t(2,:).' - s(2,:);  z = t(3,:).' - s(3,:);
+r2 = x.^2 + y.^2 + z.^2;
+X = cat(3, x, y, z);
+varargout{1} = log(r2)/(4*pi);
+varargout{2} = X./r2/(2*pi);
+H = zeros([size(x) 3 3]);
+for i = 1:3, for j = 1:3
+    H(:,:,i,j) = ((i==j)./r2 - 2*X(:,:,i).*X(:,:,j)./r2.^2)/(2*pi);
+end, end
+varargout{3} = H;
+end
+
+
+function W = w_rlb(t)
+% weights of (Laplacian - d_nn - 2 H d_n) on [G | grad | xx xy xz yy yz zz]
+n = t.n.';  H = t.mean_curv(:);
+W = [0*H, -2*H.*n, 1 - n(:,1).^2, -2*n(:,1).*n(:,2), -2*n(:,1).*n(:,3), ...
+     1 - n(:,2).^2, -2*n(:,2).*n(:,3), 1 - n(:,3).^2];
+end
+
+
+function varargout = logg(s, t)
+% G = log r with target derivatives, helm3d.green format
+x = t(1,:).' - s(1,:);  y = t(2,:).' - s(2,:);  z = t(3,:).' - s(3,:);
+r2 = x.^2 + y.^2 + z.^2;
+X = cat(3, x, y, z);
+varargout{1} = log(r2)/2;
+varargout{2} = X./r2;
+H = zeros([size(x) 3 3]);
+for i = 1:3, for j = 1:3
+    H(:,:,i,j) = (i==j)./r2 - 2*X(:,:,i).*X(:,:,j)./r2.^2;
+end, end
+varargout{3} = H;
+end
+
+
+function varargout = gaussg(s, t)
+% G = exp(-r^2/2) with target derivatives, helm3d.green format
+x = t(1,:).' - s(1,:);  y = t(2,:).' - s(2,:);  z = t(3,:).' - s(3,:);
+X = cat(3, x, y, z);
+G = exp(-(x.^2 + y.^2 + z.^2)/2);
+varargout{1} = G;
+varargout{2} = -X.*G;
+H = zeros([size(x) 3 3]);
+for i = 1:3, for j = 1:3
+    H(:,:,i,j) = (X(:,:,i).*X(:,:,j) - (i==j)).*G;
+end, end
+varargout{3} = H;
+end
+
+
+function test_radgreen_eval()
+% Eval is exact: matches helm3d for every type to rounding.
+
+zk = 1.1;  coefs = [0.7 -1.3];
+g = @(s,t) helm3d.green(zk, s, t);
+src.r  = randn(3, 40);  src.n  = randn(3, 40);  src.n  = src.n./vecnorm(src.n);
+targ.r = randn(3, 30) + [3;0;0];
+targ.n = randn(3, 30);  targ.n = targ.n./vecnorm(targ.n);
+
+types = {'s', 'd', 'c', 'sp', 'dp', 'cp'};
+for k = 1:numel(types)
+    K  = kernel3d(g, types{k}, 'coefs', coefs);
+    Ke = kernel3d.helm3d(types{k}, zk, coefs(:));
+    A = K.eval(src, targ);  B = Ke.eval(src, targ);
+    err = norm(A - B, 'fro')/norm(B, 'fro');
+    assert(strcmp(K.name, 'radgreen'), 'radgreen: name');
+    assert(err < 1e-13, 'radgreen eval %s: %.2e', types{k}, err);
+end
+
+end
+
+
+function test_radgreen_arith()
+% Kernels with the same green combine into one green kernel: scaling,
+% sums (S + D = c) and interleave (trans_sys). Different handles fall
+% back to the generic arithmetic.
+
+zk = 1.1;
+g = @(s,t) helm3d.green(zk, s, t);
+src.r  = randn(3, 40);  src.n  = randn(3, 40);  src.n  = src.n./vecnorm(src.n);
+targ.r = randn(3, 30) + [3;0;0];
+targ.n = randn(3, 30);  targ.n = targ.n./vecnorm(targ.n);
+
+Ks = kernel3d(g, 's');  Kd = kernel3d(g, 'd');
+Ksp = kernel3d(g, 'sp');  Kdp = kernel3d(g, 'dp');
+
+K = 2*Ks - 3*Kd;
+assert(strcmp(K.name, 'radgreen'), 'radgreen: sum not merged');
+B = kernel3d.helm3d('c', zk, [2; -3]).eval(src, targ);
+err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+assert(err < 1e-13, 'radgreen 2s - 3d: %.2e', err);
+assert(K.params.isrc == 1 && K.params.nderiv == 0, 'radgreen: c spec');
+
+K = Ksp + 0.5*Kdp;                 % mixed derivative orders
+B = kernel3d.helm3d('cp', zk, [1; 0.5]).eval(src, targ);
+err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+assert(strcmp(K.name, 'radgreen') && err < 1e-13, 'radgreen cp sum: %.2e', err);
+
+K = -Ks;
+err = norm(K.eval(src, targ) + Ks.eval(src, targ), 'fro');
+assert(strcmp(K.name, 'radgreen') && err == 0, 'radgreen: uminus');
+
+C = [0.7 -1.3; 0.4 2.1];
+K = kernel3d.interleave([C(1,1)*Kd, C(1,2)*Ks; C(2,1)*Kdp, C(2,2)*Ksp]);
+assert(strcmp(K.name, 'radgreen') && isequal(K.opdims, [2 2]), ...
+       'radgreen: interleave not merged');
+Kt = kernel3d(g, 'trans_sys', 'coefs', C);
+B = Kt.eval(src, targ);
+err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+assert(err < 1e-13, 'radgreen interleave: %.2e', err);
+assert(isequal(K.params.ipv, Kt.params.ipv), 'radgreen: interleave ipv');
+
+% fmms are carried through the merges (stand-in fmm: dense eval)
+F = @(K) @(eps, s, t, sig) K.eval(s, t)*sig;
+Ks.fmm = F(Ks);  Kd.fmm = F(Kd);  Ksp.fmm = F(Ksp);  Kdp.fmm = F(Kdp);
+for K = {2*Ks - 3*Kd, ...
+         kernel3d.interleave([C(1,1)*Kd, C(1,2)*Ks; C(2,1)*Kdp, C(2,2)*Ksp])}
+    K = K{1};
+    sig = randn(K.opdims(2)*size(src.r, 2), 1);
+    err = norm(K.fmm(1e-7, src, targ, sig) - K.eval(src, targ)*sig);
+    assert(strcmp(K.name, 'radgreen') && err < 1e-12, 'radgreen merged fmm: %.2e', err);
+end
+
+g2 = @(s,t) helm3d.green(zk, s, t);            % a different handle
+K = Ks + kernel3d(g2, 'd');
+assert(~strcmp(K.name, 'radgreen'), 'radgreen: different handles merged');
+
+end
+
+
+function test_radgreen_getquad()
+% The automatic range quadrature matches helm3d on and off the sphere,
+% for a single kernel and a merged sum.
+
+zk = 1.1;  eps = 1e-7;
+g = @(s,t) helm3d.green(zk, s, t);
+S = neighbours(geometries.sphere(1, 1, [0;0;0], 4, 1), 3);
+targ.r = randn(3, 40);  targ.r = targ.r./vecnorm(targ.r)*1.05;
+targ.n = targ.r./vecnorm(targ.r);
+
+cases = {{kernel3d(g, 's'),  kernel3d.helm3d('s', zk)}, ...
+         {kernel3d(g, 'cp'), kernel3d.helm3d('cp', zk, [1; 1])}, ...
+         {kernel3d(g, 's') + 2*kernel3d(g, 'd'), ...
+          kernel3d.helm3d('c', zk, [1; 2])}};
+for k = 1:numel(cases)
+    [K, Ke] = cases{k}{:};
+    for t = {S, targ}
+        Q = K.getquad(S, eps, t{1});  Qe = Ke.getquad(S, eps, t{1});
+        err = norm(Q - Qe, 'fro')/norm(Qe, 'fro');
+        assert(err < 1e-6, 'radgreen getquad case %d: %.2e', k, err);
+    end
+end
+
+end
+
+
+function test_radgreen_rlb_getquad()
+% rlb as (Laplacian - d_nn - 2 H d_n) klb with weights on the target
+% fields n and mean_curv: near quadrature matches belpde on a sphere.
+
+eps = 1e-7;
+S = neighbours(geometries.sphere(1, 1, [0;0;0], 4, 1), 3);
+K  = kernel3d(@klbg, @w_rlb, 'nderiv', 2, 'targ_fields', {'n', 'mean_curv'});
+Kb = kernel3d.belpde('rlb');
+
+Q  = K.getquad(S, eps);
+Qb = Kb.getquad(S, eps);
+err = norm(Q - Qb, 'fro')/norm(Qb, 'fro');
+assert(err < 1e-6, 'radgreen rlb getquad: %.2e', err);
+
+% one curved patch: getquad against the smooth integral
+for d = [0.5 1]
+    err = kernel3d.check_quad(K, eps, struct('dist', d));
+    assert(err < 1e-6, 'radgreen rlb check, dist %g: %.2e', d, err);
+end
+g = @(s,t) helm3d.green(1.1, s, t);
+for type = {'s', 'sp', 'dp', 'cp', 'trans_sys'}
+    err = kernel3d.check_quad(kernel3d(g, type{1}), eps);
+    assert(err < 1e-6, 'radgreen %s check: %.2e', type{1}, err);
+end
+
+end
+
+
+function test_radgreen_mfie()
+% 'mfie' = n x curl S_k[J] and 'curls' = curl S_k[J] on Cartesian
+% densities match the formulas from helm3d.green, and the MFIE near
+% quadrature matches a smooth integral on a curved patch.
+
+zk = 1.5;
+g = @(s,t) helm3d.green(zk, s, t);
+src.r  = randn(3, 20);
+targ.r = randn(3, 15) + [3;0;0];
+targ.n = randn(3, 15);  targ.n = targ.n./vecnorm(targ.n);
+[~, gr] = helm3d.green(zk, src.r, targ.r);         % (nt, ns, 3)
+
+ns = 20;  nt = 15;
+B = zeros(3, nt, 3, ns);  C = B;
+% (n x (g x J))_i = g_i (n.J) - J_i (n.g)
+ng = zeros(nt, ns);
+for b = 1:3, ng = ng + targ.n(b,:).'.*gr(:,:,b); end
+for i = 1:3
+    for c = 1:3
+        B(i,:,c,:) = reshape(targ.n(c,:).'.*gr(:,:,i) - (i==c)*ng, 1, nt, 1, ns);
+        k = 6 - i - c;
+        if i ~= c
+            C(i,:,c,:) = reshape((k-i)*(c-i)*(c-k)/2*gr(:,:,k), 1, nt, 1, ns);
+        end
+    end
+end
+B = reshape(B, 3*nt, 3*ns);  C = reshape(C, 3*nt, 3*ns);
+
+Km = kernel3d(g, 'nxcurls');
+Kc = kernel3d(g, 'curls');
+assert(isequal(Km.opdims, [3 3]) && strcmp(Km.type, 'mfie'), 'radgreen: mfie');
+err = norm(Km.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+assert(err < 1e-13, 'radgreen mfie eval: %.2e', err);
+err = norm(Kc.eval(src, targ) - C, 'fro')/norm(C, 'fro');
+assert(err < 1e-13, 'radgreen curls eval: %.2e', err);
+
+err = kernel3d.check_quad(Km, 1e-7);
+assert(err < 1e-6, 'radgreen mfie check: %.2e', err);
+
+end
+
+
+function test_radgreen_fmm()
+% A radgreen kernel with an fmm attached: em3d.fmm 'mfie' and 'curls'
+% match eval, and surfermatapply and surferkerneval with the fmm match
+% the dense matrix and the fmm-free evaluation.
+
+zk = 1.5;  eps = 1e-8;
+g = @(s,t) helm3d.green(zk, s, t);
+Km = kernel3d(g, 'mfie');  Kc = kernel3d(g, 'curls');
+
+% fmm types against eval, well-separated points
+src.r = randn(3, 30);
+targ.r = randn(3, 20) + [5;0;0];
+targ.n = randn(3, 20);  targ.n = targ.n./vecnorm(targ.n);
+sig = complex(randn(90, 1), randn(90, 1));
+for c = {{Km, 'mfie'}, {Kc, 'curls'}}
+    [K, type] = c{1}{:};
+    A = K.eval(src, targ)*sig;
+    B = em3d.fmm(eps, zk, src, targ, type, sig);
+    err = norm(A - B)/norm(A);
+    assert(err < 1e-6, 'em3d.fmm %s: %.2e', type, err);
+end
+
+Km.fmm = @(eps, s, t, sigma) em3d.fmm(eps, zk, s, t, 'mfie', sigma);
+Kc.fmm = @(eps, s, t, sigma) em3d.fmm(eps, zk, s, t, 'curls', sigma);
+S = neighbours(geometries.sphere(1, 1, [0;0;0], 3, 1), 3);       % small: 3x3 kernel
+J = complex(randn(3*S.npts, 1), randn(3*S.npts, 1));
+
+% surfermatapply with the fmm against the dense matrix
+K = kernel3d.eye(0.5*eye(3)) - Km;
+A = surfermat(S, K, eps)*J;
+B = surfermatapply(S, K, J, eps);
+err = norm(A - B)/norm(A);
+assert(err < 1e-6, 'radgreen surfermatapply fmm: %.2e', err);
+
+% surferkerneval with and without the fmm, including near targets
+t2.r = randn(3, 60);  t2.r = t2.r./vecnorm(t2.r).*(1.02 + rand(1, 60));
+A = surferkerneval(S, Kc, J, t2, eps, struct('usefmm', 0));
+B = surferkerneval(S, Kc, J, t2, eps);
+err = norm(A - B)/norm(A);
+assert(err < 1e-6, 'radgreen surferkerneval fmm: %.2e', err);
+
+end
+
+
+function v = notradial(s, t)
+v = exp(-(t(1,:).' - s(1,:)).^2 - 2*(t(2,:).' - s(2,:)).^2);
+end
+
+
+function [v, g, h] = wronghess(zk, s, t)
+[v, g, h] = helm3d.green(zk, s, t);
+h = 1.01*h;
 end
 
 
@@ -575,7 +1014,7 @@ function test_getquad_sp_3d()
 
 zk = 1.1;
 eps = 1e-7;
-S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S = neighbours(geometries.sphere(1, 1, [0;0;0], 4, 1), 3);
 K = kernel3d.radpp(@(s,t) helmgreen(zk, s, t), [1e-9 4], 'sp', ...
                    'opts', struct('eps', 1e-13));
 
@@ -620,6 +1059,50 @@ varargout{4} = cat(3, (3*x - x.^3).*G, (y - x.^2.*y).*G, ...
 end
 
 
+function test_full_2d_format()
+% A green on points in the plane with full derivative arrays, hess
+% (nt,ns,2,2) and third (nt,ns,2,2,2) as from chunkie, gives the same
+% kernels as with packed arrays.
+
+src.r = 2*rand(2, 7) - 1;
+th = 2*pi*rand(1, 9);
+targ.r  = 1.7*[cos(th); sin(th)];
+targ.d  = 1.7*[-sin(th); cos(th)];
+targ.d2 = -targ.r;
+targ.n  = [cos(th); sin(th)];
+for type = {'s', 'sp', 'clamped_bc', 'supported_bc', 'free_bc'}
+    A = kernel3d.radpp(@gauss, [1e-6 6], type{1}, 'nu', 0.3, 'dim', 2);
+    B = kernel3d.radpp(@gaussfull2, [1e-6 6], type{1}, 'nu', 0.3, 'dim', 2);
+    err = norm(A.eval(src, targ) - B.eval(src, targ), 'fro')/ ...
+          norm(A.eval(src, targ), 'fro');
+    assert(err < 1e-14, 'radpp full 2d format %s: %.2e', type{1}, err);
+end
+
+end
+
+
+function varargout = gaussfull2(s, t)
+% gauss with full derivative arrays on points in the plane: hess
+% (nt,ns,2,2), third (nt,ns,2,2,2)
+out = cell(1, max(nargout, 1));
+[out{:}] = gauss(s(1:2,:), t(1:2,:));
+varargout = out;
+if nargout >= 3
+    h = out{3};
+    H = cat(4, cat(3, h(:,:,1), h(:,:,2)), cat(3, h(:,:,2), h(:,:,3)));
+    varargout{3} = H;
+end
+if nargout >= 4
+    t3 = out{4};                       % xxx xxy xyy yyy
+    T = zeros([size(t3, 1), size(t3, 2), 2, 2, 2]);
+    for i = 1:2, for j = 1:2, for k = 1:2
+        T(:,:,i,j,k) = t3(:,:,1 + (i==2) + (j==2) + (k==2));
+    end, end, end
+    varargout{4} = T;
+end
+end
+
+
 function varargout = helmgreen(zk, s, t)
 % 3D Helmholtz Green's function in the plane z = 0 and its target
 % derivatives up to third order, chunkie format
@@ -647,4 +1130,103 @@ varargout{4} = cat(3, B.*ux.^3 + 3*C.*ux, ...
                       B.*ux.^2.*uy + C.*uy, ...
                       B.*ux.*uy.^2 + C.*ux, ...
                       B.*uy.^3 + 3*C.*uy);
+end
+
+
+function test_real_and_decaying()
+% laplace (real, so real near quadrature) and yukawa (imaginary
+% wavenumber) kernels against lap3d and helm3d on a sphere
+
+eps = 1e-7;
+S = neighbours(geometries.sphere(1, 2, [0;0;0], 4, 1), 3);
+
+for type = {'s', 'd', 'sp', 'dp'}
+    K = kernel3d(@lap3d.green, type{1});
+    Kl = kernel3d.lap3d(type{1});
+    assert(~K.ifcomplex, 'radgreen lap %s: flagged complex', type{1});
+    assert(isequal(K.params.ipv, kernel3d(@(s,t) helm3d.green(1, s, t), ...
+           type{1}).params.ipv), 'radgreen lap %s: ipv', type{1});
+    Q = K.getquad(S, eps);  Ql = Kl.getquad(S, eps);
+    assert(isreal(Q), 'radgreen lap %s: complex quadrature', type{1});
+    err = norm(Q - Ql, 'fro')/norm(Ql, 'fro');
+    assert(err < 1e-6, 'radgreen lap %s getquad: %.2e', type{1}, err);
+end
+
+zk = 3i;
+for type = {'s', 'dp'}
+    K = kernel3d(@(s,t) helm3d.green(zk, s, t), type{1});
+    assert(K.params.green.sing == 1, 'radgreen yukawa: singularity');
+    Q = K.getquad(S, eps);  Qh = kernel3d.helm3d(type{1}, zk).getquad(S, eps);
+    err = norm(Q - Qh, 'fro')/norm(Qh, 'fro');
+    assert(err < 1e-6, 'radgreen yukawa %s getquad: %.2e', type{1}, err);
+end
+
+end
+
+
+function test_two_surfers()
+% two surfers, each the patch facing the other across a 0.3 gap and the
+% patch on the far side: near quadrature between surfaces, through
+% surfermat
+
+eps = 1e-7;  zk = 1.1;
+c1 = [0;0;0];  c2 = [2.0;0.3;0];
+S1 = facing(geometries.sphere(1, 2, c1, 4, 1), c2);
+S2 = facing(geometries.sphere(0.7, 2, c2, 4, 1), c1);
+g = @(s,t) helm3d.green(zk, s, t);
+for type = {'s', 'sp', 'dp'}
+    A = surfermat({S1, S2}, kernel3d(g, type{1}), eps);
+    B = surfermat({S1, S2}, kernel3d.helm3d(type{1}, zk), eps);
+    err = norm(A - B, 'fro')/norm(B, 'fro');
+    assert(err < 1e-6, 'radgreen two surfers %s: %.2e', type{1}, err);
+end
+
+end
+
+
+function test_srcwfun()
+% custom source weights reproduce the built-in double layer, eval and
+% near quadrature
+
+zk = 1.1;  eps = 1e-7;
+g = @(s,t) helm3d.green(zk, s, t);
+one = @(t) ones(size(t.r, 2), 1);
+Kc = kernel3d(g, @(t) 0*one(t), 'nderiv', 0, 'srcwfun', one);
+Kd = kernel3d(g, 'd');
+assert(isequal(Kc.src_fields, {'n'}) && Kc.params.ipv == Kd.params.ipv, ...
+       'radgreen srcwfun: fields or ipv');
+
+src.r = randn(3, 20);  src.n = randn(3, 20);  src.n = src.n./vecnorm(src.n);
+targ.r = randn(3, 15) + [3;0;0];
+err = norm(Kc.eval(src, targ) - Kd.eval(src, targ), 'fro')/norm(Kd.eval(src, targ), 'fro');
+assert(err < 1e-14, 'radgreen srcwfun eval: %.2e', err);
+
+S = neighbours(geometries.sphere(1, 2, [0;0;0], 4, 1), 3);
+Q = Kc.getquad(S, eps);  Qd = Kd.getquad(S, eps);
+err = norm(Q - Qd, 'fro')/norm(Qd, 'fro');
+assert(err < 1e-12, 'radgreen srcwfun getquad: %.2e', err);
+
+end
+
+
+function S = facing(S, x)
+% the patch of S nearest to the point x and the one farthest from it
+d = vecnorm(S.cms - x);
+[~, inear] = min(d);  [~, ifar] = max(d);
+S = slicesurfer(S, [inear, ifar]);
+end
+
+
+function S = neighbours(S, n)
+% patch 1 of S and its n-1 nearest patches, by centroid: self, adjacent
+% and near pairs at a fraction of the cost of the whole surface
+[~, idx] = sort(vecnorm(S.cms - S.cms(:,1)));
+S = slicesurfer(S, idx(1:n));
+end
+
+
+function C = tens(dx, dy, dz, p, varargin)
+% tensors from the fit in the params p of a radpp kernel
+r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
+C = radpp_rotate(dx, dy, dz, radpp_eval(r, p.breaks, p.coefs), varargin{:});
 end

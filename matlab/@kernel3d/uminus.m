@@ -1,4 +1,9 @@
 function f = uminus(f)
+
+if kernel3d.radgreen('compatible', f)
+    f = kernel3d.radgreen('scale', f, -1);
+    return
+end
 % - Unary negation for kernel3d class
 
 f.eval = @(varargin) -f.eval(varargin{:});

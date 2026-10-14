@@ -4,6 +4,7 @@ function pot = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 % Syntax:
 %   pot = em3d.fmm(eps, zk, srcinfo, targinfo, type, sigma)
 %   pot = em3d.fmm(eps, zk, srcinfo, targinfo, 'nrccie-bc', sigma, alpha)
+%   pot = em3d.fmm(eps, zk, srcinfo, targinfo, 'mfie', sigma)
 %
 % Evaluates the far-field contribution of the Maxwell vector-Helmholtz
 % representation using emfmm3d.  The representation is
@@ -26,6 +27,11 @@ function pot = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 %                               pot (3*nt x 1): interleaved [pot_ru;pot_rv;pot_rho] per point
 %                                 pot_ru/rv projected onto orthonormal target frame
 %
+%                'mfie'         n x curl S_k[J] ('nxcurls'), needs targinfo.n.
+%                'curls'        curl S_k[J] (H alone, one emfmm3d call).
+%                               sigma (3*ns x 1): [J_x; J_y; J_z] Cartesian
+%                               pot   (3*nt x 1): Cartesian
+%
 %                'nrccie-eval'  NRCCIE field evaluation.
 %                               sigma (4*ns x 1): [J_x; J_y; J_z; rho] Cartesian
 %                               pot   (6*nt x 1): [E_x; E_y; E_z; H_x; H_y; H_z]
@@ -37,6 +43,7 @@ function pot = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 %   pot - potential column vector:
 %         nrccie-bc:   (3*nt x 1)
 %         nrccie-eval: (6*nt x 1)
+%         mfie, curls: (3*nt x 1)
 %
 % Note: This routine returns the FMM (far-field) contribution only.
 %       Near-field corrections must be added separately.
@@ -154,6 +161,18 @@ switch lower(type)
     % Interleaved output: [Ex(1);Ey(1);Ez(1);Hx(1);Hy(1);Hz(1); Ex(2);...]
     EH  = [E; H];    % (6, nt)
     pot = EH(:);
+
+    case {'mfie', 'nxcurls', 'curls'}
+    %  sigma (3*ns x 1): interleaved [Jx(1);Jy(1);Jz(1); Jx(2);...] (wt-scaled)
+    %  pot   (3*nt x 1): interleaved, curl S_k[J], or n_t x curl S_k[J]
+
+    src_H = struct('sources', src, 'h_current', reshape(sigma, 3, ns));
+    U_H   = emfmm3d(eps, zk, src_H, targ, 1, 0, 0);
+    H     = reshape(U_H.E, 3, nt);
+    if ~strcmpi(type, 'curls')
+        H = cross(targinfo.n(:,:), H);
+    end
+    pot = H(:);
 
     otherwise
         error('EM3D:fmm:type', 'Unknown em3d kernel type ''%s''.', type);

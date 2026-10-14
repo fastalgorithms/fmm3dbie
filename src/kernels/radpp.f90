@@ -8,7 +8,8 @@
 !   ipars(1:5)  vpp pointers [nbin, n, ibins, icfs, nv], see vpp.f90
 !   ipars(6)    nderiv, derivative order of the target weights
 !   ipars(7)    ncomp, number of target weights per row
-!   ipars(8)    dim, 3 (full 3D tensors) or 2 (in-plane tensors only)
+!   ipars(8)    dim, 3 (full 3D tensors), 2 (in-plane tensors only) or
+!               13 (3D dyadic green, see radpp_tensors_dyad)
 !   ipars(9)    isrc, 1 if the rows also have source weights, else 0.
 !               The profiles then go to order nderiv+1 (at most 3)
 !   ipars(10)   iw, start of this kernel's weights in targinfo
@@ -57,6 +58,10 @@ subroutine radpp_tensors(dx,dy,dz,ndd,dpars,ndi,ipars,comps)
 
   if (idim .eq. 3) then
      call radpp_tensors3(dx,dy,dz,ndd,dpars,ndi,ipars,comps)
+     return
+  endif
+  if (idim .eq. 13) then
+     call radpp_tensors_dyad(dx,dy,dz,ndd,dpars,ndi,ipars,comps)
      return
   endif
 
@@ -169,13 +174,84 @@ subroutine radpp_tensors3(dx,dy,dz,ndd,dpars,ndi,ipars,comps)
 end subroutine radpp_tensors3
 
 
+subroutine radpp_tensors_dyad(dx,dy,dz,ndd,dpars,ndi,ipars,comps)
+!
+! isotropic 3D tensor green G_ij = A d_ij + B u_i u_j, from the profiles
+! [A B | A' B'] (complex), components
+!   G_ij for ij = 11 12 13 22 23 33, then
+!   d_k G_ij = A' u_k d_ij + B' u_i u_j u_k
+!              + (B/r)(d_ik u_j + d_jk u_i - 2 u_i u_j u_k)
+!   at 6 + 3*(ij - 1) + k
+!
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: dpars(ndd)
+  integer *8 :: ipars(ndi)
+  complex *16 :: comps(*)
+  complex *16 :: a, b, ap, bp, bor
+  real *8 :: w(8), u(3), d(3,3)
+  integer *8 :: ii(6), jj(6)
+  data ii / 1,1,1,2,2,3 /
+  data jj / 1,2,3,2,3,3 /
+
+  nderiv = ipars(6)
+
+  r = sqrt(dx*dx + dy*dy + dz*dz)
+  u(1) = 1.0d0
+  u(2) = 0.0d0
+  u(3) = 0.0d0
+  if (r .gt. 0) then
+     u(1) = dx/r
+     u(2) = dy/r
+     u(3) = dz/r
+  endif
+
+  call vpp_eval(r,ndd,dpars,ndi,ipars,w)
+  a = cmplx(w(1),w(2),kind=8)
+  b = cmplx(w(3),w(4),kind=8)
+
+  d = 0
+  do i = 1,3
+     d(i,i) = 1
+  enddo
+
+  do m = 1,6
+     i = ii(m)
+     j = jj(m)
+     comps(m) = a*d(i,j) + b*u(i)*u(j)
+  enddo
+  if (nderiv .lt. 1) return
+
+  ap = cmplx(w(5),w(6),kind=8)
+  bp = cmplx(w(7),w(8),kind=8)
+  bor = 0
+  if (r .gt. 0) bor = b/r
+  do m = 1,6
+     i = ii(m)
+     j = jj(m)
+     do k = 1,3
+        ! u_i u_j u_k in sorted index order, so permuted components are
+        ! bitwise equal and antisymmetric contractions cancel exactly
+        i1 = min(i,j,k)
+        i3 = max(i,j,k)
+        i2 = i + j + k - i1 - i3
+        uuu = u(i1)*u(i2)*u(i3)
+        comps(6+3*(m-1)+k) = ap*u(k)*d(i,j) + bp*uuu + &
+             bor*(d(i,k)*u(j) + d(j,k)*u(i) - 2*uuu)
+     enddo
+  enddo
+
+  return
+end subroutine radpp_tensors_dyad
+
+
 subroutine radpp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: src(*), targ(ndt), dpars(ndd)
   integer *8 :: ipars(ndi)
   complex *16 :: zpars(*), val
-  complex *16 :: comps(20), dn
+  complex *16 :: comps(24), dn
   integer *8 :: up3(10,3), up2(6,2)
   ! up(c,i): component of D_c G differentiated once more along x_i
   data up3 / 2,5,6,7,11,12,13,14,15,16, 3,6,8,9,12,14,15,17,18,19, &

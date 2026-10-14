@@ -14,6 +14,11 @@ function K = interleave(kerns)
 %
 %   See also KERNEL3D.PLUS, KERNEL3D.TIMES
 
+if kernel3d.radgreen('compatible', kerns)
+    K = kernel3d.radgreen('interleave', kerns);
+    return
+end
+
 [m, n] = size(kerns);
 
 rowdims   = arrayfun(@(k) kerns(k,1).opdims(1), 1:m);
