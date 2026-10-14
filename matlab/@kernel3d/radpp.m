@@ -845,11 +845,54 @@ if ~isfield(opts, 'rsc') || isempty(opts.rsc)
 end
 
 [rmin, rmax] = radgreen_range(S, targinfo, opts.rsc);
-[ipars, dpars] = radpp_fit(p.profun, rmin, rmax, p.fitopts);
+G = p.green;
+if numel(G.parts) == 1
+    [ipars, dpars] = radpp_fit(p.profun, rmin, rmax, p.fitopts);
+else
+    % a sum of greens: fit each (their singular parts may cancel only up
+    % to rounding) and add the expansions
+    nfit = p.nderiv + p.isrc;
+    fits = cell(1, numel(G.parts));
+    for k = 1:numel(G.parts)
+        [~, ~, fits{k}] = radpp_fit(@(r) G.c(k)*G.parts{k}.profiles(r, nfit), ...
+                                    rmin, rmax, p.fitopts);
+    end
+    [ipars, dpars] = radpp_addfits(fits);
+end
 p.ipars = [ipars; p.ipost];
 p.dpars = dpars;
 
 spmat = radpp_getquad(S, eps, p, ifcomplex, ri, targinfo, opts);
+end
+
+
+function [ipars, dpars] = radpp_addfits(fits)
+% sum of radpp_fit expansions on the union of their panels, in the vpp
+% format
+breaks = unique(cell2mat(cellfun(@(f) f.breaks(:), fits(:), ...
+                                 'UniformOutput', false)));
+[~, n, m] = size(fits{1}.coefs);
+a = breaks(1:end-1);  nbin = numel(a);
+mid = (a + breaks(2:end))/2;
+cf = zeros(nbin, n, m);
+for k = 1:numel(fits)
+    ib = discretize(mid, fits{k}.breaks);
+    d = fits{k}.coefs(ib, end:-1:1, :);       % d(:,p+1,:): (r-b)^p
+    del = a - fits{k}.breaks(ib);             % re-centre at a: r-b = (r-a)+del
+    e = zeros(size(d));
+    for q = 0:n-1
+        for pp = q:n-1
+            e(:,q+1,:) = e(:,q+1,:) + nchoosek(pp, q)*del.^(pp-q).*d(:,pp+1,:);
+        end
+    end
+    cf = cf + e(:, end:-1:1, :);
+end
+cp = permute(cf, [3 2 1]);                    % (m,n,nbin)
+cfv = zeros(2*m, n, nbin);
+cfv(1:2:end,:,:) = real(cp);
+cfv(2:2:end,:,:) = imag(cp);
+ipars = [nbin; n; 1; nbin+2; 2*m];
+dpars = [breaks; cfv(:)];
 end
 
 

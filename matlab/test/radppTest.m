@@ -776,9 +776,10 @@ end
 
 
 function test_radgreen_arith()
-% Kernels with the same green combine into one green kernel: scaling,
-% sums (S + D = c) and interleave (trans_sys). Different handles fall
-% back to the generic arithmetic.
+% Kernels with the same green combine into one green kernel: scaling, sums
+% (S + D = c) and interleave (trans_sys). The same type on different greens
+% adds the expansions; otherwise different greens fall back to the generic
+% arithmetic.
 
 zk = 1.1;
 g = @(s,t) helm3d.green(zk, s, t);
@@ -826,16 +827,33 @@ for K = {2*Ks - 3*Kd, ...
     assert(strcmp(K.name, 'radgreen') && err < 1e-12, 'radgreen merged fmm: %.2e', err);
 end
 
-g2 = @(s,t) helm3d.green(zk, s, t);            % a different handle
+k2 = 2.3;
+g2 = @(s,t) helm3d.green(k2, s, t);            % a different green
+h = @(type, k) kernel3d.helm3d(type, k).eval(src, targ);
+K = 2*Ks + kernel3d(g2, 's');
+assert(strcmp(K.name, 'radgreen') && strcmp(K.type, 's') && ...
+       numel(K.params.green.parts) == 2, 'radgreen: s + s not merged');
+B = 2*h('s', zk) + h('s', k2);
+err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+assert(err < 1e-13, 'radgreen 2 s(k1) + s(k2): %.2e', err);
+
+% ipv and kernel_order of a sum are the worse of the two
+K = Ksp - kernel3d(g2, 'sp');
+assert(strcmp(K.name, 'radgreen') && K.params.ipv == 1 && ...
+       K.kernel_order == 0, 'radgreen: sp - sp ipv');
+B = h('sp', zk) - h('sp', k2);
+err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+assert(err < 1e-13, 'radgreen sp(k1) - sp(k2): %.2e', err);
+
 K = Ks + kernel3d(g2, 'd');
-assert(~strcmp(K.name, 'radgreen'), 'radgreen: different handles merged');
+assert(~strcmp(K.name, 'radgreen'), 'radgreen: s(g1) + d(g2) merged');
 
 end
 
 
 function test_radgreen_getquad()
 % The automatic range quadrature matches helm3d on and off the sphere,
-% for a single kernel and a merged sum.
+% for a single kernel and merged sums, on one green or two.
 
 zk = 1.1;  eps = 1e-7;
 g = @(s,t) helm3d.green(zk, s, t);
@@ -846,7 +864,10 @@ targ.n = targ.r./vecnorm(targ.r);
 cases = {{kernel3d(g, 's'),  kernel3d.helm3d('s', zk)}, ...
          {kernel3d(g, 'cp'), kernel3d.helm3d('cp', zk, [1; 1])}, ...
          {kernel3d(g, 's') + 2*kernel3d(g, 'd'), ...
-          kernel3d.helm3d('c', zk, [1; 2])}};
+          kernel3d.helm3d('c', zk, [1; 2])}, ...
+         {kernel3d(g, 'dp') - kernel3d(@(s,t) helm3d.green(2.3, s, t), 'dp'), ...
+          kernel3d.helm3d('dp', zk) - kernel3d.helm3d('dp', 2.3)}, ...
+         {2*kernel3d(g, 'sp'), 2*kernel3d.helm3d('sp', zk)}};
 for k = 1:numel(cases)
     [K, Ke] = cases{k}{:};
     for t = {S, targ}

@@ -10,9 +10,10 @@ function obj = radgreen(green, type, varargin)
 %   derivatives against finite differences.
 %
 %   TYPE and options are as in KERNEL3D.RADPP. 'ipv' overrides the
-%   automatic choice; kernel_order is max(ipv)-1. Kernels built from the
-%   same GREEN handle combine under +, -, scalar * and interleave into one
-%   kernel.
+%   automatic choice; kernel_order is max(ipv)-1. Kernels on the same
+%   GREEN (up to a factor) combine under +, -, scalar * and interleave into
+%   one kernel, and kernels of one built-in type add as that type on the
+%   sum of their greens.
 %
 %   Example:
 %      g = @(s,t) helm3d.green(zk, s, t);
@@ -53,10 +54,49 @@ else
 end
 if isempty(sing), sing = gsing(@(r) sum(abs(prof(r, 0)), 2)); end
 
-G = struct('profiles', prof, 'check', check, 'handle', green, ...
-           'sing', sing, 'tensor', istensor);
-obj = kernel3d.radpp(G, [], type, varargin{:});
+part = struct('profiles', prof, 'check', check, 'handle', green, ...
+              'sing', sing, 'tensor', istensor);
+obj = kernel3d.radpp(mkgreen({part}, 1), [], type, varargin{:});
+% built-in types: kernels of one type on different greens add as that
+% type on the sum of the greens
+obj.params.key = [];
+if ischar(type)
+    p = obj.params;
+    obj.params.key = {p.spec.name, p.kcoefs, p.nu, p.dim};
+end
 
+end
+
+
+function G = mkgreen(parts, c)
+% the green sum_k c(k)*parts{k}
+keep = c ~= 0;
+if any(keep), parts = parts(keep);  c = c(keep); end
+q = parts{1};
+G = struct('profiles', q.profiles, 'check', q.check, 'sing', q.sing, ...
+           'tensor', q.tensor, 'parts', {parts}, 'c', c);
+if numel(parts) == 1
+    if c ~= 1, G.profiles = @(r, nd) c*q.profiles(r, nd); end
+    return
+end
+G.profiles = @(r, nd) sumprof(parts, c, r, nd);
+G.check = @(nd, name) checkall(parts, nd, name);
+try
+    G.sing = gsing(@(r) sum(abs(G.profiles(r, 0)), 2));
+catch
+    G.sing = max(cellfun(@(q) q.sing, parts));
+end
+end
+
+
+function f = sumprof(parts, c, r, nd)
+f = 0;
+for k = 1:numel(parts), f = f + c(k)*parts{k}.profiles(r, nd); end
+end
+
+
+function checkall(parts, nd, name)
+for k = 1:numel(parts), parts{k}.check(nd, name); end
 end
 
 
@@ -226,10 +266,21 @@ function out = combine(op, varargin)
 switch op
     case 'compatible'
         out = compatible(varargin{1});
+    case 'summable'
+        Ks = tocell(varargin{1});
+        out = compatible(Ks) || samekey(Ks);
     case 'sum'      % sum(K1, a, K2, b) = a*K1 + b*K2
-        out = lincomb(varargin{:});
+        if samekey(varargin([1 3]))
+            out = keysum(varargin{:});
+        else
+            out = lincomb(varargin{:});
+        end
     case 'scale'    % scale(K, a)
-        out = lincomb(varargin{1}, varargin{2});
+        if ~isempty(varargin{1}.params.key)
+            out = keysum(varargin{1}, varargin{2});
+        else
+            out = lincomb(varargin{1}, varargin{2});
+        end
     case 'interleave'
         out = blocks(varargin{1});
     otherwise
@@ -238,18 +289,72 @@ end
 end
 
 
-function tf = compatible(Ks)
-% green kernels with the same green handle, dim and no diag term
-Ks = tocell(Ks);
+function tf = isgreen(Ks)
 tf = all(cellfun(@(K) strcmp(K.name, 'radgreen') && isempty(K.diag), Ks(:)));
-if ~tf, return; end
-p1 = Ks{1}.params;
+end
+
+
+function tf = compatible(Ks)
+% green kernels with no diag term, the same dim and proportional greens
+Ks = tocell(Ks);
+tf = isgreen(Ks);
 for k = 2:numel(Ks)
-    pk = Ks{k}.params;
-    if ~isequal(pk.green.handle, p1.green.handle) || pk.dim ~= p1.dim
-        tf = false;
-        return
+    if ~tf, return; end
+    tf = Ks{k}.params.dim == Ks{1}.params.dim && ...
+         ~isempty(ratio(Ks{1}.params.green, Ks{k}.params.green));
+end
+end
+
+
+function tf = samekey(Ks)
+% green kernels of one built-in type
+tf = isgreen(Ks) && ~isempty(Ks{1}.params.key) && ...
+     all(cellfun(@(K) isequal(K.params.key, Ks{1}.params.key), Ks(:)));
+end
+
+
+function lam = ratio(G1, G2)
+% lam with G2 = lam*G1, or [] if the greens are not proportional
+lam = [];
+if numel(G1.parts) ~= numel(G2.parts), return; end
+c1 = G1.c(:);  c2 = zeros(size(c1));
+for k = 1:numel(G2.parts)
+    i = find(cellfun(@(q) isequal(q.handle, G2.parts{k}.handle), G1.parts), 1);
+    if isempty(i), return; end
+    c2(i) = G2.c(k);
+end
+l = c2(1)/c1(1);
+if norm(c2 - l*c1) <= 1e-14*norm(c2), lam = l; end
+end
+
+
+function K = keysum(K1, a, K2, b)
+% a*K1 (+ b*K2) of one built-in type: that type on a*G1 (+ b*G2)
+Ks = {K1};  cs = a;
+if nargin > 2, Ks = {K1, K2};  cs = [a b]; end
+parts = {};  c = [];
+for k = 1:numel(Ks)
+    G = Ks{k}.params.green;
+    for j = 1:numel(G.parts)
+        i = find(cellfun(@(q) isequal(q.handle, G.parts{j}.handle), parts), 1);
+        if isempty(i)
+            parts{end+1} = G.parts{j};  c(end+1) = 0;  %#ok<AGROW>
+            i = numel(parts);
+        end
+        c(i) = c(i) + cs(k)*G.c(j);
     end
+end
+p = K1.params;
+ipv = p.ipv;                   % the worse of the two, as for other sums
+for k = 2:numel(Ks), ipv = max(ipv, Ks{k}.params.ipv); end
+ipv = {'ipv', ipv};
+K = kernel3d.radpp(mkgreen(parts, c), [], p.spec, 'dim', p.dim, ipv{:}, ...
+        'opts', p.fitopts, 'zk', max(cellfun(@(K) K.zk, Ks)), ...
+        'ifcomplex', any(cellfun(@(K) logical(K.ifcomplex), Ks)) || ~isreal(cs));
+K.params.key = p.key;
+if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks))
+    fs = cellfun(@(Kk) Kk.fmm, Ks, 'UniformOutput', false);
+    K.fmm = @(eps, src, targ, sigma) fmmsum(fs, cs, eps, src, targ, sigma);
 end
 end
 
@@ -265,20 +370,24 @@ p  = Ks{1}.params;
 nd = max(cellfun(@(K) K.params.nderiv, Ks));
 nc = ncompof(nd, p.dim);
 sp = specs(Ks);
+cw = cs;                       % proportional greens: G_k = lam*G_1
+for k = 2:numel(Ks)
+    cw(k) = cs(k)*ratio(p.green, Ks{k}.params.green);
+end
 
 spec = p.spec;
 spec.name = 'custom';
 spec.nderiv = nd;
-spec.wfun = @(t) wsum(t, sp, cs, nc, 'wfun');
+spec.wfun = @(t) wsum(t, sp, cw, nc, 'wfun');
 spec.vfun = [];
 if any(arrayfun(@(q) ~isempty(q.vfun), sp))
-    spec.vfun = @(t) wsum(t, sp, cs, nc, 'vfun');
+    spec.vfun = @(t) wsum(t, sp, cw, nc, 'vfun');
 end
 spec.targ_fields = unique([sp.targ_fields]);
 
 ipv = Ks{1}.params.ipv;
 for k = 2:numel(Ks), ipv = max(ipv, Ks{k}.params.ipv); end
-K = rebuild(Ks, spec, ipv, cs);
+K = rebuild(Ks, spec, ipv, cw);
 
 % fmms are combined as in the generic arithmetic
 if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks))
@@ -336,18 +445,19 @@ for e = 1:ne
 end
 
 sp = specs(Ks(:));
+lam = cellfun(@(K) ratio(p.green, K.params.green), Ks(:));
 spec = p.spec;
 spec.name = 'custom';
 spec.nderiv = nd;
 spec.opdims = opdims;
 spec.ent = [I(:) J(:)];
-spec.wfun = @(t) wblocks(t, sp, map, nc, 'wfun');
+spec.wfun = @(t) wblocks(t, sp, lam, map, nc, 'wfun');
 spec.vfun = [];
 if any(arrayfun(@(q) ~isempty(q.vfun), sp))
-    spec.vfun = @(t) wblocks(t, sp, map, nc, 'vfun');
+    spec.vfun = @(t) wblocks(t, sp, lam, map, nc, 'vfun');
 end
 spec.targ_fields = unique([sp.targ_fields]);
-K = rebuild(Ks(:).', spec, ipv, 1);
+K = rebuild(Ks(:).', spec, ipv, lam);
 
 % block fmm, as in the generic interleave
 if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks(:)))
@@ -375,12 +485,12 @@ pot = pot(:);
 end
 
 
-function W = wblocks(t, sp, map, nc, f)
+function W = wblocks(t, sp, lam, map, nc, f)
 nt = size(t.r, 2);
 W = zeros(nt, nc, size(map, 1));
 Wb = cell(numel(sp), 1);
 for b = unique(map(:,1)).'
-    if ~isempty(sp(b).(f)), Wb{b} = pad(sp(b).(f)(t), nc); end
+    if ~isempty(sp(b).(f)), Wb{b} = lam(b)*pad(sp(b).(f)(t), nc); end
 end
 for e = 1:size(map, 1)
     if ~isempty(Wb{map(e,1)})
@@ -396,6 +506,7 @@ K = kernel3d.radpp(p.green, [], spec, 'ipv', ipv, 'dim', p.dim, ...
         'opts', p.fitopts, ...
         'zk', max(cellfun(@(K) K.zk, Ks)), ...
         'ifcomplex', any(cellfun(@(K) logical(K.ifcomplex), Ks)) || ~isreal(cs));
+K.params.key = [];
 end
 
 

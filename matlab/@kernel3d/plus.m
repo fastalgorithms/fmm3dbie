@@ -4,7 +4,7 @@ function f = plus(f, g)
 % Currently only supported for adding two kernel3d class objects.
 
 if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
-    if kernel3d.radgreen('compatible', {f, g})
+    if kernel3d.radgreen('summable', {f, g})
         f = kernel3d.radgreen('sum', f, 1, g, 1);
         return
     end

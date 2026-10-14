@@ -11,10 +11,12 @@ function g = radpp_sum(coefs, varargin)
 %  outputs as are requested are computed, so value-only Green's
 %  functions may be combined for kernels that need no derivatives.
 %
-%  Example: a two-wavenumber difference, fitted as one profile
-%     g0 = @(s,t) helm3d.green(1.1, s, t);
-%     g1 = @(s,t) helm3d.green(2.3, s, t);
-%     K = kernel3d.radpp(radpp_sum([1 -1], g0, g1), 4, 'dp');
+%  Example: Helmholtz minus Laplace, fitted as one profile
+%     gh = @(s,t) helm3d.green(1.1, s, t);
+%     K = kernel3d.radpp(radpp_sum([1 -1], gh, @lap3d.green), 4, 's');
+%
+%  Analytically combining kernels is often more stable, see e.g.
+%  HELM3D.HELMDIFF_GREEN.
 %
 %  See also KERNEL3D.RADPP
 
