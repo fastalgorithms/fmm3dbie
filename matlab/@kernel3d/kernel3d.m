@@ -19,8 +19,9 @@ classdef kernel3d
 %      'maxwell'   ('em3d', 'em')        'nrccie-bc', 'nrccie-eval'
 %      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
 %      'beltrami'  ('belpde', 'bel')     'klb', 'rlb', 'khb', 'rhb'
-%      'radcheb'                         (adaptive Chebyshev interpolant of a
-%                                         radial kernel, see KERNEL3D.RADCHEB)
+%      'radpp'                           (kernels from a piecewise polynomial
+%                                         fit of a radial Green's function,
+%                                         see KERNEL3D.RADPP)
 %      'zero'/'zeros'                    (no type needed)
 %      'one'/'ones'                      (no type needed)
 %
@@ -108,8 +109,8 @@ classdef kernel3d
                         obj = kernel3d.stok3d(varargin{:});
                     case {'beltrami', 'belpde', 'bel'}
                         obj = kernel3d.belpde(varargin{:});
-                    case {'radcheb'}
-                        obj = kernel3d.radcheb(varargin{:});
+                    case {'radpp'}
+                        obj = kernel3d.radpp(varargin{:});
                     case {'z', 'zero', 'zeros'}
                         if ~isempty(varargin)
                             obj = kernel3d.zeros(varargin{1});
@@ -161,7 +162,7 @@ classdef kernel3d
         obj    = em3d(varargin);
         obj    = stok3d(varargin);
         obj    = belpde(varargin);
-        obj    = radcheb(varargin);
+        obj    = radpp(green, rmax, type, varargin);
         obj    = zeros(opdims);
         obj    = ones(m, n);
         obj    = eye(dvals);

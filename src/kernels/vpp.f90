@@ -3,14 +3,10 @@
 ! vector-valued functions in one dimension. to do complex
 ! valued, simply double the vector length
 !
-! The expansions are built in matlab by radcheb_fit.m (see
-! @kernel3d/radcheb.m); only the evaluators live here.
+! The expansions are built in matlab by radpp_fit.m (see
+! @kernel3d/radpp.m and kernels/radpp.f90); only the evaluators live here.
 !
 ! vpp_eval - evaluates the expansion at a given point r
-!
-! vpp_kern - evaluates the expansion at r where r is the
-!        distance between given source and target points. it has the
-!        correct interface for an fmm3dbie kernel
 !
 ! these do no bounds-checking etc.
 
@@ -35,25 +31,6 @@
  
 
 
-
-subroutine vpp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
-  implicit real *8 (a-h,o-z)
-  implicit integer *8 (i-n)
-  real *8 :: src(*), targ(ndt), dpars(ndd)
-  integer *8 ipars(ndi)
-  real *8 :: val(*)
-  complex *16 :: zpars(ndz)
-
-  dx=targ(1)-src(1)
-  dy=targ(2)-src(2)
-  dz=targ(3)-src(3)
-
-  r=sqrt(dx**2+dy**2+dz**2)
-
-  call vpp_eval(r,ndd,dpars,ndi,ipars,val)
-  
-  return
-end subroutine vpp_kern
 
 subroutine vpp_eval(r,ndd,dpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
