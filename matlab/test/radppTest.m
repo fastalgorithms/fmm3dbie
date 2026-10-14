@@ -11,12 +11,18 @@ test_tensors_2d();
 test_builtins_2d(@gauss, 1e-11);
 test_builtins_2d(@(s,t) helmgreen(1.1, s, t), 1e-10);
 test_helm_sp_eval_2d();
+test_src_eval_2d();
 test_getquad_rows(2);
 
 % 3D (full derivatives, dim = 3, the default)
 test_tensors_3d();
 test_builtins_3d();
 test_getquad_sp_3d();
+test_src_eval_3d();
+test_getquad_src_3d();
+test_grad_3d();
+test_hess_3d();
+test_trans_3d();
 test_getquad_rows(3);
 
 % value kernels and interfaces
@@ -24,6 +30,7 @@ test_getquad_lap();
 test_kernel3d_eval();
 test_kernel3d_getquad_helm();
 test_radcheb_interface();
+test_aliases();
 test_bad_inputs();
 
 
@@ -360,6 +367,204 @@ for k = 1:numel(types)
     B = ref.(types{k});
     err = norm(A - B, 'fro')/norm(B, 'fro');
     assert(err < 1e-10, 'radpp %s 3d: %.2e', types{k}, err);
+end
+
+end
+
+
+function test_src_eval_2d()
+% Source derivative kernels in the plane: 'd' = G_{n_y} = -grad G . n_y
+% and 'dp' = G_{n_x n_y} = -n_x' H n_y, from helmgreen.
+
+zk = 1.1;
+helm = @(s,t) helmgreen(zk, s, t);
+ns = 30;  nt = 40;
+ths = 2*pi*rand(1, ns);  tht = 2*pi*rand(1, nt);
+src.r  = 0.5*[cos(ths); sin(ths)];  src.n  = [cos(ths); sin(ths)];
+targ.r = 1.7*[cos(tht); sin(tht)];  targ.n = [cos(tht); sin(tht)];
+
+[~, g, h] = helm(src.r, targ.r);
+nx = targ.n;  ny = src.n;
+D  = -(g(:,:,1).*ny(1,:) + g(:,:,2).*ny(2,:));
+DP = -(h(:,:,1).*nx(1,:).'.*ny(1,:) + h(:,:,2).*(nx(1,:).'.*ny(2,:) ...
+       + nx(2,:).'.*ny(1,:)) + h(:,:,3).*nx(2,:).'.*ny(2,:));
+
+ref = struct('d', D, 'dp', DP);
+types = fieldnames(ref);
+for k = 1:numel(types)
+    K = kernel3d.radpp(helm, [1e-6 6], types{k}, 'dim', 2);
+    A = K.eval(src, targ);
+    B = ref.(types{k});
+    err = norm(A - B, 'fro')/norm(B, 'fro');
+    assert(err < 1e-10, 'radpp %s 2d: %.2e', types{k}, err);
+end
+
+end
+
+
+function test_src_eval_3d()
+% Source derivative kernels match helm3d for points in full 3D.
+
+zk = 1.1;  coefs = [0.7 -1.3];
+helm = @(s,t) helmgreen(zk, s, t);
+ns = 50;  nt = 60;
+src.r  = randn(3, ns);  src.r  = src.r./vecnorm(src.r);
+src.n  = randn(3, ns);  src.n  = src.n./vecnorm(src.n);
+targ.r = randn(3, nt);  targ.r = targ.r./vecnorm(targ.r)*1.7;
+targ.n = randn(3, nt);  targ.n = targ.n./vecnorm(targ.n);
+
+types = {'d', 'c', 'dp', 'cp', 's2trans', 'd2trans', 'c2trans'};
+for k = 1:numel(types)
+    K  = kernel3d.radpp(helm, [1e-6 6], types{k}, 'coefs', coefs);
+    Ke = kernel3d.helm3d(types{k}, zk, coefs(:));
+    A = K.eval(src, targ);
+    B = Ke.eval(src, targ);
+    err = norm(A - B, 'fro')/norm(B, 'fro');
+    assert(err < 1e-10, 'radpp %s 3d: %.2e', types{k}, err);
+end
+
+end
+
+
+function test_getquad_src_3d()
+% Near quadrature of the source derivative kernels matches helm3d on a
+% sphere, including the hypersingular 'dp' (ipv = 2).
+
+zk = 1.1;  coefs = [0.7 -1.3];
+eps = 1e-7;
+S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+helm = @(s,t) helmgreen(zk, s, t);
+
+types = {'d', 'c', 'dp', 'cp', 'c2trans'};
+for k = 1:numel(types)
+    K  = kernel3d.radpp(helm, [1e-9 4], types{k}, 'coefs', coefs, ...
+                        'opts', struct('eps', 1e-13));
+    Ke = kernel3d.helm3d(types{k}, zk, coefs(:));
+    Q  = K.getquad(S, eps);
+    Qe = Ke.getquad(S, eps);
+    err = norm(Q - Qe, 'fro')/norm(Qe, 'fro');
+    assert(err < 1e-6, 'radpp getquad %s 3d: %.2e', types{k}, err);
+end
+
+end
+
+
+function test_grad_3d()
+% 'grad' is grad_x G, and 'dgrad' is grad_x of 'd' (checked by finite
+% differences in the target).
+
+zk = 1.1;
+helm = @(s,t) helmgreen(zk, s, t);
+ns = 20;  nt = 25;
+src.r  = randn(3, ns);  src.r  = src.r./vecnorm(src.r);
+src.n  = randn(3, ns);  src.n  = src.n./vecnorm(src.n);
+targ.r = randn(3, nt);  targ.r = targ.r./vecnorm(targ.r)*1.7;
+
+Kg = kernel3d.radpp(helm, [1e-6 6], 'grad');
+Kd = kernel3d.radpp(helm, [1e-6 6], 'd');
+Kdg = kernel3d.radpp(helm, [1e-6 6], 'dgrad');
+assert(isequal(Kg.opdims, [3 1]), 'radpp grad: opdims');
+
+Ks = kernel3d.helm3d('s', zk);
+G = Kg.eval(src, targ);
+DG = Kdg.eval(src, targ);
+h = 1e-5;
+for j = 1:3
+    tp = targ;  tm = targ;
+    tp.r(j,:) = tp.r(j,:) + h;  tm.r(j,:) = tm.r(j,:) - h;
+    fs = (Ks.eval(src, tp) - Ks.eval(src, tm))/(2*h);
+    fd = (Kd.eval(src, tp) - Kd.eval(src, tm))/(2*h);
+    e1 = norm(G(j:3:end,:) - fs, 'fro')/norm(fs, 'fro');
+    e2 = norm(DG(j:3:end,:) - fd, 'fro')/norm(fd, 'fro');
+    assert(e1 < 1e-8, 'radpp grad 3d: %.2e', e1);
+    assert(e2 < 1e-8, 'radpp dgrad 3d: %.2e', e2);
+end
+
+end
+
+
+function test_hess_3d()
+% 'hess' is the Hessian of G: finite differences of 'grad'.
+
+helm = @(s,t) helmgreen(1.1, s, t);
+src.r  = randn(3, 20);  src.r  = src.r./vecnorm(src.r);
+targ.r = randn(3, 25);  targ.r = targ.r./vecnorm(targ.r)*1.7;
+
+Kg = kernel3d.radpp(helm, [1e-6 6], 'grad');
+Kh = kernel3d.radpp(helm, [1e-6 6], 'hess');
+assert(isequal(Kh.opdims, [6 1]), 'radpp hess: opdims');
+H = Kh.eval(src, targ);
+
+h = 1e-5;
+ih = [1 2 3; 2 4 5; 3 5 6];        % (i,j) -> xx xy xz yy yz zz
+for j = 1:3
+    tp = targ;  tm = targ;
+    tp.r(j,:) = tp.r(j,:) + h;  tm.r(j,:) = tm.r(j,:) - h;
+    fg = (Kg.eval(src, tp) - Kg.eval(src, tm))/(2*h);
+    for i = 1:3
+        f = fg(i:3:end,:);
+        err = norm(H(ih(i,j):6:end,:) - f, 'fro')/norm(f, 'fro');
+        assert(err < 1e-8, 'radpp hess 3d: %.2e', err);
+    end
+end
+
+end
+
+
+function test_trans_3d()
+% 'trans_sys' (2x2) and 'trans_rep' (1x2) match helm3d, eval and near
+% quadrature on a sphere.
+
+zk = 1.1;
+C = [0.7 -1.3; 0.4 2.1];  c = [0.9 -0.6];
+helm = @(s,t) helmgreen(zk, s, t);
+fopts = struct('eps', 1e-13);
+
+src.r  = randn(3, 30);  src.r  = src.r./vecnorm(src.r);
+src.n  = randn(3, 30);  src.n  = src.n./vecnorm(src.n);
+targ.r = randn(3, 35);  targ.r = targ.r./vecnorm(targ.r)*1.7;
+targ.n = randn(3, 35);  targ.n = targ.n./vecnorm(targ.n);
+
+S = geometries.sphere(1, 2, [0;0;0], 4, 1);
+cases = {{'trans_sys', C}, {'trans_rep', c}};
+for k = 1:numel(cases)
+    [type, cf] = cases{k}{:};
+    K  = kernel3d.radpp(helm, [1e-9 4], type, 'coefs', cf, 'opts', fopts);
+    Ke = kernel3d.helm3d(type, zk, cf);
+    assert(isequal(K.opdims, Ke.opdims), 'radpp %s: opdims', type);
+
+    A = K.eval(src, targ);  B = Ke.eval(src, targ);
+    err = norm(A - B, 'fro')/norm(B, 'fro');
+    assert(err < 1e-10, 'radpp %s eval: %.2e', type, err);
+
+    Q = K.getquad(S, 1e-7);  Qe = Ke.getquad(S, 1e-7);
+    err = norm(Q - Qe, 'fro')/norm(Qe, 'fro');
+    assert(err < 1e-6, 'radpp getquad %s: %.2e', type, err);
+end
+
+end
+
+
+function test_aliases()
+% Every name of a type gives the same kernel.
+
+helm = @(s,t) helmgreen(1.1, s, t);
+names = {{'s', 'single', 'slp'}, {'d', 'double', 'dlp'}, ...
+         {'c', 'comb', 'combined'}, {'sp', 'sprime'}, ...
+         {'dp', 'dprime'}, {'cp', 'combprime', 'cprime'}, ...
+         {'grad', 'sgrad'}, {'hess', 'shess'}, ...
+         {'trans_sys', 'transmission_sys', 'trans', 'transmission'}, ...
+         {'trans_rep', 'transmission_rep'}, ...
+         {'clamped_bc', 'clamped', 'clamped_plate_bcs', 's2trans'}};
+src.r = randn(3, 5);  src.n = src.r./vecnorm(src.r);
+targ.r = 2*randn(3, 6);  targ.n = targ.r./vecnorm(targ.r);
+for k = 1:numel(names)
+    A = kernel3d.radpp(helm, [1e-3 20], names{k}{1}).eval(src, targ);
+    for j = 2:numel(names{k})
+        K = kernel3d.radpp(helm, [1e-3 20], upper(names{k}{j}));
+        assert(isequal(K.eval(src, targ), A), ...
+               'radpp: alias ''%s'' differs', names{k}{j});
+    end
 end
 
 end

@@ -6,10 +6,12 @@
 !
 ! ipars layout
 !   ipars(1:5)  vpp pointers [nbin, n, ibins, icfs, nv], see vpp.f90
-!   ipars(6)    nderiv, highest derivative order stored (0..3)
-!   ipars(7)    ncomp, number of tensor components
+!   ipars(6)    nderiv, derivative order of the target weights
+!   ipars(7)    ncomp, number of target weights per row
 !   ipars(8)    dim, 3 (full 3D tensors) or 2 (in-plane tensors only)
-!   ipars(9)    iw, start of this kernel's weights in targinfo
+!   ipars(9)    isrc, 1 if the rows also have source weights, else 0.
+!               The profiles then go to order nderiv+1 (at most 3)
+!   ipars(10)   iw, start of this kernel's weights in targinfo
 !
 ! The profiles are complex, stored as interlaced real/imaginary parts,
 ! sampled on the positive x axis:
@@ -27,9 +29,12 @@
 !   dim = 2: [G | G_x G_y | H_xx H_xy H_yy | T_xxx T_xxy T_xyy T_yyy]
 !
 ! The kernel is
-!   K(x,y) = sum_c w_c(x) D_c G(x-y)
-! with complex weights w_c stored at the target as
-!   targinfo(iw+2c-2) + i*targinfo(iw+2c-1),  c = 1..ncomp
+!   K(x,y) = sum_c w_c(x) D_c G(x-y) + sum_c v_c(x) d_{n_y} D_c G(x-y)
+! with d_{n_y} D_c G = -sum_i n_y,i D_{c+i} G and complex weights stored
+! at the target as
+!   w_c = targinfo(iw+2c-2) + i*targinfo(iw+2c-1),  c = 1..ncomp
+!   v_c = the same, shifted by 2*ncomp (only if isrc = 1)
+! The source normal n_y is srcinfo(10:12).
 !
 ! radpp_tensors     - tensor components at a displacement (dx,dy,dz)
 ! radpp_kern        - fmm3dbie kernel, the contraction above
@@ -47,7 +52,7 @@ subroutine radpp_tensors(dx,dy,dz,ndd,dpars,ndi,ipars,comps)
   complex *16 :: g, gr, p, q, a, b
   real *8 :: w(12)
 
-  nderiv = ipars(6)
+  nderiv = ipars(6) + ipars(9)
   idim = ipars(8)
 
   if (idim .eq. 3) then
@@ -109,7 +114,7 @@ subroutine radpp_tensors3(dx,dy,dz,ndd,dpars,ndi,ipars,comps)
   complex *16 :: p, q, a, b
   real *8 :: w(12), u(3), d(3,3)
 
-  nderiv = ipars(6)
+  nderiv = ipars(6) + ipars(9)
 
   r = sqrt(dx*dx + dy*dy + dz*dz)
   u(1) = 1.0d0
@@ -170,10 +175,17 @@ subroutine radpp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
   real *8 :: src(*), targ(ndt), dpars(ndd)
   integer *8 :: ipars(ndi)
   complex *16 :: zpars(*), val
-  complex *16 :: comps(20)
+  complex *16 :: comps(20), dn
+  integer *8 :: up3(10,3), up2(6,2)
+  ! up(c,i): component of D_c G differentiated once more along x_i
+  data up3 / 2,5,6,7,11,12,13,14,15,16, 3,6,8,9,12,14,15,17,18,19, &
+             4,7,9,10,13,15,16,18,19,20 /
+  data up2 / 2,4,5,7,8,9, 3,5,6,8,9,10 /
 
   ncomp = ipars(7)
-  iw = ipars(9)
+  idim = ipars(8)
+  isrc = ipars(9)
+  iw = ipars(10)
 
   call radpp_tensors(targ(1)-src(1),targ(2)-src(2),targ(3)-src(3), &
        ndd,dpars,ndi,ipars,comps)
@@ -181,6 +193,23 @@ subroutine radpp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
   val = 0
   do i = 1,ncomp
      val = val + cmplx(targ(iw+2*i-2),targ(iw+2*i-1),kind=8)*comps(i)
+  enddo
+
+  if (isrc .eq. 0) return
+
+  iv = iw + 2*ncomp
+  do i = 1,ncomp
+     dn = 0
+     if (idim .eq. 3) then
+        do j = 1,3
+           dn = dn - src(9+j)*comps(up3(i,j))
+        enddo
+     else
+        do j = 1,2
+           dn = dn - src(9+j)*comps(up2(i,j))
+        enddo
+     endif
+     val = val + cmplx(targ(iv+2*i-2),targ(iv+2*i-1),kind=8)*dn
   enddo
 
   return
@@ -196,9 +225,9 @@ end subroutine radpp_kern
 !  zgetnearquad_ggq_guru per row.
 !
 !    - targs: real *8 (ndtarg,ntarg), locations then the complex weights
-!        of each row, ndtarg = 3 + 2*ncomp*nrow
+!        of each row, ndtarg = 3 + 2*ncomp*(1+isrc)*nrow
 !    - ipvs: integer *8 (nrow), ipv of each row (0 weakly singular,
-!        1 principal value or hypersingular)
+!        1 principal value, 2 hypersingular)
 !    - wnear: complex *16 (nrow,nquad)
 !
       implicit none
@@ -219,7 +248,7 @@ end subroutine radpp_kern
       integer *8, intent(in) :: ipars(ndi)
       complex *16, intent(out) :: wnear(nrow,nquad)
 
-      integer *8 ipars_row(9), ndi_row, ndz, ncomp, irow, i
+      integer *8 ipars_row(10), ndi_row, ndz, ncomp, irow, i
       complex *16 zpars(1)
       complex *16, allocatable :: wtmp(:)
       procedure (), pointer :: fker
@@ -228,14 +257,14 @@ end subroutine radpp_kern
       fker => radpp_kern
       ndz = 0
       zpars(1) = 0
-      ndi_row = 9
-      ipars_row(1:8) = ipars(1:8)
+      ndi_row = 10
+      ipars_row(1:9) = ipars(1:9)
       ncomp = ipars(7)
 
       allocate(wtmp(nquad))
 
       do irow = 1,nrow
-        ipars_row(9) = 4 + 2*ncomp*(irow-1)
+        ipars_row(10) = 4 + 2*ncomp*(1+ipars(9))*(irow-1)
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
         do i = 1,nquad
