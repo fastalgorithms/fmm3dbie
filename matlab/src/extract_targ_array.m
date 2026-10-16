@@ -21,13 +21,13 @@ function [targs] = extract_targ_array(targinfo)
     
     targs = targinfo.r(:,:);    
     
-    has_geom = any([has_targ_field(targinfo,'du'), ...
-        has_targ_field(targinfo,'dv'), has_targ_field(targinfo,'n')]);
+    has_dudv = any([has_targ_field(targinfo,'du'), ...
+        has_targ_field(targinfo,'dv')]);
     has_tau = has_targ_field(targinfo,'tau');
     has_d = has_targ_field(targinfo,'d');
-    if sum([has_geom, has_tau, has_d]) > 1
+    if sum([has_dudv, has_tau, has_d]) > 1
         error('FMM3DBIE:extract_targ_array:overlap', ...
-            'Target fields du/dv/n, tau, and d use overlapping rows.');
+            'Target fields du/dv, tau, and d use overlapping rows.');
     end
 
     if has_targ_field(targinfo,'du')

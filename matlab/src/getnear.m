@@ -123,3 +123,12 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc.nnz     = length(col_ind);
     rsc.nquad   = iquad(nnz+1)-1;
 end
+
+%
+
+
+%
+%%  2D volume potentials: Laplace, Helmholtz, flexural
+%%
+%
+
