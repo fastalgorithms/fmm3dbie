@@ -34,6 +34,11 @@ if ~ismatrix(g)
     error('KERNEL3D:times:invalid', 'numeric factor must be a 2D array');
 end
 
+if isscalar(g) && kernel3d.radgreen('compatible', f)
+    f = kernel3d.radgreen('scale', f, g);
+    return
+end
+
 if isscalar(g)
     f = times_scalar(f, g);
     return
