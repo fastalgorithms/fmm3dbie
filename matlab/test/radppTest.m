@@ -848,6 +848,20 @@ assert(err < 1e-13, 'radgreen sp(k1) - sp(k2): %.2e', err);
 K = Ks + kernel3d(g2, 'd');
 assert(~strcmp(K.name, 'radgreen'), 'radgreen: s(g1) + d(g2) merged');
 
+% separately created handles: merged when the text and captured values
+% agree, not otherwise
+z = zk;   K1 = kernel3d(@(s,t) helm3d.green(z, s, t), 's');
+K2 = kernel3d(@(s,t) helm3d.green(z, s, t), 'd');
+K = K1 + K2;
+assert(strcmp(K.name, 'radgreen') && numel(K.params.green.parts) == 1, ...
+       'radgreen: equal anonymous greens not merged');
+z = k2;   K3 = kernel3d(@(s,t) helm3d.green(z, s, t), 'd');
+K = K1 + K3;
+assert(~strcmp(K.name, 'radgreen'), 'radgreen: different captured zk merged');
+B = h('s', zk) + h('d', k2);
+err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
+assert(err < 1e-13, 'radgreen s(zk) + d(k2): %.2e', err);
+
 end
 
 

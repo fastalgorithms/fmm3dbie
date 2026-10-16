@@ -313,13 +313,28 @@ tf = isgreen(Ks) && ~isempty(Ks{1}.params.key) && ...
 end
 
 
+function tf = samegreen(g1, g2)
+% equal handles, or anonymous functions with the same text and the same
+% captured values
+tf = isequal(g1, g2);
+if tf, return; end
+try
+    f1 = functions(g1);  f2 = functions(g2);
+    tf = strcmp(f1.type, 'anonymous') && strcmp(f2.type, 'anonymous') && ...
+         strcmp(f1.function, f2.function) && isequal(f1.workspace, f2.workspace);
+catch
+    tf = false;
+end
+end
+
+
 function lam = ratio(G1, G2)
 % lam with G2 = lam*G1, or [] if the greens are not proportional
 lam = [];
 if numel(G1.parts) ~= numel(G2.parts), return; end
 c1 = G1.c(:);  c2 = zeros(size(c1));
 for k = 1:numel(G2.parts)
-    i = find(cellfun(@(q) isequal(q.handle, G2.parts{k}.handle), G1.parts), 1);
+    i = find(cellfun(@(q) samegreen(q.handle, G2.parts{k}.handle), G1.parts), 1);
     if isempty(i), return; end
     c2(i) = G2.c(k);
 end
@@ -336,7 +351,7 @@ parts = {};  c = [];
 for k = 1:numel(Ks)
     G = Ks{k}.params.green;
     for j = 1:numel(G.parts)
-        i = find(cellfun(@(q) isequal(q.handle, G.parts{j}.handle), parts), 1);
+        i = find(cellfun(@(q) samegreen(q.handle, G.parts{j}.handle), parts), 1);
         if isempty(i)
             parts{end+1} = G.parts{j};  c(end+1) = 0;  %#ok<AGROW>
             i = numel(parts);
