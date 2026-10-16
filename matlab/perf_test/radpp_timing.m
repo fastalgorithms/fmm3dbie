@@ -16,7 +16,8 @@ for type = {'s', 'cp'}
     type = type{1};
     Ke = kernel3d.helm3d(type, zk, coefs(:));
 
-    tic;  Kr = kernel3d.radpp(g, [1e-9 3], type, 'coefs', coefs);
+    args = {};  if strcmp(type, 'cp'), args = {coefs}; end
+    tic;  Kr = kernel3d.radpp(g, [1e-9 3], type, args{:});
     tb = toc;
 
     tic;  Qe = Ke.getquad(S, eps, S, opts);  tqe = toc;

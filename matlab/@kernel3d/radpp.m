@@ -3,6 +3,7 @@ function obj = radpp(green, rmax, type, varargin)
 %   Green's function and its derivatives.
 %
 %   K = KERNEL3D.RADPP(green, rmax, type)
+%   K = KERNEL3D.RADPP(green, rmax, type, coefs)  % or nu, plate kernels
 %   K = KERNEL3D.RADPP(green, rmax, type, 'nu', nu, 'ipv', ipv, ...)
 %   K = KERNEL3D.RADPP(green, rmax, wfun, 'nderiv', nd, 'opdims', [m 1], ...)
 %   K = KERNEL3D.RADPP(green, rmax)            % type 's'
@@ -97,7 +98,7 @@ function obj = radpp(green, rmax, type, varargin)
 %
 %   Example:
 %      green = @(s,t) helm3d.green(zk, s, t);
-%      K = kernel3d.radpp(green, 10, 'cp', 'coefs', [1 1i]);
+%      K = kernel3d.radpp(green, 10, 'cp', [1 1i]);
 %
 % See also RADPP_FIT, RADPP_ROTATE
 
@@ -124,6 +125,34 @@ if isstruct(type) && ~isspec
     end
     fo = rmfield(fo, intersect(fieldnames(fo), {'rmin','zk','kernel_order'}));
     varargin = [varargin, {'opts', fo}];
+end
+
+% positional parameter after the type, as in helm3d: coefs, or nu for
+% the plate kernels
+npos = find(cellfun(@ischar, varargin), 1) - 1;
+if isempty(npos), npos = numel(varargin); end
+if npos > 1
+    error('KERNEL3D.RADPP: one positional parameter (coefs or nu) after the type.');
+end
+if npos == 1
+    if ~ischar(type)
+        error('KERNEL3D.RADPP: positional coefs or nu need a built-in type.');
+    end
+    pname = 'coefs';
+    if any(strcmpi(type, {'supported_bc', 'supported', 'supported_plate_bcs', ...
+                          'free_bc', 'free', 'free_plate_bcs'}))
+        pname = 'nu';
+    end
+    if any(strcmpi(varargin(2:2:end), pname))
+        error('KERNEL3D.RADPP: %s given twice.', pname);
+    end
+    varargin = [{pname}, varargin];
+end
+if ischar(type) && any(strcmpi(varargin(1:2:end), 'coefs')) && ...
+        ~any(strcmpi(type, {'c', 'comb', 'combined', 'cp', 'combprime', ...
+            'cprime', 'c2trans', 'trans_sys', 'transmission_sys', 'trans', ...
+            'transmission', 'trans_rep', 'transmission_rep'}))
+    error('KERNEL3D.RADPP: type ''%s'' takes no coefs.', type);
 end
 
 o = struct('nu', [], 'ipv', [], 'opts', struct(), 'nderiv', [], ...

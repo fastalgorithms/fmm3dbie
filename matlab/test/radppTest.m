@@ -441,7 +441,8 @@ targ.n = randn(3, nt);  targ.n = targ.n./vecnorm(targ.n);
 
 types = {'d', 'c', 'dp', 'cp', 's2trans', 'd2trans', 'c2trans'};
 for k = 1:numel(types)
-    K  = kernel3d.radpp(helm, [1e-6 6], types{k}, 'coefs', coefs);
+    ca = cfs(types{k}, coefs);
+    K  = kernel3d.radpp(helm, [1e-6 6], types{k}, ca{:});
     Ke = kernel3d.helm3d(types{k}, zk, coefs(:));
     A = K.eval(src, targ);
     B = Ke.eval(src, targ);
@@ -463,7 +464,8 @@ helm = @(s,t) helmgreen(zk, s, t);
 
 types = {'d', 'c', 'dp', 'cp', 'c2trans'};
 for k = 1:numel(types)
-    K  = kernel3d.radpp(helm, [1e-9 4], types{k}, 'coefs', coefs, ...
+    ca = cfs(types{k}, coefs);
+    K  = kernel3d.radpp(helm, [1e-9 4], types{k}, ca{:}, ...
                         'opts', struct('eps', 1e-13));
     Ke = kernel3d.helm3d(types{k}, zk, coefs(:));
     Q  = K.getquad(S, eps);
@@ -764,7 +766,8 @@ targ.n = randn(3, 30);  targ.n = targ.n./vecnorm(targ.n);
 
 types = {'s', 'd', 'c', 'sp', 'dp', 'cp'};
 for k = 1:numel(types)
-    K  = kernel3d(g, types{k}, 'coefs', coefs);
+    ca = cfs(types{k}, coefs);
+    K  = kernel3d(g, types{k}, ca{:});
     Ke = kernel3d.helm3d(types{k}, zk, coefs(:));
     A = K.eval(src, targ);  B = Ke.eval(src, targ);
     err = norm(A - B, 'fro')/norm(B, 'fro');
@@ -1041,6 +1044,30 @@ for k = 1:numel(names)
     end
 end
 
+% positional coefs and nu, as in helm3d
+c = [1 1i];
+A = kernel3d.radpp(helm, [1e-3 20], 'cp', 'coefs', c).eval(src, targ);
+B = kernel3d.radpp(helm, [1e-3 20], 'cp', c).eval(src, targ);
+assert(isequal(A, B), 'radpp: positional coefs');
+g = @(s,t) helm3d.green(1.1, s, t);
+A = kernel3d(g, 'c', 'coefs', c).eval(src, targ);
+B = kernel3d(g, 'c', c).eval(src, targ);
+assert(isequal(A, B), 'radgreen: positional coefs');
+t2 = struct('r', targ.r(1:2,:), 'n', targ.n(1:2,:), ...
+            'd', targ.n(1:2,:), 'd2', targ.n(1:2,:));
+s2 = struct('r', src.r(1:2,:), 'n', src.n(1:2,:));
+A = kernel3d.radpp(helm, [1e-3 20], 'supported', 'nu', 0.3, 'dim', 2).eval(s2, t2);
+B = kernel3d.radpp(helm, [1e-3 20], 'supported', 0.3, 'dim', 2).eval(s2, t2);
+assert(isequal(A, B), 'radpp: positional nu');
+for bad = {{'s', [1 2]}, {'s', 'coefs', [1 2]}, {'c', [1 2], 'coefs', [3 4]}}
+    try
+        kernel3d(g, bad{1}{:});
+        error('radpp:test', 'radgreen: bad positional coefs accepted');
+    catch ME
+        assert(~strcmp(ME.identifier, 'radpp:test'), ME.message);
+    end
+end
+
 end
 
 
@@ -1264,4 +1291,13 @@ function C = tens(dx, dy, dz, p, varargin)
 % tensors from the fit in the params p of a radpp kernel
 r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
 C = radpp_rotate(dx, dy, dz, radpp_eval(r, p.breaks, p.coefs), varargin{:});
+end
+
+
+function a = cfs(type, coefs)
+% the 'coefs' option, for the types that take it
+a = {};
+if any(strcmp(type, {'c', 'cp', 'c2trans', 'trans_sys', 'trans_rep'}))
+    a = {'coefs', coefs};
+end
 end

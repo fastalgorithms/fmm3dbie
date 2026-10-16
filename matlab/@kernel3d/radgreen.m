@@ -17,7 +17,7 @@ function obj = radgreen(green, type, varargin)
 %
 %   Example:
 %      g = @(s,t) helm3d.green(zk, s, t);
-%      K = kernel3d(g, 'cp', 'coefs', [1 1i]);
+%      K = kernel3d(g, 'cp', [1 1i]);
 %
 % See also KERNEL3D.RADPP
 
@@ -26,6 +26,11 @@ if ischar(green)
     return
 end
 if nargin < 2 || isempty(type), type = 's'; end
+
+% a positional coefs or nu goes to radpp as is
+npos = find(cellfun(@ischar, varargin), 1) - 1;
+if isempty(npos), npos = numel(varargin); end
+pos = varargin(1:npos);  varargin(1:npos) = [];
 
 % the singularity of green, detected or given
 sing = [];
@@ -56,7 +61,7 @@ if isempty(sing), sing = gsing(@(r) sum(abs(prof(r, 0)), 2)); end
 
 part = struct('profiles', prof, 'check', check, 'handle', green, ...
               'sing', sing, 'tensor', istensor);
-obj = kernel3d.radpp(mkgreen({part}, 1), [], type, varargin{:});
+obj = kernel3d.radpp(mkgreen({part}, 1), [], type, pos{:}, varargin{:});
 % built-in types: kernels of one type on different greens add as that
 % type on the sum of the greens
 obj.params.key = [];
