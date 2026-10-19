@@ -46,6 +46,7 @@ test_radgreen_rlb_getquad();
 test_radgreen_mfie();
 test_radgreen_fmm();
 test_fmm_option();
+test_grad_ntrace();
 test_radpp_sum();
 
 % beyond helmholtz on one surface: laplace, yukawa, two surfers, custom
@@ -1165,10 +1166,84 @@ assert(~strcmp(K.name, 'radpp'), 'radpp sum: different types merged');
 end
 
 
+function test_grad_ntrace()
+% grad and normaltrace (ntrace) against the gradient and prime types, with
+% their fmms, for radpp, radgreen and the built-in kernels
+
+zk = 1.3;
+g = @(s,t) helm3d.green(zk, s, t);
+fmm = @(eps,s,pg,t,pgt) hfmm3d(eps, zk, s, pg, t, pgt);
+src.r = randn(3, 30);  src.n = randn(3, 30);  src.n = src.n./vecnorm(src.n);
+targ.r = randn(3, 20) + [5;0;0];
+targ.n = randn(3, 20);  targ.n = targ.n./vecnorm(targ.n);
+
+tab = {'s', 'sp', 'grad'; 'd', 'dp', 'dgrad'; 'c', 'cp', 'cgrad'; ...
+    'trans_rep', 'trep_prime', 'trep_grad'};
+mks = {@(type, a) kernel3d.radpp(g, [1e-6 20], type, a{:}, 'fmm', fmm), ...
+       @(type, a) kernel3d(g, type, a{:}, 'fmm', fmm)};
+for i = 1:size(tab, 1)
+    a = targs3(tab{i,1});
+    for k = 1:2
+        K = mks{k}(tab{i,1}, a);
+        E = mks{k}(tab{i,2}, a);
+        Kn = normaltrace(K);
+        A = E.eval(src, targ);
+        sig = complex(randn(size(A,2), 2), randn(size(A,2), 2));
+        assert(norm(Kn.eval(src, targ) - A, 'fro') < 1e-14*norm(A, 'fro'), ...
+            'normaltrace %s (%d)', tab{i,1}, k);
+        assert(norm(Kn.fmm(1e-12, src, targ, sig) - A*sig, 'fro') < ...
+            1e-10*norm(A*sig, 'fro'), 'normaltrace fmm %s (%d)', tab{i,1}, k);
+        assert(isequal(Kn.params.ipv, E.params.ipv), 'normaltrace ipv %s (%d)', ...
+            tab{i,1}, k);
+        assert(isequal(ntrace(K).eval(src, targ), Kn.eval(src, targ)), ...
+            'ntrace %s (%d)', tab{i,1}, k);
+        A = mks{k}(tab{i,3}, a).eval(src, targ);
+        assert(norm(grad(K).eval(src, targ) - A, 'fro') < ...
+            1e-14*norm(A, 'fro'), 'grad %s (%d)', tab{i,1}, k);
+    end
+end
+
+% the new types against the existing ones
+c = [0.7 2i];
+for k = 1:2
+    G = mks{k}('grad', {}).eval(src, targ);
+    DG = mks{k}('dgrad', {}).eval(src, targ);
+    A = mks{k}('cgrad', {c}).eval(src, targ);
+    assert(norm(A - c(1)*G - c(2)*DG, 'fro') < 1e-12*norm(A, 'fro'), 'cgrad (%d)', k);
+    A = mks{k}('trep_grad', {c}).eval(src, targ);
+    assert(norm(A(:,1:2:end) - c(1)*DG, 'fro') + norm(A(:,2:2:end) - c(2)*G, 'fro') ...
+        < 1e-12*norm(A, 'fro'), 'trep_grad (%d)', k);
+    T = mks{k}('trans_sys', {[1 1; c]}).eval(src, targ);
+    A = mks{k}('trep_prime', {c}).eval(src, targ);
+    assert(norm(A - T(2:2:end,:), 'fro') < 1e-12*norm(A, 'fro'), 'trep_prime (%d)', k);
+    assert(isequal(mks{k}('trans_rep_prime', {c}).eval(src, targ), A), ...
+        'trans_rep_prime alias (%d)', k);
+end
+
+% the built-in kernels
+Ks = {kernel3d.lap3d('d'), kernel3d.lap3d('dp'); ...
+      kernel3d.helm3d('c', zk, [1 2i]), kernel3d.helm3d('cp', zk, [1 2i])};
+for i = 1:size(Ks, 1)
+    A = Ks{i,2}.eval(src, targ);
+    assert(norm(normaltrace(Ks{i,1}).eval(src, targ) - A, 'fro') < ...
+        1e-14*norm(A, 'fro'), 'built-in normaltrace %d', i);
+end
+
+caught = false;
+try
+    grad(kernel3d.radpp(g, 20, 'sp'));
+catch
+    caught = true;
+end
+assert(caught, 'grad: prime type not rejected');
+end
+
+
 function a = targs3(type)
 % the parameter of the types that take one
 a = {};
-if any(strcmp(type, {'c','cp','c2trans','trans_rep'})), a = {[1 2i]}; end
+if any(strcmp(type, {'c','cp','cgrad','c2trans','trans_rep', ...
+        'trep_prime','trep_grad','trans_rep_prime'})), a = {[1 2i]}; end
 if strcmp(type, 'trans_sys'), a = {[1 2; 3i 4]}; end
 end
 

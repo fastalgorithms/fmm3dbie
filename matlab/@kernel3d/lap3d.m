@@ -21,7 +21,7 @@ obj.ifcomplex = 0;
 
 switch lower(type)
 
-    case {'s', 'single'}
+    case {'s', 'single', 'slp'}
         obj.type = 's';
         obj.kernel_order = -1;
 
@@ -34,7 +34,7 @@ switch lower(type)
                           lap3d.dirichlet.get_quadrature_correction(S, eps, dpars_s, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
-    case {'d', 'double'}
+    case {'d', 'double', 'dlp'}
         obj.type = 'd';
         obj.kernel_order = 0;
 
@@ -78,7 +78,7 @@ switch lower(type)
         obj.src_fields = {'n'};
         obj.targ_fields = {'n'};
 
-    case {'c', 'combined'}
+    case {'c', 'combined', 'comb'}
         if ( nargin < 2 )
             warning('KERNEL3D.LAP3D: missing coefs for combined layer. Defaulting to [1 1].');
             coefs = [1; 1];
@@ -100,7 +100,7 @@ switch lower(type)
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
 
-    case {'cp', 'cprime'}
+    case {'cp', 'cprime', 'combprime'}
         if ( nargin < 2 )
             warning('KERNEL3D.LAP3D: missing coefs for cprime. Defaulting to [1 1].');
             coefs = [1; 1];

@@ -68,7 +68,7 @@ switch lower(type)
     %  Single-wavenumber scalar kernels
     % ----------------------------------------------------------------
 
-    case {'s', 'single'}
+    case {'s', 'single', 'slp'}
         obj.type         = 's';
         obj.kernel_order = -1;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 's');
@@ -78,7 +78,7 @@ switch lower(type)
                                helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
-    case {'d', 'double'}
+    case {'d', 'double', 'dlp'}
         obj.type         = 'd';
         obj.kernel_order = 0;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'd');
@@ -112,7 +112,7 @@ switch lower(type)
         obj.src_fields   = {'n'};
         obj.targ_fields  = {'n'};
 
-    case {'c', 'combined'}
+    case {'c', 'combined', 'comb'}
         if isempty(coefs), coefs = [1; 1]; end
         coefs = coefs(:);
         obj.type         = 'c';
@@ -125,7 +125,7 @@ switch lower(type)
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
 
-    case {'cp', 'cprime'}
+    case {'cp', 'cprime', 'combprime'}
         if isempty(coefs), coefs = [1; 1]; end
         coefs = coefs(:);
         obj.type         = 'cprime';
@@ -189,7 +189,7 @@ switch lower(type)
     %
     %  Built via interleave.
     % ----------------------------------------------------------------
-    case {'trans_sys', 'transmission_sys', 'trans', 'transmission'}
+    case {'trans_sys', 'transmission_sys', 'trans', 'transmission', 'tsys'}
         if nargin < 3 || isempty(coefs), coefs = ones(2,2); end
         if ~isequal(size(coefs), [2 2])
             error('KERNEL3D.HELM3D: trans_sys coefs must be 2x2.');
@@ -210,7 +210,7 @@ switch lower(type)
     %  u(x) = coefs(1)*D[rho](x) + coefs(2)*S[sigma](x)
     %  coefs default [1;1].
     % ----------------------------------------------------------------
-    case {'trans_rep', 'transmission_rep'}
+    case {'trans_rep', 'transmission_rep', 'trep'}
         if nargin < 3 || isempty(coefs), coefs = [1; 1]; end
         coefs = coefs(:);
         obj              = kernel3d.interleave([coefs(1) .* kernel3d.helm3d('d', zk), ...
@@ -223,19 +223,19 @@ switch lower(type)
     % ----------------------------------------------------------------
     %  s2trans / d2trans / c2trans  -- [2x1] single-zk stacking kernels
     % ----------------------------------------------------------------
-    case {'s2trans'}
+    case {'s2trans', 's2t'}
         obj      = kernel3d.interleave([kernel3d.helm3d('s', zk); kernel3d.helm3d('sp', zk)]);
         obj.type = 's2trans';
         obj.zk   = zk;
         obj.fmm  = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 's2trans', sigma);
 
-    case {'d2trans'}
+    case {'d2trans', 'd2t'}
         obj      = kernel3d.interleave([kernel3d.helm3d('d', zk); kernel3d.helm3d('dp', zk)]);
         obj.type = 'd2trans';
         obj.zk   = zk;
         obj.fmm  = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'd2trans', sigma);
 
-    case {'c2trans'}
+    case {'c2trans', 'c2t', 'c2tr'}
         if nargin < 3 || isempty(coefs), coefs = [1; 1]; end
         coefs = coefs(:);
         obj      = kernel3d.interleave([kernel3d.helm3d('c',  zk, coefs); ...

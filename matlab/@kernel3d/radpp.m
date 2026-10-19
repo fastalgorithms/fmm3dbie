@@ -47,21 +47,24 @@ function obj = radpp(green, rmax, type, varargin)
 %      'sp'           ('sprime')                   G_{n_x}
 %      'dp'           ('dprime')                   G_{n_x n_y}
 %      'cp'           ('combprime', 'cprime')      alpha G_{n_x} + beta G_{n_x n_y}
-%      'grad'         ('sgrad')                    grad_x G, opdims [dim 1]
-%      'dgrad'                                     grad_x G_{n_y}
+%      'grad'         ('sgrad', 'sg')              grad_x G, opdims [dim 1]
+%      'dgrad'        ('dg')                       grad_x G_{n_y}
+%      'cgrad'        ('cg')                       alpha grad_x G + beta grad_x G_{n_y}
 %      'hess'         ('shess')                    [G_xx G_xy G_xz G_yy G_yz G_zz]
 %                                                  (dim 2: [G_xx G_xy G_yy])
-%      'trans_sys'    ('transmission_sys', 'trans', 'transmission')
+%      'trans_sys'    ('transmission_sys', 'trans', 'transmission', 'tsys')
 %                                                  [c11 D, c12 S; c21 D', c22 S'],
 %                                                  coefs 2x2 (default ones)
-%      'trans_rep'    ('transmission_rep')         [c1 D, c2 S]
+%      'trans_rep'    ('transmission_rep', 'trep') [c1 D, c2 S]
+%      'trep_prime'   ('trepp', 'trans_rep_prime') [c1 D', c2 S']
+%      'trep_grad'    ('trepg', 'trans_rep_grad')  [c1 grad_x D, c2 grad_x S]
 %   dim = 3 only, on Cartesian vector densities, opdims [3 3]:
 %      'mfie'         ('nxcurls', 'n_cross_curl_s') n_x x curl S[J]
 %      'curls'                                     curl S[J] = grad G x J
-%      'clamped_bc'   ('clamped', 'clamped_plate_bcs', 's2trans')
+%      'clamped_bc'   ('clamped', 'clamped_plate_bcs', 's2trans', 's2t')
 %                                                  [G; G_{n_x}]
-%      'd2trans'                                   [G_{n_y}; G_{n_x n_y}]
-%      'c2trans'                                   ['c'; 'cp']
+%      'd2trans'      ('d2t')                      [G_{n_y}; G_{n_x n_y}]
+%      'c2trans'      ('c2t', 'c2tr')              ['c'; 'cp']
 %   dim = 2 only:
 %      'supported_bc' ('supported', 'supported_plate_bcs')
 %                                                  [G; G_{n_x n_x} + nu G_{t_x t_x}]
@@ -168,8 +171,11 @@ if npos == 1
 end
 if ischar(type) && any(strcmpi(varargin(1:2:end), 'coefs')) && ...
         ~any(strcmpi(type, {'c', 'comb', 'combined', 'cp', 'combprime', ...
-            'cprime', 'c2trans', 'trans_sys', 'transmission_sys', 'trans', ...
-            'transmission', 'trans_rep', 'transmission_rep'}))
+            'cprime', 'c2trans', 'c2t', 'c2tr', 'trans_sys', 'transmission_sys', ...
+            'trans', 'transmission', 'tsys', 'trans_rep', 'transmission_rep', ...
+            'trep', 'cgrad', 'cg', 'trep_prime', 'trepp', 'trep_p', 'trans_rep_prime', ...
+            'trans_rep_p', 'trep_grad', 'trepg', 'trep_g', 'trans_rep_grad', ...
+            'trans_rep_g'}))
     error('KERNEL3D.RADPP: type ''%s'' takes no coefs.', type);
 end
 
@@ -313,7 +319,8 @@ obj.params = struct('green', green, 'rmin', rmin, 'rmax', rmax, ...
     'ent', spec.ent, 'ipars', ipars, 'dpars', dpars, ...
     'breaks', info.breaks, 'coefs', info.coefs, 'err', info.err, ...
     'fitopts', fitopts, 'spec', spec, 'gmode', gmode, ...
-    'profun', [], 'ipost', ipost, 'kernel_order', kernel_order);
+    'profun', [], 'ipost', ipost, 'kernel_order', kernel_order, ...
+    'fmm', o.fmm);
 if gmode, obj.params.profun = profun; end
 
 obj.params.targs = @(t) radpp_targs(t, spec.wfun, spec.vfun);  % for radpp_kern
@@ -387,15 +394,18 @@ switch lower(type)
         spec = kspec('dp', 1, 1, {'n'}, z1, dn, 2);
     case {'cp', 'combprime', 'cprime'}
         spec = kspec('cp', 1, 1, {'n'}, @(t) al*dn(t), @(t) be*dn(t), ipvcp);
-    case {'grad', 'sgrad'}
+    case {'grad', 'sgrad', 'sg'}
         spec = kspec('grad', 1, dim, {}, @(t) w_grad(t, dim), [], 1);
-    case {'dgrad'}
+    case {'dgrad', 'dg'}
         spec = kspec('dgrad', 1, dim, {}, @(t) 0*w_grad(t, dim), ...
                      @(t) w_grad(t, dim), 2);
+    case {'cgrad', 'cg'}
+        spec = kspec('cgrad', 1, dim, {}, @(t) al*w_grad(t, dim), ...
+                     @(t) be*w_grad(t, dim), ipvcp);
     case {'hess', 'shess'}
         nh = dim*(dim+1)/2;
         spec = kspec('hess', 2, nh, {}, @(t) w_hess(t, dim), [], 2);
-    case {'trans_sys', 'transmission_sys', 'trans', 'transmission'}
+    case {'trans_sys', 'transmission_sys', 'trans', 'transmission', 'tsys'}
         % entries (1,1) D, (2,1) D', (1,2) S, (2,2) S', column-major
         c = coefs;
         if isequal(size(c), [1 2]) && all(c == [1 1]), c = ones(2); end
@@ -407,17 +417,27 @@ switch lower(type)
                               c(2,2)*dn(t)), ...
                      @(t) cat(3, [c(1,1)*one(t), zeros(size(t.r,2), dim)], c(2,1)*dn(t), ...
                               z1(t), z1(t)), [1 2 0 1]);
-    case {'trans_rep', 'transmission_rep'}
+    case {'trans_rep', 'transmission_rep', 'trep'}
         spec = kspec('trans_rep', 0, [1 2], {}, ...
                      @(t) cat(3, zero(t), be*one(t)), ...
                      @(t) cat(3, al*one(t), zero(t)), [1 0]);
-    case {'clamped_bc', 'clamped', 'clamped_plate_bcs', 's2trans'}
+    case {'trep_prime', 'trepp', 'trep_p', 'trans_rep_prime', 'trans_rep_p'}
+        spec = kspec('trep_prime', 1, [1 2], {'n'}, ...
+                     @(t) cat(3, z1(t), be*dn(t)), ...
+                     @(t) cat(3, al*dn(t), z1(t)), [2 1]);
+    case {'trep_grad', 'trepg', 'trep_g', 'trans_rep_grad', 'trans_rep_g'}
+        % entries (j,1) c1 D_{x_j}, (j,2) c2 S_{x_j}, column-major
+        spec = kspec('trep_grad', 1, [dim 2], {}, ...
+                     @(t) cat(3, 0*w_grad(t, dim), be*w_grad(t, dim)), ...
+                     @(t) cat(3, al*w_grad(t, dim), 0*w_grad(t, dim)), ...
+                     [2*ones(1, dim), ones(1, dim)]);
+    case {'clamped_bc', 'clamped', 'clamped_plate_bcs', 's2trans', 's2t'}
         spec = kspec('clamped_bc', 1, 2, {'n'}, ...
                      @(t) cat(3, [one(t), zeros(size(t.r,2), dim)], dn(t)), [], [0 1], 0);
-    case {'d2trans'}
+    case {'d2trans', 'd2t'}
         spec = kspec('d2trans', 1, 2, {'n'}, @(t) cat(3, z1(t), z1(t)), ...
                      @(t) cat(3, [one(t), zeros(size(t.r,2), dim)], dn(t)), [1 2]);
-    case {'c2trans'}
+    case {'c2trans', 'c2t', 'c2tr'}
         spec = kspec('c2trans', 1, 2, {'n'}, ...
                      @(t) al*cat(3, [one(t), zeros(size(t.r,2), dim)], dn(t)), ...
                      @(t) be*cat(3, [one(t), zeros(size(t.r,2), dim)], dn(t)), [ipvc ipvcp]);
