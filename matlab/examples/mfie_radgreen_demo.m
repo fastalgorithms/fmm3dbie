@@ -2,22 +2,21 @@
 %
 %    J/2 - n x curl S_k[J] = n x H_inc
 %
-% with n x curl S_k built from helm3d.green by kernel3d(g, 'mfie'). The
-% scattered field curl S_k[J] is compared with the NRCCIE solution from
-% em3d.pec.
+% with n x curl S_k built from helm3d.green by kernel3d(g, 'mfie') and its
+% fmm from hfmm3d by the 'fmm' option. The scattered field curl S_k[J] is
+% compared with the NRCCIE solution from em3d.pec.
 
 zk  = 1.5;
 eps = 1e-7;
 S = geometries.ellipsoid([1, 0.8, 1.2], [2, 2, 2], [0;0;0], 8);
 N = S.npts;
 
+% the fmm of the green, from which the fmms of the kernels are built (one
+% hfmm3d call with a density for each component of J)
 g = @(s,t) helm3d.green(zk, s, t);
-Kmfie = kernel3d(g, 'mfie', 'zk', zk);      % n x curl S_k, opdims [3 3]
-Kcurl = kernel3d(g, 'curls', 'zk', zk);     % curl S_k,     opdims [3 3]
-
-% radgreen kernels have no fmm, so attach em3d's
-Kmfie.fmm = @(eps, s, t, sigma) em3d.fmm(eps, zk, s, t, 'mfie', sigma);
-Kcurl.fmm = @(eps, s, t, sigma) em3d.fmm(eps, zk, s, t, 'curls', sigma);
+fmm = @(eps, s, pg, t, pgt) hfmm3d(eps, zk, s, pg, t, pgt);
+Kmfie = kernel3d(g, 'mfie', 'zk', zk, 'fmm', fmm);   % n x curl S_k, opdims [3 3]
+Kcurl = kernel3d(g, 'curls', 'zk', zk, 'fmm', fmm);  % curl S_k,     opdims [3 3]
 
 % incident plane wave
 dir = [pi/3, 0];  pol = [1; 0.2];

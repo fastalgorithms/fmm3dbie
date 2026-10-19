@@ -27,7 +27,7 @@ function varargout = fmm(eps, srcinfo, targinfo, type, sigma, varargin)
 % Output:
 %   pot  - potential (nt x 1)
 %   grad - gradient (3 x nt)
-%   hess - Hessian (6 x nt), stored as [xx xy xz yy yz zz]
+%   hess - Hessian (6 x nt), ordered [xx yy zz xy xz yz] as in LFMM3D
 
 if ( nargout == 0 )
     warning('LAP3D:fmm:empty', ...

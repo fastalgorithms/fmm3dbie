@@ -8,6 +8,10 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
         f = kernel3d.radgreen('sum', f, 1, g, 1);
         return
     end
+    if kernel3d.radpp('summable', {f, g})
+        f = kernel3d.radpp('sum', {f, g}, [1 1]);
+        return
+    end
     assert(all(f.opdims == g.opdims), ...
         'kernel3d dimensions must agree to add');
 

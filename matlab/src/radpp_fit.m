@@ -9,11 +9,16 @@ function [ipars,dpars,info] = radpp_fit(f,rmin,rmax,opts)
 %  src/kernels/vpp.f90 as complex data (ipars(5) = 2*m).
 %
 %  opts:
-%    norder  - terms per panel (default 6)
+%    norder  - terms per panel (default 12)
 %    eps     - tolerance (default 1e-12)
 %    nlevmax - max levels (default ceil(log2(rmax/rmin)) + 20), warns
 %    maxsub  - max panels (default 400000), errors
 %    noise   - absolute error noise(j)/r allowed in component j (default 0)
+%    stopnoise - stop at the noise level of f, see below (default true)
+%
+%  A panel whose error stops halving when split, below 1e-4, is assumed
+%  to have stalled due to noise. Set stopnoise = false for f with sharp
+%  features.
 %
 %  info: nbin, nlev, err, breaks (nbin+1,1), coefs (nbin,norder,m)
 %
@@ -25,16 +30,18 @@ if ~(rmin > 0) || ~(rmax > rmin)
     error('RADPP_FIT: need 0 < rmin < rmax.');
 end
 
-norder  = 6;
+norder  = 12;
 tol     = 1e-12;
 nlevmax = ceil(log2(rmax/rmin)) + 20;
 maxsub  = 400000;
 noise   = 0;
+stopnoise = true;
 if isfield(opts,'norder'),  norder  = opts.norder;  end
 if isfield(opts,'eps'),     tol     = opts.eps;     end
 if isfield(opts,'nlevmax'), nlevmax = opts.nlevmax; end
 if isfield(opts,'maxsub'),  maxsub  = opts.maxsub;  end
 if isfield(opts,'noise'),   noise   = opts.noise;   end
+if isfield(opts,'stopnoise'), stopnoise = opts.stopnoise; end
 
 n  = norder;
 x  = cos((2*(1:n).'-1)*pi/(2*n));          % Chebyshev nodes on [-1,1]
@@ -51,6 +58,10 @@ fv = reshape(fv,n,1,m);
 ad = zeros(0,1);  bd = zeros(0,1);  fd = zeros(n,0,m);
 err = 0;
 
+% error of the parent of each panel
+ep = inf;
+inoise = false(0,1);
+
 for ilev = 1:nlevmax
 
     na = numel(a);
@@ -59,7 +70,8 @@ for ilev = 1:nlevmax
     fi = reshape(amat*reshape(fv,n,na*m),2*n,na,m);        % interpolated
 
     e = relerr(fo-fi, fo, noise, tol, a);
-    done = e <= tol;
+    stag = stopnoise & e > tol & e > ep/2 & e < 1e-4;
+    done = e <= tol | stag;
     if ilev == nlevmax
         done(:) = true;
         if any(e > tol)
@@ -71,6 +83,7 @@ for ilev = 1:nlevmax
     end
     err = max([err; e(done)]);
 
+    inoise = [inoise; stag(done)];        %#ok<AGROW>
     ad = [ad; a(done)];                   %#ok<AGROW>
     bd = [bd; b(done)];                   %#ok<AGROW>
     fd = cat(2,fd,fv(:,done,:));          %#ok<AGROW>
@@ -84,10 +97,17 @@ for ilev = 1:nlevmax
     end
 
     amid = (a(isplit) + b(isplit))/2;
+    ep   = [e(isplit); e(isplit)];
     fv   = cat(2,fo(1:n,isplit,:),fo(n+1:2*n,isplit,:));
     a    = [a(isplit); amid];
     b    = [amid; b(isplit)];
 
+end
+
+if any(inoise)
+    warning('RADPP_FIT:noise', ['RADPP_FIT: %d panels stopped at the ' ...
+        'noise level of f, error %.1e > eps = %.1e, in r = [%.2e, %.2e].'], ...
+        nnz(inoise), err, tol, min(ad(inoise)), max(bd(inoise)));
 end
 
 [ad,isort] = sort(ad);

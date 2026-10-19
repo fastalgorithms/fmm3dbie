@@ -39,6 +39,11 @@ if isscalar(g) && kernel3d.radgreen('compatible', f)
     return
 end
 
+if isscalar(g) && kernel3d.radpp('summable', {f})
+    f = kernel3d.radpp('sum', {f}, g);
+    return
+end
+
 if isscalar(g)
     f = times_scalar(f, g);
     return

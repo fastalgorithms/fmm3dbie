@@ -95,12 +95,30 @@ function obj = radpp(green, rmax, type, varargin)
 %      'kernel_order' - for oversampling (default from nderiv)
 %      'ifcomplex'    - custom kernels: whether the weights are complex
 %                       (default true)
+%      'fmm'          - FMM for green, U = fmm(eps, srcuse, pg, targ, pgt)
+%                       e.g. @(eps,s,pg,t,pgt) hfmm3d(eps, zk, s, pg, t, pgt).
+%
+%   Sums and multiples of radpp kernels of one built-in type are radpp
+%   kernels whose fit is the sum of the fits, on the distances common to
+%   them.
 %
 %   Example:
 %      green = @(s,t) helm3d.green(zk, s, t);
-%      K = kernel3d.radpp(green, 10, 'cp', [1 1i]);
+%      fmm = @(eps,s,pg,t,pgt) hfmm3d(eps, zk, s, pg, t, pgt);
+%      K = kernel3d.radpp(green, 10, 'cp', [1 1i], 'fmm', fmm);
 %
-% See also RADPP_FIT, RADPP_ROTATE
+% See also RADPP_FIT, RADPP_ROTATE, RADPP_FMM
+
+% kernel arithmetic: kernel3d.radpp('summable', KS) and
+% kernel3d.radpp('sum', KS, CS) = sum_k CS(k)*KS{k}
+if ischar(green)
+    if strcmp(green, 'summable')
+        obj = summable(rmax);
+    else
+        obj = ppsum(rmax, type);
+    end
+    return
+end
 
 % green mode (from KERNEL3D.RADGREEN): green is a struct with the exact
 % profiles, eval is exact and the fit is built in getquad
@@ -158,7 +176,7 @@ end
 o = struct('nu', [], 'ipv', [], 'opts', struct(), 'nderiv', [], ...
            'opdims', [1 1], 'targ_fields', {{}}, 'name', 'custom', ...
            'zk', [], 'kernel_order', [], 'ifcomplex', true, 'dim', 3, ...
-           'coefs', [1 1], 'srcwfun', []);
+           'coefs', [1 1], 'srcwfun', [], 'fmm', [], 'fit', []);
 o = parse_options(o, varargin);
 
 valueonly = isa(green, 'kernel3d');
@@ -265,7 +283,12 @@ if gmode
     info = struct('breaks', [], 'coefs', profun([0.5; 1; 2]), 'err', []);
 else
     profun = @(r) profiles(green, r, nfit);
-    [ipars, dpars, info] = radpp_fit(profun, rmin, rmax, fitopts);
+    if isempty(o.fit)
+        [ipars, dpars, info] = radpp_fit(profun, rmin, rmax, fitopts);
+    else
+        % a fit given by the kernel arithmetic, see ppsum
+        ipars = o.fit.ipars;  dpars = o.fit.dpars;  info = o.fit;
+    end
     ipars = [ipars; ipost];
 end
 
@@ -298,6 +321,13 @@ obj.params.targs = @(t) radpp_targs(t, spec.wfun, spec.vfun);  % for radpp_kern
 p = obj.params;
 obj.eval = @(s,t) radpp_eval_kern(s, t, p);
 obj.fmm  = [];
+if ~isempty(o.fmm)
+    if o.dim == 13 || nderiv > 2
+        error('KERNEL3D.RADPP: ''fmm'' needs a scalar green and at most 2 derivatives.');
+    end
+    fmmfun = o.fmm;
+    obj.fmm = @(eps, s, t, sigma) radpp_fmm(fmmfun, p, eps, s, t, sigma);
+end
 
 ri = kernel3d.rsc_interleave_full(spec.opdims(1), spec.opdims(2), nrow, ...
         struct('ker_id', num2cell(1:nrow), ...
@@ -758,8 +788,14 @@ if p.gmode
     r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
     comps = radpp_rotate(dx, dy, dz, p.profun(r), nfit, p.dim);
 else
+    % the fit, with the Fortran evaluator if the mex is built
     r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
-    comps = radpp_rotate(dx, dy, dz, radpp_eval(r, p.breaks, p.coefs), nfit, p.dim);
+    if exist('fmm3dbie_routs', 'file') == 3
+        prof = radpp_eval_fortran(r, p.ipars, p.dpars);
+    else
+        prof = radpp_eval(r, p.breaks, p.coefs);
+    end
+    comps = radpp_rotate(dx, dy, dz, prof, nfit, p.dim);
 end
 comps = reshape(comps, nt, ns, []);
 
@@ -895,11 +931,14 @@ spmat = radpp_getquad(S, eps, p, ifcomplex, ri, targinfo, opts);
 end
 
 
-function [ipars, dpars] = radpp_addfits(fits)
-% sum of radpp_fit expansions on the union of their panels, in the vpp
-% format
+function [ipars, dpars, info] = radpp_addfits(fits)
+% sum of radpp_fit expansions on the union of their panels, on the
+% distances common to them, in the vpp format
 breaks = unique(cell2mat(cellfun(@(f) f.breaks(:), fits(:), ...
                                  'UniformOutput', false)));
+lo = max(cellfun(@(f) f.breaks(1), fits));
+hi = min(cellfun(@(f) f.breaks(end), fits));
+breaks = unique([lo; breaks(breaks > lo & breaks < hi); hi]);
 [~, n, m] = size(fits{1}.coefs);
 a = breaks(1:end-1);  nbin = numel(a);
 mid = (a + breaks(2:end))/2;
@@ -922,6 +961,58 @@ cfv(1:2:end,:,:) = real(cp);
 cfv(2:2:end,:,:) = imag(cp);
 ipars = [nbin; n; 1; nbin+2; 2*m];
 dpars = [breaks; cfv(:)];
+info = struct('breaks', breaks, 'coefs', cf);
+end
+
+
+function tf = summable(Ks)
+% radpp kernels of one built-in type, parameters and fit order, with fits
+% that overlap
+tf = all(cellfun(@(K) strcmp(K.name, 'radpp'), Ks));
+if ~tf, return; end
+p = Ks{1}.params;
+same = @(K) isempty(K.diag) && ~K.params.gmode && ~strcmp(K.params.spec.name, 'custom') && ...
+    strcmp(K.params.spec.name, p.spec.name) && ...
+    isequal(K.params.kcoefs, p.kcoefs) && isequal(K.params.nu, p.nu) && ...
+    K.params.dim == p.dim && isequal(K.params.ipv, p.ipv) && ...
+    size(K.params.coefs, 2) == size(p.coefs, 2) && ...
+    size(K.params.coefs, 3) == size(p.coefs, 3);
+tf = all(cellfun(same, Ks)) && ...
+    max(cellfun(@(K) K.params.breaks(1), Ks)) < ...
+    min(cellfun(@(K) K.params.breaks(end), Ks));
+end
+
+
+function K = ppsum(Ks, cs)
+% sum_k cs(k)*Ks{k}, with the fits added on the union of their panels
+p = Ks{1}.params;
+fits = cell(size(Ks));
+for k = 1:numel(Ks)
+    fits{k} = struct('breaks', Ks{k}.params.breaks, ...
+                     'coefs', cs(k)*Ks{k}.params.coefs);
+end
+[ipars, dpars, info] = radpp_addfits(fits);
+info.ipars = ipars;  info.dpars = dpars;
+info.err = sum(abs(cs(:)).*cellfun(@(K) K.params.err, Ks(:)));
+
+greens = cellfun(@(K) K.params.green, Ks, 'UniformOutput', false);
+K = kernel3d.radpp(radpp_sum(cs, greens{:}), info.breaks([1 end]), ...
+        p.spec, 'dim', p.dim, 'ipv', p.ipv, 'coefs', p.kcoefs, ...
+        'nu', p.nu, 'opts', p.fitopts, 'kernel_order', p.kernel_order, ...
+        'zk', max(cellfun(@(K) K.zk, Ks)), 'fit', info, ...
+        'ifcomplex', any(cellfun(@(K) logical(K.ifcomplex), Ks)) || ~isreal(cs));
+if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks))
+    fmms = cellfun(@(Kk) Kk.fmm, Ks, 'UniformOutput', false);
+    K.fmm = @(varargin) fmmsum(fmms, cs, varargin{:});
+end
+end
+
+
+function pot = fmmsum(fmms, cs, varargin)
+pot = 0;
+for k = 1:numel(fmms)
+    pot = pot + cs(k)*fmms{k}(varargin{:});
+end
 end
 
 

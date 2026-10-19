@@ -6,6 +6,7 @@
 rng(42);
 
 test_fit_limits();
+test_radpp_eval_fortran();
 % 2D (in-plane derivatives, dim = 2)
 test_tensors_2d();
 test_builtins_2d(@gauss, 1e-11);
@@ -44,6 +45,8 @@ test_radgreen_getquad();
 test_radgreen_rlb_getquad();
 test_radgreen_mfie();
 test_radgreen_fmm();
+test_fmm_option();
+test_radpp_sum();
 
 % beyond helmholtz on one surface: laplace, yukawa, two surfers, custom
 % source weights
@@ -72,6 +75,49 @@ catch
     caught = true;
 end
 assert(caught, 'radpp_fit: maxsub not an error');
+
+% noise in f below the tolerance: a warning, not maxsub
+f = @(r) exp(1i*100*r)./r;
+lastwarn('');
+warning('off', 'RADPP_FIT:noise');
+[~, ~, info] = radpp_fit(f, 1e-3, 10, struct('eps', 1e-15));
+warning('on', 'RADPP_FIT:noise');
+[~, id] = lastwarn();
+assert(strcmp(id, 'RADPP_FIT:noise'), 'radpp_fit: no noise warning');
+assert(info.err < 1e-11, 'radpp_fit: noise level %.1e', info.err);
+
+% a sharp f stalls below 1e-4 before it is resolved, unless stopnoise is
+% false
+f = @(r) tanh(100*(r - 1));
+r = linspace(1e-3, 10, 10000).';
+lastwarn('');
+warning('off', 'RADPP_FIT:noise');
+radpp_fit(f, 1e-3, 10, struct('eps', 1e-13, 'norder', 6));
+warning('on', 'RADPP_FIT:noise');
+[~, id] = lastwarn();
+assert(strcmp(id, 'RADPP_FIT:noise'), 'radpp_fit: sharp f should stall');
+lastwarn('');
+[~, ~, info] = radpp_fit(f, 1e-3, 10, struct('eps', 1e-13, 'norder', 6, ...
+                                             'stopnoise', false));
+assert(isempty(lastwarn()), 'radpp_fit: stopnoise = false warned');
+err = max(abs(radpp_eval(r, info.breaks, info.coefs) - f(r)));
+assert(err < 1e-12, 'radpp_fit: stopnoise = false, error %.1e', err);
+
+end
+
+
+function test_radpp_eval_fortran()
+% The Fortran evaluator matches radpp_eval, NaN outside the fit included.
+
+f = @(r) [exp(1i*1.3*r(:))./r(:), cos(r(:))];
+[ipars, dpars, info] = radpp_fit(f, 1e-3, 5);
+r = [1e-4; linspace(1e-3, 5, 1000).'; 6];
+A = radpp_eval(r, info.breaks, info.coefs);
+B = radpp_eval_fortran(r, ipars, dpars);
+assert(isequal(isnan(A), isnan(B)), 'radpp_eval_fortran: NaN outside the fit');
+ok = ~isnan(A);
+err = max(abs(A(ok) - B(ok)))/max(abs(A(ok)));
+assert(err < 1e-14, 'radpp_eval_fortran: %.2e', err);
 
 end
 
@@ -1008,6 +1054,137 @@ B = surferkerneval(S, Kc, J, t2, eps);
 err = norm(A - B)/norm(A);
 assert(err < 1e-6, 'radgreen surferkerneval fmm: %.2e', err);
 
+end
+
+
+function test_fmm_option()
+% The 'fmm' option of radpp and radgreen (RADPP_FMM) against eval, with
+% two densities, the generic mfie and curls against em3d.fmm, and the fmm
+% of sums and interleaved kernels.
+
+zk = 1.3;  ndens = 2;
+g = @(s,t) helm3d.green(zk, s, t);
+fmm = @(eps,s,pg,t,pgt) hfmm3d(eps, zk, s, pg, t, pgt);
+src.r = randn(3, 200);  src.n = randn(3, 200);  src.n = src.n./vecnorm(src.n);
+targ.r = randn(3, 150) + [5;0;0];
+targ.n = randn(3, 150);  targ.n = targ.n./vecnorm(targ.n);
+
+types = {'s','d','c','sp','dp','cp','grad','dgrad','trans_sys', ...
+    'trans_rep','clamped_bc','d2trans','c2trans','mfie','curls'};
+for i = 1:numel(types)
+    a = targs3(types{i});
+    Ks = {kernel3d.radpp(g, [1e-6 20], types{i}, a{:}, 'fmm', fmm), ...
+          kernel3d(g, types{i}, a{:}, 'fmm', fmm)};
+    for k = 1:2
+        A = Ks{k}.eval(src, targ);
+        sig = complex(randn(size(A,2), ndens), randn(size(A,2), ndens));
+        u = Ks{k}.fmm(1e-12, src, targ, sig);
+        err = norm(u - A*sig, 'fro')/norm(A*sig, 'fro');
+        assert(err < 1e-10, 'fmm option %s (%d): %.2e', types{i}, k, err);
+    end
+end
+
+% in-plane derivatives, dim = 2
+s2.r = src.r(1:2,:);  s2.n = src.n(1:2,:)./vecnorm(src.n(1:2,:));
+t2.r = targ.r(1:2,:);  t2.n = targ.n(1:2,:)./vecnorm(targ.n(1:2,:));
+g2 = @(s,t) helmgreen(zk, s, t);
+for type = {'s','dp','cp','grad','clamped_bc','trans_sys'}
+    a = targs3(type{1});
+    K = kernel3d.radpp(g2, [1e-6 20], type{1}, a{:}, 'dim', 2, 'fmm', fmm);
+    A = K.eval(s2, t2);
+    sig = randn(size(A,2), ndens);
+    err = norm(K.fmm(1e-12, s2, t2, sig) - A*sig, 'fro')/norm(A*sig, 'fro');
+    assert(err < 1e-10, 'fmm option dim 2 %s: %.2e', type{1}, err);
+end
+
+% the generic maxwell fmms against em3d.fmm
+sig = complex(randn(600, 1), randn(600, 1));
+for type = {'mfie', 'curls'}
+    K = kernel3d(g, type{1}, 'fmm', fmm);
+    A = em3d.fmm(1e-12, zk, src, targ, type{1}, sig);
+    err = norm(K.fmm(1e-12, src, targ, sig) - A)/norm(A);
+    assert(err < 1e-10, 'fmm option vs em3d.fmm %s: %.2e', type{1}, err);
+end
+
+% hessians, with the laplace fmm
+gl = @(s,t) lapg(s, t);
+K = kernel3d.radpp(gl, [1e-6 20], 'hess', 'fmm', ...
+        @(eps,s,pg,t,pgt) lfmm3d(eps, s, pg, t, pgt));
+A = K.eval(src, targ);
+sig = randn(size(A,2), ndens);
+err = norm(K.fmm(1e-12, src, targ, sig) - A*sig, 'fro')/norm(A*sig, 'fro');
+assert(err < 1e-10, 'fmm option hess: %.2e', err);
+
+% sums and interleaved kernels of radgreen kernels keep the fmm
+Ks = kernel3d(g, 's', 'fmm', fmm);
+Kd = kernel3d(g, 'd', 'fmm', fmm);
+Ksp = kernel3d(g, 'sp', 'fmm', fmm);
+for K = {Ks + 2*Kd, Ks - Ksp, kernel3d.interleave([Ks Kd; Ksp Ks])}
+    A = K{1}.eval(src, targ);
+    sig = complex(randn(size(A,2), ndens), randn(size(A,2), ndens));
+    u = K{1}.fmm(1e-12, src, targ, sig);
+    err = norm(u - A*sig, 'fro')/norm(A*sig, 'fro');
+    assert(err < 1e-10, 'fmm option arithmetic: %.2e', err);
+end
+
+end
+
+
+function test_radpp_sum()
+% Sums and multiples of radpp kernels of one type are radpp kernels whose
+% fit is the sum of the fits, on the common distances, with the fmms
+% summed.
+
+g1 = @(s,t) helm3d.green(1.1, s, t);
+g2 = @(s,t) helm3d.green(2.3, s, t);
+f1 = @(eps,s,pg,t,pgt) hfmm3d(eps, 1.1, s, pg, t, pgt);
+f2 = @(eps,s,pg,t,pgt) hfmm3d(eps, 2.3, s, pg, t, pgt);
+src.r = 0.5*randn(3, 30);  src.n = randn(3, 30);  src.n = src.n./vecnorm(src.n);
+targ.r = 0.5*randn(3, 20) + [1;0;0];
+targ.n = randn(3, 20);  targ.n = targ.n./vecnorm(targ.n);
+
+K1 = kernel3d.radpp(g1, [1e-6 6], 'cp', [1 2i], 'fmm', f1);
+K2 = kernel3d.radpp(g2, [1e-5 8], 'cp', [1 2i], 'fmm', f2);
+A1 = K1.eval(src, targ);  A2 = K2.eval(src, targ);
+tab = {2*K1 - K2, 2*A1 - A2; K1 + K2/3, A1 + A2/3; -K1, -A1; 1i*K1, 1i*A1};
+for i = 1:size(tab, 1)
+    K = tab{i,1};
+    assert(strcmp(K.name, 'radpp'), 'radpp sum %d: not radpp', i);
+    err = norm(K.eval(src, targ) - tab{i,2}, 'fro')/norm(tab{i,2}, 'fro');
+    assert(err < 1e-13, 'radpp sum %d: %.2e', i, err);
+    sig = randn(size(A1, 2), 2);
+    err = norm(K.fmm(1e-12, src, targ, sig) - tab{i,2}*sig, 'fro')/ ...
+          norm(tab{i,2}*sig, 'fro');
+    assert(err < 1e-10, 'radpp sum %d fmm: %.2e', i, err);
+end
+K = K1 + K2;
+assert(K.params.rmin == 1e-5 && K.params.rmax == 6, 'radpp sum: range');
+K = K1 + kernel3d.radpp(g1, 6, 'sp');
+assert(~strcmp(K.name, 'radpp'), 'radpp sum: different types merged');
+
+end
+
+
+function a = targs3(type)
+% the parameter of the types that take one
+a = {};
+if any(strcmp(type, {'c','cp','c2trans','trans_rep'})), a = {[1 2i]}; end
+if strcmp(type, 'trans_sys'), a = {[1 2; 3i 4]}; end
+end
+
+
+function [val, grad, hess] = lapg(s, t)
+% 1/(4 pi r) and its target derivatives
+d = permute(t, [2 3 1]) - permute(s, [3 2 1]);
+r = sqrt(sum(d.^2, 3));
+val = 1./(4*pi*r);
+grad = -d./(4*pi*r.^3);
+hess = zeros([size(r) 3 3]);
+for i = 1:3
+    for j = 1:3
+        hess(:,:,i,j) = 3*d(:,:,i).*d(:,:,j)./(4*pi*r.^5) - (i == j)./(4*pi*r.^3);
+    end
+end
 end
 
 

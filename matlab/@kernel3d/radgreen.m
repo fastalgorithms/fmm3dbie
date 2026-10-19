@@ -9,7 +9,8 @@ function obj = radgreen(green, type, varargin)
 %   'curl' and 'mfie'. It is checked to be radial (or isotropic) and its
 %   derivatives against finite differences.
 %
-%   TYPE and options are as in KERNEL3D.RADPP. 'ipv' overrides the
+%   TYPE and options are as in KERNEL3D.RADPP, including 'fmm' for an FMM
+%   of GREEN (not for tensor greens). 'ipv' overrides the
 %   automatic choice; kernel_order is max(ipv)-1. Kernels on the same
 %   GREEN (up to a factor) combine under +, -, scalar * and interleave into
 %   one kernel, and kernels of one built-in type add as that type on the
@@ -488,20 +489,22 @@ end
 
 
 function pot = fmmblocks(Ks, r0, c0, opdims, eps, src, targ, sigma)
+% sigma is (opdims(2)*ns, ndens), one column per density
 [m, n] = size(Ks);
-ns = numel(sigma)/opdims(2);
+ns = size(src.r(:,:), 2);
+ndens = numel(sigma)/(opdims(2)*ns);
 nt = size(targ.r(:,:), 2);
-sig = reshape(sigma, opdims(2), ns);
-pot = zeros(opdims(1), nt);
+sig = reshape(sigma, opdims(2), ns, ndens);
+pot = zeros(opdims(1), nt, ndens);
 for k = 1:m
     for l = 1:n
-        sl = sig(c0(l)+1:c0(l+1), :);
-        pkl = Ks{k,l}.fmm(eps, src, targ, sl(:));
-        pot(r0(k)+1:r0(k+1), :) = pot(r0(k)+1:r0(k+1), :) + ...
-            reshape(pkl, r0(k+1) - r0(k), nt);
+        sl = sig(c0(l)+1:c0(l+1), :, :);
+        pkl = Ks{k,l}.fmm(eps, src, targ, reshape(sl, [], ndens));
+        pot(r0(k)+1:r0(k+1), :, :) = pot(r0(k)+1:r0(k+1), :, :) + ...
+            reshape(pkl, r0(k+1) - r0(k), nt, ndens);
     end
 end
-pot = pot(:);
+pot = reshape(pot, [], ndens);
 end
 
 
