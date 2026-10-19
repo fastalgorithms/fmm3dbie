@@ -15,6 +15,7 @@
 
 
 
+!@kernel lap3d_s ipv=0
 subroutine l3d_slp(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
@@ -48,6 +49,7 @@ end subroutine l3d_slp
 
 
 
+!@kernel lap3d_d ipv=1
 subroutine l3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
@@ -91,6 +93,7 @@ end subroutine l3d_dlp
 
 
 
+!@kernel lap3d_sp ipv=1
 subroutine l3d_sprime(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
@@ -120,6 +123,7 @@ end subroutine l3d_sprime
 
 
 
+!@kernel lap3d_c ipv=1
 subroutine l3d_comb(srcinfo, ndt,targ, ndd,dpars,ndz,zpars,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
@@ -403,6 +407,8 @@ end subroutine l3d_spp_sum_dp
 
 
 
+!@kernel lap3d_cp ipv=2
+!@kernel lap3d_cp_pv ipv=1
 subroutine l3d_combprime(srcinfo, ndt, targinfo, ndd, dpars, ndz, &
   zk, ndi, ipars, val)
 !

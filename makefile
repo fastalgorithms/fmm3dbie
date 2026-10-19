@@ -128,9 +128,6 @@ HOBJS = $(HELM)/helm_comb_dir.o $(HELM)/helm_rpcomb_neu.o \
 LAP = src/lap_wrappers
 LOBJS = $(LAP)/lap_comb_dir.o $(LAP)/lap_s_neu.o $(LAP)/lap_comb_cprime.o
 
-# Laplace/Helmholtz-Beltrami wrappers
-LAPBEL = src/lap_bel
-LBOBJS = $(LAPBEL)/lap_bel_routs.o
 
 # Maxwell wrappers
 EM = src/maxwell
@@ -162,6 +159,11 @@ QOBJS = $(QUAD)/far_field_routs.o \
 	$(QUAD)/ggq-selfquad-routs.o $(QUAD)/ggq-quads.o \
 	$(QUAD)/adap-quads.o \
 	$(QUAD)/near_field_routs.o $(QUAD)/near_quad_sub.o
+
+# Name-dispatched near quadrature (kernel registry)
+SGEN = src/surf_generic
+SGOBJS = $(SGEN)/kernel_registry.o $(SGEN)/kernel_registry_init.o \
+	$(SGEN)/kernel_registry_list.o $(SGEN)/getnearquad_surf_generic.o
 
 # Surface wrappers
 SURF = src/surface_routs
@@ -197,9 +199,9 @@ SURFSM_MOD_OBJS = $(SURFSM)/Mod_TreeLRD.o \
 # Add to FFLAGS so that modules get compiled in the .mod folder
 FFLAGS += -J .mod/
 
-OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(SGOBJS)
 
-OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(LBOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2)
+OBJS_64 = $(COMOBJS) $(EMOBJS) $(HOBJS) $(KOBJS) $(LOBJS) $(QOBJS) $(SOBJS) $(TOBJS) $(STOKOBJS) $(QOBJS2) $(SGOBJS)
 OBJS_64 += $(COM)/lapack_wrap_64.o
 
 ifeq ($(BLAS_64),ON)
@@ -253,6 +255,18 @@ usage:
 	$(FC) -c $(FFLAGS) $< -o $@
 %.o: %.c %.h
 	$(CC) -c $(CFLAGS) $< -o $@
+
+#
+# Kernel registry: kernel_registry_init.f90 is generated from the
+# !@kernel annotations in src/ (see src/surf_generic/gen_registry_init.sh).
+# Everything that uses the kernel_registry module needs its .mod first.
+#
+SGEN_SCAN = $(filter-out $(SGEN)/kernel_registry_init.f90, \
+	$(wildcard src/*/*.f90) $(wildcard src/*/*.f))
+$(SGEN)/kernel_registry_init.f90: $(SGEN)/gen_registry_init.sh $(SGEN_SCAN)
+	sh $(SGEN)/gen_registry_init.sh src > $@
+$(SGEN)/kernel_registry_init.o $(SGEN)/kernel_registry_list.o \
+	$(SGEN)/getnearquad_surf_generic.o: $(SGEN)/kernel_registry.o
 
 #
 # Special rule for ggq-quads
@@ -385,7 +399,7 @@ mex-dyn: $(MDYNAMICLIB)
 #
 # testing routines
 #
-test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad test/stwrap
+test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad test/stwrap test/sgen
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
@@ -394,6 +408,7 @@ test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadr
 	cd test/tria_routs; ./int2-tria
 	cd test/quad_routs; ./int2-quad
 	cd test/quadratures; ./int2-quad
+	cd test/surf_generic; ./int2-sgen
 	cat print_testres.txt
 	rm print_testres.txt
 
@@ -457,6 +472,9 @@ test/quad: $(QTOBJS)
 QQOBJS = test/quadratures/test_find_near.o test/quadratures/test_adap_quad_self.o test/quadratures/test_mixed_patch_quad.o
 test/quadrature: $(QQOBJS)
 	$(FC) $(FFLAGS) test/quadratures/test_quadratures.f -o test/quadratures/int2-quad $(QQOBJS) lib-static/$(STATICLIB) $(LIBS) 
+
+test/sgen:
+	$(FC) $(FFLAGS) test/surf_generic/test_surf_generic.f90 -o test/surf_generic/int2-sgen lib-static/$(STATICLIB) $(LIBS)
 
 
 #
@@ -532,6 +550,7 @@ endif
 	rm -f test/common/int2-com
 	rm -f test/helm_wrappers/int2-helm
 	rm -f test/tria_routs/int2-tria
+	rm -f test/surf_generic/int2-sgen
 	rm -f python/*.so
 	rm -rf python/build
 	rm -rf python/fmm3dpy.egg-info

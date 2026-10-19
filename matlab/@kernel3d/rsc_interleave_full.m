@@ -3,8 +3,8 @@ function ri = rsc_interleave_full(m, n, nker, entries)
 %
 %   ri = kernel3d.rsc_interleave_full(m, n)
 %
-%     Full m-by-n block: wnear has nker = m*n rows in column-major order,
-%     each mapping 1-to-1 to a block entry with coefficient 1.
+%     Full m-by-n block: wnear has nker = m*n rows in row-major order
+%     (entry (i,j) in row (i-1)*n+j), each with coefficient 1.
 %
 %   ri = kernel3d.rsc_interleave_full(m, n, nker, entries)
 %
@@ -19,7 +19,7 @@ function ri = rsc_interleave_full(m, n, nker, entries)
 if nargin == 2
     % Full dense block, column-major, coefficient 1.
     nker = m * n;
-    [rows, cols] = meshgrid(1:m, 1:n);   % column-major: row varies fastest
+    [rows, cols] = meshgrid(1:m, 1:n);   % row-major: column varies fastest
     row_ids = rows(:);
     col_ids = cols(:);
     entries = struct('ker_id', num2cell(1:nker), ...

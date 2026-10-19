@@ -46,6 +46,7 @@ obj.iszero    = false;   % zero as a smooth operator, but not as an operator
 obj.src_fields  = {};
 obj.targ_fields = {};
 obj.diag      = dfun;
+obj.getquad_sub = true;
 
 % smooth part is identically zero
 obj.eval = @(s,t) zeros(m*size(t.r(:,:),2), n*size(s.r(:,:),2));

@@ -56,6 +56,7 @@ obj.name      = 'helmholtz';
 obj.opdims    = [1 1];
 obj.zk        = zk;
 obj.ifcomplex = 1;
+obj.getquad_sub = true;
 
 if (nargin < 3)
     coefs = [];
@@ -72,9 +73,8 @@ switch lower(type)
         obj.kernel_order = -1;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 's');
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 's', sigma);
-        rep_pars         = [1.0; 0.0];
-        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
-                               helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, varargin{:}), S);
+        obj.getquad      = @(S,eps,varargin) surf_quad(S, eps, 'helm3d_s', ...
+                               struct('zpars', zk), varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
     case {'d', 'double'}
@@ -82,9 +82,8 @@ switch lower(type)
         obj.kernel_order = 0;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'd');
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'd', sigma);
-        rep_pars         = [0.0; 1.0];
-        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
-                               helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, varargin{:}), S);
+        obj.getquad      = @(S,eps,varargin) surf_quad(S, eps, 'helm3d_d', ...
+                               struct('zpars', zk), varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
 
@@ -93,9 +92,8 @@ switch lower(type)
         obj.kernel_order = 0;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'sprime');
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'sp', sigma);
-        rep_pars         = [1.0; 0.0];
-        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
-                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:}), S);
+        obj.getquad      = @(S,eps,varargin) surf_quad(S, eps, 'helm3d_sp', ...
+                               struct('zpars', zk), varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields  = {'n'};
 
@@ -103,9 +101,9 @@ switch lower(type)
         obj.type         = 'dprime';
         obj.kernel_order = 1;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'dprime');
-        rep_pars         = [0.0; 1.0];
-        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
-                               helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:}), S);
+        % dprime = 0*S' + 1*D', zpars = [zk; alpha; beta]
+        obj.getquad      = @(S,eps,varargin) surf_quad(S, eps, 'helm3d_cp', ...
+                               struct('zpars', [zk; 0; 1]), varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
         obj.targ_fields  = {'n'};
@@ -118,8 +116,9 @@ switch lower(type)
         obj.params.coefs = coefs;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'c', coefs);
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'c', sigma, coefs);
-        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
-                               helm3d.dirichlet.get_quadrature_correction(S, eps, zk, coefs, varargin{:}), S);
+        % zpars = [zk; alpha_S; beta_D]
+        obj.getquad      = @(S,eps,varargin) surf_quad(S, eps, 'helm3d_c', ...
+                               struct('zpars', [zk; coefs]), varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
 
@@ -130,8 +129,12 @@ switch lower(type)
         obj.kernel_order = 1;
         obj.params.coefs = coefs;
         obj.eval         = @(s,t) helm3d.kern(zk, s, t, 'cprime', coefs);
-        obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
-                               helm_combprime_getquad(S, eps, zk, coefs, varargin{:}), S);
+        % zpars = [zk; alpha_S'; beta_D']; without the hypersingular part
+        % a principal value self-quadrature is enough
+        name_cp          = 'helm3d_cp';
+        if coefs(2) == 0, name_cp = 'helm3d_cp_pv'; end
+        obj.getquad      = @(S,eps,varargin) surf_quad(S, eps, name_cp, ...
+                               struct('zpars', [zk; coefs]), varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
         obj.targ_fields  = {'n'};
@@ -296,10 +299,13 @@ end
 
 end % function helm3d
 
-function spmat = rsc_to_sparse(Q, S)
-%RSC_TO_SPARSE  Convert Helmholtz getquad RSC output to a sparse matrix.
-% Helmholtz kernels are scalar (opdims=[1,1]); no ri argument needed.
-spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear);
+function spmat = surf_quad(S, eps, name, pars, targinfo, opts)
+%SURF_QUAD  getquad via GETNEARQUAD_MEX.
+if nargin < 5, targinfo = []; end
+if nargin < 6 || isempty(opts), opts = struct(); end
+opts.format = 'sparse';
+Q = getnearquad_mex(S, name, eps, pars, targinfo, opts);
+spmat = Q.spmat;
 end
 
 % =========================================================================
@@ -336,19 +342,4 @@ function [zk0, zk1, comb, a0, a1] = parse_diff4(zk, coefs, name)
     comb = coefs(1:2);
     a0   = coefs(3);
     a1   = coefs(4);
-end
-
-function p = helm_combprime_eval(S, sigma, targ, eps, zk, rep_pars, opts)
-%HELM_COMBPRIME_EVAL  Call helm3d.dirichlet.eval with iprime=1.
-    if nargin < 7 || isempty(opts), opts = struct(); end
-    opts.iprime = 1;
-    p = helm3d.dirichlet.eval(S, sigma, targ, eps, zk, rep_pars, opts);
-end
-
-function Q = helm_combprime_getquad(S, eps, zk, rep_pars, targinfo, opts)
-%HELM_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
-    if nargin < 5 || isempty(targinfo), targinfo = S; end
-    if nargin < 6 || isempty(opts),     opts     = struct(); end
-    opts.iprime = 1;
-    Q = helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts);
 end

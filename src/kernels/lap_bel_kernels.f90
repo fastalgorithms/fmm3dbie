@@ -13,6 +13,7 @@
 !
 
 
+!@kernel belpde_rlb ipv=0
 subroutine lap_bel_res(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
@@ -54,6 +55,7 @@ end subroutine lap_bel_res
 
 
 
+!@kernel belpde_klb ipv=0
 subroutine lap_bel_log(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
@@ -86,6 +88,7 @@ end subroutine lap_bel_log
 
 
 
+!@kernel belpde_rhb ipv=0 complex
 subroutine helm_bel_res(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,zval)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
@@ -133,6 +136,7 @@ end subroutine helm_bel_res
 
 
 
+!@kernel belpde_khb ipv=0 complex
 subroutine helm_bel_hank(src, ndt,targ, ndd,dpars,ndz,zk,ndi,ipars,zval)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)

@@ -18,10 +18,12 @@ int2*
 *.msh*
 *.mod
 *.sh
+!src/surf_generic/gen_registry_init.sh
 *egg-info
 make.inc
 todo
 *mex*
+!matlab/src/getnearquad_mex.m
 *build*
 *old*
 *vscode

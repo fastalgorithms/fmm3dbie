@@ -18,6 +18,7 @@ obj.name      = 'laplace';
 obj.opdims    = [1 1];
 obj.zk        = 0;
 obj.ifcomplex = 0;
+obj.getquad_sub = true;
 
 switch lower(type)
 
@@ -27,11 +28,8 @@ switch lower(type)
 
         obj.eval = @(s,t) lap3d.kern(s, t, 's');
 
-        % dpars for dirichlet eval: [alpha_S, beta_D] = [1, 0]
-        dpars_s = [1.0; 0.0];
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 's', sigma);
-        obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
-                          lap3d.dirichlet.get_quadrature_correction(S, eps, dpars_s, varargin{:}), S);
+        obj.getquad  = @(S,eps,varargin) surf_quad(S, eps, 'lap3d_s', [], varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
     case {'d', 'double'}
@@ -40,11 +38,8 @@ switch lower(type)
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'd');
 
-        % dpars for dirichlet eval: [alpha_S, beta_D] = [0, 1]
-        dpars_d = [0.0; 1.0];
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'd', sigma);
-        obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
-                          lap3d.dirichlet.get_quadrature_correction(S, eps,dpars_d, varargin{:}), S);
+        obj.getquad  = @(S,eps,varargin) surf_quad(S, eps, 'lap3d_d', [], varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
 
@@ -54,12 +49,8 @@ switch lower(type)
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'sprime');
 
-        % sprime is the normal-derivative of S at the target: use
-        % neumann eval with dpars = [1, 0]
-        dpars_sp = [1.0; 0.0];
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'sp', sigma);
-        obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
-                          lap_combprime_getquad(S, eps, dpars_sp, varargin{:}), S);
+        obj.getquad  = @(S,eps,varargin) surf_quad(S, eps, 'lap3d_sp', [], varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields = {'n'};
 
@@ -69,11 +60,10 @@ switch lower(type)
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'dprime');
 
-        % dpars for dirichlet eval: [alpha_S, beta_D] = [0, 1]
-        dpars_dp = [0.0; 1.0];
+        % dprime = 0*S' + 1*D'
+        pars_dp      = struct('dpars', [0.0; 1.0]);
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'dp', sigma);
-        obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
-                          lap_combprime_getquad(S, eps, dpars_dp, varargin{:}), S);
+        obj.getquad  = @(S,eps,varargin) surf_quad(S, eps, 'lap3d_cp', pars_dp, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
         obj.targ_fields = {'n'};
@@ -92,11 +82,10 @@ switch lower(type)
 
         obj.eval = @(s,t) lap3d.kern(s, t, 'c', coefs(1), coefs(2));
 
-        % dpars for dirichlet eval: [alpha_S, beta_D] = coefs
-        dpars_c = coefs;
+        % dpars = [alpha_S; beta_D] = coefs
+        pars_c       = struct('dpars', coefs);
         obj.fmm      = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'c', sigma, coefs);
-        obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
-                          lap3d.dirichlet.get_quadrature_correction(S, eps, dpars_c, varargin{:}), S);
+        obj.getquad  = @(S,eps,varargin) surf_quad(S, eps, 'lap3d_c', pars_c, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
 
@@ -116,9 +105,12 @@ switch lower(type)
         obj.eval = @(s,t) lap3d.kern(s, t, 'cprime', coefs);
         obj.fmm  = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, 'cp', sigma, coefs);
 
-        dpars_c = coefs;
-        obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
-                          lap_combprime_getquad(S, eps, dpars_c, varargin{:}), S);
+        % dpars = [alpha_S'; beta_D'] = coefs; without the hypersingular
+        % part a principal value self-quadrature is enough
+        pars_cp      = struct('dpars', coefs);
+        name_cp      = 'lap3d_cp';
+        if coefs(2) == 0, name_cp = 'lap3d_cp_pv'; end
+        obj.getquad  = @(S,eps,varargin) surf_quad(S, eps, name_cp, pars_cp, varargin{:});
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
         obj.targ_fields = {'n'};
@@ -130,23 +122,11 @@ end
 
 end
 
-function spmat = rsc_to_sparse(Q, S)
-%RSC_TO_SPARSE  Convert Laplace getquad RSC output to a sparse matrix.
-% Laplace kernels are scalar (opdims=[1,1]); no ri argument needed.
-spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear);
-end
-
-function p = lap_combprime_eval(S, sigma, targ, eps, rep_pars, opts)
-%LAP_COMBPRIME_EVAL  Call lap3d.dirichlet.eval with iprime=1.
+function spmat = surf_quad(S, eps, name, pars, targinfo, opts)
+%SURF_QUAD  getquad via GETNEARQUAD_MEX.
+if nargin < 5, targinfo = []; end
 if nargin < 6 || isempty(opts), opts = struct(); end
-opts.iprime = 1;
-p = lap3d.dirichlet.eval(S, sigma, targ, eps, rep_pars, opts);
-end
-
-function Q = lap_combprime_getquad(S, eps, rep_pars, targinfo, opts)
-%LAP_COMBPRIME_GETQUAD  Call get_quadrature_correction with iprime=1.
-if nargin < 4 || isempty(targinfo), targinfo = S; end
-if nargin < 5 || isempty(opts),     opts     = struct(); end
-opts.iprime = 1;
-Q = lap3d.dirichlet.get_quadrature_correction(S, eps, rep_pars, targinfo, opts);
+opts.format = 'sparse';
+Q = getnearquad_mex(S, name, eps, pars, targinfo, opts);
+spmat = Q.spmat;
 end
