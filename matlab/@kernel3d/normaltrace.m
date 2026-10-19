@@ -1,16 +1,25 @@
 function Kn = normaltrace(K)
 %NORMALTRACE   Target normal derivative of a kernel from KERNEL3D.RADPP,
 % KERNEL3D.RADGREEN, KERNEL3D.LAP3D or KERNEL3D.HELM3D, the kernel of the
-% prime type, e.g. 'sp' for 's'.
+% prime type, e.g. 'sp' for 's' and 'sp_diff' for 's_diff'.
 %
 % See also KERNEL3D.GRAD, KERNEL3D.NTRACE.
 
-if ( ~any(strcmp(K.type, {'s', 'd', 'c', 'trans_rep'})) )
-    error('KERNEL3D.NORMALTRACE: Currently only supported for the types s, d, c and trans_rep.');
-end
-type = [strrep(K.type, 'trans_rep', 'trep') 'p'];
-
 p = K.params;
+
+% the prime type, e.g. 'sp' for 's' and 'sp_diff' for 's_diff'
+type = regexprep(K.type, '_diff$', '');
+if ( ~any(strcmp(type, {'s', 'd', 'c', 'trans_rep'})) )
+    error('KERNEL3D.NORMALTRACE: Currently only supported for the types s, d, c and trans_rep, and their _diff.');
+end
+type = [strrep(type, 'trans_rep', 'trep') 'p'];
+
+% the difference kernels of KERNEL3D.HELM3D
+if ( endsWith(K.type, '_diff') )
+    Kn = kernel3d.helm3d([type '_diff'], p.zks, p.coefs);
+    return
+end
+
 switch K.name
     case {'radpp', 'radgreen'}
         % the new type with the same green, fit range (radpp) and options

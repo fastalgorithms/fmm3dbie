@@ -526,7 +526,8 @@ end
 
 function test_grad_3d()
 % 'grad' is grad_x G, and 'dgrad' is grad_x of 'd' (checked by finite
-% differences in the target).
+% differences in the target), and 'cgrad' and 'trep_grad' are built from
+% them.
 
 zk = 1.1;
 helm = @(s,t) helmgreen(zk, s, t);
@@ -553,6 +554,15 @@ for j = 1:3
     e2 = norm(DG(j:3:end,:) - fd, 'fro')/norm(fd, 'fro');
     assert(e1 < 1e-8, 'radpp grad 3d: %.2e', e1);
     assert(e2 < 1e-8, 'radpp dgrad 3d: %.2e', e2);
+
+% 'cgrad' and 'trep_grad' from 'grad' and 'dgrad'
+c = [0.7 2i];
+A = kernel3d.radpp(helm, [1e-6 6], 'cgrad', c).eval(src, targ);
+err = norm(A - c(1)*G - c(2)*DG, 'fro')/norm(A, 'fro');
+assert(err < 1e-12, 'radpp cgrad 3d: %.2e', err);
+A = kernel3d.radpp(helm, [1e-6 6], 'trep_grad', c).eval(src, targ);
+err = max(norm(A(:,1:2:end) - c(1)*DG, 'fro'), norm(A(:,2:2:end) - c(2)*G, 'fro'))/norm(A, 'fro');
+assert(err < 1e-12, 'radpp trep_grad 3d: %.2e', err);
 end
 
 end
@@ -587,8 +597,8 @@ end
 
 
 function test_trans_3d()
-% 'trans_sys' (2x2) and 'trans_rep' (1x2) match helm3d, eval and near
-% quadrature on a sphere.
+% 'trans_sys' (2x2), 'trans_rep' and 'trep_prime' (1x2) match helm3d, eval
+% and near quadrature on a sphere.
 
 zk = 1.1;
 C = [0.7 -1.3; 0.4 2.1];  c = [0.9 -0.6];
@@ -601,7 +611,7 @@ targ.r = randn(3, 35);  targ.r = targ.r./vecnorm(targ.r)*1.7;
 targ.n = randn(3, 35);  targ.n = targ.n./vecnorm(targ.n);
 
 S = neighbours(geometries.sphere(1, 1, [0;0;0], 4, 1), 3);
-cases = {{'trans_sys', C}, {'trans_rep', c}};
+cases = {{'trans_sys', C}, {'trans_rep', c}, {'trep_prime', c}};
 for k = 1:numel(cases)
     [type, cf] = cases{k}{:};
     K  = kernel3d.radpp(helm, [1e-9 4], type, 'coefs', cf, 'opts', fopts);
@@ -1203,39 +1213,105 @@ for i = 1:size(tab, 1)
     end
 end
 
-% the new types against the existing ones
-c = [0.7 2i];
-for k = 1:2
-    G = mks{k}('grad', {}).eval(src, targ);
-    DG = mks{k}('dgrad', {}).eval(src, targ);
-    A = mks{k}('cgrad', {c}).eval(src, targ);
-    assert(norm(A - c(1)*G - c(2)*DG, 'fro') < 1e-12*norm(A, 'fro'), 'cgrad (%d)', k);
-    A = mks{k}('trep_grad', {c}).eval(src, targ);
-    assert(norm(A(:,1:2:end) - c(1)*DG, 'fro') + norm(A(:,2:2:end) - c(2)*G, 'fro') ...
-        < 1e-12*norm(A, 'fro'), 'trep_grad (%d)', k);
-    T = mks{k}('trans_sys', {[1 1; c]}).eval(src, targ);
-    A = mks{k}('trep_prime', {c}).eval(src, targ);
-    assert(norm(A - T(2:2:end,:), 'fro') < 1e-12*norm(A, 'fro'), 'trep_prime (%d)', k);
-    assert(isequal(mks{k}('trans_rep_prime', {c}).eval(src, targ), A), ...
-        'trans_rep_prime alias (%d)', k);
-end
-
 % the built-in kernels
 Ks = {kernel3d.lap3d('d'), kernel3d.lap3d('dp'); ...
-      kernel3d.helm3d('c', zk, [1 2i]), kernel3d.helm3d('cp', zk, [1 2i])};
+      kernel3d.helm3d('c', zk, [1 2i]), kernel3d.helm3d('cp', zk, [1 2i]); ...
+      kernel3d.helm3d('s_diff', [zk; 2.1], [1; 0.5]), ...
+      kernel3d.helm3d('sp_diff', [zk; 2.1], [1; 0.5]); ...
+      kernel3d.helm3d('c_diff', [zk; 2.1], [1; 2i; 1; 0.5]), ...
+      kernel3d.helm3d('cp_diff', [zk; 2.1], [1; 2i; 1; 0.5]); ...
+      kernel3d.helm3d('trans_rep_diff', [zk; 2.1], [0.7; 2i; 1; 0.5]), ...
+      kernel3d.helm3d('trep_prime_diff', [zk; 2.1], [0.7; 2i; 1; 0.5])};
 for i = 1:size(Ks, 1)
     A = Ks{i,2}.eval(src, targ);
     assert(norm(normaltrace(Ks{i,1}).eval(src, targ) - A, 'fro') < ...
         1e-14*norm(A, 'fro'), 'built-in normaltrace %d', i);
 end
 
-caught = false;
-try
-    grad(kernel3d.radpp(g, 20, 'sp'));
-catch
-    caught = true;
+% trans_rep of helm3d, an interleaved kernel
+cf = [0.7; 2i];
+P = kernel3d(@(s,t) helm3d.green(zk, s, t), 'trep_prime', cf.').eval(src, targ);
+Kn = normaltrace(kernel3d.helm3d('trans_rep', zk, cf));
+assert(strcmp(Kn.type, 'trep_prime') && ...
+    norm(Kn.eval(src, targ) - P, 'fro') < 1e-12*norm(P, 'fro'), ...
+    'helm3d trans_rep normaltrace');
+
+% the gradients of lap3d and helm3d, as grad of the layer potentials,
+% against the radgreen kernels, with their fmms
+gl = @(s,t) lap3d.green(s, t);
+tab = {kernel3d.lap3d('s'), gl, 'grad', {}; ...
+       kernel3d.lap3d('c', [0.7; 2]), gl, 'cgrad', {[0.7 2]}; ...
+       kernel3d.helm3d('d', zk), g, 'dgrad', {}; ...
+       kernel3d.helm3d('c', zk, cf), g, 'cgrad', {cf.'}; ...
+       kernel3d.helm3d('trans_rep', zk, cf), g, 'trep_grad', {cf.'}};
+for i = 1:size(tab, 1)
+    Kg = grad(tab{i,1});
+    A = kernel3d(tab{i,2}, tab{i,3}, tab{i,4}{:}).eval(src, targ);
+    sig = randn(size(A,2), 2);
+    assert(norm(Kg.eval(src, targ) - A, 'fro') < 1e-12*norm(A, 'fro'), ...
+        'built-in grad %d', i);
+    assert(norm(Kg.fmm(1e-12, src, targ, sig) - A*sig, 'fro') < ...
+        1e-10*norm(A*sig, 'fro'), 'built-in grad fmm %d', i);
 end
-assert(caught, 'grad: prime type not rejected');
+
+% sums of radpp and radgreen kernels keep the fmm of their greens
+g2 = @(s,t) helm3d.green(2.1, s, t);
+fmm2 = @(eps,s,pg,t,pgt) hfmm3d(eps, 2.1, s, pg, t, pgt);
+for k = 1:2
+    if k == 1
+        K1 = kernel3d.radpp(g, [1e-6 20], 'c', cf.', 'fmm', fmm);
+        K2 = kernel3d.radpp(g2, [1e-6 20], 'c', cf.', 'fmm', fmm2);
+    else
+        K1 = kernel3d(g, 'c', cf.', 'fmm', fmm);
+        K2 = kernel3d(g2, 'c', cf.', 'fmm', fmm2);
+    end
+    Kn1 = normaltrace(K1);
+    Kn2 = normaltrace(K2);
+    Kn = normaltrace(2*K1 - K2);
+    A = 2*Kn1.eval(src, targ) - Kn2.eval(src, targ);
+    sig = randn(size(A,2), 2);
+    assert(norm(Kn.eval(src, targ) - A, 'fro') < 1e-12*norm(A, 'fro'), ...
+        'sum normaltrace (%d)', k);
+    assert(norm(Kn.fmm(1e-12, src, targ, sig) - A*sig, 'fro') < ...
+        1e-10*norm(A*sig, 'fro'), 'sum normaltrace fmm (%d)', k);
+end
+
+% 2D (in-plane) radpp kernels keep their dimension
+g2 = @(s,t) helmgreen(1.1, s, t);
+src2.r = randn(2, 30);  src2.n = randn(2, 30);  src2.n = src2.n./vecnorm(src2.n);
+targ2.r = randn(2, 20) + [5; 0];
+targ2.n = randn(2, 20);  targ2.n = targ2.n./vecnorm(targ2.n);
+tab = {'s', {}, 'grad', 'sp'; 'c', {[1 2i]}, 'cgrad', 'cp'};
+for i = 1:size(tab, 1)
+    a = tab{i,2};
+    K = kernel3d.radpp(g2, [1e-6 20], tab{i,1}, a{:}, 'dim', 2);
+    Kg = grad(K);
+    Kn = normaltrace(K);
+    A = kernel3d.radpp(g2, [1e-6 20], tab{i,3}, a{:}, 'dim', 2).eval(src2, targ2);
+    B = kernel3d.radpp(g2, [1e-6 20], tab{i,4}, a{:}, 'dim', 2).eval(src2, targ2);
+    assert(Kg.params.dim == 2 && norm(Kg.eval(src2, targ2) - A, 'fro') < ...
+        1e-12*norm(A, 'fro'), '2D grad %s', tab{i,1});
+    assert(Kn.params.dim == 2 && norm(Kn.eval(src2, targ2) - B, 'fro') < ...
+        1e-12*norm(B, 'fro'), '2D normaltrace %s', tab{i,1});
+end
+
+% kernels that grad and normaltrace reject: a prime type, a custom type,
+% a sum of different types and an interleave of different kernels
+Krej = {kernel3d.radpp(g, 20, 'sp'), ...
+        kernel3d.radpp(g, [1e-6 20], @(t) ones(size(t.r,2), 1), 'nderiv', 0), ...
+        kernel3d(g, 's') + kernel3d(g, 'dp'), ...
+        kernel3d.interleave([kernel3d(g, 's'), kernel3d.lap3d('s')])};
+for i = 1:numel(Krej)
+    for op = {@grad, @normaltrace}
+        caught = false;
+        try
+            op{1}(Krej{i});
+        catch
+            caught = true;
+        end
+        assert(caught, '%s: kernel %d not rejected', func2str(op{1}), i);
+    end
+end
 end
 
 
@@ -1281,10 +1357,14 @@ helm = @(s,t) helmgreen(1.1, s, t);
 names = {{'s', 'single', 'slp'}, {'d', 'double', 'dlp'}, ...
          {'c', 'comb', 'combined'}, {'sp', 'sprime'}, ...
          {'dp', 'dprime'}, {'cp', 'combprime', 'cprime'}, ...
-         {'grad', 'sgrad'}, {'hess', 'shess'}, ...
-         {'trans_sys', 'transmission_sys', 'trans', 'transmission'}, ...
-         {'trans_rep', 'transmission_rep'}, ...
-         {'clamped_bc', 'clamped', 'clamped_plate_bcs', 's2trans'}};
+         {'grad', 'sgrad', 'sg'}, {'dgrad', 'dg'}, {'cgrad', 'cg'}, ...
+         {'hess', 'shess'}, ...
+         {'trans_sys', 'transmission_sys', 'trans', 'transmission', 'tsys'}, ...
+         {'trans_rep', 'transmission_rep', 'trep'}, ...
+         {'trep_prime', 'trepp', 'trep_p', 'trans_rep_prime', 'trans_rep_p'}, ...
+         {'trep_grad', 'trepg', 'trep_g', 'trans_rep_grad', 'trans_rep_g'}, ...
+         {'clamped_bc', 'clamped', 'clamped_plate_bcs', 's2trans', 's2t'}, ...
+         {'d2trans', 'd2t'}, {'c2trans', 'c2t', 'c2tr'}};
 src.r = randn(3, 5);  src.n = src.r./vecnorm(src.r);
 targ.r = 2*randn(3, 6);  targ.n = targ.r./vecnorm(targ.r);
 for k = 1:numel(names)

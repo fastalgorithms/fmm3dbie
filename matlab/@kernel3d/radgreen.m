@@ -369,13 +369,21 @@ p = K1.params;
 ipv = p.ipv;                   % the worse of the two, as for other sums
 for k = 2:numel(Ks), ipv = max(ipv, Ks{k}.params.ipv); end
 ipv = {'ipv', ipv};
+% the fmm of the sum of the greens
+fmm = {};
+if all(cellfun(@(Kk) ~isempty(Kk.params.fmm), Ks))
+    fs = cellfun(@(Kk) Kk.params.fmm, Ks, 'UniformOutput', false);
+    fmm = {'fmm', radpp_sum(cs, fs{:})};
+end
 K = kernel3d.radpp(mkgreen(parts, c), [], p.spec, 'dim', p.dim, ipv{:}, ...
-        'opts', p.fitopts, 'zk', max(cellfun(@(K) K.zk, Ks)), ...
+        'coefs', p.kcoefs, 'nu', p.nu, 'opts', p.fitopts, ...
+        'zk', max(cellfun(@(K) K.zk, Ks)), fmm{:}, ...
         'ifcomplex', any(cellfun(@(K) logical(K.ifcomplex), Ks)) || ~isreal(cs));
 K.params.key = p.key;
-if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks))
+% otherwise the sum of the fmms of the kernels, if they have them
+if isempty(fmm) && all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks))
     fs = cellfun(@(Kk) Kk.fmm, Ks, 'UniformOutput', false);
-    K.fmm = @(eps, src, targ, sigma) fmmsum(fs, cs, eps, src, targ, sigma);
+    K.fmm = radpp_sum(cs, fs{:});
 end
 end
 

@@ -6,6 +6,7 @@ function obj = lap3d(type, coefs)
 %      'd'  - double layer,   D(x,y) = d/dn_y G(x,y)
 %      'sp' - sprime,         S'(x,y) = d/dn_x G(x,y)
 %      'c'  - combined layer, coefs(1)*S + coefs(2)*D  (default coefs=[1 1])
+%      'sg', 'dg', 'cg' - target gradients (3x1) of 's', 'd' and 'c'
 %
 % See also LAP3D.KERN, LAP3D.DIRICHLET.EVAL, LAP3D.NEUMANN.EVAL
 
@@ -123,12 +124,37 @@ switch lower(type)
         obj.src_fields = {'n'};
         obj.targ_fields = {'n'};
         
+    % target gradients (3x1), with the quadrature of KERNEL3D.RADGREEN
+    case {'sg', 'sgrad', 'grad'}
+        obj = grad_kernel('grad', 'sg', []);
+
+    case {'dg', 'dgrad'}
+        obj = grad_kernel('dgrad', 'dg', []);
+
+    case {'cg', 'cgrad'}
+        if nargin < 2 || isempty(coefs), coefs = [1; 1]; end
+        obj = grad_kernel('cgrad', 'cg', coefs(:));
+
     otherwise
         error('KERNEL3D.LAP3D: unknown Laplace kernel type ''%s''.', type);
 
 end
 
 end
+
+function K = grad_kernel(rtype, type, coefs)
+%GRAD_KERNEL  the gradient kernel TYPE, the radgreen kernel RTYPE on
+%  lap3d.green, with the fmm of LAP3D.FMM
+c = {};
+args = {};
+if ~isempty(coefs), c = {coefs};  args = {'coefs', coefs.'}; end
+K = kernel3d(@(s,t) lap3d.green(s, t), rtype, args{:});
+K.name = 'laplace';
+K.type = type;
+K.params.coefs = coefs;
+K.fmm = @(eps,src,targ,sigma) lap3d.fmm(eps, src, targ, type, sigma, c{:});
+end
+
 
 function spmat = rsc_to_sparse(Q, S)
 %RSC_TO_SPARSE  Convert Laplace getquad RSC output to a sparse matrix.

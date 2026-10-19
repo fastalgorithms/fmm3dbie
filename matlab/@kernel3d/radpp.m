@@ -305,9 +305,9 @@ obj.type         = spec.name;
 obj.opdims       = spec.opdims;
 obj.zk           = o.zk;
 obj.kernel_order = kernel_order;
-obj.ifcomplex    = ~isreal(info.coefs) || ~isreal(o.nu) || ...
+obj.ifcomplex    = double(~isreal(info.coefs) || ~isreal(o.nu) || ...
                    ~isreal(o.coefs) || ...
-                   ((isa(type, 'function_handle') || isspec) && o.ifcomplex);
+                   ((isa(type, 'function_handle') || isspec) && o.ifcomplex));
 obj.targ_fields  = spec.targ_fields;
 obj.src_fields   = {};
 if isrc, obj.src_fields = {'n'}; end
@@ -1016,22 +1016,21 @@ info.ipars = ipars;  info.dpars = dpars;
 info.err = sum(abs(cs(:)).*cellfun(@(K) K.params.err, Ks(:)));
 
 greens = cellfun(@(K) K.params.green, Ks, 'UniformOutput', false);
+% the fmm of the sum of the greens
+fmm = {};
+if all(cellfun(@(Kk) ~isempty(Kk.params.fmm), Ks))
+    fmms = cellfun(@(Kk) Kk.params.fmm, Ks, 'UniformOutput', false);
+    fmm = {'fmm', radpp_sum(cs, fmms{:})};
+end
 K = kernel3d.radpp(radpp_sum(cs, greens{:}), info.breaks([1 end]), ...
         p.spec, 'dim', p.dim, 'ipv', p.ipv, 'coefs', p.kcoefs, ...
         'nu', p.nu, 'opts', p.fitopts, 'kernel_order', p.kernel_order, ...
-        'zk', max(cellfun(@(K) K.zk, Ks)), 'fit', info, ...
+        'zk', max(cellfun(@(K) K.zk, Ks)), 'fit', info, fmm{:}, ...
         'ifcomplex', any(cellfun(@(K) logical(K.ifcomplex), Ks)) || ~isreal(cs));
-if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks))
+% otherwise the sum of the fmms of the kernels, if they have them
+if isempty(fmm) && all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks))
     fmms = cellfun(@(Kk) Kk.fmm, Ks, 'UniformOutput', false);
-    K.fmm = @(varargin) fmmsum(fmms, cs, varargin{:});
-end
-end
-
-
-function pot = fmmsum(fmms, cs, varargin)
-pot = 0;
-for k = 1:numel(fmms)
-    pot = pot + cs(k)*fmms{k}(varargin{:});
+    K.fmm = radpp_sum(cs, fmms{:});
 end
 end
 

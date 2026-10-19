@@ -90,6 +90,18 @@ for c = 1:size(cases, 1)
     err = max(norm(A(1:2:end,:) - B1, 'fro')/norm(B1, 'fro'), ...
               norm(A(2:2:end,:) - B2, 'fro')/norm(B2, 'fro'));
     assert(err < 1e-13, 'helm %s_diff blocks: %.2e', type, err);
+
+% trans_rep_diff and trep_prime_diff: [c1 D, c2 S] and [c1 D', c2 S'] of
+% the scalar kernels, by columns
+for t = {{'trans_rep', 'd', 's'}, {'trep_prime', 'dp', 'sp'}}
+    [type, t1, t2] = t{1}{:};
+    A = kernel3d('h', [type '_diff'], k, [comb; a]).eval(src, targ);
+    B1 = comb(1)*kernel3d('h', [t1 '_diff'], k, a).eval(src, targ);
+    B2 = comb(2)*kernel3d('h', [t2 '_diff'], k, a).eval(src, targ);
+    err = max(norm(A(:,1:2:end) - B1, 'fro')/norm(B1, 'fro'), ...
+              norm(A(:,2:2:end) - B2, 'fro')/norm(B2, 'fro'));
+    assert(err < 1e-13, 'helm %s_diff blocks: %.2e', type, err);
+end
 end
 
 C = [0.7+0.1i, 0.3; 0.5, 1.2i];
@@ -123,7 +135,8 @@ C = [0.7+0.1i, 0.3; 0.5, 1.2i];
 [src, targ] = points();
 targ.r = targ.r + [3;0;0];
 cases = {'s', {}; 'd', {}; 'sp', {}; 'dp', {}; 'c', {comb}; 'cp', {comb}; ...
-         's2trans', {}; 'd2trans', {}; 'c2trans', {comb}};
+         's2trans', {}; 'd2trans', {}; 'c2trans', {comb}; ...
+         'trans_rep', {comb}; 'trep_prime', {comb}};
 for c = 1:size(cases, 1)
     [type, hc] = cases{c,:};
     check_fmm(kernel3d('h', [type '_diff'], k, [hc{:}; a]), src, targ, type);

@@ -19,6 +19,11 @@ function obj = helm3d(type,zk, coefs)
 %      'dp_diff'    - a0*D'_{k0} - a1*D'_{k1}
 %      'c_diff'     - a0*C_{k0} - a1*C_{k1},    coefs=[comb_alpha;comb_beta;a0;a1]
 %      'cp_diff'    - a0*C'_{k0} - a1*C'_{k1},  same coefs as c_diff
+%      'trans_rep_diff' ('trep_diff')
+%                   - a0*[c1 D, c2 S]_{k0} - a1*[c1 D, c2 S]_{k1},
+%                     coefs=[c1;c2;a0;a1] default [1;1;1;1]
+%      'trep_prime_diff' ('trepp_diff', 'trans_rep_prime_diff')
+%                   - the same with D', S', same coefs as trans_rep_diff
 %
 %   Transmission kernels (single wavenumber, zk scalar):
 %      'trans_sys'  - [2x2] BIE kernel built from interleave of D,S,D',S'.
@@ -31,6 +36,11 @@ function obj = helm3d(type,zk, coefs)
 %      'trans_rep'  - [1x2] representation: u = D[rho] + S[sigma].
 %                    Built from interleave([coefs(1)*D, coefs(2)*S]),
 %                    coefs default [1;1].
+%      'trep_prime' - [1x2] its normal derivative: [D', S'], from
+%                    interleave([coefs(1)*D', coefs(2)*S']).
+%      'sg', 'dg', 'cg' - [3x1] target gradients of 's', 'd' and 'c'
+%      'trep_grad'  - [3x2] target gradient of trans_rep, [grad D, grad S],
+%                    from interleave([coefs(1)*'dg', coefs(2)*'sg']).
 %      's2trans'    - [2x1]  [S; S']     (col 5 of the BIE system)
 %      'd2trans'    - [2x1]  [D; D']
 %      'c2trans'    - [2x1]  [C; C'],    coefs=[alpha;beta] default [1;1]
@@ -177,6 +187,17 @@ switch lower(type)
         obj = diff_kernel('cp', [zk0; zk1], [a0; a1], comb);
         obj.type = 'cp_diff';  obj.params.zks = [zk0;zk1];  obj.params.coefs = [comb;a0;a1];
 
+    case {'trans_rep_diff', 'trep_diff'}
+        % coefs = [c1; c2; a0; a1]: a0*[c1 D, c2 S]_{k0} - a1*[c1 D, c2 S]_{k1}
+        [zk0, zk1, comb, a0, a1] = parse_diff4(zk, coefs, 'trans_rep_diff');
+        obj = diff_kernel('trans_rep', [zk0; zk1], [a0; a1], comb);
+        obj.type = 'trans_rep_diff';  obj.params.zks = [zk0;zk1];  obj.params.coefs = [comb;a0;a1];
+
+    case {'trep_prime_diff', 'trepp_diff', 'trans_rep_prime_diff'}
+        [zk0, zk1, comb, a0, a1] = parse_diff4(zk, coefs, 'trep_prime_diff');
+        obj = diff_kernel('trep_prime', [zk0; zk1], [a0; a1], comb);
+        obj.type = 'trep_prime_diff';  obj.params.zks = [zk0;zk1];  obj.params.coefs = [comb;a0;a1];
+
     % ----------------------------------------------------------------
     %  trans_sys  -- [2x2] BIE system kernel, single wavenumber
     %
@@ -215,10 +236,46 @@ switch lower(type)
         coefs = coefs(:);
         obj              = kernel3d.interleave([coefs(1) .* kernel3d.helm3d('d', zk), ...
                                                 coefs(2) .* kernel3d.helm3d('s', zk)]);
+        obj.name         = 'helmholtz';
         obj.type         = 'trans_rep';
         obj.zk           = zk;
         obj.params.coefs = coefs;
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'trans_rep', sigma, coefs);
+
+    case {'trep_prime', 'trepp', 'trep_p', 'trans_rep_prime', 'trans_rep_p'}
+        if nargin < 3 || isempty(coefs), coefs = [1; 1]; end
+        coefs = coefs(:);
+        obj              = kernel3d.interleave([coefs(1) .* kernel3d.helm3d('dp', zk), ...
+                                                coefs(2) .* kernel3d.helm3d('sp', zk)]);
+        obj.name         = 'helmholtz';
+        obj.type         = 'trep_prime';
+        obj.zk           = zk;
+        obj.params.coefs = coefs;
+        obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'trep_prime', sigma, coefs);
+
+    % ----------------------------------------------------------------
+    %  target gradients, (3x1), with the quadrature of KERNEL3D.RADGREEN
+    % ----------------------------------------------------------------
+    case {'sg', 'sgrad', 'grad'}
+        obj = grad_kernel('grad', 'sg', zk, []);
+
+    case {'dg', 'dgrad'}
+        obj = grad_kernel('dgrad', 'dg', zk, []);
+
+    case {'cg', 'cgrad'}
+        if nargin < 3 || isempty(coefs), coefs = [1; 1]; end
+        obj = grad_kernel('cgrad', 'cg', zk, coefs(:));
+
+    case {'trep_grad', 'trepg', 'trep_g', 'trans_rep_grad', 'trans_rep_g'}
+        if nargin < 3 || isempty(coefs), coefs = [1; 1]; end
+        coefs = coefs(:);
+        obj              = kernel3d.interleave([coefs(1) .* kernel3d.helm3d('dg', zk), ...
+                                                coefs(2) .* kernel3d.helm3d('sg', zk)]);
+        obj.name         = 'helmholtz';
+        obj.type         = 'trep_grad';
+        obj.zk           = zk;
+        obj.params.coefs = coefs;
+        obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'trep_grad', sigma, coefs);
 
     % ----------------------------------------------------------------
     %  s2trans / d2trans / c2trans  -- [2x1] single-zk stacking kernels
@@ -317,6 +374,20 @@ end
 % =========================================================================
 %  Local helpers
 % =========================================================================
+
+function K = grad_kernel(rtype, type, zk, coefs)
+%GRAD_KERNEL  the gradient kernel TYPE, the radgreen kernel RTYPE on
+%  helm3d.green, with the fmm of HELM3D.FMM
+c = {};
+args = {'zk', zk};
+if ~isempty(coefs), c = {coefs};  args = [args, {'coefs', coefs.'}]; end
+K = kernel3d(@(s,t) helm3d.green(zk, s, t), rtype, args{:});
+K.name = 'helmholtz';
+K.type = type;
+K.params.coefs = coefs;
+K.fmm = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, type, sigma, c{:});
+end
+
 
 function K = diff_kernel(type, zks, a, comb, g)
 %DIFF_KERNEL  a(1)*K_{zks(1)} - a(2)*K_{zks(2)} for a helmholtz type, as
