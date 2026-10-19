@@ -123,6 +123,8 @@ else
     out.eval    = @eval_right;
     out.fmm     = set_if_exist(Kfmm,     @fmm_right);
     out.getquad = set_if_exist(Kgetquad, @getquad_right);
+    % N(s) is sampled at oversampled nodes in the smooth rule
+    out.getquad_sub = false;
     out.diag    = set_if_exist(Kdiag,    @diag_right);
 end
 

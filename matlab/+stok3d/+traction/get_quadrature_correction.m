@@ -176,7 +176,8 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
         Q.col_ptr = col_ptr;
         Q.row_ind = row_ind;
     else
-        spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
+        spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear, ...
+            kernel3d.rsc_interleave_symmetric3());
         Q.spmat = spmat;
     end
 

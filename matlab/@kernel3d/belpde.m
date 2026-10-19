@@ -69,14 +69,37 @@ end
 zk2 = zk^2;
 obj.eval = @(s,t) belpde.kern(zk2, s, t, obj.type);
 
-obj.getquad = @(S,eps,varargin) rsc_to_sparse( ...
-    belpde.get_quadrature_correction(S, obj.type, zk, eps, varargin{:}), S);
+% registry names belpde_klb, belpde_rlb, belpde_khb, belpde_rhb
+qname = ['belpde_', lower(obj.type)];
+obj.getquad = @(S,eps,varargin) surf_quad(S, eps, qname, zk, varargin{:});
+obj.getquad_sub = true;
 obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
 end
 
-function spmat = rsc_to_sparse(Q, S)
-%RSC_TO_SPARSE  Convert belpde getquad RSC output to a sparse matrix.
-% Beltrami kernels are scalar (opdims=[1,1]); no ri argument needed.
-spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear);
+function spmat = surf_quad(S, eps, name, zk, targinfo, opts)
+%SURF_QUAD  getquad via GETNEARQUAD_MEX; targets need the mean curvature.
+if nargin < 5 || isempty(targinfo), targinfo = S; end
+if nargin < 6 || isempty(opts), opts = struct(); end
+
+if isa(targinfo, 'surfer')
+    targinfo = struct('r', targinfo.r, 'du', targinfo.du, ...
+        'dv', targinfo.dv, 'n', targinfo.n, ...
+        'patch_id', targinfo.patch_id, 'uvs_targ', targinfo.uvs_targ, ...
+        'kappa', targinfo.mean_curv);
+end
+if ~isfield(targinfo, 'kappa')
+    if isfield(targinfo, 'mean_curv')
+        targinfo.kappa = targinfo.mean_curv;
+        targinfo = rmfield(targinfo, 'mean_curv');
+    else
+        error(['KERNEL3D.BELPDE: mean curvature at the targets must be ' ...
+            'supplied in targinfo.kappa or targinfo.mean_curv.']);
+    end
+end
+targinfo.kappa = reshape(targinfo.kappa, 1, []);
+
+opts.format = 'sparse';
+Q = getnearquad_mex(S, name, eps, struct('zpars', zk), targinfo, opts);
+spmat = Q.spmat;
 end
