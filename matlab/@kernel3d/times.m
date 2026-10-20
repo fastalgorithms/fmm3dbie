@@ -12,8 +12,8 @@ function f = times(f, g)
 % Singleton dimensions of either A or K.opdims are expanded, just like the
 % usual .* for matrices.
 %
-% eval and getquad are always adjusted. The fmm is adjusted when A is a
-% scalar, a column vector or a row vector; it is set to [] if A is a
+% eval, getquad and diag are always adjusted. The fmm is adjusted when A
+% is a scalar, a column vector or a row vector; it is set to [] if A is a
 % general matrix.
 
 if ~isa(f, 'kernel3d')
@@ -32,6 +32,16 @@ end
 
 if ~ismatrix(g)
     error('KERNEL3D:times:invalid', 'numeric factor must be a 2D array');
+end
+
+if isscalar(g) && kernel3d.radgreen('compatible', f)
+    f = kernel3d.radgreen('scale', f, g);
+    return
+end
+
+if isscalar(g) && kernel3d.radpp('summable', {f})
+    f = kernel3d.radpp('sum', {f}, g);
+    return
 end
 
 if isscalar(g)
@@ -57,6 +67,7 @@ end
 Keval    = f.eval;
 Kfmm     = f.fmm;
 Kgetquad = f.getquad;
+Kdiag    = f.diag;
 A4 = reshape(A, a1, 1, a2, 1);
 
     function vals = apply_mat(Kmat)
@@ -80,9 +91,9 @@ A4 = reshape(A, a1, 1, a2, 1);
             for qq = 1:Q
                 if q == 1, sel = sel_r; else, sel = sel_r & (jk == qq); end
                 aval = A(min(pp, a1), min(qq, a2));
-                I = [I; it(sel)*P + pp]; %#ok<AGROW>
-                J = [J; jt(sel)*Q + qq]; %#ok<AGROW>
-                V = [V; aval * v(sel)];  %#ok<AGROW>
+                I = [I; it(sel)*P + pp]; 
+                J = [J; jt(sel)*Q + qq]; 
+                V = [V; aval * v(sel)];  
             end
         end
         vals = sparse(I, J, V, P*nt, Q*n);
@@ -132,6 +143,18 @@ else
     f.getquad = [];
 end
 
+if isa(Kdiag, 'function_handle')
+    f.diag = @diag_;
+end
+
+    function D = diag_(t)
+        % apply A to each (m x q) point block of the stacked diag
+        Dm = Kdiag(t);
+        nt = size(Dm,1)/m;
+        D3 = A .* permute(reshape(Dm, m, nt, q), [1 3 2]);
+        D  = reshape(permute(D3, [1 3 2]), P*nt, Q);
+    end
+
 f.opdims = [P, Q];
 f.type = ['custom_', f.type];
 f.name = ['custom ', f.name];
@@ -164,6 +187,11 @@ if isa(f.getquad, 'function_handle')
         Kgetquad(S, eps, varargin{:}), g);
 else
     f.getquad = [];
+end
+
+if isa(f.diag, 'function_handle')
+    Kdiag = f.diag;
+    f.diag = @(t) g * Kdiag(t);
 end
 
 if isnan(g)

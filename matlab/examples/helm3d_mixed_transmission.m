@@ -8,20 +8,17 @@ S2 = geometries.ellipsoid([1,1.5,1],3*[1,1,1],ctr2,6);
 zk = 2;
 zks = [zk,0.5];
 
-% use the representation S[sigma]-D[mu] for transmission
-neg2 = diag([1,-1]);
-
+% % use the representation S[sigma]-D[mu] for transmission
 kerns(2,2) = kernel3d();
-kerns(1,1) = 2*kernel3d('h','c',zk,[1,1]);
-kerns(1,2) = kernel3d('h','trans_rep',zk) * neg2;
-kerns(2,1) = 2*kernel3d('h','c2trans',zk,[1,1]);
-kerns(2,2) = kernel3d('h','trans_sys_diff',zks) * neg2;
+kerns(1,1) = kernel3d('h','c',zk,[1,1]) + kernel3d.eye(0.5);
+kerns(1,2) = kernel3d('h','trans_rep',zk);
+kerns(2,1) = kernel3d('h','c2trans',zk,[1,1]);
+kerns(2,2) = kernel3d('h','trans_sys_diff',zks) + kernel3d.eye(diag([1,-1]));
 
 eps = 1e-10;
 srfrs = [S1,S2];
 tic;
 Smat = surfermat(srfrs,kerns,eps);
-Smat = Smat + eye(size(Smat));
 tbuild = toc
 
 rhskerns(2,1) = kernel3d();
@@ -55,7 +52,7 @@ kernseval = kerns(1,:);
 % Evaluation kernel for targets interior to S2
 kernseval2(1,2) = kernel3d();
 kernseval2(1) = kernel3d('z');
-kernseval2(2) = kernel3d('h','trans_rep',zks(2)) * neg2;
+kernseval2(2) = kernel3d('h','trans_rep',zks(2));
 
 %%
 nplot = 100;

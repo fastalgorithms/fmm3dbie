@@ -4,8 +4,18 @@ function f = minus(f, g)
 % Currently only supported for subtracting two kernel3d class objects.
 
 if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
+    if kernel3d.radgreen('summable', {f, g})
+        f = kernel3d.radgreen('sum', f, 1, g, -1);
+        return
+    end
+    if kernel3d.radpp('summable', {f, g})
+        f = kernel3d.radpp('sum', {f, g}, [1 -1]);
+        return
+    end
     assert(all(f.opdims == g.opdims), ...
         'kernel3d dimensions must agree to subtract');
+
+    fdiag = f.diag; gdiag = g.diag;
 
     f.name = ['custom ', f.name, ' ', g.name];
     f.type = 'custom';
@@ -35,6 +45,13 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
     if isempty(targ), targ = []; end
     f.src_fields  = src;
     f.targ_fields = targ;
+
+    % identity/self ("delta") terms subtract
+    if isempty(fdiag) && ~isempty(gdiag)
+        f.diag = @(t) -gdiag(t);
+    elseif ~isempty(fdiag) && ~isempty(gdiag)
+        f.diag = @(t) fdiag(t) - gdiag(t);
+    end
 
 else
     error('KERNEL3D:minus:invalid', ...

@@ -19,6 +19,11 @@ classdef kernel3d
 %      'maxwell'   ('em3d', 'em')        'nrccie-bc', 'nrccie-eval'
 %      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
 %      'beltrami'  ('belpde', 'bel')     'klb', 'rlb', 'khb', 'rhb'
+%      kernel3d(@green, type, ...)       (radial Green's function with exact
+%                                         eval, see KERNEL3D.RADGREEN)
+%      'radpp'                           (kernels from a piecewise polynomial
+%                                         fit of a radial Green's function,
+%                                         see KERNEL3D.RADPP)
 %      'zero'/'zeros'                    (no type needed)
 %      'lap2d'                           's', 'sp', 'sg' (2D, surfer in z = 0)
 %      'helm2d'                          's', 'sp', 'sg', 's2trans' (2D, surfer in z = 0)
@@ -58,6 +63,15 @@ classdef kernel3d
 %      K.src_fields  - source fields expected by K.eval. ('r' is assumed)
 %      K.targ_fields - target fields expected by K.eval. ('r' is assumed)
 %
+%      K.diag - identity/self ("Dirac delta") term. [] means none.
+%         Otherwise a function handle @(t) returning an
+%         (opdims(1)*nt) x opdims(2) array, the per-point blocks D(x)
+%         stacked by target, giving the operator
+%           (D*sigma)(x) = D(x) * sigma(x),
+%         i.e. the multiplier on delta(x-y). With diag set,
+%           surfermat(S, kern) == D + surfermat(S, kern_without_diag)
+%         Build with KERNEL3D.EYE, e.g. K = kernel3d('l','d') + kernel3d.eye(-0.5)
+%
     properties
 
         name           % Name of the kernel
@@ -71,6 +85,7 @@ classdef kernel3d
                        % the location 'r' is implicitly added
         targ_fields    % Ptinfo fields required at targets
                        % the location 'r' is implicitly added
+        diag = []      % Identity/self term: @(t) -> (opdims(1)*nt x opdims(2)), or []
 
     end
 
@@ -102,6 +117,8 @@ classdef kernel3d
                         obj = kernel3d.stok3d(varargin{:});
                     case {'beltrami', 'belpde', 'bel'}
                         obj = kernel3d.belpde(varargin{:});
+                    case {'radpp'}
+                        obj = kernel3d.radpp(varargin{:});
                     case {'z', 'zero', 'zeros'}
                         if ~isempty(varargin)
                             obj = kernel3d.zeros(varargin{1});
@@ -123,6 +140,9 @@ classdef kernel3d
                     otherwise
                         error('KERNEL3D: kernel ''%s'' not found.', kern);
                 end
+            elseif ( isa(kern, 'function_handle') && ~isempty(varargin) )
+                % radial Green's function and a type, see KERNEL3D.RADGREEN
+                obj = kernel3d.radgreen(kern, varargin{:});
             elseif ( isa(kern, 'function_handle') )
                 obj.eval = kern;
                 try
@@ -159,11 +179,15 @@ classdef kernel3d
         obj    = em3d(varargin);
         obj    = stok3d(varargin);
         obj    = belpde(varargin);
+        obj    = radpp(green, rmax, type, varargin);
+        obj    = radgreen(green, type, varargin);
+        [err, Q, Qs] = check_quad(K, eps, opts);
         obj    = zeros(opdims);
         obj    = lap2d(varargin);
         obj    = helm2d(varargin);
         obj    = flex2d(varargin);
         obj    = ones(m, n);
+        obj    = eye(dvals);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
         Q      = addquad(Qa,Qb,c);
