@@ -321,6 +321,8 @@ obj.params = struct('green', green, 'rmin', rmin, 'rmax', rmax, ...
     'fitopts', fitopts, 'spec', spec, 'gmode', gmode, ...
     'profun', [], 'ipost', ipost, 'kernel_order', kernel_order, ...
     'fmm', o.fmm);
+% checked once here: exist is too slow to call on every evaluation
+obj.params.usemex = exist('fmm3dbie_routs', 'file') == 3;
 if gmode, obj.params.profun = profun; end
 
 obj.params.targs = @(t) radpp_targs(t, spec.wfun, spec.vfun);  % for radpp_kern
@@ -810,7 +812,7 @@ if p.gmode
 else
     % the fit, with the Fortran evaluator if the mex is built
     r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
-    if exist('fmm3dbie_routs', 'file') == 3
+    if p.usemex
         prof = radpp_eval_fortran(r, p.ipars, p.dpars);
     else
         prof = radpp_eval(r, p.breaks, p.coefs);
