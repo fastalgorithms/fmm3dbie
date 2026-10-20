@@ -66,5 +66,10 @@ function [targs] = extract_targ_array(targinfo)
 end
 
 function tf = has_targ_field(targinfo, name)
-tf = (isstruct(targinfo) && isfield(targinfo,name)) || isprop(targinfo,name);
+% isprop on a struct is very slow, so only objects go to isprop
+if isstruct(targinfo)
+    tf = isfield(targinfo,name);
+else
+    tf = isprop(targinfo,name);
+end
 end
