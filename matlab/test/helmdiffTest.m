@@ -133,7 +133,7 @@ function test_fmm()
 k = [1.1 + 0.3i; 2.3];  a = [1.2; 0.8];  comb = [1i*k(1); 1];
 C = [0.7+0.1i, 0.3; 0.5, 1.2i];
 [src, targ] = points();
-targ.r = targ.r + [3;0;0];
+targ.r = 2*targ.r;                               % push the shell out to 5
 cases = {'s', {}; 'd', {}; 'sp', {}; 'dp', {}; 'c', {comb}; 'cp', {comb}; ...
          's2trans', {}; 'd2trans', {}; 'c2trans', {comb}; ...
          'trans_rep', {comb}; 'trep_prime', {comb}};
@@ -198,8 +198,16 @@ end
 
 
 function [src, targ] = points()
-src.r  = randn(3, 30);
-src.n  = randn(3, 30);  src.n  = src.n./vecnorm(src.n);
-targ.r = randn(3, 20) + [2;0;0];
-targ.n = randn(3, 20);  targ.n = targ.n./vecnorm(targ.n);
+% sources in the unit ball, targets on a shell of radius 2.5.  The clouds
+% have to stay separated: the tests compare the analytically cancelled
+% kernels against an explicit a0*K_{k0} - a1*K_{k1}, and that difference
+% only carries eps*|K_{k0}| ~ eps/r^3 absolute accuracy, so a source landing
+% on top of a target costs the reference (not the kernel) its last digits.
+% With overlapping gaussian clouds the closest pair shrinks as the source
+% count grows, and the 1e-13 checks start failing on the reference alone.
+ns = 10000;  nt = 20;
+src.r  = randn(3, ns);  src.r  = src.r./vecnorm(src.r).*rand(1, ns).^(1/3);
+src.n  = randn(3, ns);  src.n  = src.n./vecnorm(src.n);
+targ.r = randn(3, nt);  targ.r = 2.5*targ.r./vecnorm(targ.r);
+targ.n = randn(3, nt);  targ.n = targ.n./vecnorm(targ.n);
 end

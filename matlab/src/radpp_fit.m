@@ -83,10 +83,10 @@ for ilev = 1:nlevmax
     end
     err = max([err; e(done)]);
 
-    inoise = [inoise; stag(done)];        %#ok<AGROW>
-    ad = [ad; a(done)];                   %#ok<AGROW>
-    bd = [bd; b(done)];                   %#ok<AGROW>
-    fd = cat(2,fd,fv(:,done,:));          %#ok<AGROW>
+    inoise = [inoise; stag(done)];        
+    ad = [ad; a(done)];                   
+    bd = [bd; b(done)];                   
+    fd = cat(2,fd,fv(:,done,:));          
 
     isplit = find(~done);
     if isempty(isplit), break; end

@@ -359,7 +359,7 @@ for k = 1:numel(Ks)
     for j = 1:numel(G.parts)
         i = find(cellfun(@(q) samegreen(q.handle, G.parts{j}.handle), parts), 1);
         if isempty(i)
-            parts{end+1} = G.parts{j};  c(end+1) = 0;  %#ok<AGROW>
+            parts{end+1} = G.parts{j};  c(end+1) = 0;  
             i = numel(parts);
         end
         c(i) = c(i) + cs(k)*G.c(j);

@@ -863,7 +863,7 @@ for ord = 1:3
         last = 1;
         if ord > 1, last = idx{c}(end); end
         for i = last:dim
-            idx{end+1} = [idx{c} i]; %#ok<AGROW>
+            idx{end+1} = [idx{c} i]; 
         end
     end
 end

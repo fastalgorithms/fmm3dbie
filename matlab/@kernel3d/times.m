@@ -91,9 +91,9 @@ A4 = reshape(A, a1, 1, a2, 1);
             for qq = 1:Q
                 if q == 1, sel = sel_r; else, sel = sel_r & (jk == qq); end
                 aval = A(min(pp, a1), min(qq, a2));
-                I = [I; it(sel)*P + pp]; %#ok<AGROW>
-                J = [J; jt(sel)*Q + qq]; %#ok<AGROW>
-                V = [V; aval * v(sel)];  %#ok<AGROW>
+                I = [I; it(sel)*P + pp]; 
+                J = [J; jt(sel)*Q + qq]; 
+                V = [V; aval * v(sel)];  
             end
         end
         vals = sparse(I, J, V, P*nt, Q*n);
