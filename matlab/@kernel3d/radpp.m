@@ -674,7 +674,7 @@ end
 
 function n = normals(t, dim)
 % unit normals (nt,dim), padded with zeros if t.n has fewer rows
-n = zeros(size(t.n,2), dim);
+n = zeros(size(t.n(:,:),2), dim);
 m = min(dim, size(t.n,1));
 n(:,1:m) = t.n(1:m,:).';
 end
