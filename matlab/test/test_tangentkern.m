@@ -43,7 +43,7 @@ K_tan = kernel3d.tangent_kern(K_cart, ids, jds);
 
 f_right      = @(s) local_tangent_pages(s, ids, zeros(0,1), 2, false);
 f_left       = @(t) local_tangent_pages(t, jds, zeros(0,1), 2, true);
-K_tan_direct = f_left .* K_cart .* f_right;
+K_tan_direct = f_left * K_cart * f_right;
 
 sigma_tan = randn(2*ns, 1);
 
@@ -74,14 +74,14 @@ end
 
 
 function failures = test_chained_multiply(failures, S, ns, wts, src_s, targ, eps)
-% Chained multiply A.*((C.*K).*B): eval and fmm match manual reference.
+% Chained multiply A*((C*K)*B): eval and fmm match manual reference.
 
 K_cart = kernel3d('stok', 's');
 rng(7);
 B_mat = randn(3, 4);
 C_mat = randn(2, 3);
 A_mat = randn(5, 2);
-K_chain = A_mat .* ((C_mat .* K_cart) .* B_mat);
+K_chain = A_mat * ((C_mat * K_cart) * B_mat);
 
 sigma_chain = randn(4*ns, 1);
 wts4        = repmat(wts, 4, 1);
@@ -129,7 +129,7 @@ function failures = test_ndot_multiply(failures, S, ns, wts, src_s, targ, eps)
 
 K_cart = kernel3d('stok', 's');
 f_ndot = @(t) reshape(t.n, 1, 3, size(t.r,2));
-K_ndot = f_ndot .* K_cart;
+K_ndot = f_ndot * K_cart;
 
 sigma_3 = randn(3*ns, 1);
 wts3    = repmat(wts, 3, 1);

@@ -1,6 +1,5 @@
 function g = radpp_sum(coefs, varargin)
-%RADPP_SUM linear combination of Green's functions in the chunkie calling
-%  sequence, for kernel3d.radpp.
+%RADPP_SUM linear combination of Green's functions or fmms, for kernel3d.radpp.
 %
 %  g = radpp_sum(coefs, g1, g2, ...)
 %
@@ -12,11 +11,12 @@ function g = radpp_sum(coefs, varargin)
 %  outputs as are requested are computed, so value-only Green's
 %  functions may be combined for kernels that need no derivatives.
 %
-%  Example:
-%     gs   = @(s,t) surfwave.flex.gsflex(rts, ejs, s, t);
-%     gphi = @(s,t) surfwave.flex.gphiflex(rts, ejs, s, t);
-%     K = kernel3d.radpp(radpp_sum([-gamma/4 1/2], gs, gphi), rmax, ...
-%                        'free_bc', 'nu', nu);
+%  Example: Helmholtz minus Laplace, fitted as one profile
+%     gh = @(s,t) helm3d.green(1.1, s, t);
+%     K = kernel3d.radpp(radpp_sum([1 -1], gh, @lap3d.green), 4, 's');
+%
+%  Analytically combining kernels is often more stable, see e.g.
+%  HELM3D.HELMDIFF_GREEN.
 %
 %  See also KERNEL3D.RADPP
 
@@ -24,23 +24,33 @@ if numel(coefs) ~= numel(varargin)
     error('RADPP_SUM: need one coefficient per Green''s function.');
 end
 greens = varargin;
-g = @(s,t) green_sum(coefs, greens, s, t);
+g = @(varargin) green_sum(coefs, greens, varargin{:});
 
 end
 
 
-function varargout = green_sum(coefs, greens, s, t)
+function varargout = green_sum(coefs, greens, varargin)
 nout = max(nargout, 1);
 varargout = cell(1, nout);
 for k = 1:numel(greens)
     out = cell(1, nout);
-    [out{:}] = greens{k}(s, t);
+    [out{:}] = greens{k}(varargin{:});
     for i = 1:nout
-        if k == 1
-            varargout{i} = coefs(k)*out{i};
-        else
-            varargout{i} = varargout{i} + coefs(k)*out{i};
-        end
+        varargout{i} = add(varargout{i}, coefs(k), out{i});
     end
+end
+end
+
+
+function a = add(a, c, b)
+% a + c*b, field by field for the output struct of an fmm
+if ~isstruct(b)
+    if isempty(a), a = c*b; else, a = a + c*b; end
+    return
+end
+for f = fieldnames(b).'
+    v = c*b.(f{1});
+    if isfield(a, f{1}), v = a.(f{1}) + v; end
+    a.(f{1}) = v;
 end
 end

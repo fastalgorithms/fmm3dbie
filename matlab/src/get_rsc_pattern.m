@@ -36,8 +36,8 @@ function [row_ptr, col_ind] = get_rsc_pattern(S, spmat, opdims)
         for bj = 1:n
             spmat_bij = spmat(bi:m:end, bj:n:end);
             [row_b, col_b] = find(spmat_bij);
-            row_s = [row_s; row_b]; %#ok<AGROW>
-            col_s = [col_s; col_b]; %#ok<AGROW>
+            row_s = [row_s; row_b]; 
+            col_s = [col_s; col_b]; 
         end
     end
 

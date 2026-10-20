@@ -448,6 +448,7 @@ c
 
       integer *8 ntri,ntrimax,nlev,itri,istart,i,j
       integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 ntmaxuse
       integer *8 iqtri,ii
 
       integer *8 npmax
@@ -482,12 +483,14 @@ c
 cc      max number of levels
 c
       nlmax = 20
-      allocate(tricm(3,npatches,ntrimax),
-     1   trirad(npatches,ntrimax),tverts(2,3,ntrimax))
-      allocate(itrireltmp(ntarg,ntrimax))
-      allocate(da(ntrimax),ichild_start(ntrimax))
+      ntmaxuse = ntrimax
+ 1110 continue
+      allocate(tricm(3,npatches,ntmaxuse),
+     1   trirad(npatches,ntmaxuse),tverts(2,3,ntmaxuse))
+      allocate(itrireltmp(ntarg,ntmaxuse))
+      allocate(da(ntmaxuse),ichild_start(ntmaxuse))
 
-      do i=1,ntrimax
+      do i=1,ntmaxuse
         do j=1,ntarg
           itrireltmp(j,i) = 0
         enddo
@@ -498,7 +501,7 @@ c
       nlev = 0
       ier = 0
 
-      do i=1,ntrimax
+      do i=1,ntmaxuse
         ichild_start(i) = -1
       enddo
 
@@ -506,7 +509,7 @@ c
 
       if(ifp.eq.1) then
         call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
-     1     xyzproxy, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri, 
+     1     xyzproxy, itargptr, ntargptr, ntmaxuse, nlmax, rfac, ntri, 
      2     nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3     ier)
       else
@@ -518,7 +521,7 @@ c
           enddo
         enddo
         call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
-     1      xyztargtmp, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri, 
+     1      xyztargtmp, itargptr, ntargptr, ntmaxuse, nlmax, rfac, ntri, 
      2      nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3      ier)        
          deallocate(xyztargtmp)
@@ -528,8 +531,12 @@ c
       
 
       if(ier.ne.0) then
-        ier = 2
-        return
+        deallocate(tricm,trirad,tverts,itrireltmp,da,ichild_start)
+        ntmaxuse = ntmaxuse*4
+        call prinf('restarting tree construction with ntri=*',
+     1       ntmaxuse,1)
+        ier = 0
+        goto 1110
       endif
 
       allocate(itrirel(ntri,ntarg),itrirelall(ntri))
@@ -1648,6 +1655,12 @@ c
 
       integer *8 ntri,ntrimax,nlev,itri,istart,i,j
       integer *8 ier,itarg,jj,jstart,nlmax,npts
+      real *8, allocatable :: tverts2(:,:,:),da2(:)
+      integer *8, allocatable :: ichild_start2(:)
+      real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
+      real *8, allocatable :: srcvals2(:,:),qwts2(:)
+      integer *8 nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 int8_1
       integer *8 iqtri,ii
 
       integer *8 npmax
@@ -1683,8 +1696,6 @@ c
 
       data ima/(0.0d0,1.0d0)/
 
-      allocate(cvals(nppols,ntrimax))
-      allocate(istack(2*ntrimax))
 
 
 
@@ -1693,13 +1704,16 @@ c
 cc      max number of levels
 c
       nlmax = 20
-      allocate(tricm(3,npatches,ntrimax),
-     1   trirad(npatches,ntrimax),tverts(2,3,ntrimax))
-      allocate(itrireltmp(ntarg,ntrimax))
-      allocate(da(ntrimax),ichild_start(ntrimax))
-      allocate(ichild_start0(ntrimax))
+      int8_1 = 1
+      ntmaxuse = ntrimax
+ 1110 continue
+      allocate(tricm(3,npatches,ntmaxuse),
+     1   trirad(npatches,ntmaxuse),tverts(2,3,ntmaxuse))
+      allocate(itrireltmp(ntarg,ntmaxuse))
+      allocate(da(ntmaxuse),ichild_start(ntmaxuse))
+      allocate(ichild_start0(ntmaxuse))
 
-      do i=1,ntrimax
+      do i=1,ntmaxuse
         do j=1,ntarg
           itrireltmp(j,i) = 0
         enddo
@@ -1711,7 +1725,7 @@ c
       nlev = 0
       ier = 0
 
-      do i=1,ntrimax
+      do i=1,ntmaxuse
         ichild_start(i) = -1
       enddo
 
@@ -1719,7 +1733,7 @@ c
 
       if(ifp.eq.1) then
         call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
-     1     xyzproxy, itargptr, ntargptr, ntrimax, nlmax, rfac, 
+     1     xyzproxy, itargptr, ntargptr, ntmaxuse, nlmax, rfac, 
      2     ntri, nlev, ichild_start, da, tricm, trirad, tverts,
      3     itrireltmp, ier)
       else
@@ -1730,7 +1744,7 @@ c
           enddo
         enddo
         call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
-     1     xyztargtmp, itargptr, ntargptr, ntrimax, nlmax, rfac,
+     1     xyztargtmp, itargptr, ntargptr, ntmaxuse, nlmax, rfac,
      2     ntri, nlev, ichild_start, da, tricm, trirad, tverts,
      3     itrireltmp, ier)
         deallocate(xyztargtmp)
@@ -1746,15 +1760,16 @@ c
       
 
       if(ier.ne.0) then
-        call prinf('Could not allocate triangle tree*',i,0)
-        call prinf('Exiting without computing anything*',i,0)
-        call prinf('Press 0 to continue*',i,0)
-        call prinf('Press 1 to exit routine and continue*',i,0)
-        call prinf('Press 2 to stop*',i,0)
-        read *, ier
-        if(ier.eq.2) stop
-        if(ier.eq.1) return
+        deallocate(tricm,trirad,tverts,itrireltmp,da,ichild_start,
+     1    ichild_start0)
+        ntmaxuse = ntmaxuse*4
+        call prinf('restarting tree construction with ntri=*',
+     1       ntmaxuse,1)
+        ier = 0
+        goto 1110
       endif
+      allocate(cvals(nppols,ntmaxuse))
+      allocate(istack(2*ntmaxuse))
 
       allocate(itrirel(ntri0,ntarg),itrirelall(ntri0))
 
@@ -1801,7 +1816,7 @@ c
 cc      call prinf('nqpols=*',nqpols,1)
 
       npts0 = ntri0*nqpols
-      npmax = ntrimax*nqpols
+      npmax = ntmaxuse*nqpols
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
       allocate(qwts(npmax))
@@ -1860,6 +1875,7 @@ c
         enddo
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
+ 1111     continue
           do i=1,nppols
             cintvals(i,itarg) = 0
           enddo
@@ -1900,13 +1916,76 @@ c           done with initial computation of
 c
 
           ier = 0
-          call triaadap_main(eps, nqpols, nlmax, ntrimax, ntri, 
+          call triaadap_main(eps, nqpols, nlmax, ntmaxuse, ntri, 
      1     ichild_start, tverts, da, uvsq, wts, norder, npols,
      2     isd, ndsc, srccoefs(1,1,itri), npmax, nds, srcvals, qwts, 
      3     sigvals, nporder, nppols, sigvalsdens, ndtarg, 
      4     xyztarg(1,itarg), rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
      5     fker, ndd, dpars, ndz, zpars, ndi, ipars, cvals,
      6     istack, nproclist0, xkernvals, cintvals(1,itarg), ier)
+           if(ier.eq.4) then
+             ntmaxuse0 = ntmaxuse*4
+             npmax0 = ntmaxuse0*nqpols
+             allocate(sigvals2(npols,npmax))
+             allocate(sigvalsdens2(nppols,npmax))
+             allocate(srcvals2(nds,npmax),qwts2(npmax))
+             allocate(ichild_start2(ntmaxuse),tverts2(2,3,ntmaxuse))
+             allocate(da2(ntmaxuse))
+             nn1 = npols*npmax
+             nn2 = nppols*npmax
+             nn3 = nds*npmax
+             nn4 = ntri0*6
+             call dcopy_guru(nn1, sigvals, int8_1, sigvals2, int8_1)
+             call dcopy_guru(nn2, sigvalsdens, int8_1, sigvalsdens2,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals, int8_1, srcvals2, int8_1)
+             call dcopy_guru(npmax, qwts, int8_1, qwts2, int8_1)
+             do ii=1,ntri0
+               ichild_start2(ii) = ichild_start0(ii)
+             enddo
+             call dcopy_guru(nn4, tverts, int8_1, tverts2, int8_1)
+             call dcopy_guru(ntri0, da, int8_1, da2, int8_1)
+
+             deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
+             deallocate(ichild_start0,tverts,da)
+             deallocate(cvals,istack,xkernvals)
+
+             allocate(sigvals(npols,npmax0))
+             allocate(sigvalsdens(nppols,npmax0))
+             allocate(srcvals(nds,npmax0),qwts(npmax0))
+             allocate(ichild_start(ntmaxuse0),tverts(2,3,ntmaxuse0))
+             allocate(ichild_start0(ntmaxuse0),da(ntmaxuse0))
+             allocate(cvals(nppols,ntmaxuse0))
+             allocate(istack(2*ntmaxuse0))
+             allocate(xkernvals(npmax0))
+
+             do ii=1,ntmaxuse0
+               ichild_start(ii) = -1
+             enddo
+
+             call dcopy_guru(nn1, sigvals2, int8_1, sigvals, int8_1)
+             call dcopy_guru(nn2, sigvalsdens2, int8_1, sigvalsdens,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals2, int8_1, srcvals, int8_1)
+             call dcopy_guru(npmax, qwts2, int8_1, qwts, int8_1)
+             do ii=1,ntri0
+               ichild_start0(ii) = ichild_start2(ii)
+               ichild_start(ii) = ichild_start2(ii)
+             enddo
+             call dcopy_guru(nn4, tverts2, int8_1, tverts, int8_1)
+             call dcopy_guru(ntri0, da2, int8_1, da, int8_1)
+
+             ntri = ntri0
+             npmax = npmax0
+             ntmaxuse = ntmaxuse0
+             call prinf('restarting adaptive inetgration with ntri=*',
+     1             ntmaxuse,1)
+
+
+             deallocate(sigvals2,sigvalsdens2,srcvals2,ichild_start2)
+             deallocate(tverts2,da2,qwts2)
+             goto 1111
+           endif
 
       
         enddo
@@ -2324,6 +2403,7 @@ c
 
       integer *8 ntri,ntrimax,nlev,itri,istart,i,j
       integer *8 ier,itarg,jj,jstart,nlmax,npts
+      integer *8 ntmaxuse
       integer *8 iqtri,ii
 
       integer *8 npmax
@@ -2356,12 +2436,14 @@ c
 cc      max number of levels
 c
       nlmax = 20
-      allocate(tricm(3,npatches,ntrimax),
-     1   trirad(npatches,ntrimax),tverts(2,3,ntrimax))
-      allocate(itrireltmp(ntarg,ntrimax))
-      allocate(da(ntrimax),ichild_start(ntrimax))
+      ntmaxuse = ntrimax
+ 1110 continue
+      allocate(tricm(3,npatches,ntmaxuse),
+     1   trirad(npatches,ntmaxuse),tverts(2,3,ntmaxuse))
+      allocate(itrireltmp(ntarg,ntmaxuse))
+      allocate(da(ntmaxuse),ichild_start(ntmaxuse))
 
-      do i=1,ntrimax
+      do i=1,ntmaxuse
         do j=1,ntarg
           itrireltmp(j,i) = 0
         enddo
@@ -2372,7 +2454,7 @@ c
       nlev = 0
       ier = 0
 
-      do i=1,ntrimax
+      do i=1,ntmaxuse
         ichild_start(i) = -1
       enddo
 
@@ -2380,7 +2462,7 @@ c
 
       if(ifp.eq.1) then
         call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
-     1    xyzproxy, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri,
+     1    xyzproxy, itargptr, ntargptr, ntmaxuse, nlmax, rfac, ntri,
      2    nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3    ier)
       else
@@ -2392,7 +2474,7 @@ c
         enddo
 
         call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
-     1     xyztargtmp, itargptr, ntargptr, ntrimax, nlmax, rfac, 
+     1     xyztargtmp, itargptr, ntargptr, ntmaxuse, nlmax, rfac, 
      2     ntri, nlev, ichild_start, da, tricm, trirad, tverts,
      3     itrireltmp, ier)
         deallocate(xyztargtmp)
@@ -2402,14 +2484,12 @@ c
       
 
       if(ier.ne.0) then
-        call prinf('Could not allocate triangle tree*',i,0)
-        call prinf('Exiting without computing anything*',i,0)
-        call prinf('Press 0 to continue*',i,0)
-        call prinf('Press 1 to exit routine and continue*',i,0)
-        call prinf('Press 2 to stop*',i,0)
-        read *, ier
-        if(ier.eq.2) stop
-        if(ier.eq.1) return
+        deallocate(tricm,trirad,tverts,itrireltmp,da,ichild_start)
+        ntmaxuse = ntmaxuse*4
+c        call prinf('restarting tree construction with ntri=*',
+c     1       ntmaxuse,1)
+        ier = 0
+        goto 1110
       endif
 
       allocate(itrirel(ntri,ntarg),itrirelall(ntri))
@@ -3085,7 +3165,7 @@ c        * ier = 4, too few triangles, try with more triangles
       real *8 srcvals(nds,*),qwts(npmax)
       complex *16, allocatable :: xkernvals(:,:)
       real *8 xt(ndtarg)
-      complex *16 cintall(nd,npols),fval(nd)
+      complex *16 cintall(nd,nppols),fval(nd)
       complex *16, allocatable :: cvals(:,:,:)
 
       integer *8 ndd,ndz,ndi
@@ -3569,6 +3649,12 @@ c
 
       integer *8 ntri,ntrimax,nlev,itri,istart,i,j
       integer *8 ier,itarg,jj,jstart,nlmax,npts
+      real *8, allocatable :: tverts2(:,:,:),da2(:)
+      integer *8, allocatable :: ichild_start2(:)
+      real *8, allocatable :: sigvals2(:,:),sigvalsdens2(:,:)
+      real *8, allocatable :: srcvals2(:,:),qwts2(:)
+      integer *8 nn1,nn2,nn3,nn4,npmax0,ntmaxuse,ntmaxuse0
+      integer *8 int8_1
       integer *8 iqtri,ii
 
       integer *8 npmax
@@ -3604,8 +3690,6 @@ c
 
       data ima/(0.0d0,1.0d0)/
 
-      allocate(cvals(nd,nppols,ntrimax))
-      allocate(istack(2*ntrimax))
 
 
 
@@ -3614,13 +3698,16 @@ c
 cc      max number of levels
 c
       nlmax = 20
-      allocate(tricm(3,npatches,ntrimax),
-     1   trirad(npatches,ntrimax),tverts(2,3,ntrimax))
-      allocate(itrireltmp(ntarg,ntrimax))
-      allocate(da(ntrimax),ichild_start(ntrimax))
-      allocate(ichild_start0(ntrimax))
+      int8_1 = 1
+      ntmaxuse = ntrimax
+ 1110 continue
+      allocate(tricm(3,npatches,ntmaxuse),
+     1   trirad(npatches,ntmaxuse),tverts(2,3,ntmaxuse))
+      allocate(itrireltmp(ntarg,ntmaxuse))
+      allocate(da(ntmaxuse),ichild_start(ntmaxuse))
+      allocate(ichild_start0(ntmaxuse))
 
-      do i=1,ntrimax
+      do i=1,ntmaxuse
         do j=1,ntarg
           itrireltmp(j,i) = 0
         enddo
@@ -3632,7 +3719,7 @@ c
       nlev = 0
       ier = 0
 
-      do i=1,ntrimax
+      do i=1,ntmaxuse
         ichild_start(i) = -1
       enddo
 
@@ -3640,7 +3727,7 @@ c
 
       if(ifp.eq.1) then
         call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
-     1    xyzproxy, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri,
+     1    xyzproxy, itargptr, ntargptr, ntmaxuse, nlmax, rfac, ntri,
      2    nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3    ier)
       else
@@ -3651,7 +3738,7 @@ c
           enddo
         enddo
         call gettritree(npatches, norder, npols, ndsc, srccoefs, ntarg,
-     1     xyztargtmp, itargptr, ntargptr, ntrimax, nlmax, rfac, ntri,
+     1     xyztargtmp, itargptr, ntargptr, ntmaxuse, nlmax, rfac, ntri,
      2     nlev, ichild_start, da, tricm, trirad, tverts, itrireltmp,
      3     ier)
         deallocate(xyztargtmp)
@@ -3667,15 +3754,16 @@ c
       
 
       if(ier.ne.0) then
-        call prinf('Could not allocate triangle tree*',i,0)
-        call prinf('Exiting without computing anything*',i,0)
-        call prinf('Press 0 to continue*',i,0)
-        call prinf('Press 1 to exit routine and continue*',i,0)
-        call prinf('Press 2 to stop*',i,0)
-        read *, ier
-        if(ier.eq.2) stop
-        if(ier.eq.1) return
+        deallocate(tricm,trirad,tverts,itrireltmp,da,ichild_start,
+     1    ichild_start0)
+        ntmaxuse = ntmaxuse*4
+c        call prinf('restarting tree construction with ntri=*',
+c     1       ntmaxuse,1)
+        ier = 0
+        goto 1110
       endif
+      allocate(cvals(nd,nppols,ntmaxuse))
+      allocate(istack(2*ntmaxuse))
 
       allocate(itrirel(ntri0,ntarg),itrirelall(ntri0))
 
@@ -3722,7 +3810,7 @@ c
 cc      call prinf('nqpols=*',nqpols,1)
 
       npts0 = ntri0*nqpols
-      npmax = ntrimax*nqpols
+      npmax = ntmaxuse*nqpols
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
       nds = 12
@@ -3777,6 +3865,7 @@ c
         enddo
 
         do itarg=itargptr(itri),itargptr(itri)+ntargptr(itri)-1
+ 1111     continue
           do i=1,nppols
             do idim=1,nd
               cintvals(idim,i,itarg) = 0
@@ -3826,7 +3915,8 @@ c           done with initial computation of
 c
 
 
-          call triaadap_main_vec(eps, nqpols, nlmax, ntrimax, ntri,
+          ier = 0
+          call triaadap_main_vec(eps, nqpols, nlmax, ntmaxuse, ntri,
      1      ichild_start, tverts, da, uvsq, wts, norder, npols, 
      2      isd, ndsc, srccoefs(1,1,itri), npmax, nds, srcvals, qwts, 
      2      sigvals,
@@ -3834,6 +3924,69 @@ c
      3      rat1, rat2, rsc1, rat1p, rat2p, rsc1p,
      3      fker, nd, ndd, dpars, ndz, zpars, ndi, ipars, cvals, 
      3      istack, nproclist0, xkernvals, cintvals(1,1,itarg), ier)
+           if(ier.eq.4) then
+             ntmaxuse0 = ntmaxuse*4
+             npmax0 = ntmaxuse0*nqpols
+             allocate(sigvals2(npols,npmax))
+             allocate(sigvalsdens2(nppols,npmax))
+             allocate(srcvals2(nds,npmax),qwts2(npmax))
+             allocate(ichild_start2(ntmaxuse),tverts2(2,3,ntmaxuse))
+             allocate(da2(ntmaxuse))
+             nn1 = npols*npmax
+             nn2 = nppols*npmax
+             nn3 = nds*npmax
+             nn4 = ntri0*6
+             call dcopy_guru(nn1, sigvals, int8_1, sigvals2, int8_1)
+             call dcopy_guru(nn2, sigvalsdens, int8_1, sigvalsdens2,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals, int8_1, srcvals2, int8_1)
+             call dcopy_guru(npmax, qwts, int8_1, qwts2, int8_1)
+             do ii=1,ntri0
+               ichild_start2(ii) = ichild_start0(ii)
+             enddo
+             call dcopy_guru(nn4, tverts, int8_1, tverts2, int8_1)
+             call dcopy_guru(ntri0, da, int8_1, da2, int8_1)
+
+             deallocate(sigvals,sigvalsdens,srcvals,qwts,ichild_start)
+             deallocate(ichild_start0,tverts,da)
+             deallocate(cvals,istack,xkernvals)
+
+             allocate(sigvals(npols,npmax0))
+             allocate(sigvalsdens(nppols,npmax0))
+             allocate(srcvals(nds,npmax0),qwts(npmax0))
+             allocate(ichild_start(ntmaxuse0),tverts(2,3,ntmaxuse0))
+             allocate(ichild_start0(ntmaxuse0),da(ntmaxuse0))
+             allocate(cvals(nd,nppols,ntmaxuse0))
+             allocate(istack(2*ntmaxuse0))
+             allocate(xkernvals(nd,npmax0))
+
+             do ii=1,ntmaxuse0
+               ichild_start(ii) = -1
+             enddo
+
+             call dcopy_guru(nn1, sigvals2, int8_1, sigvals, int8_1)
+             call dcopy_guru(nn2, sigvalsdens2, int8_1, sigvalsdens,
+     1          int8_1)
+             call dcopy_guru(nn3, srcvals2, int8_1, srcvals, int8_1)
+             call dcopy_guru(npmax, qwts2, int8_1, qwts, int8_1)
+             do ii=1,ntri0
+               ichild_start0(ii) = ichild_start2(ii)
+               ichild_start(ii) = ichild_start2(ii)
+             enddo
+             call dcopy_guru(nn4, tverts2, int8_1, tverts, int8_1)
+             call dcopy_guru(ntri0, da2, int8_1, da, int8_1)
+
+             ntri = ntri0
+             npmax = npmax0
+             ntmaxuse = ntmaxuse0
+c             call prinf('restarting adaptive inetgration with ntri=*',
+c     1             ntmaxuse,1)
+
+
+             deallocate(sigvals2,sigvalsdens2,srcvals2,ichild_start2)
+             deallocate(tverts2,da2,qwts2)
+             goto 1111
+           endif
 
       
         enddo

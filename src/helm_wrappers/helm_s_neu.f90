@@ -1679,6 +1679,7 @@
       complex *16 temp
       
       int8_1 = 1
+      lmem8 = 0
       bigint = numit+1
       bigint = bigint*npts*2
       lmem8 = lmem8 + bigint
@@ -1789,7 +1790,7 @@
 !
       nquad = iquad(nnz+1)-1
       lmem8 = lmem8 + nquad*2
-      rmem = lmem8*8/1024/1024/1024
+      rmem = dble(lmem8)*8/1024/1024/1024
 
       ifcharge = 1
       ifdipole = 0

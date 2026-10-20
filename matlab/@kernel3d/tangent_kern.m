@@ -11,11 +11,11 @@ function obj = tangent_kern(kernin, ids, jds)
 %   Equivalent to:
 %       f_right(s) = tangent expansion pages (q_cart x p_tan x ns)
 %       f_left(t)  = tangent contraction pages (p_tan x m_cart x nt)
-%       OBJ = f_left .* KERNIN .* f_right
+%       OBJ = f_left * KERNIN * f_right
 %
 %   OBJ.opdims = [tgt_opdim - ko, src_opdim - ki].
 %
-%   See also TANGENT_BLOCK, KERNEL3D/TIMES
+%   See also TANGENT_BLOCK, KERNEL3D/MTIMES
 
 ki = size(ids, 2);
 ko = size(jds, 2);
@@ -40,7 +40,7 @@ tgt_scalar_rows = setdiff((1:tgt_opdim_in)', jds(:));
 
 % Right multiply by f_right  ->  kernin * f_right
 % then left  multiply by f_left   ->  f_left * (kernin * f_right)
-obj = times(@f_left, times(kernin, @f_right));
+obj = mtimes(@f_left, mtimes(kernin, @f_right));
 
 % Restore metadata from the inner kernel
 obj.name         = kernin.name;

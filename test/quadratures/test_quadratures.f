@@ -6,9 +6,12 @@
       ntests = ntests + 6
       call test_adap_quad_self(i2)
 
-      print *, i1, i2
+      ntests = ntests + 2
+      call test_mixed_patch_quad(i3)
 
-      nsuccess = i1 + i2
+      print *, i1, i2, i3
+
+      nsuccess = i1 + i2 + i3
 
       open(unit=33,file='../../print_testres.txt',access='append')
       write(33,'(a,i2,a,i2,a)') 'Successfully completed ',nsuccess,

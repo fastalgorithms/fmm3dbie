@@ -3,12 +3,11 @@ ctr1 = [0;0;0];
 
 S = geometries.ellipsoid([1,1,1.5],[3,3,3],ctr1,6);
 
-kerns = kernel3d('stokes','c',[1,1]);
+kerns = kernel3d('stokes','c',[1,1]) + kernel3d.eye(0.5*eye(3));
 
 eps = 1e-10;
 tic;
 Smat = surfermat(S,kerns,eps);
-Smat = Smat+0.5*eye(size(Smat));
 tbuild = toc
 
 rhskerns = kernel3d('stokes','s');

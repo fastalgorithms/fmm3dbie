@@ -6561,6 +6561,30 @@ end
 
 
 %
+
+@ src/radpp_eval_fortran.m
+function val = radpp_eval_fortran(r,ipars,dpars)
+%RADPP_EVAL_FORTRAN evaluate a radpp_fit expansion with the Fortran
+%  evaluator vpp_eval_vec
+%
+%  val = radpp_eval_fortran(r,ipars,dpars), with ipars and dpars from
+%  RADPP_FIT. r is any array; val is (numel(r),m), as RADPP_EVAL. Radii
+%  outside the fit give NaN.
+%
+%  See also RADPP_EVAL, RADPP_FIT
+%
+    r = r(:);
+    nr = length(r);
+    ndd = length(dpars);
+    ndi = length(ipars);
+    nv = ipars(5);
+    vals = zeros(nv,nr);
+    # FORTRAN vpp_eval_vec(int[1] nr, double[nr] r, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, inout double[nv,nr] vals);
+    val = complex(vals(1:2:end,:),vals(2:2:end,:)).';
+    val(r < dpars(1) | r > dpars(ipars(1)+1),:) = NaN;
+end
+
+%
 %
 
 @ src/getnearquad_radpp.m
@@ -6568,13 +6592,8 @@ function wnear = getnearquad_radpp(npatches,norders,ixyzs, ...
           iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
           ipvs,nnz,row_ptr,col_ind,iquad,rfac0,nquad,dpars,ipars)
 %
-%  getnearquad_radpp
-%
-%  Near field quadrature for length(ipvs) radpp kernels sharing the
-%  profile expansion (dpars,ipars) built by radpp_fit. targs is the
-%  (3+2*ncomp*nrow, ntarg) array of target locations followed by the
-%  complex kernel weights, see src/kernels/radpp.f90 and kernel3d.radpp.
-%  Returns wnear (nrow, nquad).
+%  Near quadrature for the length(ipvs) rows of a radpp kernel.
+%  Returns wnear (nrow,nquad).
 %
     [n12,npts] = size(srcvals);
     [n9,~] = size(srccoefs);

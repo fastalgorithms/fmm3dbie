@@ -4,8 +4,18 @@ function f = plus(f, g)
 % Currently only supported for adding two kernel3d class objects.
 
 if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
+    if kernel3d.radgreen('summable', {f, g})
+        f = kernel3d.radgreen('sum', f, 1, g, 1);
+        return
+    end
+    if kernel3d.radpp('summable', {f, g})
+        f = kernel3d.radpp('sum', {f, g}, [1 1]);
+        return
+    end
     assert(all(f.opdims == g.opdims), ...
         'kernel3d dimensions must agree to add');
+
+    fdiag = f.diag; gdiag = g.diag;
 
     f.name = ['custom ', f.name, ' ', g.name];
     f.type = 'custom';
@@ -42,6 +52,15 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
     if isempty(targ), targ = []; end
     f.src_fields  = src;
     f.targ_fields = targ;
+
+    % identity/self ("delta") terms add
+    if isempty(fdiag)
+        f.diag = gdiag;
+    elseif isempty(gdiag)
+        f.diag = fdiag;
+    else
+        f.diag = @(t) fdiag(t) + gdiag(t);
+    end
 
 else
     error('KERNEL3D:plus:invalid', ...

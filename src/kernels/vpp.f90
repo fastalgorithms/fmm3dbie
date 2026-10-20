@@ -7,6 +7,7 @@
 ! @kernel3d/radpp.m and kernels/radpp.f90); only the evaluators live here.
 !
 ! vpp_eval - evaluates the expansion at a given point r
+! vpp_eval_vec - evaluates the expansion at an array of points
 !
 ! these do no bounds-checking etc.
 
@@ -51,6 +52,26 @@ subroutine vpp_eval(r,ndd,dpars,ndi,ipars,val)
   
   return
 end subroutine vpp_eval
+
+subroutine vpp_eval_vec(nr,r,ndd,dpars,ndi,ipars,vals)
+  ! vals(:,i) is the expansion at r(i), vals is (ipars(5),nr)
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  integer *8 :: nr
+  real *8 :: r(nr), dpars(ndd)
+  integer *8 ipars(ndi)
+  real *8 :: vals(ipars(5),nr)
+
+  nv = ipars(5)
+
+!$OMP PARALLEL DO DEFAULT(SHARED) SCHEDULE(STATIC)
+  do i = 1,nr
+     call vpp_eval(r(i),ndd,dpars,ndi,ipars,vals(1,i))
+  enddo
+!$OMP END PARALLEL DO
+
+  return
+end subroutine vpp_eval_vec
 
 subroutine vpp_eval0(r,a,dcfs,n,nv,val)
   ! coefficients are ordered highest degree to lowest.

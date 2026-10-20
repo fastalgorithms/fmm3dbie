@@ -251,6 +251,42 @@ c
       call prin2('error in integrals = *',erra,1)
 
 
+c
+c    test that the adaptive integration routines correctly
+c    reallocate the tree arrays when ntrimax is too small
+c    to begin with
+c
+      write(*,*) '======================='
+      write(*,*) 'Testing strategy 1, reallocation, RV nodes'
+      write(*,*) ' '
+      write(*,*) ' '
+
+      istrat = 1
+      intype = 1
+      ifp = 0
+      ifmetric = 0
+      ntrimax = 4
+
+      call ctriaints(eps,istrat,intype,npatches,norder,npols,
+     1      isd,ndsc,srccoefs,ndim,ntarg,xyztarg,ifp,tmp,itargptr,
+     2      ntargptr,nporder,nppols,lslp,ndd,dpars,ndz,zpars,ndi,ipars,
+     3      nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+
+      ntrimax = 3000
+
+      erra = 0
+      ra = 0
+      do i=1,ntarg
+        do j=1,3
+          ra = ra + abs(cintex(j,i))**2
+          erra = erra + abs(cintex(j,i)-cintvals(j,i))**2
+        enddo
+      enddo
+
+      erra = sqrt(erra/ra)
+      if(erra.lt.eps) nsuccess = nsuccess + 1
+      call prin2('error in integrals = *',erra,1)
+
  2000 continue
 
 c
@@ -743,6 +779,44 @@ c
 
 
       
+
+c
+c    test that the adaptive integration routines correctly
+c    reallocate the tree arrays when ntrimax is too small
+c    to begin with
+c
+      write(*,*) '======================='
+      write(*,*) 'Testing strategy 1, reallocation, RV nodes'
+      write(*,*) ' '
+      write(*,*) ' '
+
+      istrat = 1
+      intype = 1
+      ifp = 0
+      ifmetric = 0
+      ntrimax = 4
+
+      call ctriaints_vec(eps,istrat,intype,npatches,norder,npols,
+     1      isd,ndsc,srccoefs,ndim,ntarg,xyztarg,ifp,tmp,itargptr,
+     2      ntargptr,nporder,nppols,vslp,nd,ndd,dpars,ndz,zpars,ndi,
+     3      ipars,nqorder,ntrimax,rfac,cintvals,ifmetric,rn1,n2)
+
+      ntrimax = 3000
+
+      erra = 0
+      ra = 0
+      do i=1,ntarg
+        do j=1,3
+          do idim=1,nd
+            ra = ra + abs(cintex(idim,j,i))**2
+            erra = erra + abs(cintex(idim,j,i)-cintvals(idim,j,i))**2
+          enddo
+        enddo
+      enddo
+
+      erra = sqrt(erra/ra)
+      if(erra.lt.eps) nsuccess = nsuccess + 1
+      call prin2('error in integrals = *',erra,1)
 
  2000 continue
 

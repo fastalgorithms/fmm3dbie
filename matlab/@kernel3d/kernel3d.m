@@ -30,10 +30,13 @@ classdef kernel3d
 %                                        'supported_plate_bcs', 'free_plate_bcs'
 %                                        (2D, surfer in z = 0)
 %      'gravity'   ('grav')              's', 'grad', 'free_plate_bcs', 'vol'
+%      kernel3d(@green, type, ...)       (radial Green's function with exact
+%                                         eval, see KERNEL3D.RADGREEN)
 %      'radpp'                           (kernels from a piecewise polynomial
 %                                         fit of a radial Green's function,
 %                                         see KERNEL3D.RADPP)
 %      'zero'/'zeros'                    (no type needed)
+%      'one'/'ones'                      (no type needed)
 %
 %   Some kernels accept extra parameters as trailing arguments, e.g.
 %   the combined-layer Laplace kernel:
@@ -65,6 +68,15 @@ classdef kernel3d
 %      K.src_fields  - source fields expected by K.eval. ('r' is assumed)
 %      K.targ_fields - target fields expected by K.eval. ('r' is assumed)
 %
+%      K.diag - identity/self ("Dirac delta") term. [] means none.
+%         Otherwise a function handle @(t) returning an
+%         (opdims(1)*nt) x opdims(2) array, the per-point blocks D(x)
+%         stacked by target, giving the operator
+%           (D*sigma)(x) = D(x) * sigma(x),
+%         i.e. the multiplier on delta(x-y). With diag set,
+%           surfermat(S, kern) == D + surfermat(S, kern_without_diag)
+%         Build with KERNEL3D.EYE, e.g. K = kernel3d('l','d') + kernel3d.eye(-0.5)
+%
     properties
 
         name           % Name of the kernel
@@ -78,6 +90,7 @@ classdef kernel3d
                        % the location 'r' is implicitly added
         targ_fields    % Ptinfo fields required at targets
                        % the location 'r' is implicitly added
+        diag = []      % Identity/self term: @(t) -> (opdims(1)*nt x opdims(2)), or []
 
     end
 
@@ -129,9 +142,18 @@ classdef kernel3d
                         else
                             obj = kernel3d.zeros();
                         end
+                    case {'o', 'one', 'ones'}
+                        if ~isempty(varargin)
+                            obj = kernel3d.ones(varargin{:});
+                        else
+                            obj = kernel3d.ones();
+                        end
                     otherwise
                         error('KERNEL3D: kernel ''%s'' not found.', kern);
                 end
+            elseif ( isa(kern, 'function_handle') && ~isempty(varargin) )
+                % radial Green's function and a type, see KERNEL3D.RADGREEN
+                obj = kernel3d.radgreen(kern, varargin{:});
             elseif ( isa(kern, 'function_handle') )
                 obj.eval = kern;
                 try
@@ -175,7 +197,11 @@ classdef kernel3d
         obj    = flex2d(varargin);
         obj    = gravity(varargin);
         obj    = radpp(green, rmax, type, varargin);
+        obj    = radgreen(green, type, varargin);
+        [err, Q, Qs] = check_quad(K, eps, opts);
         obj    = zeros(opdims);
+        obj    = ones(m, n);
+        obj    = eye(dvals);
         K      = interleave(kerns);
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
         Q      = addquad(Qa,Qb,c);

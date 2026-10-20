@@ -36,6 +36,7 @@ failures = test_stok_sp_identity(failures, src, targ);
 failures = test_combined_layer(failures, zk, ns, src, targ);
 failures = test_arithmetic(failures, zk, eps, src, targ, S, targ_off);
 failures = test_zeros(failures, eps, ns, nt, src, targ);
+failures = test_times(failures, eps, ns, nt, src, targ);
 
 nfail = numel(failures);
 if nfail > 0
@@ -47,7 +48,8 @@ end
 % =========================================================================
 
 function failures = test_per_kernel(failures, zk, eps, ~, ~, src, targ, S, targ_off)
-% FD-prime and FMM checks for all basic kernels.
+% FD-prime and FMM checks for all basic kernels, the laplace and
+% helmholtz fmms with two densities.
 
 sigma_r  = randn(S.npts, 1);
 sigma_s  = randn(S.npts, 1) + 1i*randn(S.npts, 1);
@@ -60,6 +62,11 @@ sigma_pt      = randn(size(src.r,2), 1) + 1i*randn(size(src.r,2), 1);
 sigma_stok_pt = randn(3*size(src.r,2), 1);
 sigma_em3_pt  = randn(3*size(src.r,2), 1) + 1i*randn(3*size(src.r,2), 1);
 sigma_em4_pt  = randn(4*size(src.r,2), 1) + 1i*randn(4*size(src.r,2), 1);
+% two densities for the laplace and helmholtz fmms
+nsp = size(src.r,2);
+sigma_r_pt2 = randn(nsp, 2);
+sigma_pt2   = randn(nsp, 2) + 1i*randn(nsp, 2);
+sigma_rep2  = randn(2*nsp, 2) + 1i*randn(2*nsp, 2);
 
 tol_fd = 1e-3;  tol_fmm = 1e-5;  h_fd = 1e-5;
 coefs_lap  = [0.7; 1.3];
@@ -69,18 +76,27 @@ coefs_stok = [0.7; 1.3];
 zk_em = 2.5 + 0.1i;  alpha_em = 0.5;
 
 kernels = { ...
-  kernel3d('l','s'),              'lap s',       sigma_r,    sigma_r_pt,   [];                          ...
-  kernel3d('l','d'),              'lap d',       sigma_r,    sigma_r_pt,   [];                          ...
+  kernel3d('l','s'),              'lap s',       sigma_r,    sigma_r_pt2,  [];                          ...
+  kernel3d('l','d'),              'lap d',       sigma_r,    sigma_r_pt2,  [];                          ...
   kernel3d('l','sp'),             'lap sp',      sigma_r,    sigma_r_pt,   kernel3d('l','s');            ...
   kernel3d('l','dp'),             'lap dp',      sigma_r,    sigma_r_pt,   kernel3d('l','d');            ...
   kernel3d('l','c',coefs_lap),    'lap c',       sigma_r,    sigma_r_pt,   [];                          ...
   kernel3d('l','cp',coefs_lap),   'lap cp',      sigma_r,    sigma_r_pt,   kernel3d('l','c',coefs_lap);  ...
-  kernel3d('h','s',zk),           'helm s',      sigma_s,    sigma_pt,     [];                          ...
-  kernel3d('h','d',zk),           'helm d',      sigma_s,    sigma_pt,     [];                          ...
+  kernel3d('l','sg'),             'lap sg',      sigma_r,    sigma_r_pt2,  [];                          ...
+  kernel3d('l','dg'),             'lap dg',      sigma_r,    sigma_r_pt2,  [];                          ...
+  kernel3d('l','cg',coefs_lap),   'lap cg',      sigma_r,    sigma_r_pt2,  [];                          ...
+  kernel3d('h','s',zk),           'helm s',      sigma_s,    sigma_pt2,    [];                          ...
+  kernel3d('h','d',zk),           'helm d',      sigma_s,    sigma_pt2,    [];                          ...
   kernel3d('h','sp',zk),          'helm sp',     sigma_s,    sigma_pt,     kernel3d('h','s',zk);         ...
   kernel3d('h','dp',zk),          'helm dp',     sigma_s,    sigma_pt,     kernel3d('h','d',zk);         ...
   kernel3d('h','c',zk,coefs_h),   'helm c',      sigma_s,    sigma_pt,     [];                          ...
   kernel3d('h','cp',zk,coefs_h),  'helm cp',     sigma_s,    sigma_pt,     kernel3d('h','c',zk,coefs_h); ...
+  kernel3d('h','sg',zk),          'helm sg',     sigma_s,    sigma_pt2,    [];                          ...
+  kernel3d('h','dg',zk),          'helm dg',     sigma_s,    sigma_pt2,    [];                          ...
+  kernel3d('h','cg',zk,coefs_h),  'helm cg',     sigma_s,    sigma_pt2,    [];                          ...
+  kernel3d('h','trans_rep',zk,coefs_h), 'helm trans_rep', sigma_s, sigma_rep2, [];                    ...
+  kernel3d('h','trep_prime',zk,coefs_h), 'helm trep_prime', sigma_s, sigma_rep2, kernel3d('h','trans_rep',zk,coefs_h); ...
+  kernel3d('h','trep_grad',zk,coefs_h), 'helm trep_grad', sigma_s, sigma_rep2, [];                    ...
   kernel3d('h','s2trans',zk),     'helm s2trans',sigma_s,    sigma_s,      kernel3d('h','s',zk);         ...
   kernel3d('h','d2trans',zk),     'helm d2trans',sigma_s,    sigma_s,      kernel3d('h','d',zk);         ...
   kernel3d('h','c2trans',zk,coefs_ct),'helm c2trans',sigma_s,sigma_s,     kernel3d('h','c',zk,coefs_ct); ...
@@ -108,6 +124,9 @@ for k = 1:size(kernels, 1)
             case 'c2trans',  K_bot = kernel3d('h','cp',zk,coefs_ct);
         end
         failures = check_x2trans(failures, K, K_aux, K_bot, src, targ, label);
+        if ~isempty(K.fmm)      % [2x1]: one density per source point
+            failures = check_fmm(failures, K, src, targ, sigma_pt2, eps, tol_fmm, label);
+        end
     else
         if ~isempty(K_aux)
             failures = check_fd_targ(failures, K, K_aux, src, targ, h_fd, tol_fd, label);
@@ -193,6 +212,33 @@ failures = check_x2trans_diff(failures, ...
     kernel3d('h','c2trans_diff',zks,c_coefs4), kernel3d('h','c_diff',zks,c_coefs4), ...
     kernel3d('h','cp_diff',zks,c_coefs4), src, targ, 'helm c2trans_diff');
 
+% fmm against eval for every transmission and diff kernel
+fmm_kernels = { ...
+  'helm trans_rep',      kernel3d('h','trans_rep',zk,[0.7;1.3]); ...
+  'helm trans_sys',      kernel3d('h','trans_sys',zk,coe_22); ...
+  'helm trans_sys_diff', kernel3d('h','trans_sys_diff',zks,coe_222); ...
+  'helm trans_sys_diff (per block)', ...
+                         kernel3d('h','trans_sys_diff',zks,cat(3,coe_22,[0.2 1.1; 0.4 0.6])); ...
+  'helm s_diff',         kernel3d('h','s_diff',zks,diff_coefs); ...
+  'helm d_diff',         kernel3d('h','d_diff',zks,diff_coefs); ...
+  'helm sp_diff',        kernel3d('h','sp_diff',zks,diff_coefs); ...
+  'helm dp_diff',        kernel3d('h','dp_diff',zks,diff_coefs); ...
+  'helm c_diff',         kernel3d('h','c_diff',zks,c_coefs4); ...
+  'helm cp_diff',        kernel3d('h','cp_diff',zks,c_coefs4); ...
+  'helm s2trans_diff',   kernel3d('h','s2trans_diff',zks,diff_coefs); ...
+  'helm d2trans_diff',   kernel3d('h','d2trans_diff',zks,diff_coefs); ...
+  'helm c2trans_diff',   kernel3d('h','c2trans_diff',zks,c_coefs4)};
+for k = 1:size(fmm_kernels, 1)
+    [label, K] = fmm_kernels{k,:};
+    if isempty(K.fmm)
+        failures = report(failures, label, 'has fmm', 1, 0);
+        continue
+    end
+    nsrc = size(src.r, 2);
+    sig = randn(K.opdims(2)*nsrc, 1) + 1i*randn(K.opdims(2)*nsrc, 1);
+    failures = check_fmm(failures, K, src, targ, sig, eps, 1e-5, label);
+end
+
 end
 
 
@@ -271,6 +317,42 @@ end
 end
 
 
+function failures = test_times(failures, eps, ns, nt, src, targ)
+% Elementwise .* with scalar/row/col/matrix, and * with a matrix.
+
+Ks = kernel3d('stok', 's');
+M  = Ks.eval(src, targ);
+sig3 = randn(3*ns, 1);
+for c = {2.5, randn(3,1), randn(1,3), randn(3,3)}
+    A = c{1};
+    Kt = Ks .* A;  Kt2 = A .* Ks;
+    ref = M .* repmat(A .* ones(3), nt, ns);
+    lbl = sprintf('.* %dx%d', size(A,1), size(A,2));
+    failures = report(failures, 'times', [lbl ' eval'], norm(Kt.eval(src,targ)-ref,'fro')/norm(ref,'fro'), 1e-14);
+    failures = report(failures, 'times', [lbl ' commutes'], norm(Kt2.eval(src,targ)-ref,'fro')/norm(ref,'fro'), 1e-14);
+    if ~isempty(Kt.fmm)
+        u = Kt.fmm(eps,src,targ,sig3);
+        failures = report(failures, 'times', [lbl ' fmm'], ...
+            norm(u(:)-ref*sig3)/norm(ref*sig3), 1e-5);
+    end
+end
+
+% singleton expansion: 1x1 kernel .* 2x3 matrix
+Kl = kernel3d('l', 's');  A = randn(2, 3);
+Ke = Kl .* A;
+assert(isequal(Ke.opdims, [2 3]));
+ref = kron(Kl.eval(src,targ), A);
+failures = report(failures, 'times', 'expand eval', norm(Ke.eval(src,targ)-ref,'fro')/norm(ref,'fro'), 1e-14);
+
+% mtimes with constant matrix equals block matrix product
+B = randn(3, 2);
+Km = Ks * B;
+ref = M * kron(speye(ns), B);
+failures = report(failures, 'mtimes', 'K*B eval', norm(Km.eval(src,targ)-ref,'fro')/norm(ref,'fro'), 1e-13);
+
+end
+
+
 % =========================================================================
 % Helpers
 % =========================================================================
@@ -278,7 +360,7 @@ end
 function failures = check_fmm(failures, K, src, targ, sigma, eps, tol, label)
 % Compare K.fmm against K.eval.
 pot_fmm = K.fmm(eps, src, targ, sigma);
-pot_ref = K.eval(src, targ) * sigma(:);
+pot_ref = K.eval(src, targ) * reshape(sigma, [], size(sigma, 2));
 failures = report(failures, label, 'fmm vs eval', norm(pot_fmm(:)-pot_ref(:))/norm(pot_ref(:)), tol);
 end
 

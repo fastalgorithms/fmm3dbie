@@ -1,4 +1,13 @@
 function f = uminus(f)
+
+if kernel3d.radgreen('compatible', f)
+    f = kernel3d.radgreen('scale', f, -1);
+    return
+end
+if kernel3d.radpp('summable', {f})
+    f = kernel3d.radpp('sum', {f}, -1);
+    return
+end
 % - Unary negation for kernel3d class
 
 f.eval = @(varargin) -f.eval(varargin{:});
@@ -15,6 +24,11 @@ if (isa(f.getquad, 'function_handle'))
         fgetquad(S, eps, varargin{:}), -1);
 else
     f.getquad = [];
+end
+
+if isa(f.diag, 'function_handle')
+    fdiag = f.diag;
+    f.diag = @(t) -fdiag(t);
 end
 
 end

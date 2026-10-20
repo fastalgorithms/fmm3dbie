@@ -18,7 +18,8 @@ function U = fmm(eps, src, targ, type, sigma, coefs)
 %   coefs    - [alpha; beta] for combined layer (type 'c' only)
 %
 % Output:
-%   U    - potential (3 x nt)
+%   U    - potential column vector (3*nt x 1), ordered point by point
+%          (u1,u2,u3 at target 1, then target 2, ...)
 
 sigma = reshape(sigma,3,[]);
 switch lower(type)
@@ -114,4 +115,6 @@ switch lower(type)
         U(2,:) = n(1,:).*(g21 + g12)    + n(2,:).*(-pre + 2*g22) + n(3,:).*(g23 + g32);
         U(3,:) = n(1,:).*(g31 + g13)    + n(2,:).*(g32 + g23) + n(3,:).*(-pre + 2*g33);
 end
+
+U = U(:);
 end

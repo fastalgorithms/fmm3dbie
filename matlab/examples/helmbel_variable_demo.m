@@ -20,14 +20,13 @@ kparam  = kernel3d('bel','klb');
 krem    = kernel3d('bel','rlb');
 
 zk2f = @(t) reshape(zk2fun(t.r), 1, 1, []);
-kvar = krem + zk2f.*kparam;
+kvar = krem + zk2f*kparam;
 
 eps = 1e-9;
 
 %% Build the system matrix and solve
 tic;
-Rmat = surfermat(S, kvar, eps);
-Amat = Rmat + eye(size(Rmat));
+Amat = surfermat(S, kvar, eps);
 Kmat = surfermat(S, kparam, eps);
 tbuild = toc
 
