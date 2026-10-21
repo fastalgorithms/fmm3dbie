@@ -45,6 +45,7 @@ test_radgreen_getquad();
 test_radgreen_rlb_getquad();
 test_radgreen_mfie();
 test_radgreen_fmm();
+test_radgreen_2d();
 test_fmm_option();
 test_grad_ntrace();
 test_radpp_sum();
@@ -87,22 +88,24 @@ warning('on', 'RADPP_FIT:noise');
 assert(strcmp(id, 'RADPP_FIT:noise'), 'radpp_fit: no noise warning');
 assert(info.err < 1e-11, 'radpp_fit: noise level %.1e', info.err);
 
-% a sharp f stalls below 1e-4 before it is resolved, unless stopnoise is
-% false
-f = @(r) tanh(100*(r - 1));
-r = linspace(1e-3, 10, 10000).';
+% a green plus 1e-6 noise stalls at the noise level
+s0 = rng(7);
+f = @(r) [exp(1i*r)./(1 + r), r.^2.*log(r), r.*log(r)] + 1e-6*rand(numel(r), 3);
 lastwarn('');
 warning('off', 'RADPP_FIT:noise');
-radpp_fit(f, 1e-3, 10, struct('eps', 1e-13, 'norder', 6));
+[~, ~, info] = radpp_fit(f, 1e-9, 3, struct('eps', 1e-13));
 warning('on', 'RADPP_FIT:noise');
+rng(s0);
 [~, id] = lastwarn();
-assert(strcmp(id, 'RADPP_FIT:noise'), 'radpp_fit: sharp f should stall');
+assert(strcmp(id, 'RADPP_FIT:noise'), 'radpp_fit: noisy green, no noise warning');
+assert(info.err > 1e-8 && info.err < 1e-4, 'radpp_fit: noisy green, error %.1e', info.err);
+assert(info.nbin < 300, 'radpp_fit: noisy green, %d panels', info.nbin);
+
+f = @(r) flexprof([1.7, 0.5i], r);
 lastwarn('');
-[~, ~, info] = radpp_fit(f, 1e-3, 10, struct('eps', 1e-13, 'norder', 6, ...
-                                             'stopnoise', false));
-assert(isempty(lastwarn()), 'radpp_fit: stopnoise = false warned');
-err = max(abs(radpp_eval(r, info.breaks, info.coefs) - f(r)));
-assert(err < 1e-12, 'radpp_fit: stopnoise = false, error %.1e', err);
+[~, ~, info] = radpp_fit(f, 1e-9, 3, struct('eps', 1e-13));
+assert(isempty(lastwarn()), 'radpp_fit: r log r warned');
+assert(info.err < 1e-12, 'radpp_fit: r log r, error %.1e', info.err);
 
 end
 
@@ -658,8 +661,8 @@ end
 
 
 function test_radgreen_ipv()
-% ipv from the detected singularity: helmholtz gives the helm3d choices,
-% log r is weakly singular, overrides win.
+% ipv measured from each kernel: helmholtz gives the helm3d choices, log r
+% is weakly singular, an ipv given wins.
 
 zk = 1.1;
 g = @(s,t) helm3d.green(zk, s, t);
@@ -667,14 +670,12 @@ cases = {'s', 0; 'sp', 1; 'd', 1; 'c', 1; 'dp', 2; 'cp', 2; ...
          'clamped_bc', [0 1]; 'trans_sys', [1 2 0 1]; 'hess', 2};
 for k = 1:size(cases, 1)
     K = kernel3d(g, cases{k,1});
-    assert(K.params.green.sing == 1, 'radgreen: helm singularity');
     assert(isequal(K.params.ipv, repmat(cases{k,2}, 1, ...
            numel(K.params.ipv)/numel(cases{k,2}))), ...
            'radgreen ipv %s: %s', cases{k,1}, mat2str(K.params.ipv));
 end
 
 % log r: weakly singular
-assert(kernel3d(@logg, 's').params.green.sing == 0, 'radgreen: log sing');
 assert(kernel3d(@logg, 's').params.ipv == 0, 'radgreen: log s');
 assert(kernel3d(@logg, 'sp').params.ipv == 0, 'radgreen: log sp');
 assert(kernel3d(@logg, 'dp').params.ipv == 1, 'radgreen: log dp');
@@ -685,22 +686,20 @@ inv2 = @(s,t) 1./((t(1,:).'-s(1,:)).^2 + (t(2,:).'-s(2,:)).^2 + ...
                   (t(3,:).'-s(3,:)).^2);
 assert(kernel3d(inv2, 's').params.ipv == 1, 'radgreen: 1/r^2 s');
 assert(kernel3d(@gaussg, 'dp').params.ipv == 0, 'radgreen: smooth dp');
-assert(kernel3d(@gaussg, 's').params.green.sing == 0, 'radgreen: smooth');
+assert(kernel3d(@gaussg, 's').params.ipv == 0, 'radgreen: smooth s');
 gd = @(s,t) helm3d.green(1.1, s, t) - helm3d.green(2.3, s, t);
-assert(kernel3d(gd, 's').params.green.sing == 0, 'radgreen: diff sing');
+assert(kernel3d(gd, 's').params.ipv == 0, 'radgreen: diff s');
 
-% overrides
-assert(kernel3d(g, 's', 'singularity', 2, 'dim', 2).params.ipv == 1, ...
-       'radgreen: singularity override');
-assert(kernel3d(@logg, 'dp', 'singularity', 'log', 'dim', 2).params.ipv == 1, ...
-       'radgreen: log override');
-assert(kernel3d(g, 'sp', 'ipv', 0).params.ipv == 0, 'radgreen: ipv override');
+% ipv given
+assert(kernel3d(g, 'sp', 'ipv', 0).params.ipv == 0, 'radgreen: ipv given');
+assert(kernel3d(@logg, 'dp', 'ipv', 2, 'dim', 2).params.ipv == 2, ...
+       'radgreen: ipv given 2d');
 
 end
 
 
 function test_radgreen_order()
-% Singularity detection and ipv at build time for differences of
+% ipv at build time for differences of
 % helmholtz kernels (bounded at 0) and the Laplace- and Helmholtz-
 % Beltrami kernels (log), with eval checked against helm3d and belpde.
 
@@ -716,7 +715,6 @@ cases = {'s', 0; 'sp', 0; 'd', 0; 'dp', 0};    % dp_diff ~ 1/r, isotropic
 for k = 1:size(cases, 1)
     type = cases{k,1};
     K = kernel3d(gd, type);
-    assert(K.params.green.sing == 0, 'radgreen: %s_diff singularity', type);
     assert(K.params.ipv == cases{k,2}, 'radgreen ipv %s_diff: %d', type, ...
            K.params.ipv);
     B = kernel3d.helm3d([type '_diff'], [k0; k1]).eval(src, targ);
@@ -731,8 +729,7 @@ khb = @(s,t) belpde.kern(kb^2, struct('r', s), struct('r', t), 'khb');
 for c = {{klb, kernel3d.belpde('klb')}, {khb, kernel3d.belpde('khb', kb)}}
     [g, Kb] = c{1}{:};
     K = kernel3d(g, 's');
-    assert(K.params.green.sing == 0 && K.params.ipv == 0, ...
-           'radgreen: %s not weakly singular', Kb.type);
+    assert(K.params.ipv == 0, 'radgreen: %s not weakly singular', Kb.type);
     B = Kb.eval(src, targ);
     err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
     assert(err < 1e-13, 'radgreen %s eval: %.2e', Kb.type, err);
@@ -740,8 +737,7 @@ end
 
 % rlb = (Laplacian - d_nn - 2 H d_n) klb, as custom weights on klb
 K = kernel3d(@klbg, @w_rlb, 'nderiv', 2, 'targ_fields', {'n', 'mean_curv'});
-assert(K.params.green.sing == 0 && K.params.ipv == 0, ...
-       'radgreen: rlb ipv %d', K.params.ipv);     % bounded on the surface
+assert(K.params.ipv == 0, 'radgreen: rlb ipv %d', K.params.ipv);     % bounded on the surface
 assert(K.kernel_order == -1, 'radgreen: rlb kernel_order');
 B = kernel3d.belpde('rlb').eval(src, targ);
 err = norm(K.eval(src, targ) - B, 'fro')/norm(B, 'fro');
@@ -783,14 +779,16 @@ end
 
 
 function varargout = logg(s, t)
-% G = log r with target derivatives, helm3d.green format
-x = t(1,:).' - s(1,:);  y = t(2,:).' - s(2,:);  z = t(3,:).' - s(3,:);
-r2 = x.^2 + y.^2 + z.^2;
-X = cat(3, x, y, z);
+% G = log r with target derivatives, points (2,n) or (3,n)
+d = size(t, 1);
+X = t(1,:).' - s(1,:);
+for i = 2:d, X = cat(3, X, t(i,:).' - s(i,:)); end
+x = X(:,:,1);
+r2 = sum(X.^2, 3);
 varargout{1} = log(r2)/2;
 varargout{2} = X./r2;
-H = zeros([size(x) 3 3]);
-for i = 1:3, for j = 1:3
+H = zeros([size(x) d d]);
+for i = 1:d, for j = 1:d
     H(:,:,i,j) = (i==j)./r2 - 2*X(:,:,i).*X(:,:,j)./r2.^2;
 end, end
 varargout{3} = H;
@@ -1549,7 +1547,6 @@ end
 zk = 3i;
 for type = {'s', 'dp'}
     K = kernel3d(@(s,t) helm3d.green(zk, s, t), type{1});
-    assert(K.params.green.sing == 1, 'radgreen yukawa: singularity');
     Q = K.getquad(S, eps);  Qh = kernel3d.helm3d(type{1}, zk).getquad(S, eps);
     err = norm(Q - Qh, 'fro')/norm(Qh, 'fro');
     assert(err < 1e-6, 'radgreen yukawa %s getquad: %.2e', type{1}, err);
@@ -1633,3 +1630,72 @@ if any(strcmp(type, {'c', 'cp', 'c2trans', 'trans_sys', 'trans_rep'}))
     a = {'coefs', coefs};
 end
 end
+
+
+function f = flexprof(zk, r)
+% on-axis profiles [G, G_x] of flex2d.green
+[v, g] = flex2d.green(zk, [0; 0], [r(:).'; 0*r(:).']);
+f = [v(:), g(:,1,1)];
+end
+
+
+function test_radgreen_2d()
+% radgreen with dim 2 greens: flex2d kernels, packed vs full derivatives
+
+nu = 0.3;
+src = []; src.r = [randn(2, 7); zeros(1, 7)];
+th = 2*pi*rand(1, 5);
+t = []; t.r = [2*cos(th); 2*sin(th); 0*th];
+t.n = [cos(th); sin(th); 0*th];
+t.d = [-2*sin(th); 2*cos(th); 0*th];
+t.d2 = -t.r;
+tab = {'s', 's'; 'sp', 'sp'; 'grad', 'sg'; 'clamped_bc', 'clamped_plate_bcs'; ...
+       'supported_bc', 'supported_plate_bcs'; 'free_bc', 'free_plate_bcs'; ...
+       'flex_varalpha', 'varcoef'};
+for zk = {1.7, [1.7, 0.5i], [1.7, 0], 0}
+    z = zk{1};
+    if isscalar(z) && z ~= 0, z = [z, 1i*z]; end
+    for i = 1:size(tab, 1)
+        K = kernel3d(@(s,t) flex2d.green(z, s, t), tab{i,1}, 'dim', 2, ...
+                     'nu', nu, 'pfun', @platep, 'zk', z);
+        A = K.eval(src, t);
+        B = flex2d.kern(z, src, t, tab{i,2}, nu, @platep);
+        err = norm(A - B)/norm(B);
+        assert(err < 1e-12, 'radgreen 2d %s, zk = %s: %.1e', tab{i,1}, ...
+               mat2str(z), err);
+        assert(all(K.params.ipv == 0), 'radgreen 2d %s: ipv %s', tab{i,1}, ...
+               mat2str(K.params.ipv));
+    end
+end
+
+% packed and full derivatives give the same kernel
+A = kernel3d(@gauss, 'free', 'nu', nu, 'dim', 2).eval(src, t);
+B = kernel3d(@gaussfull2, 'free', 'nu', nu, 'dim', 2).eval(src, t);
+assert(norm(A - B) <= 1e-14*norm(A), 'radgreen 2d: packed vs full');
+
+% flex_varalpha kernels with different pfun add
+g = @(s,t) flex2d.green([1.7, 0.5i], s, t);
+K1 = kernel3d(g, 'flex_varalpha', 'dim', 2, 'nu', nu, 'pfun', @platep, ...
+              'zk', [1.7, 0.5i]);
+K2 = kernel3d(g, 'flex_varalpha', 'dim', 2, 'nu', nu, ...
+              'pfun', @(t) platep(t, 2), 'zk', [1.7, 0.5i]);
+K = K1 + K2;
+A = K.eval(src, t);
+B = K1.eval(src, t) + K2.eval(src, t);
+assert(norm(A - B) <= 1e-13*norm(B), 'radgreen 2d: flex_varalpha sum');
+
+end
+
+
+function p = platep(t, a)
+% smooth plate coefficients for flex_varalpha
+if nargin < 2, a = 1; end
+x = t.r(1,:);  y = t.r(2,:);
+g = 0.3*a*exp(-(x.^2 + y.^2));
+p = [];
+p.alpha   = 1 + g;
+p.dalpha  = [-2*x.*g; -2*y.*g];
+p.d2alpha = [(4*x.^2 - 2).*g; 4*x.*y.*g; (4*y.^2 - 2).*g];
+p.beta    = 2 + 0.5*a*x.*y;
+end
+

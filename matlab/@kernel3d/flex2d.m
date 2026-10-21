@@ -1,4 +1,4 @@
-function obj = flex2d(type, zk, nu, pfun)
+function obj = flex2d(type, zk, nu, pfun, varargin)
 %KERNEL3D.FLEX2D   Construct a flexural (thin-plate) kernel in 2D.
 %
 %   KERNEL3D.FLEX2D(type, zk) or KERNEL3D.FLEX2D(type, zk, nu), for
@@ -7,16 +7,21 @@ function obj = flex2d(type, zk, nu, pfun)
 %   [zk, 1i*zk], and zk = 0 gives the biharmonic kernel), nu is the
 %   Poisson ratio, and type is:
 %      's'                   - single layer G,                   [1 1]
+%      'sp'                  - sprime, d/dn_x G,                 [1 1]
+%      'sg'                  - gradient, [d/dx G; d/dy G],       [2 1]
 %      'clamped_plate_bcs'   - [G; d/dn_x G],                    [2 1]
 %      'supported_plate_bcs' - [G; M_nn + nu*M_tt],               [2 1]
 %      'free_plate_bcs'      - [M_nn + nu*M_tt; Kirchhoff shear], [2 1]
 %      'varcoef'             - variable coefficient plate operator, [1 1]
+%                              (alias 'flex_varalpha')
 %
-%   KERNEL3D.FLEX2D('varcoef', zk, nu, pfun) is the kernel K such that,
-%   for u = V[sigma] with V the 's' kernel,
+%   KERNEL3D.FLEX2D('varcoef', zk, nu, pfun) is alpha*I + K, where for
+%   u = V[sigma] with V the 's' kernel,
 %
 %      Delta(alpha Delta u) - beta u - (1-nu)(alpha_xx u_yy
 %         - 2 alpha_xy u_xy + alpha_yy u_xx) = alpha sigma + K[sigma].
+%
+%   The identity term alpha sigma is stored in obj.diag
 %
 %   pfun is a function handle of the target struct t (with t.r) that
 %   returns a struct with fields alpha (1,nt), dalpha (2,nt), d2alpha
@@ -28,16 +33,35 @@ function obj = flex2d(type, zk, nu, pfun)
 %   kernel second derivatives d2 (or the curvature kappa). nu is required
 %   for the supported and free kernels.
 %
+%   KERNEL3D.FLEX2D(..., 'ifppquad', ifppquad) returns a KERNEL3D.RADGREEN
+%   kernel if true (default), otherwise uses the Fortran near quadrature.
+%
 % See also FLEX2D.KERN, FLEX2D.GET_QUADRATURE_CORRECTION
 
 if ( nargin < 2 )
     error('KERNEL3D.FLEX2D: requires type and zk arguments.');
 end
-if ( nargin < 3 )
-    nu = [];
+% positional nu and pfun, then name-value options
+args = varargin;
+if ( nargin >= 4 ), args = [{pfun}, args]; end
+if ( nargin >= 3 ), args = [{nu}, args]; end
+npos = find(cellfun(@(v) ischar(v) || isstring(v), args), 1) - 1;
+if ( isempty(npos) ), npos = numel(args); end
+if ( npos > 2 )
+    error('KERNEL3D.FLEX2D: at most nu and pfun before the options.');
 end
-if ( nargin < 4 )
-    pfun = [];
+nu = [];  pfun = [];
+if ( npos >= 1 ), nu = args{1}; end
+if ( npos >= 2 ), pfun = args{2}; end
+varargin = args(npos+1:end);
+ifppquad = true;
+for i = 1:2:numel(varargin)
+    switch lower(varargin{i})
+        case 'ifppquad'
+            ifppquad = logical(varargin{i+1});
+        otherwise
+            error('KERNEL3D.FLEX2D: unknown option ''%s''.', varargin{i});
+    end
 end
 
 zk = zk(:).';
@@ -54,9 +78,20 @@ obj.params.nu = nu;
 
 switch lower(type)
 
-    case {'s', 'single'}
+    case {'s', 'single', 'slp'}
         obj.type         = 's';
         obj.opdims       = [1 1];
+        obj.kernel_order = -1;
+
+    case {'sp', 'sprime'}
+        obj.type         = 'sp';
+        obj.opdims       = [1 1];
+        obj.kernel_order = -1;
+        obj.targ_fields  = {'n'};
+
+    case {'sg', 'sgrad'}
+        obj.type         = 'sg';
+        obj.opdims       = [2 1];
         obj.kernel_order = -1;
 
     case {'clamped_plate_bcs', 'clamped'}
@@ -77,7 +112,7 @@ switch lower(type)
         obj.kernel_order = -1;
         obj.targ_fields  = {'n', 'd', 'd2'};
 
-    case {'varcoef', 'var'}
+    case {'varcoef', 'var', 'flex_varalpha', 'varalpha'}
         obj.type         = 'varcoef';
         obj.opdims       = [1 1];
         obj.kernel_order = -1;
@@ -85,6 +120,8 @@ switch lower(type)
             error('KERNEL3D.FLEX2D: ''varcoef'' requires nu and pfun.');
         end
         obj.params.pfun  = pfun;
+        % varcoef kernel contains its identity term
+        obj.diag         = @(t) reshape(pfun(t).alpha, [], 1);
 
     otherwise
         error('KERNEL3D.FLEX2D: unknown plate kernel type ''%s''.', type);
@@ -111,6 +148,27 @@ end
 icheck = exist(['fmm2d.' mexext], 'file');
 if ( icheck ~= 3 )
     obj.fmm = [];
+end
+
+% radgreen kernel on flex2d.green
+if ( ifppquad )
+    rtypes = struct('s', 's', 'sp', 'sp', 'sg', 'grad', ...
+        'clamped_plate_bcs', 'clamped_bc', 'supported_plate_bcs', 'supported_bc', ...
+        'free_plate_bcs', 'free_bc', 'varcoef', 'flex_varalpha');
+    args = {'dim', 2, 'zk', zk};
+    if ( ~isempty(nu) ), args = [args, {'nu', nu}]; end
+    if ( ~isempty(pfun) ), args = [args, {'pfun', pfun}]; end
+    isvar = strcmp(obj.type, 'varcoef');
+    if ( ~isempty(obj.fmm) && ~isvar )
+        args = [args, {'fmm', @(eps,s,pg,t,pgt) flex2d.fmmgreen(eps, zk, s, pg, t, pgt)}];
+    end
+    K = kernel3d(@(s,t) flex2d.green(zk, s, t), rtypes.(obj.type), args{:});
+    if ( isvar )
+        % third derivatives: flex2d.fmm uses Lap G_k = -k^2 G_k
+        K.fmm  = obj.fmm;
+        K.diag = obj.diag;
+    end
+    obj = K;
 end
 
 end

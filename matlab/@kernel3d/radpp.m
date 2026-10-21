@@ -69,6 +69,8 @@ function obj = radpp(green, rmax, type, varargin)
 %      'supported_bc' ('supported', 'supported_plate_bcs')
 %                                                  [G; G_{n_x n_x} + nu G_{t_x t_x}]
 %      'free_bc'      ('free', 'free_plate_bcs')   [moment; shear]
+%      'flex_varalpha'                             see FLEX2D.PLATE_COEFS; needs
+%                                                  'nu', 'pfun', 'zk' = [zk1 zk2]
 %
 %   Custom kernels: pass a function handle WFUN in place of TYPE,
 %
@@ -82,7 +84,8 @@ function obj = radpp(green, rmax, type, varargin)
 %
 %   Name-value options:
 %      'dim'          - 3 (default) or 2, see above
-%      'nu'           - Poisson ratio (supported_bc, free_bc)
+%      'nu'           - Poisson ratio (supported_bc, free_bc, flex_varalpha)
+%      'pfun'         - plate coefficients (flex_varalpha)
 %      'coefs'        - [alpha beta] for 'c', 'cp', 'c2trans' (default [1 1])
 %      'ipv'          - ipv for the GGQ quadrature, scalar or one per entry:
 %                       0 weakly singular, 1 principal value, 2
@@ -94,7 +97,8 @@ function obj = radpp(green, rmax, type, varargin)
 %      'opdims'       - custom kernels: [m n] (default [1 1])
 %      'targ_fields'  - custom kernels: target fields used by wfun
 %      'name'         - custom kernels: name (default 'custom')
-%      'zk'           - wavenumber for oversampling (default 0)
+%      'zk'           - wavenumber for oversampling (default 0); for
+%                       flex_varalpha the plate wavenumbers [zk1 zk2]
 %      'kernel_order' - for oversampling (default from nderiv)
 %      'ifcomplex'    - custom kernels: whether the weights are complex
 %                       (default true)
@@ -182,7 +186,7 @@ end
 o = struct('nu', [], 'ipv', [], 'opts', struct(), 'nderiv', [], ...
            'opdims', [1 1], 'targ_fields', {{}}, 'name', 'custom', ...
            'zk', [], 'kernel_order', [], 'ifcomplex', true, 'dim', 3, ...
-           'coefs', [1 1], 'srcwfun', [], 'fmm', [], 'fit', []);
+           'coefs', [1 1], 'srcwfun', [], 'fmm', [], 'fit', [], 'pfun', []);
 o = parse_options(o, varargin);
 
 valueonly = isa(green, 'kernel3d');
@@ -210,7 +214,7 @@ elseif isa(type, 'function_handle')
     spec = kspec(o.name, o.nderiv, o.opdims, o.targ_fields, type);
     spec.vfun = o.srcwfun;
 else
-    spec = builtin_kernel(type, o.nu, o.dim, o.coefs);
+    spec = builtin_kernel(type, o.nu, o.dim, o.coefs, o.pfun, o.zk);
 end
 nderiv = spec.nderiv;
 nrow   = size(spec.ent, 1);          % one GGQ call per block entry
@@ -242,23 +246,12 @@ ncomp  = ncomp(nderiv+1);
 
 ipv = o.ipv(:).';
 if isempty(ipv) && gmode
-    % 3D: from the behaviour of each entry on a curved test surface.
-    % 2D (in-plane kernels): from the singularity of the green and the
-    % derivatives of each entry
+    % from the behaviour of each entry on a test surface, flat in 2D
     p0 = struct('nderiv', nderiv, 'isrc', isrc, 'dim', o.dim, ...
                 'gmode', true, 'profun', @(r) green.profiles(r, nfit), ...
                 'wfun', spec.wfun, 'vfun', spec.vfun, 'opdims', spec.opdims, ...
                 'ent', spec.ent, 'ncomp', ncomp);
-    if o.dim == 3 || o.dim == 13
-        ipv = surface_ipv(p0, spec.targ_fields);
-    else
-        try
-            nd = entry_derivs(spec, nderiv, ncomp, o.dim);
-        catch
-            nd = repmat(nfit, 1, nrow);      % weights could not be probed
-        end
-        ipv = min(max(green.sing + nd - 1, 0), 2);
-    end
+    ipv = surface_ipv(p0, spec.targ_fields, o.dim == 2);
 elseif isempty(ipv)
     ipv = spec.ipv;
     if o.dim == 2 && ~isempty(spec.ipv2), ipv = spec.ipv2; end
@@ -303,7 +296,7 @@ obj.name         = 'radpp';
 if gmode, obj.name = 'radgreen'; end
 obj.type         = spec.name;
 obj.opdims       = spec.opdims;
-obj.zk           = o.zk;
+obj.zk           = max(abs(o.zk));      % a plate pair gives its largest
 obj.kernel_order = kernel_order;
 obj.ifcomplex    = double(~isreal(info.coefs) || ~isreal(o.nu) || ...
                    ~isreal(o.coefs) || ...
@@ -357,7 +350,7 @@ end
 
 %%% built-in kernels
 
-function spec = builtin_kernel(type, nu, dim, coefs)
+function spec = builtin_kernel(type, nu, dim, coefs, pfun, zk)
 
 if dim == 13
     spec = dyad_kernel(type);
@@ -365,7 +358,7 @@ if dim == 13
 end
 
 needs_nu = {'supported_bc', 'supported', 'supported_plate_bcs', ...
-            'free_bc', 'free', 'free_plate_bcs'};
+            'free_bc', 'free', 'free_plate_bcs', 'flex_varalpha'};
 if any(strcmpi(type, needs_nu)) && isempty(nu)
     error('KERNEL3D.RADPP: type ''%s'' needs ''nu''.', type);
 end
@@ -453,6 +446,12 @@ switch lower(type)
     case {'free_bc', 'free', 'free_plate_bcs'}
         spec = kspec('free_bc', 3, 2, {'n', 'd', 'd2'}, ...
                      @(t) w_free(t, nu), [], 0);
+    case {'flex_varalpha'}
+        if isempty(pfun)
+            error('KERNEL3D.RADPP: type ''%s'' needs ''pfun''.', type);
+        end
+        spec = kspec('flex_varalpha', 3, 1, {}, ...
+                     @(t) w_varalpha(t, nu, pfun, zk), [], 0);
     otherwise
         error('KERNEL3D.RADPP: unknown type ''%s''.', type);
 end
@@ -486,18 +485,25 @@ end
 end
 
 
-function ipv = surface_ipv(p, targ_fields)
+function ipv = surface_ipv(p, targ_fields, flat)
 % ipv per block entry from the kernel on the paraboloid z = (x^2+3y^2)/2,
+% or the plane z = 0 if flat (in-plane kernels, normals in the plane),
 % target at the origin: |K| ~ rho^-q in the geodesic distance rho (log
-% or bounded: q = 0) gives ipv 0 for q = 0, for q = 1 0 if isotropic and
-% 1 if not, 1 for q = 2 and 2 for q >= 3. Target fields other than n
-% and mean_curv are filled with random values.
-a = 1;  b = 3;
-% a generic orientation, so fixed-axis weights (grad, hess) are not
-% aligned with the normal
-c1 = cos(0.7);  s1 = sin(0.7);  c2 = cos(1.1);  s2 = sin(1.1);
-Q = [1 0 0; 0 c1 -s1; 0 s1 c1]*[c2 0 s2; 0 1 0; -s2 0 c2];
-targ = struct('r', [0;0;0], 'n', Q*[0;0;1], 'mean_curv', -(a+b)/2);
+% or bounded: q = 0) gives ipv 0 for q = 0, for q = 1 0 if isotropic or
+% flat and 1 if not, 1 for q = 2 and 2 for q >= 3. Target fields other
+% than n, d, d2 and mean_curv are filled with random values.
+if flat
+    a = 0;  b = 0;  Q = eye(3);
+    u = [cos(0.7); sin(0.7); 0];
+    targ = struct('r', [0;0;0], 'n', u, 'd', [-u(2); u(1); 0], 'd2', -u);
+else
+    a = 1;  b = 3;
+    % a generic orientation, so fixed-axis weights (grad, hess) are not
+    % aligned with the normal
+    c1 = cos(0.7);  s1 = sin(0.7);  c2 = cos(1.1);  s2 = sin(1.1);
+    Q = [1 0 0; 0 c1 -s1; 0 s1 c1]*[c2 0 s2; 0 1 0; -s2 0 c2];
+    targ = struct('r', [0;0;0], 'n', Q*[0;0;1], 'mean_curv', -(a+b)/2);
+end
 fs = setdiff(targ_fields, fieldnames(targ));
 for i = 1:numel(fs)
     targ.(fs{i}) = randn(3, 1);
@@ -507,6 +513,7 @@ rho = 10.^-(2:0.5:5);  th = 0.1 + (0:11)*pi/6;
 x = R(:).'.*cos(T(:).');  y = R(:).'.*sin(T(:).');
 src.r = Q*[x; y; (a*x.^2 + b*y.^2)/2];
 src.n = [-a*x; -b*y; ones(size(x))];  src.n = Q*(src.n./vecnorm(src.n));
+if flat, src.n = repmat([cos(1.1); sin(1.1); 0], 1, numel(x)); end
 
 try
     A = radpp_eval_kern(src, targ, p);          % (m, n*ns)
@@ -527,39 +534,13 @@ for e = 1:ne
     if all(mx <= 1e-10*big), continue; end
     sl = diff(log(mx + realmin))./diff(log(rho));
     q = max(0, ceil(-median(sl(end-2:end)) - 0.25));
-    if q == 1
+    if q == 1 && flat
+        ipv(e) = 0;
+    elseif q == 1
         w = v(:,end)*rho(end);
         ipv(e) = (max(w) - min(w)) > 0.05*max(w);
     else
         ipv(e) = min(max(q - 1, 0), 2);
-    end
-end
-end
-
-
-function nd = entry_derivs(spec, nderiv, ncomp, dim)
-% derivatives used by each block entry: the highest order of its nonzero
-% target weights, or of its source weights plus one
-t.r = randn(3, 5);  t.n = randn(3, 5);  t.n = t.n./vecnorm(t.n);
-t.d = randn(3, 5);  t.d2 = randn(3, 5);
-fs = setdiff(spec.targ_fields, fieldnames(t));     % e.g. mean_curv
-for i = 1:numel(fs)
-    t.(fs{i}) = randn(5, 1);
-end
-nh = dim*(dim+1)/2;  n3 = nh*(dim+2)/3;
-ord = [0, ones(1,dim), 2*ones(1,nh), 3*ones(1,n3)];
-ord = ord(1:ncomp);
-ne = size(spec.ent, 1);
-nd = zeros(1, ne);
-W = spec.wfun(t);
-V = [];
-if ~isempty(spec.vfun), V = spec.vfun(t); end
-for e = 1:ne
-    nzw = any(W(:,:,e) ~= 0, 1);
-    if any(nzw), nd(e) = max(ord(nzw)); end
-    if ~isempty(V)
-        nzv = any(V(:,:,e) ~= 0, 1);
-        if any(nzv), nd(e) = max(nd(e), max(ord(nzv)) + 1); end
     end
 end
 end
@@ -699,6 +680,15 @@ moment = [z, z, z, sym2(n,n) + nu*sym2(tau,tau), z, z, z, z];
 shear  = [z, z, z, (1-nu)*kappa.*(sym2(tau,tau) - sym2(n,n)), ...
           sym3(n,n,n) + (2-nu)*sym3(n,tau,tau)];
 W = cat(3, moment, shear);
+end
+
+
+function W = w_varalpha(t, nu, pfun, zk)
+% weights of the variable coefficient plate kernel, see FLEX2D.PLATE_COEFS
+c = flex2d.plate_coefs(pfun(t), nu, zk).';
+z = zeros(size(c,1), 1);
+W = [c(:,7), z, z, c(:,3) + c(:,5), c(:,6), c(:,3) + c(:,4), ...
+     c(:,1), c(:,2), c(:,1), c(:,2)];
 end
 
 

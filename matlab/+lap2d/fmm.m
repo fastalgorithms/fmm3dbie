@@ -14,18 +14,45 @@ function varargout = fmm(eps, srcinfo, targinfo, type, sigma)
 %   type - string, kernel type as in LAP2D.KERN
 %                type == 's', single layer S
 %                type == 'sprime', normal derivative of S at the target
-%   sigma - (ns,1) density, already multiplied by quadrature weights
+%                type == 'sg', gradient of S at the target, (2*nt,1)
+%                    with d/dx and d/dy interleaved by target
+%   sigma - (ns,ndens) densities, already multiplied by quadrature
+%           weights
 %
 % Output:
-%   pot  - (nt,1) potential
-%   grad - (2,nt) gradient at the targets, type 's' only
-%   hess - (3,nt) Hessian (xx, xy, yy) at the targets, type 's' only
+%   pot  - (nt,ndens) potential, (2*nt,ndens) for 'sg'
+%   grad - (2,nt) gradient at the targets, type 's' only, or
+%          (ndens,2,nt)
+%   hess - (3,nt) Hessian (xx, xy, yy) at the targets, type 's' only, or
+%          (ndens,3,nt)
 %
 % see also LAP2D.KERN
 
 if ( nargout == 0 )
     warning('LAP2D:fmm:empty', ...
         'Nothing to compute in LAP2D.FMM. Returning empty array.');
+    return
+end
+
+ns = size(srcinfo.r(:,:), 2);
+ndens = numel(sigma)/ns;
+if ( ndens > 1 )
+    sigma = reshape(sigma, ns, ndens);
+    out = cell(1, max(nargout, 1));
+    varargout = cell(1, numel(out));
+    for j = 1:ndens
+        [out{:}] = lap2d.fmm(eps, srcinfo, targinfo, type, sigma(:,j));
+        if ( j == 1 )
+            varargout{1} = zeros(numel(out{1}), ndens, 'like', out{1});
+            for k = 2:numel(out)
+                varargout{k} = zeros([ndens, size(out{k})], 'like', out{k});
+            end
+        end
+        varargout{1}(:,j) = out{1}(:);
+        for k = 2:numel(out)
+            varargout{k}(j,:,:) = reshape(out{k}, [1, size(out{k})]);
+        end
+    end
     return
 end
 
@@ -42,7 +69,7 @@ end
 switch lower(type)
     case {'s', 'single'}
         pgt = min(nargout, 3);
-    case {'sp', 'sprime'}
+    case {'sp', 'sprime', 'sg', 'sgrad'}
         pgt = 2;
     otherwise
         error('LAP2D:fmm:type', 'Unknown kernel type ''%s''.', type);
@@ -63,6 +90,8 @@ end
 switch lower(type)
     case {'s', 'single'}
         varargout{1} = U.pottarg(:);
+    case {'sg', 'sgrad'}
+        varargout{1} = U.gradtarg(:);
     case {'sp', 'sprime'}
         if ( ~isfield(targinfo, 'n') && ~isprop(targinfo, 'n') )
             error('LAP2D:fmm:normals', ...

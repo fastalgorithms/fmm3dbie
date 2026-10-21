@@ -21,7 +21,7 @@ obj.ifcomplex = 0;
 
 switch lower(type)
 
-    case {'s', 'single'}
+    case {'s', 'single', 'slp'}
         obj.type         = 's';
         obj.kernel_order = -1;
         obj.eval         = @(s,t) lap2d.kern(s, t, 's');
@@ -39,7 +39,7 @@ switch lower(type)
         obj.opdims       = [2 1];
         obj.kernel_order = -1;
         obj.eval         = @(s,t) lap2d.kern(s, t, 'sgrad');
-        obj.fmm          = @(eps,s,t,sigma) sgrad_fmm(eps, s, t, sigma);
+        obj.fmm          = @(eps,s,t,sigma) lap2d.fmm(eps, s, t, 'sg', sigma);
 
     otherwise
         error('KERNEL3D.LAP2D: unknown Laplace kernel type ''%s''.', type);
@@ -68,8 +68,3 @@ else
 end
 end
 
-function pot = sgrad_fmm(eps, s, t, sigma)
-%SGRAD_FMM  Gradient of the single layer, d/dx and d/dy interleaved.
-[~, grad] = lap2d.fmm(eps, s, t, 's', sigma);
-pot = grad(:);
-end

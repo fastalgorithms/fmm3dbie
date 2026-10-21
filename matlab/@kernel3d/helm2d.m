@@ -23,7 +23,7 @@ obj.ifcomplex = 1;
 
 switch lower(type)
 
-    case {'s', 'single'}
+    case {'s', 'single', 'slp'}
         obj.type         = 's';
         obj.kernel_order = -1;
         obj.eval         = @(s,t) helm2d.kern(zk, s, t, 's');
@@ -36,7 +36,7 @@ switch lower(type)
         obj.fmm          = @(eps,s,t,sigma) helm2d.fmm(eps, zk, s, t, 'sprime', sigma);
         obj.targ_fields  = {'n'};
 
-    case {'s2trans'}
+    case {'s2trans', 's2t'}
         if nargin < 3 || isempty(coefs), coefs = [1; 1]; end
         coefs = coefs(:);
         obj      = kernel3d.interleave([coefs(1)*kernel3d.helm2d('s', zk); ...
@@ -52,7 +52,7 @@ switch lower(type)
         obj.opdims       = [2 1];
         obj.kernel_order = -1;
         obj.eval         = @(s,t) helm2d.kern(zk, s, t, 'sgrad');
-        obj.fmm          = @(eps,s,t,sigma) sgrad_fmm(eps, zk, s, t, sigma);
+        obj.fmm          = @(eps,s,t,sigma) helm2d.fmm(eps, zk, s, t, 'sg', sigma);
 
     otherwise
         error('KERNEL3D.HELM2D: unknown Helmholtz kernel type ''%s''.', type);
@@ -81,8 +81,3 @@ else
 end
 end
 
-function pot = sgrad_fmm(eps, zk, s, t, sigma)
-%SGRAD_FMM  Gradient of the single layer, d/dx and d/dy interleaved.
-[~, grad] = helm2d.fmm(eps, zk, s, t, 's', sigma);
-pot = grad(:);
-end

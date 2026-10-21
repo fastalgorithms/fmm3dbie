@@ -29,8 +29,8 @@ opts = []; opts.corrections = true;
 [cors, objover] = surfermat(S, K, eps, opts);
 
 qt   = @(t) reshape(qfun(t.r(1,:), t.r(2,:)), 1, 1, []);
-Kq   = -zk^4 * (qt * K);
-corq = speye(S.npts) - zk^4 * q(:).'.* cors;
+Kq   = kernel3d.eye() - zk^4 * (qt * K);
+corq = surfermat(S, Kq, eps, opts);
 lhs  = @(dens) surfermatapply(S, Kq, dens, eps, objover, corq);
 
 % solve

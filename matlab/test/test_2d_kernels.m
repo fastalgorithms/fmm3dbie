@@ -23,8 +23,11 @@
 
 test_lap2d_volume();
 test_helm2d_volume();
-test_flex2d_volume();
-test_flex2d_varcoef();
+% Fortran near quadrature, then the radial fit of flex2d.green
+for ifpp = [false true]
+    test_flex2d_volume(ifpp);
+    test_flex2d_varcoef(ifpp);
+end
 test_helm2d_lippmann_schwinger();
 test_fmm();
 
@@ -35,6 +38,13 @@ th = linspace(0, 2*pi, 41); th = th(1:end-1);
 tbd = []; tbd.r = [cos(th); sin(th); zeros(size(th))];
 tbd.n = [cos(th); sin(th); zeros(size(th))];
 tbd = add_patch_ids(S, tbd);
+end
+
+function t = vol_targets(S)
+% a few on-surface targets inside the unit disk
+[r, th] = ndgrid([0.05 0.3 0.55 0.8], [0.3 2.4 4.4]);
+t = []; t.r = [r(:).'.*cos(th(:).'); r(:).'.*sin(th(:).'); 0*r(:).'];
+t = add_patch_ids(S, t);
 end
 
 function t = add_patch_ids(S, t)
@@ -128,9 +138,10 @@ check('helm2d s2trans (v2b)', val, tex(:), tol);
 end
 
 
-function test_flex2d_volume()
+function test_flex2d_volume(ifpp)
 
 tol = 1e-5;
+pp = '';  if ifpp, pp = '(pp) '; end
 eps = 1e-8;
 nu  = 0.3;
 [n, kap] = density_mode();
@@ -151,6 +162,8 @@ curv = (tbd.d(1,:).*tbd.d2(2,:) - tbd.d2(1,:).*tbd.d(2,:)).' ...
     ./ vecnorm(tbd.d(1:2,:)).'.^3;
 
 types = {'s', 'clamped_plate_bcs', 'supported_plate_bcs', 'free_plate_bcs'};
+tv = vol_targets(S);
+xs = tv.r(1,:).'; ys = tv.r(2,:).';
 
 for iz = 1:numel(zks)
     zk = zks{iz};
@@ -158,9 +171,8 @@ for iz = 1:numel(zks)
     zstr = mat2str(zk);
 
     % on-surface (volume-to-volume)
-    A = surfermat(S, kernel3d('flex2d', 's', zk, nu), eps);
-    uex = dxy(T, 0, 0, S.r(1,:).', S.r(2,:).');
-    check(['flex2d s (v2v), zk = ' zstr], A*f, uex, tol);
+    val = surferkerneval(S, kernel3d('flex2d', 's', zk, nu, 'ifppquad', ifpp), f, tv, eps);
+    check([pp 'flex2d s (v2v), zk = ' zstr], val, dxy(T, 0, 0, xs, ys), tol);
 
     % boundary data from the derivatives of u on r = 1
     u    = dxy(T, 0, 0, xb, yb);
@@ -175,19 +187,34 @@ for iz = 1:numel(zks)
     exs = {u, [u, un].', [u, mom].', [mom, shr].'};
 
     for it = 1:numel(types)
-        K = kernel3d('flex2d', types{it}, zk, nu);
+        K = kernel3d('flex2d', types{it}, zk, nu, 'ifppquad', ifpp);
         val = surferkerneval(S, K, f, tbd, eps);
         if it == 1
-            check(['flex2d s (v2b), zk = ' zstr], val, exs{it}, tol);
+            check([pp 'flex2d s (v2b), zk = ' zstr], val, exs{it}, tol);
         else
             % check the two conditions separately, they scale differently
             ex = exs{it};
-            check(['flex2d ' types{it} ' (1), zk = ' zstr], ...
+            check([pp 'flex2d ' types{it} ' (1), zk = ' zstr], ...
                 val(1:2:end), ex(1,:), tol);
-            check(['flex2d ' types{it} ' (2), zk = ' zstr], ...
+            check([pp 'flex2d ' types{it} ' (2), zk = ' zstr], ...
                 val(2:2:end), ex(2,:), tol);
         end
     end
+
+    % sp (pp: covered by clamped) and sg on the boundary curve
+    if ~ifpp
+        val = surferkerneval(S, kernel3d('flex2d', 'sp', zk, 'ifppquad', false), f, tbd, eps);
+        check(['flex2d sp (v2b), zk = ' zstr], val, un, tol);
+    end
+
+    val = surferkerneval(S, kernel3d('flex2d', 'sg', zk, 'ifppquad', ifpp), f, tbd, eps);
+    gex = [dxy(T, 1, 0, xb, yb), dxy(T, 0, 1, xb, yb)].';
+    check([pp 'flex2d sg (v2b), zk = ' zstr], val, gex(:), tol);
+
+    % gradient on-surface (volume-to-volume)
+    val = surferkerneval(S, kernel3d('flex2d', 'sg', zk, 'ifppquad', ifpp), f, tv, eps);
+    gex = [dxy(T, 1, 0, xs, ys), dxy(T, 0, 1, xs, ys)].';
+    check([pp 'flex2d sg (v2v), zk = ' zstr], val, gex(:), tol);
 end
 
 end
@@ -205,7 +232,7 @@ p.beta    = 2 + 0.5*x.*y;
 end
 
 
-function test_flex2d_varcoef()
+function test_flex2d_varcoef(ifpp)
 % Variable coefficient plate kernel K, defined by
 %
 %   L V[f] = alpha f + K[f],
@@ -220,6 +247,7 @@ function test_flex2d_varcoef()
 %          - (c0 alpha + beta) u
 
 tol = 1e-5;
+pp = '';  if ifpp, pp = '(pp) '; end
 eps = 1e-8;
 nu  = 0.3;
 [n, kap] = density_mode();
@@ -229,10 +257,12 @@ zks  = {1.7, [1.7, 0.5i], [1.7, 0], 0};
 zkps = {[1.7, 1.7i], [1.7, 0.5i], [1.7, 0], [0, 0]};
 
 S = disk_and_boundary(8);
-x = S.r(1,:).'; y = S.r(2,:).';
-f = density(x, y);
+f = density(S.r(1,:).', S.r(2,:).');
 
-p = plate_pfun(S);
+% K[f] at a few on-surface targets
+tv = vol_targets(S);
+x = tv.r(1,:).'; y = tv.r(2,:).';
+p = plate_pfun(tv);
 al  = p.alpha(:);
 ax  = p.dalpha(1,:).';  ay  = p.dalpha(2,:).';
 axx = p.d2alpha(1,:).'; axy = p.d2alpha(2,:).'; ayy = p.d2alpha(3,:).';
@@ -255,9 +285,11 @@ for iz = 1:numel(zks)
     ex = 2*(ax.*lapux + ay.*lapuy) + (axx + ayy - b0*al).*lapu ...
         - (1-nu)*(axx.*uyy - 2*axy.*uxy + ayy.*uxx) - (c0*al + be).*u;
 
-    K = kernel3d('flex2d', 'varcoef', zk, nu, @plate_pfun);
-    A = surfermat(S, K, eps);
-    check(['flex2d varcoef (v2v), zk = ' mat2str(zk)], A*f, ex, tol);
+    % varcoef kernel contains its identity term
+    K = kernel3d('flex2d', 'varcoef', zk, nu, @plate_pfun, 'ifppquad', ifpp);
+    assert(isequal(K.diag(tv), al), 'flex2d varcoef: diag is not alpha');
+    val = surferkerneval(S, K, f, tv, eps);
+    check([pp 'flex2d varcoef (v2v), zk = ' mat2str(zk)], val, ex, tol);
 end
 
 end
@@ -328,6 +360,10 @@ kerns = {kernel3d('lap2d', 's'), kernel3d('lap2d', 'sp'), ...
          kernel3d('helm2d', 'sg', 2.3), ...
          kernel3d('helm2d', 's2trans', 2.3, [1; 2]), ...
          kernel3d('flex2d', 's', 1.7), ...
+         kernel3d('flex2d', 'sp', 1.7), ...
+         kernel3d('flex2d', 'sg', 1.7), ...
+         kernel3d('flex2d', 'sp', [1.7, 0]), ...
+         kernel3d('flex2d', 'sg', 0), ...
          kernel3d('flex2d', 'clamped_plate_bcs', 1.7), ...
          kernel3d('flex2d', 'supported_plate_bcs', [1.7, 0.5i], 0.3), ...
          kernel3d('flex2d', 'clamped_plate_bcs', [1.7, 0]), ...

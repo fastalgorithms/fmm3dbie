@@ -35,7 +35,8 @@ n = opdims(2);
 
 obj.eval = @(s,t) zeros(m * size(t.r,2), n * size(s.r,2));
 
-obj.fmm = @(eps,src,targ,sigma) zeros(m * size(targ.r,2), 1);
+obj.fmm = @(eps,src,targ,sigma) zeros(m * size(targ.r,2), ...
+                                      numel(sigma)/(n * size(src.r,2)));
 
 obj.getquad = @(S,eps,varargin) build_empty_quad(m, n, S, varargin);
 

@@ -25,8 +25,11 @@ q = qfun(x,y);
 K = kernel3d('helm2d', 's', zk);
 V = surfermat(S, K, eps);
 
+% system operator I - zk^2 q V
+qt = @(t) reshape(qfun(t.r(1,:), t.r(2,:)), 1, 1, []);
+A  = surfermat(S, kernel3d.eye() - zk^2 * (qt * K), eps);
+
 % solve
-A     = eye(S.npts) - zk^2 * (q .* V);
 rhs   = zk^2 * q .* uinc(x,y);
 sigma = A \ rhs;
 

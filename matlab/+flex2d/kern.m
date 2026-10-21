@@ -15,6 +15,10 @@ function submat= kern(zk,srcinfo,targinfo,type,varargin)
 %        targinfo.n, and targinfo.d and targinfo.d2 where noted
 %   type - string, determines kernel type
 %        type == 's', the Green's function G
+%        type == 'sp', normal derivative at the target, d/dn_x G.
+%               Requires n.
+%        type == 'sg', gradient at the target, [d/dx G; d/dy G],
+%               (2*nt,ns) interleaved by row
 %        type == 'clamped_plate_bcs', clamped plate boundary conditions
 %               applied to G. Requires n.
 %        type == 'free_plate_bcs', free plate boundary conditions applied
@@ -48,6 +52,15 @@ switch lower(type)
 case {'s', 'single'}
 
    submat = flex2d.green(zk,src,targ);
+
+case {'sp', 'sprime'}
+    [~, grad] = flex2d.green(zk,src,targ);
+    submat = grad(:,:,1).*targinfo.n(1,:).' + ...
+             grad(:,:,2).*targinfo.n(2,:).';
+
+case {'sg', 'sgrad'}
+    [~, grad] = flex2d.green(zk,src,targ);
+    submat = reshape(permute(grad,[3,1,2]),2*nt,ns);
 
 case {'clamped_plate_bcs'}
     nxtarg = targinfo.n(1,:).'; 

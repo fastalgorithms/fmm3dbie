@@ -85,7 +85,7 @@ if pgt >= 2
 end
 if pgt >= 3
     h = permute(reshape(U.hesstarg,nd,6,nt),[3 2 1]);
-    F(:,2+dim:end,:) = h(:,ih,:);
+    F(:,1+dim+(1:numel(ih)),:) = h(:,ih,:);
 end
 F = reshape(F,nt,p.ncomp,nq + ndip,ndens);
 

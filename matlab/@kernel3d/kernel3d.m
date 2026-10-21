@@ -27,9 +27,9 @@ classdef kernel3d
 %      'zero'/'zeros'                    (no type needed)
 %      'lap2d'                           's', 'sp', 'sg' (2D, surfer in z = 0)
 %      'helm2d'                          's', 'sp', 'sg', 's2trans' (2D, surfer in z = 0)
-%      'flex2d'    ('plate')             's', 'clamped_plate_bcs',
+%      'flex2d'    ('plate')             's', 'sp', 'sg', 'clamped_plate_bcs',
 %                                        'supported_plate_bcs', 'free_plate_bcs',
-%                                        'varcoef'
+%                                        'varcoef' ('flex_varalpha')
 %                                        (2D, surfer in z = 0)
 %      'one'/'ones'                      (no type needed)
 %

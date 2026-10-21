@@ -158,7 +158,9 @@ end
         nt    = size(t.r, 2);
         fval  = h(t);
         inner = Kfmm(eps, s, t, sigma);
-        out   = reshape(apply_left(fval, reshape(inner, m, 1, nt)), p*nt, 1);
+        ndens = numel(inner)/(m*nt);
+        X     = permute(reshape(inner, m, nt, ndens), [1 3 2]);
+        out   = reshape(permute(apply_left(fval, X), [1 3 2]), p*nt, ndens);
     end
 
     function Q = getquad_left(S, eps, varargin)
@@ -195,7 +197,9 @@ end
     function out = fmm_right(eps, s, t, sigma)
         ns     = size(s.r, 2);
         fval   = h(s);
-        sig_in = reshape(apply_left(fval, reshape(sigma, p, 1, ns)), q, ns);
+        ndens  = numel(sigma)/(p*ns);
+        X      = permute(reshape(sigma, p, ns, ndens), [1 3 2]);
+        sig_in = reshape(permute(apply_left(fval, X), [1 3 2]), q*ns, ndens);
         out    = Kfmm(eps, s, t, sig_in);
     end
 

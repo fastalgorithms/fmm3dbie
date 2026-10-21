@@ -34,10 +34,10 @@ p  = plate_pfun(S, zk);
 cf = flex2d.plate_coefs(p, nu, zk);
 
 % kernel and corrections
+% varcoef kernel contains its identity term
 Kv = kernel3d('flex2d', 'varcoef', zk, nu, @(t) plate_pfun(t, zk));
 opts = []; opts.corrections = true;
 [corv, objover] = surfermat(S, Kv, eps, opts);
-corv = spdiags(p.alpha(:), 0, S.npts, S.npts) + corv;
 lhs  = @(dens) surfermatapply(S, Kv, dens, eps, objover, corv);
 
 % right hand side -L u_inc. For the plane wave, (Delta^2 - zk^4) u_inc = 0,

@@ -6668,13 +6668,16 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
 %
 %  Kernels, with G the flexural Green's function of flex2d.green:
 %     type = 's':                    G
+%     type = 'sp':                   \nabla_{n_x} G
+%     type = 'sg':                   \nabla_x G, [d/dx G; d/dy G]
 %     type = 'clamped_plate_bcs':    [G; \nabla_{n_x} G]
 %     type = 'supported_plate_bcs':  [G; G_{nn} + nu G_{tt}]
 %     type = 'free_plate_bcs':       [G_{nn} + nu G_{tt}; free-plate shear]
 %     type = 'varcoef':              kernel of the variable coefficient
 %                                    plate operator, see FLEX2D.PLATE_COEFS.
 %                                    Needs nu and opts.pfun.
-%  The two-row kernels return Q.wnear of size (2,nquad).
+%  The two-row kernels ('sg' and the plate bcs) return Q.wnear of size
+%  (2,nquad).
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
@@ -6685,7 +6688,8 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
 %    * eps: precision requested
 %    * targinfo: target info (optional, defaults to S)
 %       targinfo.r = (3,nt) target locations, only r(1:2,:) is used
-%       targinfo.n = (3,nt) target normals, required for the plate bcs types
+%       targinfo.n = (3,nt) target normals, required for 'sp' and the
+%          plate bcs types
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv coordinates of target on
@@ -6718,6 +6722,8 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
       case {'s', 'single'}
         kernel_order = -1;
       case {'varcoef'}
+        kernel_order = -1;
+      case {'sp', 'sprime', 'sg', 'sgrad'}
         kernel_order = -1;
       case {'clamped_plate_bcs'}
         kernel_order = -1;
@@ -6841,6 +6847,22 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
         # FORTRAN getnearquad_flex2d_var(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[2] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] w1);
         wnear = w1;
         nker = 1;
+      case {'sp', 'sprime'}
+        # FORTRAN getnearquad_flex2d_neu(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[2] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] w1);
+        wnear = w1;
+        nker = 1;
+      case {'sg', 'sgrad'}
+        % the gradient is sprime with the target normal set to e1, then e2
+        if size(targs,1) < 12, targs(12,:) = 0; end
+        ndtarg = size(targs,1);
+        targs(10:12,:) = 0;
+        targs(10,:) = 1;
+        # FORTRAN getnearquad_flex2d_neu(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[2] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] w1);
+        targs(10,:) = 0;
+        targs(11,:) = 1;
+        # FORTRAN getnearquad_flex2d_neu(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[2] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] w2);
+        wnear = [w1.'; w2.'];
+        nker = 2;
       case {'clamped_plate_bcs'}
         # FORTRAN getnearquad_flex2d_dir(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[2] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] w1);
         # FORTRAN getnearquad_flex2d_neu(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[2] zpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] w2);

@@ -105,20 +105,22 @@ A4 = reshape(A, a1, 1, a2, 1);
 
     function out = fmm_col(eps, s, t, sigma)
         % A is a column vector: post-multiply the fmm output
+        ndens = numel(sigma)/(Q*size(s.r,2));
         u  = Kfmm(eps, s, t, sigma);
-        nt = numel(u)/m;
-        out = reshape(A(:) .* reshape(u, m, nt), P*nt, 1);
+        nt = numel(u)/(m*ndens);
+        out = reshape(A(:) .* reshape(u, m, nt, ndens), P*nt, ndens);
     end
 
     function out = fmm_row(eps, s, t, sigma)
         % A is a row vector: pre-multiply the density
-        ns  = numel(sigma)/Q;
-        sig = A(:) .* reshape(sigma, Q, ns);
+        ns  = size(s.r,2);
+        ndens = numel(sigma)/(Q*ns);
+        sig = A(:) .* reshape(sigma, Q, ns, ndens);
         if q == 1 && Q > 1
             % K has a single input channel: [a1 K, a2 K, ...] sigma
             sig = sum(sig, 1);
         end
-        out = Kfmm(eps, s, t, reshape(sig, q*ns, 1));
+        out = Kfmm(eps, s, t, reshape(sig, q*ns, ndens));
     end
 
     function Qm = getquad_(S, eps, varargin)

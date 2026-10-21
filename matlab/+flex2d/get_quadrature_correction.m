@@ -14,13 +14,16 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
 %
 %  Kernels, with G the flexural Green's function of flex2d.green:
 %     type = 's':                    G
+%     type = 'sp':                   \nabla_{n_x} G
+%     type = 'sg':                   \nabla_x G, [d/dx G; d/dy G]
 %     type = 'clamped_plate_bcs':    [G; \nabla_{n_x} G]
 %     type = 'supported_plate_bcs':  [G; G_{nn} + nu G_{tt}]
 %     type = 'free_plate_bcs':       [G_{nn} + nu G_{tt}; free-plate shear]
 %     type = 'varcoef':              kernel of the variable coefficient
 %                                    plate operator, see FLEX2D.PLATE_COEFS.
 %                                    Needs nu and opts.pfun.
-%  The two-row kernels return Q.wnear of size (2,nquad).
+%  The two-row kernels ('sg' and the plate bcs) return Q.wnear of size
+%  (2,nquad).
 %
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
@@ -31,7 +34,8 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
 %    * eps: precision requested
 %    * targinfo: target info (optional, defaults to S)
 %       targinfo.r = (3,nt) target locations, only r(1:2,:) is used
-%       targinfo.n = (3,nt) target normals, required for the plate bcs types
+%       targinfo.n = (3,nt) target normals, required for 'sp' and the
+%          plate bcs types
 %       targinfo.patch_id (nt,) patch id of target, = -1, if target
 %          is off-surface (optional)
 %       targinfo.uvs_targ (2,nt) local uv coordinates of target on
@@ -64,6 +68,8 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
       case {'s', 'single'}
         kernel_order = -1;
       case {'varcoef'}
+        kernel_order = -1;
+      case {'sp', 'sprime', 'sg', 'sgrad'}
         kernel_order = -1;
       case {'clamped_plate_bcs'}
         kernel_order = -1;
@@ -189,6 +195,25 @@ function Q = get_quadrature_correction(S, type, zk, nu, eps, targinfo, opts)
 [w1] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, w1, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
         wnear = w1;
         nker = 1;
+      case {'sp', 'sprime'}
+        mex_id_ = 'getnearquad_flex2d_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])';
+[w1] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, w1, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
+        wnear = w1;
+        nker = 1;
+      case {'sg', 'sgrad'}
+        % the gradient is sprime with the target normal set to e1, then e2
+        if size(targs,1) < 12, targs(12,:) = 0; end
+        ndtarg = size(targs,1);
+        targs(10:12,:) = 0;
+        targs(10,:) = 1;
+        mex_id_ = 'getnearquad_flex2d_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])';
+[w1] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, w1, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
+        targs(10,:) = 0;
+        targs(11,:) = 1;
+        mex_id_ = 'getnearquad_flex2d_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])';
+[w2] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, w2, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
+        wnear = [w1.'; w2.'];
+        nker = 2;
       case {'clamped_plate_bcs'}
         mex_id_ = 'getnearquad_flex2d_dir(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[x])';
 [w1] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, w1, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
@@ -254,3 +279,5 @@ end
 %
 %
 %-------------------------------------------------
+%
+

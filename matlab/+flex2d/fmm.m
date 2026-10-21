@@ -22,21 +22,49 @@ function varargout = fmm(eps, zk, srcinfo, targinfo, type, sigma, nu, pfun)
 %                need targinfo.n, and 'supported_plate_bcs' targinfo.d
 %   type - string, kernel type as in FLEX2D.KERN
 %                type == 's'
+%                type == 'sp', normal derivative at the target
+%                type == 'sg', gradient at the target, (2*nt,1) with
+%                    d/dx and d/dy interleaved by target
 %                type == 'clamped_plate_bcs'
 %                type == 'supported_plate_bcs'
 %                type == 'varcoef', needs nu and pfun, see FLEX2D.KERN
-%   sigma - (ns,1) density, already multiplied by quadrature weights
+%   sigma - (ns,ndens) densities, already multiplied by quadrature
+%           weights
 %   nu - Poisson's ratio, needed for 'supported_plate_bcs'
 %
 % Output:
-%   pot - (nt,1) potential, or (2*nt,1) with the two conditions
-%         interleaved for the plate bcs kernels
+%   pot - (nt,ndens) potential, or (2*nt,ndens) with the two conditions
+%         interleaved by target for the plate bcs kernels
 %
 % see also FLEX2D.KERN, FLEX2D.GREEN
 
 if ( nargout == 0 )
     warning('FLEX2D:fmm:empty', ...
         'Nothing to compute in FLEX2D.FMM. Returning empty array.');
+    return
+end
+if ( nargin < 7 ), nu = []; end
+if ( nargin < 8 ), pfun = []; end
+
+ns = size(srcinfo.r(:,:), 2);
+ndens = numel(sigma)/ns;
+if ( ndens > 1 )
+    sigma = reshape(sigma, ns, ndens);
+    out = cell(1, max(nargout, 1));
+    varargout = cell(1, numel(out));
+    for j = 1:ndens
+        [out{:}] = flex2d.fmm(eps, zk, srcinfo, targinfo, type, sigma(:,j), nu, pfun);
+        if ( j == 1 )
+            varargout{1} = zeros(numel(out{1}), ndens, 'like', out{1});
+            for k = 2:numel(out)
+                varargout{k} = zeros([ndens, size(out{k})], 'like', out{k});
+            end
+        end
+        varargout{1}(:,j) = out{1}(:);
+        for k = 2:numel(out)
+            varargout{k}(j,:,:) = reshape(out{k}, [1, size(out{k})]);
+        end
+    end
     return
 end
 
@@ -55,12 +83,14 @@ end
 switch lower(type)
     case {'s', 'single'}
         pgt = 1;
-    case {'clamped_plate_bcs'}
+    case {'sp', 'sprime', 'sg', 'sgrad', 'clamped_plate_bcs'}
         pgt = 2;
     case {'supported_plate_bcs'}
         pgt = 3;
     case {'varcoef'}
         pgt = 3;
+    case {'green'}
+        pgt = max(nargout, 1);
     otherwise
         error('FLEX2D:fmm:type', 'Unsupported kernel type ''%s''.', type);
 end
@@ -70,6 +100,8 @@ try
 catch
     targuse = targinfo(1:2,:);
 end
+
+needgl = strcmpi(type, 'varcoef');
 
 grad = []; hess = [];
 if ( isbh )
@@ -102,23 +134,24 @@ else
     if ( pgt > 2 ), hess = U.hesstarg - U2.hesstarg; end
 
     % grad Lap G, using Lap G_k = -k^2 G_k away from the source
-    if ( strcmpi(type, 'varcoef') )
+    if ( needgl )
         gradlap = -zk1^2*U.gradtarg + zk2^2*U2.gradtarg;
     end
 end
 
+if ( needgl && isbh )
+    % Lap G = (log r + 1)/(2 pi), so grad Lap G = grad log r/(2 pi)
+    srcuse = [];
+    srcuse.sources = srcinfo.r(1:2,:);
+    srcuse.nd = 2;
+    srcuse.charges = [real(sigma(:).'); imag(sigma(:).')]/(2*pi);
+    U = rfmm2d(eps, srcuse, 0, targuse, 2);
+    nt = size(targuse, 2);
+    gl = reshape(U.gradtarg, 2, 2, nt);
+    gradlap = reshape(gl(1,:,:) + 1i*gl(2,:,:), 2, nt);
+end
+
 if ( strcmpi(type, 'varcoef') )
-    if ( isbh )
-        % Lap G = (log r + 1)/(2 pi), so grad Lap G = grad log r/(2 pi)
-        srcuse = [];
-        srcuse.sources = srcinfo.r(1:2,:);
-        srcuse.nd = 2;
-        srcuse.charges = [real(sigma(:).'); imag(sigma(:).')]/(2*pi);
-        U = rfmm2d(eps, srcuse, 0, targuse, 2);
-        nt = size(targuse, 2);
-        gl = reshape(U.gradtarg, 2, 2, nt);
-        gradlap = reshape(gl(1,:,:) + 1i*gl(2,:,:), 2, nt);
-    end
     t = targinfo;
     if ( isnumeric(t) ), t = []; t.r = targinfo; end
     cf = flex2d.plate_coefs(pfun(t), nu, zk);
@@ -130,8 +163,23 @@ if ( strcmpi(type, 'varcoef') )
 end
 
 switch lower(type)
+    case {'green'}
+        % G, grad (2,nt), Hessian (3,nt: xx, xy, yy)
+        varargout = {val(:).', grad, hess};
+        varargout = varargout(1:max(nargout, 1));
+        return
+
     case {'s', 'single'}
         varargout{1} = val(:);
+        return
+
+    case {'sp', 'sprime'}
+        varargout{1} = (grad(1,:).*targinfo.n(1,:) + ...
+                        grad(2,:).*targinfo.n(2,:)).';
+        return
+
+    case {'sg', 'sgrad'}
+        varargout{1} = grad(:);
         return
 
     case {'clamped_plate_bcs'}
