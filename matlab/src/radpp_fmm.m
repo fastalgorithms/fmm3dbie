@@ -22,7 +22,7 @@ function pot = radpp_fmm(fmmfun,p,eps,srcinfo,targinfo,sigma)
 %   pot  - potential (opdims(1)*nt x ndens)
 
 m = p.opdims(1);  n = p.opdims(2);
-ns = size(srcinfo.r,2);
+ns = size(srcinfo.r(:,:), 2);
 ndens = numel(sigma)/(n*ns);
 sigma = reshape(sigma,n,ns,ndens);
 
@@ -85,7 +85,7 @@ if pgt >= 2
 end
 if pgt >= 3
     h = permute(reshape(U.hesstarg,nd,6,nt),[3 2 1]);
-    F(:,1+dim+(1:numel(ih)),:) = h(:,ih,:);
+    F(:,2+dim:end,:) = h(:,ih,:);
 end
 F = reshape(F,nt,p.ncomp,nq + ndip,ndens);
 

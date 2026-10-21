@@ -1,72 +1,54 @@
-function varargout = fmm(eps, zk, srcinfo, targinfo, type, sigma, nu, pfun)
-%FLEX2D.FMM   Fast multipole evaluation of the 2D flexural kernels.
+function U = fmm(eps, zk, srcuse, pg, targ, pgt, iflap)
+%FLEX2D.FMM   FMM for flex2d.green, or its Laplacian, with the interface
+% of HFMM2D. Charges only, pg = 0.
 %
-% Syntax: pot = flex2d.fmm(eps, zk, srcinfo, targinfo, type, sigma, nu)
+% Syntax: U = flex2d.fmm(eps, zk, srcuse, pg, targ, pgt)
+%         U = flex2d.fmm(eps, zk, srcuse, pg, targ, pgt, iflap)
+%
+% With iflap = true the green is H = Lap G instead of G.
 %
 % Uses G = (G_{zk1} - G_{zk2})/(zk1^2 - zk2^2), with G_k the Helmholtz
 % Green's function (the Laplace one if zk2 = 0), so each call is two
-% FMM2D calls (hfmm2d, rfmm2d). The biharmonic case (zk = 0) uses
+% FMM2D calls (hfmm2d, rfmm2d), and Lap G_k = -k^2 G_k for H. The
+% biharmonic case (zk = 0) uses
 %
 %   |x-y|^2 log|x-y| = (|x|^2 - 2 x.y + |y|^2) log|x-y|,
 %
 % i.e. four Laplace FMMs with charges sigma, sigma*y1, sigma*y2 and
 % sigma*|y|^2, done in one rfmm2d call, with the origin shifted to the
-% centroid of the sources to limit cancellation. The free plate
-% boundary condition (third derivatives) is not supported.
+% centroid of the sources to limit cancellation, and H = (log r + 1)/(2 pi).
 %
-% Input:
-%   eps - precision requested
-%   zk - wavenumbers [zk1, zk2], as in FLEX2D.KERN
-%   srcinfo - sources, srcinfo.r (2 or 3,ns)
-%   targinfo - targets, targinfo.r (2 or 3,nt); the plate bcs kernels
-%                need targinfo.n, and 'supported_plate_bcs' targinfo.d
-%   type - string, kernel type as in FLEX2D.KERN
-%                type == 's'
-%                type == 'sp', normal derivative at the target
-%                type == 'sg', gradient at the target, (2*nt,1) with
-%                    d/dx and d/dy interleaved by target
-%                type == 'clamped_plate_bcs'
-%                type == 'supported_plate_bcs'
-%                type == 'varcoef', needs nu and pfun, see FLEX2D.KERN
-%   sigma - (ns,ndens) densities, already multiplied by quadrature
-%           weights
-%   nu - Poisson's ratio, needed for 'supported_plate_bcs'
-%
-% Output:
-%   pot - (nt,ndens) potential, or (2*nt,ndens) with the two conditions
-%         interleaved by target for the plate bcs kernels
-%
-% see also FLEX2D.KERN, FLEX2D.GREEN
+% see also FLEX2D.GREEN, FMM2DTO3D
 
-if ( nargout == 0 )
-    warning('FLEX2D:fmm:empty', ...
-        'Nothing to compute in FLEX2D.FMM. Returning empty array.');
-    return
+if ( nargin < 7 ), iflap = false; end
+if ( pg ~= 0 || isfield(srcuse, 'dipoles') )
+    error('FLEX2D:fmm:pg', 'Only charges and target outputs.');
 end
-if ( nargin < 7 ), nu = []; end
-if ( nargin < 8 ), pfun = []; end
+nd = 1;
+if ( isfield(srcuse, 'nd') ), nd = srcuse.nd; end
+ns = size(srcuse.sources, 2);
+nt = size(targ, 2);
+q = reshape(srcuse.charges, nd, ns);
+src = srcuse.sources(1:2,:);
+t = targ(1:2,:);
 
-ns = size(srcinfo.r(:,:), 2);
-ndens = numel(sigma)/ns;
-if ( ndens > 1 )
-    sigma = reshape(sigma, ns, ndens);
-    out = cell(1, max(nargout, 1));
-    varargout = cell(1, numel(out));
-    for j = 1:ndens
-        [out{:}] = flex2d.fmm(eps, zk, srcinfo, targinfo, type, sigma(:,j), nu, pfun);
-        if ( j == 1 )
-            varargout{1} = zeros(numel(out{1}), ndens, 'like', out{1});
-            for k = 2:numel(out)
-                varargout{k} = zeros([ndens, size(out{k})], 'like', out{k});
-            end
-        end
-        varargout{1}(:,j) = out{1}(:);
-        for k = 2:numel(out)
-            varargout{k}(j,:,:) = reshape(out{k}, [1, size(out{k})]);
-        end
-    end
-    return
+U = [];
+U.pottarg = zeros(nd, nt);
+if ( pgt > 1 ), U.gradtarg = zeros(nd, 2, nt); end
+if ( pgt > 2 ), U.hesstarg = zeros(nd, 3, nt); end
+for j = 1:nd
+    [val, grad, hess] = green_fmm(eps, zk, src, t, q(j,:), pgt, iflap);
+    U.pottarg(j,:) = val;
+    if ( pgt > 1 ), U.gradtarg(j,:,:) = reshape(grad, 1, 2, nt); end
+    if ( pgt > 2 ), U.hesstarg(j,:,:) = reshape(hess, 1, 3, nt); end
 end
+
+end
+
+
+function [val, grad, hess] = green_fmm(eps, zk, src, targ, sigma, pgt, iflap)
+% G (or H = Lap G) with charges sigma, its gradient (2,nt) and Hessian
+% (3,nt: xx, xy, yy)
 
 zk = zk(:).';
 if ( isscalar(zk) ), zk = [zk, 1i*zk]; end
@@ -80,124 +62,59 @@ else
     isbh = false;
 end
 
-switch lower(type)
-    case {'s', 'single'}
-        pgt = 1;
-    case {'sp', 'sprime', 'sg', 'sgrad', 'clamped_plate_bcs'}
-        pgt = 2;
-    case {'supported_plate_bcs'}
-        pgt = 3;
-    case {'varcoef'}
-        pgt = 3;
-    case {'green'}
-        pgt = max(nargout, 1);
-    otherwise
-        error('FLEX2D:fmm:type', 'Unsupported kernel type ''%s''.', type);
-end
-
-try
-    targuse = targinfo.r(1:2,:);
-catch
-    targuse = targinfo(1:2,:);
-end
-
-needgl = strcmpi(type, 'varcoef');
-
 grad = []; hess = [];
-if ( isbh )
-    [val, grad, hess] = bh_fmm(eps, srcinfo.r(1:2,:), targuse, sigma, pgt);
-else
+if ( isbh && iflap )
     srcuse = [];
-    srcuse.sources = srcinfo.r(1:2,:);
-    srcuse.charges = sigma(:).'/(zk1^2 - zk2^2);
-
-    % G_{zk1} part
-    U = hfmm2d(eps, zk1, srcuse, 0, targuse, pgt);
-
-    % minus G_{zk2} part
-    if ( zk2 ~= 0 )
-        U2 = hfmm2d(eps, zk2, srcuse, 0, targuse, pgt);
-    else
-        % Laplace, G_0 = -log|x-y|/(2 pi), real charges only
-        c = srcuse.charges;
-        srcuse.charges = -real(c)/(2*pi);
-        U2 = rfmm2d(eps, srcuse, 0, targuse, pgt);
-        srcuse.charges = -imag(c)/(2*pi);
-        U2i = rfmm2d(eps, srcuse, 0, targuse, pgt);
-        U2.pottarg = U2.pottarg + 1i*U2i.pottarg;
-        if ( pgt > 1 ), U2.gradtarg = U2.gradtarg + 1i*U2i.gradtarg; end
-        if ( pgt > 2 ), U2.hesstarg = U2.hesstarg + 1i*U2i.hesstarg; end
-    end
-
-    val = U.pottarg - U2.pottarg;
-    if ( pgt > 1 ), grad = U.gradtarg - U2.gradtarg; end
-    if ( pgt > 2 ), hess = U.hesstarg - U2.hesstarg; end
-
-    % grad Lap G, using Lap G_k = -k^2 G_k away from the source
-    if ( needgl )
-        gradlap = -zk1^2*U.gradtarg + zk2^2*U2.gradtarg;
-    end
-end
-
-if ( needgl && isbh )
-    % Lap G = (log r + 1)/(2 pi), so grad Lap G = grad log r/(2 pi)
-    srcuse = [];
-    srcuse.sources = srcinfo.r(1:2,:);
+    srcuse.sources = src;
     srcuse.nd = 2;
-    srcuse.charges = [real(sigma(:).'); imag(sigma(:).')]/(2*pi);
-    U = rfmm2d(eps, srcuse, 0, targuse, 2);
-    nt = size(targuse, 2);
-    gl = reshape(U.gradtarg, 2, 2, nt);
-    gradlap = reshape(gl(1,:,:) + 1i*gl(2,:,:), 2, nt);
+    srcuse.charges = [real(sigma); imag(sigma)]/(2*pi);
+    U = rfmm2d(eps, srcuse, 0, targ, pgt);
+    nt = size(targ, 2);
+    P = reshape(U.pottarg, 2, nt);
+    val = P(1,:) + 1i*P(2,:) + sum(sigma)/(2*pi);
+    if ( pgt > 1 )
+        G = reshape(U.gradtarg, 2, 2, nt);
+        grad = reshape(G(1,:,:) + 1i*G(2,:,:), 2, nt);
+    end
+    if ( pgt > 2 )
+        H = reshape(U.hesstarg, 2, 3, nt);
+        hess = reshape(H(1,:,:) + 1i*H(2,:,:), 3, nt);
+    end
+    return
 end
-
-if ( strcmpi(type, 'varcoef') )
-    t = targinfo;
-    if ( isnumeric(t) ), t = []; t.r = targinfo; end
-    cf = flex2d.plate_coefs(pfun(t), nu, zk);
-    pot = cf(1,:).*gradlap(1,:) + cf(2,:).*gradlap(2,:) + ...
-        cf(3,:).*(hess(1,:) + hess(3,:)) + cf(4,:).*hess(3,:) + ...
-        cf(5,:).*hess(1,:) + cf(6,:).*hess(2,:) + cf(7,:).*val(:).';
-    varargout{1} = pot(:);
+if ( isbh )
+    [val, grad, hess] = bh_fmm(eps, src, targ, sigma, pgt);
     return
 end
 
-switch lower(type)
-    case {'green'}
-        % G, grad (2,nt), Hessian (3,nt: xx, xy, yy)
-        varargout = {val(:).', grad, hess};
-        varargout = varargout(1:max(nargout, 1));
-        return
+a1 = 1;  a2 = 1;
+if ( iflap ), a1 = -zk1^2;  a2 = -zk2^2; end
 
-    case {'s', 'single'}
-        varargout{1} = val(:);
-        return
+srcuse = [];
+srcuse.sources = src;
+srcuse.charges = sigma/(zk1^2 - zk2^2);
 
-    case {'sp', 'sprime'}
-        varargout{1} = (grad(1,:).*targinfo.n(1,:) + ...
-                        grad(2,:).*targinfo.n(2,:)).';
-        return
+% G_{zk1} part
+U = hfmm2d(eps, zk1, srcuse, 0, targ, pgt);
 
-    case {'sg', 'sgrad'}
-        varargout{1} = grad(:);
-        return
-
-    case {'clamped_plate_bcs'}
-        nx = targinfo.n(1,:); ny = targinfo.n(2,:);
-        row2 = grad(1,:).*nx + grad(2,:).*ny;
-
-    case {'supported_plate_bcs'}
-        nx = targinfo.n(1,:); ny = targinfo.n(2,:);
-        ds = sqrt(targinfo.d(1,:).^2 + targinfo.d(2,:).^2);
-        tx = targinfo.d(1,:)./ds; ty = targinfo.d(2,:)./ds;
-        row2 = hess(1,:).*nx.*nx + 2*hess(2,:).*nx.*ny + hess(3,:).*ny.*ny + ...
-            nu*(hess(1,:).*tx.*tx + 2*hess(2,:).*tx.*ty + hess(3,:).*ty.*ty);
+% minus G_{zk2} part
+if ( zk2 ~= 0 )
+    U2 = hfmm2d(eps, zk2, srcuse, 0, targ, pgt);
+else
+    % Laplace, G_0 = -log|x-y|/(2 pi), real charges only
+    c = srcuse.charges;
+    srcuse.charges = -real(c)/(2*pi);
+    U2 = rfmm2d(eps, srcuse, 0, targ, pgt);
+    srcuse.charges = -imag(c)/(2*pi);
+    U2i = rfmm2d(eps, srcuse, 0, targ, pgt);
+    U2.pottarg = U2.pottarg + 1i*U2i.pottarg;
+    if ( pgt > 1 ), U2.gradtarg = U2.gradtarg + 1i*U2i.gradtarg; end
+    if ( pgt > 2 ), U2.hesstarg = U2.hesstarg + 1i*U2i.hesstarg; end
 end
 
-pot = zeros(2*numel(val), 1, 'like', val);
-pot(1:2:end) = val;
-pot(2:2:end) = row2;
-varargout{1} = pot;
+val = a1*U.pottarg - a2*U2.pottarg;
+if ( pgt > 1 ), grad = a1*U.gradtarg - a2*U2.gradtarg; end
+if ( pgt > 2 ), hess = a1*U.hesstarg - a2*U2.hesstarg; end
 
 end
 

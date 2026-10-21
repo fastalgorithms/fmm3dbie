@@ -54,7 +54,7 @@ function [xmat,nover] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, 
         targinfo.uvs_targ = obj.uvs_targ;
     end
 
-    [ndtarg,ntarg] = size(targinfo.r);
+    [ndtarg,ntarg] = size(targinfo.r(:,:));
     
     if isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id')
       patch_id = targinfo.patch_id;

@@ -57,8 +57,7 @@ obj = kernel3d.radpp(mkgreen({part}, 1), [], type, pos{:}, varargin{:});
 % built-in types: kernels of one type on different greens add as that
 % type on the sum of the greens
 obj.params.key = [];
-% (not flex_varalpha: its weights depend on zk)
-if ischar(type) && ~strcmpi(type, 'flex_varalpha')
+if ischar(type)
     p = obj.params;
     obj.params.key = {p.spec.name, p.kcoefs, p.nu, p.dim};
 end
@@ -440,7 +439,7 @@ for k = 1:numel(sp)
     end
 end
 if isequal(W, 0)
-    W = zeros(size(t.r,2), nc, size(sp(1).ent, 1));
+    W = zeros(size(t.r(:,:), 2), nc, size(sp(1).ent, 1));
 end
 end
 
@@ -515,7 +514,7 @@ end
 
 
 function W = wblocks(t, sp, lam, map, nc, f)
-nt = size(t.r, 2);
+nt = size(t.r(:,:), 2);
 W = zeros(nt, nc, size(map, 1));
 Wb = cell(numel(sp), 1);
 for b = unique(map(:,1)).'

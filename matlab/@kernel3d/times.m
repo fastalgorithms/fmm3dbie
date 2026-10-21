@@ -105,7 +105,7 @@ A4 = reshape(A, a1, 1, a2, 1);
 
     function out = fmm_col(eps, s, t, sigma)
         % A is a column vector: post-multiply the fmm output
-        ndens = numel(sigma)/(Q*size(s.r,2));
+        ndens = numel(sigma)/(Q*size(s.r(:,:), 2));
         u  = Kfmm(eps, s, t, sigma);
         nt = numel(u)/(m*ndens);
         out = reshape(A(:) .* reshape(u, m, nt, ndens), P*nt, ndens);
@@ -113,7 +113,7 @@ A4 = reshape(A, a1, 1, a2, 1);
 
     function out = fmm_row(eps, s, t, sigma)
         % A is a row vector: pre-multiply the density
-        ns  = size(s.r,2);
+        ns  = size(s.r(:,:), 2);
         ndens = numel(sigma)/(Q*ns);
         sig = A(:) .* reshape(sigma, Q, ns, ndens);
         if q == 1 && Q > 1

@@ -25,11 +25,11 @@ classdef kernel3d
 %                                         fit of a radial Green's function,
 %                                         see KERNEL3D.RADPP)
 %      'zero'/'zeros'                    (no type needed)
-%      'lap2d'                           's', 'sp', 'sg' (2D, surfer in z = 0)
+%      'lap2d'                           's', 'sp', 'sg', 's2trans' (2D, surfer in z = 0)
 %      'helm2d'                          's', 'sp', 'sg', 's2trans' (2D, surfer in z = 0)
 %      'flex2d'    ('plate')             's', 'sp', 'sg', 'clamped_plate_bcs',
 %                                        'supported_plate_bcs', 'free_plate_bcs',
-%                                        'varcoef' ('flex_varalpha')
+%                                        'flex_varalpha' ('varcoef')
 %                                        (2D, surfer in z = 0)
 %      'one'/'ones'                      (no type needed)
 %

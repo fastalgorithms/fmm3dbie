@@ -44,8 +44,8 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
     end
 
     function out = eval_(s, t)
-        [~, ns] = size(s.r);
-        [~, nt] = size(t.r);
+        ns = size(s.r(:,:), 2);
+        nt = size(t.r(:,:), 2);
         [ridx, cidx] = make_idx(nt, ns);
         out = zeros(opdims(1)*nt, opdims(2)*ns);
         for k = 1:m
@@ -57,11 +57,11 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
 
     function varargout = fmm_(eps, s, t, sigma)
         if isstruct(t)
-            [~, nt] = size(t.r);
+            nt = size(t.r(:,:), 2);
         else
             [~, nt] = size(t);
         end
-        [~, ns] = size(s.r);
+        ns = size(s.r(:,:), 2);
         [ridx, cidx] = make_idx(nt, ns);
         ndens = numel(sigma)/(opdims(2)*ns);
         sigma = reshape(sigma, opdims(2)*ns, ndens);
@@ -122,7 +122,7 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
 
     function D = diag_(t)
         % assemble the interleaved (opdims(1)*nt x opdims(2)) stacked diag
-        nt = size(t.r, 2);
+        nt = size(t.r(:,:), 2);
         D  = zeros(opdims(1)*nt, opdims(2));
         for k = 1:m
             for l = 1:n

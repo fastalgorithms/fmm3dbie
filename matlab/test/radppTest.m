@@ -6,6 +6,7 @@
 rng(42);
 
 test_fit_limits();
+test_fit_battery();
 test_radpp_eval_fortran();
 % 2D (in-plane derivatives, dim = 2)
 test_tensors_2d();
@@ -1361,7 +1362,7 @@ names = {{'s', 'single', 'slp'}, {'d', 'double', 'dlp'}, ...
          {'trans_rep', 'transmission_rep', 'trep'}, ...
          {'trep_prime', 'trepp', 'trep_p', 'trans_rep_prime', 'trans_rep_p'}, ...
          {'trep_grad', 'trepg', 'trep_g', 'trans_rep_grad', 'trans_rep_g'}, ...
-         {'clamped_bc', 'clamped', 'clamped_plate_bcs', 's2trans', 's2t'}, ...
+         {'clamped_bc', 'clamped', 'clamped_plate_bcs'}, {'s2trans', 's2t'}, ...
          {'d2trans', 'd2t'}, {'c2trans', 'c2t', 'c2tr'}};
 src.r = randn(3, 5);  src.n = src.r./vecnorm(src.r);
 targ.r = 2*randn(3, 6);  targ.n = targ.r./vecnorm(targ.r);
@@ -1640,7 +1641,7 @@ end
 
 
 function test_radgreen_2d()
-% radgreen with dim 2 greens: flex2d kernels, packed vs full derivatives
+% radgreen with dim 2 greens: flex2d.green against its fit, packed vs full derivatives
 
 nu = 0.3;
 src = []; src.r = [randn(2, 7); zeros(1, 7)];
@@ -1649,21 +1650,20 @@ t = []; t.r = [2*cos(th); 2*sin(th); 0*th];
 t.n = [cos(th); sin(th); 0*th];
 t.d = [-2*sin(th); 2*cos(th); 0*th];
 t.d2 = -t.r;
-tab = {'s', 's'; 'sp', 'sp'; 'grad', 'sg'; 'clamped_bc', 'clamped_plate_bcs'; ...
-       'supported_bc', 'supported_plate_bcs'; 'free_bc', 'free_plate_bcs'; ...
-       'flex_varalpha', 'varcoef'};
+types = {'s', 'sp', 'grad', 'clamped_bc', 'supported_bc', 'free_bc'};
 for zk = {1.7, [1.7, 0.5i], [1.7, 0], 0}
     z = zk{1};
     if isscalar(z) && z ~= 0, z = [z, 1i*z]; end
-    for i = 1:size(tab, 1)
-        K = kernel3d(@(s,t) flex2d.green(z, s, t), tab{i,1}, 'dim', 2, ...
-                     'nu', nu, 'pfun', @platep, 'zk', z);
+    g = @(s,t) flex2d.green(z, s, t);
+    for i = 1:numel(types)
+        args = {'dim', 2, 'nu', nu, 'zk', z};
+        K = kernel3d(g, types{i}, args{:});
         A = K.eval(src, t);
-        B = flex2d.kern(z, src, t, tab{i,2}, nu, @platep);
+        B = kernel3d.radpp(g, [1e-4 10], types{i}, args{:}).eval(src, t);
         err = norm(A - B)/norm(B);
-        assert(err < 1e-12, 'radgreen 2d %s, zk = %s: %.1e', tab{i,1}, ...
+        assert(err < 1e-10, 'radgreen 2d %s, zk = %s: %.1e', types{i}, ...
                mat2str(z), err);
-        assert(all(K.params.ipv == 0), 'radgreen 2d %s: ipv %s', tab{i,1}, ...
+        assert(all(K.params.ipv == 0), 'radgreen 2d %s: ipv %s', types{i}, ...
                mat2str(K.params.ipv));
     end
 end
@@ -1673,29 +1673,44 @@ A = kernel3d(@gauss, 'free', 'nu', nu, 'dim', 2).eval(src, t);
 B = kernel3d(@gaussfull2, 'free', 'nu', nu, 'dim', 2).eval(src, t);
 assert(norm(A - B) <= 1e-14*norm(A), 'radgreen 2d: packed vs full');
 
-% flex_varalpha kernels with different pfun add
-g = @(s,t) flex2d.green([1.7, 0.5i], s, t);
-K1 = kernel3d(g, 'flex_varalpha', 'dim', 2, 'nu', nu, 'pfun', @platep, ...
-              'zk', [1.7, 0.5i]);
-K2 = kernel3d(g, 'flex_varalpha', 'dim', 2, 'nu', nu, ...
-              'pfun', @(t) platep(t, 2), 'zk', [1.7, 0.5i]);
-K = K1 + K2;
-A = K.eval(src, t);
-B = K1.eval(src, t) + K2.eval(src, t);
-assert(norm(A - B) <= 1e-13*norm(B), 'radgreen 2d: flex_varalpha sum');
-
 end
 
 
-function p = platep(t, a)
-% smooth plate coefficients for flex_varalpha
-if nargin < 2, a = 1; end
-x = t.r(1,:);  y = t.r(2,:);
-g = 0.3*a*exp(-(x.^2 + y.^2));
-p = [];
-p.alpha   = 1 + g;
-p.dalpha  = [-2*x.*g; -2*y.*g];
-p.d2alpha = [(4*x.^2 - 2).*g; 4*x.*y.*g; (4*y.^2 - 2).*g];
-p.beta    = 2 + 0.5*a*x.*y;
+function test_fit_battery()
+% radpp_fit resolves singular, smooth, oscillatory and flexural profiles
+% on short and long ranges, at any scale, without warnings
+
+prof = { ...
+  'r^m log r', @(r) [log(r), r.*log(r), r.^2.*log(r), r.^3.*log(r)]; ...
+  '1/r^p',     @(r) [1./r, 1./r.^2, 1./r.^3]; ...
+  'smooth',    @(r) [exp(-r.^2), exp(-r)]; ...
+  'helm 3d',   @(r) [exp(1i*r)./r, exp(30i*r)./r]; ...
+  'helm 2d',   @(r) [besselh(0, 1, 2*r), besselh(0, 1, 30*r)]; ...
+  'flex',      @(r) [flexprof(1.7, r), flexprof([1.7, 0.5i], r), ...
+                     flexprof([1.7, 0], r), flexprof(0, r)]};
+ranges = [1e-9 1; 1e-4 10; 1e-6 100];
+
+for i = 1:size(prof, 1)
+    for j = 1:size(ranges, 1)
+        for sc = [1 1e6 1e-6]
+            g = @(r) sc*prof{i,2}(r);
+            a = ranges(j,1);  b = ranges(j,2);
+            lbl = sprintf('%s on [%g, %g], scale %g', prof{i,1}, a, b, sc);
+            lastwarn('');
+            [~, ~, info] = radpp_fit(g, a, b, struct('eps', 1e-12));
+            assert(isempty(lastwarn()), 'radpp_fit %s: %s', lbl, lastwarn());
+            assert(info.err < 1e-11, 'radpp_fit %s: error %.1e', lbl, info.err);
+            r = min(max(logspace(log10(a), log10(b), 2000).', a), b);
+            fv = g(r);
+            pv = radpp_eval(r, info.breaks, info.coefs);
+            fsc = max(abs(fv(r >= (a + b)/2, :)), [], 1);
+            fsc(fsc == 0) = 1;
+            den = max(movmax(abs(fv), 101), fsc);
+            err = max(abs(pv - fv)./den, [], 'all');
+            assert(err < 1e-10, 'radpp_fit %s: eval error %.1e', lbl, err);
+        end
+    end
+end
+
 end
 

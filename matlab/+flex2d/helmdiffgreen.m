@@ -205,41 +205,41 @@ nterms = 14;
 const1 = (io4+(log(2)-gam-log(k))*o2p);
 
 % relevant parts of hankel function represented as power series
-[cf1,cf2] = flex2d.besseldiff_etc_pscoefs(nterms);
+[cf1,cf2] = besseldiff_etc_pscoefs(nterms);
 cf1(1) = cf1(1)*r2logrfac;
 kpow = (k*k).^(1:nterms); 
 cf1 = cf1(:).*kpow(:); cf2 = cf2(:).*kpow(:);
 
 logr = log(rsus);
 
-j0m1 = flex2d.even_pseval(cf1,rsus);
-f = flex2d.even_pseval(cf2,rsus);
+j0m1 = even_pseval(cf1,rsus);
+f = even_pseval(cf2,rsus);
 
 % differentiate power series to get derivatives
 fac = 2*(1:nterms);
 d21 = fac(:).*(fac(:)-1)-fac(:);
-fd21 = flex2d.even_pseval(cf2(:).*d21,rsus).*rm2;
+fd21 = even_pseval(cf2(:).*d21,rsus).*rm2;
 cf1 = cf1.*fac(:); cf2 = cf2.*fac(:);
-j0m1d1 = flex2d.even_pseval(cf1,rsus).*rm1;
-fd1 = flex2d.even_pseval(cf2,rsus).*rm1;
+j0m1d1 = even_pseval(cf1,rsus).*rm1;
+fd1 = even_pseval(cf2,rsus).*rm1;
 cf1 = cf1.*(fac(:)-1); cf2 = cf2.*(fac(:)-1);
-j0m1d2 = flex2d.even_pseval(cf1,rsus).*rm2;
-fd2 = flex2d.even_pseval(cf2,rsus).*rm2;
+j0m1d2 = even_pseval(cf1,rsus).*rm2;
+fd2 = even_pseval(cf2,rsus).*rm2;
 
 cf1 = cf1(:).*(fac(:)-2); cf1 = cf1(2:end);
 cf2 = cf2(:).*(fac(:)-2); cf2 = cf2(2:end);
-j0m1d3 = flex2d.even_pseval(cf1,rsus).*rm1;
+j0m1d3 = even_pseval(cf1,rsus).*rm1;
 
-fd3 = flex2d.even_pseval(cf2,rsus).*rm1;
+fd3 = even_pseval(cf2,rsus).*rm1;
 fac = fac(1:end-1);
 cf1 = cf1(:).*(fac(:)-1); cf2 = cf2(:).*(fac(:)-1);
-j0m1d4 = flex2d.even_pseval(cf1,rsus).*rm2;
-fd4 = flex2d.even_pseval(cf2,rsus).*rm2;
+j0m1d4 = even_pseval(cf1,rsus).*rm2;
+fd4 = even_pseval(cf2,rsus).*rm2;
 
 cf1 = cf1(:).*(fac(:)-2); cf1 = cf1(2:end);
 cf2 = cf2(:).*(fac(:)-2); cf2 = cf2(2:end);
-j0m1d5 = flex2d.even_pseval(cf1,rsus).*rm1;
-fd5 = flex2d.even_pseval(cf2,rsus).*rm1;
+j0m1d5 = even_pseval(cf1,rsus).*rm1;
+fd5 = even_pseval(cf2,rsus).*rm1;
 
 % combine to get derivative of i/4 H + log/(2*pi)
 r2fac = -(1-r2logrfac)*k*k*0.25;
@@ -255,3 +255,55 @@ g5(isus) = const1*j0m1d5 - o2p*(fd5 + logr.*j0m1d5 + 5*j0m1d4.*rm1 - ...
 
 end
 
+function [cf1,cf2] = besseldiff_etc_pscoefs(nterms)
+% powerseries coefficients for J_0 - 1 and the other series in
+% definition of Y_0
+%
+% these are both series with the terms z^2,z^4,z^6,..z^(2*nterms)
+%
+% cf1 are power series coeffs of even terms (excluding constant) 
+% for J_0(z) - 1
+%
+% cf2 are power series coeffs for the similar series
+% z^2/4 - (1+1/2)*(z^2/4)^2/(2!)^2 + (1+1/2+1/3)*(z^2/4)^3/(3!)^2 - ...
+%
+% which appears in the power series for H_0(z)
+
+sum1 = 0;
+fac1 = 1;
+pow1 = 1;
+
+cf1 = zeros(nterms,1);
+cf2 = zeros(nterms,1);
+sgn = 1;
+
+for j = 1:nterms
+    fac1 = fac1/(j*j);
+    sum1 = sum1 + 1.0/j;
+    pow1 = pow1*0.25;
+    cf1(j) = -sgn*pow1*fac1;
+    cf2(j) = sgn*sum1*pow1*fac1;
+    sgn = -sgn;
+end
+
+end
+
+function [v] = even_pseval(cf,x)
+% evaluates an even power series with no constant term 
+% with coefficients given in cf. 
+%
+% x can be an array
+
+x2 = x.*x;
+
+xp = x2;
+
+v = zeros(size(x));
+
+nterms = length(cf);
+for j = 1:nterms
+    v = v + cf(j)*xp;
+    xp = xp.*x2;
+end
+
+end

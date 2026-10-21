@@ -14,7 +14,7 @@
 %
 %   alpha sigma + K[sigma] = -L u_inc
 %
-% with K the 'varcoef' kernel of kernel3d.flex2d and L the operator
+% with K the 'flex_varalpha' kernel of kernel3d.flex2d and L the operator
 % above. The system is solved with FMM-accelerated GMRES
 
 zk  = 4;
@@ -34,8 +34,8 @@ p  = plate_pfun(S, zk);
 cf = flex2d.plate_coefs(p, nu, zk);
 
 % kernel and corrections
-% varcoef kernel contains its identity term
-Kv = kernel3d('flex2d', 'varcoef', zk, nu, @(t) plate_pfun(t, zk));
+% flex_varalpha kernel contains its identity term
+Kv = kernel3d('flex2d', 'flex_varalpha', zk, nu, @(t) plate_pfun(t, zk));
 opts = []; opts.corrections = true;
 [corv, objover] = surfermat(S, Kv, eps, opts);
 lhs  = @(dens) surfermatapply(S, Kv, dens, eps, objover, corv);

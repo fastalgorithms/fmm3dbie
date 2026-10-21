@@ -1,70 +1,42 @@
-function obj = lap2d(type)
+function obj = lap2d(type, coefs)
 %KERNEL3D.LAP2D   Construct a Laplace volume potential kernel in 2D.
 %
-%   KERNEL3D.LAP2D(type), for densities on a flat surfer in the z = 0
-%   plane, where type is:
+%   KERNEL3D.LAP2D(type) or KERNEL3D.LAP2D(type, coefs), for densities on
+%   a flat surfer in the z = 0 plane, where type is:
 %      's'  - single layer,   S(x,y) = -log|x-y|/(2*pi)
 %      'sp' - sprime,         S'(x,y) = d/dn_x S(x,y)
 %      'sg' - gradient,       [d/dx S; d/dy S], [2 1], rows interleaved
+%      's2trans' - [2x1]      [coefs(1)*S; coefs(2)*S'], default [1;1]
 %
-% See also LAP2D.KERN, LAP2D.GET_QUADRATURE_CORRECTION
+%   The kernel is a KERNEL3D.RADGREEN kernel on LAP2D.GREEN, with an fmm
+%   if rfmm2d is on the path.
+%
+% See also LAP2D.GREEN, KERNEL3D.RADGREEN
 
 if ( nargin < 1 )
     error('KERNEL3D.LAP2D: missing Laplace kernel type.');
 end
+if ( nargin < 2 || isempty(coefs) ), coefs = [1; 1]; end
 
-obj           = kernel3d();
-obj.name      = 'lap2d';
-obj.opdims    = [1 1];
-obj.zk        = 0;
-obj.ifcomplex = 0;
-
+extra = {};
 switch lower(type)
-
     case {'s', 'single', 'slp'}
-        obj.type         = 's';
-        obj.kernel_order = -1;
-        obj.eval         = @(s,t) lap2d.kern(s, t, 's');
-        obj.fmm          = @(eps,s,t,sigma) lap2d.fmm(eps, s, t, 's', sigma);
-
+        rtype = 's';
     case {'sp', 'sprime'}
-        obj.type         = 'sp';
-        obj.kernel_order = -1;
-        obj.eval         = @(s,t) lap2d.kern(s, t, 'sprime');
-        obj.fmm          = @(eps,s,t,sigma) lap2d.fmm(eps, s, t, 'sprime', sigma);
-        obj.targ_fields  = {'n'};
-
+        rtype = 'sp';
     case {'sg', 'sgrad'}
-        obj.type         = 'sg';
-        obj.opdims       = [2 1];
-        obj.kernel_order = -1;
-        obj.eval         = @(s,t) lap2d.kern(s, t, 'sgrad');
-        obj.fmm          = @(eps,s,t,sigma) lap2d.fmm(eps, s, t, 'sg', sigma);
-
+        rtype = 'grad';
+    case {'s2trans', 's2t'}
+        rtype = 's2trans';
+        extra = {'coefs', coefs(:).'};
     otherwise
         error('KERNEL3D.LAP2D: unknown Laplace kernel type ''%s''.', type);
-
 end
 
-obj.getquad = @(S,eps,varargin) rsc_to_sparse( ...
-    lap2d.get_quadrature_correction(S, obj.type, eps, varargin{:}), S, obj.opdims(1));
-obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
-
-icheck = exist(['fmm2d.' mexext], 'file');
-if ( icheck ~= 3 )
-    obj.fmm = [];
+args = {'dim', 2};
+if ( exist('rfmm2d', 'file') )
+    args = [args, {'fmm', @(varargin) fmm2dto3d(@lap2d.fmm, varargin{:})}];
 end
+obj = kernel3d(@(s,t) lap2d.green(s, t), rtype, args{:}, extra{:});
 
 end
-
-function spmat = rsc_to_sparse(Q, S, nker)
-%RSC_TO_SPARSE  Convert lap2d getquad RSC output to a sparse matrix.
-% The gradient kernel stores two rows per target, Q.wnear is (2,nquad).
-if ( nker == 1 )
-    spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear);
-else
-    spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear, ...
-        kernel3d.rsc_interleave_full(nker, 1));
-end
-end
-

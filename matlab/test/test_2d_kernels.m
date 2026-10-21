@@ -23,13 +23,11 @@
 
 test_lap2d_volume();
 test_helm2d_volume();
-% Fortran near quadrature, then the radial fit of flex2d.green
-for ifpp = [false true]
-    test_flex2d_volume(ifpp);
-    test_flex2d_varcoef(ifpp);
-end
+test_flex2d_volume();
+test_flex2d_varalpha();
 test_helm2d_lippmann_schwinger();
 test_fmm();
+test_tensor_targets();
 
 
 function [S, tbd] = disk_and_boundary(norder)
@@ -87,9 +85,9 @@ xb = tbd.r(1,:).'; yb = tbd.r(2,:).';
 nb = tbd.n(1:2,:);
 
 % on-surface (volume-to-volume)
-A = surfermat(S, kernel3d('lap2d', 's'), eps);
-uex = real(dxy(T, 0, 0, S.r(1,:).', S.r(2,:).'));
-check('lap2d  s  (v2v)', A*f, uex, tol);
+tv = vol_targets(S);
+val = surferkerneval(S, kernel3d('lap2d', 's'), f, tv, eps);
+check('lap2d  s  (v2v)', val, real(dxy(T, 0, 0, tv.r(1,:).', tv.r(2,:).')), tol);
 
 % normal derivative on the boundary curve
 val = surferkerneval(S, kernel3d('lap2d', 'sp'), f, tbd, eps);
@@ -99,6 +97,11 @@ check('lap2d  sp (v2b)', val, real(dirder(T, xb, yb, {nb})), tol);
 val = surferkerneval(S, kernel3d('lap2d', 'sg'), f, tbd, eps);
 gex = [dxy(T, 1, 0, xb, yb), dxy(T, 0, 1, xb, yb)].';
 check('lap2d  sg (v2b)', val, real(gex(:)), tol);
+
+coefs = [1; 2];
+val = surferkerneval(S, kernel3d('lap2d', 's2trans', coefs), f, tbd, eps);
+tex = real([coefs(1)*dxy(T, 0, 0, xb, yb), coefs(2)*dirder(T, xb, yb, {nb})].');
+check('lap2d  s2trans (v2b)', val, tex(:), tol);
 
 end
 
@@ -116,9 +119,9 @@ T = helm_terms(zk, n, kap);
 xb = tbd.r(1,:).'; yb = tbd.r(2,:).';
 nb = tbd.n(1:2,:);
 
-A = surfermat(S, kernel3d('helm2d', 's', zk), eps);
-uex = dxy(T, 0, 0, S.r(1,:).', S.r(2,:).');
-check('helm2d s  (v2v)', A*f, uex, tol);
+tv = vol_targets(S);
+val = surferkerneval(S, kernel3d('helm2d', 's', zk), f, tv, eps);
+check('helm2d s  (v2v)', val, dxy(T, 0, 0, tv.r(1,:).', tv.r(2,:).'), tol);
 
 ub  = dxy(T, 0, 0, xb, yb);
 dub = dirder(T, xb, yb, {nb});
@@ -138,10 +141,9 @@ check('helm2d s2trans (v2b)', val, tex(:), tol);
 end
 
 
-function test_flex2d_volume(ifpp)
+function test_flex2d_volume()
 
 tol = 1e-5;
-pp = '';  if ifpp, pp = '(pp) '; end
 eps = 1e-8;
 nu  = 0.3;
 [n, kap] = density_mode();
@@ -171,8 +173,8 @@ for iz = 1:numel(zks)
     zstr = mat2str(zk);
 
     % on-surface (volume-to-volume)
-    val = surferkerneval(S, kernel3d('flex2d', 's', zk, nu, 'ifppquad', ifpp), f, tv, eps);
-    check([pp 'flex2d s (v2v), zk = ' zstr], val, dxy(T, 0, 0, xs, ys), tol);
+    val = surferkerneval(S, kernel3d('flex2d', 's', zk, nu), f, tv, eps);
+    check(['flex2d s (v2v), zk = ' zstr], val, dxy(T, 0, 0, xs, ys), tol);
 
     % boundary data from the derivatives of u on r = 1
     u    = dxy(T, 0, 0, xb, yb);
@@ -187,34 +189,32 @@ for iz = 1:numel(zks)
     exs = {u, [u, un].', [u, mom].', [mom, shr].'};
 
     for it = 1:numel(types)
-        K = kernel3d('flex2d', types{it}, zk, nu, 'ifppquad', ifpp);
+        K = kernel3d('flex2d', types{it}, zk, nu);
         val = surferkerneval(S, K, f, tbd, eps);
         if it == 1
-            check([pp 'flex2d s (v2b), zk = ' zstr], val, exs{it}, tol);
+            check(['flex2d s (v2b), zk = ' zstr], val, exs{it}, tol);
         else
             % check the two conditions separately, they scale differently
             ex = exs{it};
-            check([pp 'flex2d ' types{it} ' (1), zk = ' zstr], ...
+            check(['flex2d ' types{it} ' (1), zk = ' zstr], ...
                 val(1:2:end), ex(1,:), tol);
-            check([pp 'flex2d ' types{it} ' (2), zk = ' zstr], ...
+            check(['flex2d ' types{it} ' (2), zk = ' zstr], ...
                 val(2:2:end), ex(2,:), tol);
         end
     end
 
-    % sp (pp: covered by clamped) and sg on the boundary curve
-    if ~ifpp
-        val = surferkerneval(S, kernel3d('flex2d', 'sp', zk, 'ifppquad', false), f, tbd, eps);
-        check(['flex2d sp (v2b), zk = ' zstr], val, un, tol);
-    end
+    % sp and sg on the boundary curve
+    val = surferkerneval(S, kernel3d('flex2d', 'sp', zk), f, tbd, eps);
+    check(['flex2d sp (v2b), zk = ' zstr], val, un, tol);
 
-    val = surferkerneval(S, kernel3d('flex2d', 'sg', zk, 'ifppquad', ifpp), f, tbd, eps);
+    val = surferkerneval(S, kernel3d('flex2d', 'sg', zk), f, tbd, eps);
     gex = [dxy(T, 1, 0, xb, yb), dxy(T, 0, 1, xb, yb)].';
-    check([pp 'flex2d sg (v2b), zk = ' zstr], val, gex(:), tol);
+    check(['flex2d sg (v2b), zk = ' zstr], val, gex(:), tol);
 
     % gradient on-surface (volume-to-volume)
-    val = surferkerneval(S, kernel3d('flex2d', 'sg', zk, 'ifppquad', ifpp), f, tv, eps);
+    val = surferkerneval(S, kernel3d('flex2d', 'sg', zk), f, tv, eps);
     gex = [dxy(T, 1, 0, xs, ys), dxy(T, 0, 1, xs, ys)].';
-    check([pp 'flex2d sg (v2v), zk = ' zstr], val, gex(:), tol);
+    check(['flex2d sg (v2v), zk = ' zstr], val, gex(:), tol);
 end
 
 end
@@ -232,7 +232,7 @@ p.beta    = 2 + 0.5*x.*y;
 end
 
 
-function test_flex2d_varcoef(ifpp)
+function test_flex2d_varalpha()
 % Variable coefficient plate kernel K, defined by
 %
 %   L V[f] = alpha f + K[f],
@@ -247,7 +247,6 @@ function test_flex2d_varcoef(ifpp)
 %          - (c0 alpha + beta) u
 
 tol = 1e-5;
-pp = '';  if ifpp, pp = '(pp) '; end
 eps = 1e-8;
 nu  = 0.3;
 [n, kap] = density_mode();
@@ -285,11 +284,11 @@ for iz = 1:numel(zks)
     ex = 2*(ax.*lapux + ay.*lapuy) + (axx + ayy - b0*al).*lapu ...
         - (1-nu)*(axx.*uyy - 2*axy.*uxy + ayy.*uxx) - (c0*al + be).*u;
 
-    % varcoef kernel contains its identity term
-    K = kernel3d('flex2d', 'varcoef', zk, nu, @plate_pfun, 'ifppquad', ifpp);
-    assert(isequal(K.diag(tv), al), 'flex2d varcoef: diag is not alpha');
+    % flex_varalpha kernel contains its identity term
+    K = kernel3d('flex2d', 'flex_varalpha', zk, nu, @plate_pfun);
+    assert(isequal(K.diag(tv), al), 'flex2d flex_varalpha: diag is not alpha');
     val = surferkerneval(S, K, f, tv, eps);
-    check([pp 'flex2d varcoef (v2v), zk = ' mat2str(zk)], val, ex, tol);
+    check(['flex2d flex_varalpha (v2v), zk = ' mat2str(zk)], val, ex, tol);
 end
 
 end
@@ -341,7 +340,7 @@ end
 function test_fmm()
 % fmm vs direct sum, skipped if fmm2d is not on the path
 
-if ( exist(['fmm2d.' mexext], 'file') ~= 3 )
+if ( ~exist('hfmm2d', 'file') || ~exist('rfmm2d', 'file') )
     fprintf('fmm2d not found, skipping fmm tests\n');
     return
 end
@@ -355,7 +354,7 @@ t.n = [cos(th); sin(th); zeros(size(th))];
 t.d = [-sin(th); cos(th); zeros(size(th))];
 
 kerns = {kernel3d('lap2d', 's'), kernel3d('lap2d', 'sp'), ...
-         kernel3d('lap2d', 'sg'), ...
+         kernel3d('lap2d', 'sg'), kernel3d('lap2d', 's2trans', [1; 2]), ...
          kernel3d('helm2d', 's', 2.3), kernel3d('helm2d', 'sp', 2.3), ...
          kernel3d('helm2d', 'sg', 2.3), ...
          kernel3d('helm2d', 's2trans', 2.3, [1; 2]), ...
@@ -370,10 +369,10 @@ kerns = {kernel3d('lap2d', 's'), kernel3d('lap2d', 'sp'), ...
          kernel3d('flex2d', 's', 0), ...
          kernel3d('flex2d', 'clamped_plate_bcs', 0), ...
          kernel3d('flex2d', 'supported_plate_bcs', 0, 0.3), ...
-         kernel3d('flex2d', 'varcoef', 1.7, 0.3, @plate_pfun), ...
-         kernel3d('flex2d', 'varcoef', [1.7, 0.5i], 0.3, @plate_pfun), ...
-         kernel3d('flex2d', 'varcoef', [1.7, 0], 0.3, @plate_pfun), ...
-         kernel3d('flex2d', 'varcoef', 0, 0.3, @plate_pfun)};
+         kernel3d('flex2d', 'flex_varalpha', 1.7, 0.3, @plate_pfun), ...
+         kernel3d('flex2d', 'flex_varalpha', [1.7, 0.5i], 0.3, @plate_pfun), ...
+         kernel3d('flex2d', 'flex_varalpha', [1.7, 0], 0.3, @plate_pfun), ...
+         kernel3d('flex2d', 'flex_varalpha', 0, 0.3, @plate_pfun)};
 
 for i = 1:numel(kerns)
     K = kerns{i};
@@ -515,3 +514,62 @@ for ind = 0:2^m-1
     val = val + w.*dxy(T, m-sum(bits), sum(bits), x, y);
 end
 end
+
+
+function test_tensor_targets()
+% targets in the plane stored as (2,k,nch) arrays, as for chunkers, give
+% the same values as (3,nt) targets: on and off the surface, with and
+% without the fmm, for two densities
+
+eps = 1e-8;
+S = disk_and_boundary(8);
+f = density(S.r(1,:), S.r(2,:));
+F = [f, 2i*f + 1];
+
+qt = @(t) reshape(1 + t.r(1,:).^2, 1, 1, []);
+kerns = {kernel3d('lap2d', 'sp'), kernel3d('helm2d', 's2trans', 2.3, [1; 2]), ...
+         kernel3d('flex2d', 'sg', 1.7), ...
+         kernel3d('flex2d', 'clamped_plate_bcs', 1.7), ...
+         kernel3d('flex2d', 'free_plate_bcs', [1.7, 0.5i], 0.3), ...
+         kernel3d('flex2d', 'flex_varalpha', 1.7, 0.3, @plate_pfun), ...
+         qt * kernel3d('lap2d', 's')};
+
+for rad = [1, 1.3]
+    [t3, t2] = tensor_targets(S, rad);
+    for i = 1:numel(kerns)
+        K = kerns{i};
+        for usefmm = [0 1]
+            if usefmm && isempty(K.fmm), continue; end
+            opts = struct('usefmm', usefmm);
+            v3 = surferkerneval(S, K, F, t3, eps, opts);
+            v2 = surferkerneval(S, K, F, t2, eps, opts);
+            err = norm(v2 - v3, 'fro')/norm(v3, 'fro');
+            fprintf('%-8s %-24s r = %3.1f fmm %d tensor targets err %5.2e\n', ...
+                K.name, K.type, rad, usefmm, err);
+            assert(isequal(size(v2), size(v3)) && err < 1e-12, ...
+                'tensor targets %s %s, r = %g, fmm %d: %.2e', K.name, ...
+                K.type, rad, usefmm, err);
+        end
+    end
+end
+
+end
+
+
+function [t3, t2] = tensor_targets(S, rad)
+% points on the circle of radius rad as (3,nt) and (2,k,nch) arrays, with
+% patch ids if on the surface
+th = linspace(0, 2*pi, 41); th = th(1:end-1);
+x = rad*cos(th); y = rad*sin(th);
+k = 10;  nch = numel(x)/k;
+t3 = []; t2 = [];
+t3.r  = [x; y; 0*x];          t2.r  = reshape([x; y], 2, k, nch);
+t3.n  = [x; y; 0*x]/rad;      t2.n  = reshape([x; y]/rad, 2, k, nch);
+t3.d  = [-y; x; 0*x];         t2.d  = reshape([-y; x], 2, k, nch);
+t3.d2 = [-x; -y; 0*x];        t2.d2 = reshape([-x; -y], 2, k, nch);
+if rad <= 1
+    t3 = add_patch_ids(S, t3);
+    t2 = add_patch_ids(S, t2);
+end
+end
+

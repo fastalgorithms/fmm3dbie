@@ -60,7 +60,7 @@ function [rsc] = getnear(S, targinfo, rfac)
         if isempty(targinfo)
             targs = S.r;
         elseif isa(targinfo, 'struct') || isa(targinfo,'surfer')
-            targs = targinfo.r;
+            targs = targinfo.r(:,:);
         elseif isa(targinfo, 'chunker') || isa(targinfo,'chunkgraph')
             targs = targinfo.r(:,:);
         else
@@ -125,10 +125,5 @@ function [rsc] = getnear(S, targinfo, rfac)
 end
 
 %
-
-
-%
-%%  2D volume potentials: Laplace, Helmholtz, flexural
-%%
 %
 
