@@ -22,6 +22,21 @@ function obj = kernel2d(type, nu, rts, ejs)
 %                   rule under quad = 'ggq', which these evaluators do not
 %                   tolerate, hence the explicit 'native'.)
 %
+%   The same operator split as chnk.flex2d.kern 'free_plate_log' /
+%   'free_plate_smooth' (preferred: the 'b2b_log' pair above puts the full
+%   biharmonic part of K21H into the log kernel, which loses digits at the
+%   near-singular GGQ nodes):
+%
+%      'free_plate_log'    - everything but the "bad" K21H terms, at most
+%                            log singular, sing = 'log'.   chunkermat(chnkr, K)
+%      'free_plate_smooth' - the "bad" K21H terms, sing = 'smooth'.
+%                            chunkermat(chnkr, K, struct('quad','native'))
+%                            The self entries come from kappa' = d kappa/ds,
+%                            which must be in chnkr.data(1,:), e.g.
+%                              chnkr = makedatarows(chnkr, 1);
+%                              chnkr.data(1,:) = arclengthder(chnkr, signed_curvature(chnkr));
+%                            No diagonal fix by the caller.
+%
 %   Scalar, [1 1]:
 %
 %      'hilb'     - Hilbert transform kernel, sing = 'pv'
@@ -62,6 +77,16 @@ switch lower(type)
         obj.opdims = [2 3];
         obj.sing   = 'smooth';
         obj.eval   = @(s,t) surfwave.flex.kern(s, t, 'free plate b2b bh', nu, rts, ejs);
+    case {'free_plate_log', 'free plate log'}
+        obj.type   = 'free_plate_log';
+        obj.opdims = [2 3];
+        obj.sing   = 'log';
+        obj.eval   = @(s,t) surfwave.flex.kern(s, t, 'free plate log', nu, rts, ejs);
+    case {'free_plate_smooth', 'free plate smooth'}
+        obj.type   = 'free_plate_smooth';
+        obj.opdims = [2 3];
+        obj.sing   = 'smooth';
+        obj.eval   = @(s,t) surfwave.flex.kern(s, t, 'free plate smooth', nu, rts, ejs);
     case {'hilb', 'hilbert'}
         obj.type   = 'hilb';
         obj.opdims = [1 1];

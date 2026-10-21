@@ -354,6 +354,57 @@ if strcmpi(type, 'free plate b2b bh')
    submat = interleave(nt, ns, {0, B11, 0; A21, B21, 0});
 end
 
+% Free plate b2b kernels split as in chnk.flex2d.kern 'free_plate_log' /
+% 'free_plate_smooth', (2*nt, 3*ns) acting on [rho1; H*rho1; rho2] like the
+% pair above. Near r = 0, gsflex = (2/alpha)*bhgreen + (terms whose fourth
+% derivatives are bounded), so chunkie's explicit biharmonic terms appear
+% here scaled by 2/alpha:
+% 'free plate log'    - full gsflex derivatives, plus the (1+nu)/(4pi) term
+%                       of K21, the Hilbert term of K11H and the "nice"
+%                       terms of K21H; at most log singular, GGQ log
+%                       quadrature
+% 'free plate smooth' - the "bad" terms of K21H (row 2, column H*rho1),
+%                       smooth on the curve; native quadrature. The self
+%                       entries are (2/alpha)(1+nu)^2/(48 pi) kappa', with
+%                       kappa' = d kappa/ds in targinfo.data(1,:)
+if strcmpi(type, 'free plate log')
+   alpha = 1./sum(ejs.*rts.^4);
+   [~, ~, hessF, thirdF, fourthF] = surfwave.flex.gsflex(rts,ejs,src,targ,false);
+   [~, ~, ~,     ~,      fourthT] = surfwave.flex.gsflex(rts,ejs,src,targ,true);
+   [A11,A12,A21,A22] = fp_first(srcinfo,targinfo,nu,rts,ejs,hessF,thirdF,fourthF);
+   [B11,~,  B21,~  ] = fp_hilbert(srcinfo,targinfo,nu,rts,ejs,thirdF,fourthT);
+   g = fp_geom(srcinfo, targinfo);
+   [~,grad] = green2d.lap(src,targ,true);
+   hilb = 2*(grad(:,:,1).*g.ny - grad(:,:,2).*g.nx);
+   A21 = A21 - (2/alpha)*(1+nu)/(4*pi)*(g.tt./g.r2 - 2*g.rtt.*g.rt./g.r4);
+   B11 = B11 + (2/alpha)*(1+nu)^2/8*hilb;
+   B21 = B21 + (2/alpha)*(1+nu)/2*(3/(2*pi)*g.rnt.^2.*g.nt./g.r4 ...
+                                   - 2/pi*g.rt.*g.rnt.^3./g.r6);
+   submat = interleave(nt, ns, {A11, B11, A12; A21, B21, A22});
+end
+
+if strcmpi(type, 'free plate smooth')
+   alpha = 1./sum(ejs.*rts.^4);
+   g = fp_geom(srcinfo, targinfo);
+   K = (1+nu)/2*(-3/(4*pi)*g.nt./g.r2 + 3/(2*pi)*g.rnt.*g.rt./g.r4) + ...
+       (2-nu)/2*(1+nu)*( 1/pi*g.rnt.*g.rtt.*g.tt./g.r4 + 1/(2*pi)*g.nt.*g.rtt.^2./g.r4 ...
+                        - 2/pi*g.rnt.*g.rt.*g.rtt.^2./g.r6 ...
+                        - 1/(4*pi)*g.nt./g.r2 + 1/(2*pi)*g.rnt.*g.rt./g.r4);
+   self = g.r2 < 1e-24;
+   if any(self(:))
+       if ~((isstruct(targinfo) && isfield(targinfo, 'data')) || isprop(targinfo, 'data')) ...
+               || isempty(targinfo.data)
+           error('SURFWAVE.FLEX.KERN:noData', ['''free plate smooth'' needs ' ...
+               'kappa'' = d kappa/ds in targinfo.data(1,:) for the self entries.']);
+       end
+       kp = repmat(targinfo.data(1,:).', 1, ns);
+       K(self) = (1+nu)^2/(48*pi)*kp(self);
+   end
+   K = (2/alpha)*K;
+   z = zeros(nt, ns);
+   submat = interleave(nt, ns, {z, z, z; z, K, z});
+end
+
 end
 
 function [K11,K12,K21,K22] = fp_first(srcinfo,targinfo,nu,rts,ejs,hess,third,fourth)
@@ -660,6 +711,32 @@ function [K11,K12,K21,K22] = fp_hilbert_bh(srcinfo,targinfo,nu,rts,ejs,thirdbh)
 
   K22 = 0;
 
+end
+
+function g = fp_geom(srcinfo, targinfo)
+% pairwise geometry for the explicit biharmonic terms, (nt, ns) each:
+% r = x - y (x target, y source), unit tangents tau (source) and tau'
+% (target), normals n (source) and n' (target):
+%   r2, r4, r6 = |r|^2, |r|^4, |r|^6     nx, ny = n
+%   rt = r.tau   rtt = r.tau'   rnt = r.n'   tt = tau.tau'   nt = n'.tau
+   src = srcinfo.r;  targ = targinfo.r;
+   ns = size(src,2); nt = size(targ,2);
+   ts = srcinfo.d(1:2,:) ./ vecnorm(srcinfo.d(1:2,:));
+   tg = targinfo.d(1:2,:) ./ vecnorm(targinfo.d(1:2,:));
+   taux  = repmat(ts(1,:), nt, 1);   tauy  = repmat(ts(2,:), nt, 1);
+   tauxt = repmat(tg(1,:).', 1, ns); tauyt = repmat(tg(2,:).', 1, ns);
+   g.nx  = repmat(srcinfo.n(1,:), nt, 1);
+   g.ny  = repmat(srcinfo.n(2,:), nt, 1);
+   nxt = repmat(targinfo.n(1,:).', 1, ns);
+   nyt = repmat(targinfo.n(2,:).', 1, ns);
+   rx = targ(1,:).' - src(1,:);
+   ry = targ(2,:).' - src(2,:);
+   g.r2 = rx.^2 + ry.^2;  g.r4 = g.r2.^2;  g.r6 = g.r2.*g.r4;
+   g.rt  = rx.*taux  + ry.*tauy;
+   g.rtt = rx.*tauxt + ry.*tauyt;
+   g.rnt = rx.*nxt   + ry.*nyt;
+   g.tt  = taux.*tauxt + tauy.*tauyt;
+   g.nt  = nxt.*taux + nyt.*tauy;
 end
 
 function submat = interleave(nt, ns, K)
