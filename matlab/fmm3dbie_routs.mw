@@ -6308,3 +6308,29 @@ end
 %
 %
 
+@ src/getnearquad_radpp_sub.m
+function wnear = getnearquad_radpp_sub(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
+          ipvs,nnz,row_ptr,col_ind,iquad,rfac0,nquad,dpars,ipars,novers)
+%
+%  Near quadrature for the length(ipvs) rows of a radpp kernel, minus
+%  the smooth rule oversampled to novers (npatches,1).
+%  Returns wnear (nrow,nquad).
+%
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    nrow = length(ipvs);
+    ndd = length(dpars);
+    ndi = length(ipars);
+
+    wnear = zeros(nrow,nquad,'like',1i);
+    # FORTRAN getnearquad_radpp_sub(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] nrow, int[nrow] ipvs, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, int[npatches] novers, inout dcomplex[nrow,nquad] wnear);
+end
+
+%
+%
+

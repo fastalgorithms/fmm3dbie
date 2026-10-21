@@ -73,7 +73,7 @@ classdef kernel3d
         eval           % Function handle for kernel evaluation
         getquad        % Function handle to get quadrature corrections
         fmm            % Function handle for FMM call
-        kernel_order   % Kernel order: -1 (single layer), 0 (double layer), 1 (derivative of double layer)
+        kernel_order = -1 % Kernel order: -1 (single layer), 0 (double layer), 1 (derivative of double layer)
         opdims = [0 0] % Dimension of the operator [m n]
         src_fields     % Ptinfo fields required at sources, i.e. {'n'} for double layer
                        % the location 'r' is implicitly added
@@ -86,6 +86,7 @@ classdef kernel3d
     properties (Hidden = true)
         zk      = 0    % Wavenumber for oversampling purposes (largest wavenumber in the probelm)
         ifcomplex = 0  % 0 = real-valued kernel, 1 = complex-valued kernel
+        getquad_sub = false % true if getquad honors opts.corrections, opts.nover
         get_overs_orders % Function handle to get oversampling orders
         isnan  = false % Boolean, true for NaN kernels
         iszero = false % Boolean, true for zero kernels
@@ -177,6 +178,7 @@ classdef kernel3d
         novers = kernel3d_getnear_overs(S,t,eps,zk,sing);
         Q      = addquad(Qa,Qb,c);
         Q      = scalequad(Q,c);
+        A      = getquad_corrections(K, S, eps, targinfo, nover);
         ri     = rsc_interleave_full(m, n, nker, entries);
         ri     = rsc_interleave_symmetric3();
         ri     = rsc_interleave_nrccie_eval(zk);

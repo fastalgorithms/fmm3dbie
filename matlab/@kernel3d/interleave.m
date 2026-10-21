@@ -174,6 +174,7 @@ end
 
 if all(arrayfun(@(k) isa(kerns(k).getquad, 'function_handle'), 1:numel(kerns)))
     K.getquad = @getquad_;
+    K.getquad_sub = all(arrayfun(@(k) kerns(k).getquad_sub, 1:numel(kerns)));
 else
     K.getquad = [];
 end

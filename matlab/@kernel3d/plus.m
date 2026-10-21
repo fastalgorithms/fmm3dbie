@@ -36,6 +36,8 @@ if (isa(g, 'kernel3d') && isa(f, 'kernel3d'))
     else
         f.getquad = [];
     end
+    f.getquad_sub = f.getquad_sub && g.getquad_sub;
+    f.kernel_order = max(f.kernel_order, g.kernel_order);
 
     f.get_overs_orders = @(S,t,eps) max(f.get_overs_orders(S, t, eps),g.get_overs_orders(S, t, eps));
 

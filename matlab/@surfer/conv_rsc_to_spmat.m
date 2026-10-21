@@ -72,7 +72,12 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
     NZ = np * ne;
     II = zeros(NZ, 1);
     JJ = zeros(NZ, 1);
-    VV = complex(zeros(NZ, 1));
+    % keep real problems real: a complex sparse matrix doubles the memory
+    if isreal(wnear) && isreal([ri.entries.coef])
+        VV = zeros(NZ, 1);
+    else
+        VV = complex(zeros(NZ, 1));
+    end
     off = 0;
     for ei = 1:ne
         e = ri.entries(ei);

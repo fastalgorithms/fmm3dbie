@@ -244,11 +244,11 @@ for i = 1:nsurfers
         end
 
         if ((adaptive_correction && (i~=j)) || ((i==j) && selfquad)) && ~isempty(ktmp.getquad)
-            sysmat_quad = ktmp.getquad(surferj,eps,surferi_targ);
             if corrections
-                [rp, ci] = get_rsc_pattern(surferj, sysmat_quad, opdims);
-                sysmat_smth = smooth_sparse_quad(ktmp, surferi_targ, surferj, rp, ci, noversj);
-                sysmat_quad = sysmat_quad-sysmat_smth;
+                sysmat_quad = kernel3d.getquad_corrections(ktmp, surferj, eps, ...
+                    surferi_targ, noversj);
+            else
+                sysmat_quad = ktmp.getquad(surferj,eps,surferi_targ);
             end
 
             if (~nonsmoothonly)
