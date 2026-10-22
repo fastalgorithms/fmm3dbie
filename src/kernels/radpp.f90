@@ -375,7 +375,7 @@ end subroutine radpp_kern
         iquad, rfac0, nquad, ndd, dpars, ndi, ipars, novers, wnear)
 !
 !  As getnearquad_radpp, with the smooth rule oversampled to novers
-!  subtracted from each row (see zgetnearquadsub_new_guru).
+!  subtracted from each row (see zgetnearquadsub_guru).
 !
 !    - novers: integer *8 (npatches), oversampled order on each patch
 !    - wnear: complex *16 (nrow,nquad), near quadrature minus the
@@ -401,7 +401,7 @@ end subroutine radpp_kern
       complex *16, intent(out) :: wnear(nrow,nquad)
 
       integer *8 ipars_row(10), ndi_row, ndz, ncomp, irow, i
-      integer *8 nptso, npolso, int8_12
+      integer *8 nptso, npolso, int8_1, int8_12
       integer *8, allocatable :: ixyzso(:)
       real *8, allocatable :: srcover(:,:), wover(:)
       real *8 thresh
@@ -416,6 +416,7 @@ end subroutine radpp_kern
       ndi_row = 10
       ipars_row(1:9) = ipars(1:9)
       ncomp = ipars(7)
+      int8_1 = 1
       int8_12 = 12
 
 !
@@ -453,11 +454,11 @@ end subroutine radpp_kern
           ndz, zpars, ndi_row, ipars_row, nnz, row_ptr, col_ind, &
           iquad, rfac0, nquad, wtmp)
 
-        call zgetnearquadsub_new_guru(npatches, norders, ixyzs, &
+        call zgetnearquadsub_guru(npatches, norders, ixyzs, &
           iptype, novers, ixyzso, nptso, srcover, wover, ndtarg, &
           ntarg, targs, thresh, fker, ndd, dpars, ndz, zpars, &
           ndi_row, ipars_row, nnz, row_ptr, col_ind, iquad, nquad, &
-          wtmp)
+          int8_1, int8_1, wtmp)
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
         do i = 1,nquad
