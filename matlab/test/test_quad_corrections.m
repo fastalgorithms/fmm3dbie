@@ -160,7 +160,7 @@ end
 
 
 function test_radpp_corrections()
-% radpp getquad with opts.corrections (getnearquad_radpp_sub) equals
+% radpp getquad with opts.corrections (getnearcorr_radpp) equals
 % getquad minus smooth_sparse_quad, and getquad_corrections agrees with
 % its fallback.
 

@@ -1,4 +1,4 @@
-function wnear = getnearquad_radpp_sub(npatches,norders,ixyzs, ...
+function wnear = getnearcorr_radpp(npatches,norders,ixyzs, ...
           iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
           ipvs,nnz,row_ptr,col_ind,iquad,rfac0,nquad,dpars,ipars,novers)
 %
@@ -17,7 +17,7 @@ function wnear = getnearquad_radpp_sub(npatches,norders,ixyzs, ...
     ndi = length(ipars);
 
     wnear = zeros(nrow,nquad,'like',1i);
-    mex_id_ = 'getnearquad_radpp_sub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io dcomplex[xx])';
+    mex_id_ = 'getnearcorr_radpp(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io dcomplex[xx])';
 [wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, nrow, ipvs, nnz, row_ptr, col_ind, iquad, rfac0, nquad, ndd, dpars, ndi, ipars, novers, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, nrow, 1, ntargp1, nnz, nnzp1, 1, 1, 1, ndd, 1, ndi, npatches, nrow, nquad);
 end
 

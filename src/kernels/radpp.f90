@@ -41,7 +41,7 @@
 ! radpp_kern        - fmm3dbie kernel, the contraction above
 ! getnearquad_radpp - near quadrature for nrow such kernels, with
 !                     their weights stored one after the other in targs
-! getnearquad_radpp_sub - the same, minus the oversampled smooth rule
+! getnearcorr_radpp - the same, minus the oversampled smooth rule
 !
 
 
@@ -369,13 +369,13 @@ end subroutine radpp_kern
 
 
 
-      subroutine getnearquad_radpp_sub(npatches, norders, ixyzs, &
+      subroutine getnearcorr_radpp(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         ipatch_id, uvs_targ, eps, nrow, ipvs, nnz, row_ptr, col_ind, &
         iquad, rfac0, nquad, ndd, dpars, ndi, ipars, novers, wnear)
 !
-!  As getnearquad_radpp, with the smooth rule oversampled to novers
-!  subtracted from each row (see zgetnearquadsub_guru).
+!  As getnearquad_radpp, minus the smooth rule oversampled to novers
+!  in each row (see zgetnearquadsub).
 !
 !    - novers: integer *8 (npatches), oversampled order on each patch
 !    - wnear: complex *16 (nrow,nquad), near quadrature minus the
@@ -400,15 +400,15 @@ end subroutine radpp_kern
       integer *8, intent(in) :: novers(npatches)
       complex *16, intent(out) :: wnear(nrow,nquad)
 
-      integer *8 ipars_row(10), ndi_row, ndz, ncomp, irow, i
-      integer *8 nptso, npolso, int8_1, int8_12
-      integer *8, allocatable :: ixyzso(:)
-      real *8, allocatable :: srcover(:,:), wover(:)
-      real *8 thresh
+      integer *8 ipars_row(10), ndi_row, ndz, ncomp, irow
       complex *16 zpars(1)
-      complex *16, allocatable :: wtmp(:)
       procedure (), pointer :: fker
       external radpp_kern
+
+      call getnearquad_radpp(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, &
+        eps, nrow, ipvs, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
+        ndd, dpars, ndi, ipars, wnear)
 
       fker => radpp_kern
       ndz = 0
@@ -416,58 +416,14 @@ end subroutine radpp_kern
       ndi_row = 10
       ipars_row(1:9) = ipars(1:9)
       ncomp = ipars(7)
-      int8_1 = 1
-      int8_12 = 12
-
-!
-!  oversampled geometry, weights and fmm threshold
-!
-      allocate(ixyzso(npatches+1))
-      ixyzso(1) = 1
-      do i = 1,npatches
-        call get_npols(iptype(i), novers(i), npolso)
-        ixyzso(i+1) = ixyzso(i) + npolso
-      enddo
-      nptso = ixyzso(npatches+1) - 1
-      allocate(srcover(12,nptso), wover(nptso))
-      call oversample_geom(npatches, norders, ixyzs, iptype, npts, &
-        srccoefs, srcvals, novers, ixyzso, nptso, srcover)
-      call get_qwts(npatches, novers, ixyzso, iptype, nptso, srcover, &
-        wover)
-      call get_fmm_thresh(int8_12, nptso, srcover, ndtarg, ntarg, &
-        targs, thresh)
-
-      allocate(wtmp(nquad))
 
       do irow = 1,nrow
         ipars_row(10) = 4 + 2*ncomp*(1+ipars(9))*(irow-1)
-
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
-        do i = 1,nquad
-          wtmp(i) = 0
-        enddo
-!$OMP END PARALLEL DO
-
-        call zgetnearquad_ggq_guru(npatches, norders, ixyzs, &
-          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-          ipatch_id, uvs_targ, eps, ipvs(irow), fker, ndd, dpars, &
-          ndz, zpars, ndi_row, ipars_row, nnz, row_ptr, col_ind, &
-          iquad, rfac0, nquad, wtmp)
-
-        call zgetnearquadsub_guru(npatches, norders, ixyzs, &
-          iptype, novers, ixyzso, nptso, srcover, wover, ndtarg, &
-          ntarg, targs, thresh, fker, ndd, dpars, ndz, zpars, &
-          ndi_row, ipars_row, nnz, row_ptr, col_ind, iquad, nquad, &
-          int8_1, int8_1, wtmp)
-
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
-        do i = 1,nquad
-          wnear(irow,i) = wtmp(i)
-        enddo
-!$OMP END PARALLEL DO
+        call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+          srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+          dpars, ndz, zpars, ndi_row, ipars_row, nnz, row_ptr, &
+          col_ind, iquad, nquad, nrow, irow, wnear)
       enddo
 
-      deallocate(wtmp, srcover, wover, ixyzso)
-
       return
-      end subroutine getnearquad_radpp_sub
+      end subroutine getnearcorr_radpp

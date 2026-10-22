@@ -1157,7 +1157,7 @@ mxWrapReturnZDef_single   (mxWrapReturn_single_dcomplex, dcomplex,
 #define MWF77_getnearquad_helm_bel_hank GETNEARQUAD_HELM_BEL_HANK
 #define MWF77_vpp_eval_vec VPP_EVAL_VEC
 #define MWF77_getnearquad_radpp GETNEARQUAD_RADPP
-#define MWF77_getnearquad_radpp_sub GETNEARQUAD_RADPP_SUB
+#define MWF77_getnearcorr_radpp GETNEARCORR_RADPP
 #elif defined(MWF77_UNDERSCORE1)
 #define MWF77_get_ellipsoid_npat_mem get_ellipsoid_npat_mem_
 #define MWF77_get_ellipsoid_npat get_ellipsoid_npat_
@@ -1217,7 +1217,7 @@ mxWrapReturnZDef_single   (mxWrapReturn_single_dcomplex, dcomplex,
 #define MWF77_getnearquad_helm_bel_hank getnearquad_helm_bel_hank_
 #define MWF77_vpp_eval_vec vpp_eval_vec_
 #define MWF77_getnearquad_radpp getnearquad_radpp_
-#define MWF77_getnearquad_radpp_sub getnearquad_radpp_sub_
+#define MWF77_getnearcorr_radpp getnearcorr_radpp_
 #elif defined(MWF77_UNDERSCORE0)
 #define MWF77_get_ellipsoid_npat_mem get_ellipsoid_npat_mem
 #define MWF77_get_ellipsoid_npat get_ellipsoid_npat
@@ -1277,7 +1277,7 @@ mxWrapReturnZDef_single   (mxWrapReturn_single_dcomplex, dcomplex,
 #define MWF77_getnearquad_helm_bel_hank getnearquad_helm_bel_hank
 #define MWF77_vpp_eval_vec vpp_eval_vec
 #define MWF77_getnearquad_radpp getnearquad_radpp
-#define MWF77_getnearquad_radpp_sub getnearquad_radpp_sub
+#define MWF77_getnearcorr_radpp getnearcorr_radpp
 #else /* f2c convention */
 #define MWF77_get_ellipsoid_npat_mem get_ellipsoid_npat_mem__
 #define MWF77_get_ellipsoid_npat get_ellipsoid_npat__
@@ -1337,7 +1337,7 @@ mxWrapReturnZDef_single   (mxWrapReturn_single_dcomplex, dcomplex,
 #define MWF77_getnearquad_helm_bel_hank getnearquad_helm_bel_hank__
 #define MWF77_vpp_eval_vec vpp_eval_vec__
 #define MWF77_getnearquad_radpp getnearquad_radpp__
-#define MWF77_getnearquad_radpp_sub getnearquad_radpp_sub__
+#define MWF77_getnearcorr_radpp getnearcorr_radpp__
 #endif
 
 #ifdef __cplusplus
@@ -1406,7 +1406,7 @@ MWF77_RETURN MWF77_getnearquad_lap_bel_log(int64_t*, int64_t*, int64_t*, int64_t
 MWF77_RETURN MWF77_getnearquad_helm_bel_hank(int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, double*, double*, int64_t*, int64_t*, double*, int64_t*, double*, double*, dcomplex*, int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, double*, int64_t*, dcomplex*);
 MWF77_RETURN MWF77_vpp_eval_vec(int64_t*, double*, int64_t*, double*, int64_t*, int64_t*, double*);
 MWF77_RETURN MWF77_getnearquad_radpp(int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, double*, double*, int64_t*, int64_t*, double*, int64_t*, double*, double*, int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, double*, int64_t*, int64_t*, double*, int64_t*, int64_t*, dcomplex*);
-MWF77_RETURN MWF77_getnearquad_radpp_sub(int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, double*, double*, int64_t*, int64_t*, double*, int64_t*, double*, double*, int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, double*, int64_t*, int64_t*, double*, int64_t*, int64_t*, int64_t*, dcomplex*);
+MWF77_RETURN MWF77_getnearcorr_radpp(int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, double*, double*, int64_t*, int64_t*, double*, int64_t*, double*, double*, int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, int64_t*, double*, int64_t*, int64_t*, double*, int64_t*, int64_t*, int64_t*, dcomplex*);
 
 #ifdef __cplusplus
 } /* end extern C */
@@ -26657,9 +26657,9 @@ mw_err_label:
 }
 
 /* ---- fmm3dbie_routs.mw: 6349 ----
- * getnearquad_radpp_sub(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, int64_t[1] nrow, int64_t[nrow] ipvs, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, int64_t[1] ndd, double[ndd] dpars, int64_t[1] ndi, int64_t[ndi] ipars, int64_t[npatches] novers, inout dcomplex[nrow, nquad] wnear);
+ * getnearcorr_radpp(int64_t[1] npatches, int64_t[npatches] norders, int64_t[npp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[n9, npts] srccoefs, double[n12, npts] srcvals, int64_t[1] ndtarg, int64_t[1] ntarg, double[ndtarg, ntarg] targs, int64_t[ntarg] ipatch_id, double[2, ntarg] uvs_targ, double[1] eps, int64_t[1] nrow, int64_t[nrow] ipvs, int64_t[1] nnz, int64_t[ntargp1] row_ptr, int64_t[nnz] col_ind, int64_t[nnzp1] iquad, double[1] rfac0, int64_t[1] nquad, int64_t[1] ndd, double[ndd] dpars, int64_t[1] ndi, int64_t[ndi] ipars, int64_t[npatches] novers, inout dcomplex[nrow, nquad] wnear);
  */
-static const char* stubids110_ = "getnearquad_radpp_sub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io dcomplex[xx])";
+static const char* stubids110_ = "getnearcorr_radpp(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c io dcomplex[xx])";
 
 void mexStub110(int nlhs, mxArray* plhs[],
               int nrhs, const mxArray* prhs[])
@@ -27148,7 +27148,7 @@ void mexStub110(int nlhs, mxArray* plhs[],
 
     if (mexprofrecord_)
         mexprofrecord_[110]++;
-    MWF77_getnearquad_radpp_sub(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_);
+    MWF77_getnearcorr_radpp(in0_, in1_, in2_, in3_, in4_, in5_, in6_, in7_, in8_, in9_, in10_, in11_, in12_, in13_, in14_, in15_, in16_, in17_, in18_, in19_, in20_, in21_, in22_, in23_, in24_, in25_, in26_);
     plhs[0] = mxCreateDoubleMatrix(dim57_, dim58_, mxCOMPLEX);
     mxWrapCopy_dcomplex(plhs[0], in26_, dim57_*dim58_);
 
