@@ -35,6 +35,10 @@
 !        on-surface or off-surface, with user-provided near-information
 !        prescribed in row-sparse compressed format.
 !
+!    - getnearcorr_stok_sprime: same as getnearquad_stok_sprime, minus
+!        the smooth quadrature rule oversampled to user-provided
+!        orders, for stok_sprime_eval_addsub with ifcorr = 1
+!
 !    - stok_sprime_eval_addsub: compute S'[\sigma] at a collection of
 !        targets (on-surface or off-surface), given sigma.
 !        On input, user provides precomputed near quadrature in
@@ -222,6 +226,88 @@
 
       return
       end
+!
+!
+!
+!
+!
+      subroutine getnearcorr_stok_sprime(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, &
+        targs, ipatch_id, uvs_targ, eps, iquadtype, nnz, &
+        row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_stok_sprime, minus the smooth quadrature rule
+!  oversampled to novers, i.e. the near quadrature corrections for
+!  stok_sprime_eval_addsub with ifcorr = 1 and the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, iquadtype,
+!      nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_stok_sprime
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: real *8(6,nquad)
+!        The near quadrature corrections, stored as in
+!        getnearquad_stok_sprime
+!
+      implicit none
+      integer *8, intent(in) :: npatches, norders(npatches), npts, nquad
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iquadtype
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg, ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: novers(npatches)
+      real *8, intent(out) :: wnear(6,nquad)
+
+      integer *8 ndd, ndz, ndi, nker, i, ijloc(2,6)
+      real *8 dpars(1)
+      complex *16 zpars(1)
+      procedure (), pointer :: fker
+      external st3d_strac
+
+      call getnearquad_stok_sprime(npatches, norders, ixyzs, iptype, &
+        npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, &
+        uvs_targ, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, &
+        nquad, wnear)
+
+      ijloc(1,1) = 1
+      ijloc(2,1) = 1
+      ijloc(1,2) = 1
+      ijloc(2,2) = 2
+      ijloc(1,3) = 1
+      ijloc(2,3) = 3
+      ijloc(1,4) = 2
+      ijloc(2,4) = 2
+      ijloc(1,5) = 2
+      ijloc(2,5) = 3
+      ijloc(1,6) = 3
+      ijloc(2,6) = 3
+
+      fker => st3d_strac
+      ndd = 0
+      ndz = 0
+      ndi = 2
+      nker = 6
+      do i = 1,6
+        call dgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+          srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+          dpars, ndz, zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, &
+          iquad, nquad, nker, i, wnear)
+      enddo
+
+      return
+      end
 
 !
 !
@@ -322,7 +408,7 @@
       real *8, allocatable :: cms(:,:), rads(:), rad_near(:)
 
       integer *8 nnz, nquad, npts_over
-      integer *8 iquadtype, nker, ikerorder
+      integer *8 iquadtype, nker, ikerorder, ifcorr
       real *8 rfac0, rfac
 
       integer *8 ndd, ndz, ndi, lwork, ndim
@@ -425,11 +511,12 @@
       ndi   = 1
       lwork = 0
       ndim  = 3
+      ifcorr = 0
 
       call stok_sprime_eval_addsub(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
         novers, npts_over, ixyzso, srcover, wover, lwork, work, &
         ndim, sigma, pot)
 
@@ -444,7 +531,7 @@
       subroutine stok_sprime_eval_addsub(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
         novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
         ndim, sigma, pot)
 !
@@ -515,6 +602,12 @@
 !        precomputed near-field quadrature for S'.
 !        wnear(1,:)-(1,1), wnear(2,:)-(1,2), wnear(3,:)-(1,3),
 !        wnear(4,:)-(2,2), wnear(5,:)-(2,3), wnear(6,:)-(3,3)
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_stok_sprime, the oversampled
+!            smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_stok_sprime with the same
+!            novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        oversampling orders for each patch
 !    - nptso: integer *8
@@ -562,6 +655,7 @@
 
       integer *8, intent(in) :: nker
       real *8, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
@@ -754,55 +848,57 @@
       !
       ! Subtract the smooth (oversampled) near-field FMM contribution
       !
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2,sttmp2) &
 !$OMP PRIVATE(strstmp2,strsvec2,nss,l,jstart,npover) &
 !$OMP PRIVATE(potv,pv,gradv,istress,tnorm)
-      do i = 1,nt
-        nss = 0
-        do j = row_ptr(i), row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l = ixyzso(jpatch), ixyzso(jpatch+1)-1
-            nss = nss + 1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
+        do i = 1,nt
+          nss = 0
+          do j = row_ptr(i), row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l = ixyzso(jpatch), ixyzso(jpatch+1)-1
+              nss = nss + 1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
 
-            sttmp2(1,nss) = stoklet(1,l)
-            sttmp2(2,nss) = stoklet(2,l)
-            sttmp2(3,nss) = stoklet(3,l)
+              sttmp2(1,nss) = stoklet(1,l)
+              sttmp2(2,nss) = stoklet(2,l)
+              sttmp2(3,nss) = stoklet(3,l)
+            enddo
           enddo
+
+          potv(1:3)    = 0
+          pv           = 0
+          gradv(1:3,1:3) = 0
+
+          istress = 0
+          call st3ddirectstokstrsg(nd, srctmp2, sttmp2, istress, &
+            strstmp2, strsvec2, nss, targvals(1,i), ntarg0, potv, pv, &
+            gradv, thresh)
+
+          ! Assemble traction from the direct evaluation output
+          tnorm(1) = targs(10,i)
+          tnorm(2) = targs(11,i)
+          tnorm(3) = targs(12,i)
+
+          potv(1) = tnorm(1)*(-pv + 2*gradv(1,1)) + &
+                    tnorm(2)*(gradv(1,2) + gradv(2,1)) + &
+                    tnorm(3)*(gradv(1,3) + gradv(3,1))
+          potv(2) = tnorm(1)*(gradv(1,2) + gradv(2,1)) + &
+                    tnorm(2)*(-pv + 2*gradv(2,2)) + &
+                    tnorm(3)*(gradv(2,3) + gradv(3,2))
+          potv(3) = tnorm(1)*(gradv(1,3) + gradv(3,1)) + &
+                    tnorm(2)*(gradv(2,3) + gradv(3,2)) + &
+                    tnorm(3)*(-pv + 2*gradv(3,3))
+
+          pot(1,i) = pot(1,i) - potv(1)
+          pot(2,i) = pot(2,i) - potv(2)
+          pot(3,i) = pot(3,i) - potv(3)
+
         enddo
-
-        potv(1:3)    = 0
-        pv           = 0
-        gradv(1:3,1:3) = 0
-
-        istress = 0
-        call st3ddirectstokstrsg(nd, srctmp2, sttmp2, istress, &
-          strstmp2, strsvec2, nss, targvals(1,i), ntarg0, potv, pv, &
-          gradv, thresh)
-
-        ! Assemble traction from the direct evaluation output
-        tnorm(1) = targs(10,i)
-        tnorm(2) = targs(11,i)
-        tnorm(3) = targs(12,i)
-
-        potv(1) = tnorm(1)*(-pv + 2*gradv(1,1)) + &
-                  tnorm(2)*(gradv(1,2) + gradv(2,1)) + &
-                  tnorm(3)*(gradv(1,3) + gradv(3,1))
-        potv(2) = tnorm(1)*(gradv(1,2) + gradv(2,1)) + &
-                  tnorm(2)*(-pv + 2*gradv(2,2)) + &
-                  tnorm(3)*(gradv(2,3) + gradv(3,2))
-        potv(3) = tnorm(1)*(gradv(1,3) + gradv(3,1)) + &
-                  tnorm(2)*(gradv(2,3) + gradv(3,2)) + &
-                  tnorm(3)*(-pv + 2*gradv(3,3))
-
-        pot(1,i) = pot(1,i) - potv(1)
-        pot(2,i) = pot(2,i) - potv(2)
-        pot(3,i) = pot(3,i) - potv(3)
-
-      enddo
 !$OMP END PARALLEL DO
+      endif
 
       return
       end

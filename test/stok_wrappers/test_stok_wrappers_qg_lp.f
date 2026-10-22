@@ -327,8 +327,12 @@ c
       call prin2('rel err in Greens ID --- FMM, adaptive quadrature *',
      1     errl2,1)
 
-      ntests=2
-      nsuccess = i1+i2
+c
+c   near quadrature corrections
+c
+      call test_stok_corr(i3)
+      ntests=9
+      nsuccess = i1+i2+i3
 
       open(unit=33,file='../../print_testres.txt',access='append')
       write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,

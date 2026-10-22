@@ -439,7 +439,7 @@ test/lwrap:
 	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f test/lap_wrappers/test_lap_corr.f90 -o test/lap_wrappers/int2-lap lib-static/$(STATICLIB) $(LIBS) 
 
 test/stwrap:
-	$(FC) $(FFLAGS) test/stok_wrappers/test_stok_wrappers_qg_lp.f -o test/stok_wrappers/int2-stok lib-static/$(STATICLIB) $(LIBS) 
+	$(FC) $(FFLAGS) test/stok_wrappers/test_stok_wrappers_qg_lp.f test/stok_wrappers/test_stok_corr.f90 -o test/stok_wrappers/int2-stok lib-static/$(STATICLIB) $(LIBS) 
 
 test/surf:
 	$(FC) $(FFLAGS) test/surface_routs/test_surf_routs.f -o test/surface_routs/int2-surf lib-static/$(STATICLIB) $(LIBS) 

@@ -29,6 +29,9 @@
 !        for evaluating S'[\sigma] at target points which can be either
 !        on-surface or off-surface, with user-provided near-information
 !        prescribed in row-sparse compressed format.
+!    - getnearcorr_stok_combtrac: same as getnearquad_stok_combtrac,
+!        minus the smooth quadrature rule oversampled to user-provided
+!        orders
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 
@@ -202,6 +205,88 @@
         enddo
 
       endif
+
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine getnearcorr_stok_combtrac(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, &
+        targs, ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, &
+        row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_stok_combtrac, minus the smooth quadrature rule
+!  oversampled to novers, i.e. the near quadrature corrections to
+!  the oversampled smooth rule used by an fmm.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, dpars,
+!      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_stok_combtrac
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: real *8(6,nquad)
+!        The near quadrature corrections, stored as in
+!        getnearquad_stok_combtrac
+!
+      implicit none
+      integer *8, intent(in) :: npatches, norders(npatches), npts, nquad
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iquadtype
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg, ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: dpars(2)
+      integer *8, intent(in) :: novers(npatches)
+      real *8, intent(out) :: wnear(6,nquad)
+
+      integer *8 ndd, ndz, ndi, nker, i, ijloc(2,6)
+      complex *16 zpars(1)
+      procedure (), pointer :: fker
+      external st3d_combtrac
+
+      call getnearquad_stok_combtrac(npatches, norders, ixyzs, iptype, &
+        npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, &
+        uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, col_ind, iquad, &
+        rfac0, nquad, wnear)
+
+      ijloc(1,1) = 1
+      ijloc(2,1) = 1
+      ijloc(1,2) = 1
+      ijloc(2,2) = 2
+      ijloc(1,3) = 1
+      ijloc(2,3) = 3
+      ijloc(1,4) = 2
+      ijloc(2,4) = 2
+      ijloc(1,5) = 2
+      ijloc(2,5) = 3
+      ijloc(1,6) = 3
+      ijloc(2,6) = 3
+
+      fker => st3d_combtrac
+      ndd = 2
+      ndz = 0
+      ndi = 2
+      nker = 6
+      do i = 1,6
+        call dgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+          srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+          dpars, ndz, zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, &
+          iquad, nquad, nker, i, wnear)
+      enddo
 
       return
       end

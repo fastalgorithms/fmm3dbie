@@ -4176,6 +4176,7 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
     ndi = 0;
     ipars = [];
     nker = 6;
+    ifcorr = 0;
     lwork = 0;
     work = [];
     ndim_s = 3;
@@ -4183,7 +4184,7 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
     ipotflag = 0;
     ndim_p = 3;
 % Call the layer potential evaluator
-    # FORTRAN stok_comb_vel_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker, double[nker,nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, double[ndim_s,npts] sigma, int[1] ipotflag, int[1] ndim_p, inout double[ndim_p,ntarg] p);   
+    # FORTRAN stok_comb_vel_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker, double[nker,nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, double[ndim_s,npts] sigma, int[1] ipotflag, int[1] ndim_p, inout double[ndim_p,ntarg] p);   
 end    
 %
 %
@@ -4513,8 +4514,9 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 6;
+    ifcorr = 0;
 % Call the layer potential evaluator
-    # FORTRAN stok_comb_vel_solver_guru(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals, double[1] eps, double[2] dpars, int[1] maxit, int[1] ifout, double[3,npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nker,nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout double[3,npts] sigma);  
+    # FORTRAN stok_comb_vel_solver_guru(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals, double[1] eps, double[2] dpars, int[1] maxit, int[1] ifout, double[3,npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nker,nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout double[3,npts] sigma);  
 
     errs = errs(1:niter);
     varargout{1} = errs;
@@ -4648,11 +4650,12 @@ function p = eval(S, sigma, targinfo, eps, varargin)
     ndi = 1;
     ipars = [0];
     nker = 6;
+    ifcorr = 0;
     lwork = 0;
     work = [];
     ndim = 3;
 % Call the layer potential evaluator
-    # FORTRAN stok_sprime_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker, double[nker,nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] ndim, double[ndim,npts] sigma, inout double[ndim,ntarg] p);
+    # FORTRAN stok_sprime_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker, double[nker,nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] ndim, double[ndim,npts] sigma, inout double[ndim,ntarg] p);
 end
 %
 %
