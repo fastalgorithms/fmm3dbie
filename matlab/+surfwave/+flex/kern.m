@@ -367,10 +367,15 @@ end
 %                       smooth on the curve; native quadrature. The self
 %                       entries are (2/alpha)(1+nu)^2/(48 pi) kappa', with
 %                       kappa' = d kappa/ds in targinfo.data(1,:)
+% Finite depth: kern(s, t, 'free plate log', nu, rts, ejs, fgw), with
+% fgw = surfwave.flex.fgw_setup(alpha, gamma, depth), adds the finite depth
+% minus deep water part, i.e. the same first part + hilbert formulas with
+% G = 2*G1_diff (smooth; the bh/rational terms are G-independent and cancel).
+% 'free plate smooth' is unchanged.
 if strcmpi(type, 'free plate log')
    alpha = 1./sum(ejs.*rts.^4);
    [~, ~, hessF, thirdF, fourthF] = surfwave.flex.gsflex(rts,ejs,src,targ,false);
-   [~, ~, ~,     ~,      fourthT] = surfwave.flex.gsflex(rts,ejs,src,targ,true);
+   fourthT = gsflex_fourth_r2logr(rts, ejs, alpha, src, targ, fourthF);
    [A11,A12,A21,A22] = fp_first(srcinfo,targinfo,nu,rts,ejs,hessF,thirdF,fourthF);
    [B11,~,  B21,~  ] = fp_hilbert(srcinfo,targinfo,nu,rts,ejs,thirdF,fourthT);
    g = fp_geom(srcinfo, targinfo);
@@ -380,6 +385,13 @@ if strcmpi(type, 'free plate log')
    B11 = B11 + (2/alpha)*(1+nu)^2/8*hilb;
    B21 = B21 + (2/alpha)*(1+nu)/2*(3/(2*pi)*g.rnt.^2.*g.nt./g.r4 ...
                                    - 2/pi*g.rt.*g.rnt.^3./g.r6);
+   if numel(varargin) >= 4 && ~isempty(varargin{4})
+       [hd, td, fd] = fgw_derivs(varargin{4}, src, targ);
+       [a11,a12,a21,a22] = fp_first(srcinfo,targinfo,nu,rts,ejs,hd,td,fd);
+       [b11,~,  b21,~  ] = fp_hilbert(srcinfo,targinfo,nu,rts,ejs,td,fd);
+       A11 = A11 + a11;  A12 = A12 + a12;  A21 = A21 + a21;  A22 = A22 + a22;
+       B11 = B11 + b11;  B21 = B21 + b21;
+   end
    submat = interleave(nt, ns, {A11, B11, A12; A21, B21, A22});
 end
 
@@ -737,6 +749,47 @@ function g = fp_geom(srcinfo, targinfo)
    g.rnt = rx.*nxt   + ry.*nyt;
    g.tt  = taux.*tauxt + tauy.*tauyt;
    g.nt  = nxt.*taux + nyt.*tauy;
+end
+
+function fourthT = gsflex_fourth_r2logr(rts, ejs, alpha, src, targ, fourthF)
+% fourth derivatives of gsflex(..., true), i.e. of gsflex minus its r^2 log r
+% part -(2/alpha) r^2 log r/(8 pi), from those of gsflex (fourthF). Away from
+% r = 0 the difference is the closed form -1/(4 pi alpha) d^4(r^2 log r); where
+% subtracting it cancels more than 3 digits (small r) the pairs are evaluated
+% by gsflex(..., true) itself, as one target list (the kernel depends on
+% targ - src only). This replaces a second gsflex call on every pair.
+   ns = size(src,2); nt = size(targ,2);
+   x = targ(1,:).' - src(1,:);
+   y = targ(2,:).' - src(2,:);
+   x2 = x.^2;  y2 = y.^2;
+   q = (x2 + y2).^3;
+   d4 = cat(3, -2*(x2.^2 + 6*x2.*y2 - 3*y2.^2)./q, ...
+                4*x.*y.*(x2 - 3*y2)./q, ...
+               -2*((x2 - y2).^2 - 4*x2.*y2)./q, ...
+               -4*x.*y.*(3*x2 - y2)./q, ...
+                2*(3*x2.^2 - 6*x2.*y2 - y2.^2)./q);
+   corr = -1/(4*pi*alpha)*d4;
+   fourthT = fourthF + corr;
+   near = any(abs(corr) > 1e3*abs(fourthT), 3) | q == 0 | any(~isfinite(fourthT), 3);
+   if any(near(:))
+       [~, ~, ~, ~, fn] = surfwave.flex.gsflex(rts, ejs, [0; 0], [x(near).'; y(near).'], true);
+       fourthT = reshape(fourthT, nt*ns, 5);
+       fourthT(near(:), :) = reshape(fn, [], 5);
+       fourthT = reshape(fourthT, nt, ns, 5);
+   end
+end
+
+function [hess, third, fourth] = fgw_derivs(S, src, targ)
+% second, third and fourth derivatives of 2*G1_diff (finite depth minus deep
+% gsflex) w.r.t. the target, ordered as in gsflex
+   ns = size(src,2); nt = size(targ,2);
+   rx = targ(1,:).' - src(1,:);
+   ry = targ(2,:).' - src(2,:);
+   D = surfwave.flex.fgw_eval_xy(S, rx, ry, 'diff');
+   Dab = @(a, b) 2*reshape(D(:, a+1, b+1), nt, ns);
+   hess   = cat(3, Dab(2,0), Dab(1,1), Dab(0,2));
+   third  = cat(3, Dab(3,0), Dab(2,1), Dab(1,2), Dab(0,3));
+   fourth = cat(3, Dab(4,0), Dab(3,1), Dab(2,2), Dab(1,3), Dab(0,4));
 end
 
 function submat = interleave(nt, ns, K)
