@@ -329,8 +329,8 @@
 !
 !  Now test the solver
 !
-      allocate(errs(numit+1)) 
       numit = 100
+      allocate(errs(numit+1))
       niter = 0
       rres = 0
       eps_gmres = eps
