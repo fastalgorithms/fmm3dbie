@@ -456,7 +456,7 @@ test/quad: $(QTOBJS)
 
 
 QQOBJS = test/quadratures/test_find_near.o test/quadratures/test_adap_quad_self.o test/quadratures/test_mixed_patch_quad.o \
-	test/quadratures/test_near_quad_sub.o
+	test/quadratures/test_near_quad_sub.o test/quadratures/test_near_corr_bel.o
 test/quadrature: $(QQOBJS)
 	$(FC) $(FFLAGS) test/quadratures/test_quadratures.f -o test/quadratures/int2-quad $(QQOBJS) lib-static/$(STATICLIB) $(LIBS) 
 

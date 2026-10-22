@@ -12,9 +12,12 @@
       ntests = ntests + 3
       call test_near_quad_sub(i4)
 
-      print *, i1, i2, i3, i4
+      ntests = ntests + 2
+      call test_near_corr_bel(i5)
 
-      nsuccess = i1 + i2 + i3 + i4
+      print *, i1, i2, i3, i4, i5
+
+      nsuccess = i1 + i2 + i3 + i4 + i5
 
       open(unit=33,file='../../print_testres.txt',access='append')
       write(33,'(a,i2,a,i2,a)') 'Successfully completed ',nsuccess,
