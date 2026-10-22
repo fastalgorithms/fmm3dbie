@@ -347,11 +347,12 @@
           zey*zynm(i)*srcvals(10:12,i)
       enddo
 
+      ifcorr = 0
       call em_nrccie_pec_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, zpars, numit, &
         einc, hinc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
-        novers, npts_over, ixyzso, srcover, wover, eps_gmres, niter, &
-        errs, rres, zjvec, rho)
+        ifcorr, novers, npts_over, ixyzso, srcover, wover, eps_gmres, &
+        niter, errs, rres, zjvec, rho)
       
       do i=1,3
          do j=1,3

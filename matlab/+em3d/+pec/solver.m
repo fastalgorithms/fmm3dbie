@@ -143,6 +143,7 @@ function [densities, varargout] = solver(S, einc, hinc, eps, zk, rep_params, opt
     errs = zeros(maxit+1,1);
     maxitp1 = maxit + 1;
     rres = 0;
+    ifcorr = 0;
 
     if strcmpi(rep, 'nrccie')
       zjvec = complex(zeros(3,npts));
@@ -151,8 +152,8 @@ function [densities, varargout] = solver(S, einc, hinc, eps, zk, rep_params, opt
       zpars(1) = zk;
       zpars(2) = rep_params;
 % Call the layer potential evaluator
-      mex_id_ = 'em_nrccie_pec_solver_guru(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i dcomplex[xx], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c io int64_t[x], c io double[x], c io double[x], c io dcomplex[xx], c io dcomplex[x])';
-[niter, errs, rres, zjvec, rho] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, einc, hinc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, zjvec, rho, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 3, npts, 3, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, 3, npts, npts);
+      mex_id_ = 'em_nrccie_pec_solver_guru(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i dcomplex[xx], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c io int64_t[x], c io double[x], c io double[x], c io dcomplex[xx], c io dcomplex[x])';
+[niter, errs, rres, zjvec, rho] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, einc, hinc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, zjvec, rho, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 2, 1, 3, npts, 3, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nker, nquad, 1, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, 3, npts, npts);
       
       densities = complex(zeros(4,npts));
       densities(1:3,:) = zjvec;
