@@ -1,4 +1,4 @@
-function obj = kernel2d(type, nu, rts, ejs)
+function obj = kernel2d(type, nu, rts, ejs, fgw)
 %SURFWAVE.FLEX.KERNEL2D   chunkie kernel objects for the 2D (boundary)
 %   flexural / polynya kernels.
 %
@@ -37,6 +37,11 @@ function obj = kernel2d(type, nu, rts, ejs)
 %                              chnkr.data(1,:) = arclengthder(chnkr, signed_curvature(chnkr));
 %                            No diagonal fix by the caller.
 %
+%   Finite depth: K = SURFWAVE.FLEX.KERNEL2D('free_plate_log', nu, rts, ejs, fgw)
+%   with fgw = SURFWAVE.FLEX.FGW_SETUP(alpha, gamma, depth) adds the (smooth)
+%   finite depth minus deep water part to the log kernel; rts, ejs are still
+%   the deep water roots. 'free_plate_smooth' needs no change.
+%
 %   Scalar, [1 1]:
 %
 %      'hilb'     - Hilbert transform kernel, sing = 'pv'
@@ -47,10 +52,13 @@ function obj = kernel2d(type, nu, rts, ejs)
 %      'gphi_eval' - SURFWAVE.FLEX.KERNEL_EVAL('free_plate_gphi_eval', ...)
 %      Combine with kernel arithmetic, e.g. Kb2v = 0.5*Kgs - Kgp.
 %
-% See also SURFWAVE.FLEX.KERN, SURFWAVE.FLEX.KERNEL_EVAL, KERNEL3D.ICEFLEX
+% See also SURFWAVE.FLEX.KERN, SURFWAVE.FLEX.KERNEL_EVAL, SURFWAVE.FLEX.FGW_SETUP
 
 if ( nargin < 4 )
     error('SURFWAVE.FLEX.KERNEL2D: need type, nu, rts and ejs.');
+end
+if ( nargin < 5 )
+    fgw = [];
 end
 
 switch lower(type)
@@ -81,7 +89,8 @@ switch lower(type)
         obj.type   = 'free_plate_log';
         obj.opdims = [2 3];
         obj.sing   = 'log';
-        obj.eval   = @(s,t) surfwave.flex.kern(s, t, 'free plate log', nu, rts, ejs);
+        obj.eval   = @(s,t) surfwave.flex.kern(s, t, 'free plate log', nu, rts, ejs, fgw);
+        if ~isempty(fgw), obj.params.fgw = fgw; end
     case {'free_plate_smooth', 'free plate smooth'}
         obj.type   = 'free_plate_smooth';
         obj.opdims = [2 3];
