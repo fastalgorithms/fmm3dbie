@@ -26,6 +26,10 @@ function obj = iceflex(type, rts, ejs, green, varargin)
 %   'rmax', rmax it is a KERNEL3D.RADPP kernel (eval from a fit on
 %   [1e-12 rmax], fast), see SURFWAVE.KERNEL.
 %
+%   'add', {gs_d, gphi_d, s3d_d, bilap_d} adds smooth corrections to the
+%   Green's functions (e.g. finite depth), weighted by w, see
+%   SURFWAVE.FLEX.GREEN.
+%
 %   Further arguments go to KERNEL3D.RADGREEN or KERNEL3D.RADPP.
 %
 %   Example, the polynya v2b operator:
@@ -41,7 +45,14 @@ if ( nargin < 4 || isempty(green) ), green = 'gs'; end
 
 rts = rts(:);  ejs = ejs(:);
 
-obj = surfwave.kernel(surfwave.flex.green(rts, ejs, green), type, ...
+add = {};
+k = find(strcmpi(varargin(1:2:end), 'add'), 1);
+if ( ~isempty(k) )
+    add = varargin{2*k};
+    varargin(2*k-1:2*k) = [];
+end
+
+obj = surfwave.kernel(surfwave.flex.green(rts, ejs, green, add), type, ...
                      max(abs(rts)), varargin{:});
 
 end

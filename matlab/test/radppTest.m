@@ -7,7 +7,7 @@ rng(42);
 
 test_fit_limits();
 test_fit_battery();
-test_radpp_eval_fortran();
+test_radpp_eval_derivs();
 % 2D (in-plane derivatives, dim = 2)
 test_tensors_2d();
 test_builtins_2d(@gauss, 1e-11);
@@ -111,18 +111,33 @@ assert(info.err < 1e-12, 'radpp_fit: r log r, error %.1e', info.err);
 end
 
 
-function test_radpp_eval_fortran()
-% The Fortran evaluator matches radpp_eval, NaN outside the fit included.
+function test_radpp_eval_derivs()
+% radpp_eval_derivs vs radpp_rotate(radpp_eval), dim = 2, 3, 13.
 
-f = @(r) [exp(1i*1.3*r(:))./r(:), cos(r(:))];
+f = @(r) exp(1i*1.3*r(:))./r(:).*(1:6) + cos((1:6).*r(:));
 [ipars, dpars, info] = radpp_fit(f, 1e-3, 5);
-r = [1e-4; linspace(1e-3, 5, 1000).'; 6];
-A = radpp_eval(r, info.breaks, info.coefs);
-B = radpp_eval_fortran(r, ipars, dpars);
-assert(isequal(isnan(A), isnan(B)), 'radpp_eval_fortran: NaN outside the fit');
-ok = ~isnan(A);
-err = max(abs(A(ok) - B(ok)))/max(abs(A(ok)));
-assert(err < 1e-14, 'radpp_eval_fortran: %.2e', err);
+n = 500;
+d = randn(3, n);
+d = d./vecnorm(d).*(1e-3 + 4*rand(1, n));
+d(:,1) = [0.5; 0; 0];                        % on the x axis
+for dim = [2 3 13]
+    nfits = 0:3;
+    if dim == 13, nfits = 0:1; end
+    dz = d(3,:);
+    if dim == 2, dz = 0*dz; end
+    r = sqrt(d(1,:).^2 + d(2,:).^2 + dz.^2);
+    prof = radpp_eval(r, info.breaks, info.coefs);
+    for nfit = nfits
+        ip = [ipars(:); nfit; 1; dim; 0];
+        A = radpp_rotate(d(1,:), d(2,:), dz, prof, nfit, dim);
+        B = radpp_eval_derivs(d(1,:), d(2,:), dz, ip, dpars);
+        assert(isequal(size(A), size(B)), ...
+            'radpp_eval_derivs: size, dim %d, nfit %d', dim, nfit);
+        err = max(abs(A(:) - B(:)))/max(abs(A(:)));
+        assert(err < 1e-13, 'radpp_eval_derivs: dim %d, nfit %d, %.2e', ...
+            dim, nfit, err);
+    end
+end
 
 end
 

@@ -71,7 +71,7 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     if nbytes_itrirel > 4e9
         error('FMM3DBIE:GETTRITREE:itrirelTooLarge', ...
             ['itrirel would be %d x %d (%.1f GB)'], ...
-            ntarg, ntrimax, nbytes_itrirel/1e9, ntrimax);
+            ntarg, ntrimax, nbytes_itrirel/1e9);
     end
     itrirel = zeros(ntarg,ntrimax);
 

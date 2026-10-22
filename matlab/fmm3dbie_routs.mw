@@ -845,7 +845,7 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     if nbytes_itrirel > 4e9
         error('FMM3DBIE:GETTRITREE:itrirelTooLarge', ...
             ['itrirel would be %d x %d (%.1f GB)'], ...
-            ntarg, ntrimax, nbytes_itrirel/1e9, ntrimax);
+            ntarg, ntrimax, nbytes_itrirel/1e9);
     end
     itrirel = zeros(ntarg,ntrimax);
 
@@ -6407,26 +6407,30 @@ end
 %
 %
 
-@ src/radpp_eval_fortran.m
-function val = radpp_eval_fortran(r,ipars,dpars)
-%RADPP_EVAL_FORTRAN evaluate a radpp_fit expansion with the Fortran
-%  evaluator vpp_eval_vec
+@ src/radpp_eval_derivs.m
+function comps = radpp_eval_derivs(dx,dy,dz,ipars,dpars)
+%RADPP_EVAL_DERIVS radpp fit and derivatives at displacements (dx,dy,dz)
 %
-%  val = radpp_eval_fortran(r,ipars,dpars), with ipars and dpars from
-%  RADPP_FIT. r is any array; val is (numel(r),m), as RADPP_EVAL. Radii
-%  outside the fit give NaN.
+%  comps = radpp_eval_derivs(dx,dy,dz,ipars,dpars), with ipars (including
+%  ipars(6:9) = nderiv, ncomp, dim, isrc) and dpars from KERNEL3D.RADPP.
+%  dx, dy, dz: target - source, same size. comps: (numel(dx),nc), ordered
+%  as RADPP_ROTATE. Outside the fit, the end panels are extrapolated.
 %
-%  See also RADPP_EVAL, RADPP_FIT
+%  See also RADPP_ROTATE, RADPP_EVAL
 %
-    r = r(:);
-    nr = length(r);
+    dx = dx(:);  dy = dy(:);  dz = dz(:);
+    n = length(dx);
     ndd = length(dpars);
     ndi = length(ipars);
-    nv = ipars(5);
-    vals = zeros(nv,nr);
-    # FORTRAN vpp_eval_vec(int[1] nr, double[nr] r, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, inout double[nv,nr] vals);
-    val = complex(vals(1:2:end,:),vals(2:2:end,:)).';
-    val(r < dpars(1) | r > dpars(ipars(1)+1),:) = NaN;
+    nfit = ipars(6) + ipars(9);
+    switch ipars(8)
+      case 2,  nc = [1 3 6 10];   nc = nc(nfit+1);
+      case 3,  nc = [1 4 10 20];  nc = nc(nfit+1);
+      case 13, nc = 6 + 18*(ipars(6) > 0);
+    end
+    comps = complex(zeros(nc,n));
+    # FORTRAN radpp_eval_derivs_vec(int[1] n, double[n] dx, double[n] dy, double[n] dz, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, int[1] nc, inout dcomplex[nc,n] comps);
+    comps = comps.';
 end
 
 %
@@ -6452,6 +6456,31 @@ function wnear = getnearquad_radpp(npatches,norders,ixyzs, ...
 
     wnear = zeros(nrow,nquad,'like',1i);
     # FORTRAN getnearquad_radpp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] nrow, int[nrow] ipvs, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, inout dcomplex[nrow,nquad] wnear);
+end
+
+%
+%
+
+@ src/getnearquad_radpp_d.m
+function wnear = getnearquad_radpp_d(npatches,norders,ixyzs, ...
+          iptype,npts,srccoefs,srcvals,targs,ipatch_id,uvs_targ,eps, ...
+          ipvs,nnz,row_ptr,col_ind,iquad,rfac0,nquad,dpars,ipars)
+%
+%  Near quadrature for the length(ipvs) rows of a real radpp kernel.
+%  Returns wnear (nrow,nquad).
+%
+    [n12,npts] = size(srcvals);
+    [n9,~] = size(srccoefs);
+    npp1 = npatches+1;
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    nrow = length(ipvs);
+    ndd = length(dpars);
+    ndi = length(ipars);
+
+    wnear = zeros(nrow,nquad);
+    # FORTRAN getnearquad_radpp_d(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] ipatch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] nrow, int[nrow] ipvs, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[1] ndd, double[ndd] dpars, int[1] ndi, int[ndi] ipars, inout double[nrow,nquad] wnear);
 end
 
 %

@@ -123,9 +123,6 @@ if ischar(green)
         case 'summable'
             obj = summable(rmax);
         case 'fit'
-            % kernel3d.radpp('fit', K, S, targinfo, rsc): the params of a
-            % radgreen kernel K with the fit (ipars, dpars) over the
-            % distances its near quadrature on S needs
             obj = radgreen_fit(rmax.params, type, varargin{:});
         otherwise
             obj = ppsum(rmax, type);
@@ -326,7 +323,7 @@ obj.params = struct('green', green, 'rmin', rmin, 'rmax', rmax, ...
 if gmode, obj.params.profun = profun; end
 
 obj.params.targs = @(t) radpp_targs(t, spec.wfun, spec.vfun);  % for radpp_kern
-% checked once here: exist is too slow to call on every evaluation
+% mex availability
 obj.params.usemex = exist('fmm3dbie_routs', 'file') == 3;
 
 p = obj.params;
@@ -791,14 +788,14 @@ if p.gmode
     r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
     comps = radpp_rotate(dx, dy, dz, p.profun(r), nfit, p.dim);
 else
-    % the fit, with the Fortran evaluator if the mex is built
-    r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
+    % the fit
     if p.usemex
-        prof = radpp_eval_fortran(r, p.ipars, p.dpars);
+        comps = radpp_eval_derivs(dx, dy, dz, p.ipars, p.dpars);
     else
+        r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
         prof = radpp_eval(r, p.breaks, p.coefs);
+        comps = radpp_rotate(dx, dy, dz, prof, nfit, p.dim);
     end
-    comps = radpp_rotate(dx, dy, dz, prof, nfit, p.dim);
 end
 comps = reshape(comps, nt, ns, []);
 
@@ -889,13 +886,15 @@ if isempty(patch_id)
     uvs_targ = zeros(2, ntarg);
 end
 
-wnear = getnearquad_radpp(S.npatches, norders, ixyzs, iptype, S.npts, ...
+if ifcomplex
+    nq = @getnearquad_radpp;
+else
+    nq = @getnearquad_radpp_d;
+end
+wnear = nq(S.npatches, norders, ixyzs, iptype, S.npts, ...
     srccoefs, srcvals, targs, patch_id, uvs_targ, eps, p.ipv, rsc.nnz, ...
     rsc.row_ptr, rsc.col_ind, rsc.iquad, rsc.rfac0, nquad, p.dpars, ...
     p.ipars);
-if ~ifcomplex
-    wnear = real(wnear);
-end
 
 spmat = conv_rsc_to_spmat(S, rsc.row_ptr, rsc.col_ind, wnear, ri);
 
@@ -918,10 +917,9 @@ spmat = radpp_getquad(S, eps, p, ifcomplex, ri, targinfo, opts);
 end
 
 
-
 function p = radgreen_fit(p, S, targinfo, rsc)
-% the params p of a radgreen kernel with the fit of the profiles over the
-% distances the near quadrature of S at targinfo (near field rsc) needs
+% params p of a radgreen kernel with ipars, dpars fitted over the near
+% field distances of S at targinfo
 if nargin < 4 || isempty(rsc), rsc = getnear(S, targinfo); end
 [rmin, rmax] = radgreen_range(S, targinfo, rsc);
 G = p.green;
@@ -941,6 +939,7 @@ end
 p.ipars = [ipars; p.ipost];
 p.dpars = dpars;
 end
+
 
 function [ipars, dpars, info] = radpp_addfits(fits)
 % sum of radpp_fit expansions on the union of their panels, on the
@@ -1029,14 +1028,8 @@ end
 function [rmin, rmax] = radgreen_range(S, targinfo, rsc)
 % distances from each target to its near patches: rmax bounds them with
 % the patch radii, rmin is a small fraction of the smallest patch
-[~, ~, ~, ixyzs] = extract_arrays(S);
-np  = numel(ixyzs) - 1;
-pid = reshape(repelem((1:np).', diff(double(ixyzs(:)))), [], 1);
-c = zeros(3, np);
-for k = 1:3
-    c(k,:) = accumarray(pid, S.r(k,:).', [np 1], @mean).';
-end
-R = accumarray(pid, vecnorm(S.r - c(:,pid)).', [np 1], @max).';
+c = S.cms;
+R = reshape(S.rads, 1, []);
 
 tr = zeros(3, size(targinfo.r(:,:), 2));
 tr(1:size(targinfo.r,1), :) = targinfo.r(:,:);

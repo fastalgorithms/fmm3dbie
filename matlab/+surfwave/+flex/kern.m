@@ -379,7 +379,7 @@ if strcmpi(type, 'free plate log')
    [A11,A12,A21,A22] = fp_first(srcinfo,targinfo,nu,rts,ejs,hessF,thirdF,fourthF);
    [B11,~,  B21,~  ] = fp_hilbert(srcinfo,targinfo,nu,rts,ejs,thirdF,fourthT);
    g = fp_geom(srcinfo, targinfo);
-   [~,grad] = green2d.lap(src,targ,true);
+   [~,grad] = lapgreen(src,targ,true);
    hilb = 2*(grad(:,:,1).*g.ny - grad(:,:,2).*g.nx);
    A21 = A21 - (2/alpha)*(1+nu)/(4*pi)*(g.tt./g.r2 - 2*g.rtt.*g.rt./g.r4);
    B11 = B11 + (2/alpha)*(1+nu)^2/8*hilb;
@@ -772,7 +772,7 @@ function fourthT = gsflex_fourth_r2logr(rts, ejs, alpha, src, targ, fourthF)
    fourthT = fourthF + corr;
    near = any(abs(corr) > 1e3*abs(fourthT), 3) | q == 0 | any(~isfinite(fourthT), 3);
    if any(near(:))
-       [~, ~, ~, ~, fn] = surfwave.flex.gsflex(rts, ejs, [0; 0], [x(near).'; y(near).'], true);
+       [~, ~, ~, ~, fn] = surfwave.flex.gsflex(rts, ejs, [0; 0], [reshape(x(near), 1, []); reshape(y(near), 1, [])], true);
        fourthT = reshape(fourthT, nt*ns, 5);
        fourthT(near(:), :) = reshape(fn, [], 5);
        fourthT = reshape(fourthT, nt, ns, 5);
