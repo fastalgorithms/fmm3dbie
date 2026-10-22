@@ -480,6 +480,8 @@
       integer *8 iptype,nv
       real *8 uv(2,*)
 
+      nv = 0
+
       if(iptype.eq.1) then
         nv = 3
         uv(1,1) = 0

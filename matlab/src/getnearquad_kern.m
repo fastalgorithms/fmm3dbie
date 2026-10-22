@@ -15,7 +15,7 @@ function [xmat,nover] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, 
 %    targinfo     - (optional) struct with target point information.
 %                   Defaults to the self-interaction targets on obj.
 %    opts         - (optional) options struct with fields:
-%        opts.nover    - oversampling order (default obj.norders(1)+2)
+%        opts.nover    - oversampling order (default obj.norders+2)
 %        opts.subtract - if false, do not subtract the smooth oversampled
 %                        quadrature; just return the raw near correction
 %                        (default true)
@@ -36,7 +36,7 @@ function [xmat,nover] = getnearquad_kern(obj, kern, eps, getnearquad, targinfo, 
         opts = [];
     end
     if ~isfield(opts, 'nover') || isempty(opts.nover)
-        nover = obj.norders(1) + 2;
+        nover = obj.norders + 2;
     else
         nover = opts.nover;
     end

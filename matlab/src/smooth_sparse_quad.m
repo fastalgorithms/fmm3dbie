@@ -57,6 +57,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
     npatches = S.npatches;
     nnz_rsc  = length(col_ind);
     npols = ixyzs(2:end) - ixyzs(1:end-1);  % pts per patch (oversampled)
+    npols = npols(:);
     rsc.iquad = [1; 1 + cumsum(npols(col_ind(:)))];
     csc = conv_rsc_to_csc(npatches, rsc);
 
