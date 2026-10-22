@@ -55,7 +55,7 @@ if isnumeric(h) && ~isscalar(h)
             'KERNEL3D:mtimes: right matrix must have %d rows', K.opdims(2));
         p = size(A, 2);
     end
-    h = @(pts) repmat(A, 1, 1, size(pts.r, 2));
+    h = @(pts) repmat(A, 1, 1, size(pts.r(:,:), 2));
 end
 
 % only remaining option is a function handle
@@ -145,8 +145,8 @@ end
 % left-multiply: h(t) * K(s,t)
 
     function vals = eval_left(s, t)
-        nt   = size(t.r, 2);
-        ns   = size(s.r, 2);
+        nt   = size(t.r(:,:), 2);
+        ns   = size(s.r(:,:), 2);
         fval = h(t);
         Kmat = Keval(s, t);
         K3   = permute(reshape(Kmat, m, nt, q*ns), [1 3 2]);
@@ -155,10 +155,12 @@ end
     end
 
     function out = fmm_left(eps, s, t, sigma)
-        nt    = size(t.r, 2);
+        nt    = size(t.r(:,:), 2);
         fval  = h(t);
         inner = Kfmm(eps, s, t, sigma);
-        out   = reshape(apply_left(fval, reshape(inner, m, 1, nt)), p*nt, 1);
+        ndens = numel(inner)/(m*nt);
+        X     = permute(reshape(inner, m, nt, ndens), [1 3 2]);
+        out   = reshape(permute(apply_left(fval, X), [1 3 2]), p*nt, ndens);
     end
 
     function Q = getquad_left(S, eps, varargin)
@@ -168,7 +170,7 @@ end
         else
             targ = S;
         end
-        nt   = size(targ.r, 2);
+        nt   = size(targ.r(:,:), 2);
         fval = h(targ);
         Q3   = permute(reshape(full(Qinner), m, nt, q*S.npts), [1 3 2]);
         Q    = sparse(reshape(permute(apply_left(fval, Q3), [1 3 2]), p*nt, q*S.npts));
@@ -176,7 +178,7 @@ end
 
     function D = diag_left(t)
         % stacked (m*nt x q) diag -> pages, left-multiply, restack
-        nt = size(t.r, 2);
+        nt = size(t.r(:,:), 2);
         D3 = permute(reshape(Kdiag(t), m, nt, q), [1 3 2]);
         D  = reshape(permute(apply_left(h(t), D3), [1 3 2]), p*nt, q);
     end
@@ -184,8 +186,8 @@ end
 % right-multiply: K(s,t) * h(s)
 
     function vals = eval_right(s, t)
-        ns   = size(s.r, 2);
-        nt   = size(t.r, 2);
+        ns   = size(s.r(:,:), 2);
+        nt   = size(t.r(:,:), 2);
         fval = h(s);
         Kmat = Keval(s, t);
         K3   = reshape(Kmat, m*nt, q, ns);
@@ -193,9 +195,11 @@ end
     end
 
     function out = fmm_right(eps, s, t, sigma)
-        ns     = size(s.r, 2);
+        ns     = size(s.r(:,:), 2);
         fval   = h(s);
-        sig_in = reshape(apply_left(fval, reshape(sigma, p, 1, ns)), q, ns);
+        ndens  = numel(sigma)/(p*ns);
+        X      = permute(reshape(sigma, p, ns, ndens), [1 3 2]);
+        sig_in = reshape(permute(apply_left(fval, X), [1 3 2]), q*ns, ndens);
         out    = Kfmm(eps, s, t, sig_in);
     end
 
@@ -214,7 +218,7 @@ end
 
     function D = diag_right(t)
         % the delta term has s = t, so h is evaluated at the targets
-        nt = size(t.r, 2);
+        nt = size(t.r(:,:), 2);
         D3 = permute(reshape(Kdiag(t), m, nt, q), [1 3 2]);
         D  = reshape(permute(apply_right(D3, h(t)), [1 3 2]), m*nt, p);
     end
@@ -229,7 +233,7 @@ function hn = normalize_handle(h, hr, hc, side)
 % Wrap h so that it always returns the tensor form.
     function fval = hwrap(pts)
         fval = h(pts);
-        n = size(pts.r, 2);
+        n = size(pts.r(:,:), 2);
         if n <= 1 || size(fval, 3) ~= 1
             return
         end

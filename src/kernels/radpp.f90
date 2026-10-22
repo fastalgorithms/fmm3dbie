@@ -38,6 +38,7 @@
 ! The source normal n_y is srcinfo(10:12).
 !
 ! radpp_tensors     - tensor components at a displacement (dx,dy,dz)
+! radpp_eval_derivs_vec - radpp_tensors at many displacements
 ! radpp_kern        - fmm3dbie kernel, the contraction above
 ! getnearquad_radpp - near quadrature for nrow such kernels, with
 !                     their weights stored one after the other in targs
@@ -103,6 +104,28 @@ subroutine radpp_tensors(dx,dy,dz,ndd,dpars,ndi,ipars,comps)
 
   return
 end subroutine radpp_tensors
+
+
+subroutine radpp_eval_derivs_vec(n,dx,dy,dz,ndd,dpars,ndi,ipars,nc,comps)
+!
+!  radpp_tensors at n displacements, first nc components, comps (nc,n)
+!
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: dx(n), dy(n), dz(n), dpars(ndd)
+  integer *8 :: ipars(ndi)
+  complex *16 :: comps(nc,n)
+  complex *16 :: ctmp(24)
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,ctmp)
+  do i = 1,n
+     call radpp_tensors(dx(i),dy(i),dz(i),ndd,dpars,ndi,ipars,ctmp)
+     comps(1:nc,i) = ctmp(1:nc)
+  enddo
+!$OMP END PARALLEL DO
+
+  return
+end subroutine radpp_eval_derivs_vec
 
 
 subroutine radpp_tensors3(dx,dy,dz,ndd,dpars,ndi,ipars,comps)
@@ -365,3 +388,90 @@ end subroutine radpp_kern
 
       return
       end subroutine getnearquad_radpp
+
+
+
+subroutine radpp_kern_d(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
+!
+!  real part of radpp_kern, real-kernel interface
+!
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: src(*), targ(ndt), dpars(ndd), val
+  integer *8 :: ipars(ndi)
+  complex *16 :: zpars(*), zval
+
+  call radpp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,zval)
+  val = dble(zval)
+
+  return
+end subroutine radpp_kern_d
+
+
+      subroutine getnearquad_radpp_d(npatches, norders, ixyzs, iptype, &
+        npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, &
+        uvs_targ, eps, nrow, ipvs, nnz, row_ptr, col_ind, iquad, &
+        rfac0, nquad, ndd, dpars, ndi, ipars, wnear)
+!
+!  getnearquad_radpp for real radpp kernels, with
+!    - wnear: real *8 (nrow,nquad)
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg), eps
+      integer *8, intent(in) :: nrow, ipvs(nrow)
+      integer *8, intent(in) :: nnz, row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: nquad, ndd, ndi
+      real *8, intent(in) :: dpars(ndd)
+      integer *8, intent(in) :: ipars(ndi)
+      real *8, intent(out) :: wnear(nrow,nquad)
+
+      integer *8 ipars_row(10), ndi_row, ndz, ncomp, irow, i
+      complex *16 zpars(1)
+      real *8, allocatable :: wtmp(:)
+      procedure (), pointer :: fker
+      external radpp_kern_d
+
+      fker => radpp_kern_d
+      ndz = 0
+      zpars(1) = 0
+      ndi_row = 10
+      ipars_row(1:9) = ipars(1:9)
+      ncomp = ipars(7)
+
+      allocate(wtmp(nquad))
+
+      do irow = 1,nrow
+        ipars_row(10) = 4 + 2*ncomp*(1+ipars(9))*(irow-1)
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i = 1,nquad
+          wtmp(i) = 0
+        enddo
+!$OMP END PARALLEL DO
+
+        call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
+          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+          ipatch_id, uvs_targ, eps, ipvs(irow), fker, ndd, dpars, &
+          ndz, zpars, ndi_row, ipars_row, nnz, row_ptr, col_ind, &
+          iquad, rfac0, nquad, wtmp)
+
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+        do i = 1,nquad
+          wnear(irow,i) = wtmp(i)
+        enddo
+!$OMP END PARALLEL DO
+      enddo
+
+      deallocate(wtmp)
+
+      return
+      end subroutine getnearquad_radpp_d
