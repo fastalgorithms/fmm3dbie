@@ -472,7 +472,7 @@
       enddo
 !$OMP END PARALLEL DO
 
-      call get_fmm_thresh(int8_12, ns, srcover, int8_12, ntarg, srctmp, &
+      call get_fmm_thresh(int8_12, ns, srcover, int8_3, ntarg, srctmp, &
         thresh)
 
 !     Add precomputed near-field quadrature
@@ -737,7 +737,7 @@
 !$OMP END PARALLEL DO
 
 !     threshold for ignoring near direct interactions
-      call get_fmm_thresh(int8_12, ns, srcover, int8_12, ntarg, &
+      call get_fmm_thresh(int8_12, ns, srcover, int8_3, ntarg, &
         srctmp, thresh)
 
 !     add precomputed near quadrature

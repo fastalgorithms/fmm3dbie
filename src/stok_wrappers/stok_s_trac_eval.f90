@@ -598,7 +598,7 @@
       real *8 tnorm(3)
 
       integer *8 i, j, l, jpatch, jquadstart, jstart, npols, npover
-      integer *8 nd, ntarg0
+      integer *8 nd, ntarg0, int8_3
       integer *8 ier, iper
       integer *8 ifstoklet, ifstrslet, ifrotlet, ifdoublet
       integer *8 ifppreg, ifppregtarg
@@ -610,6 +610,7 @@
       parameter (nd=1, ntarg0=1)
 
       done = 1
+      int8_3 = 3
       pi = atan(done)*4
 
       ns = nptso
@@ -714,7 +715,7 @@
       !
       ! Compute near-field FMM exclusion threshold
       !
-      call get_fmm_thresh(3, ns, sources, 3, nt, targvals, thresh)
+      call get_fmm_thresh(int8_3, ns, sources, int8_3, nt, targvals, thresh)
 
       !
       ! Add precomputed near-field quadrature correction

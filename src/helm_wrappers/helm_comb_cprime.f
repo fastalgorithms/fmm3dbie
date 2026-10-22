@@ -477,7 +477,7 @@ C$OMP PARALLEL DO DEFAULT(SHARED)
       enddo
 C$OMP END PARALLEL DO
 
-      call get_fmm_thresh(int8_12,ns,srcover,int8_12,ntarg,srctmp,
+      call get_fmm_thresh(int8_12,ns,srcover,int8_3,ntarg,srctmp,
      1  thresh)
 
 c     Add precomputed near-field quadrature
@@ -661,9 +661,10 @@ c
 
       integer *8 ier
       integer *8 nd,ntarg0
-      integer *8 int8_12
+      integer *8 int8_3,int8_12
 
       parameter (nd=1,ntarg0=1)
+      int8_3 = 3
       int8_12 = 12
 
       ns = nptso
@@ -732,7 +733,7 @@ C$OMP PARALLEL DO DEFAULT(SHARED)
       enddo
 C$OMP END PARALLEL DO
 
-      call get_fmm_thresh(int8_12,ns,srcover,int8_12,ntarg,srctmp,
+      call get_fmm_thresh(int8_12,ns,srcover,int8_3,ntarg,srctmp,
      1  thresh)
 
 c     add precomputed near quadrature
