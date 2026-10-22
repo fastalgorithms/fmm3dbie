@@ -200,6 +200,82 @@
       return
       end
 !
+!
+!
+!
+!
+      subroutine getnearcorr_helm_comb_wdd_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_helm_comb_wdd_eval, minus the smooth quadrature rule
+!  oversampled to novers, for each of S_{k} and D_{k}. The result is
+!  the near quadrature correction for helm_comb_wdd_eval_addsub with
+!  ifcorr = 1, and the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars,
+!      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_helm_comb_wdd_eval
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: complex *16(2,nquad)
+!        The near quadrature corrections
+!        wnear(1,:) - for S_{k}
+!        wnear(2,:) - for D_{k}
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg, ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: eps
+      complex *16, intent(in) :: zpars(1)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: nquad
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(2,nquad)
+
+      integer *8 ndd, ndz, ndi, nker, ipars(1)
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external h3d_slp, h3d_dlp
+
+      call getnearquad_helm_comb_wdd_eval(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+
+      ndd = 0
+      ndz = 1
+      ndi = 0
+      nker = 2
+      fker => h3d_slp
+      call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+        dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+        nquad, nker, 1_8, wnear)
+      fker => h3d_dlp
+      call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+        dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+        nquad, nker, 2_8, wnear)
+
+      return
+      end
+!
 
 
 
@@ -207,7 +283,7 @@
       subroutine helm_comb_wdd_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, &
         nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
         ndim_s, sigma, ipotflag, ndim_p, pot)
 
@@ -311,6 +387,12 @@
 !        number of kernels in quadrature correction, must be 2
 !    - wnear: complex *16(nker, nquad)
 !        precomputed quadrature corrections            
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_helm_comb_wdd_eval, the
+!            oversampled smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_helm_comb_wdd_eval with the
+!            same novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -371,6 +453,7 @@
     
       integer *8, intent(in) :: nker
       complex *16, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
@@ -506,32 +589,39 @@
 !     Remove near contribution of the FMM
 ! 
 
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, j, jpatch, srctmp2) &
 !$OMP PRIVATE(ctmp2, dtmp2, l, jstart, nss, pottmp)
-      do i=1,ntarg
-        nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss+1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
-            ctmp2(nss) = charges(l)
-            dtmp2(1,nss) = dipvec(1,l)
-            dtmp2(2,nss) = dipvec(2,l)
-            dtmp2(3,nss) = dipvec(3,l)
+        do i=1,ntarg
+          nss = 0
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss+1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
+              ctmp2(nss) = charges(l)
+              dtmp2(1,nss) = dipvec(1,l)
+              dtmp2(2,nss) = dipvec(2,l)
+              dtmp2(3,nss) = dipvec(3,l)
+            enddo
           enddo
+
+          pottmp = 0
+
+          call h3ddirectcdp(nd, zpars(1), srctmp2, ctmp2, dtmp2, nss, &
+            targtmp(1,i), ntarg0, pottmp, thresh)
+          potloc(i) = potloc(i) - pottmp
         enddo
+!$OMP END PARALLEL DO
+      endif
 
-        pottmp = 0
-
-        call h3ddirectcdp(nd, zpars(1), srctmp2, ctmp2, dtmp2, nss, &
-          targtmp(1,i), ntarg0, pottmp, thresh)
-        potloc(i) = potloc(i) - pottmp
+!$OMP PARALLEL DO DEFAULT(SHARED)
+      do i=1,ntarg
         pot(1,i) = potloc(i)
       enddo
-!$OMP END PARALLEL DO      
+!$OMP END PARALLEL DO
 
       return
       end

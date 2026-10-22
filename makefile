@@ -433,7 +433,7 @@ test/com:
 	$(FC) $(FFLAGS) test/common/test_common.f -o test/common/int2-com lib-static/$(STATICLIB) $(LIBS) 
 
 test/hwrap:
-	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm lib-static/$(STATICLIB) $(LIBS) 
+	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f test/helm_wrappers/test_helm_corr.f90 -o test/helm_wrappers/int2-helm lib-static/$(STATICLIB) $(LIBS) 
 
 test/lwrap:
 	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f test/lap_wrappers/test_lap_corr.f90 -o test/lap_wrappers/int2-lap lib-static/$(STATICLIB) $(LIBS) 
@@ -470,7 +470,7 @@ test/com-dyn:
 	$(FC) $(FFLAGS) test/common/test_common.f -o test/common/int2-com -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 test/hwrap-dyn:
-	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
+	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f test/helm_wrappers/test_helm_corr.f90 -o test/helm_wrappers/int2-helm -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 test/lwrap-dyn:
 	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f test/lap_wrappers/test_lap_corr.f90 -o test/lap_wrappers/int2-lap -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)

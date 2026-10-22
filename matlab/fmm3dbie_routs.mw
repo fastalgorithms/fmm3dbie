@@ -2094,13 +2094,14 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
       ndi = 0;
       ipars = [];
       nker = 1;
+      ifcorr = 0;
       lwork = 0;
       work = [];
       ndim = 1;
       idensflag = 0;
       ipotflag = 0;
       ndim_p = 1;
-      # FORTRAN helm_comb_dir_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, dcomplex[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);
+      # FORTRAN helm_comb_dir_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, dcomplex[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);
     else
       ndd = 0;
       dpars = [];
@@ -2109,12 +2110,13 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
       ipars = [];
       ndim = 1;
       nker = 1;
+      ifcorr = 0;
       lwork = 0;
       work = [];
       idensflag = 0;
       ipotflag = 0;
       ndim_p = 1;
-      # FORTRAN helm_comb_cprime_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, dcomplex[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);
+      # FORTRAN helm_comb_cprime_eval_addsub(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps,int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad,int[1] nker,dcomplex[nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso,double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim, dcomplex[npts] sigma, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);
     end
 end
 %
@@ -2446,6 +2448,7 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 1;
+    ifcorr = 0;
 
     zpars = complex(zeros(3,1));
     zpars(1) = zk;
@@ -2453,7 +2456,7 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
     zpars(3) = rep_pars(2);
 
 % Call the layer potential evaluator
-    # FORTRAN helm_comb_dir_solver_guru(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals, double[1] eps, dcomplex[3] zpars, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma);  
+    # FORTRAN helm_comb_dir_solver_guru(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals, double[1] eps, dcomplex[3] zpars, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma);  
 
     errs = errs(1:niter);
     varargout{1} = errs;
@@ -2610,6 +2613,7 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
     ndi = 0;
     ipars = [];
     nker = 2;
+    ifcorr = 0;
     lwork = 0;
     work = [];
     ndim_s = 2;
@@ -2617,7 +2621,7 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
     idensflag = 1;
     ipotflag = 1;
 % Call the layer potential evaluator
-    # FORTRAN helm_rpcomb_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[2,npts] densities, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);   
+    # FORTRAN helm_rpcomb_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[2,npts] densities, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);   
 end    
 %
 %
@@ -2962,6 +2966,7 @@ function [densities, varargout] = solver(S, rhs, eps, zk, alpha, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 4;
+    ifcorr = 0;
 
     zpars = complex(zeros(2,1));
     zpars(1) = zk;
@@ -2969,7 +2974,7 @@ function [densities, varargout] = solver(S, rhs, eps, zk, alpha, opts)
 
 
 % Call the layer potential evaluator
-    # FORTRAN helm_rpcomb_neu_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma, inout dcomplex[npts] siksigma);  
+    # FORTRAN helm_rpcomb_neu_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma, inout dcomplex[npts] siksigma);  
 
     densities = complex(zeros(2,npts));
     densities(1,:) = sigma;
@@ -3125,6 +3130,7 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
     ndi = 0;
     ipars = [];
     nker = 2;
+    ifcorr = 0;
     lwork = 0;
     work = [];
     ndim_s = 2;
@@ -3132,7 +3138,7 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
     idensflag = 1;
     ipotflag = 1;
 % Call the layer potential evaluator
-    # FORTRAN helm_rpcomb_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear,  int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[2,npts] densities, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);   
+    # FORTRAN helm_rpcomb_eval_addsub(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, double[1] eps, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, int[1] lwork, double[lwork] work, int[1] idensflag, int[1] ndim_s, dcomplex[2,npts] densities, int[1] ipotflag, int[1] ndim_p, inout dcomplex[ntarg] p);   
 end    
 %
 %
@@ -3496,6 +3502,7 @@ function [densities, varargout] = solver(S, zlams, rhs, eps, zk, alpha, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 6;
+    ifcorr = 0;
 
     zpars = complex(zeros(2,1));
     zpars(1) = zk;
@@ -3512,7 +3519,7 @@ function [densities, varargout] = solver(S, zlams, rhs, eps, zk, alpha, opts)
 
 
 % Call the layer potential evaluator
-    # FORTRAN helm_rpcomb_imp_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, dcomplex[npts] zlams_use, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma, inout dcomplex[npts] siksigma);  
+    # FORTRAN helm_rpcomb_imp_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, dcomplex[npts] zlams_use, int[1] maxit, int[1] ifout, dcomplex[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[npts] sigma, inout dcomplex[npts] siksigma);  
     
     densities = complex(zeros(2,npts));
     densities(1,:) = sigma;
@@ -4007,6 +4014,7 @@ function [densities, varargout] = solver(S, rhs, eps, zks, rep_params, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 4;
+    ifcorr = 0;
 
     zpars = complex(zeros(6,1));
     zpars(1) = zks(1);
@@ -4018,7 +4026,7 @@ function [densities, varargout] = solver(S, rhs, eps, zks, rep_params, opts)
 
 
 % Call the layer potential evaluator
-    # FORTRAN helm_comb_trans_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] maxit, dcomplex[2,npts] rhs_use, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[2,npts] densities);
+    # FORTRAN helm_comb_trans_solver_guru(int[1] npatches, int[npatches] norders, int[npatp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] maxit, dcomplex[2,npts] rhs_use, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, dcomplex[nker,nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout dcomplex[2,npts] densities);
     
     errs = errs(1:niter);
     varargout{1} = errs;
