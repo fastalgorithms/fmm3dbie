@@ -87,8 +87,9 @@ function obj = radpp(green, rmax, type, varargin)
 %      'coefs'        - [alpha beta] for 'c', 'cp', 'c2trans' (default [1 1])
 %      'ipv'          - ipv for the GGQ quadrature, scalar or one per entry:
 %                       0 weakly singular, 1 principal value, 2
-%                       hypersingular. Defaults as in helm3d (the old 2D
-%                       types 's', 'sp', plate kernels use 0 in 2D)
+%                       hypersingular. By default this is
+%                       detected automatically from the behaviour on a
+%                       test surface
 %      'srcwfun'      - custom kernels: source derivative weights
 %      'opts'         - fit options, see RADPP_FIT (eps default 1e-13)
 %      'nderiv'       - custom kernels: highest derivative used (0..3)
@@ -97,15 +98,15 @@ function obj = radpp(green, rmax, type, varargin)
 %      'name'         - custom kernels: name (default 'custom')
 %      'zk'           - wavenumber for oversampling (default 0), the
 %                       largest if several
-%      'kernel_order' - for oversampling (default from nderiv)
+%      'kernel_order' - for oversampling (default max(ipv) - 1)
 %      'ifcomplex'    - custom kernels: whether the weights are complex
 %                       (default true)
 %      'fmm'          - FMM for green, U = fmm(eps, srcuse, pg, targ, pgt)
 %                       e.g. @(eps,s,pg,t,pgt) hfmm3d(eps, zk, s, pg, t, pgt).
 %
-%   Sums and multiples of radpp kernels of one built-in type are radpp
-%   kernels whose fit is the sum of the fits, on the distances common to
-%   them.
+%   Sums of radpp kernels of one built-in type are radpp kernels refitted
+%   on the sum of their greens, on the distances common to them; multiples
+%   scale the fit.
 %
 %   Example:
 %      green = @(s,t) helm3d.green(zk, s, t);
@@ -243,16 +244,20 @@ end
 ncomp  = ncomp(nderiv+1);
 
 ipv = o.ipv(:).';
-if isempty(ipv) && gmode
-    % from the behaviour of each entry on a test surface, flat in 2D
+ipvauto = isempty(ipv);
+if ipvauto
+    % from the singularity of each entry of the kernel itself (its weights
+    % applied to the green's derivatives) on a test surface, flat in 2D
+    if gmode
+        prof0 = @(r) green.profiles(r, nfit);
+    else
+        prof0 = @(r) profiles(green, r, nfit);
+    end
     p0 = struct('nderiv', nderiv, 'isrc', isrc, 'dim', o.dim, ...
-                'gmode', true, 'profun', @(r) green.profiles(r, nfit), ...
+                'gmode', true, 'profun', prof0, ...
                 'wfun', spec.wfun, 'vfun', spec.vfun, 'opdims', spec.opdims, ...
                 'ent', spec.ent, 'ncomp', ncomp);
     ipv = surface_ipv(p0, spec.targ_fields, o.dim == 2);
-elseif isempty(ipv)
-    ipv = spec.ipv;
-    if o.dim == 2 && ~isempty(spec.ipv2), ipv = spec.ipv2; end
 end
 if isscalar(ipv), ipv = repmat(ipv, 1, nrow); end
 if numel(ipv) ~= nrow
@@ -266,8 +271,7 @@ if gmode
     end
     kernel_order = max(ipv) - 1;
 elseif isempty(kernel_order)
-    kernel_order = min(nfit, 2) - 1;
-    if o.dim == 13, kernel_order = nfit + 1; end  % dyadic: G ~ 1/r^3
+    kernel_order = max(ipv) - 1;
 end
 
 % fit the on-axis profiles (in green mode, at getquad time)
@@ -369,33 +373,31 @@ one  = @(t) ones(size(t.r(:,:), 2), 1);
 zero = @(t) zeros(size(t.r(:,:), 2), 1);
 dn   = @(t) [zero(t), normals(t, dim)];        % weights of G_{n_x}
 z1   = @(t) zeros(size(t.r(:,:), 2), 1+dim);
-ipvc = 1;  if be == 0, ipvc = 0; end           % as lap_comb_dir
-ipvcp = 2; if be == 0, ipvcp = 1; end          % as lap_comb_cprime
 
 switch lower(type)
     case {'s', 'single', 'slp'}
-        spec = kspec('s', 0, 1, {}, one, [], 0);
+        spec = kspec('s', 0, 1, {}, one, []);
     case {'d', 'double', 'dlp'}
-        spec = kspec('d', 0, 1, {}, zero, one, 1);
+        spec = kspec('d', 0, 1, {}, zero, one);
     case {'c', 'comb', 'combined'}
-        spec = kspec('c', 0, 1, {}, @(t) al*one(t), @(t) be*one(t), ipvc);
+        spec = kspec('c', 0, 1, {}, @(t) al*one(t), @(t) be*one(t));
     case {'sp', 'sprime'}
-        spec = kspec('sp', 1, 1, {'n'}, dn, [], 1, 0);
+        spec = kspec('sp', 1, 1, {'n'}, dn, []);
     case {'dp', 'dprime'}
-        spec = kspec('dp', 1, 1, {'n'}, z1, dn, 2);
+        spec = kspec('dp', 1, 1, {'n'}, z1, dn);
     case {'cp', 'combprime', 'cprime'}
-        spec = kspec('cp', 1, 1, {'n'}, @(t) al*dn(t), @(t) be*dn(t), ipvcp);
+        spec = kspec('cp', 1, 1, {'n'}, @(t) al*dn(t), @(t) be*dn(t));
     case {'grad', 'sgrad', 'sg'}
-        spec = kspec('grad', 1, dim, {}, @(t) w_grad(t, dim), [], 1);
+        spec = kspec('grad', 1, dim, {}, @(t) w_grad(t, dim), []);
     case {'dgrad', 'dg'}
         spec = kspec('dgrad', 1, dim, {}, @(t) 0*w_grad(t, dim), ...
-                     @(t) w_grad(t, dim), 2);
+                     @(t) w_grad(t, dim));
     case {'cgrad', 'cg'}
         spec = kspec('cgrad', 1, dim, {}, @(t) al*w_grad(t, dim), ...
-                     @(t) be*w_grad(t, dim), ipvcp);
+                     @(t) be*w_grad(t, dim));
     case {'hess', 'shess'}
         nh = dim*(dim+1)/2;
-        spec = kspec('hess', 2, nh, {}, @(t) w_hess(t, dim), [], 2);
+        spec = kspec('hess', 2, nh, {}, @(t) w_hess(t, dim), []);
     case {'trans_sys', 'transmission_sys', 'trans', 'transmission', 'tsys'}
         % entries (1,1) D, (2,1) D', (1,2) S, (2,2) S', column-major
         c = coefs;
@@ -407,46 +409,45 @@ switch lower(type)
                      @(t) cat(3, z1(t), z1(t), [c(1,2)*one(t), zeros(size(t.r(:,:), 2), dim)], ...
                               c(2,2)*dn(t)), ...
                      @(t) cat(3, [c(1,1)*one(t), zeros(size(t.r(:,:), 2), dim)], c(2,1)*dn(t), ...
-                              z1(t), z1(t)), [1 2 0 1]);
+                              z1(t), z1(t)));
     case {'trans_rep', 'transmission_rep', 'trep'}
         spec = kspec('trans_rep', 0, [1 2], {}, ...
                      @(t) cat(3, zero(t), be*one(t)), ...
-                     @(t) cat(3, al*one(t), zero(t)), [1 0]);
+                     @(t) cat(3, al*one(t), zero(t)));
     case {'trep_prime', 'trepp', 'trep_p', 'trans_rep_prime', 'trans_rep_p'}
         spec = kspec('trep_prime', 1, [1 2], {'n'}, ...
                      @(t) cat(3, z1(t), be*dn(t)), ...
-                     @(t) cat(3, al*dn(t), z1(t)), [2 1]);
+                     @(t) cat(3, al*dn(t), z1(t)));
     case {'trep_grad', 'trepg', 'trep_g', 'trans_rep_grad', 'trans_rep_g'}
         % entries (j,1) c1 D_{x_j}, (j,2) c2 S_{x_j}, column-major
         spec = kspec('trep_grad', 1, [dim 2], {}, ...
                      @(t) cat(3, 0*w_grad(t, dim), be*w_grad(t, dim)), ...
-                     @(t) cat(3, al*w_grad(t, dim), 0*w_grad(t, dim)), ...
-                     [2*ones(1, dim), ones(1, dim)]);
+                     @(t) cat(3, al*w_grad(t, dim), 0*w_grad(t, dim)));
     case {'clamped_bc', 'clamped', 'clamped_plate_bcs'}
         spec = kspec('clamped_bc', 1, 2, {'n'}, ...
-                     @(t) cat(3, [one(t), zeros(size(t.r(:,:), 2), dim)], dn(t)), [], [0 1], 0);
+                     @(t) cat(3, [one(t), zeros(size(t.r(:,:), 2), dim)], dn(t)), []);
     case {'s2trans', 's2t'}
         spec = kspec('s2trans', 1, 2, {'n'}, ...
-                     @(t) cat(3, [al*one(t), zeros(size(t.r(:,:), 2), dim)], be*dn(t)), [], [0 1], 0);
+                     @(t) cat(3, [al*one(t), zeros(size(t.r(:,:), 2), dim)], be*dn(t)), []);
     case {'d2trans', 'd2t'}
         spec = kspec('d2trans', 1, 2, {'n'}, @(t) cat(3, z1(t), z1(t)), ...
-                     @(t) cat(3, [one(t), zeros(size(t.r(:,:), 2), dim)], dn(t)), [1 2]);
+                     @(t) cat(3, [one(t), zeros(size(t.r(:,:), 2), dim)], dn(t)));
     case {'c2trans', 'c2t', 'c2tr'}
         spec = kspec('c2trans', 1, 2, {'n'}, ...
                      @(t) al*cat(3, [one(t), zeros(size(t.r(:,:), 2), dim)], dn(t)), ...
-                     @(t) be*cat(3, [one(t), zeros(size(t.r(:,:), 2), dim)], dn(t)), [ipvc ipvcp]);
+                     @(t) be*cat(3, [one(t), zeros(size(t.r(:,:), 2), dim)], dn(t)));
     case {'mfie', 'nxcurls', 'n_cross_curl_s'}
         if dim ~= 3, error('KERNEL3D.RADPP: ''mfie'' needs dim = 3.'); end
-        spec = kspec('mfie', 1, [3 3], {'n'}, @w_mfie, [], 1);
+        spec = kspec('mfie', 1, [3 3], {'n'}, @w_mfie, []);
     case {'curls'}
         if dim ~= 3, error('KERNEL3D.RADPP: ''curls'' needs dim = 3.'); end
-        spec = kspec('curls', 1, [3 3], {}, @w_curls, [], 1);
+        spec = kspec('curls', 1, [3 3], {}, @w_curls, []);
     case {'supported_bc', 'supported', 'supported_plate_bcs'}
         spec = kspec('supported_bc', 2, 2, {'n', 'd'}, ...
-                     @(t) w_supported(t, nu), [], 0);
+                     @(t) w_supported(t, nu), []);
     case {'free_bc', 'free', 'free_plate_bcs'}
         spec = kspec('free_bc', 3, 2, {'n', 'd', 'd2'}, ...
-                     @(t) w_free(t, nu), [], 0);
+                     @(t) w_free(t, nu), []);
     otherwise
         error('KERNEL3D.RADPP: unknown type ''%s''.', type);
 end
@@ -454,18 +455,15 @@ end
 end
 
 
-function spec = kspec(name, nderiv, opdims, targ_fields, wfun, vfun, ...
-                      ipv, ipv2)
+function spec = kspec(name, nderiv, opdims, targ_fields, wfun, vfun)
 % opdims: m or [m n]; the weights hold the block entries in column-major
-% order. ipv: default ipv per entry; ipv2: default in 2D if different
+% order
 if nargin < 6, vfun = []; end
-if nargin < 7, ipv  = 0;  end
-if nargin < 8, ipv2 = []; end
 if isscalar(opdims), opdims = [opdims 1]; end
 [i, j] = ndgrid(1:opdims(1), 1:opdims(2));
 spec = struct('name', name, 'nderiv', nderiv, 'opdims', opdims, ...
               'ent', [i(:) j(:)], 'targ_fields', {targ_fields}, ...
-              'wfun', wfun, 'vfun', vfun, 'ipv', ipv, 'ipv2', ipv2);
+              'wfun', wfun, 'vfun', vfun);
 end
 
 
@@ -546,13 +544,13 @@ function spec = dyad_kernel(type)
 % opdims [3 3]; components G_ij then d_k G_ij (see RADPP_ROTATE)
 switch lower(type)
     case {'s', 'single'}
-        spec = kspec('s', 0, [3 3], {}, @(t) w_dyad(t, 's'), [], 0);
+        spec = kspec('s', 0, [3 3], {}, @(t) w_dyad(t, 's'), []);
     case {'efie', 'nxs'}
-        spec = kspec('efie', 0, [3 3], {'n'}, @(t) w_dyad(t, 'efie'), [], 0);
+        spec = kspec('efie', 0, [3 3], {'n'}, @(t) w_dyad(t, 'efie'), []);
     case {'curl', 'curls'}
-        spec = kspec('curl', 1, [3 3], {}, @(t) w_dyad(t, 'curl'), [], 0);
+        spec = kspec('curl', 1, [3 3], {}, @(t) w_dyad(t, 'curl'), []);
     case {'mfie', 'nxcurls', 'n_cross_curl_s'}
-        spec = kspec('mfie', 1, [3 3], {'n'}, @(t) w_dyad(t, 'mfie'), [], 0);
+        spec = kspec('mfie', 1, [3 3], {'n'}, @(t) w_dyad(t, 'mfie'), []);
     otherwise
         error('KERNEL3D.RADPP: unknown type ''%s'' for a tensor green.', type);
 end
@@ -980,17 +978,9 @@ end
 
 
 function K = ppsum(Ks, cs)
-% sum_k cs(k)*Ks{k}, with the fits added on the union of their panels
+% sum_k cs(k)*Ks{k}: a sum is refitted on the green sum_k cs(k)*green_k
+% over the distances common to the fits; a multiple scales the fit
 p = Ks{1}.params;
-fits = cell(size(Ks));
-for k = 1:numel(Ks)
-    fits{k} = struct('breaks', Ks{k}.params.breaks, ...
-                     'coefs', cs(k)*Ks{k}.params.coefs);
-end
-[ipars, dpars, info] = radpp_addfits(fits);
-info.ipars = ipars;  info.dpars = dpars;
-info.err = sum(abs(cs(:)).*cellfun(@(K) K.params.err, Ks(:)));
-
 greens = cellfun(@(K) K.params.green, Ks, 'UniformOutput', false);
 % the fmm of the sum of the greens
 fmm = {};
@@ -998,11 +988,19 @@ if all(cellfun(@(Kk) ~isempty(Kk.params.fmm), Ks))
     fmms = cellfun(@(Kk) Kk.params.fmm, Ks, 'UniformOutput', false);
     fmm = {'fmm', radpp_sum(cs, fmms{:})};
 end
-K = kernel3d.radpp(radpp_sum(cs, greens{:}), info.breaks([1 end]), ...
-        p.spec, 'dim', p.dim, 'ipv', p.ipv, 'coefs', p.kcoefs, ...
-        'nu', p.nu, 'opts', p.fitopts, 'kernel_order', p.kernel_order, ...
-        'zk', max(cellfun(@(K) K.zk, Ks)), 'fit', info, fmm{:}, ...
-        'ifcomplex', any(cellfun(@(K) logical(K.ifcomplex), Ks)) || ~isreal(cs));
+args = {p.spec, 'dim', p.dim, 'coefs', p.kcoefs, 'nu', p.nu, ...
+        'opts', p.fitopts, 'zk', max(cellfun(@(K) K.zk, Ks)), fmm{:}, ...
+        'ifcomplex', any(cellfun(@(K) logical(K.ifcomplex), Ks)) || ~isreal(cs)};
+if numel(Ks) == 1
+    info = struct('breaks', p.breaks, 'coefs', cs*p.coefs, 'err', abs(cs)*p.err);
+    [info.ipars, info.dpars] = radpp_addfits({info});
+    K = kernel3d.radpp(radpp_sum(cs, greens{:}), info.breaks([1 end]), args{:}, ...
+            'ipv', p.ipv, 'kernel_order', p.kernel_order, 'fit', info);
+else
+    rmin = max(cellfun(@(K) K.params.breaks(1), Ks));
+    rmax = min(cellfun(@(K) K.params.breaks(end), Ks));
+    K = kernel3d.radpp(radpp_sum(cs, greens{:}), [rmin rmax], args{:});
+end
 % otherwise the sum of the fmms of the kernels, if they have them
 if isempty(fmm) && all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks))
     fmms = cellfun(@(Kk) Kk.fmm, Ks, 'UniformOutput', false);

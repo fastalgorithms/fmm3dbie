@@ -10,8 +10,9 @@ function obj = radgreen(green, type, varargin)
 %   derivatives against finite differences.
 %
 %   TYPE and options are as in KERNEL3D.RADPP, including 'fmm' for an FMM
-%   of GREEN (not for tensor greens). 'ipv' overrides the
-%   automatic choice; kernel_order is max(ipv)-1. Kernels on the same
+%   of GREEN (not for tensor greens). By default ipv is
+%   detected automatically from the behaviour on a test surface; 'ipv'
+%   overrides it; kernel_order is max(ipv)-1. Kernels on the same
 %   GREEN (up to a factor) combine under +, -, scalar * and interleave into
 %   one kernel, and kernels of one built-in type add as that type on the
 %   sum of their greens.
