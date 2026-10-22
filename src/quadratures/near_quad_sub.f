@@ -12,9 +12,12 @@ c
 c
 c     This file has the following user callable routines
 c
-c        ?getnearquadsub_guru - subtract, in place, the oversampled
+c        ?getnearquadsub - subtract, in place, the oversampled
 c         smooth rule from a near field quadrature, interpolated back
 c         to the discretization nodes
+c
+c        ?getnearquadsub_guru - guru interface for ?getnearquadsub,
+c         with user provided oversampled geometry and fmm threshold
 c        
 c
 c         z - complex
@@ -458,6 +461,228 @@ C$OMP DO SCHEDULE(DYNAMIC)
 C$OMP END DO
       deallocate(vals)
 C$OMP END PARALLEL
+
+      return
+      end
+c
+c
+c
+c
+      subroutine zgetnearquadsub(npatches,norders,ixyzs,iptype,npts,
+     1   srccoefs,srcvals,ndtarg,ntarg,targvals,novers,fker,ndd,dpars,
+     2   ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad,nker,iker,
+     3   wnear)
+c
+c------------------------
+c  This subroutine subtracts, in place, the smooth quadrature rule
+c  oversampled to novers from a near field quadrature wnear (as
+c  computed by zgetnearquad_ggq_guru), for a given kernel, where
+c  the near field is specified by the user in row sparse compressed
+c  format.
+c
+c  The oversampled geometry, smooth quadrature weights, and fmm
+c  threshold are computed here; see zgetnearquadsub_guru for
+c  details.
+c
+c  Input arguments:
+c    - npatches: integer *8
+c        number of patches
+c    - norders: integer *8(npatches)
+c        order of discretization on each patch
+c    - ixyzs: integer *8(npatches+1)
+c        ixyzs(i) denotes the starting location in srccoefs,
+c        and srcvals array corresponding to patch i
+c    - iptype: integer *8(npatches)
+c        type of patch
+c        *  iptype = 1, triangular patch discretized using RV nodes
+c        *  iptype = 11, quad patch with GL nodes
+c        *  iptype = 12, quad patch with Chebyshev nodes
+c    - npts: integer *8
+c        total number of discretization points on the boundary
+c    - srccoefs: double precision (9,npts)
+c        basis expansion coefficients of xyz, dxyz/du, and dxyz/dv
+c        on each patch
+c    - srcvals: double precision (12,npts)
+c        xyz(u,v) and derivative info sampled at the discretization
+c        nodes on the surface
+c    - ndtarg: integer *8
+c        leading dimension of target array
+c    - ntarg: integer *8
+c        number of targets
+c    - targvals: double precision (ndtarg,ntarg)
+c        target info. First three components must be x,y,z
+c        coordinates
+c    - novers: integer *8(npatches)
+c        oversampled order on each patch, must match the one used
+c        by the fmm in the evaluator
+c    - fker, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr,
+c      col_ind, iquad, nquad, nker, iker:
+c        as in zgetnearquadsub_guru
+c
+c  Input/output parameters:
+c    - wnear: double complex(nker,nquad)
+c        on input, wnear(iker,:) is the near field quadrature; on
+c        output, it is the near field quadrature minus the
+c        oversampled smooth rule. Other kernels are not accessed
+c----------------------------------------------------
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: npatches,norders(npatches)
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      integer *8, intent(in) :: npts
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+      integer *8, intent(in) :: ndtarg,ntarg
+      real *8, intent(in) :: targvals(ndtarg,ntarg)
+      integer *8, intent(in) :: novers(npatches)
+      integer *8, intent(in) :: ndd,ndz,ndi
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1),nquad
+      integer *8, intent(in) :: nker,iker
+      complex *16, intent(inout) :: wnear(nker,nquad)
+
+      integer *8, allocatable :: ixyzso(:)
+      real *8, allocatable :: srcover(:,:),wover(:)
+      integer *8 i,npolso,nptso,int8_12
+      real *8 thresh
+
+      external fker
+
+      int8_12 = 12
+
+      allocate(ixyzso(npatches+1))
+      ixyzso(1) = 1
+      do i=1,npatches
+        call get_npols(iptype(i),novers(i),npolso)
+        ixyzso(i+1) = ixyzso(i) + npolso
+      enddo
+      nptso = ixyzso(npatches+1)-1
+
+      allocate(srcover(12,nptso),wover(nptso))
+      call oversample_geom(npatches,norders,ixyzs,iptype,npts,
+     1   srccoefs,srcvals,novers,ixyzso,nptso,srcover)
+      call get_qwts(npatches,novers,ixyzso,iptype,nptso,srcover,wover)
+      call get_fmm_thresh(int8_12,nptso,srcover,ndtarg,ntarg,targvals,
+     1   thresh)
+
+      call zgetnearquadsub_guru(npatches,norders,ixyzs,iptype,novers,
+     1   ixyzso,nptso,srcover,wover,ndtarg,ntarg,targvals,thresh,fker,
+     2   ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad,
+     3   nker,iker,wnear)
+
+      return
+      end
+c
+c
+c
+c
+      subroutine dgetnearquadsub(npatches,norders,ixyzs,iptype,npts,
+     1   srccoefs,srcvals,ndtarg,ntarg,targvals,novers,fker,ndd,dpars,
+     2   ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad,nker,iker,
+     3   wnear)
+c
+c------------------------
+c  This subroutine subtracts, in place, the smooth quadrature rule
+c  oversampled to novers from a near field quadrature wnear (as
+c  computed by dgetnearquad_ggq_guru), for a given kernel, where
+c  the near field is specified by the user in row sparse compressed
+c  format.
+c
+c  The oversampled geometry, smooth quadrature weights, and fmm
+c  threshold are computed here; see dgetnearquadsub_guru for
+c  details.
+c
+c  Input arguments:
+c    - npatches: integer *8
+c        number of patches
+c    - norders: integer *8(npatches)
+c        order of discretization on each patch
+c    - ixyzs: integer *8(npatches+1)
+c        ixyzs(i) denotes the starting location in srccoefs,
+c        and srcvals array corresponding to patch i
+c    - iptype: integer *8(npatches)
+c        type of patch
+c        *  iptype = 1, triangular patch discretized using RV nodes
+c        *  iptype = 11, quad patch with GL nodes
+c        *  iptype = 12, quad patch with Chebyshev nodes
+c    - npts: integer *8
+c        total number of discretization points on the boundary
+c    - srccoefs: double precision (9,npts)
+c        basis expansion coefficients of xyz, dxyz/du, and dxyz/dv
+c        on each patch
+c    - srcvals: double precision (12,npts)
+c        xyz(u,v) and derivative info sampled at the discretization
+c        nodes on the surface
+c    - ndtarg: integer *8
+c        leading dimension of target array
+c    - ntarg: integer *8
+c        number of targets
+c    - targvals: double precision (ndtarg,ntarg)
+c        target info. First three components must be x,y,z
+c        coordinates
+c    - novers: integer *8(npatches)
+c        oversampled order on each patch, must match the one used
+c        by the fmm in the evaluator
+c    - fker, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr,
+c      col_ind, iquad, nquad, nker, iker:
+c        as in dgetnearquadsub_guru
+c
+c  Input/output parameters:
+c    - wnear: double precision(nker,nquad)
+c        on input, wnear(iker,:) is the near field quadrature; on
+c        output, it is the near field quadrature minus the
+c        oversampled smooth rule. Other kernels are not accessed
+c----------------------------------------------------
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8, intent(in) :: npatches,norders(npatches)
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      integer *8, intent(in) :: npts
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts)
+      integer *8, intent(in) :: ndtarg,ntarg
+      real *8, intent(in) :: targvals(ndtarg,ntarg)
+      integer *8, intent(in) :: novers(npatches)
+      integer *8, intent(in) :: ndd,ndz,ndi
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1),nquad
+      integer *8, intent(in) :: nker,iker
+      real *8, intent(inout) :: wnear(nker,nquad)
+
+      integer *8, allocatable :: ixyzso(:)
+      real *8, allocatable :: srcover(:,:),wover(:)
+      integer *8 i,npolso,nptso,int8_12
+      real *8 thresh
+
+      external fker
+
+      int8_12 = 12
+
+      allocate(ixyzso(npatches+1))
+      ixyzso(1) = 1
+      do i=1,npatches
+        call get_npols(iptype(i),novers(i),npolso)
+        ixyzso(i+1) = ixyzso(i) + npolso
+      enddo
+      nptso = ixyzso(npatches+1)-1
+
+      allocate(srcover(12,nptso),wover(nptso))
+      call oversample_geom(npatches,norders,ixyzs,iptype,npts,
+     1   srccoefs,srcvals,novers,ixyzso,nptso,srcover)
+      call get_qwts(npatches,novers,ixyzso,iptype,nptso,srcover,wover)
+      call get_fmm_thresh(int8_12,nptso,srcover,ndtarg,ntarg,targvals,
+     1   thresh)
+
+      call dgetnearquadsub_guru(npatches,norders,ixyzs,iptype,novers,
+     1   ixyzso,nptso,srcover,wover,ndtarg,ntarg,targvals,thresh,fker,
+     2   ndd,dpars,ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad,
+     3   nker,iker,wnear)
 
       return
       end

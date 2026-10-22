@@ -11,6 +11,9 @@ c  nodes y_l of the near patches of K(x,y_l) w_l sigma_over(l),
 c  where sigma_over is sigma interpolated with oversample_fun_surf
 c  (as done by the add-and-subtract evaluators). Only row iker of
 c  wnear(nker,nquad) may change.
+c
+c  The simple interface z/dgetnearquadsub must agree with the guru
+c  interface.
 c------------------------------------------------------------------
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
@@ -34,8 +37,10 @@ c------------------------------------------------------------------
       real *8, allocatable :: srcover(:,:), wover(:)
 
       complex *16, allocatable :: zwnear(:,:), zwnear0(:,:)
+      complex *16, allocatable :: zwnear2(:,:)
       complex *16, allocatable :: zsig(:), zsigover(:)
       real *8, allocatable :: dwnear(:,:), dwnear0(:,:)
+      real *8, allocatable :: dwnear2(:,:)
       real *8, allocatable :: dsig(:), dsigover(:)
 
       real *8 dpars(2)
@@ -305,6 +310,37 @@ c
       call prin2('real: relative error in subtraction=*', err, 1)
       call prinf('real: other kernels modified=*', nuntouched, 1)
       if(err.lt.1.0d-12.and.nuntouched.eq.0) nsuccess = nsuccess + 1
+
+c
+c   simple interfaces, same kernels and rows as above
+c
+      allocate(zwnear2(nker,nquad), dwnear2(nker,nquad))
+      zwnear2 = zwnear0
+      dwnear2 = dwnear0
+
+      iker = 2
+      ndd = 0
+      ndz = 1
+      fker => h3d_slp
+      call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts,
+     1   srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd,
+     2   dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad,
+     3   nquad, nker, iker, zwnear2)
+
+      iker = 3
+      ndd = 2
+      ndz = 0
+      fker => l3d_comb
+      call dgetnearquadsub(npatches, norders, ixyzs, iptype, npts,
+     1   srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd,
+     2   dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad,
+     3   nquad, nker, iker, dwnear2)
+
+      err = maxval(abs(zwnear2-zwnear))/maxval(abs(zwnear))
+      err = max(err, maxval(abs(dwnear2-dwnear))/maxval(abs(dwnear)))
+      call prin2('simple vs guru interface: relative difference=*',
+     1   err, 1)
+      if(err.lt.1.0d-14) nsuccess = nsuccess + 1
 
       return
       end

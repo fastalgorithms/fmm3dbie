@@ -9,7 +9,7 @@
       ntests = ntests + 2
       call test_mixed_patch_quad(i3)
 
-      ntests = ntests + 2
+      ntests = ntests + 3
       call test_near_quad_sub(i4)
 
       print *, i1, i2, i3, i4
