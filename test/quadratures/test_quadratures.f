@@ -9,9 +9,12 @@
       ntests = ntests + 2
       call test_mixed_patch_quad(i3)
 
-      print *, i1, i2, i3
+      ntests = ntests + 2
+      call test_near_quad_sub(i4)
 
-      nsuccess = i1 + i2 + i3
+      print *, i1, i2, i3, i4
+
+      nsuccess = i1 + i2 + i3 + i4
 
       open(unit=33,file='../../print_testres.txt',access='append')
       write(33,'(a,i2,a,i2,a)') 'Successfully completed ',nsuccess,
