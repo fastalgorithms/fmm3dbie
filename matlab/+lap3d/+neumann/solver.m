@@ -107,7 +107,13 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -129,7 +135,6 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 1;
-    ifcorr = 0;
 
 
 % Call the layer potential evaluator

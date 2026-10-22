@@ -86,6 +86,7 @@ switch lower(type)
         rep_pars         = [1.0; 0.0];
         obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
                                helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, varargin{:}), S);
+        obj.getquad_sub  = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
     case {'d', 'double', 'dlp'}
@@ -96,6 +97,7 @@ switch lower(type)
         rep_pars         = [0.0; 1.0];
         obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
                                helm3d.dirichlet.get_quadrature_correction(S, eps, zk, rep_pars, varargin{:}), S);
+        obj.getquad_sub  = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
 
@@ -107,6 +109,7 @@ switch lower(type)
         rep_pars         = [1.0; 0.0];
         obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
                                helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:}), S);
+        obj.getquad_sub  = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields  = {'n'};
 
@@ -118,6 +121,7 @@ switch lower(type)
         rep_pars         = [0.0; 1.0];
         obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
                                helm_combprime_getquad(S, eps, zk, rep_pars, varargin{:}), S);
+        obj.getquad_sub  = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
         obj.targ_fields  = {'n'};
@@ -132,6 +136,7 @@ switch lower(type)
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'c', sigma, coefs);
         obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
                                helm3d.dirichlet.get_quadrature_correction(S, eps, zk, coefs, varargin{:}), S);
+        obj.getquad_sub  = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
 
@@ -145,6 +150,7 @@ switch lower(type)
         obj.fmm          = @(eps,src,targ,sigma) helm3d.fmm(eps, zk, src, targ, 'cp', sigma, coefs);
         obj.getquad      = @(S,eps,varargin) rsc_to_sparse( ...
                                helm_combprime_getquad(S, eps, zk, coefs, varargin{:}), S);
+        obj.getquad_sub  = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields   = {'n'};
         obj.targ_fields  = {'n'};

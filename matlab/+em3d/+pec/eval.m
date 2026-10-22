@@ -182,7 +182,13 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S, Q, eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S, Q, eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -205,7 +211,6 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     lwork = 0;
     work = [];
     idensflag = 1;
-    ifcorr = 0;
 % Call the layer potential evaluator
 
     if strcmpi(rep, 'nrccie') || strcmpi(rep, 'nrccie-eval')

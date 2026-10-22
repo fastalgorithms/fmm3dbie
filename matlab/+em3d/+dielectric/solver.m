@@ -108,7 +108,13 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -143,7 +149,6 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
 
     densities = complex(zeros(npts,4));
     zpars = complex([om, rep_params(:).']);
-    ifcorr = 0;
 
 
 % Call the solver 

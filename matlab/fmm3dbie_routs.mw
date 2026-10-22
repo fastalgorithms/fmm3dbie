@@ -1029,7 +1029,13 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -1048,7 +1054,6 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
 
 % Call the layer potential evaluator
     nker = 1;
-    ifcorr = 0;
     lwork = 0;
     work = [];
     idensflag = 0;
@@ -1130,6 +1135,13 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %        opts.iprime - if 1, compute quadrature for combined prime kernel
 %           (default 0)
 %
@@ -1204,6 +1216,11 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     nnzp1   = nnz+1;
 
     wnear = zeros(nquad,1);
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -1212,11 +1229,6 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
         fprintf('Unsupported quadrature type, reverting to ggq\n');
         iquadtype = 1;
       end
-    end
-    if iprime == 0
-        # FORTRAN getnearquad_lap_comb_dir_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nquad] wnear);
-    else
-        # FORTRAN getnearquad_lap_comb_cprime_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nquad] wnear);
     end
     Q = [];
     Q.targinfo = targinfo;
@@ -1231,6 +1243,35 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
         Q.kernel_order = 0;
     end
     Q.kernel_order = Q.kernel_order + iprime;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if iprime == 0
+        if ifcorr
+          # FORTRAN getnearcorr_lap_comb_dir_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad, int[npatches] novers, inout double[nquad] wnear);
+        else
+          # FORTRAN getnearquad_lap_comb_dir_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nquad] wnear);
+        end
+    else
+        if ifcorr
+          # FORTRAN getnearcorr_lap_comb_cprime_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad, int[npatches] novers, inout double[nquad] wnear);
+        else
+          # FORTRAN getnearquad_lap_comb_cprime_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nquad] wnear);
+        end
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;
@@ -1372,7 +1413,13 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -1394,7 +1441,6 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 1;
-    ifcorr = 0;
 
 % Call the layer potential evaluator
     # FORTRAN lap_comb_dir_solver_guru(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals, double[1] eps, double[2] dpars, int[1] maxit, int[1] ifout, double[npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout double[npts] sigma);  
@@ -1524,7 +1570,13 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -1548,7 +1600,6 @@ function [p,varargout] = eval(S,sigma,targinfo,eps,varargin)
     ndi = 0;
     ipars = [];
     nker = 1;
-    ifcorr = 0;
     lwork = 0;
     work = [];
     ndim_s = 1;
@@ -1605,6 +1656,13 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %        opts.rep - whether to compute correction for on surface
 %                   integral equation or post-processing
 %                   'bc' - on surface integral equation. If option
@@ -1718,6 +1776,11 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
     # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
     nquad = iquad(nnz+1)-1;
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -1731,13 +1794,6 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
     nker = 1;
     wnear = zeros(nquad,1);
 
-    if strcmpi(qtype, 'bc')
-      # FORTRAN getnearquad_lap_s_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] wnear);
-    elseif strcmpi(qtype, 'eval')
-      # FORTRAN getnearquad_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear);
-    else
-      error('lap3d.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
-    end
     
     Q = [];
     Q.targinfo = targinfo;
@@ -1748,6 +1804,37 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
     Q.kernel_order = 0;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if strcmpi(qtype, 'bc')
+      if ifcorr
+        # FORTRAN getnearcorr_lap_s_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, int[npatches] novers, inout double[nquad] wnear);
+      else
+        # FORTRAN getnearquad_lap_s_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout double[nquad] wnear);
+      end
+    elseif strcmpi(qtype, 'eval')
+      if ifcorr
+        # FORTRAN getnearcorr_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[npatches] novers, inout double[nquad] wnear);
+      else
+        # FORTRAN getnearquad_lap_s_neu_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout double[nquad] wnear);
+      end
+    else
+      error('lap3d.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;
@@ -1886,7 +1973,13 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -1908,7 +2001,6 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 1;
-    ifcorr = 0;
 
 
 % Call the layer potential evaluator
@@ -2064,7 +2156,13 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1;
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -2094,7 +2192,6 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
       ndi = 0;
       ipars = [];
       nker = 1;
-      ifcorr = 0;
       lwork = 0;
       work = [];
       ndim = 1;
@@ -2110,7 +2207,6 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
       ipars = [];
       ndim = 1;
       nker = 1;
-      ifcorr = 0;
       lwork = 0;
       work = [];
       idensflag = 0;
@@ -2171,6 +2267,13 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -2246,6 +2349,11 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
 
     nquad = iquad(nnz+1)-1;
     wnear = complex(zeros(nquad,1));
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -2260,11 +2368,6 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     zpars(1) = zk;
     zpars(2) = rep_pars(1);
     zpars(3) = rep_pars(2);
-    if iprime == 0
-      # FORTRAN getnearquad_helm_comb_dir_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
-    else
-      # FORTRAN getnearquad_helm_comb_cprime_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
-    end
 
     Q = [];
     Q.targinfo = targinfo;
@@ -2283,6 +2386,35 @@ function Q = get_quadrature_correction(S, eps, zk, rep_pars, targinfo, opts)
     %  Q.kernel_order = 1;
     %end
     Q.kernel_order = Q.kernel_order+iprime;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if iprime == 0
+      if ifcorr
+        # FORTRAN getnearcorr_helm_comb_dir_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[npatches] novers, inout dcomplex[nquad] wnear);
+      else
+        # FORTRAN getnearquad_helm_comb_dir_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
+      end
+    else
+      if ifcorr
+        # FORTRAN getnearcorr_helm_comb_cprime_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[npatches] novers, inout dcomplex[nquad] wnear);
+      else
+        # FORTRAN getnearquad_helm_comb_cprime_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[3] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nquad] wnear);
+      end
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;
@@ -2426,7 +2558,13 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -2448,7 +2586,6 @@ function [sigma,varargout] = solver(S, rhs, eps, zk, rep_pars, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 1;
-    ifcorr = 0;
 
     zpars = complex(zeros(3,1));
     zpars(1) = zk;
@@ -2587,7 +2724,13 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -2613,7 +2756,6 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
     ndi = 0;
     ipars = [];
     nker = 2;
-    ifcorr = 0;
     lwork = 0;
     work = [];
     ndim_s = 2;
@@ -2671,6 +2813,13 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %        opts.rep - whether to compute correction for on surface
 %                   integral equation or post-processing
 %                   'rpcomb-bc' - on surface integral equation. If option
@@ -2765,6 +2914,11 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     nquad = rsc.nquad;
     nnzp1 = nnz+1; 
 
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -2780,17 +2934,6 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     zpars(2) = alpha;
     zkuse = complex(zk);
 
-    if strcmpi(qtype, 'rpcomb-bc')
-      nker = 4;
-      wnear = complex(zeros(nker,nquad));
-      # FORTRAN getnearquad_helm_rpcomb_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
-    elseif strcmpi(qtype, 'rpcomb-eval')
-      nker = 2;
-      wnear = complex(zeros(nker,nquad));
-      # FORTRAN getnearquad_helm_rpcomb_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zkuse, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
-    else
-      error('HELM3D.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
-    end
     
     Q = [];
     Q.targinfo = targinfo;
@@ -2801,6 +2944,41 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
     Q.kernel_order = 0;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if strcmpi(qtype, 'rpcomb-bc')
+      nker = 4;
+      wnear = complex(zeros(nker,nquad));
+      if ifcorr
+        # FORTRAN getnearcorr_helm_rpcomb_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, int[npatches] novers, inout dcomplex[nker,nquad] wnear);
+      else
+        # FORTRAN getnearquad_helm_rpcomb_neu(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
+      end
+    elseif strcmpi(qtype, 'rpcomb-eval')
+      nker = 2;
+      wnear = complex(zeros(nker,nquad));
+      if ifcorr
+        # FORTRAN getnearcorr_helm_rpcomb_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zkuse, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[npatches] novers, inout dcomplex[nker,nquad] wnear);
+      else
+        # FORTRAN getnearquad_helm_rpcomb_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zkuse, int[1] iquadtype, int[1] nnz, int[ntargp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
+      end
+    else
+      error('HELM3D.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;
@@ -2943,7 +3121,13 @@ function [densities, varargout] = solver(S, rhs, eps, zk, alpha, opts)
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -2966,7 +3150,6 @@ function [densities, varargout] = solver(S, rhs, eps, zk, alpha, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 4;
-    ifcorr = 0;
 
     zpars = complex(zeros(2,1));
     zpars(1) = zk;
@@ -3104,7 +3287,13 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -3130,7 +3319,6 @@ function p = eval(S,densities,targinfo,eps,zk,alpha,varargin)
     ndi = 0;
     ipars = [];
     nker = 2;
-    ifcorr = 0;
     lwork = 0;
     work = [];
     ndim_s = 2;
@@ -3187,6 +3375,13 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %        opts.rep - whether to compute correction for on surface
 %                   integral equation or post-processing
 %                   'rpcomb-bc' - on surface integral equation. If option
@@ -3300,6 +3495,11 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
     nquad = iquad(nnz+1)-1;
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -3316,17 +3516,6 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
 
     zkuse = complex(zk);
 
-    if strcmpi(qtype, 'rpcomb-bc')
-      nker = 6;
-      wnear = complex(zeros(nker,nquad));
-      # FORTRAN getnearquad_helm_rpcomb_imp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
-    elseif strcmpi(qtype, 'rpcomb-eval')
-      nker = 2;
-      wnear = complex(zeros(nker,nquad));
-      # FORTRAN getnearquad_helm_rpcomb_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zkuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
-    else
-      error('HELM3D.IMPEDANCE.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
-    end
     
     Q = [];
     Q.targinfo = targinfo;
@@ -3337,6 +3526,41 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
     Q.kernel_order = 0;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if strcmpi(qtype, 'rpcomb-bc')
+      nker = 6;
+      wnear = complex(zeros(nker,nquad));
+      if ifcorr
+        # FORTRAN getnearcorr_helm_rpcomb_imp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, int[npatches] novers, inout dcomplex[nker,nquad] wnear);
+      else
+        # FORTRAN getnearquad_helm_rpcomb_imp(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
+      end
+    elseif strcmpi(qtype, 'rpcomb-eval')
+      nker = 2;
+      wnear = complex(zeros(nker,nquad));
+      if ifcorr
+        # FORTRAN getnearcorr_helm_rpcomb_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zkuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[npatches] novers, inout dcomplex[nker,nquad] wnear);
+      else
+        # FORTRAN getnearquad_helm_rpcomb_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zkuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
+      end
+    else
+      error('HELM3D.IMPEDANCE.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;
@@ -3479,7 +3703,13 @@ function [densities, varargout] = solver(S, zlams, rhs, eps, zk, alpha, opts)
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -3502,7 +3732,6 @@ function [densities, varargout] = solver(S, zlams, rhs, eps, zk, alpha, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 6;
-    ifcorr = 0;
 
     zpars = complex(zeros(2,1));
     zpars(1) = zk;
@@ -3696,6 +3925,13 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %        opts.rep - whether to compute correction for on surface
 %                   integral equation or post-processing
 %                   'trans-bc' - on surface integral equation.
@@ -3808,6 +4044,11 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
     # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
     nquad = iquad(nnz+1)-1;
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -3829,7 +4070,6 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
 
     nker = 4;
     wnear = complex(zeros(nker,nquad));
-    # FORTRAN getnearquad_helm_comb_trans(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
     
     Q = [];
     Q.targinfo = targinfo;
@@ -3841,6 +4081,27 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
     Q.kernel_order = 0;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if ifcorr
+      # FORTRAN getnearcorr_helm_comb_trans(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, int[npatches] novers, inout dcomplex[nker,nquad] wnear);
+    else
+      # FORTRAN getnearquad_helm_comb_trans(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[6] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;
@@ -3987,7 +4248,13 @@ function [densities, varargout] = solver(S, rhs, eps, zks, rep_params, opts)
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -4014,7 +4281,6 @@ function [densities, varargout] = solver(S, rhs, eps, zks, rep_params, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 4;
-    ifcorr = 0;
 
     zpars = complex(zeros(6,1));
     zpars(1) = zks(1);
@@ -4153,7 +4419,13 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -4176,7 +4448,6 @@ function p = eval(S,sigma,targinfo,eps,dpars,varargin)
     ndi = 0;
     ipars = [];
     nker = 6;
-    ifcorr = 0;
     lwork = 0;
     work = [];
     ndim_s = 3;
@@ -4236,6 +4507,13 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -4327,6 +4605,11 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     nquad = iquad(nnz+1)-1;
     nker = 6;
     wnear = zeros(nker,nquad);
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -4336,7 +4619,6 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
         iquadtype = 1;
       end
     end
-    # FORTRAN getnearquad_stok_comb_vel_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
     
     Q = [];
     Q.targinfo = targinfo;
@@ -4350,6 +4632,27 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 
     if(abs(dpars(2)) > 1e-16)
         Q.kernel_order = 0;
+    end
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if ifcorr
+      # FORTRAN getnearcorr_stok_comb_vel_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad, int[npatches] novers, inout double[nker, nquad] wnear);
+    else
+      # FORTRAN getnearquad_stok_comb_vel_eval(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
     end
 
     if(strcmpi(ff,'rsc'))
@@ -4492,7 +4795,13 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -4514,7 +4823,6 @@ function [sigma,varargout] = solver(S, rhs, eps, dpars, opts)
     maxitp1 = maxit + 1;
     rres = 0;
     nker = 6;
-    ifcorr = 0;
 % Call the layer potential evaluator
     # FORTRAN stok_comb_vel_solver_guru(int[1] npatches,int[npatches] norders, int[npatp1] ixyzs,int[npatches] iptype, int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals, double[1] eps, double[2] dpars, int[1] maxit, int[1] ifout, double[3,npts] rhs, int[1] nnz, int[nptsp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, int[1] nker, double[nker,nquad] wnear, int[1] ifcorr, int[npatches] novers, int[1] nptso, int[npatp1] ixyzso, double[12,nptso] srcover, double[nptso] wover, double[1] eps_gmres, inout int[1] niter, inout double[maxitp1] errs, inout double[1] rres, inout double[3,npts] sigma);  
 
@@ -4626,7 +4934,13 @@ function p = eval(S, sigma, targinfo, eps, varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1;
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -4650,7 +4964,6 @@ function p = eval(S, sigma, targinfo, eps, varargin)
     ndi = 1;
     ipars = [0];
     nker = 6;
-    ifcorr = 0;
     lwork = 0;
     work = [];
     ndim = 3;
@@ -4696,6 +5009,13 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %    * opts: options struct
 %        opts.format - storage format: 'rsc' (default), 'csc', 'sparse'
 %        opts.quadtype - quadrature type; currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -4793,6 +5113,11 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     nquad = iquad(nnz+1)-1;
     nker = 6;
     wnear = zeros(nker,nquad);
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -4803,11 +5128,6 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
       end
     end
 
-    if strcmp(qtype,'s')
-    # FORTRAN getnearquad_stok_sprime(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
-    else
-    # FORTRAN getnearquad_stok_combtrac(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps, double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
-    end
     Q = [];
     Q.targinfo = targinfo;
     Q.ifcomplex = 0;
@@ -4817,6 +5137,35 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
 
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if strcmp(qtype,'s')
+    if ifcorr
+      # FORTRAN getnearcorr_stok_sprime(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad, int[npatches] novers, inout double[nker, nquad] wnear);
+    else
+      # FORTRAN getnearquad_stok_sprime(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
+    end
+    else
+    if ifcorr
+      # FORTRAN getnearcorr_stok_combtrac(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps, double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad, int[npatches] novers, inout double[nker, nquad] wnear);
+    else
+      # FORTRAN getnearquad_stok_combtrac(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ,double[1] eps, double[2] dpars,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nker, nquad] wnear);
+    end
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;
@@ -5038,7 +5387,13 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S, Q, eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S, Q, eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -5061,7 +5416,6 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     lwork = 0;
     work = [];
     idensflag = 1;
-    ifcorr = 0;
 % Call the layer potential evaluator
 
     if strcmpi(rep, 'nrccie') || strcmpi(rep, 'nrccie-eval')
@@ -5140,6 +5494,13 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %        opts.rep - integral representation being used
 %                         Supported representations
 %                         'nrccie-bc', 'nrccie-eval'.
@@ -5241,6 +5602,11 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
     # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
     nquad = iquad(nnz+1)-1;
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -5251,24 +5617,6 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
       end
     end
 
-    if strcmpi(qtype, 'nrccie-bc')
-      nker = 9;
-      wnear = complex(zeros(nker,nquad));
-      ndz = 2;
-      zpars = complex(zeros(2,1));
-      zpars(1) = zk;
-      zpars(2) = rep_params;
-
-%      # FORTRAN getnearquad_em_nrccie_pec(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
-       # FORTRAN getnearquad_em_nrccie_pec_targ(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
-    elseif strcmpi(qtype, 'nrccie-eval')
-      nker = 4;
-      wnear = complex(zeros(nker,nquad));
-      zpuse = complex(zk);
-      # FORTRAN getnearquad_em_nrccie_pec_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
-    else
-      error('em3d.pec.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
-    end
     
     Q = [];
     Q.targinfo = targinfo;
@@ -5279,6 +5627,48 @@ function Q = get_quadrature_correction(S, eps, zk, rep_params, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
     Q.kernel_order = 0;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if strcmpi(qtype, 'nrccie-bc')
+      nker = 9;
+      wnear = complex(zeros(nker,nquad));
+      ndz = 2;
+      zpars = complex(zeros(2,1));
+      zpars(1) = zk;
+      zpars(2) = rep_params;
+
+%      # FORTRAN getnearquad_em_nrccie_pec(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nker,nquad] wnear);
+       if ifcorr
+         # FORTRAN getnearcorr_em_nrccie_pec_targ(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[npatches] novers, inout dcomplex[nker,nquad] wnear);
+       else
+         # FORTRAN getnearquad_em_nrccie_pec_targ(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[2] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
+       end
+    elseif strcmpi(qtype, 'nrccie-eval')
+      nker = 4;
+      wnear = complex(zeros(nker,nquad));
+      zpuse = complex(zk);
+      if ifcorr
+        # FORTRAN getnearcorr_em_nrccie_pec_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, int[npatches] novers, inout dcomplex[nker,nquad] wnear);
+      else
+        # FORTRAN getnearquad_em_nrccie_pec_eval(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[1] zpuse, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0, int[1] nquad, inout dcomplex[nker,nquad] wnear);
+      end
+    else
+      error('em3d.pec.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;
@@ -5433,7 +5823,13 @@ function [densities, varargout] = solver(S, einc, hinc, eps, zk, rep_params, opt
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -5453,7 +5849,6 @@ function [densities, varargout] = solver(S, einc, hinc, eps, zk, rep_params, opt
     errs = zeros(maxit+1,1);
     maxitp1 = maxit + 1;
     rres = 0;
-    ifcorr = 0;
 
     if strcmpi(rep, 'nrccie')
       zjvec = complex(zeros(3,npts));
@@ -5642,7 +6037,7 @@ end
 %----------------------------------
 %
 @ +em3d/+dielectric/get_quadrature_correction.m 
-function Q = get_quadrature_correction(S, eps, om, rep_params)
+function Q = get_quadrature_correction(S, eps, om, rep_params, opts)
 %
 %  em3d.dielectric.get_quadrature_correction
 %    This subroutine returns the near quadrature correction
@@ -5674,6 +6069,7 @@ function Q = get_quadrature_correction(S, eps, om, rep_params)
 %
 %  Syntax
 %   Q = em3d.dielectric.get_quadrature_correction(S,eps,om,rep_params)
+%   Q = em3d.dielectric.get_quadrature_correction(S,eps,om,rep_params,opts)
 %
 %
 %  Input arguments:
@@ -5683,7 +6079,19 @@ function Q = get_quadrature_correction(S, eps, om, rep_params)
 %    * rep_params: parameters for integral representation 
 %                  for muller, it should be a 4 vector
 %                  consisting of [\ep0, \mu0, \ep1, \mu1]
+%    * opts: options struct (optional)
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %
+
+    if nargin < 5
+      opts = [];
+    end
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
     [n12,npts] = size(srcvals);
@@ -5757,12 +6165,16 @@ function Q = get_quadrature_correction(S, eps, om, rep_params)
     # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
 
     nquad = iquad(nnz+1)-1;
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
 
     nker = 16;
     zpars = complex([om rep_params(:).']);
     wnear = complex(zeros(nquad,nker));
-    # FORTRAN getnearquad_em_muller_trans(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[5] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad,nker] wnear);
 
     Q = [];
     Q.targinfo = tinfouse;
@@ -5773,6 +6185,27 @@ function Q = get_quadrature_correction(S, eps, om, rep_params)
     Q.nquad = nquad;
     Q.format = ff;
     Q.kernel_order = 0;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if ifcorr
+      # FORTRAN getnearcorr_em_muller_trans(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[5] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, int[npatches] novers, inout dcomplex[nquad,nker] wnear);
+    else
+      # FORTRAN getnearquad_em_muller_trans(int[1] npatches, int[npatches] norders, int[npp1] ixyzs, int[npatches] iptype, int[1] npts, double[n9,npts] srccoefs, double[n12,npts] srcvals, int[1] ndtarg, int[1] ntarg, double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, double[1] eps, dcomplex[5] zpars, int[1] iquadtype, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, int[nnzp1] iquad, double[1] rfac0,int[1] nquad, inout dcomplex[nquad,nker] wnear);
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     Q.iquad = iquad;
     Q.wnear = wnear;
@@ -5895,7 +6328,13 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -5930,7 +6369,6 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
 
     densities = complex(zeros(npts,4));
     zpars = complex([om, rep_params(:).']);
-    ifcorr = 0;
 
 
 % Call the solver 
@@ -5991,6 +6429,13 @@ function Q = get_quadrature_correction(S, type, zk, eps, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %
 
     switch lower(type)
@@ -6094,6 +6539,11 @@ function Q = get_quadrature_correction(S, type, zk, eps, targinfo, opts)
     ntp1    = ntarg+1;
     nnzp1   = nnz+1;
 
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -6104,14 +6554,6 @@ function Q = get_quadrature_correction(S, type, zk, eps, targinfo, opts)
       end
     end
 
-    if islap
-        wnear = zeros(nquad,1);
-        # FORTRAN getnearquad_lap_bel_log(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,int[1] iktype,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nquad] wnear);
-    else
-        zpars = complex(zk);
-        wnear = complex(zeros(nquad,1));
-        # FORTRAN getnearquad_helm_bel_hank(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[1] zpars,int[1] iktype,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] wnear);
-    end
 
     Q = [];
     Q.targinfo = targinfo;
@@ -6121,6 +6563,38 @@ function Q = get_quadrature_correction(S, type, zk, eps, targinfo, opts)
     Q.rfac = rfac;
     Q.nquad = nquad;
     Q.format = ff;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if islap
+        wnear = zeros(nquad,1);
+        if ifcorr
+          # FORTRAN getnearcorr_lap_bel_log(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,int[1] iktype,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad, int[npatches] novers, inout double[nquad] wnear);
+        else
+          # FORTRAN getnearquad_lap_bel_log(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,int[1] iktype,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout double[nquad] wnear);
+        end
+    else
+        zpars = complex(zk);
+        wnear = complex(zeros(nquad,1));
+        if ifcorr
+          # FORTRAN getnearcorr_helm_bel_hank(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[1] zpars,int[1] iktype,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad, int[npatches] novers, inout dcomplex[nquad] wnear);
+        else
+          # FORTRAN getnearquad_helm_bel_hank(int[1] npatches,int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype,int[1] npts,double[n9,npts] srccoefs,double[n12,npts] srcvals,int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs,int[ntarg] patch_id,double[2,ntarg] uvs_targ,double[1] eps,dcomplex[1] zpars,int[1] iktype,int[1] iquadtype,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,int[nnzp1] iquad,double[1] rfac0,int[1] nquad,inout dcomplex[nquad] wnear);
+        end
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;

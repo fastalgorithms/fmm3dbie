@@ -50,6 +50,13 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %        opts.rep - whether to compute correction for on surface
 %                   integral equation or post-processing
 %                   'trans-bc' - on surface integral equation.
@@ -166,6 +173,11 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
 [iquad] = fmm3dbie_routs(mex_id_, npatches, ixyzs, npts, nnz, row_ptr, col_ind, iquad, 1, npp1, 1, 1, ntp1, nnz, nnzp1);
 
     nquad = iquad(nnz+1)-1;
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -187,8 +199,6 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
 
     nker = 4;
     wnear = complex(zeros(nker,nquad));
-    mex_id_ = 'getnearquad_helm_comb_trans(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
     
     Q = [];
     Q.targinfo = targinfo;
@@ -200,6 +210,29 @@ function Q = get_quadrature_correction(S, eps, zks, rep_params, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
     Q.kernel_order = 0;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if ifcorr
+      mex_id_ = 'getnearcorr_helm_comb_trans(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io dcomplex[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, npatches, nker, nquad);
+    else
+      mex_id_ = 'getnearquad_helm_comb_trans(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io dcomplex[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 6, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;

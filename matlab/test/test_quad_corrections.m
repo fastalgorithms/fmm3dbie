@@ -62,12 +62,14 @@ end
 function test_getquad_sub_flags()
 % getquad_sub is true only when getquad can subtract the smooth rule itself.
 
-L = kernel3d.lap3d('d');
+L = kernel3d(@(s,t) lap3d.kern(s,t,'d'));
 F = kernel3d(@(s,t) lap3d.kern(s,t,'s'));
 E = kernel3d.eye(1);
 Z = kernel3d.zeros([1 1]);
 
 assert(~L.getquad_sub && ~F.getquad_sub, 'flags: default false');
+% package kernels compute the corrections in get_quadrature_correction
+assert(kernel3d.lap3d('d').getquad_sub, 'flags: package kernel');
 assert(E.getquad_sub, 'flags: eye');
 assert(Z.getquad_sub, 'flags: zeros');
 % the smooth rule drops coincident nodes, so ones has a nonzero correction
@@ -103,9 +105,12 @@ kerns = {kernel3d.lap3d('d') + 0.5*kernel3d.lap3d('s'), ...
          kernel3d.lap3d('d') + kernel3d.ones(1,1), ...
          kernel3d.lap3d('s') * [1 2], ...
          kernel3d.ones(1,1)};
+% the first three subtract in getquad, the others fall back to
+% smooth_sparse_quad
+flags = [true, true, true, false, false, false];
 for k = 1:numel(kerns)
     K = kerns{k};
-    assert(~K.getquad_sub, 'getquad_corrections: case %d flag', k);
+    assert(K.getquad_sub == flags(k), 'getquad_corrections: case %d flag', k);
     A  = kernel3d.getquad_corrections(K, S, eps, S, nover);
     ws = smooth_sparse_quad(K, S, S, rsc.row_ptr, rsc.col_ind, nover);
     Aref = K.getquad(S, eps, S) - conv_rsc_to_spmat(S, rsc.row_ptr, ...

@@ -45,6 +45,7 @@ switch lower(type)
         dpars_s = [1.0; 0.0];
         obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
                           stok_getquad(S, eps, dpars_s, varargin{:}), S);
+        obj.getquad_sub = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
     case {'d', 'double', 'traction'}
@@ -58,6 +59,7 @@ switch lower(type)
         dpars_d = [0.0; 1.0];
         obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
                           stok_getquad(S, eps, dpars_d, varargin{:}), S);
+        obj.getquad_sub = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
 
@@ -71,6 +73,7 @@ switch lower(type)
 
         obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
                           stok_strac_getquad(S, eps, varargin{:}), S);
+        obj.getquad_sub = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.targ_fields = {'n'};
 
@@ -92,6 +95,7 @@ switch lower(type)
         dpars_c = coefs;
         obj.getquad  = @(S,eps,varargin) rsc_to_sparse( ...
                           stok_getquad(S, eps, dpars_c, varargin{:}), S);
+        obj.getquad_sub = true;
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
 

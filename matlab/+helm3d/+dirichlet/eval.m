@@ -130,7 +130,13 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1;
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -160,7 +166,6 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
       ndi = 0;
       ipars = [];
       nker = 1;
-      ifcorr = 0;
       lwork = 0;
       work = [];
       ndim = 1;
@@ -177,7 +182,6 @@ function p = eval(S,sigma,targinfo,eps,zk,rep_pars,varargin)
       ipars = [];
       ndim = 1;
       nker = 1;
-      ifcorr = 0;
       lwork = 0;
       work = [];
       idensflag = 0;

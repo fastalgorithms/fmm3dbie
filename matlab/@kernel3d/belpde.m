@@ -71,6 +71,7 @@ obj.eval = @(s,t) belpde.kern(zk2, s, t, obj.type);
 
 obj.getquad = @(S,eps,varargin) rsc_to_sparse( ...
     belpde.get_quadrature_correction(S, obj.type, zk, eps, varargin{:}), S);
+obj.getquad_sub = true;
 obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
 
 end
