@@ -23,6 +23,10 @@
 !
 !    - getnearquad_lap_comb_cprime_eval: compute near quadrature for
 !        general (on or off surface) targets
+!    - getnearcorr_lap_comb_cprime, getnearcorr_lap_comb_cprime_eval:
+!        same as the two routines above, minus the smooth quadrature
+!        rule oversampled to user-provided orders, for use with
+!        lap_comb_cprime_eval_addsub with ifcorr = 1
 !
 !    - lap_comb_cprime_eval: evaluate the layer potential at a
 !        collection of targets using the combined prime kernel
@@ -218,6 +222,139 @@
 
       return
       end subroutine getnearquad_lap_comb_cprime_eval
+!
+!
+!
+!
+!
+      subroutine getnearcorr_lap_comb_cprime(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, dpars, iquadtype, nnz, row_ptr, col_ind, &
+        iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_lap_comb_cprime, minus the smooth quadrature rule
+!  oversampled to novers, for the combined prime representation
+!    K = (\alpha S_{0}' + \beta D_{0}')[\sigma]
+!  i.e. the near quadrature correction for on-surface targets.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      eps, dpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0,
+!      nquad:
+!        as in getnearquad_lap_comb_cprime
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: real *8(nquad)
+!        near quadrature correction for K
+!
+      implicit none
+      integer *8, intent(in) :: npatches, norders(npatches), npts, nquad
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iquadtype
+      real *8, intent(in) :: dpars(2)
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: novers(npatches)
+      real *8, intent(out) :: wnear(nquad)
+
+      integer *8 ndtarg, ndd, ndz, ndi, nker, iker, ipars(1)
+      complex *16 zpars(1)
+      procedure (), pointer :: fker
+      external l3d_combprime
+
+      call getnearquad_lap_comb_cprime(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, dpars, iquadtype, nnz, &
+        row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+
+      fker => l3d_combprime
+      ndd = 2
+      ndz = 0
+      ndi = 0
+      ndtarg = 12
+      nker = 1
+      iker = 1
+      call dgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, npts, srcvals, novers, fker, ndd, &
+        dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+        nquad, nker, iker, wnear)
+
+      return
+      end subroutine getnearcorr_lap_comb_cprime
+!
+!
+!
+!
+!
+      subroutine getnearcorr_lap_comb_cprime_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_lap_comb_cprime_eval, minus the smooth quadrature
+!  rule oversampled to novers, for the combined prime representation
+!    K = (\alpha S_{0}' + \beta D_{0}')[\sigma]
+!  The result is the near quadrature correction for
+!  lap_comb_cprime_eval_addsub with ifcorr = 1, and the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, dpars,
+!      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_lap_comb_cprime_eval
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: real *8(nquad)
+!        near quadrature correction for K
+!
+      implicit none
+      integer *8, intent(in) :: npatches, norders(npatches), npts, nquad
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iquadtype
+      real *8, intent(in) :: dpars(2)
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: novers(npatches)
+      real *8, intent(out) :: wnear(nquad)
+
+      integer *8 ndd, ndz, ndi, nker, iker, ipars(1)
+      complex *16 zpars(1)
+      procedure (), pointer :: fker
+      external l3d_combprime
+
+      call getnearquad_lap_comb_cprime_eval(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+
+      fker => l3d_combprime
+      ndd = 2
+      ndz = 0
+      ndi = 0
+      nker = 1
+      iker = 1
+      call dgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+        dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+        nquad, nker, iker, wnear)
+
+      return
+      end subroutine getnearcorr_lap_comb_cprime_eval
 !
 !
 !
@@ -548,7 +685,7 @@
       subroutine lap_comb_cprime_eval_addsub(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, &
         nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
         ndim_s, sigma, ipotflag, ndim_p, pot)
 !
@@ -597,6 +734,12 @@
 !    - nker: integer *8 (must be 1)
 !    - wnear: real *8(nker,nquad)
 !        precomputed near quadrature for K = alpha*S' + beta*D'
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_lap_comb_cprime_eval, the
+!            oversampled smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_lap_comb_cprime_eval with
+!            the same novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !    - nptso: integer *8
 !    - ixyzso: integer *8(npatches+1)
@@ -636,6 +779,7 @@
 
       integer *8, intent(in) :: nker
       real *8, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
@@ -757,51 +901,53 @@
 !$OMP END PARALLEL DO
 
 !     subtract near FMM contribution (add-subtract correction)
-      call get_near_corr_max(ntarg, row_ptr, nnz, col_ind, npatches, &
-        ixyzso, nmax)
-      allocate(srctmp2(3,nmax), ctmp2(nmax), dtmp2(3,nmax))
+      if (ifcorr.ne.1) then
+        call get_near_corr_max(ntarg, row_ptr, nnz, col_ind, npatches, &
+          ixyzso, nmax)
+        allocate(srctmp2(3,nmax), ctmp2(nmax), dtmp2(3,nmax))
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2) &
 !$OMP PRIVATE(ctmp2,dtmp2,nss,l,jstart,pottmp,gradtmp)
-      do i = 1,ntarg
-        nss = 0
-        do j = row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l = ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss+1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
-            if (ifcharge .eq. 1) ctmp2(nss)   = charges(l)
-            if (ifdipole .eq. 1) then
-              dtmp2(1,nss) = dipvec(1,l)
-              dtmp2(2,nss) = dipvec(2,l)
-              dtmp2(3,nss) = dipvec(3,l)
-            endif
+        do i = 1,ntarg
+          nss = 0
+          do j = row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l = ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss+1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
+              if (ifcharge .eq. 1) ctmp2(nss)   = charges(l)
+              if (ifdipole .eq. 1) then
+                dtmp2(1,nss) = dipvec(1,l)
+                dtmp2(2,nss) = dipvec(2,l)
+                dtmp2(3,nss) = dipvec(3,l)
+              endif
+            enddo
           enddo
+
+          pottmp     = 0
+          gradtmp(1) = 0
+          gradtmp(2) = 0
+          gradtmp(3) = 0
+
+          if (ifcharge .eq. 1 .and. ifdipole .eq. 1) then
+            call l3ddirectcdg(nd, srctmp2, ctmp2, dtmp2, &
+              nss, srctmp(1,i), ntarg0, pottmp, gradtmp, thresh)
+          elseif (ifcharge .eq. 1 .and. ifdipole .eq. 0) then
+            call l3ddirectcg(nd, srctmp2, ctmp2, &
+              nss, srctmp(1,i), ntarg0, pottmp, gradtmp, thresh)
+          elseif (ifcharge .eq. 0 .and. ifdipole .eq. 1) then
+            call l3ddirectdg(nd, srctmp2, dtmp2, &
+              nss, srctmp(1,i), ntarg0, pottmp, gradtmp, thresh)
+          endif
+
+          pot(i) = pot(i) - (gradtmp(1)*targs(10,i) + &
+                              gradtmp(2)*targs(11,i) + &
+                              gradtmp(3)*targs(12,i))
         enddo
-
-        pottmp     = 0
-        gradtmp(1) = 0
-        gradtmp(2) = 0
-        gradtmp(3) = 0
-
-        if (ifcharge .eq. 1 .and. ifdipole .eq. 1) then
-          call l3ddirectcdg(nd, srctmp2, ctmp2, dtmp2, &
-            nss, srctmp(1,i), ntarg0, pottmp, gradtmp, thresh)
-        elseif (ifcharge .eq. 1 .and. ifdipole .eq. 0) then
-          call l3ddirectcg(nd, srctmp2, ctmp2, &
-            nss, srctmp(1,i), ntarg0, pottmp, gradtmp, thresh)
-        elseif (ifcharge .eq. 0 .and. ifdipole .eq. 1) then
-          call l3ddirectdg(nd, srctmp2, dtmp2, &
-            nss, srctmp(1,i), ntarg0, pottmp, gradtmp, thresh)
-        endif
-
-        pot(i) = pot(i) - (gradtmp(1)*targs(10,i) + &
-                            gradtmp(2)*targs(11,i) + &
-                            gradtmp(3)*targs(12,i))
-      enddo
 !$OMP END PARALLEL DO
+      endif
 
       return
       end subroutine lap_comb_cprime_eval_addsub
