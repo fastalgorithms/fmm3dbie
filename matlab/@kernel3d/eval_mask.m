@@ -4,6 +4,7 @@ val = obj.eval(src,targ);
 
 src_norm = max(vecnorm(src.r(:,:)), 1);
 targ_r   = targ.r(:,:);
+targ_r(end+1:size(src.r,1),:) = 0;
 for q = 1:size(src.r(:,:), 2)
     diff_norms = vecnorm(targ_r - src.r(:,q));
     self_mask  = diff_norms < 1e-13 * src_norm(q);

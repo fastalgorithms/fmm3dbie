@@ -292,6 +292,25 @@ subroutine radpp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
 end subroutine radpp_kern
 
 
+
+subroutine radpp_kern_d(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,val)
+!
+!  real part of radpp_kern, for kernel3d.radpp kernels that are real
+!  (real fit and weights), in the real-kernel interface
+!
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: src(*), targ(ndt), dpars(ndd), val
+  integer *8 :: ipars(ndi)
+  complex *16 :: zpars(*), zval
+
+  call radpp_kern(src,ndt,targ,ndd,dpars,ndz,zpars,ndi,ipars,zval)
+  val = dble(zval)
+
+  return
+end subroutine radpp_kern_d
+
+
       subroutine getnearquad_radpp(npatches, norders, ixyzs, iptype, &
         npts, srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, &
         uvs_targ, eps, nrow, ipvs, nnz, row_ptr, col_ind, iquad, &

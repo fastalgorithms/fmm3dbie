@@ -46,11 +46,12 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     end
     norder = (-3 + sqrt(8*npols + 1))/2;
     
-    if isa(targinfo, 'struct')
-        targs = targinfo.r;
-    else
+    if isnumeric(targinfo)
         targs = targinfo;
+    else
+        targs = targinfo.r(:,:);
     end
+    targs = [targs; zeros(max(3-size(targs,1),0), size(targs,2))];
 
     ntarg = size(targs, 2);
     

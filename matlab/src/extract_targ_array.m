@@ -17,7 +17,7 @@ function [targs] = extract_targ_array(targinfo)
 %          13 if kappa (curvature) is present
 %          14+ if extra data is present
 %
-    [~,ntarg] = size(targinfo.r);
+    ntarg = size(targinfo.r(:,:), 2);
     
     targs = targinfo.r(:,:);    
     

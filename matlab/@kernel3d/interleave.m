@@ -44,8 +44,8 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
     end
 
     function out = eval_(s, t)
-        [~, ns] = size(s.r);
-        [~, nt] = size(t.r);
+        ns = size(s.r(:,:), 2);
+        nt = size(t.r(:,:), 2);
         [ridx, cidx] = make_idx(nt, ns);
         out = zeros(opdims(1)*nt, opdims(2)*ns);
         for k = 1:m
@@ -57,29 +57,34 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
 
     function varargout = fmm_(eps, s, t, sigma)
         if isstruct(t)
-            [~, nt] = size(t.r);
+            nt = size(t.r(:,:), 2);
         else
             [~, nt] = size(t);
         end
-        [~, ns] = size(s.r);
+        ns = size(s.r(:,:), 2);
         [ridx, cidx] = make_idx(nt, ns);
+        ndens = numel(sigma)/(opdims(2)*ns);
+        sigma = reshape(sigma, opdims(2)*ns, ndens);
 
         % Call each sub-kernel FMM and accumulate
-        pot  = zeros(opdims(1)*nt, 1);
+        pot  = zeros(opdims(1)*nt, ndens);
         if nargout > 1
-            grad = zeros(3, opdims(1)*nt);
+            grad = zeros(ndens, 3, opdims(1)*nt);
         end
 
         for k = 1:m
             for l = 1:n
                 if nargout > 1
-                    [p, g] = kerns(k,l).fmm(eps, s, t, sigma(cidx{l}));
-                    grad(:, ridx{k}) = grad(:, ridx{k}) + g;
+                    [p, g] = kerns(k,l).fmm(eps, s, t, sigma(cidx{l},:));
+                    grad(:,:,ridx{k}) = grad(:,:,ridx{k}) + reshape(g, ndens, 3, []);
                 else
-                    p = kerns(k,l).fmm(eps, s, t, sigma(cidx{l}));
+                    p = kerns(k,l).fmm(eps, s, t, sigma(cidx{l},:));
                 end
-                pot(ridx{k}) = pot(ridx{k}) + p(:);
+                pot(ridx{k},:) = pot(ridx{k},:) + reshape(p, [], ndens);
             end
+        end
+        if nargout > 1 && ndens == 1
+            grad = reshape(grad, 3, []);
         end
 
         varargout{1} = pot;
@@ -117,7 +122,7 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
 
     function D = diag_(t)
         % assemble the interleaved (opdims(1)*nt x opdims(2)) stacked diag
-        nt = size(t.r, 2);
+        nt = size(t.r(:,:), 2);
         D  = zeros(opdims(1)*nt, opdims(2));
         for k = 1:m
             for l = 1:n

@@ -154,7 +154,7 @@ end
 assert(all(opdims_mat(1,:) == opdims_mat(1,1)), ...
     'SURFERKERNEVAL: opdims(1) is not constant across all source blocks');
 
-ntarg  = size(targinfo.r, 2);
+ntarg  = size(targinfo.r(:,:), 2);
 opdim1 = opdims_mat(1,1);
 
 icollocs = zeros(nsurfers+1, 1);

@@ -67,7 +67,7 @@ end
 
 if strcmpi(type,'hilb')
     srcnorm = [srcinfo.d(2,:); -srcinfo.d(1,:)]./vecnorm(srcinfo.d(1:2,:));
-    [~,grad] = green2d.lap(src,targ,true);
+    [~,grad] = lapgreen(src,targ,true);
     nx = repmat((srcnorm(1,:)),nt,1);
     ny = repmat((srcnorm(2,:)),nt,1);
 
@@ -633,7 +633,7 @@ function [K11,K12,K21,K22] = fp_hilbert_bh(srcinfo,targinfo,nu,rts,ejs,thirdbh)
 
    kappax = numer ./ denom; % target curvature
 
-   [~,grad] = green2d.lap(src,targ,true); 
+   [~,grad] = lapgreen(src,targ,true); 
    hilb = 2*(grad(:,:,1).*ny - grad(:,:,2).*nx);
 
    zk = 1/sqrt(2); % get rid of zk (they currently cancel anyway)
@@ -672,4 +672,45 @@ for i = 1:m
     submat(i:m:end, j:n:end) = K{i,j};
   end
 end
+end
+
+
+function [val,grad,hess] = lapgreen(src,targ,nolog)
+%LAPGREEN  2D Laplace Green's function -log|x-y|/(2 pi).
+%
+%  [val,grad,hess] = lapgreen(src,targ)
+%  [val,grad,hess] = lapgreen(src,targ,nolog)
+%
+%  Same layout as SURFWAVE.HELMGREEN. If nolog is true, val is returned empty.
+%
+%  Adapted from chunkie (BSD 3-clause).
+%
+%  See also SURFWAVE.HELMGREEN
+
+if nargin < 3, nolog = false; end
+
+rx = targ(1,:).' - src(1,:);
+ry = targ(2,:).' - src(2,:);
+r2 = rx.^2 + ry.^2;
+
+if nolog
+    val = [];
+else
+    val = -log(r2)/(4*pi);
+end
+
+if nargout > 1
+    grad = zeros([size(r2),2]);
+    grad(:,:,1) = -rx./(2*pi*r2);
+    grad(:,:,2) = -ry./(2*pi*r2);
+end
+
+if nargout > 2
+    r4 = r2.*r2;
+    hess = zeros([size(r2),3]);
+    hess(:,:,1) = rx.^2./(pi*r4) - 1./(2*pi*r2);
+    hess(:,:,2) = rx.*ry./(pi*r4);
+    hess(:,:,3) = ry.^2./(pi*r4) - 1./(2*pi*r2);
+end
+
 end

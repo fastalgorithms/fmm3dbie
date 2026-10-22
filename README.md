@@ -26,6 +26,8 @@ on linux machines)
 
 Please see the [online documentation](https://fmm3dbie.readthedocs.io).
 
+The 2D flexural plate kernels (kernel3d.flex2d) can be accelerated by linking the [fmm2d](https://github.com/flatironinstitute/fmm2d) package.
+
 
 fmm3dbie team
 ===============

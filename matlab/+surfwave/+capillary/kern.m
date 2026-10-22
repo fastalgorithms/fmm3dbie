@@ -22,7 +22,7 @@ function submat= kern(rts,ejs,srcinfo,targinfo,type,varargin)
 % Output:
 %   submat - (nt,ns) kernel matrix
 %
-% See also GREEN2D.HELM
+% See also SURFWAVE.HELMGREEN
 
 src = srcinfo.r;
 targ = targinfo.r;

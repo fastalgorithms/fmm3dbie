@@ -1,206 +1,45 @@
-function obj = capillary(type, rts, ejs, opts)
-%KERNEL3D.CAPILLARY   Construct a capillary surface wave kernel in 3D.
+function obj = capillary(type, rts, ejs, green, varargin)
+%KERNEL3D.CAPILLARY   Capillary surface wave kernels, for a flat surfer
+%   in z = 0.
 %
-%   KERNEL3D.CAPILLARY(type, rts, ejs) or KERNEL3D.CAPILLARY(type, rts, ejs, opts).
+%   K = KERNEL3D.CAPILLARY(type, rts, ejs)
+%   K = KERNEL3D.CAPILLARY(type, rts, ejs, green)
+%   K = KERNEL3D.CAPILLARY(type, rts, ejs, green, 'rmax', rmax, ...)
 %
-%   RTS and EJS are the three dispersion roots and their partial fraction
-%   residues, as returned by SURFWAVE.CAPILLARY.FIND_ROOTS_CAPILLARY.  The
-%   Fortran gateway takes them packed as zpars = [rts; ejs].
+%   RTS and EJS are the dispersion roots and their partial fraction
+%   residues, see SURFWAVE.CAPILLARY.FIND_ROOTS_CAPILLARY. GREEN is a
+%   weight vector w on
 %
-%   Types ([1 1]):
+%      [G_S, G_phi, S3d]
 %
-%      's'       - single layer. opts.green selects G_S ('gs', default)
-%                  or G_phi ('gphi').
-%      'lap'     - surface Laplacian of the single layer. Near quadrature
-%                  only for G_phi.
-%      's3d'     - the 3D single layer applied to G_phi.
-%      's3d_lap' - the Laplace 3D single layer.
-%      's3d_sum' - s3d_lap + s3d.
-%      'sp'      - target normal derivative of the single layer.
-%      'v2b'     - cs*S'_S + cp*S'_phi, the combined capillary v2b
-%                  operator; weights in opts.cs, opts.cp.
-%      'd'       - source normal derivative of the single layer (no
-%                  near quadrature).
-%      'dp'      - target normal derivative of 'd' for G_S (no near
-%                  quadrature).
+%   with G_S = SURFWAVE.CAPILLARY.GSHELM, G_phi = SURFWAVE.CAPILLARY.GPHIHELM
+%   and S3d = S3d G_phi + the Laplace single layer 1/(4 pi r) (values only,
+%   so type 's'), giving the kernel on w(1) G_S + w(2) G_phi + w(3) S3d.
+%   Trailing zeros may be left out. 'gs', 'gphi' and 's3d' (default 'gs')
+%   are [1 0 0], [0 1 0] and [0 0 1].
 %
-%   OPTS:
-%      opts.green - 'gs' (default) or 'gphi', for 's', 'lap', 'sp', 'd'.
+%   TYPE is any type of KERNEL3D.RADPP with 'dim' = 2 that needs at most
+%   two derivatives ('s', 'sp', 'grad', 'hess', ...), or 'lap' (surface
+%   Laplacian G_xx + G_yy).
 %
-% See also SURFWAVE.CAPILLARY.KERN, KERNEL3D.GRAVITY, KERNEL3D.ICEFLEX
+%   By default this is a KERNEL3D.RADGREEN kernel (exact eval, near
+%   quadrature from a radpp fit); with 'rmax', rmax it is a KERNEL3D.RADPP
+%   kernel (eval from a fit on [1e-12 rmax], fast), see SURFWAVE.KERNEL.
+%   Further arguments go to KERNEL3D.RADGREEN or KERNEL3D.RADPP, e.g. fit
+%   options 'opts', struct('eps', 1e-12).
+%
+%   Example, the capillary v2b operator cs*S'_S + cp*S'_phi:
+%      Kv2b = kernel3d.capillary('sp', rts, ejs, [cs cp], 'rmax', 50);
+%
+% See also SURFWAVE.CAPILLARY.GREEN, SURFWAVE.KERNEL, KERNEL3D.ICEFLEX, KERNEL3D.GRAVITY
 
-if ( nargin < 1 )
-    error('KERNEL3D.CAPILLARY: missing capillary kernel type.');
-end
 if ( nargin < 3 )
     error('KERNEL3D.CAPILLARY: need type, rts and ejs.');
 end
-if ( nargin < 4 || isempty(opts) ), opts = struct(); end
+if ( nargin < 4 || isempty(green) ), green = 'gs'; end
 
 rts = rts(:);  ejs = ejs(:);
-zpars = complex([rts; ejs]);
-
-green = 'gs';
-if ( isfield(opts, 'green') ), green = lower(opts.green); end
-if ( ~any(strcmp(green, {'gs', 'gphi'})) )
-    error('KERNEL3D.CAPILLARY: opts.green must be ''gs'' or ''gphi''.');
-end
-
-obj           = kernel3d();
-obj.name      = 'capillary';
-obj.ifcomplex = 1;
-obj.zk        = max(abs(rts));
-obj.params.rts   = rts;
-obj.params.ejs   = ejs;
-obj.params.green = green;
-
-% iker selectors into getnearquad_capillary_all:
-%   0 = G_S, 1 = G_phi, 3 = lap G_phi, 5 = S3d G_phi,
-%   6 = Laplace S3d, 7 = 5 + 6, 8 = S'_S, 9 = S'_phi
-ikers_s  = struct('gs', 0, 'gphi', 1);
-ikers_sp = struct('gs', 8, 'gphi', 9);
-
-switch lower(type)
-
-    case {'s', 'single'}
-        obj.type         = 's';
-        obj.opdims       = [1 1];
-        obj.kernel_order = -1;
-        obj.eval    = @(s,t) surfwave.capillary.kern(rts, ejs, s, t, [green '_s']);
-        obj.getquad = cap_getquad_handle(zpars, ikers_s.(green), 1, 1);
-
-    case {'lap', 'lap_s'}
-        obj.type         = 'lap';
-        obj.opdims       = [1 1];
-        obj.kernel_order = 1;
-        obj.eval    = @(s,t) surfwave.capillary.kern(rts, ejs, s, t, ['lap_' green]);
-        if ( strcmp(green, 'gphi') )
-            obj.getquad = cap_getquad_handle(zpars, 3, 1, 1);
-        else
-            obj.getquad = [];
-        end
-
-    case {'s3d', 's3d_gphi'}
-        obj.type         = 's3d';
-        obj.opdims       = [1 1];
-        obj.kernel_order = -1;
-        obj.eval    = @(s,t) surfwave.capillary.kern(rts, ejs, s, t, 's3d_gphi');
-        obj.getquad = cap_getquad_handle(zpars, 5, 1, 1);
-
-    case {'s3d_lap'}
-        obj.type         = 's3d_lap';
-        obj.opdims       = [1 1];
-        obj.kernel_order = -1;
-        obj.eval    = @(s,t) surfwave.flex.lap3dkern(s.r, t.r);
-        obj.getquad = cap_getquad_handle(zpars, 6, 1, 1);
-
-    case {'s3d_sum', 's3d_plus_s3d_gphi'}
-        obj.type         = 's3d_sum';
-        obj.opdims       = [1 1];
-        obj.kernel_order = -1;
-        obj.eval    = @(s,t) surfwave.flex.lap3dkern(s.r, t.r) + ...
-                             surfwave.capillary.kern(rts, ejs, s, t, 's3d_gphi');
-        obj.getquad = cap_getquad_handle(zpars, 7, 1, 1);
-
-    case {'d', 'double'}
-        obj = cap_evalonly(obj, rts, ejs, [green '_d'], 'd', [1 1], 0);
-        obj.src_fields = {'n'};
-
-    case {'sp', 'sprime'}
-        % G' ~ grad of a log / 1/r kernel: weakly singular on the surface
-        % (ipv = 0, as iceflex v2b); ipv = 1 cannot take targets on a
-        % patch edge
-        obj = cap_evalonly(obj, rts, ejs, [green '_sprime'], 'sp', [1 1], -1);
-        obj.targ_fields = {'n'};
-        obj.getquad = cap_getquad_handle(zpars, ikers_sp.(green), 1, 1);
-
-    case {'v2b'}
-        % combined capillary v2b: cs*S'_S + cp*S'_phi
-        if ~(isfield(opts, 'cs') && isfield(opts, 'cp'))
-            error('KERNEL3D.CAPILLARY: ''v2b'' needs opts.cs and opts.cp.');
-        end
-        cs = opts.cs;  cp = opts.cp;
-        obj = cap_evalonly(obj, rts, ejs, 'gs_sprime', 'v2b', [1 1], -1);
-        obj.eval = @(s,t) cs*surfwave.capillary.kern(rts, ejs, s, t, 'gs_sprime') ...
-                        + cp*surfwave.capillary.kern(rts, ejs, s, t, 'gphi_sprime');
-        obj.targ_fields = {'n'};
-        obj.getquad = @(S,eps,varargin) cs*cap_getquad(S, eps, zpars, 8, ...
-                kernel3d.rsc_interleave_full(1,1), varargin{:}) ...
-              + cp*cap_getquad(S, eps, zpars, 9, ...
-                kernel3d.rsc_interleave_full(1,1), varargin{:});
-
-    case {'dp', 'dprime'}
-        obj = cap_evalonly(obj, rts, ejs, 'gs_dprime', 'dp', [1 1], 1);
-        obj.src_fields = {'n'}; obj.targ_fields = {'n'};
-
-    otherwise
-        error('KERNEL3D.CAPILLARY: unknown capillary kernel type ''%s''.', type);
-
-end
-
-obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, ...
-                                     obj.zk, obj.kernel_order);
-
-end
-
-
-function obj = cap_evalonly(obj, rts, ejs, ktype, tname, opdims, korder)
-%CAP_EVALONLY  Populate an eval-only capillary type (no Fortran getquad).
-obj.type         = tname;
-obj.opdims       = opdims;
-obj.kernel_order = korder;
-obj.eval = @(s,t) surfwave.capillary.kern(rts, ejs, s, t, ktype);
-obj.getquad = [];
-end
-
-
-function h = cap_getquad_handle(zpars, iker, m, n)
-%CAP_GETQUAD_HANDLE  getquad handle for a scalar capillary Green's function.
-ri = kernel3d.rsc_interleave_full(m, n);
-h  = @(S,eps,varargin) cap_getquad(S, eps, zpars, iker, ri, varargin{:});
-end
-
-
-function spmat = cap_getquad(S, eps, zpars, iker, ri, targinfo, opts)
-%CAP_GETQUAD  Near-quadrature correction for a scalar capillary kernel.
-%
-%   Targets are generic: targinfo may be the source surfer, another surfer,
-%   or a plain struct with field .r.  Targets that lie on the source surface
-%   should carry .patch_id / .uvs_targ; anything else is treated as
-%   off-surface.
-
-if ( nargin < 6 || isempty(targinfo) ), targinfo = S;        end
-if ( nargin < 7 || isempty(opts) ),     opts     = struct(); end
-
-[srcvals, srccoefs, norders, ixyzs, iptype, ~] = extract_arrays(S);
-
-if ( isfield(opts, 'rsc') && ~isempty(opts.rsc) )
-    rsc = opts.rsc;
-else
-    rsc = getnear(S, targinfo);
-end
-nquad = rsc.iquad(end) - 1;
-
-ntarg    = size(extract_targ_array(targinfo), 2);
-patch_id = [];
-if ( isfield(targinfo, 'patch_id') || isprop(targinfo, 'patch_id') )
-    patch_id = targinfo.patch_id;
-    uvs_targ = targinfo.uvs_targ;
-end
-if ( isempty(patch_id) )
-    patch_id = -ones(ntarg, 1);
-    uvs_targ = zeros(2, ntarg);
-end
-
-wnear = surfwave.capillary.getnearquad_capillary(S.npatches, norders, ...
-    ixyzs, iptype, S.npts, srccoefs, srcvals, targinfo, patch_id, ...
-    uvs_targ, eps, 1, rsc.nnz, rsc.row_ptr, rsc.col_ind, rsc.iquad, ...
-    rsc.rfac0, complex(zpars), nquad, iker);
-
-if ( size(wnear, 1) == nquad && size(wnear, 2) ~= nquad )
-    wnear = wnear.';
-end
-
-spmat = conv_rsc_to_spmat(S, rsc.row_ptr, rsc.col_ind, wnear, ri);
+obj = surfwave.kernel(surfwave.capillary.green(rts, ejs, green), type, ...
+                     max(abs(rts)), varargin{:});
 
 end

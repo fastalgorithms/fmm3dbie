@@ -37,7 +37,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 
     kern = kernel3d(kern);
 
-    ntarg = size(targs.r, 2);
+    ntarg = size(targs.r(:,:), 2);
 
     if ismethod(S,'oversample') && ~any(isnan(nover))
         [S_over, val2over] = oversample(S, nover);
@@ -123,6 +123,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 end
 
 function v = slice_field(A, idx, npts)
+if ~ismatrix(A), A = A(:,:); end
 if size(A, 2) == npts
     v = A(:, idx);
 elseif size(A, 1) == npts

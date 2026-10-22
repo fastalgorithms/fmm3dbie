@@ -19,23 +19,21 @@ classdef kernel3d
 %      'maxwell'   ('em3d', 'em')        'nrccie-bc', 'nrccie-eval'
 %      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
 %      'beltrami'  ('belpde', 'bel')     'klb', 'rlb', 'khb', 'rhb'
-%      'capillary' ('cap')               's', 'lap', 's3d', 's3d_lap',
-%                                        's3d_sum', 'sp', 'd', 'dp'
-%      'iceflex'   ('ice_flex')          'gs', 'gphi', 'gphi_bilap', 's3d',
-%                                        's3d_gphi', 's3d_sum',
-%                                        'gs_v2b', 'gphi_v2b'
-%      'lap2d'                           's', 'sp'   (2D, surfer in z = 0)
-%      'helm2d'                          's', 'sp', 's2trans' (2D, surfer in z = 0)
-%      'flex2d'    ('plate')             's', 'clamped_plate_bcs',
-%                                        'supported_plate_bcs', 'free_plate_bcs'
-%                                        (2D, surfer in z = 0)
-%      'gravity'   ('grav')              's', 'grad', 'free_plate_bcs', 'vol'
 %      kernel3d(@green, type, ...)       (radial Green's function with exact
 %                                         eval, see KERNEL3D.RADGREEN)
 %      'radpp'                           (kernels from a piecewise polynomial
 %                                         fit of a radial Green's function,
 %                                         see KERNEL3D.RADPP)
 %      'zero'/'zeros'                    (no type needed)
+%      'flex2d'    ('plate')             's', 'sp', 'sg', 'clamped_plate_bcs',
+%                                        'supported_plate_bcs', 'free_plate_bcs',
+%                                        'flex_varalpha' ('varcoef')
+%                                        (2D, surfer in z = 0)
+%      'capillary' ('cap')               radial types on G_S, G_phi or S3d G_phi
+%      'iceflex'   ('ice_flex')          radial types on G_S, G_phi or S3d G_phi
+%      'gravity'   ('grav')              radial types on G_S or G_phi, 'vol'
+%                                        (surface waves, 2D, surfer in z = 0,
+%                                         see KERNEL3D.CAPILLARY)
 %      'one'/'ones'                      (no type needed)
 %
 %   Some kernels accept extra parameters as trailing arguments, e.g.
@@ -122,18 +120,6 @@ classdef kernel3d
                         obj = kernel3d.stok3d(varargin{:});
                     case {'beltrami', 'belpde', 'bel'}
                         obj = kernel3d.belpde(varargin{:});
-                    case {'capillary', 'cap'}
-                        obj = kernel3d.capillary(varargin{:});
-                    case {'iceflex', 'ice_flex'}
-                        obj = kernel3d.iceflex(varargin{:});
-                    case {'lap2d'}
-                        obj = kernel3d.lap2d(varargin{:});
-                    case {'helm2d'}
-                        obj = kernel3d.helm2d(varargin{:});
-                    case {'flex2d', 'plate'}
-                        obj = kernel3d.flex2d(varargin{:});
-                    case {'gravity', 'grav'}
-                        obj = kernel3d.gravity(varargin{:});
                     case {'radpp'}
                         obj = kernel3d.radpp(varargin{:});
                     case {'z', 'zero', 'zeros'}
@@ -142,6 +128,14 @@ classdef kernel3d
                         else
                             obj = kernel3d.zeros();
                         end
+                    case {'flex2d', 'plate'}
+                        obj = kernel3d.flex2d(varargin{:});
+                    case {'capillary', 'cap'}
+                        obj = kernel3d.capillary(varargin{:});
+                    case {'iceflex', 'ice_flex'}
+                        obj = kernel3d.iceflex(varargin{:});
+                    case {'gravity', 'grav'}
+                        obj = kernel3d.gravity(varargin{:});
                     case {'o', 'one', 'ones'}
                         if ~isempty(varargin)
                             obj = kernel3d.ones(varargin{:});
@@ -190,16 +184,14 @@ classdef kernel3d
         obj    = em3d(varargin);
         obj    = stok3d(varargin);
         obj    = belpde(varargin);
-        obj    = capillary(varargin);
-        obj    = iceflex(varargin);
-        obj    = lap2d(varargin);
-        obj    = helm2d(varargin);
-        obj    = flex2d(varargin);
-        obj    = gravity(varargin);
         obj    = radpp(green, rmax, type, varargin);
         obj    = radgreen(green, type, varargin);
         [err, Q, Qs] = check_quad(K, eps, opts);
         obj    = zeros(opdims);
+        obj    = flex2d(varargin);
+        obj    = capillary(type, rts, ejs, green, varargin);
+        obj    = iceflex(type, rts, ejs, green, varargin);
+        obj    = gravity(type, g, green, varargin);
         obj    = ones(m, n);
         obj    = eye(dvals);
         K      = interleave(kerns);

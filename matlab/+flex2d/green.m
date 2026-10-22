@@ -3,13 +3,13 @@ function varargout = green(zk,src,targ)
 %
 %  [val,grad,hess,der3,der4,der5] = flex2d.green(zk,src,targ)
 %
-%  Evaluates the Green's function used by FLEX2D.KERN,
+%  Evaluates the Green's function used by KERNEL3D.FLEX2D,
 %
 %     G(x,y) = 1/(zk1^2 - zk2^2) * (G_{zk1}(x,y) - G_{zk2}(x,y)),
 %
 %  where G_k is the (Laplace-subtracted) 2D Helmholtz Green's function
-%  of SURFWAVE.FLEX.HELMDIFFGREEN. The wavenumbers are chosen from zk
-%  exactly as in FLEX2D.KERN:
+%  of FLEX2D.HELMDIFFGREEN. The wavenumbers are chosen from zk
+%  as follows:
 %
 %     scalar zk, |zk| < 1e-6 : biharmonic, G = |x-y|^2 log|x-y| / (8 pi)
 %     scalar zk              : flexural,   [zk1, zk2] = [zk, 1i*zk]
@@ -18,7 +18,7 @@ function varargout = green(zk,src,targ)
 %
 %  src (2,ns) and targ (2,nt) are points in the plane (further rows are
 %  ignored). All outputs are (nt,ns,:) with derivatives taken in the
-%  target variables, ordered as in SURFWAVE.FLEX.HELMDIFFGREEN:
+%  target variables, ordered as in FLEX2D.HELMDIFFGREEN:
 %     grad: G_x, G_y
 %     hess: G_xx, G_xy, G_yy
 %     der3: G_xxx, G_xxy, G_xyy, G_yyy
@@ -33,7 +33,7 @@ zk = zk(:).';
 if isscalar(zk)
     if abs(zk) < 1e-6
         % biharmonic: no difference formula needed
-        [varargout{1:nout}] = surfwave.flex.bhgreen(src,targ);
+        [varargout{1:nout}] = flex2d.bhgreen(src,targ);
         return
     end
     zk1 = zk;
@@ -51,7 +51,7 @@ else
 end
 
 out1 = cell(1,nout);
-[out1{:}] = surfwave.flex.helmdiffgreen(zk1,src,targ);
+[out1{:}] = flex2d.helmdiffgreen(zk1,src,targ);
 
 scale = 1/(zk1^2 - zk2^2);
 
@@ -59,7 +59,7 @@ if zk2 == 0
     varargout = cellfun(@(a) scale*a, out1, 'UniformOutput', false);
 else
     out2 = cell(1,nout);
-    [out2{:}] = surfwave.flex.helmdiffgreen(zk2,src,targ);
+    [out2{:}] = flex2d.helmdiffgreen(zk2,src,targ);
     varargout = cellfun(@(a,b) scale*(a-b), out1, out2, 'UniformOutput', false);
 end
 
