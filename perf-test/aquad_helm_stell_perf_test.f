@@ -297,7 +297,8 @@ c
         enddo
       enddo
 
-      call get_quadparams_adap(eps,nqorder,eps_adap,nlev,nqorder_f)
+      call get_quadparams_adap(eps,int8_1,norder,nqorder,eps_adap,
+     1   nlev,nqorder_f)
 
       open(unit=33,file='data/res-sum.dat',access='append')
  1231 format(2x,i1,2x,e11.5,2x,i2,2x,e11.5,2(2x,i2),2(2x,e11.5))      

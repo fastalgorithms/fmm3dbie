@@ -1125,7 +1125,6 @@
         iquad)
 
       ikerorder = -1
-      if(abs(dpars(2)).gt.1.0d-16) ikerorder = 0
 
 !
 !    estimate oversampling for far-field, and oversample geometry
