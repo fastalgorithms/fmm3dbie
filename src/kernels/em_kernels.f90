@@ -136,7 +136,7 @@ subroutine em3d_nrccie_kers(nd, src, ndt, targ, ndd, dpars, ndz, &
       rinv2 = rinv*rinv
 !   zexp also serves as a proxy for S \rho
       zexp = exp(ima*zk*rr)*rinv*over4pi
-      zfac = (ima*zk*r - 1.0d0)*zexp*rinv2
+      zfac = (ima*zk*rr - 1.0d0)*zexp*rinv2
 
 !   zgrad also  serves as a proxy for \nabla S \rho      
       zgrad(1) = zfac*dx

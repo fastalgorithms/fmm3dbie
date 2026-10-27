@@ -271,8 +271,8 @@ c
 c
 c    Get triangle parameters
 c
-      call get_quadparams_adap(eps,int8_1,nqorder,eps_adap,nlev,
-     1   nqorder_f)
+      call get_quadparams_adap(eps,int8_1,norder_avg,nqorder,
+     1   eps_adap,nlev,nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
       
@@ -287,8 +287,8 @@ c
 c   Get quad parameters
 c
       
-      call get_quadparams_adap(eps,int8_11,nqorder,eps_adap,nlev,
-     1   nqorder_f)
+      call get_quadparams_adap(eps,int8_11,norder_avg,nqorder,
+     1   eps_adap,nlev,nqorder_f)
 
       call squarearbq_pts(nqorder_f,nnodes)
       
@@ -741,8 +741,8 @@ c
 c
 c    Get triangle parameters
 c
-      call get_quadparams_adap(eps,int8_1,nqorder,eps_adap,nlev,
-     1   nqorder_f)
+      call get_quadparams_adap(eps,int8_1,norder_avg,nqorder,
+     1   eps_adap,nlev,nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
       
@@ -757,8 +757,8 @@ c
 c   Get quad parameters
 c
       
-      call get_quadparams_adap(eps,int8_11,nqorder,eps_adap,nlev,
-     1   nqorder_f)
+      call get_quadparams_adap(eps,int8_11,norder_avg,nqorder,
+     1   eps_adap,nlev,nqorder_f)
 
       call squarearbq_pts(nqorder_f,nnodes)
       
@@ -1614,8 +1614,8 @@ c
 c
 c    Get triangle parameters
 c
-      call get_quadparams_adap(eps,int8_1,nqorder,eps_adap,nlev,
-     1   nqorder_f)
+      call get_quadparams_adap(eps,int8_1,norder_avg,nqorder,
+     1   eps_adap,nlev,nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
       
@@ -1630,8 +1630,8 @@ c
 c   Get quad parameters
 c
       
-      call get_quadparams_adap(eps,int8_11,nqorder,eps_adap,nlev,
-     1   nqorder_f)
+      call get_quadparams_adap(eps,int8_11,norder_avg,nqorder,
+     1   eps_adap,nlev,nqorder_f)
 
       call squarearbq_pts(nqorder_f,nnodes)
       
@@ -2095,8 +2095,8 @@ c
 c
 c    Get triangle parameters
 c
-      call get_quadparams_adap(eps,int8_1,nqorder,eps_adap,nlev,
-     1   nqorder_f)
+      call get_quadparams_adap(eps,int8_1,norder_avg,nqorder,
+     1   eps_adap,nlev,nqorder_f)
 
       call triasymq_pts(nqorder_f,nnodes)
       
@@ -2111,8 +2111,8 @@ c
 c   Get quad parameters
 c
       
-      call get_quadparams_adap(eps,int8_11,nqorder,eps_adap,nlev,
-     1   nqorder_f)
+      call get_quadparams_adap(eps,int8_11,norder_avg,nqorder,
+     1   eps_adap,nlev,nqorder_f)
 
       call squarearbq_pts(nqorder_f,nnodes)
       

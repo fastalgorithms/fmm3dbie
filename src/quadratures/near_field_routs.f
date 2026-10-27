@@ -880,8 +880,8 @@ c
 c
 c
 
-      subroutine get_quadparams_adap(eps,iptype,nqorder,eps_adap,nlev,
-     1   nqorder_f)
+      subroutine get_quadparams_adap(eps,iptype,norder,nqorder,
+     1   eps_adap,nlev,nqorder_f)
 c
 c
 c
@@ -893,6 +893,9 @@ c          eps - real *8
 c             tolerance
 c          iptype - integer *8
 c             patch type
+c          norder - integer *8
+c             order of discretization of the patches; the
+c             parameters for norder >= 4 and norder < 4 differ
 c        outputs:
 c          nqorder - integer *8
 c             order of XG nodes to use on each triangle in the
