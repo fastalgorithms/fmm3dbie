@@ -1,6 +1,6 @@
 function f = uminus(f)
 
-if kernel3d.radgreen('compatible', f)
+if kernel3d.radgreen('summable', {f})
     f = kernel3d.radgreen('scale', f, -1);
     return
 end

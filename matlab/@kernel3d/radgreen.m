@@ -272,24 +272,43 @@ switch op
         out = compatible(varargin{1});
     case 'summable'
         Ks = tocell(varargin{1});
-        out = compatible(Ks) || samekey(Ks);
+        out = ~isempty(Ks) && all(cellfun(@(K) isequal(K.opdims,Ks{1}.opdims),Ks));
+        if out
+            Ks = radpp_sum_parts(Ks);
+            out = isempty(Ks) || compatible(Ks) || samekey(Ks);
+        end
     case 'sum'      % sum(K1, a, K2, b) = a*K1 + b*K2
-        if samekey(varargin([1 3]))
-            out = keysum(varargin{:});
-        else
-            out = lincomb(varargin{:});
-        end
+        out = sum_kernels(varargin([1 3]),[varargin{[2 4]}]);
     case 'scale'    % scale(K, a)
-        if ~isempty(varargin{1}.params.key)
-            out = keysum(varargin{1}, varargin{2});
-        else
-            out = lincomb(varargin{1}, varargin{2});
-        end
+        out = sum_kernels(varargin(1),varargin{2});
     case 'interleave'
         out = blocks(varargin{1});
     otherwise
         error('KERNEL3D.RADGREEN: unknown operation ''%s''.', op);
 end
+end
+
+
+function K = sum_kernels(kernels, coefs)
+opdims = kernels{1}.opdims;
+[kernels,coefs,diagonal] = radpp_sum_parts(kernels,coefs);
+if isempty(kernels)
+    K = kernel3d.zeros(opdims);
+    if ~isempty(diagonal), K = kernel3d.eye(zeros(opdims)); end
+elseif numel(kernels) == 1
+    if coefs == 1
+        K = kernels{1};
+    elseif ~isempty(kernels{1}.params.key)
+        K = keysum(kernels{1},coefs);
+    else
+        K = lincomb(kernels{1},coefs);
+    end
+elseif samekey(kernels)
+    K = keysum(kernels{1},coefs(1),kernels{2},coefs(2));
+else
+    K = lincomb(kernels{1},coefs(1),kernels{2},coefs(2));
+end
+K.diag = diagonal;
 end
 
 

@@ -34,7 +34,7 @@ if ~ismatrix(g)
     error('KERNEL3D:times:invalid', 'numeric factor must be a 2D array');
 end
 
-if isscalar(g) && kernel3d.radgreen('compatible', f)
+if isscalar(g) && kernel3d.radgreen('summable', {f})
     f = kernel3d.radgreen('scale', f, g);
     return
 end

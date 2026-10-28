@@ -6,6 +6,7 @@
 test_eye_scalar();
 test_eye_block();
 test_eye_algebra();
+test_kernel3d_radial_eye();
 
 
 function test_eye_scalar()
