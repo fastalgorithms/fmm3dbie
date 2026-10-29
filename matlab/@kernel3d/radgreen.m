@@ -446,7 +446,7 @@ end
 
 
 function K = blocks(Ks)
-% interleave a block array of green kernels into one kernel
+% interleave a block array of green kernels into one kernel; skips I and 0 blocks
 Ks = tocell(Ks);
 [m, n] = size(Ks);
 rd = cellfun(@(K) K.opdims(1), Ks(:,1)).';
@@ -454,47 +454,55 @@ cd = cellfun(@(K) K.opdims(2), Ks(1,:));
 r0 = [0 cumsum(rd)];  c0 = [0 cumsum(cd)];
 opdims = [r0(end) c0(end)];
 
-p  = Ks{1}.params;
-nd = max(cellfun(@(K) K.params.nderiv, Ks(:)));
+isg = cellfun(@(K) strcmp(K.name, 'radgreen'), Ks);
+Kg  = Ks(isg);                 % the green blocks, in column-major order
+ig  = zeros(m, n);  ig(isg) = 1:numel(Kg);
+
+p  = Kg{1}.params;
+nd = max(cellfun(@(K) K.params.nderiv, Kg));
 nc = ncompof(nd, p.dim);
 
-% entries of the result in column-major order: block, local entry
+% entries of the result in column-major order: green block, local entry
 [I, J] = ndgrid(1:opdims(1), 1:opdims(2));
 ne = numel(I);
 map = zeros(ne, 2);
 ipv = zeros(1, ne);
+keep = false(1, ne);
 for e = 1:ne
     k = find(I(e) > r0, 1, 'last');  l = find(J(e) > c0, 1, 'last');
+    if ~isg(k,l), continue; end
     q = Ks{k,l}.params;
     le = find(q.ent(:,1) == I(e) - r0(k) & q.ent(:,2) == J(e) - c0(l));
-    map(e,:) = [sub2ind([m n], k, l), le];
+    map(e,:) = [ig(k,l), le];
     ipv(e) = q.ipv(le);
+    keep(e) = true;
 end
+map = map(keep,:);  ipv = ipv(keep);
 
-sp = specs(Ks(:));
-lam = cellfun(@(K) ratio(p.green, K.params.green), Ks(:));
+sp = specs(Kg);
+lam = cellfun(@(K) ratio(p.green, K.params.green), Kg);
 spec = p.spec;
 spec.name = 'custom';
 spec.nderiv = nd;
 spec.opdims = opdims;
-spec.ent = [I(:) J(:)];
+spec.ent = [reshape(I(keep), [], 1), reshape(J(keep), [], 1)];
 spec.wfun = @(t) wblocks(t, sp, lam, map, nc, 'wfun');
 spec.vfun = [];
 if any(arrayfun(@(q) ~isempty(q.vfun), sp))
     spec.vfun = @(t) wblocks(t, sp, lam, map, nc, 'vfun');
 end
 spec.targ_fields = unique([sp.targ_fields]);
-K = rebuild(Ks(:).', spec, ipv, lam);
+K = rebuild(Kg(:).', spec, ipv, lam);
 
-% block fmm, as in the generic interleave
-if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks(:)))
-    K.fmm = @(eps, src, targ, sigma) fmmblocks(Ks, r0, c0, opdims, eps, ...
-                                               src, targ, sigma);
+% block fmm, as in the generic interleave, over the green blocks
+if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Kg))
+    K.fmm = @(eps, src, targ, sigma) fmmblocks(Ks, isg, r0, c0, opdims, ...
+                                               eps, src, targ, sigma);
 end
 end
 
 
-function pot = fmmblocks(Ks, r0, c0, opdims, eps, src, targ, sigma)
+function pot = fmmblocks(Ks, isg, r0, c0, opdims, eps, src, targ, sigma)
 % sigma is (opdims(2)*ns, ndens), one column per density
 [m, n] = size(Ks);
 ns = size(src.r(:,:), 2);
@@ -504,6 +512,7 @@ sig = reshape(sigma, opdims(2), ns, ndens);
 pot = zeros(opdims(1), nt, ndens);
 for k = 1:m
     for l = 1:n
+        if ~isg(k,l), continue; end
         sl = sig(c0(l)+1:c0(l+1), :, :);
         pkl = Ks{k,l}.fmm(eps, src, targ, reshape(sl, [], ndens));
         pot(r0(k)+1:r0(k+1), :, :) = pot(r0(k)+1:r0(k+1), :, :) + ...

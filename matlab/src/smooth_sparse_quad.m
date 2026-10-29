@@ -25,7 +25,8 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 %        patch indices of the non-zero target-patch interactions,
 %        sorted by target number
 %    * nover: integer
-%        quadrature order to use when oversampling each source patch
+%        quadrature order to use when oversampling each source patch,
+%        or a cell {S_over, val2over} with val2over an opdims-aware interpolation matrix
 %
 %  Output arguments:
 %    * Asmth: sparse matrix of size (opdim(1)*ntarg, opdim(2)*S.npts)
@@ -39,15 +40,19 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 
     ntarg = size(targs.r(:,:), 2);
 
-    if ismethod(S,'oversample') && ~any(isnan(nover))
-        [S_over, val2over] = oversample(S, nover);
+    opdims = kern.opdims;
+    if iscell(nover)
+        [S_over, val2over] = nover{:};
     else
-        S_over = S; val2over = eye(size(S.r(:,:),2));
+        if ismethod(S,'oversample') && ~any(isnan(nover))
+            [S_over, val2over] = oversample(S, nover);
+        else
+            S_over = S; val2over = eye(size(S.r(:,:),2));
+        end
+        val2over = kron(val2over,eye(opdims(2)));
     end
 
     ixyzs = S_over.ixyzs;
-    opdims = kern.opdims;
-    val2over = kron(val2over,eye(opdims(2)));
 
     % Convert rsc -> csc so we can loop over patches (columns)
     rsc = [];

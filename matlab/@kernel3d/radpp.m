@@ -981,6 +981,10 @@ function tf = summable(Ks)
 tf = all(cellfun(@(K) strcmp(K.name, 'radpp'), Ks));
 if ~tf, return; end
 p = Ks{1}.params;
+if isscalar(Ks)     % a multiple of one kernel scales its fit
+    tf = isempty(Ks{1}.diag) && ~p.gmode;
+    return
+end
 same = @(K) isempty(K.diag) && ~K.params.gmode && ~strcmp(K.params.spec.name, 'custom') && ...
     strcmp(K.params.spec.name, p.spec.name) && ...
     isequal(K.params.kcoefs, p.kcoefs) && isequal(K.params.nu, p.nu) && ...

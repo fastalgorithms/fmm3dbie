@@ -538,11 +538,15 @@ for rad = [1, 1.3]
     [t3, t2] = tensor_targets(S, rad);
     for i = 1:numel(kerns)
         K = kerns{i};
+        % corrections are shared by the direct and fmm evaluations
+        [c3, o3] = surferkernevalmat(S, K, t3, eps, struct('corrections', 1));
+        [c2, o2] = surferkernevalmat(S, K, t2, eps, struct('corrections', 1));
         for usefmm = [0 1]
             if usefmm && isempty(K.fmm), continue; end
-            opts = struct('usefmm', usefmm);
-            v3 = surferkerneval(S, K, F, t3, eps, opts);
-            v2 = surferkerneval(S, K, F, t2, eps, opts);
+            opts3 = struct('usefmm', usefmm, 'corrections', c3, 'objover', {o3});
+            opts2 = struct('usefmm', usefmm, 'corrections', c2, 'objover', {o2});
+            v3 = surferkerneval(S, K, F, t3, eps, opts3);
+            v2 = surferkerneval(S, K, F, t2, eps, opts2);
             err = norm(v2 - v3, 'fro')/norm(v3, 'fro');
             fprintf('%-8s %-24s r = %3.1f fmm %d tensor targets err %5.2e\n', ...
                 K.name, K.type, rad, usefmm, err);
