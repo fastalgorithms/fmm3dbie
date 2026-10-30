@@ -187,7 +187,7 @@ for i = 1:nsurfers
         else
             novers{i,j} = NaN;
             surferjover = surferj;
-            xinterp = eye(numel(wts));
+            xinterp = speye(numel(wts));
         end
         surfers_over{i,j} = surferjover;
         xinterps{i,j}     = xinterp;

@@ -1,27 +1,39 @@
-function mat = kernbyindexeval(i, j, surfers, kern, targobj, eps, objover, Qsparse, opts)
+function mat = kernbyindexeval(i, j, surfers, kern, targobj, Qsparse, opts)
 %KERNBYINDEXEVAL  Evaluate smooth-rule off-surface matrix entries by index.
 %
-% mat = byindex.kernbyindexeval(i, j, surfers, kern, targobj, eps)
-% mat = byindex.kernbyindexeval(i, j, surfers, kern, targobj, eps, objover)
-% mat = byindex.kernbyindexeval(i, j, surfers, kern, targobj, eps, objover, Qsparse)
-% mat = byindex.kernbyindexeval(i, j, surfers, kern, targobj, eps, objover, Qsparse, opts)
+% mat = byindex.kernbyindexeval(i, j, surfers, kern, targobj)
+% mat = byindex.kernbyindexeval(i, j, surfers, kern, targobj, Qsparse)
+% mat = byindex.kernbyindexeval(i, j, surfers, kern, targobj, Qsparse, opts)
 %
-% Analogous to byindex.kernbyindex but targets are off-surface points in targobj.
+% Analogous to byindex.kernbyindex but targets are the points in targobj.
+% Entries use the smooth rule at the nodes of the surfers, without
+% oversampling. To oversample, pass the oversampled surfers and apply the
+% interpolation matrices outside, e.g. with surferkernevalmat:
+%
+%   [Qc, objover] = surferkernevalmat(surfers, kern, targs, eps, ...
+%                                     struct('corrections', 1));
+%   Sover   = [objover{1}{:}];
+%   xinterp = blkdiag(objover{2}{:});
+%   Afun    = @(i,j) byindex.kernbyindexeval(i, j, Sover, kern, targs);
+%   pxyfun  = @(varargin) byindex.proxyfun(Sover, kern, targs, proxy, varargin{:});
+%   F = ifmm(Afun, rx, cx, occ, rank_or_tol, pxyfun);
+%   u = ifmm_mv(F, xinterp*sigma, Afun) + Qc*sigma;
+%
+% Non-finite entries, from targets that coincide with sources (e.g. the
+% original nodes as targets of oversampled sources), are set to zero.
 %
 % Input:
 %   i       - row indices into the flat target DOF array (length ntarg*opdim1)
 %   j       - col indices into the source DOF array
 %   surfers - surfer object or array of surfer objects (sources)
 %   kern    - kernel3d object, scalar or vector of length nsurfers
-%   targobj - off-surface targets: struct with .r (3 x ntarg)
+%   targobj - targets: struct or surfer with .r (3 x ntarg)
 %             or numeric (3 x ntarg) array
-%   eps     - quadrature tolerance
-%   objover   - (optional) oversampling spec, as returned by surfermat: []
-%               to recompute on the fly, a collection of oversampling orders, or a
-%               pair of precomputed oversampled surfers/interpolation matrices.
 %   Qsparse - (optional) sparse correction matrix (ntarg*opdim1 x ncols)
 %   opts    - options struct
-%     opts.replace_quadcorr - logical (default true)
+%     opts.replace_quadcorr - logical (default true). If false, Qsparse
+%                             is added to the smooth entries, e.g. for
+%                             corrections=1 output from surferkernevalmat
 %
 % Output:
 %   mat - length(i) x length(j) submatrix
@@ -29,9 +41,13 @@ function mat = kernbyindexeval(i, j, surfers, kern, targobj, eps, objover, Qspar
 if ~isa(kern, 'kernel3d')
     error('BYINDEX.KERNBYINDEXEVAL: kern must be a kernel3d object');
 end
-if nargin < 7, objover = []; end
-if nargin < 8, Qsparse = []; end
-if nargin < 9, opts    = []; end
+if nargin < 6, Qsparse = []; end
+if nargin < 7, opts    = []; end
+
+if ~isempty(Qsparse) && ~issparse(Qsparse)
+    error(['BYINDEX.KERNBYINDEXEVAL: Qsparse must be a sparse matrix (eps ' ...
+        'and objover are no longer inputs)']);
+end
 
 replace_quadcorr = true;
 if isstruct(opts) && isfield(opts, 'replace_quadcorr')
@@ -56,23 +72,6 @@ assert(all(opdims_mat(1,:) == opdims_mat(1,1)), ...
     'BYINDEX.KERNBYINDEXEVAL: opdims(1) must be constant across all source surfers');
 
 opdim1 = opdims_mat(1,1);
-
-% objover_mode == false : objover is a collection of oversampling orders
-%                         (or empty, in which case orders are computed on the fly).
-% objover_mode == true  : objover is the oversampled surfers and xinterps
-
-objover_mode = false;
-surfers_over = [];
-xinterps     = [];
-novers       = [];
-
-if iscell(objover) && numel(objover) == 2 && iscell(objover{1})
-    objover_mode = true;
-    surfers_over = objover{1};
-    xinterps     = objover{2};
-else
-    novers = objover;
-end
 
 icollocs = zeros(nsurfers+1, 1); icollocs(1) = 1;
 for k = 1:nsurfers
@@ -101,7 +100,6 @@ for k = 1:numel(targ_fields)
         targinfo.(f) = slice_field(targinfo_full.(f), iuni, ntarg);
     end
 end
-ntrg_uni = length(iuni);
 
 mat = zeros(length(i), length(j));
 if isempty(i) || isempty(j), return; end
@@ -120,129 +118,15 @@ for isrc = 1:nsurfers
 
     jpts = idivide(int64(mat_col_ind(:) - mat_col_start), int64(opdims_src)) + 1;
     [juni, ~, ijuni] = unique(jpts);
-    nsrc_uni = length(juni);
     ijuni2 = (ijuni - 1)*opdims_src + mod(mat_col_ind(:) - mat_col_start, opdims_src) + 1;
 
-    if objover_mode
-        % --- Precomputed oversampled geometry / interpolation matrix ---
-        srfjover = surfers_over{isrc};
-        xinterp  = xinterps{isrc};
+    srcp   = slice_surfer(srfj, juni, ktmp.src_fields);
+    wts    = repmat(srfj.wts(juni(:)).', opdims_src, 1);
+    wts    = wts(:).';
+    matuni = ktmp.eval(srcp, targinfo) .* wts;
+    matuni(~isfinite(matuni)) = 0;
 
-        if isempty(srfjover) || srfjover.npts == srfj.npts
-            srcp   = slice_surfer(srfj, juni, ktmp.src_fields);
-            wts    = repmat(srfj.wts(juni(:)).', opdims_src, 1);
-            wts    = wts(:).';
-            matuni = ktmp.eval(srcp, targinfo) .* wts;
-            mat(true(size(i)), flag_j) = matuni(iiuni2, ijuni2);
-        else
-            srcp_over = slice_surfer(srfjover, 1:srfjover.npts, ktmp.src_fields);
-
-            wts_over = repmat(srfjover.wts(:).', opdims_src, 1);
-            wts_over = wts_over(:).';
-
-            sub_kern_over = ktmp.eval(srcp_over, targinfo) .* wts_over;
-
-            col_off_full = mat_col_ind(:) - mat_col_start + 1;
-            matuni = sub_kern_over * xinterp(:, col_off_full);
-
-            mat(true(size(i)), flag_j) = matuni(iiuni2, :);
-        end
-
-    else
-        % --- Oversampling order vector (or on-the-fly computation) ---
-        if isempty(novers)
-            novers_j = ktmp.get_overs_orders(srfj, targinfo_full, eps);
-        else
-            novers_j = novers{isrc}(:);
-        end
-        norders_j = srfj.norders(:);
-
-        if all(novers_j == norders_j) || any(isnan(novers_j))
-            srcp   = slice_surfer(srfj, juni, ktmp.src_fields);
-            wts    = repmat(srfj.wts(juni(:)).', opdims_src, 1);
-            wts    = wts(:).';
-            matuni = ktmp.eval(srcp, targinfo) .* wts;
-            mat(true(size(i)), flag_j) = matuni(iiuni2, ijuni2);
-        else
-            matuni = zeros(ntrg_uni * opdim1, nsrc_uni * opdims_src);
-
-            ntmp = [norders_j, novers_j, srfj.iptype(:)];
-            [ntmp_uni, ~, intmp] = unique(ntmp, 'rows');
-
-            vmat_cache    = cell(size(ntmp_uni,1), 1);
-            xinterp_cache = cell(size(ntmp_uni,1), 1);
-            wts_raw_cache = cell(size(ntmp_uni,1), 1);
-
-            for tt = 1:size(ntmp_uni,1)
-                norder = ntmp_uni(tt,1); nover = ntmp_uni(tt,2); iptype = ntmp_uni(tt,3);
-                if iptype == 1
-                    rnodes      = koorn.rv_nodes(norder);
-                    rnodes_over = koorn.rv_nodes(nover);
-                    vmat = koorn.coefs2vals(norder, rnodes_over);
-                    umat = koorn.vals2coefs(norder, rnodes);
-                    wts_raw_cache{tt} = koorn.rv_weights(nover);
-                elseif iptype == 11
-                    rnodes      = polytens.lege.nodes(norder);
-                    rnodes_over = polytens.lege.nodes(nover);
-                    vmat = polytens.lege.coefs2vals(norder, rnodes_over);
-                    umat = polytens.lege.vals2coefs(norder, rnodes);
-                    wts_raw_cache{tt} = polytens.lege.weights(nover);
-                elseif iptype == 12
-                    rnodes      = polytens.cheb.nodes(norder);
-                    rnodes_over = polytens.cheb.nodes(nover);
-                    vmat = polytens.cheb.coefs2vals(norder, rnodes_over);
-                    umat = polytens.cheb.vals2coefs(norder, rnodes);
-                    wts_raw_cache{tt} = polytens.cheb.weights(nover);
-                end
-                vmat_cache{tt} = vmat;
-                xi = vmat * umat;
-                [lia, iindb] = ismembertol(rnodes', rnodes_over', 1e-7, 'ByRows', true);
-                isp = [find(lia), iindb(lia)];
-                if ~isempty(isp)
-                    i1 = isp(:,1); i2 = isp(:,2);
-                    xi(i2,:) = 0; xi(i2,i1) = 1;
-                end
-                xinterp_cache{tt} = xi;
-            end
-
-            for p = 1:srfj.npatches
-                p_inds = srfj.ixyzs(p):(srfj.ixyzs(p+1)-1);
-                [tf, loc_in_juni] = ismember(juni, p_inds);
-                if ~any(tf), continue; end
-                loc_juni_p = find(tf);
-                loc_in_p   = loc_in_juni(tf);
-
-                tt   = intmp(p);
-                vmat = vmat_cache{tt};
-
-                srcover_vals = srfj.srccoefs{p} * vmat';
-                ru   = srcover_vals(4:6,:);
-                rv   = srcover_vals(7:9,:);
-                rtmp = cross(ru, rv);
-                jac  = vecnorm(rtmp, 2);
-                nhat = rtmp ./ jac;
-
-                srcp_over = [];
-                srcp_over.r  = srcover_vals(1:3,:);
-                srcp_over.du = srcover_vals(4:6,:);
-                srcp_over.dv = srcover_vals(7:9,:);
-                srcp_over.n  = nhat;
-
-                wts_over     = wts_raw_cache{tt}(:) .* jac(:);
-                wts_over_rep = repmat(wts_over(:).', opdims_src, 1);
-                wts_over_rep = wts_over_rep(:).';
-
-                sub_kern_over = ktmp.eval(srcp_over, targinfo) .* wts_over_rep;
-                xinterp_sub   = xinterp_cache{tt}(:, loc_in_p);
-                sub_kern_smth = sub_kern_over * kron(xinterp_sub, eye(opdims_src));
-
-                col_inds = expand_cols(loc_juni_p, opdims_src);
-                matuni(:, col_inds) = matuni(:, col_inds) + sub_kern_smth;
-            end
-
-            mat(true(size(i)), flag_j) = matuni(iiuni2, ijuni2);
-        end
-    end
+    mat(:, flag_j) = matuni(iiuni2, ijuni2);
 end
 
 if ~isempty(Qsparse)
@@ -276,9 +160,4 @@ elseif size(A, 1) == npts
 else
     error('SLICE_FIELD: no dimension of A matches npts');
 end
-end
-
-function col_inds = expand_cols(loc_juni_p, opdims_src)
-    starts   = (loc_juni_p(:) - 1) * opdims_src + 1;
-    col_inds = cell2mat(arrayfun(@(s) s:(s+opdims_src-1), starts, 'UniformOutput', false)');
 end
