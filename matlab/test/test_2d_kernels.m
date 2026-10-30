@@ -346,7 +346,7 @@ if ( ~exist('hfmm2d', 'file') || ~exist('rfmm2d', 'file') )
 end
 
 tol = 1e-8;
-S = geometries.disk([], [], [1,1,1], 4);
+S = geometries.disk([], [], [3,3,3], 4);
 sigma = randn(S.npts, 1) + 1i*randn(S.npts, 1);
 th = linspace(0, 2*pi, 31); th = th(1:end-1);
 t = []; t.r = 1.5*[cos(th); sin(th); zeros(size(th))];

@@ -1048,10 +1048,11 @@ g = @(s,t) helm3d.green(zk, s, t);
 Km = kernel3d(g, 'mfie');  Kc = kernel3d(g, 'curls');
 
 % fmm types against eval, well-separated points
-src.r = randn(3, 30);
-targ.r = randn(3, 20) + [5;0;0];
-targ.n = randn(3, 20);  targ.n = targ.n./vecnorm(targ.n);
-sig = complex(randn(90, 1), randn(90, 1));
+ns = 10000;
+src.r = randn(3, ns);
+targ.r = randn(3, 200) + [5;0;0];
+targ.n = randn(3, 200);  targ.n = targ.n./vecnorm(targ.n);
+sig = complex(randn(3*ns, 1), randn(3*ns, 1));
 for c = {{Km, 'mfie'}, {Kc, 'curls'}}
     [K, type] = c{1}{:};
     A = K.eval(src, targ)*sig;
@@ -1073,7 +1074,7 @@ err = norm(A - B)/norm(A);
 assert(err < 1e-6, 'radgreen surfermatapply fmm: %.2e', err);
 
 % surferkerneval with and without the fmm, including near targets
-t2.r = randn(3, 60);  t2.r = t2.r./vecnorm(t2.r).*(1.02 + rand(1, 60));
+t2.r = randn(3, 10000);  t2.r = t2.r./vecnorm(t2.r).*(1.02 + rand(1, 10000));
 A = surferkerneval(S, Kc, J, t2, eps, struct('usefmm', 0));
 B = surferkerneval(S, Kc, J, t2, eps);
 err = norm(A - B)/norm(A);
