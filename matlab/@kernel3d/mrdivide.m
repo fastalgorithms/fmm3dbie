@@ -3,9 +3,20 @@ function f = mrdivide(f, g)
 %
 % Currently only supports scalars: returns F/g for kernel F and scalar g.
 
-if isnumeric(g) && isscalar(g) && kernel3d.radpp('summable', {f})
-    f = kernel3d.radpp('sum', {f}, 1/g);
-    return
+if isnumeric(g) && isscalar(g)
+    fdiag = f.diag;
+    f.diag = [];
+    if kernel3d.radgreen('summable', {f})
+        f = kernel3d.radgreen('scale', f, 1/g);
+        if ~isempty(fdiag), f.diag = @(t) fdiag(t) / g; end
+        return
+    end
+    if kernel3d.radpp('summable', {f})
+        f = kernel3d.radpp('sum', {f}, 1/g);
+        if ~isempty(fdiag), f.diag = @(t) fdiag(t) / g; end
+        return
+    end
+    f.diag = fdiag;
 end
 
 if (isnumeric(g) && isscalar(g))

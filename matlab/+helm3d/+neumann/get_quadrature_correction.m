@@ -109,7 +109,7 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     if(isfield(tinfouse,'patch_id') || isprop(tinfouse,'patch_id'))
       patch_id = tinfouse.patch_id;
     else
-      patch_id = zeros(ntarg,1);
+      patch_id = -1*ones(ntarg,1);
     end
 
     if(isfield(tinfouse,'uvs_targ') || isprop(tinfouse,'uvs_targ'))
@@ -128,11 +128,17 @@ function Q = get_quadrature_correction(S, eps, zk, alpha, targinfo, opts)
     end
 
 
-    rsc = getnear(S, targinfo);
+    if isfield(opts,'rsc') && ~isempty(opts.rsc)
+        rsc = opts.rsc;
+    else
+        rsc = getnear(S, tinfouse);
+    end
     row_ptr = rsc.row_ptr; col_ind = rsc.col_ind; iquad   = rsc.iquad;
     rfac    = rsc.rfac;    rfac0   = rsc.rfac0;   nnz     = rsc.nnz;
-    nquad = rsc.nquad;
-    nnzp1 = nnz+1; 
+    ntp1    = ntarg+1;
+    nnzp1   = nnz+1;
+
+    nquad = iquad(nnz+1)-1;
 
     iquadtype = 1;
     if(isfield(opts,'quadtype'))

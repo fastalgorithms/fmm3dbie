@@ -41,10 +41,12 @@ obj.targ_fields = {};
 obj.eval = @(s,t) repmat(A, size(t.r(:,:),2), size(s.r(:,:),2));
 
 obj.fmm = @fmm_;
-    function varargout = fmm_(eps, s, t, sigma) %#ok<INUSL>
+    function varargout = fmm_(eps, s, t, sigma) 
         if isstruct(t), nt = size(t.r(:,:),2); else, nt = size(t(:,:),2); end
-        blk = A * sum(reshape(sigma, n, []), 2);
-        pot = repmat(blk, nt, 1);
+        ns = size(s.r(:,:),2);
+        ndens = numel(sigma)/(n*ns);
+        blk = A * reshape(sum(reshape(sigma, n, ns, ndens), 2), n, ndens);
+        pot = reshape(repmat(reshape(blk, m, 1, ndens), 1, nt), m*nt, ndens);
         if nargout > 0, varargout{1} = pot; end
         if nargout > 1
             error('KERNEL3D:ones:fmm', 'Too many output arguments.');

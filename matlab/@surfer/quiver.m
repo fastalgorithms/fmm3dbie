@@ -1,23 +1,23 @@
-function varargout = quiver(S, v, noder, varargin)
+function varargout = quiver(S, v, norder, varargin)
 % QUIVER  plot vector field on a surfer object using quiver3
 %
-% quiver(S, v, noder) oversamples the geometry S and the vector field v to
-%   order noder, then calls quiver3 to plot arrows at each node.
+% quiver(S, v, norder) oversamples the geometry S and the vector field v to
+%   order norder, then calls quiver3 to plot arrows at each node.
 %
 %   S      - surfer object
 %   v      - (3 x S.npts) array of vectors at the nodes of S, or
 %            (3*S.npts x 1) vector in the same ordering
-%   noder  - oversampling order (integer). Pass S.norders (or 0) for no
+%   norder - oversampling order (integer). Pass S.norders for no
 %            oversampling.
 %
-% quiver(S, v, noder, ...) passes any extra arguments through to quiver3.
+% quiver(S, v, norder, ...) passes any extra arguments through to quiver3.
 %
 % h = quiver(...) returns the handle to the quiver3 object.
 %
 % Example
 %   S = geometries.sphere(1.0);
 %   quiver(S, S.n, 3)                      % plot normals, oversampled to order 3
-%   h = quiver(S, S.n, S.norders(1));      % no oversampling
+%   h = quiver(S, S.n, S.norders);         % no oversampling
 %
 % See also PLOT_NODES, OVERSAMPLE
 
@@ -26,7 +26,7 @@ function varargout = quiver(S, v, noder, varargin)
 v = reshape(v, 3, S.npts);
 
 % Oversample geometry and interpolate v to oversampled nodes
-[Sover, Pmat] = oversample(S, noder);
+[Sover, Pmat] = oversample(S, norder);
 vover = v * Pmat';   % (3 x nptso)
 
 x = Sover.r(1,:);

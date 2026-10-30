@@ -10,8 +10,9 @@ function obj = radgreen(green, type, varargin)
 %   derivatives against finite differences.
 %
 %   TYPE and options are as in KERNEL3D.RADPP, including 'fmm' for an FMM
-%   of GREEN (not for tensor greens). 'ipv' overrides the
-%   automatic choice; kernel_order is max(ipv)-1. Kernels on the same
+%   of GREEN (not for tensor greens). By default ipv is
+%   detected automatically from the behaviour on a test surface; 'ipv'
+%   overrides it; kernel_order is max(ipv)-1. Kernels on the same
 %   GREEN (up to a factor) combine under +, -, scalar * and interleave into
 %   one kernel, and kernels of one built-in type add as that type on the
 %   sum of their greens.
@@ -33,18 +34,11 @@ npos = find(cellfun(@ischar, varargin), 1) - 1;
 if isempty(npos), npos = numel(varargin); end
 pos = varargin(1:npos);  varargin(1:npos) = [];
 
-% the singularity of green, detected or given
-sing = [];
-k = find(strcmpi(varargin(1:2:end), 'singularity'));
-if ~isempty(k)
-    sing = varargin{2*k};
-    varargin(2*k-1:2*k) = [];
-    if ischar(sing) && strcmpi(sing, 'log'), sing = 0; end
-    if ~isnumeric(sing) || ~isscalar(sing)
-        error('KERNEL3D.RADGREEN: ''singularity'' must be a power or ''log''.');
-    end
-end
-istensor = numel(green(zeros(3,1), [1;0;0])) == 9;
+% dim 2: green takes points (2,n)
+k = find(strcmpi(varargin(1:2:end), 'dim'));
+dim = 3;
+if ~isempty(k), dim = varargin{2*k}; end
+istensor = dim ~= 2 && numel(green(zeros(3,1), [1;0;0])) == 9;
 if istensor
     prof  = @(r, nd) tprofiles(green, r, nd);
     check = @(nd, name) tcheck(green, nd, name);
@@ -55,13 +49,11 @@ if istensor
     if ~isempty(k), varargin(2*k-1:2*k) = []; end
     varargin = [varargin, {'dim', 13}];
 else
-    prof  = @(r, nd) gprofiles(green, r, nd);
-    check = @(nd, name) gcheck(green, nd, name);
+    prof  = @(r, nd) gprofiles(green, r, nd, dim);
+    check = @(nd, name) gcheck(green, nd, name, dim);
 end
-if isempty(sing), sing = gsing(@(r) sum(abs(prof(r, 0)), 2)); end
-
 part = struct('profiles', prof, 'check', check, 'handle', green, ...
-              'sing', sing, 'tensor', istensor);
+              'tensor', istensor);
 obj = kernel3d.radpp(mkgreen({part}, 1), [], type, pos{:}, varargin{:});
 % built-in types: kernels of one type on different greens add as that
 % type on the sum of the greens
@@ -79,7 +71,7 @@ function G = mkgreen(parts, c)
 keep = c ~= 0;
 if any(keep), parts = parts(keep);  c = c(keep); end
 q = parts{1};
-G = struct('profiles', q.profiles, 'check', q.check, 'sing', q.sing, ...
+G = struct('profiles', q.profiles, 'check', q.check, ...
            'tensor', q.tensor, 'parts', {parts}, 'c', c);
 if numel(parts) == 1
     if c ~= 1, G.profiles = @(r, nd) c*q.profiles(r, nd); end
@@ -87,11 +79,6 @@ if numel(parts) == 1
 end
 G.profiles = @(r, nd) sumprof(parts, c, r, nd);
 G.check = @(nd, name) checkall(parts, nd, name);
-try
-    G.sing = gsing(@(r) sum(abs(G.profiles(r, 0)), 2));
-catch
-    G.sing = max(cellfun(@(q) q.sing, parts));
-end
 end
 
 
@@ -106,11 +93,12 @@ for k = 1:numel(parts), parts{k}.check(nd, name); end
 end
 
 
-function f = gprofiles(green, r, nd)
-% on-axis profiles [G | G_x | G_xx G_yy | G_xxx G_xyy]
+function f = gprofiles(green, r, nd, dim)
+% on-axis profiles [G | G_x | G_xx G_yy | G_xxx G_xyy], from points (dim,n)
 r = r(:);
 out = cell(1, nd+1);
-[out{:}] = green(zeros(3,1), [r.'; zeros(2, numel(r))]);
+[out{:}] = green(zeros(dim,1), [r.'; zeros(dim-1, numel(r))]);
+for k = 2:nd+1, out{k} = fullders(out{k}, k-1, dim); end
 f = out{1}(:);
 if nd >= 1, f = [f, out{2}(:,1,1)]; end
 if nd >= 2, f = [f, out{3}(:,1,1,1), out{3}(:,1,2,2)]; end
@@ -118,20 +106,20 @@ if nd >= 3, f = [f, out{4}(:,1,1,1,1), out{4}(:,1,1,2,2)]; end
 end
 
 
-function p = gsing(v)
-% power p of the singularity G ~ r^-p at 0, from the slopes of log|G| at
-% small r. log r, bounded and smooth greens give p = 0 (weakly singular):
-% the slope of log|log r| tends to 0 only like 1/log r, hence the 0.25
-% margin, which still counts r^-1/2 as p = 1
-r = 10.^-(4:0.5:10).';
-v = v(r);
-sl = diff(log(abs(v) + realmin))./diff(log(r));
-sl = sl(end-3:end);
-if any(~isfinite(sl)) || max(sl) - min(sl) > 0.15
-    error(['KERNEL3D.RADGREEN: cannot determine the singularity of ' ...
-           'green; pass ''singularity'', p.']);
+function D = fullders(D, k, dim)
+% derivatives of order k as (nt,ns,dim,...,dim), from packed 2D (nt,ns,k+1)
+sz = size(D);
+if k == 1 || numel(sz) >= 2 + k || dim ~= 2 || sz(3) ~= k+1
+    return
 end
-p = max(0, ceil(-median(sl) - 0.25));
+P = D;
+D = zeros([sz(1:2), 2*ones(1, k)], 'like', P);
+idx = cell(1, k);
+for c = 1:2^k
+    [idx{:}] = ind2sub(2*ones(1, k), c);
+    ny = sum([idx{:}] == 2);              % number of y derivatives
+    D(:,:,c) = P(:,:,ny+1);
+end
 end
 
 
@@ -201,13 +189,13 @@ end
 end
 
 
-function gcheck(green, nd, name)
+function gcheck(green, nd, name, dim)
 % enough outputs, of the right sizes, radial, and consistent derivatives
 names = {'val', 'grad', 'hess', 'third'};
 need  = strjoin(names(1:nd+1), ', ');
 err0  = 'KERNEL3D.RADGREEN: ';
 
-s = randn(3, 2);  t = randn(3, 4) + [2; 0; 0];
+s = randn(dim, 2);  t = randn(dim, 4) + [2; zeros(dim-1, 1)];
 out = cell(1, nd+1);
 try
     [out{:}] = green(s, t);
@@ -216,16 +204,22 @@ catch ME
           ME.message);
 end
 for k = 1:nd+1
-    sz = [4 2 3*ones(1, k-1)];
+    sz = [4 2 dim*ones(1, k-1)];
+    if k > 1, out{k} = fullders(out{k}, k-1, dim); end
     if ~isequal(size(out{k}), sz)
+        if dim == 2 && k > 2
+            sz = sprintf('%s or %s', mat2str(sz), mat2str([4 2 k]));
+        else
+            sz = mat2str(sz);
+        end
         error([err0 '%s of green should be %s, not %s.'], names{k}, ...
-              mat2str(sz), mat2str(size(out{k})));
+              sz, mat2str(size(out{k})));
     end
 end
 
 % radial: same r in several directions and after a shift
-y = [0.2; -0.1; 0.4];  r0 = 0.8;
-U = randn(3, 8);  U = U./vecnorm(U);
+y = [0.2; -0.1; 0.4];  y = y(1:dim);  r0 = 0.8;
+U = randn(dim, 8);  U = U./vecnorm(U);
 o1 = cell(1, min(nd, 1) + 1);  o2 = o1;
 [o1{:}] = green(y, y + r0*U);
 [o2{:}] = green(y + 1.3, y + 1.3 + r0*U);
@@ -235,7 +229,7 @@ if (max(abs(v - v(1))) > 1e-10*sc) || (max(abs(o2{1} - v)) > 1e-10*sc)
     error([err0 'green is not radial.']);
 end
 if nd >= 1
-    g = reshape(o1{2}, 8, 3);
+    g = reshape(o1{2}, 8, dim);
     gr = sum(g.*U.', 2);
     if norm(g - gr.*U.', 'fro') > 1e-10*norm(g, 'fro')
         error([err0 'grad of green is not radial.']);
@@ -247,13 +241,17 @@ x = y + 0.9*U(:,1);  h = 1e-5;
 for k = 1:nd
     ok = cell(1, k+1);
     [ok{:}] = green(y, x);
-    A = reshape(ok{k+1}, [], 3);
+    A = reshape(fullders(ok{k+1}, k, dim), [], dim);
     F = zeros(size(A));
-    for j = 1:3
-        e = zeros(3, 1);  e(j) = h;
+    for j = 1:dim
+        e = zeros(dim, 1);  e(j) = h;
         op = cell(1, k);  om = op;
         [op{:}] = green(y, x + e);
         [om{:}] = green(y, x - e);
+        if k > 1
+            op{k} = fullders(op{k}, k-1, dim);
+            om{k} = fullders(om{k}, k-1, dim);
+        end
         F(:, j) = (op{k}(:) - om{k}(:))/(2*h);
     end
     rel = norm(A - F, 'fro')/max(norm(A, 'fro'), realmin);
@@ -442,13 +440,13 @@ for k = 1:numel(sp)
     end
 end
 if isequal(W, 0)
-    W = zeros(size(t.r,2), nc, size(sp(1).ent, 1));
+    W = zeros(size(t.r(:,:), 2), nc, size(sp(1).ent, 1));
 end
 end
 
 
 function K = blocks(Ks)
-% interleave a block array of green kernels into one kernel
+% interleave a block array of green kernels into one kernel; skips I and 0 blocks
 Ks = tocell(Ks);
 [m, n] = size(Ks);
 rd = cellfun(@(K) K.opdims(1), Ks(:,1)).';
@@ -456,47 +454,55 @@ cd = cellfun(@(K) K.opdims(2), Ks(1,:));
 r0 = [0 cumsum(rd)];  c0 = [0 cumsum(cd)];
 opdims = [r0(end) c0(end)];
 
-p  = Ks{1}.params;
-nd = max(cellfun(@(K) K.params.nderiv, Ks(:)));
+isg = cellfun(@(K) strcmp(K.name, 'radgreen'), Ks);
+Kg  = Ks(isg);                 % the green blocks, in column-major order
+ig  = zeros(m, n);  ig(isg) = 1:numel(Kg);
+
+p  = Kg{1}.params;
+nd = max(cellfun(@(K) K.params.nderiv, Kg));
 nc = ncompof(nd, p.dim);
 
-% entries of the result in column-major order: block, local entry
+% entries of the result in column-major order: green block, local entry
 [I, J] = ndgrid(1:opdims(1), 1:opdims(2));
 ne = numel(I);
 map = zeros(ne, 2);
 ipv = zeros(1, ne);
+keep = false(1, ne);
 for e = 1:ne
     k = find(I(e) > r0, 1, 'last');  l = find(J(e) > c0, 1, 'last');
+    if ~isg(k,l), continue; end
     q = Ks{k,l}.params;
     le = find(q.ent(:,1) == I(e) - r0(k) & q.ent(:,2) == J(e) - c0(l));
-    map(e,:) = [sub2ind([m n], k, l), le];
+    map(e,:) = [ig(k,l), le];
     ipv(e) = q.ipv(le);
+    keep(e) = true;
 end
+map = map(keep,:);  ipv = ipv(keep);
 
-sp = specs(Ks(:));
-lam = cellfun(@(K) ratio(p.green, K.params.green), Ks(:));
+sp = specs(Kg);
+lam = cellfun(@(K) ratio(p.green, K.params.green), Kg);
 spec = p.spec;
 spec.name = 'custom';
 spec.nderiv = nd;
 spec.opdims = opdims;
-spec.ent = [I(:) J(:)];
+spec.ent = [reshape(I(keep), [], 1), reshape(J(keep), [], 1)];
 spec.wfun = @(t) wblocks(t, sp, lam, map, nc, 'wfun');
 spec.vfun = [];
 if any(arrayfun(@(q) ~isempty(q.vfun), sp))
     spec.vfun = @(t) wblocks(t, sp, lam, map, nc, 'vfun');
 end
 spec.targ_fields = unique([sp.targ_fields]);
-K = rebuild(Ks(:).', spec, ipv, lam);
+K = rebuild(Kg(:).', spec, ipv, lam);
 
-% block fmm, as in the generic interleave
-if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks(:)))
-    K.fmm = @(eps, src, targ, sigma) fmmblocks(Ks, r0, c0, opdims, eps, ...
-                                               src, targ, sigma);
+% block fmm, as in the generic interleave, over the green blocks
+if all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Kg))
+    K.fmm = @(eps, src, targ, sigma) fmmblocks(Ks, isg, r0, c0, opdims, ...
+                                               eps, src, targ, sigma);
 end
 end
 
 
-function pot = fmmblocks(Ks, r0, c0, opdims, eps, src, targ, sigma)
+function pot = fmmblocks(Ks, isg, r0, c0, opdims, eps, src, targ, sigma)
 % sigma is (opdims(2)*ns, ndens), one column per density
 [m, n] = size(Ks);
 ns = size(src.r(:,:), 2);
@@ -506,6 +512,7 @@ sig = reshape(sigma, opdims(2), ns, ndens);
 pot = zeros(opdims(1), nt, ndens);
 for k = 1:m
     for l = 1:n
+        if ~isg(k,l), continue; end
         sl = sig(c0(l)+1:c0(l+1), :, :);
         pkl = Ks{k,l}.fmm(eps, src, targ, reshape(sl, [], ndens));
         pot(r0(k)+1:r0(k+1), :, :) = pot(r0(k)+1:r0(k+1), :, :) + ...
@@ -517,7 +524,7 @@ end
 
 
 function W = wblocks(t, sp, lam, map, nc, f)
-nt = size(t.r, 2);
+nt = size(t.r(:,:), 2);
 W = zeros(nt, nc, size(map, 1));
 Wb = cell(numel(sp), 1);
 for b = unique(map(:,1)).'

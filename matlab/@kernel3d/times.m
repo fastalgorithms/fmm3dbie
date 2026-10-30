@@ -34,14 +34,20 @@ if ~ismatrix(g)
     error('KERNEL3D:times:invalid', 'numeric factor must be a 2D array');
 end
 
-if isscalar(g) && kernel3d.radgreen('compatible', f)
-    f = kernel3d.radgreen('scale', f, g);
-    return
-end
-
-if isscalar(g) && kernel3d.radpp('summable', {f})
-    f = kernel3d.radpp('sum', {f}, g);
-    return
+if isscalar(g)
+    fdiag = f.diag;
+    f.diag = [];
+    if kernel3d.radgreen('summable', {f})
+        f = kernel3d.radgreen('scale', f, g);
+        if ~isempty(fdiag), f.diag = @(t) g * fdiag(t); end
+        return
+    end
+    if kernel3d.radpp('summable', {f})
+        f = kernel3d.radpp('sum', {f}, g);
+        if ~isempty(fdiag), f.diag = @(t) g * fdiag(t); end
+        return
+    end
+    f.diag = fdiag;
 end
 
 if isscalar(g)
@@ -105,20 +111,22 @@ A4 = reshape(A, a1, 1, a2, 1);
 
     function out = fmm_col(eps, s, t, sigma)
         % A is a column vector: post-multiply the fmm output
+        ndens = numel(sigma)/(Q*size(s.r(:,:), 2));
         u  = Kfmm(eps, s, t, sigma);
-        nt = numel(u)/m;
-        out = reshape(A(:) .* reshape(u, m, nt), P*nt, 1);
+        nt = numel(u)/(m*ndens);
+        out = reshape(A(:) .* reshape(u, m, nt, ndens), P*nt, ndens);
     end
 
     function out = fmm_row(eps, s, t, sigma)
         % A is a row vector: pre-multiply the density
-        ns  = numel(sigma)/Q;
-        sig = A(:) .* reshape(sigma, Q, ns);
+        ns  = size(s.r(:,:), 2);
+        ndens = numel(sigma)/(Q*ns);
+        sig = A(:) .* reshape(sigma, Q, ns, ndens);
         if q == 1 && Q > 1
             % K has a single input channel: [a1 K, a2 K, ...] sigma
             sig = sum(sig, 1);
         end
-        out = Kfmm(eps, s, t, reshape(sig, q*ns, 1));
+        out = Kfmm(eps, s, t, reshape(sig, q*ns, ndens));
     end
 
     function Qm = getquad_(S, eps, varargin)
