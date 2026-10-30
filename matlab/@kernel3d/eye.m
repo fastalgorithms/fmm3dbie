@@ -51,7 +51,7 @@ obj.diag      = dfun;
 obj.eval = @(s,t) zeros(m*size(t.r(:,:),2), n*size(s.r(:,:),2));
 
 obj.fmm = @fmm_;
-    function varargout = fmm_(eps, s, t, sigma) %#ok<INUSL>
+    function varargout = fmm_(eps, s, t, sigma) 
         if isstruct(t), nt = size(t.r(:,:),2); else, nt = size(t(:,:),2); end
         ndens = numel(sigma)/(n*size(s.r(:,:),2));
         if nargout > 0, varargout{1} = zeros(m*nt, ndens); end

@@ -106,7 +106,7 @@ function [nodes, eshapes, eorders, enodes] = i_parse_msh(fname)
     if fid < 0
         error('surfer:load_from_msh:fopen', 'cannot open %s', fname);
     end
-    cleanup = onCleanup(@() fclose(fid)); %#ok<NASGU>
+    cleanup = onCleanup(@() fclose(fid)); 
 
     nodes   = zeros(3, 0);
     eshapes = char(zeros(1, 0));
