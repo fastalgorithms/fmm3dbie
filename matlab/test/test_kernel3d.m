@@ -6,9 +6,9 @@ run ../startup.m
 rng(42);
 
 zk  = 0.1 + 0.2i;
-eps = 1e-6;
-ns  = 500;
-nt  = 300;
+eps = 1e-7;
+ns  = 2000;
+nt  = 2000;
 
 src = [];
 src.r  = randn(3,ns);  src.r  = src.r  ./ vecnorm(src.r) .* rand(1,ns);
