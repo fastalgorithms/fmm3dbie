@@ -43,7 +43,7 @@ if nargin < 5, opts = []; end
 
 % Assign appropriate object to targinfo
 if isnumeric(targobj)
-    targinfo = targobj.r;
+    targinfo = struct('r', targobj);
 else
     targinfo = targobj;
 end
@@ -82,7 +82,7 @@ for j=1:nsurfers
     end
     opdims_mat(:,j) = ktmp.opdims;
     if ismethod(surfers{j},'oversample')
-        novers{j} = ktmp.get_overs_orders(surfers{j},targobj,eps);
+        novers{j} = ktmp.get_overs_orders(surfers{j},targinfo,eps);
     else
         novers{j} = NaN;
     end

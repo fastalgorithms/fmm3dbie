@@ -25,6 +25,8 @@ function pot = surferkerneval(surferobj, kern, dens, targobj, eps, opts)
 %                                by surferkernevalmat
 %           opts.usefmm      = (1) use FMM for smooth quadrature
 %
+% A single kern uses one FMM for all surfers.
+%
 % Output:
 %   pot  - result of applying the operator to dens, length ntarg*opdims(1)
 %
@@ -56,7 +58,7 @@ if isempty(cors)
 end
 
 if isnumeric(targobj)
-    targinfo = targobj.r;
+    targinfo = struct('r', targobj);
 else
     targinfo = targobj;
 end
@@ -140,7 +142,7 @@ if ~objover_mode
         opdims_mat(:,j) = ktmp.opdims;
         if isempty(objover)
             if ismethod(surfers{j},'oversample')
-                novers_tmp{j} = ktmp.get_overs_orders(surfers{j},targobj,eps);
+                novers_tmp{j} = ktmp.get_overs_orders(surfers{j},targinfo,eps);
             else
                 novers_tmp{j} = NaN;
             end
@@ -167,6 +169,11 @@ nrows = ntarg * opdim1;
 ncols = icollocs(end)-1;
 
 pot = zeros(nrows, 1);
+
+% One FMM for all source surfers for a single kernel
+batch = numel(kern) == 1 && usefmm && ~isempty(kern.fmm);
+srcs = cell(1, nsurfers);
+sigs = cell(nsurfers, 1);
 
 for j = 1:nsurfers
     surferj = surfers{j};
@@ -198,12 +205,20 @@ for j = 1:nsurfers
     end
     wtsover = repmat(surferjover.wts(:).', ktmp.opdims(2), 1);
     dens_j = wtsover(:).*(xinterp*dens_j);
-    if usefmm && ~isempty(ktmp.fmm)
+    if batch
+        srcs{j} = surferjover;
+        sigs{j} = dens_j;
+        continue
+    elseif usefmm && ~isempty(ktmp.fmm)
         pot_j = ktmp.fmm(eps,surferjover,targinfo,dens_j);
     else
         pot_j = ktmp.eval(surferjover,targinfo)*dens_j;
     end
     pot = pot + pot_j(:);
+end
+if batch && ~isempty([srcs{:}])
+    pot = kern.fmm(eps, merge([srcs{:}]), targinfo, vertcat(sigs{:}));
+    pot = pot(:);
 end
 
 %% Add near-field correction
