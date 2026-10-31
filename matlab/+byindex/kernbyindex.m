@@ -6,16 +6,15 @@ function mat = kernbyindex(i, j, surfers, kern, Qsparse, opts)
 % mat = byindex.kernbyindex(i, j, surfers, kern, Qsparse, opts)
 %
 % Entries use the smooth rule at the nodes of the surfers, without
-% oversampling, so together with Qsparse this matches surfermat with
-% opts.ifoversamp = 0. Self interactions (same surfer, same node) are
-% zero. Matrices that need oversampled sources can be built from
-% byindex.kernbyindexeval with the oversampled surfers, applying the
-% interpolation matrices outside.
+% oversampling, so with Qsparse this matches surfermat with
+% opts.ifoversamp = 0. Self interactions are zero and kern.diag is not
+% used. For oversampled sources, see byindex.kernbyindexeval.
 %
 % For use with FLAM, e.g.
 %   Afun   = @(i,j) byindex.kernbyindex(i, j, surfers, kern, Q);
 %   pxyfun = @(varargin) byindex.proxyfun(surfers, kern, [], proxy, varargin{:});
 %   F = rskelf(Afun, x, occ, rank_or_tol, pxyfun);
+% or see byindex.flamfuns.
 %
 % Input:
 %   i, j      - row/col indices to evaluate
@@ -27,8 +26,8 @@ function mat = kernbyindex(i, j, surfers, kern, Qsparse, opts)
 %                 true (default): replacement, i.e. overwrite smooth entries
 %                   with Qsparse values where nonzero.  Use with nonsmoothonly=1
 %                   output from surfermat.
-%                 false: additive, i.e. mat += Qsparse.  Use with corrections=1
-%                   output from surfermat, which stores (near-singular - smooth).
+%                 false: additive, i.e. mat += Qsparse.  Use with corrections=1,
+%                   ifoversamp=0 output from surfermat.
 %   opts      - options struct
 %     opts.replace_quadcorr - logical (default true), see Qsparse above
 %
@@ -63,10 +62,8 @@ else
 end
 
 % Build row/col offset tables
-irowlocs = zeros(nsurfers+1, 1);
-icollocs = zeros(nsurfers+1, 1);
-irowlocs(1) = 1;
-icollocs(1) = 1;
+irowlocs = ones(nsurfers+1, 1);
+icollocs = ones(nsurfers+1, 1);
 for k = 1:nsurfers
     irowlocs(k+1) = irowlocs(k) + surfers(k).npts * opdims_mat(1, k, 1);
     icollocs(k+1) = icollocs(k) + surfers(k).npts * opdims_mat(2, 1, k);
@@ -76,60 +73,31 @@ mat = zeros(length(i), length(j));
 if isempty(i) || isempty(j)
     return;
 end
+i = double(i(:));
+j = double(j(:));
 
 for itrg = 1:nsurfers
     srfi = surfers(itrg);
 
-    mat_row_start = irowlocs(itrg);
-    mat_row_end   = irowlocs(itrg+1) - 1;
-    flag_i = (i >= mat_row_start) & (i <= mat_row_end);
-    mat_row_ind = i(flag_i);
-    if isempty(mat_row_ind), continue; end
+    flag_i = (i >= irowlocs(itrg)) & (i < irowlocs(itrg+1));
+    if ~any(flag_i), continue; end
+    [iuni, iiuni2] = decode(i(flag_i) - irowlocs(itrg), opdims_mat(1, itrg, 1));
 
-    opdims_row = opdims_mat(1, itrg, 1);
-
-    ipts = idivide(int64(mat_row_ind(:) - mat_row_start), int64(opdims_row)) + 1;
-    [iuni, ~, iiuni] = unique(ipts);
-    iiuni2 = (iiuni - 1)*opdims_row + mod(mat_row_ind(:) - mat_row_start, opdims_row) + 1;
+    targinfo = ptinfo(srfi, iuni, unique([{}, kern(min(itrg, end), :).targ_fields]));
 
     for isrc = 1:nsurfers
         srfj = surfers(isrc);
 
-        mat_col_start = icollocs(isrc);
-        mat_col_end   = icollocs(isrc+1) - 1;
-        flag_j = (j >= mat_col_start) & (j <= mat_col_end);
-        mat_col_ind = j(flag_j);
-        if isempty(mat_col_ind), continue; end
-
+        flag_j = (j >= icollocs(isrc)) & (j < icollocs(isrc+1));
+        if ~any(flag_j), continue; end
         opdims_src = opdims_mat(2, itrg, isrc);
+        [juni, ijuni2] = decode(j(flag_j) - icollocs(isrc), opdims_src);
 
-        if numel(kern) == 1
-            ktmp = kern;
-        else
-            ktmp = kern(itrg, isrc);
-        end
+        ktmp = kern(min(itrg, end), min(isrc, end));
 
-        jpts = idivide(int64(mat_col_ind(:) - mat_col_start), int64(opdims_src)) + 1;
-        [juni, ~, ijuni] = unique(jpts);
-        ijuni2 = (ijuni - 1)*opdims_src + mod(mat_col_ind(:) - mat_col_start, opdims_src) + 1;
-
-        targinfo = slice_surfer(srfi, iuni, ktmp.targ_fields);
-        srcp     = slice_surfer(srfj, juni, ktmp.src_fields);
-        wts = repmat(srfj.wts(juni(:)).', opdims_src, 1);
-        wts = wts(:).';
-        matuni = ktmp.eval(srcp, targinfo) .* wts;
-
-        % Zero self interactions, i.e. source and target at the same node
-        if itrg == isrc
-            [lia, loc] = ismember(juni, iuni);
-            if any(lia)
-                q = find(lia);
-                p = loc(lia);
-                ir = repmat((1:opdims_row).' + opdims_row*(p(:).' - 1), opdims_src, 1);
-                ic = repelem((1:opdims_src).' + opdims_src*(q(:).' - 1), opdims_row, 1);
-                matuni(ir(:) + size(matuni, 1)*(ic(:) - 1)) = 0;
-            end
-        end
+        srcp = ptinfo(srfj, juni, ktmp.src_fields);
+        wts = repmat(srfj.wts(juni).', opdims_src, 1);
+        matuni = ktmp.eval_mask(srcp, targinfo) .* wts(:).';
 
         mat(flag_i, flag_j) = matuni(iiuni2, ijuni2);
     end
@@ -137,15 +105,11 @@ end
 
 % Apply singular quadrature corrections
 if ~isempty(Qsparse)
-    [isp, jsp, vsp] = find(Qsparse(i(:), j(:)));
-    linsp = isp + (jsp - 1)*length(i(:));
+    [isp, jsp, vsp] = find(Qsparse(i, j));
+    linsp = isp + (jsp - 1)*length(i);
     if replace_quadcorr
-        % nonsmoothonly mode: Qsparse holds full near-singular values;
-        % replace smooth entries wherever Qsparse is structurally nonzero.
         mat(linsp) = vsp;
     else
-        % corrections mode: Qsparse holds (near-singular - smooth);
-        % add to smooth entries.
         mat(linsp) = mat(linsp) + vsp;
     end
 end
@@ -153,22 +117,29 @@ end
 end
 
 
-function srcp = slice_surfer(srfj, pts, fields)
-    srcp = [];
-    srcp.r = srfj.r(:, pts);
-    for k = 1:length(fields)
-        f = fields{k};
-        srcp.(f) = slice_field(srfj.(f), pts, srfj.npts);
-    end
+function [uni, ind] = decode(k, opdim)
+% Zero-based dof indices k -> unique points uni, and the row/col of each
+% dof in the matrix over (uni, components)
+pts = floor(k/opdim) + 1;
+[uni, ~, iuni] = unique(pts);
+ind = (iuni - 1)*opdim + (k - (pts - 1)*opdim) + 1;
 end
 
 
-function v = slice_field(A, idx, npts)
-if size(A, 2) == npts
-    v = A(:, idx);
-elseif size(A, 1) == npts
-    v = A(idx, :).';
-else
-    error('SLICE_FIELD: no dimension of A matches npts');
+function info = ptinfo(obj, pts, fields)
+% Point info at pts. Fields may be stored as (:, npts) or (npts, :).
+npts = size(obj.r(:,:), 2);
+info = [];
+info.r = obj.r(:, pts);
+for k = 1:numel(fields)
+    f = fields{k};
+    A = obj.(f);
+    if size(A, 2) == npts
+        info.(f) = A(:, pts);
+    elseif size(A, 1) == npts
+        info.(f) = A(pts, :).';
+    else
+        error('BYINDEX: no dimension of field %s matches npts', f);
+    end
 end
 end

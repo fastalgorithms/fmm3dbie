@@ -42,7 +42,7 @@ obj.eval = @(s,t) repmat(A, size(t.r(:,:),2), size(s.r(:,:),2));
 
 obj.fmm = @fmm_;
     function varargout = fmm_(eps, s, t, sigma) %#ok<INUSL>
-        if isstruct(t), nt = size(t.r(:,:),2); else, nt = size(t(:,:),2); end
+        if isnumeric(t), nt = size(t(:,:),2); else, nt = size(t.r(:,:),2); end
         blk = A * sum(reshape(sigma, n, []), 2);
         pot = repmat(blk, nt, 1);
         if nargout > 0, varargout{1} = pot; end
@@ -59,7 +59,7 @@ end
 
 function spmat = build_near_quad(A, m, n, S, args)
 % Near-field quadrature over the getnear(S,targinfo) patch neighborhood.
-if ~isempty(args) && isstruct(args{1}) && isfield(args{1}, 'r')
+if ~isempty(args) && ~isempty(args{1}) && ~isnumeric(args{1})
     targinfo = args{1};
 else
     targinfo = S;

@@ -145,13 +145,13 @@ for j = 1:nsurfers
 
     noversj = novers{j};
     if ismethod(surferj,'oversample') && ~any(isnan(noversj))
-        [surferjover, xinterp] = surferj.oversample(noversj);
-        xinterp = kron(xinterp, eye(opdims(2)));
+        [surferjover, xraw] = surferj.oversample(noversj);
     else
         novers{j} = NaN;
         surferjover = surferj;
-        xinterp = speye(numel(wts));
+        xraw = speye(surferj.npts);
     end
+    xinterp = kron(xraw, eye(opdims(2)));
     surfers_over{j} = surferjover;
     xinterps{j}     = xinterp;
 
@@ -166,7 +166,7 @@ for j = 1:nsurfers
         sysmat_quad = ktmp.getquad(surferj,eps,targinfo);
         if corrections
             [rp, ci] = get_rsc_pattern(surferj, sysmat_quad, opdims);
-            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, rp, ci, noversj);
+            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, rp, ci, noversj, surferjover, xraw);
             sysmat_quad = sysmat_quad-sysmat_smth;
         end
 

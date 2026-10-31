@@ -1,79 +1,45 @@
-function proxy = proxy_points(kern, width, eps, nshell_max, opts)
+function proxy = proxy_points(kern, width, eps, opts)
 %PROXY_POINTS  Proxy surface for byindex.proxyfun, chosen for a kernel.
 %
 % proxy = byindex.proxy_points(kern, width, eps)
-% proxy = byindex.proxy_points(kern, width, eps, nshell_max)
-% proxy = byindex.proxy_points(kern, width, eps, nshell_max, opts)
 % proxy = byindex.proxy_points(kern, width, eps, opts)
 %
 % Adapted from the proxy selection in pcfft's dx_nproxy. Sources fill a
 % box of side width, and the proxy surface is nshell concentric spheres of
-% nproxy points each, the innermost of radius crad*sqrt(3)*width/2. The
-% selection is done in two steps:
+% nproxy points each, the innermost of radius crad*sqrt(3)*width/2:
 %
-%   1. Find nproxy that resolves K(.,x) down to eps on a single sphere by
-%      looking at the spherical harmonic tails of the kernel. Leaves a
-%      margin of at least 3 degrees and at least 25%.
-%
-%   2. For increasing nshell, check that a skeleton of random sources in
-%      the box chosen from their interactions with the proxy points (a
-%      column-pivoted QR to eps/10) reproduces their interactions with
-%      targets outside the proxy surface to eps.
-%
-% Proxy points only carry r and n (outward radial normal), so no kernel
-% may need fields other than 'n' in src_fields or targ_fields.
+%   1. nproxy resolves K(.,x) to eps on one sphere, judged from the
+%      spherical harmonic tails of the kernel, with a margin.
+%   2. nshell is the smallest number of shells for which a skeleton of
+%      random sources reproduces their interactions with targets outside to eps.
 %
 % Input:
-%   kern       - kernel3d object or array of kernel3d objects. The proxy
-%                surface is chosen to work for all of them.
-%   width      - side length of the box, e.g. the largest side of the
-%                bounding box of all points passed to FLAM
-%   eps        - tolerance
-%   nshell_max - (optional) maximum number of shells (default 20)
-%   opts       - (optional) options struct
-%     opts.nshell_max - maximum number of shells, if not given as an
-%                       argument (default 20)
-%     opts.nproxy_max - maximum number of proxy points per shell
-%                       (default 6000)
-%     opts.crad       - the innermost shell has radius
-%                       crad*sqrt(3)*width/2 (default sqrt(3), i.e. 1.5*width).
-%                       FLAM requires crad <= sqrt(3) so that every
-%                       non-neighbor box is outside the proxy surface.
-%     opts.nsrc       - initial number of random sources (default 117)
-%     opts.rank_frac  - double the random sources while the rank is more
-%                       than rank_frac of them (default 0.5)
-%     opts.ifaddtrans - stored in proxy. If true, byindex.proxyfun called
-%                       from rskelf also returns the transpose block, as
-%                       needed for non-symmetric matrices (default false)
+%   kern  - kernel3d object or array; the surface works for all of them
+%   width - side length of the box, e.g. the largest side of the
+%           bounding box of all points passed to FLAM
+%   eps   - tolerance
+%   opts  - (optional) options struct
+%     opts.nshell_max - maximum number of shells (default 20)
+%     opts.nproxy_max - maximum number of proxy points per shell (default 6000)
+%     opts.crad       - innermost radius crad*sqrt(3)*width/2 (default
+%                       sqrt(3)); FLAM needs crad <= sqrt(3)
+%     opts.ifaddtrans - (false) proxyfun also returns the transpose block
+%                       to rskelf, for non-symmetric matrices
 %
 % Output:
-%   proxy - struct describing the proxy surface in units of the box size,
-%           i.e. for a box of size l centered at ctr the proxy points are
-%           proxy.r*l + ctr.
-%     proxy.r          - (3, nproxy*nshell) proxy points
-%     proxy.n          - (3, nproxy*nshell) outward unit normals
+%   proxy - proxy surface in units of the box size, i.e. for a box of size
+%           l centered at ctr the proxy points are proxy.r*l + ctr
+%     proxy.r, proxy.n - (3, nproxy*nshell) points and outward normals
 %     proxy.w          - (nproxy*nshell, 1) area weights
-%     proxy.radius     - radius of the innermost shell; points closer to
-%                        the box center are kept as neighbors
-%     proxy.nproxy     - number of proxy points per shell
-%     proxy.nshell     - number of shells
-%     proxy.crad       - see opts.crad
-%     proxy.ifaddtrans - see opts.ifaddtrans
-%     proxy.width, proxy.eps, proxy.nshell_max, proxy.opts - the inputs,
-%                        used by byindex.proxyfun to rebuild the proxy
-%                        surface for each level
+%     proxy.radius     - innermost radius; closer points stay neighbors
+%     proxy.nproxy, proxy.nshell, proxy.crad, proxy.ifaddtrans
+%     proxy.width, proxy.eps, proxy.opts - the inputs, from which
+%                        byindex.proxyfun rebuilds the surface per level
 
-if nargin < 4, nshell_max = []; end
-if nargin < 5, opts = []; end
-if isstruct(nshell_max)
-    opts = nshell_max;
-    nshell_max = [];
-end
-if isempty(nshell_max)
-    nshell_max = 20;
-    if isfield(opts, 'nshell_max'), nshell_max = opts.nshell_max; end
-end
+if nargin < 4, opts = []; end
 
+nshell_max = 20;
+if isfield(opts, 'nshell_max'), nshell_max = opts.nshell_max; end
 nproxy_max = 6000;
 if isfield(opts, 'nproxy_max'), nproxy_max = opts.nproxy_max; end
 crad = sqrt(3);
@@ -103,7 +69,7 @@ for k = 1:numel(kern)
         error(['BYINDEX.PROXY_POINTS: proxy points only carry r and n, ' ...
             'but kernel %d needs {%s}'], k, strjoin(fields, ', '));
     end
-    kerns{end+1} = ktmp; %#ok<AGROW>
+    kerns{end+1} = ktmp;
 end
 if isempty(kerns)
     error('BYINDEX.PROXY_POINTS: no nonzero kernels given');
@@ -148,6 +114,13 @@ grd.n = [reshape(st*cos(phi), 1, []); reshape(st*sin(phi), 1, []); ...
 grd.r = radius*grd.n;
 ngrid = ntheta*nphi;
 
+% Quadrature weights times normalized associated Legendre functions,
+% W{l+1}(:, m+1) for degree l and order m
+W = cell(Lmax+1, 1);
+for l = 0:Lmax
+    W{l+1} = wt .* legendre(l, ct.', 'norm').';
+end
+
 nproxy = 0;
 for k = 1:numel(kerns)
     F    = kerns{k}.eval(srcres, grd);
@@ -161,9 +134,8 @@ for k = 1:numel(kerns)
     for id = 1:nder
         G = fft(reshape(F(id:nder:end, :), ntheta, nphi, ncol), [], 2)/nphi;
         for l = 0:Lmax
-            W  = wt .* legendre(l, ct.', 'norm').';
-            cp = sum(G(:, 1:l+1, :) .* W, 1);
-            cn = sum(G(:, [1, nphi:-1:nphi-l+1], :) .* W, 1);
+            cp = sum(G(:, 1:l+1, :) .* W{l+1}, 1);
+            cn = sum(G(:, [1, nphi:-1:nphi-l+1], :) .* W{l+1}, 1);
             e  = max(max(abs(cp), [], 2), max(abs(cn), [], 2));
             deg_energy(l+1, :) = max(deg_energy(l+1, :), reshape(e, 1, ncol));
         end
@@ -173,17 +145,29 @@ for k = 1:numel(kerns)
     scl(scl == 0) = 1;
     tail = max(flipud(cummax(flipud(deg_energy), 1)) ./ scl, [], 2);
 
+    % Largest degree with at most nproxy_max points
+    Lbig = min(Lmax, floor(sqrt(nproxy_max/1.05))) - 1;
     nproxy_k = 0;
-    for L = 0:Lmax-1
+    for L = 0:Lbig
         Lc = L - max(3, ceil(0.25*L));
         if Lc >= 0 && tail(Lc+2) < eps
             nproxy_k = ceil(1.05*(L+1)^2);
             break
         end
     end
-    if nproxy_k == 0 || nproxy_k > nproxy_max
-        error('BYINDEX.PROXY_POINTS: nproxy did not converge below nproxy_max = %d', ...
-            nproxy_max);
+    if nproxy_k == 0
+        % Warn if the largest allowed nproxy is within a factor of ten
+        Lc = Lbig - max(3, ceil(0.25*Lbig));
+        tail_big = tail(max(Lc, 0)+2);
+        if tail_big < 10*eps
+            warning('BYINDEX:proxy_points:nproxy', ['BYINDEX.PROXY_POINTS: ' ...
+                'nproxy_max = %d only resolves kernel %d to %.1e > eps = %.1e'], ...
+                nproxy_max, k, tail_big, eps);
+            nproxy_k = ceil(1.05*(Lbig+1)^2);
+        else
+            error('BYINDEX.PROXY_POINTS: nproxy did not converge below nproxy_max = %d', ...
+                nproxy_max);
+        end
     end
     nproxy = max(nproxy, nproxy_k);
 end
@@ -206,40 +190,47 @@ targ.r = 1.01*radius*(1 + rand(1, ntarget)) .* [cos(th).*rv; yv; sin(th).*rv];
 targ.n = randn(3, ntarget);
 targ.n = targ.n ./ vecnorm(targ.n);
 
-nshell = 0;
+nshell   = 0;
+err_best = Inf;
 for ns = 1:nshell_max
-    % Chebyshev-like spacing in 1/r, starting from the innermost shell
-    if ns > 1
-        sr   = cos((1:ns-1)/ns*pi);
-        sr   = (sr(:) + 1)/2*(1/radius);
-        rads = [radius, 1./sr(:).'];
-    else
-        rads = radius;
-    end
-    pxy = [];
-    pxy.r = reshape(rads .* reshape(p0, 3, 1, []), 3, []);
-    pxy.n = pxy.r ./ vecnorm(pxy.r);
+    [pxy, rads] = shells(p0, radius, ns);
 
     err = 0;
     for k = 1:numel(kerns)
-        % Skeleton of the sources from their proxy interactions, doubling
-        % the sources while the rank is above rank_frac of them. The rank
-        % is at most the number of proxy rows, so this stops by the time
-        % there are nrows/rank_frac columns.
+        % Skeleton of the sources from their proxy interactions, adding
+        % sources until the rank is at most rank_frac of the columns
         krank = Inf;
         ncol  = 0;
+        nsk   = Inf;
         while krank > rank_frac*ncol
             if ncol > 0
-                nsrc  = min(2*nsrc, ceil(size(Kp, 1)/(rank_frac*ncol/nsrc)));
+                cps = ncol/nsrc;   % columns per source
+                if krank < nsk
+                    % The sketch resolved the rank, so take enough sources
+                    nsrc = ceil(1.25*krank/(rank_frac*cps));
+                else
+                    nsrc = 2*nsrc;
+                end
+                nsrc  = min(nsrc, ceil(nrows/(rank_frac*cps)));
                 src.r = (rand(3, nsrc) - 0.5)*width;
                 src.n = randn(3, nsrc);
                 src.n = src.n ./ vecnorm(src.n);
             end
             Kp = kerns{k}.eval(src, pxy);
+            [nrows, ncol] = size(Kp);
+            % Randomized ID on a row sketch. The first can resolve the
+            % rank, later ones only test rank <= rank_frac*ncol
+            if isinf(nsk)
+                nsk = min(nrows, ncol);
+            else
+                nsk = min(nrows, ceil(1.25*rank_frac*ncol) + 10);
+            end
+            if nsk < nrows
+                Kp = randn(nsk, nrows)*Kp;
+            end
             [~, R, p] = qr(Kp, 0);
             d = abs(diag(R));
             krank = sum(d > eps/10*d(1));
-            ncol  = size(Kp, 2);
         end
 
         % Error of the skeleton at the targets
@@ -253,10 +244,23 @@ for ns = 1:nshell_max
         nshell = ns;
         break
     end
+    if err < err_best
+        err_best = err;
+        ns_best  = ns;
+    end
 end
 if nshell == 0
-    error('BYINDEX.PROXY_POINTS: no proxy surface with up to %d shells reaches eps = %g', ...
-        nshell_max, eps);
+    % Warn if the best number of shells is within a factor of ten
+    if err_best < 10*eps
+        warning('BYINDEX:proxy_points:nshell', ['BYINDEX.PROXY_POINTS: no ' ...
+            'proxy surface with up to %d shells reaches eps = %.1e, using %d ' ...
+            'shells with error %.1e'], nshell_max, eps, ns_best, err_best);
+        nshell = ns_best;
+        [pxy, rads] = shells(p0, radius, nshell);
+    else
+        error('BYINDEX.PROXY_POINTS: no proxy surface with up to %d shells reaches eps = %g', ...
+            nshell_max, eps);
+    end
 end
 
 proxy = [];
@@ -270,7 +274,22 @@ proxy.crad   = crad;
 proxy.ifaddtrans = ifaddtrans;
 proxy.width      = width;
 proxy.eps        = eps;
-proxy.nshell_max = nshell_max;
 proxy.opts       = opts;
 
+end
+
+
+function [pxy, rads] = shells(p0, radius, ns)
+% ns copies of the unit sphere points p0, with Chebyshev-like spacing in
+% 1/r starting from the innermost shell of the given radius
+if ns > 1
+    sr   = cos((1:ns-1)/ns*pi);
+    sr   = (sr(:) + 1)/2*(1/radius);
+    rads = [radius, 1./sr(:).'];
+else
+    rads = radius;
+end
+pxy = [];
+pxy.r = reshape(rads .* reshape(p0, 3, 1, []), 3, []);
+pxy.n = pxy.r ./ vecnorm(pxy.r);
 end

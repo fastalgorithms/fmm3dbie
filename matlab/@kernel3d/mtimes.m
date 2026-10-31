@@ -163,12 +163,12 @@ end
 
     function Q = getquad_left(S, eps, varargin)
         Qinner = Kgetquad(S, eps, varargin{:});
-        if ~isempty(varargin) && isstruct(varargin{1})
+        if ~isempty(varargin) && ~isempty(varargin{1}) && ~isnumeric(varargin{1})
             targ = varargin{1};
         else
             targ = S;
         end
-        nt   = size(targ.r, 2);
+        nt   = size(targ.r(:,:), 2);
         fval = h(targ);
         Q3   = permute(reshape(full(Qinner), m, nt, q*S.npts), [1 3 2]);
         Q    = sparse(reshape(permute(apply_left(fval, Q3), [1 3 2]), p*nt, q*S.npts));
@@ -203,8 +203,8 @@ end
         Qinner = Kgetquad(S, eps, varargin{:});
         ns   = S.npts;
         fval = h(S);
-        if ~isempty(varargin) && isstruct(varargin{1})
-            nt = size(varargin{1}.r, 2);
+        if ~isempty(varargin) && ~isempty(varargin{1}) && ~isnumeric(varargin{1})
+            nt = size(varargin{1}.r(:,:), 2);
         else
             nt = ns;
         end
