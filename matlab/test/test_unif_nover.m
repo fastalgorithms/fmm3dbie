@@ -7,6 +7,7 @@ run ../startup.m
 test_uniform_orders();
 test_monotone_on_add();
 test_nonuniform_without_flag();
+test_batched_apply();
 
 
 function [S1, S2, S3, kern, eps] = make_setup()
@@ -61,5 +62,26 @@ for j = 1:size(novers,2)
     end
 end
 assert(any_nonuniform, 'expected non-uniform novers without unif_nover flag');
+
+end
+
+
+function test_batched_apply()
+% With unif_nover=1 and a single kernel, surfermatapply uses one FMM for
+% all surfers. The kernel wraps eye, ones and a target multiplier, which
+% must accept merged surfers as targets.
+
+S1 = geometries.sphere(1, 1, [0;0;0], 4, 1);
+S2 = geometries.sphere(1, 1, [3;0;0], 4, 1);
+eps = 1e-6;
+kern = kernel3d('l', 'd') + (@(t) cos(t.r(1,:)).') * kernel3d.ones ...
+    + kernel3d.eye(0.5);
+opts = struct('unif_nover', 1);
+
+A = surfermat([S1, S2], kern, eps, opts);
+dens = randn(size(A, 2), 1);
+u = surfermatapply([S1, S2], kern, dens, eps, [], [], opts);
+err = norm(u - A*dens) / norm(A*dens);
+assert(err < 1e-5, 'batched surfermatapply: err %.2e', err);
 
 end

@@ -1,9 +1,10 @@
-function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
+function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,val2over)
 %
 %  SMOOTH_SPARSE_QUAD
 %
 %  Syntax:
 %    Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
+%    Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,val2over)
 %
 %  This subroutine returns a sparse matrix of smooth quadrature
 %  corrections for the interactions between a set of targets and
@@ -26,6 +27,8 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 %        sorted by target number
 %    * nover: integer
 %        quadrature order to use when oversampling each source patch
+%    * S_over, val2over: (optional) S oversampled to nover and the
+%        interpolation matrix from S.oversample, to avoid recomputing them
 %
 %  Output arguments:
 %    * Asmth: sparse matrix of size (opdim(1)*ntarg, opdim(2)*S.npts)
@@ -39,7 +42,9 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 
     ntarg = size(targs.r, 2);
 
-    if ismethod(S,'oversample') && ~any(isnan(nover))
+    if nargin >= 8
+        % precomputed oversampling
+    elseif ismethod(S,'oversample') && ~any(isnan(nover))
         [S_over, val2over] = oversample(S, nover);
     else
         S_over = S; val2over = eye(size(S.r(:,:),2));

@@ -52,7 +52,7 @@ obj.eval = @(s,t) zeros(m*size(t.r(:,:),2), n*size(s.r(:,:),2));
 
 obj.fmm = @fmm_;
     function varargout = fmm_(eps, s, t, sigma) %#ok<INUSD>
-        if isstruct(t), nt = size(t.r(:,:),2); else, nt = size(t(:,:),2); end
+        if isnumeric(t), nt = size(t(:,:),2); else, nt = size(t.r(:,:),2); end
         if nargout > 0, varargout{1} = zeros(m*nt, 1); end
         if nargout > 1, varargout{2} = zeros(3, m*nt); end
         if nargout > 2

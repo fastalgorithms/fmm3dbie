@@ -56,10 +56,10 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
     end
 
     function varargout = fmm_(eps, s, t, sigma)
-        if isstruct(t)
-            [~, nt] = size(t.r);
-        else
+        if isnumeric(t)
             [~, nt] = size(t);
+        else
+            nt = size(t.r(:,:), 2);
         end
         [~, ns] = size(s.r);
         [ridx, cidx] = make_idx(nt, ns);

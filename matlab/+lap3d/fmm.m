@@ -85,7 +85,7 @@ if ( nargout > 0 )
         case {'s', 'd', 'c', 'combined'}
             varargout{1} = reshape(U.pottarg, ndens, nt).';
         case {'sprime', 'sp', 'dprime', 'dp', 'cprime', 'cp'}
-            if ( ~isfield(targinfo, 'n') )
+            if ( ~isfield(targinfo, 'n') && ~isprop(targinfo, 'n') )
                 error('LAP3D:fmm:normals', ...
                     'targinfo.n required for kernel type ''%s''.', type);
             end

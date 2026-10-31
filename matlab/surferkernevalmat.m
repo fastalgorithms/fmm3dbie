@@ -43,7 +43,7 @@ if nargin < 5, opts = []; end
 
 % Assign appropriate object to targinfo
 if isnumeric(targobj)
-    targinfo = targobj.r;
+    targinfo = struct('r', targobj);
 else
     targinfo = targobj;
 end
@@ -82,7 +82,7 @@ for j=1:nsurfers
     end
     opdims_mat(:,j) = ktmp.opdims;
     if ismethod(surfers{j},'oversample')
-        novers{j} = ktmp.get_overs_orders(surfers{j},targobj,eps);
+        novers{j} = ktmp.get_overs_orders(surfers{j},targinfo,eps);
     else
         novers{j} = NaN;
     end
@@ -145,13 +145,13 @@ for j = 1:nsurfers
 
     noversj = novers{j};
     if ismethod(surferj,'oversample') && ~any(isnan(noversj))
-        [surferjover, xinterp] = surferj.oversample(noversj);
-        xinterp = kron(xinterp, eye(opdims(2)));
+        [surferjover, xraw] = surferj.oversample(noversj);
     else
         novers{j} = NaN;
         surferjover = surferj;
-        xinterp = eye(numel(wts));
+        xraw = speye(surferj.npts);
     end
+    xinterp = kron(xraw, eye(opdims(2)));
     surfers_over{j} = surferjover;
     xinterps{j}     = xinterp;
 
@@ -166,7 +166,7 @@ for j = 1:nsurfers
         sysmat_quad = ktmp.getquad(surferj,eps,targinfo);
         if corrections
             [rp, ci] = get_rsc_pattern(surferj, sysmat_quad, opdims);
-            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, rp, ci, noversj);
+            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, rp, ci, noversj, surferjover, xraw);
             sysmat_quad = sysmat_quad-sysmat_smth;
         end
 

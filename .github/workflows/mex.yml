@@ -13,6 +13,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'true'
+      - name: Check out FLAM
+        uses: actions/checkout@v4
+        with:
+          repository: fastalgorithms/FLAM
+          ref: 73b7accda7c1a933517b008831d8404d8d3cc764
+          path: FLAM
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v2
         with:
@@ -44,7 +50,7 @@ jobs:
       - name: Run Matlab test
         uses: matlab-actions/run-command@v2
         with:
-          command: cd('matlab/test'), runtests;
+          command: run('FLAM/startup.m'), cd('matlab/test'), runtests;
       - name: Upload mex files
         uses: actions/upload-artifact@v4
         with:
