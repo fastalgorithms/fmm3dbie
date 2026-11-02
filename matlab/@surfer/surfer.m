@@ -181,7 +181,7 @@ classdef surfer
             nuni = size(no_ip_uni,1);
             rnodes = cell(nuni,1);
             rwts = cell(nuni,1);
-            umats = cell(nuni,1);
+            bmats = cell(nuni,1);
             npols = cell(nuni,1);
             dumats = cell(nuni,1);
             dvmats = cell(nuni,1);
@@ -192,7 +192,7 @@ classdef surfer
                 if(ip0 == 1)
                     rnodes{i} = koorn.rv_nodes(no_ip_uni(i,1));
                     rwts{i} = koorn.rv_weights(no_ip_uni(i,1));
-                    umats{i} = koorn.vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    bmats{i} = koorn.coefs2vals(no_ip_uni(i,1),rnodes{i});
                     [~, dumats{i}, dvmats{i}] = koorn.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
                     epts = [0,1,0;0,0,1];
@@ -200,7 +200,7 @@ classdef surfer
                 elseif(ip0 == 11)
                     rnodes{i} = polytens.lege.nodes(no_ip_uni(i,1));
                     rwts{i} = polytens.lege.weights(no_ip_uni(i,1));
-                    umats{i} = polytens.lege.vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    bmats{i} = polytens.lege.coefs2vals(no_ip_uni(i,1),rnodes{i});
                     [~, dumats{i}, dvmats{i}] = polytens.lege.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
                     epts = [-1,1,1,-1;-1,-1,1,1];
@@ -208,7 +208,7 @@ classdef surfer
                 elseif(ip0 == 12)
                     rnodes{i} = polytens.cheb.nodes(no_ip_uni(i,1));
                     rwts{i} = polytens.cheb.weights(no_ip_uni(i,1));
-                    umats{i} = polytens.cheb.vals2coefs(no_ip_uni(i,1),rnodes{i});
+                    bmats{i} = polytens.cheb.coefs2vals(no_ip_uni(i,1),rnodes{i});
                     [~, dumats{i}, dvmats{i}] = polytens.cheb.ders(no_ip_uni(i,1), rnodes{i});
                     npols{i} = size(rnodes{i},2);
                     epts = [-1,1,1,-1;-1,-1,1,1];
@@ -246,11 +246,21 @@ classdef surfer
             obj.cms = zeros(3,obj.npatches);
             obj.rads = zeros(obj.npatches,1);
             
-            
+            % coefficients of xyz, du and dv: one solve per patch type
+            coefs9 = zeros(9,obj.npts);
+            for i=1:nuni
+                ip = find(iuse == i);
+                np = numel(ip);
+                ind = reshape(obj.ixyzs(ip),1,[]) + (0:npols{i}-1).';
+                X = permute(reshape(srcvals(1:9,ind),9,npols{i},np),[1 3 2]);
+                C = reshape(X,9*np,npols{i}) / bmats{i}.';
+                coefs9(:,ind) = reshape(permute(reshape(C,9,np,npols{i}),[1 3 2]),9,[]);
+            end
+
             for i=1:npatches
                 iind = obj.ixyzs(i):(obj.ixyzs(i+1)-1);
                 srcvals_cell{i} = srcvals(:,iind);
-                srccoefs_tmp = srcvals(1:9,iind)*umats{iuse(i)}';
+                srccoefs_tmp = coefs9(:,iind);
                 srccoefs_cell{i} = srccoefs_tmp;
 
                 du = srcvals(4:6,iind);

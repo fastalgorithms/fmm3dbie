@@ -140,6 +140,7 @@ function [wsmth, iquad] = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 end
 
 function v = slice_field(A, idx, npts)
+if ~ismatrix(A), A = A(:,:); end
 if size(A, 2) == npts
     v = A(:, idx);
 elseif size(A, 1) == npts

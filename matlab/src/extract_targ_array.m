@@ -17,17 +17,17 @@ function [targs] = extract_targ_array(targinfo)
 %          13 if kappa (curvature) is present
 %          14+ if extra data is present
 %
-    [~,ntarg] = size(targinfo.r);
+    ntarg = size(targinfo.r(:,:), 2);
     
     targs = targinfo.r(:,:);    
     
-    has_geom = any([has_targ_field(targinfo,'du'), ...
-        has_targ_field(targinfo,'dv'), has_targ_field(targinfo,'n')]);
+    has_dudv = any([has_targ_field(targinfo,'du'), ...
+        has_targ_field(targinfo,'dv')]);
     has_tau = has_targ_field(targinfo,'tau');
     has_d = has_targ_field(targinfo,'d');
-    if sum([has_geom, has_tau, has_d]) > 1
+    if sum([has_dudv, has_tau, has_d]) > 1
         error('FMM3DBIE:extract_targ_array:overlap', ...
-            'Target fields du/dv/n, tau, and d use overlapping rows.');
+            'Target fields du/dv, tau, and d use overlapping rows.');
     end
 
     if has_targ_field(targinfo,'du')
@@ -66,5 +66,10 @@ function [targs] = extract_targ_array(targinfo)
 end
 
 function tf = has_targ_field(targinfo, name)
-tf = (isstruct(targinfo) && isfield(targinfo,name)) || isprop(targinfo,name);
+% isprop on a struct is very slow, so only objects go to isprop
+if isstruct(targinfo)
+    tf = isfield(targinfo,name);
+else
+    tf = isprop(targinfo,name);
+end
 end

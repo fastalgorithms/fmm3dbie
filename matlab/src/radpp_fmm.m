@@ -22,7 +22,7 @@ function pot = radpp_fmm(fmmfun,p,eps,srcinfo,targinfo,sigma)
 %   pot  - potential (opdims(1)*nt x ndens)
 
 m = p.opdims(1);  n = p.opdims(2);
-ns = size(srcinfo.r,2);
+ns = size(srcinfo.r(:,:), 2);
 ndens = numel(sigma)/(n*ns);
 sigma = reshape(sigma,n,ns,ndens);
 
