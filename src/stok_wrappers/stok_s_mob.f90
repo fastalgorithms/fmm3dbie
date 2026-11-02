@@ -1124,7 +1124,7 @@
       call get_iquad_rsc(npatches, ixyzs, npts, nnz, row_ptr, col_ind, &
         iquad)
 
-      ikerorder = -1
+      ikerorder = 0
 
 !
 !    estimate oversampling for far-field, and oversample geometry
