@@ -108,7 +108,13 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
     nquad = Q.iquad(end)-1;
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S,Q,eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S,Q,eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -146,8 +152,8 @@ function [densities, varargout] = solver(S, einc, hinc, eps, om, rep_params, opt
 
 
 % Call the solver 
-    mex_id_ = 'em_muller_trans_solver_guru(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c io int64_t[x], c io double[x], c io double[x], c io dcomplex[xx])';
-[niter, errs, rres, densities] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, rhs, nnz, row_ptr, col_ind, iquad, nquad, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, densities, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 5, 1, npts, 4, 1, nptsp1, nnz, nnzp1, 1, nquad, nker, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts, 4);
+    mex_id_ = 'em_muller_trans_solver_guru(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i dcomplex[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c io int64_t[x], c io double[x], c io double[x], c io dcomplex[xx])';
+[niter, errs, rres, densities] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, maxit, rhs, nnz, row_ptr, col_ind, iquad, nquad, wnear, ifcorr, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, densities, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 5, 1, npts, 4, 1, nptsp1, nnz, nnzp1, 1, nquad, nker, 1, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts, 4);
 
     errs = errs(1:niter);
     varargout{1} = errs;

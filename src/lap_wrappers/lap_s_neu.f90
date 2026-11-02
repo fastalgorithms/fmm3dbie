@@ -44,11 +44,19 @@
 !        off-surface with user-provided near-information prescribed in
 !        row-sparse compressed format
 !
+!    - getnearcorr_lap_s_neu, getnearcorr_lap_s_neu_eval: same as the
+!        two routines above, minus the smooth quadrature rule
+!        oversampled to user-provided orders, so that the evaluators
+!        below can skip the subtraction step (ifcorr = 1)
+!
 !    - lpcomp_lap_s_neu_addsub: apply the principal value part
 !        of the integeral equation on surface. On input, user provides
 !        precomputed near quadrature in row-sparse compressed format,
 !        and oversampling information for handling the far part of the
 !        computation
+!
+!    - lpcomp_lap_s_neu_corr: same as lpcomp_lap_s_neu_addsub, with
+!        the near quadrature from getnearcorr_lap_s_neu
 !
 !    - lap_s_neu_eval_addsub: compute the solution u at a
 !        collection of targets (on-surface or off-surface), given \sigma.
@@ -218,11 +226,78 @@
 !
 !
 !
-      subroutine lpcomp_lap_s_neu_addsub(npatches, norders, ixyzs, &
+      subroutine getnearcorr_lap_s_neu(npatches, norders, &
+       ixyzs, iptype, npts, srccoefs, srcvals, eps, iquadtype, nnz, &
+       row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_lap_s_neu, minus the smooth quadrature rule
+!  oversampled to novers, i.e. the near quadrature correction for
+!  the Neumann data of the representation:
+!
+!  u = S_{0}[\rho]
+!
+!  The result is meant for lap_s_neu_solver_guru and
+!  lpcomp_lap_s_neu_corr, with the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_lap_s_neu
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: real *8(nquad)
+!        The near quadrature correction for S_{0}'
+!
+      implicit none
+      integer *8, intent(in) :: npatches, norders(npatches)
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      integer *8, intent(in) :: npts
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+      real *8, intent(in) :: eps
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz), iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: nquad
+      integer *8, intent(in) :: novers(npatches)
+      real *8, intent(out) :: wnear(nquad)
+
+      integer *8 ndtarg, ndd, ndz, ndi, nker, iker, ipars(1)
+      real *8 dpars(1)
+      complex *16 zpars(1)
+      procedure (), pointer :: fker
+      external l3d_sprime
+
+      call getnearquad_lap_s_neu(npatches, norders, ixyzs, iptype, &
+        npts, srccoefs, srcvals, eps, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+
+      fker => l3d_sprime
+      ndd = 0
+      ndz = 0
+      ndi = 0
+      ndtarg = 12
+      nker = 1
+      iker = 1
+      call dgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, npts, srcvals, novers, fker, ndd, &
+        dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+        nquad, nker, iker, wnear)
+
+      return
+      end subroutine getnearcorr_lap_s_neu
+!
+!
+!
+!
+!
+      subroutine lpcomp_lap_s_neu_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
         ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
-        novers, nptso, ixyzso, srcover, whtsover, lwork, work, ndim, &
-        sigma, pot)
+        ifcorr, novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
+        ndim, sigma, pot)
 !
 !  This subroutine evaluates the Neumann data corresponding to
 !  the following integral representation:
@@ -313,6 +388,12 @@
 !        number of kernels in quadrature correction, must be 1
 !    - wnear: real *8(nker, nquad)
 !        precomputed quadrature corrections            
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_lap_s_neu, the oversampled
+!            smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_lap_s_neu with the same
+!            novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -358,6 +439,7 @@
       
       integer *8, intent(in) :: nker
       real *8, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
@@ -490,32 +572,34 @@
 !     Remove near contribution of the FMM
 !
 
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, j, jpatch, srctmp2) &
 !$OMP PRIVATE(ctmp2, l, jstart, nss, pottmp, gradtmp)
-      do i = 1,npts
-        nss = 0
-        do j = row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l = ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss + 1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
-            ctmp2(nss) = charges(l)
+        do i = 1,npts
+          nss = 0
+          do j = row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l = ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss + 1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
+              ctmp2(nss) = charges(l)
+            enddo
           enddo
+
+          pottmp = 0
+          gradtmp(1) = 0
+          gradtmp(2) = 0
+          gradtmp(3) = 0
+
+          call l3ddirectcg(nd, srctmp2, ctmp2, nss, srctmp(1,i), &
+            ntarg0, pottmp, gradtmp, thresh)
+          pot(i) = pot(i) - gradtmp(1)*srcvals(10,i) - &
+            gradtmp(2)*srcvals(11,i) - gradtmp(3)*srcvals(12,i)
         enddo
-
-        pottmp = 0
-        gradtmp(1) = 0
-        gradtmp(2) = 0
-        gradtmp(3) = 0
-
-        call l3ddirectcg(nd, srctmp2, ctmp2, nss, srctmp(1,i), &
-          ntarg0, pottmp, gradtmp, thresh)
-        pot(i) = pot(i) - gradtmp(1)*srcvals(10,i) - &
-          gradtmp(2)*srcvals(11,i) - gradtmp(3)*srcvals(12,i)
-      enddo
 !$OMP END PARALLEL DO      
+      endif
 
       rint = 0
 !$OMP PARALLEL DO DEFAULT(SHARED) REDUCTION(+:rint)
@@ -531,7 +615,130 @@
 !$OMP END PARALLEL DO
 
       return
+      end subroutine lpcomp_lap_s_neu_guru
+!
+!
+!
+!
+!
+      subroutine lpcomp_lap_s_neu_addsub(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        novers, nptso, ixyzso, srcover, whtsover, lwork, work, ndim, &
+        sigma, pot)
+!
+!  This subroutine evaluates the Neumann data of u = S_{0}[\sigma],
+!  with wnear from getnearquad_lap_s_neu.
+!
+!  Calling sequence as required by dgmres_guru, see
+!  lpcomp_lap_s_neu_guru for the arguments.
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+
+      real *8, intent(in) :: eps
+
+      integer *8, intent(in) :: ndd, ndz, ndi
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+
+      integer *8, intent(in) :: nnz, nquad
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+
+      integer *8, intent(in) :: nker
+      real *8, intent(in) :: wnear(nker,nquad)
+
+      integer *8, intent(in) :: nptso
+      integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
+      real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
+
+      integer *8, intent(in) :: lwork
+      real *8, intent(in) :: work(lwork)
+
+      integer *8, intent(in) :: ndim
+
+      real *8, intent(in) :: sigma(npts)
+
+      real *8, intent(out) :: pot(npts)
+
+      integer *8 ifcorr
+
+      ifcorr = 0
+      call lpcomp_lap_s_neu_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        ifcorr, novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
+        ndim, sigma, pot)
+
+      return
       end subroutine lpcomp_lap_s_neu_addsub
+!
+!
+!
+!
+!
+      subroutine lpcomp_lap_s_neu_corr(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        novers, nptso, ixyzso, srcover, whtsover, lwork, work, ndim, &
+        sigma, pot)
+!
+!  This subroutine evaluates the Neumann data of u = S_{0}[\sigma],
+!  with wnear from getnearcorr_lap_s_neu (computed with the same
+!  novers), so that no subtraction is needed.
+!
+!  Calling sequence as required by dgmres_guru, see
+!  lpcomp_lap_s_neu_guru for the arguments.
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+
+      real *8, intent(in) :: eps
+
+      integer *8, intent(in) :: ndd, ndz, ndi
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+
+      integer *8, intent(in) :: nnz, nquad
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+
+      integer *8, intent(in) :: nker
+      real *8, intent(in) :: wnear(nker,nquad)
+
+      integer *8, intent(in) :: nptso
+      integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
+      real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
+
+      integer *8, intent(in) :: lwork
+      real *8, intent(in) :: work(lwork)
+
+      integer *8, intent(in) :: ndim
+
+      real *8, intent(in) :: sigma(npts)
+
+      real *8, intent(out) :: pot(npts)
+
+      integer *8 ifcorr
+
+      ifcorr = 1
+      call lpcomp_lap_s_neu_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        ifcorr, novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
+        ndim, sigma, pot)
+
+      return
+      end subroutine lpcomp_lap_s_neu_corr
 !
 !
 !
@@ -666,7 +873,7 @@
 !
       real *8 did, dtmp
       complex *16 ztmp
-      integer *8 nker
+      integer *8 nker, ifcorr
 
 
       done = 1
@@ -777,19 +984,20 @@
       call cpu_time(t1)
 !$      t1 = omp_get_wtime()      
 
-      call getnearquad_lap_s_neu(npatches, norders, &
+      call getnearcorr_lap_s_neu(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, eps, iquadtype, &
-        nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+        nnz, row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear)
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()     
 
       print *, "done generating near quadrature, now starting gmres"
       
       nker = 1
+      ifcorr = 1
       call lap_s_neu_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, numit, ifinout, &
-        rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
-        npts_over, ixyzso, srcover, wover, eps_gmres, niter, &
+        rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
+        novers, npts_over, ixyzso, srcover, wover, eps_gmres, niter, &
         errs, rres, soln)
       
       return
@@ -802,8 +1010,8 @@
 
       subroutine lap_s_neu_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, numit, ifinout, &
-        rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
-        nptso, ixyzso, srcover, whtsover, eps_gmres, niter, &
+        rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
+        novers, nptso, ixyzso, srcover, whtsover, eps_gmres, niter, &
         errs, rres, soln)
 !
 !
@@ -882,6 +1090,11 @@
 !        number of kernels in quadrature correction
 !    - wnear: real *8(nker, nquad)
 !        precomputed quadrature corrections 
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_lap_s_neu
+!          * ifcorr = 1, from getnearcorr_lap_s_neu with the same
+!            novers, the subtraction step is skipped
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -930,6 +1143,7 @@
 
       integer *8, intent(in) :: nker
       real *8, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: novers(npatches), ixyzso(npatches+1)
@@ -940,7 +1154,7 @@
       real *8 did, rint
 
       procedure (), pointer :: fker
-      external lpcomp_lap_s_neu_addsub
+      external lpcomp_lap_s_neu_addsub, lpcomp_lap_s_neu_corr
 
       integer *8 ndd, ndi, ndz, lwork, ndim, i
       real *8 work
@@ -954,6 +1168,7 @@
 
       did = 0.5d0*(-1)**(ifinout)
       fker => lpcomp_lap_s_neu_addsub
+      if (ifcorr.eq.1) fker => lpcomp_lap_s_neu_corr
 
       ndd = 1
       ndi = 0
@@ -1119,6 +1334,61 @@
 
       return
       end
+!
+!
+!
+!
+!
+      subroutine getnearcorr_lap_s_neu_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, &
+        targs, ipatch_id, uvs_targ, eps, iquadtype, nnz, &
+        row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_lap_s_neu_eval, minus the smooth quadrature rule
+!  oversampled to novers, i.e. the near quadrature correction for
+!  S_{0}, to be used with lap_s_neu_eval_addsub with ifcorr = 1
+!  and the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, iquadtype,
+!      nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_lap_s_neu_eval
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: real *8(nquad)
+!        The near quadrature correction for S_{0}
+!
+      implicit none
+      integer *8, intent(in) :: npatches, norders(npatches), npts, nquad
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iquadtype
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg, ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz), iquad(nnz+1)
+      integer *8, intent(in) :: novers(npatches)
+      real *8, intent(out) :: wnear(nquad)
+
+      real *8 dpars(2)
+
+      dpars(1) = 1.0d0
+      dpars(2) = 0.0d0
+
+      call getnearcorr_lap_comb_dir_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, &
+        targs, ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, &
+        row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear)
+
+      return
+      end
 !      
 !
 !
@@ -1225,7 +1495,7 @@
       subroutine lap_s_neu_eval_addsub(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, &
         nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
         ndim_s, sigma, ipotflag, ndim_p, pot)
 !
@@ -1320,6 +1590,12 @@
 !        number of kernels in quadrature correction, must be 1
 !    - wnear: real *8(nker, nquad)
 !        precomputed quadrature corrections            
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_lap_s_neu_eval, the
+!            oversampled smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_lap_s_neu_eval with the same
+!            novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -1379,6 +1655,7 @@
         
       integer *8, intent(in) :: nker
       real *8, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
   
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
@@ -1402,7 +1679,7 @@
       call lap_comb_dir_eval_addsub(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars_use, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, &
         nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
         ndim_s, sigma, ipotflag, ndim_p, pot)
 

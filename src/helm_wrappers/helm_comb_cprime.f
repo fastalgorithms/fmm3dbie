@@ -25,6 +25,11 @@ c
 c    - getnearquad_helm_comb_cprime_eval: compute near quadrature for
 c        general (on or off surface) targets
 c
+c    - getnearcorr_helm_comb_cprime, getnearcorr_helm_comb_cprime_eval:
+c        same as the two routines above, minus the smooth quadrature
+c        rule oversampled to user-provided orders, for use with
+c        helm_comb_cprime_eval_addsub with ifcorr = 1
+c
 c    - helm_comb_cprime_eval: evaluate the layer potential at a
 c        collection of targets using the combined prime kernel
 c
@@ -221,6 +226,139 @@ c       with beta = 0 the kernel is alpha*S'
      1     ipatch_id,uvs_targ,eps,ipv,fker,ndd,dpars,ndz,zpars,
      1     ndi,ipars,nnz,row_ptr,col_ind,iquad,rfac0,nquad,wnear)
       endif
+
+      return
+      end
+c
+c
+c
+c
+c
+      subroutine getnearcorr_helm_comb_cprime(npatches, norders,
+     1   ixyzs, iptype, npts, srccoefs, srcvals,
+     2   eps, zpars, iquadtype, nnz, row_ptr, col_ind,
+     3   iquad, rfac0, nquad, novers, wnear)
+c
+c  This subroutine generates the near quadrature of
+c  getnearquad_helm_comb_cprime, minus the smooth quadrature rule
+c  oversampled to novers, for the combined prime representation
+c  K = (\alpha S_{k}' + \beta D_{k}')[\sigma], i.e. the near
+c  quadrature correction for on-surface targets.
+c
+c  Input arguments:
+c    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+c      eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0,
+c      nquad:
+c        as in getnearquad_helm_comb_cprime
+c    - novers: integer *8(npatches)
+c        order of discretization for oversampled sources
+c
+c  Output arguments
+c    - wnear: complex *16(nquad)
+c        the near quadrature correction for K
+c
+      implicit none
+      integer *8, intent(in) :: npatches,norders(npatches),npts,nquad
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iquadtype
+      complex *16, intent(in) :: zpars(3)
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(npts+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(nquad)
+
+      integer *8 ndtarg,ndd,ndz,ndi,nker,iker,ipars(1)
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external h3d_combprime
+
+      call getnearquad_helm_comb_cprime(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,eps,zpars,iquadtype,nnz,
+     2  row_ptr,col_ind,iquad,rfac0,nquad,wnear)
+
+      fker => h3d_combprime
+      ndd = 0
+      ndz = 3
+      ndi = 0
+      ndtarg = 12
+      nker = 1
+      iker = 1
+      call zgetnearquadsub(npatches,norders,ixyzs,iptype,npts,
+     1  srccoefs,srcvals,ndtarg,npts,srcvals,novers,fker,ndd,dpars,
+     2  ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad,nker,iker,
+     3  wnear)
+
+      return
+      end
+c
+c
+c
+c
+c
+      subroutine getnearcorr_helm_comb_cprime_eval(npatches,norders,
+     1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
+     2   ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,
+     3   iquad,rfac0,nquad,novers,wnear)
+c
+c  This subroutine generates the near quadrature of
+c  getnearquad_helm_comb_cprime_eval, minus the smooth quadrature
+c  rule oversampled to novers, for the combined prime
+c  representation K = (\alpha S_{k}' + \beta D_{k}')[\sigma].
+c  The result is the near quadrature correction for
+c  helm_comb_cprime_eval_addsub with ifcorr = 1, and the same novers.
+c
+c  Input arguments:
+c    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+c      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars,
+c      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+c        as in getnearquad_helm_comb_cprime_eval
+c    - novers: integer *8(npatches)
+c        order of discretization for oversampled sources
+c
+c  Output arguments
+c    - wnear: complex *16(nquad)
+c        the near quadrature correction for K
+c
+      implicit none
+      integer *8, intent(in) :: npatches,norders(npatches),npts,nquad
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: ndtarg,ntarg
+      integer *8, intent(in) :: iquadtype
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      complex *16, intent(in) :: zpars(3)
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(nquad)
+
+      integer *8 ndd,ndz,ndi,nker,iker,ipars(1)
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external h3d_combprime
+
+      call getnearquad_helm_comb_cprime_eval(npatches,norders,ixyzs,
+     1  iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,
+     2  uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,
+     3  nquad,wnear)
+
+      fker => h3d_combprime
+      ndd = 0
+      ndz = 3
+      ndi = 0
+      nker = 1
+      iker = 1
+      call zgetnearquadsub(npatches,norders,ixyzs,iptype,npts,
+     1  srccoefs,srcvals,ndtarg,ntarg,targs,novers,fker,ndd,dpars,
+     2  ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad,nker,iker,
+     3  wnear)
 
       return
       end
@@ -477,7 +615,7 @@ C$OMP PARALLEL DO DEFAULT(SHARED)
       enddo
 C$OMP END PARALLEL DO
 
-      call get_fmm_thresh(int8_12,ns,srcover,int8_12,ntarg,srctmp,
+      call get_fmm_thresh(int8_12,ns,srcover,int8_3,ntarg,srctmp,
      1  thresh)
 
 c     Add precomputed near-field quadrature
@@ -553,7 +691,7 @@ c
       subroutine helm_comb_cprime_eval_addsub(npatches,norders,ixyzs,
      1   iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
      2   eps,ndd,dpars,ndz,zpars,ndi,ipars,
-     3   nnz,row_ptr,col_ind,iquad,nquad,nker,wnear,novers,
+     3   nnz,row_ptr,col_ind,iquad,nquad,nker,wnear,ifcorr,novers,
      4   nptso,ixyzso,srcover,whtsover,lwork,work,idensflag,
      5   ndim_s,sigma,ipotflag,ndim_p,pot)
 c
@@ -603,6 +741,12 @@ c    - nquad: integer *8
 c    - nker: integer *8 (must be 1)
 c    - wnear: complex *16(nker,nquad)
 c        precomputed near quadrature for K = alpha*S_k' + beta*D_k'
+c    - ifcorr: integer *8
+c        type of near quadrature in wnear
+c          * ifcorr = 0, from getnearquad_helm_comb_cprime_eval, the
+c            oversampled smooth rule is subtracted here
+c          * ifcorr = 1, from getnearcorr_helm_comb_cprime_eval with
+c            the same novers, no subtraction is needed
 c    - novers: integer *8(npatches)
 c    - nptso: integer *8
 c    - ixyzso: integer *8(npatches+1)
@@ -636,6 +780,7 @@ c
       integer *8, intent(in) :: iquad(nnz+1)
       integer *8, intent(in) :: nker
       complex *16, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: ixyzso(npatches+1),novers(npatches)
       real *8, intent(in) :: srcover(12,nptso),whtsover(nptso)
@@ -661,9 +806,10 @@ c
 
       integer *8 ier
       integer *8 nd,ntarg0
-      integer *8 int8_12
+      integer *8 int8_3,int8_12
 
       parameter (nd=1,ntarg0=1)
+      int8_3 = 3
       int8_12 = 12
 
       ns = nptso
@@ -732,7 +878,7 @@ C$OMP PARALLEL DO DEFAULT(SHARED)
       enddo
 C$OMP END PARALLEL DO
 
-      call get_fmm_thresh(int8_12,ns,srcover,int8_12,ntarg,srctmp,
+      call get_fmm_thresh(int8_12,ns,srcover,int8_3,ntarg,srctmp,
      1  thresh)
 
 c     add precomputed near quadrature
@@ -752,51 +898,53 @@ C$OMP$PRIVATE(jstart,pottmp,npols,l)
 C$OMP END PARALLEL DO
 
 c     subtract near FMM contribution (add-subtract correction)
-      call get_near_corr_max(ntarg,row_ptr,nnz,col_ind,npatches,
-     1  ixyzso,nmax)
-      allocate(srctmp2(3,nmax),ctmp2(nmax),dtmp2(3,nmax))
+      if (ifcorr.ne.1) then
+        call get_near_corr_max(ntarg,row_ptr,nnz,col_ind,npatches,
+     1    ixyzso,nmax)
+        allocate(srctmp2(3,nmax),ctmp2(nmax),dtmp2(3,nmax))
 
 C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2)
 C$OMP$PRIVATE(ctmp2,dtmp2,nss,l,jstart,pottmp,gradtmp)
-      do i=1,ntarg
-        nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss+1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
-            if(ifcharge.eq.1) ctmp2(nss)   = charges(l)
-            if(ifdipole.eq.1) then
-              dtmp2(1,nss) = dipvec(1,l)
-              dtmp2(2,nss) = dipvec(2,l)
-              dtmp2(3,nss) = dipvec(3,l)
-            endif
+        do i=1,ntarg
+          nss = 0
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss+1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
+              if(ifcharge.eq.1) ctmp2(nss)   = charges(l)
+              if(ifdipole.eq.1) then
+                dtmp2(1,nss) = dipvec(1,l)
+                dtmp2(2,nss) = dipvec(2,l)
+                dtmp2(3,nss) = dipvec(3,l)
+              endif
+            enddo
           enddo
+
+          pottmp = 0
+          gradtmp(1) = 0
+          gradtmp(2) = 0
+          gradtmp(3) = 0
+
+          if(ifcharge.eq.1.and.ifdipole.eq.1) then
+            call h3ddirectcdg(nd,zpars(1),srctmp2,ctmp2,dtmp2,
+     1        nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+          elseif(ifcharge.eq.1.and.ifdipole.eq.0) then
+            call h3ddirectcg(nd,zpars(1),srctmp2,ctmp2,
+     1        nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+          elseif(ifcharge.eq.0.and.ifdipole.eq.1) then
+            call h3ddirectdg(nd,zpars(1),srctmp2,dtmp2,
+     1        nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
+          endif
+
+          pot(i) = pot(i) - (gradtmp(1)*targs(10,i) +
+     1                       gradtmp(2)*targs(11,i) +
+     2                       gradtmp(3)*targs(12,i))
         enddo
-
-        pottmp = 0
-        gradtmp(1) = 0
-        gradtmp(2) = 0
-        gradtmp(3) = 0
-
-        if(ifcharge.eq.1.and.ifdipole.eq.1) then
-          call h3ddirectcdg(nd,zpars(1),srctmp2,ctmp2,dtmp2,
-     1      nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
-        elseif(ifcharge.eq.1.and.ifdipole.eq.0) then
-          call h3ddirectcg(nd,zpars(1),srctmp2,ctmp2,
-     1      nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
-        elseif(ifcharge.eq.0.and.ifdipole.eq.1) then
-          call h3ddirectdg(nd,zpars(1),srctmp2,dtmp2,
-     1      nss,srctmp(1,i),ntarg0,pottmp,gradtmp,thresh)
-        endif
-
-        pot(i) = pot(i) - (gradtmp(1)*targs(10,i) +
-     1                     gradtmp(2)*targs(11,i) +
-     2                     gradtmp(3)*targs(12,i))
-      enddo
 C$OMP END PARALLEL DO
+      endif
 
       return
       end

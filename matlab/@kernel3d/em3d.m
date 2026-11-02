@@ -72,6 +72,7 @@ switch lower(type)
 
         obj.getquad = @(S,eps,varargin) rsc_to_sparse_bc( ...
             em3d_nrccie_bc_getquad(S, eps, zk, alpha, varargin{:}), S);
+        obj.getquad_sub = true;
 
         obj.get_overs_orders = @(S,t,eps) ...
             kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
@@ -97,6 +98,7 @@ switch lower(type)
 
         obj.getquad = @(S,eps,varargin) rsc_to_sparse_eval( ...
             em3d_nrccie_eval_getquad(S, eps, zk, varargin{:}), S, zk);
+        obj.getquad_sub = true;
 
         obj.get_overs_orders = @(S,t,eps) ...
             kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);

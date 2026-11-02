@@ -43,11 +43,20 @@
 !        with user-provided near-information prescribed in 
 !        row-sparse compressed format
 !
+!    - getnearcorr_helm_rpcomb_imp: same as getnearquad_helm_rpcomb_imp,
+!        minus the smooth quadrature rule oversampled to user-provided
+!        orders, so that the solver can skip the subtraction step
+!        (ifcorr = 1)
+!
 !    - lpcomp_helm_rpcomb_imp_addsub: Apply the principal value part
 !        of the integral equation on surface. On input, user
 !        provides precomputed near quadrature in row-sparse
 !        compressed format, and oversampling information for 
 !        handling the far part of the computation
+!
+!    - lpcomp_helm_rpcomb_imp_corr: same as
+!        lpcomp_helm_rpcomb_imp_addsub, with the near quadrature from
+!        getnearcorr_helm_rpcomb_imp
 !
 !    - helm_rpcomb_imp_solver_guru: Guru solver routine, 
 !        where user is responsible for providing precomputed
@@ -57,6 +66,11 @@
 !    - getnearquad_helm_rpcomb_imp_eval: Generate quadrature
 !        for the post-processor, where targets can be in the volume
 !        or on surface
+!
+!    - getnearcorr_helm_rpcomb_imp_eval: same as
+!        getnearquad_helm_rpcomb_imp_eval, minus the smooth quadrature
+!        rule oversampled to user-provided orders, for
+!        helm_rpcomb_eval_addsub with ifcorr = 1
 !   
 !    - helm_rpcomb_imp_solver_memest: estimate the memory required
 !        for the solver with minimal computation
@@ -384,10 +398,121 @@
 !
 !
 !
-      subroutine lpcomp_helm_rpcomb_imp_addsub(npatches, norders, &
+      subroutine getnearcorr_helm_rpcomb_imp(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, zpars, iquadtype, nnz, row_ptr, col_ind, &
+        iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_helm_rpcomb_imp, minus the smooth quadrature rule
+!  oversampled to novers for each of the six kernels, i.e. the near
+!  quadrature corrections for helm_rpcomb_imp_solver_guru and
+!  lpcomp_helm_rpcomb_imp_corr, with the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0,
+!      nquad:
+!        as in getnearquad_helm_rpcomb_imp
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: complex *16(6,nquad)
+!        The near quadrature corrections, in the same order as in
+!        getnearquad_helm_rpcomb_imp
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
+      real *8, intent(in) :: eps
+      complex *16, intent(in) :: zpars(2)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: nquad
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(6,nquad)
+
+      complex *16 zpars_tmp(2), ima
+      integer *8 ndtarg, ndd, ndz, ndi, nker, ipars(1)
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external h3d_sprime, h3d_slp, h3d_dlp, h3d_dprime_diff
+      data ima/(0.0d0,1.0d0)/
+
+      call getnearquad_helm_rpcomb_imp(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, &
+        row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+
+      ndd = 0
+      ndi = 0
+      ndtarg = 12
+      nker = 6
+
+      zpars_tmp(1) = zpars(1)
+      ndz = 1
+      fker => h3d_sprime
+      call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, npts, srcvals, novers, fker, ndd, &
+        dpars, ndz, zpars_tmp, ndi, ipars, nnz, row_ptr, col_ind, &
+        iquad, nquad, nker, 1_8, wnear)
+
+      zpars_tmp(1) = ima*abs(zpars(1))
+      ndz = 1
+      fker => h3d_slp
+      call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, npts, srcvals, novers, fker, ndd, &
+        dpars, ndz, zpars_tmp, ndi, ipars, nnz, row_ptr, col_ind, &
+        iquad, nquad, nker, 2_8, wnear)
+
+      zpars_tmp(1) = ima*abs(zpars(1))
+      ndz = 1
+      fker => h3d_sprime
+      call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, npts, srcvals, novers, fker, ndd, &
+        dpars, ndz, zpars_tmp, ndi, ipars, nnz, row_ptr, col_ind, &
+        iquad, nquad, nker, 3_8, wnear)
+
+      zpars_tmp(1) = zpars(1)
+      zpars_tmp(2) = ima*abs(zpars(1))
+      ndz = 2
+      fker => h3d_dprime_diff
+      call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, npts, srcvals, novers, fker, ndd, &
+        dpars, ndz, zpars_tmp, ndi, ipars, nnz, row_ptr, col_ind, &
+        iquad, nquad, nker, 4_8, wnear)
+
+      zpars_tmp(1) = zpars(1)
+      ndz = 1
+      fker => h3d_slp
+      call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, npts, srcvals, novers, fker, ndd, &
+        dpars, ndz, zpars_tmp, ndi, ipars, nnz, row_ptr, col_ind, &
+        iquad, nquad, nker, 5_8, wnear)
+
+      zpars_tmp(1) = zpars(1)
+      ndz = 1
+      fker => h3d_dlp
+      call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, npts, srcvals, novers, fker, ndd, &
+        dpars, ndz, zpars_tmp, ndi, ipars, nnz, row_ptr, col_ind, &
+        iquad, nquad, nker, 6_8, wnear)
+
+      return
+      end subroutine getnearcorr_helm_rpcomb_imp
+!
+!
+!
+!
+!
+      subroutine lpcomp_helm_rpcomb_imp_guru(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
-        row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, nptso, &
         ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
 
 !
@@ -487,6 +612,12 @@
 !        number of kernels in quadrature correction, must be 6
 !    - wnear: complex *16(nker, nquad)
 !        precomputed quadrature corrections            
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_helm_rpcomb_imp, the
+!            oversampled smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_helm_rpcomb_imp with the
+!            same novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -533,6 +664,7 @@
 
       integer *8, intent(in) :: nker
       complex *16, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
@@ -685,34 +817,36 @@
       ifcharge = 1
       ifdipole = 0 
 
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, j, jpatch, srctmp2) &
 !$OMP PRIVATE(ctmp2, l, jstart, nss, pottmp, gradtmp, zfac)
-      do i=1,npts
-        nss = 0
-        zfac = ima*zpars(1)*zlams(i)
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss+1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
-            ctmp2(nss) = charges(l)
+        do i=1,npts
+          nss = 0
+          zfac = ima*zpars(1)*zlams(i)
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss+1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
+              ctmp2(nss) = charges(l)
+            enddo
           enddo
+
+          pottmp = 0
+          gradtmp(1) = 0
+          gradtmp(2) = 0
+          gradtmp(3) = 0
+
+          call h3ddirectcg(nd, zpars(1), srctmp2, ctmp2, nss, &
+            srctmp(1,i), ntarg0, pottmp, gradtmp, thresh)
+          pot(i) = pot(i) - gradtmp(1)*srcvals(10,i) - &
+            gradtmp(2)*srcvals(11,i) - gradtmp(3)*srcvals(12,i)
+          pot(i) = pot(i) - pottmp*zfac
         enddo
-
-        pottmp = 0
-        gradtmp(1) = 0
-        gradtmp(2) = 0
-        gradtmp(3) = 0
-
-        call h3ddirectcg(nd, zpars(1), srctmp2, ctmp2, nss, &
-          srctmp(1,i), ntarg0, pottmp, gradtmp, thresh)
-        pot(i) = pot(i) - gradtmp(1)*srcvals(10,i) - &
-          gradtmp(2)*srcvals(11,i) - gradtmp(3)*srcvals(12,i)
-        pot(i) = pot(i) - pottmp*zfac
-      enddo
 !$OMP END PARALLEL DO      
+      endif
 
 !
 !
@@ -761,31 +895,33 @@
 !     Remove near contribution of the FMM
 !
 
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, j, jpatch, srctmp2) &
 !$OMP PRIVATE(ctmp2, nss, l, pottmp, gradtmp)
-      do i=1,npts
-        nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss+1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
-            ctmp2(nss)= charges(l) 
+        do i=1,npts
+          nss = 0
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss+1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
+              ctmp2(nss)= charges(l)
+            enddo
           enddo
+          pottmp = 0
+          gradtmp(1) = 0
+          gradtmp(2) = 0
+          gradtmp(3) = 0
+          call h3ddirectcg(nd, ztmp, srctmp2, ctmp2, nss, srctmp(1,i), &
+            ntarg0, pottmp, gradtmp, thresh)
+          phi1(i) = phi1(i) - pottmp
+          phi2(i) = phi2(i) - gradtmp(1)*srcvals(10,i) - &
+            gradtmp(2)*srcvals(11,i) - gradtmp(3)*srcvals(12,i)
         enddo
-        pottmp = 0
-        gradtmp(1) = 0
-        gradtmp(2) = 0
-        gradtmp(3) = 0
-        call h3ddirectcg(nd, ztmp, srctmp2, ctmp2, nss, srctmp(1,i), &
-          ntarg0, pottmp, gradtmp, thresh)
-        phi1(i) = phi1(i) - pottmp  
-        phi2(i) = phi2(i) - gradtmp(1)*srcvals(10,i) - &
-          gradtmp(2)*srcvals(11,i) - gradtmp(3)*srcvals(12,i)
-      enddo
 !$OMP END PARALLEL DO      
+      endif
 !
 !  End of computing phi1 = S_{i|k|}[\sigma]
 !  and phi2 = S_{i|k|}'[\sigma]
@@ -855,26 +991,28 @@
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, j, jpatch, srctmp2) &
 !$OMP PRIVATE(ctmp2, nss, l, jstart, pottmp, gradtmp)
       do i=1,npts
-        nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss+1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
-            ctmp2(nss) = charges(l) 
+        if (ifcorr.ne.1) then
+          nss = 0
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss+1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
+              ctmp2(nss) = charges(l)
+            enddo
           enddo
-        enddo
-        pottmp = 0
-        gradtmp(1) = 0
-        gradtmp(2) = 0
-        gradtmp(3) = 0
+          pottmp = 0
+          gradtmp(1) = 0
+          gradtmp(2) = 0
+          gradtmp(3) = 0
 
-        call h3ddirectcg(nd, ztmp, srctmp2, ctmp2, nss, srctmp(1,i), &
-          ntarg0, pottmp, gradtmp, thresh)
-        pot_aux(i) = pot_aux(i) - gradtmp(1)*srcvals(10,i) - &
-          gradtmp(2)*srcvals(11,i) - gradtmp(3)*srcvals(12,i)
+          call h3ddirectcg(nd, ztmp, srctmp2, ctmp2, nss, srctmp(1,i), &
+            ntarg0, pottmp, gradtmp, thresh)
+          pot_aux(i) = pot_aux(i) - gradtmp(1)*srcvals(10,i) - &
+            gradtmp(2)*srcvals(11,i) - gradtmp(3)*srcvals(12,i)
+        endif
         pot(i) = pot(i) + ima*zpars(2)*pot_aux(i)
       enddo
 !$OMP END PARALLEL DO      
@@ -965,28 +1103,32 @@
       do i=1,npts
         nss = 0
         zfac = zpars(1)*zpars(2)*zlams(i)
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss + 1
-            srctmp2(1:3,nss) = srcover(1:3,l)
-            dtmp2(1:3,nss) = dipvec(1:3,l) 
-            pottmp = 0
-            rr = sqrt((srcover(1,l) - srcvals(1,i))**2 + &
-              (srcover(2,l) - srcvals(2,i))**2 + &
-              (srcover(3,l) - srcvals(3,i))**2)
-            if(rr.lt.thresh) goto 1311
-            call h3d_dprime_diff(srcover(1,l), int8_12, srcvals(1,i), &
-              nddtmp, dpars, ndztmp, zpars2, nditmp, ipars, pottmp)
-            pot_aux(i) = pot_aux(i) - pottmp*sigmaover(l)*whtsover(l)
- 1311       continue
+        if (ifcorr.ne.1) then
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss + 1
+              srctmp2(1:3,nss) = srcover(1:3,l)
+              dtmp2(1:3,nss) = dipvec(1:3,l)
+              pottmp = 0
+              rr = sqrt((srcover(1,l) - srcvals(1,i))**2 + &
+                (srcover(2,l) - srcvals(2,i))**2 + &
+                (srcover(3,l) - srcvals(3,i))**2)
+              if(rr.lt.thresh) goto 1311
+              call h3d_dprime_diff(srcover(1,l), int8_12, srcvals(1,i), &
+                nddtmp, dpars, ndztmp, zpars2, nditmp, ipars, pottmp)
+              pot_aux(i) = pot_aux(i) - pottmp*sigmaover(l)*whtsover(l)
+   1311       continue
+            enddo
           enddo
-        enddo
+        endif
         pot(i) = pot(i)+ ima*zpars(2)*pot_aux(i)
-        pottmp = 0
-        call h3ddirectdp(nd, zpars(1), srctmp2, dtmp2, nss, &
-          srctmp(1,i), ntarg0, pottmp, thresh)
-        pot(i) = pot(i) + zfac*pottmp
+        if (ifcorr.ne.1) then
+          pottmp = 0
+          call h3ddirectdp(nd, zpars(1), srctmp2, dtmp2, nss, &
+            srctmp(1,i), ntarg0, pottmp, thresh)
+          pot(i) = pot(i) + zfac*pottmp
+        endif
       enddo
 !$OMP END PARALLEL DO      
 
@@ -997,7 +1139,128 @@
 
 
       return
+      end subroutine lpcomp_helm_rpcomb_imp_guru
+!
+!
+!
+!
+!
+      subroutine lpcomp_helm_rpcomb_imp_addsub(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, &
+        ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
+!
+!  This subroutine evaluates the impedance data of the right
+!  preconditioned combined field representation, with wnear from
+!  getnearquad_helm_rpcomb_imp.
+!
+!  Calling sequence as required by zgmres_guru, see
+!  lpcomp_helm_rpcomb_imp_guru for the arguments.
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+
+      real *8, intent(in) :: eps
+
+      integer *8, intent(in) :: ndd, ndz, ndi
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+
+      integer *8, intent(in) :: nnz, nquad
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+
+      integer *8, intent(in) :: nker
+      complex *16, intent(in) :: wnear(nker,nquad)
+
+      integer *8, intent(in) :: nptso
+      integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
+      real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
+
+      integer *8, intent(in) :: lwork
+      real *8, intent(in) :: work(lwork)
+
+      integer *8, intent(in) :: ndim
+      complex *16, intent(in) :: sigma(npts)
+      complex *16, intent(out) :: pot(npts)
+
+      integer *8 ifcorr
+
+      ifcorr = 0
+      call lpcomp_helm_rpcomb_imp_guru(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, nptso, &
+        ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
+
+      return
       end subroutine lpcomp_helm_rpcomb_imp_addsub
+!
+!
+!
+!
+!
+      subroutine lpcomp_helm_rpcomb_imp_corr(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, &
+        ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
+!
+!  This subroutine evaluates the impedance data of the right
+!  preconditioned combined field representation, with wnear from
+!  getnearcorr_helm_rpcomb_imp (computed with the same novers), so that
+!  no subtraction is needed.
+!
+!  Calling sequence as required by zgmres_guru, see
+!  lpcomp_helm_rpcomb_imp_guru for the arguments.
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches),ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+
+      real *8, intent(in) :: eps
+
+      integer *8, intent(in) :: ndd, ndz, ndi
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+
+      integer *8, intent(in) :: nnz, nquad
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+
+      integer *8, intent(in) :: nker
+      complex *16, intent(in) :: wnear(nker,nquad)
+
+      integer *8, intent(in) :: nptso
+      integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
+      real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
+
+      integer *8, intent(in) :: lwork
+      real *8, intent(in) :: work(lwork)
+
+      integer *8, intent(in) :: ndim
+      complex *16, intent(in) :: sigma(npts)
+      complex *16, intent(out) :: pot(npts)
+
+      integer *8 ifcorr
+
+      ifcorr = 1
+      call lpcomp_helm_rpcomb_imp_guru(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, nptso, &
+        ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
+
+      return
+      end subroutine lpcomp_helm_rpcomb_imp_corr
 !
 !
 !
@@ -1133,7 +1396,7 @@
       real *8 t1, t2
 !$    real *8 omp_get_wtime
 
-      integer *8 nker
+      integer *8 nker, ifcorr
       real *8 rfac, rfac0
       integer *8 iptype_avg, norder_avg
       integer *8 ikerorder, iquadtype, npts_over
@@ -1244,20 +1507,22 @@
       call cpu_time(t1)
 !$      t1 = omp_get_wtime()      
 
-      call getnearquad_helm_rpcomb_imp(npatches, norders, &
+      call getnearcorr_helm_rpcomb_imp(npatches, norders, &
        ixyzs, iptype, npts, srccoefs, srcvals, &
        eps, zpars, iquadtype, nnz, row_ptr, col_ind, &
-       iquad, rfac0, nquad, wnear)
+       iquad, rfac0, nquad, novers, wnear)
 
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()     
       
       print *, "done generating near quadrature, now starting gmres"
 
+      ifcorr = 1
       call helm_rpcomb_imp_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, zpars, zlams, numit, &
         ifinout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, &
-        wnear, novers, npts_over, ixyzso, srcover, wover, eps_gmres, &
+        wnear, ifcorr, novers, npts_over, ixyzso, srcover, wover, &
+        eps_gmres, &
         niter, errs, rres, soln, siksoln)
  
 
@@ -1271,7 +1536,8 @@
       subroutine helm_rpcomb_imp_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, zpars, zlams, numit, & 
         ifinout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, &
-        wnear, novers, nptso, ixyzso, srcover, whtsover, eps_gmres, &
+        wnear, ifcorr, novers, nptso, ixyzso, srcover, whtsover, &
+        eps_gmres, &
         niter, errs, rres, soln, siksoln)
 !
 !
@@ -1364,6 +1630,11 @@
 !                     D_{k}'-D_{i|k|}'
 !        wnear(5,:) - stores the quadrature correction for S_{k}        
 !        wnear(6,:) - stores the quadrature correction for D_{k}        
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_helm_rpcomb_imp
+!          * ifcorr = 1, from getnearcorr_helm_rpcomb_imp with the same
+!            novers, the subtraction steps are skipped
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -1418,6 +1689,7 @@
 
       integer *8, intent(in) :: nker
       complex *16, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: novers(npatches), ixyzso(npatches+1)
@@ -1428,8 +1700,9 @@
 
       complex *16 zid
 
-      procedure (), pointer :: fker
-      external lpcomp_helm_rpcomb_imp_addsub
+      procedure (), pointer :: fker, fsik
+      external lpcomp_helm_rpcomb_imp_addsub, lpcomp_helm_rpcomb_imp_corr
+      external lpcomp_helm_comb_dir_addsub, lpcomp_helm_comb_dir_corr
 
       integer *8 ndd, ndi, ndz, lwork, ndim
       real *8 dpars, work
@@ -1447,6 +1720,7 @@
 
       zid=((-1)**(ifinout)/2.0d0-ima*zpars(2)/4)
       fker => lpcomp_helm_rpcomb_imp_addsub
+      if (ifcorr.eq.1) fker => lpcomp_helm_rpcomb_imp_corr
 
       ndd = 0
       ndi = 1
@@ -1487,7 +1761,9 @@
       ndtarg = 12
       nkertmp = 1
    
-      call lpcomp_helm_comb_dir_addsub(npatches, norders, ixyzs, &
+      fsik => lpcomp_helm_comb_dir_addsub
+      if (ifcorr.eq.1) fsik => lpcomp_helm_comb_dir_corr
+      call fsik(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, &
         zpars_use, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, &
         nkertmp, wnear(2,1:nquad), novers, nptso, ixyzso, srcover, &
@@ -1646,6 +1922,61 @@
         ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
         col_ind, iquad, rfac0, nquad, wnear)
         
+      return
+      end
+!
+!
+!
+!
+!
+      subroutine getnearcorr_helm_rpcomb_imp_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_helm_rpcomb_imp_eval, minus the smooth quadrature
+!  rule oversampled to novers, i.e. the near quadrature corrections
+!  for helm_rpcomb_eval_addsub with ifcorr = 1 and the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars,
+!      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_helm_rpcomb_imp_eval
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: complex *16(2,nquad)
+!        The near quadrature corrections
+!        wnear(1,:) - for S_{k}
+!        wnear(2,:) - for D_{k}
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) ::  srccoefs(9,npts), srcvals(12,npts)
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg, ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: eps
+      complex *16, intent(in) :: zpars(2)
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: nquad
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(2,nquad)
+
+      call getnearcorr_helm_comb_wdd_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, novers, wnear)
+
       return
       end
 !

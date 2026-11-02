@@ -30,6 +30,13 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %    * opts: options struct
 %        opts.format - storage format: 'rsc' (default), 'csc', 'sparse'
 %        opts.quadtype - quadrature type; currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %
 
     [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
@@ -114,6 +121,11 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     nquad = iquad(nnz+1)-1;
     nker = 6;
     wnear = zeros(nker,nquad);
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -124,13 +136,6 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
       end
     end
 
-    if strcmp(qtype,'s')
-    mex_id_ = 'getnearquad_stok_sprime(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
-    else
-    mex_id_ = 'getnearquad_stok_combtrac(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[xx])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
-    end
     Q = [];
     Q.targinfo = targinfo;
     Q.ifcomplex = 0;
@@ -140,6 +145,39 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
 
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if strcmp(qtype,'s')
+    if ifcorr
+      mex_id_ = 'getnearcorr_stok_sprime(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, npatches, nker, nquad);
+    else
+      mex_id_ = 'getnearquad_stok_sprime(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+    end
+    else
+    if ifcorr
+      mex_id_ = 'getnearcorr_stok_combtrac(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, npatches, nker, nquad);
+    else
+      mex_id_ = 'getnearquad_stok_combtrac(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[xx])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, dpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 2, 1, 1, ntp1, nnz, nnzp1, 1, 1, nker, nquad);
+    end
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;

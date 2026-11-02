@@ -11,6 +11,10 @@ c       getnearquad_helm_bel_hank - near field quadrature for the
 c         Helmholtz-Beltrami parametrix H_0(zk|x-y|)/(4i) and for the
 c         associated remainder
 c
+c       getnearcorr_lap_bel_log, getnearcorr_helm_bel_hank - the same,
+c         minus the smooth quadrature rule oversampled to user-provided
+c         orders
+c
 c     Both routines require the mean curvature of the target surface to
 c     be supplied in the 13th component of the target array.
 c
@@ -182,6 +186,76 @@ c
 c
 c
 c
+      subroutine getnearcorr_lap_bel_log(npatches,norders,
+     1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
+     2   ipatch_id,uvs_targ,eps,iktype,iquadtype,nnz,row_ptr,
+     3   col_ind,iquad,rfac0,nquad,novers,wnear)
+c
+c  This subroutine generates the near quadrature of
+c  getnearquad_lap_bel_log, minus the smooth quadrature rule
+c  oversampled to novers, i.e. the near quadrature correction to the
+c  oversampled smooth rule used by an fmm.
+c
+c  Input arguments:
+c    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+c      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, iktype,
+c      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+c        as in getnearquad_lap_bel_log
+c    - novers: integer *8(npatches)
+c        order of discretization for oversampled sources
+c
+c  Output arguments
+c    - wnear: real *8(nquad)
+c        The near quadrature correction
+c
+      implicit none
+      integer *8, intent(in) :: npatches,norders(npatches),npts,nquad
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      integer *8, intent(in) :: ndtarg,ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iktype
+      integer *8, intent(in) :: iquadtype
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: novers(npatches)
+      real *8, intent(out) :: wnear(nquad)
+
+      integer *8 ipars(1),ndd,ndz,ndi,nker,iker
+      real *8 dpars(1)
+      complex *16 zpars(1)
+      procedure (), pointer :: fker
+      external lap_bel_res,lap_bel_log
+
+      call getnearquad_lap_bel_log(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,
+     2  eps,iktype,iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,
+     3  nquad,wnear)
+
+      if(iktype.eq.1) fker=>lap_bel_res
+      if(iktype.eq.2) fker=>lap_bel_log
+      ndd = 0
+      ndz = 1
+      ndi = 0
+      zpars(1) = 0
+      nker = 1
+      iker = 1
+      call dgetnearquadsub(npatches,norders,ixyzs,iptype,npts,
+     1  srccoefs,srcvals,ndtarg,ntarg,targs,novers,fker,ndd,dpars,
+     2  ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad,nker,iker,
+     3  wnear)
+
+      return
+      end
+c
+c
+c
+c
+c
 
       subroutine getnearquad_helm_bel_hank(npatches,norders,
      1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
@@ -343,6 +417,75 @@ c
      5     rfac0,nquad,wnear)
       endif
 
+
+      return
+      end
+c
+c
+c
+c
+c
+      subroutine getnearcorr_helm_bel_hank(npatches,norders,
+     1   ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,ntarg,targs,
+     2   ipatch_id,uvs_targ,eps,zpars,iktype,iquadtype,nnz,row_ptr,
+     3   col_ind,iquad,rfac0,nquad,novers,wnear)
+c
+c  This subroutine generates the near quadrature of
+c  getnearquad_helm_bel_hank, minus the smooth quadrature rule
+c  oversampled to novers, i.e. the near quadrature correction to the
+c  oversampled smooth rule used by an fmm.
+c
+c  Input arguments:
+c    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+c      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars, iktype,
+c      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+c        as in getnearquad_helm_bel_hank
+c    - novers: integer *8(npatches)
+c        order of discretization for oversampled sources
+c
+c  Output arguments
+c    - wnear: complex *16(nquad)
+c        The near quadrature correction
+c
+      implicit none
+      integer *8, intent(in) :: npatches,norders(npatches),npts,nquad
+      integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts),srcvals(12,npts),eps
+      integer *8, intent(in) :: ndtarg,ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: rfac0
+      complex *16, intent(in) :: zpars
+      integer *8, intent(in) :: iktype
+      integer *8, intent(in) :: iquadtype
+      integer *8, intent(in) :: nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1),col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(nquad)
+
+      integer *8 ipars(1),ndd,ndz,ndi,nker,iker
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external helm_bel_res,helm_bel_hank
+
+      call getnearquad_helm_bel_hank(npatches,norders,ixyzs,iptype,
+     1  npts,srccoefs,srcvals,ndtarg,ntarg,targs,ipatch_id,uvs_targ,
+     2  eps,zpars,iktype,iquadtype,nnz,row_ptr,col_ind,iquad,rfac0,
+     3  nquad,wnear)
+
+      if(iktype.eq.1) fker=>helm_bel_res
+      if(iktype.eq.2) fker=>helm_bel_hank
+      ndd = 0
+      ndz = 1
+      ndi = 0
+      nker = 1
+      iker = 1
+      call zgetnearquadsub(npatches,norders,ixyzs,iptype,npts,
+     1  srccoefs,srcvals,ndtarg,ntarg,targs,novers,fker,ndd,dpars,
+     2  ndz,zpars,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad,nker,iker,
+     3  wnear)
 
       return
       end

@@ -211,6 +211,7 @@ c
       ipotflag = 0
       ndim = 1
       ndim_p = 1
+      ifcorr = 0
 
 
       call cpu_time(t1)
@@ -218,7 +219,7 @@ c
       call helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
      1  iptype, npts, srccoefs, srcvals, ndtarg, npts, targs,
      2  eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, 
-     3  col_ind, iquad, nquad, nker, slp_near, nfars, npts_over,
+     3  col_ind, iquad, nquad, nker, slp_near, ifcorr, nfars, npts_over,
      4  ixyzso, srcover, wover, lwork, work, idensflag,  
      5  ndim, dudnval, ipotflag, ndim_p, potslp)
 
@@ -229,7 +230,7 @@ c
       call helm_comb_dir_eval_addsub(npatches, norders, ixyzs,
      1  iptype, npts, srccoefs, srcvals, ndtarg, npts, targs,
      2  eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, 
-     3  col_ind, iquad, nquad, nker, dlp_near, nfars, npts_over,
+     3  col_ind, iquad, nquad, nker, dlp_near, ifcorr, nfars, npts_over,
      4  ixyzso, srcover, wover, lwork, work, idensflag,  
      5  ndim, uval, ipotflag, ndim_p, potdlp)
 
@@ -283,12 +284,17 @@ c
 
       i2 = 0
       if(errl2.lt.1.0d-12) i2 = 1
-      ntests = 2
 
-      nsuccess = i1+i2
+c
+c   near quadrature corrections
+c
+      call test_helm_corr(i3)
+      ntests = 18
+
+      nsuccess = i1+i2+i3
 
       open(unit=33,file='../../print_testres.txt',access='append')
-      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
+      write(33,'(a,i2,a,i2,a)') 'Successfully completed ',nsuccess,
      1  ' out of ',ntests,' in helm_wrappers testing suite'
       close(33)
       

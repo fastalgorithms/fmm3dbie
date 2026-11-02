@@ -182,7 +182,13 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
     nnz = length(Q.col_ind);
     nnzp1 = nnz+1; 
 
-    [novers] = get_oversampling_parameters(S, Q, eps);
+    ifcorr = 0;
+    if isfield(Q,'ifcorr') && Q.ifcorr
+      ifcorr = 1;
+      novers = Q.novers;
+    else
+      [novers] = get_oversampling_parameters(S, Q, eps);
+    end
     Sover = oversample(S,novers);
 
 
@@ -211,8 +217,8 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
       ndim_p = 6;
       ipotflag = 3;
       p = complex(zeros(ndim_p,ntarg));
-      mex_id_ = 'em_nrccie_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c io dcomplex[xx])';
-[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, densities, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, ndim_s, npts, 1, 1, ndim_p, ntarg);
+      mex_id_ = 'em_nrccie_eval_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c io dcomplex[xx])';
+[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, nptso, ixyzso, srcover, wover, lwork, work, idensflag, ndim_s, densities, ipotflag, ndim_p, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, 1, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, 1, ndim_s, npts, 1, 1, ndim_p, ntarg);
       E = p(1:3,:);
       H = p(4:6,:);
     elseif strcmpi(rep, 'nrccie-bc')
@@ -223,8 +229,8 @@ function [E, H] = eval(S, densities, targinfo, eps, zk, rep_params, varargin)
       %
       ndim_p = 3;
       p = complex(zeros(ndim_p,ntarg));
-      mex_id_ = 'lpcomp_em_nrccie_pec_addsub_targ(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[xx], c io dcomplex[xx])';
-[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, ndim_s, densities, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, ndim_s, npts, ndim_p, ntarg);
+      mex_id_ = 'lpcomp_em_nrccie_pec_addsub_targ(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i dcomplex[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[xx], c io dcomplex[xx])';
+[p] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, nptso, ixyzso, srcover, wover, lwork, work, ndim_s, densities, p, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, 1, 1, ndd, 1, ndz, 1, ndi, 1, ntargp1, nnz, nnzp1, 1, 1, nker, nquad, 1, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, ndim_s, npts, ndim_p, ntarg);
       E = p(1:3,:);
       H = [];
     end

@@ -289,12 +289,88 @@
 !stop
     return
     end subroutine getnearquad_em_muller_trans
+!
+!
+!
+!
+!
+      subroutine getnearcorr_em_muller_trans(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_em_muller_trans, minus the smooth quadrature rule
+!  oversampled to novers for each of the sixteen kernels, i.e. the
+!  near quadrature corrections for em_muller_trans_solver_guru and
+!  lpcomp_em_muller_trans_corr, with the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars,
+!      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_em_muller_trans
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: complex *16(16*nquad)
+!        The near quadrature corrections, stored as in
+!        getnearquad_em_muller_trans
+!
+      implicit none
+      integer *8 npatches, norders(npatches), npts, nquad
+      integer *8 ixyzs(npatches+1), iptype(npatches)
+      real *8 srccoefs(9,npts), srcvals(12,npts), eps, rfac0
+      integer *8 ndtarg, ntarg
+      real *8 targs(ndtarg,ntarg)
+      integer *8 ipatch_id(ntarg)
+      real *8 uvs_targ(2,ntarg)
+      complex *16 zpars(5)
+      integer *8 iquadtype, nnz
+      integer *8 row_ptr(ntarg+1), col_ind(nnz), iquad(nnz+1)
+      integer *8 novers(npatches)
+      complex *16 wnear(16*nquad)
+
+      integer *8 ndd, ndz, ndi, nker, iker, i, j, ipars(2)
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external em_muller_trans
+
+      call getnearquad_em_muller_trans(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+
+!
+!  the kernels are stored one after the other, kernel (i,j) in
+!  wnear(((i-1)*4+j-1)*nquad+1:((i-1)*4+j)*nquad)
+!
+      fker => em_muller_trans
+      ndd = 0
+      ndz = 5
+      ndi = 2
+      nker = 1
+      iker = 1
+      do i = 1,4
+        do j = 1,4
+          ipars(1) = i
+          ipars(2) = j
+          call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+            srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+            dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, &
+            iquad, nquad, nker, iker, wnear(((i-1)*4+j-1)*nquad+1))
+        enddo
+      enddo
+
+      return
+      end subroutine getnearcorr_em_muller_trans
 
 
-      subroutine lpcomp_em_muller_trans_addsub(npatches,norders,ixyzs, &
+      subroutine lpcomp_em_muller_trans_guru(npatches,norders,ixyzs, &
        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
        eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, sigma, novers, &
-       nptso, ixyzso, srcover, whtsover, pot, wnear)
+       nptso, ixyzso, srcover, whtsover, pot, wnear, ifcorr)
 
 !
 !  This subroutine evaluates the layer potential for
@@ -418,6 +494,13 @@
 !    whtsover - real *8 (nptso)
 !      smooth quadrature weights at oversampled nodes
 !
+!    ifcorr - integer *8
+!      type of near quadrature in wnear
+!        * ifcorr = 0, from getnearquad_em_muller_trans, the
+!          oversampled smooth rule is subtracted here
+!        * ifcorr = 1, from getnearcorr_em_muller_trans with the same
+!          novers, no subtraction is needed
+!
 
       implicit none
       integer *8 npatches,norder,npols,npts
@@ -432,6 +515,7 @@
       complex *16 sigma(4*npts),sigma2(npts)
 	  
       complex *16 wnear(16*nquad)
+      integer *8 ifcorr
 	  
       integer *8 novers(npatches+1)
       integer *8 nover,npolso,nptso
@@ -562,36 +646,38 @@
       allocate(ctmp2_b_u(nmax),ctmp2_b_v(nmax))
 
       ifdir=1
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2) &
 !$OMP PRIVATE(ctmp2_a_u,ctmp2_a_v,ctmp2_b_u,ctmp2_b_v,wtmp2) &
 !$OMP PRIVATE(nss,l,jstart,ii,E,npover)
-      do i=1,ntarg
-        nss = 0
-        ii = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          jstart = ixyzso(jpatch)-1
-          npover = ixyzso(jpatch+1)-ixyzso(jpatch)
-          do l=1,npover
-            ii = ii+1
-            srctmp2(:,ii) = srcover(:,jstart+l)
-            ctmp2_a_u(ii)=sigmaover(jstart+l)
-            ctmp2_a_v(ii)=sigmaover(jstart+l+ns)
-            ctmp2_b_u(ii)=sigmaover(jstart+l+2*ns)
-            ctmp2_b_v(ii)=sigmaover(jstart+l+3*ns)
-            wtmp2(ii)=whtsover(jstart+l)
+        do i=1,ntarg
+          nss = 0
+          ii = 0
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            jstart = ixyzso(jpatch)-1
+            npover = ixyzso(jpatch+1)-ixyzso(jpatch)
+            do l=1,npover
+              ii = ii+1
+              srctmp2(:,ii) = srcover(:,jstart+l)
+              ctmp2_a_u(ii)=sigmaover(jstart+l)
+              ctmp2_a_v(ii)=sigmaover(jstart+l+ns)
+              ctmp2_b_u(ii)=sigmaover(jstart+l+2*ns)
+              ctmp2_b_v(ii)=sigmaover(jstart+l+3*ns)
+              wtmp2(ii)=whtsover(jstart+l)
+            enddo
+          enddo
+          nss = ii
+          call em_muller_trans_FMM2(eps,zpars,nss,ntarg0,srctmp2,targs(:,i),&
+          &wtmp2,ctmp2_a_u,ctmp2_a_v,ctmp2_b_u,ctmp2_b_v,&
+          &E(1),E(2),E(3),E(4),thresh,ifdir)
+
+          do j=0,3
+            pot_aux(i+j*ntarg) = pot_aux(i+j*ntarg) - E(j+1)
           enddo
         enddo
-        nss = ii
-        call em_muller_trans_FMM2(eps,zpars,nss,ntarg0,srctmp2,targs(:,i),&
-        &wtmp2,ctmp2_a_u,ctmp2_a_v,ctmp2_b_u,ctmp2_b_v,&
-        &E(1),E(2),E(3),E(4),thresh,ifdir)
- 
-        do j=0,3
-          pot_aux(i+j*ntarg) = pot_aux(i+j*ntarg) - E(j+1)
-        enddo
-      enddo
 !$OMP END PARALLEL DO      
+      endif
 
       omega = zpars(1)
       ep0 = zpars(2)
@@ -612,7 +698,86 @@
       enddo
   
       return
+      end subroutine lpcomp_em_muller_trans_guru
+!
+!
+!
+!
+!
+      subroutine lpcomp_em_muller_trans_addsub(npatches,norders,ixyzs, &
+       iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+       eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, sigma, novers, &
+       nptso, ixyzso, srcover, whtsover, pot, wnear)
+!
+!  This subroutine evaluates the layer potentials of the Muller
+!  integral equation, with wnear from getnearquad_em_muller_trans.
+!
+!  See lpcomp_em_muller_trans_guru for the arguments.
+!
+      implicit none
+      integer *8 npatches,npts,ndtarg,ntarg
+      integer *8 norders(npatches),ixyzs(npatches+1),iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps
+      real *8 targs(ndtarg,ntarg)
+      complex *16 zpars(5)
+      integer *8 nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
+      integer *8 iquad(nnz+1)
+      complex *16 sigma(4*npts)
+      integer *8 novers(npatches),nptso,ixyzso(npatches+1)
+      real *8 srcover(12,nptso),whtsover(nptso)
+      complex *16 pot(4*ntarg)
+      complex *16 wnear(16*nquad)
+
+      integer *8 ifcorr
+
+      ifcorr = 0
+      call lpcomp_em_muller_trans_guru(npatches,norders,ixyzs, &
+       iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+       eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, sigma, novers, &
+       nptso, ixyzso, srcover, whtsover, pot, wnear, ifcorr)
+
+      return
       end subroutine lpcomp_em_muller_trans_addsub
+!
+!
+!
+!
+!
+      subroutine lpcomp_em_muller_trans_corr(npatches,norders,ixyzs, &
+       iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+       eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, sigma, novers, &
+       nptso, ixyzso, srcover, whtsover, pot, wnear)
+!
+!  This subroutine evaluates the layer potentials of the Muller
+!  integral equation, with wnear from getnearcorr_em_muller_trans
+!  (computed with the same novers), so that no subtraction is needed.
+!
+!  See lpcomp_em_muller_trans_guru for the arguments.
+!
+      implicit none
+      integer *8 npatches,npts,ndtarg,ntarg
+      integer *8 norders(npatches),ixyzs(npatches+1),iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps
+      real *8 targs(ndtarg,ntarg)
+      complex *16 zpars(5)
+      integer *8 nnz,row_ptr(ntarg+1),col_ind(nnz),nquad
+      integer *8 iquad(nnz+1)
+      complex *16 sigma(4*npts)
+      integer *8 novers(npatches),nptso,ixyzso(npatches+1)
+      real *8 srcover(12,nptso),whtsover(nptso)
+      complex *16 pot(4*ntarg)
+      complex *16 wnear(16*nquad)
+
+      integer *8 ifcorr
+
+      ifcorr = 1
+      call lpcomp_em_muller_trans_guru(npatches,norders,ixyzs, &
+       iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+       eps, zpars, nnz, row_ptr, col_ind, iquad, nquad, sigma, novers, &
+       nptso, ixyzso, srcover, whtsover, pot, wnear, ifcorr)
+
+      return
+      end subroutine lpcomp_em_muller_trans_corr
 
 
 
@@ -763,7 +928,7 @@ subroutine em_muller_trans_solver(npatches, norders, ixyzs, &
       real *8 rfac,rfac0
       integer *8 iptype_avg,norder_avg
       integer *8 ikerorder, iquadtype,npts_over
-      integer *8 n_var
+      integer *8 n_var, ifcorr
 
 !
 !
@@ -893,10 +1058,10 @@ subroutine em_muller_trans_solver(npatches, norders, ixyzs, &
       call cpu_time(t1)
 !C$      t1 = omp_get_wtime()      
 
-       call getnearquad_em_muller_trans(npatches,norders,&
+       call getnearcorr_em_muller_trans(npatches,norders,&
      &ixyzs,iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
      &ipatch_id,uvs_targ,eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
-     &iquad,rfac0,nquad,wnear)
+     &iquad,rfac0,nquad,novers,wnear)
       call cpu_time(t2)
 !C$      t2 = omp_get_wtime()     
 
@@ -905,10 +1070,12 @@ subroutine em_muller_trans_solver(npatches, norders, ixyzs, &
  1111 continue     
       print *, "done generating near quadrature, now starting gmres"
 
+      ifcorr = 1
       call em_muller_trans_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, zpars, numit, rhs, &
-        nnz, row_ptr, col_ind, iquad, nquad, wnear, novers, npts_over, &
-        ixyzso, srcover, wover, eps_gmres, niter, errs, rres, soln)
+        nnz, row_ptr, col_ind, iquad, nquad, wnear, ifcorr, novers, &
+        npts_over, ixyzso, srcover, wover, eps_gmres, niter, errs, &
+        rres, soln)
 
       return
       end
@@ -920,10 +1087,15 @@ subroutine em_muller_trans_solver(npatches, norders, ixyzs, &
 
       subroutine em_muller_trans_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, zpars, numit, rhs, &
-        nnz, row_ptr, col_ind, iquad, nquad, wnear, novers, npts_over, &
-        ixyzso, srcover, wover, eps_gmres, niter, errs, rres, soln)
+        nnz, row_ptr, col_ind, iquad, nquad, wnear, ifcorr, novers, &
+        npts_over, ixyzso, srcover, wover, eps_gmres, niter, errs, &
+        rres, soln)
 !
 !  Guru subroutine for em_muller_trans_solver.
+!
+!  The near quadrature wnear is from getnearquad_em_muller_trans
+!  (ifcorr = 0), or from getnearcorr_em_muller_trans with the same
+!  novers (ifcorr = 1), in which case the subtraction step is skipped.
 !
 !  Documentation coming soon
 !
@@ -953,6 +1125,7 @@ subroutine em_muller_trans_solver(npatches, norders, ixyzs, &
       integer *8 row_ptr(npts+1), col_ind(nnz), iquad(nnz+1)
 
       complex *16 wnear(16*nquad)
+      integer *8 ifcorr
 
       real *8 srcover(12,npts_over),wover(npts_over)
       integer *8 ixyzso(npatches+1),novers(npatches)
@@ -1075,10 +1248,11 @@ subroutine em_muller_trans_solver(npatches, norders, ixyzs, &
 !
 
 
-        call lpcomp_em_muller_trans_addsub(npatches,norders,ixyzs,&
+        call lpcomp_em_muller_trans_guru(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
      &eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,&
-     &vmat(1,it),novers,npts_over,ixyzso,srcover,wover,wtmp,wnear)
+     &vmat(1,it),novers,npts_over,ixyzso,srcover,wover,wtmp,wnear,&
+     &ifcorr)
 
         do k=1,it
           hmat(k,it) = 0
@@ -1158,10 +1332,11 @@ subroutine em_muller_trans_solver(npatches, norders, ixyzs, &
 !
 
 
-          call lpcomp_em_muller_trans_addsub(npatches,norders,ixyzs,&
+          call lpcomp_em_muller_trans_guru(npatches,norders,ixyzs,&
      &iptype,npts,srccoefs,srcvals,ndtarg,npts,targs,&
      &eps,zpars,nnz,row_ptr,col_ind,iquad,nquad,&
-     &soln,novers,npts_over,ixyzso,srcover,wover,wtmp,wnear)
+     &soln,novers,npts_over,ixyzso,srcover,wover,wtmp,wnear,&
+     &ifcorr)
 
             
           do i=1,npts

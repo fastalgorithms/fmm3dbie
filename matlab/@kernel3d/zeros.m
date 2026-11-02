@@ -26,6 +26,7 @@ obj.opdims    = opdims;
 obj.zk        = 0;
 obj.ifcomplex = 0;
 obj.iszero    = true;
+obj.getquad_sub = true;
 obj.kernel_order = -1;
 obj.src_fields = {};
 obj.targ_fields = {};

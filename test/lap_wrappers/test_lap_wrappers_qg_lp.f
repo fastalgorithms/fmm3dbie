@@ -263,12 +263,17 @@ c
 
       i2 = 0
       if(errl2.lt.1.0d-12) i2 = 1
-      ntests = 2
 
-      nsuccess = i1+i2
+c
+c   near quadrature corrections
+c
+      call test_lap_corr(i3)
+      ntests = 11
+
+      nsuccess = i1+i2+i3
 
       open(unit=33,file='../../print_testres.txt',access='append')
-      write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
+      write(33,'(a,i2,a,i2,a)') 'Successfully completed ',nsuccess,
      1  ' out of ',ntests,' in lap_wrappers testing suite'
       close(33)
       

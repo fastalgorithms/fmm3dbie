@@ -42,6 +42,7 @@
 ! radpp_kern        - fmm3dbie kernel, the contraction above
 ! getnearquad_radpp - near quadrature for nrow such kernels, with
 !                     their weights stored one after the other in targs
+! getnearcorr_radpp - the same, minus the oversampled smooth rule
 !
 
 
@@ -475,3 +476,64 @@ end subroutine radpp_kern_d
 
       return
       end subroutine getnearquad_radpp_d
+
+
+
+      subroutine getnearcorr_radpp(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, nrow, ipvs, nnz, row_ptr, col_ind, &
+        iquad, rfac0, nquad, ndd, dpars, ndi, ipars, novers, wnear)
+!
+!  As getnearquad_radpp, minus the smooth rule oversampled to novers
+!  in each row (see zgetnearquadsub).
+!
+!    - novers: integer *8 (npatches), oversampled order on each patch
+!    - wnear: complex *16 (nrow,nquad), near quadrature minus the
+!        oversampled smooth rule
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg,ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg), eps
+      integer *8, intent(in) :: nrow, ipvs(nrow)
+      integer *8, intent(in) :: nnz, row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: nquad, ndd, ndi
+      real *8, intent(in) :: dpars(ndd)
+      integer *8, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(nrow,nquad)
+
+      integer *8 ipars_row(10), ndi_row, ndz, ncomp, irow
+      complex *16 zpars(1)
+      procedure (), pointer :: fker
+      external radpp_kern
+
+      call getnearquad_radpp(npatches, norders, ixyzs, iptype, npts, &
+        srccoefs, srcvals, ndtarg, ntarg, targs, ipatch_id, uvs_targ, &
+        eps, nrow, ipvs, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
+        ndd, dpars, ndi, ipars, wnear)
+
+      fker => radpp_kern
+      ndz = 0
+      zpars(1) = 0
+      ndi_row = 10
+      ipars_row(1:9) = ipars(1:9)
+      ncomp = ipars(7)
+
+      do irow = 1,nrow
+        ipars_row(10) = 4 + 2*ncomp*(1+ipars(9))*(irow-1)
+        call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+          srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+          dpars, ndz, zpars, ndi_row, ipars_row, nnz, row_ptr, &
+          col_ind, iquad, nquad, nrow, irow, wnear)
+      enddo
+
+      return
+      end subroutine getnearcorr_radpp

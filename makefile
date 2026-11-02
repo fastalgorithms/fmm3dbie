@@ -433,13 +433,13 @@ test/com:
 	$(FC) $(FFLAGS) test/common/test_common.f -o test/common/int2-com lib-static/$(STATICLIB) $(LIBS) 
 
 test/hwrap:
-	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm lib-static/$(STATICLIB) $(LIBS) 
+	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f test/helm_wrappers/test_helm_corr.f90 -o test/helm_wrappers/int2-helm lib-static/$(STATICLIB) $(LIBS) 
 
 test/lwrap:
-	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f -o test/lap_wrappers/int2-lap lib-static/$(STATICLIB) $(LIBS) 
+	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f test/lap_wrappers/test_lap_corr.f90 -o test/lap_wrappers/int2-lap lib-static/$(STATICLIB) $(LIBS) 
 
 test/stwrap:
-	$(FC) $(FFLAGS) test/stok_wrappers/test_stok_wrappers_qg_lp.f -o test/stok_wrappers/int2-stok lib-static/$(STATICLIB) $(LIBS) 
+	$(FC) $(FFLAGS) test/stok_wrappers/test_stok_wrappers_qg_lp.f test/stok_wrappers/test_stok_corr.f90 -o test/stok_wrappers/int2-stok lib-static/$(STATICLIB) $(LIBS) 
 
 test/surf:
 	$(FC) $(FFLAGS) test/surface_routs/test_surf_routs.f -o test/surface_routs/int2-surf lib-static/$(STATICLIB) $(LIBS) 
@@ -455,7 +455,8 @@ test/quad: $(QTOBJS)
 	$(FC) $(FFLAGS) test/quad_routs/test_quadrouts.f -o test/quad_routs/int2-quad $(QTOBJS) lib-static/$(STATICLIB) $(LIBS) 
 
 
-QQOBJS = test/quadratures/test_find_near.o test/quadratures/test_adap_quad_self.o test/quadratures/test_mixed_patch_quad.o
+QQOBJS = test/quadratures/test_find_near.o test/quadratures/test_adap_quad_self.o test/quadratures/test_mixed_patch_quad.o \
+	test/quadratures/test_near_quad_sub.o test/quadratures/test_near_corr_bel.o
 test/quadrature: $(QQOBJS)
 	$(FC) $(FFLAGS) test/quadratures/test_quadratures.f -o test/quadratures/int2-quad $(QQOBJS) lib-static/$(STATICLIB) $(LIBS) 
 
@@ -469,10 +470,10 @@ test/com-dyn:
 	$(FC) $(FFLAGS) test/common/test_common.f -o test/common/int2-com -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 test/hwrap-dyn:
-	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
+	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f test/helm_wrappers/test_helm_corr.f90 -o test/helm_wrappers/int2-helm -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 test/lwrap-dyn:
-	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f -o test/lap_wrappers/int2-lap -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
+	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f test/lap_wrappers/test_lap_corr.f90 -o test/lap_wrappers/int2-lap -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS)
 
 test/surf-dyn:
 	$(FC) $(FFLAGS) test/surface_routs/test_surf_routs.f -o test/surface_routs/int2-surf -L$(FMMBIE_INSTALL_DIR) $(LLINKLIB) $(LIBS) 

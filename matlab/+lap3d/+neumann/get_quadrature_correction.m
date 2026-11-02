@@ -38,6 +38,13 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
 %           'csc' - column sparse compressed format
 %           'sparse' - sparse matrix format
 %        opts.quadtype - quadrature type, currently only 'ggq' supported
+%        opts.corrections - if true, return the near quadrature minus
+%           the smooth quadrature rule oversampled to opts.nover, for
+%           the evaluators and solvers to skip the subtraction step
+%           (default false)
+%        opts.nover - oversampling orders of the smooth rule, scalar or
+%           (npatches,1) array (default: the oversampling used by the
+%           evaluators, see get_oversampling_parameters)
 %        opts.rep - whether to compute correction for on surface
 %                   integral equation or post-processing
 %                   'bc' - on surface integral equation. If option
@@ -138,6 +145,11 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
     nnzp1   = nnz+1;
 
     nquad = iquad(nnz+1)-1;
+    ifcorr = 0;
+    if isfield(opts,'corrections') && opts.corrections
+      ifcorr = 1;
+    end
+
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
       if(strcmpi(opts.quadtype,'ggq'))
@@ -151,15 +163,6 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
     nker = 1;
     wnear = zeros(nquad,1);
 
-    if strcmpi(qtype, 'bc')
-      mex_id_ = 'getnearquad_lap_s_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
-    elseif strcmpi(qtype, 'eval')
-      mex_id_ = 'getnearquad_lap_s_neu_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])';
-[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
-    else
-      error('lap3d.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
-    end
     
     Q = [];
     Q.targinfo = targinfo;
@@ -170,6 +173,41 @@ function Q = get_quadrature_correction(S, eps, targinfo, opts)
     Q.nquad = nquad;
     Q.format = ff;
     Q.kernel_order = 0;
+
+    if ifcorr
+      if isfield(opts,'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        novers = opts.nover(:).*ones(npatches,1);
+      else
+        Qn = Q;
+        Qn.row_ptr = row_ptr;
+        Qn.col_ind = col_ind;
+        novers = get_oversampling_parameters(S,Qn,eps);
+      end
+    end
+    if strcmpi(qtype, 'bc')
+      if ifcorr
+        mex_id_ = 'getnearcorr_lap_s_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[x])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, npatches, nquad);
+      else
+        mex_id_ = 'getnearquad_lap_s_neu(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
+      end
+    elseif strcmpi(qtype, 'eval')
+      if ifcorr
+        mex_id_ = 'getnearcorr_lap_s_neu_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c io double[x])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, novers, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, npatches, nquad);
+      else
+        mex_id_ = 'getnearquad_lap_s_neu_eval(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c io double[x])';
+[wnear] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, patch_id, uvs_targ, eps, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, wnear, 1, npatches, npp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndtarg, ntarg, ntarg, 2, ntarg, 1, 1, 1, ntp1, nnz, nnzp1, 1, 1, nquad);
+      end
+    else
+      error('lap3d.neumann.GET_QUADRATURE_CORRECTION:Unsupported quadrature correction');
+    end
+
+    Q.ifcorr = ifcorr;
+    if ifcorr
+      Q.novers = novers;
+    end
 
     if(strcmpi(ff,'rsc'))
         Q.iquad = iquad;

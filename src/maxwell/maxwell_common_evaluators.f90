@@ -1,7 +1,7 @@
       subroutine em_debye_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, &
         nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
         ndim_s, sigma, ipotflag, ndim_p, pot)
 
@@ -121,6 +121,12 @@
 !        * wnear(2,:) stores corrections for \nabla_{x_{1}} S_{k} 
 !        * wnear(3,:) stores corrections for \nabla_{x_{2}} S_{k}
 !        * wnear(3,:) stores corrections for \nabla_{x_{3}} S_{k}
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_em_nrccie_pec_eval, the
+!            oversampled smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_em_nrccie_pec_eval with the
+!            same novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -197,6 +203,7 @@
         
       integer *8, intent(in) :: nker
       complex *16, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
@@ -478,40 +485,42 @@
 !     Remove near contribution of the FMM
 ! 
 
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, j, jpatch, srctmp2) &
 !$OMP PRIVATE(e_current2, h_current2, e_charge2, l, jstart, nss) &
 !$OMP PRIVATE(pottmp, curlpottmp, divpottmp, idim)
-      do i=1,ntarg
-        nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss+1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
-            e_current2(1:nd,1:3,nss) = e_current(1:nd,1:3,l)
-            h_current2(1:nd,1:3,nss) = h_current(1:nd,1:3,l)
-            e_charge2(1:nd,nss) = e_charge(1:nd,l)
+        do i=1,ntarg
+          nss = 0
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss+1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
+              e_current2(1:nd,1:3,nss) = e_current(1:nd,1:3,l)
+              h_current2(1:nd,1:3,nss) = h_current(1:nd,1:3,l)
+              e_charge2(1:nd,nss) = e_charge(1:nd,l)
+            enddo
           enddo
+
+          pottmp = 0
+
+          call em3ddirect(nd, zpars(1), nss, srctmp2, ifh_current, &
+            h_current2, ife_current, e_current2, ife_charge, e_charge2, &
+            ntarg0, targtmp(1,i), ife, pottmp, ifcurle, curlpottmp, &
+            ifdive, divpottmp, thresh)
+          idim = 1
+          if(i1.eq.1) then
+            pot(1:3,i) = pot(1:3,i) - pottmp(1,1:3)
+            idim = idim + 1
+          endif
+          if(i2.eq.1) then
+            pot(4:6,i) = pot(4:6,i) - pottmp(idim,1:3)
+          endif
         enddo
-
-        pottmp = 0
-
-        call em3ddirect(nd, zpars(1), nss, srctmp2, ifh_current, &
-          h_current2, ife_current, e_current2, ife_charge, e_charge2, &
-          ntarg0, targtmp(1,i), ife, pottmp, ifcurle, curlpottmp, &
-          ifdive, divpottmp, thresh)
-        idim = 1
-        if(i1.eq.1) then
-          pot(1:3,i) = pot(1:3,i) - pottmp(1,1:3)
-          idim = idim + 1
-        endif
-        if(i2.eq.1) then
-          pot(4:6,i) = pot(4:6,i) - pottmp(idim,1:3)
-        endif
-      enddo
 !$OMP END PARALLEL DO      
+      endif
 
 
 

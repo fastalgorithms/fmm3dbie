@@ -59,11 +59,19 @@
 !        with user-provided near-information prescribed in 
 !        row-sparse compressed format
 !
+!    - getnearcorr_em_nrccie_pec: same as getnearquad_em_nrccie_pec,
+!        minus the smooth quadrature rule oversampled to user-provided
+!        orders, so that the solver can skip the subtraction step
+!        (ifcorr = 1)
+!
 !    - lpcomp_em_nrccie_pec_addsub: Apply the principal value part
 !        of the integral equation on surface. On input, user
 !        provides precomputed near quadrature in row-sparse
 !        compressed format, and oversampling information for 
 !        handling the far part of the computation
+!
+!    - lpcomp_em_nrccie_pec_corr: same as lpcomp_em_nrccie_pec_addsub,
+!        with the near quadrature from getnearcorr_em_nrccie_pec
 !
 !    - em_nrccie_pec_solver_guru: Guru solver routine, 
 !        where user is responsible for providing precomputed
@@ -73,6 +81,11 @@
 !    - getnearquad_em_nrccie_pec_eval: Generate quadrature
 !        for the post-processor, where targets can be in the volume
 !        or on surface
+!
+!    - getnearcorr_em_nrccie_pec_eval: same as
+!        getnearquad_em_nrccie_pec_eval, minus the smooth quadrature
+!        rule oversampled to user-provided orders, for
+!        em_nrccie_eval_addsub with ifcorr = 1
 !
 !
 !    - em_nrccie_pec_eval_addsub: Compute the solution
@@ -294,10 +307,80 @@
 !
 !
 !
+      subroutine getnearcorr_em_nrccie_pec(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, &
+        iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
+        novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_em_nrccie_pec, minus the smooth quadrature rule
+!  oversampled to novers for each of the nine kernels, i.e. the near
+!  quadrature corrections for em_nrccie_pec_solver_guru and
+!  lpcomp_em_nrccie_pec_corr, with the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0,
+!      nquad:
+!        as in getnearquad_em_nrccie_pec
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: complex *16(9,nquad)
+!        The near quadrature corrections, in the same order as in
+!        getnearquad_em_nrccie_pec
+!
+      implicit none
+      integer *8, intent(in) :: npatches, norders(npatches), npts, nquad
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      complex *16, intent(in) :: zpars(2)
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(9,nquad)
 
-      subroutine lpcomp_em_nrccie_pec_addsub(npatches, norders, ixyzs, &
+      integer *8 ndd, ndz, ndi, nker, iker, i, j, ipars(2), ndtarg
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external fker_em_nrccie_pec_s
+
+      call getnearquad_em_nrccie_pec(npatches, norders, ixyzs, iptype, &
+        npts, srccoefs, srcvals, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+
+      ndtarg = 12
+      fker => fker_em_nrccie_pec_s
+      ndd = 0
+      ndz = 2
+      ndi = 2
+      nker = 9
+      do j = 1,3
+        do i = 1,3
+          ipars(1) = j
+          ipars(2) = i
+          iker = (j-1)*3 + i
+          call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+            srccoefs, srcvals, ndtarg, npts, srcvals, novers, fker, ndd, &
+            dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, &
+            iquad, nquad, nker, iker, wnear)
+        enddo
+      enddo
+
+      return
+      end subroutine getnearcorr_em_nrccie_pec
+!
+!
+!
+!
+!
+
+      subroutine lpcomp_em_nrccie_pec_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
-        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
         novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
         ndim, sigma, pot)
 !
@@ -418,6 +501,12 @@
 !        * wnear(8,:) stores corrections for
 !         (-ik n \cdot S_{k} + \alpha \nabla \cdot S_{k})[j_{v} \rv]
 !        * wnear(9,:) stores corrections for S_{k}'[\rho]        
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_em_nrccie_pec, the
+!            oversampled smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_em_nrccie_pec with the
+!            same novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -477,6 +566,7 @@
       
       integer *8, intent(in) :: nker
       complex *16 wnear(nker, nquad)
+      integer *8 ifcorr
 
       integer *8, intent(in) :: lwork
       real *8, intent(in) :: work(lwork)
@@ -640,31 +730,33 @@
       allocate(srctmp2(3,nmax), ctmp(nduse,nmax))
       call cpu_time(t1)
 !$      t1 = omp_get_wtime()
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, nss, j, jpatch, l)  &
 !$OMP PRIVATE(srctmp2, ctmp, zpottmp, zgradtmp, pottmp)
-      do i=1,npts
-        nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch), ixyzso(jpatch+1)-1
-            nss = nss + 1
-            srctmp2(1:3,nss) = sources(1:3,l)            
-            ctmp(1:nduse,nss) = charges(1:nduse,l)
+        do i=1,npts
+          nss = 0
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch), ixyzso(jpatch+1)-1
+              nss = nss + 1
+              srctmp2(1:3,nss) = sources(1:3,l)
+              ctmp(1:nduse,nss) = charges(1:nduse,l)
+            enddo
           enddo
+          zpottmp(1:4) = 0
+          zgradtmp(1:4,1:3) = 0
+          pottmp(1:3) = 0
+          call h3ddirectcg(nduse, zk, srctmp2, ctmp, nss, &
+            srctmp(1,i), ntarg0, zpottmp, zgradtmp, thresh)
+
+          call get_nrccie_inteq_comps_from_potgrad(zk, alpha, &
+              srcvals(1,i), ru(1,i), rv(1,i), zpottmp, zgradtmp, &
+              pottmp)
+
+          pot(1:3,i) = pot(1:3,i) - pottmp(1:3)
         enddo
-        zpottmp(1:4) = 0
-        zgradtmp(1:4,1:3) = 0
-        pottmp(1:3) = 0
-        call h3ddirectcg(nduse, zk, srctmp2, ctmp, nss, &
-          srctmp(1,i), ntarg0, zpottmp, zgradtmp, thresh)
-
-        call get_nrccie_inteq_comps_from_potgrad(zk, alpha, &
-            srcvals(1,i), ru(1,i), rv(1,i), zpottmp, zgradtmp, &
-            pottmp)
-
-        pot(1:3,i) = pot(1:3,i) - pottmp(1:3)
-      enddo
 !$OMP END PARALLEL DO      
+      endif
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()     
 
@@ -675,7 +767,124 @@
 
 
       return
+      end subroutine lpcomp_em_nrccie_pec_guru
+!
+!
+!
+!
+!
+      subroutine lpcomp_em_nrccie_pec_addsub(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
+        ndim, sigma, pot)
+!
+!  This subroutine evaluates the nrccie operator on surface, with wnear
+!  from getnearquad_em_nrccie_pec.
+!
+!  Calling sequence as required by zgmres_guru, see
+!  lpcomp_em_nrccie_pec_guru for the arguments.
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+      real *8, intent(in) :: eps
+      integer *8, intent(in) :: ndd, ndi, ndz
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: nnz, nquad
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+
+      integer *8, intent(in) :: ndim
+      complex *16, intent(in) :: sigma(ndim,npts)
+
+      integer *8, intent(in) :: nptso
+      integer *8, intent(in) :: novers(npatches+1)
+      integer *8, intent(in) :: ixyzso(npatches+1)
+      real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
+
+      integer *8, intent(in) :: nker
+      complex *16 wnear(nker, nquad)
+
+      integer *8, intent(in) :: lwork
+      real *8, intent(in) :: work(lwork)
+
+      complex *16, intent(out) :: pot(ndim,npts)
+
+      integer *8 ifcorr
+
+      ifcorr = 0
+      call lpcomp_em_nrccie_pec_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
+        novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
+        ndim, sigma, pot)
+
+      return
       end subroutine lpcomp_em_nrccie_pec_addsub
+!
+!
+!
+!
+!
+      subroutine lpcomp_em_nrccie_pec_corr(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
+        ndim, sigma, pot)
+!
+!  This subroutine evaluates the nrccie operator on surface, with wnear
+!  from getnearcorr_em_nrccie_pec (computed with the same novers), so
+!  that no subtraction is needed.
+!
+!  Calling sequence as required by zgmres_guru, see
+!  lpcomp_em_nrccie_pec_guru for the arguments.
+!
+      implicit none
+      integer *8, intent(in) :: npatches, npts
+      integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+      integer *8, intent(in) :: iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
+      real *8, intent(in) :: eps
+      integer *8, intent(in) :: ndd, ndi, ndz
+      real *8, intent(in) :: dpars(ndd)
+      complex *16, intent(in) :: zpars(ndz)
+      integer *8, intent(in) :: ipars(ndi)
+      integer *8, intent(in) :: nnz, nquad
+      integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+
+      integer *8, intent(in) :: ndim
+      complex *16, intent(in) :: sigma(ndim,npts)
+
+      integer *8, intent(in) :: nptso
+      integer *8, intent(in) :: novers(npatches+1)
+      integer *8, intent(in) :: ixyzso(npatches+1)
+      real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
+
+      integer *8, intent(in) :: nker
+      complex *16 wnear(nker, nquad)
+
+      integer *8, intent(in) :: lwork
+      real *8, intent(in) :: work(lwork)
+
+      complex *16, intent(out) :: pot(ndim,npts)
+
+      integer *8 ifcorr
+
+      ifcorr = 1
+      call lpcomp_em_nrccie_pec_guru(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, &
+        ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
+        novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
+        ndim, sigma, pot)
+
+      return
+      end subroutine lpcomp_em_nrccie_pec_corr
 !
 !
 !
@@ -902,7 +1111,7 @@
 
       integer *8 i, j, jpatch, jquadstart, jstart
 
-      integer *8 ndtarg, nker
+      integer *8 ndtarg, nker, ifcorr
       real *8 ttot
       real *8 rfac, rfac0
       integer *8 iptype_avg, norder_avg
@@ -1014,20 +1223,21 @@
 
       iquadtype = 1
 
-      call getnearquad_em_nrccie_pec(npatches, norders, &
+      call getnearcorr_em_nrccie_pec(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, eps, zpars, &
         iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad, &
-        wnear)
+        novers, wnear)
  
       
       print *, "done generating near quadrature, now starting gmres"
       nker = 9
+      ifcorr = 1
 
       call em_nrccie_pec_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, zpars, numit, &
         einc, hinc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
-        novers, npts_over, ixyzso, srcover, wover, eps_gmres, niter, &
-        errs, rres, zjvec, rho)
+        ifcorr, novers, npts_over, ixyzso, srcover, wover, eps_gmres, &
+        niter, errs, rres, zjvec, rho)
 
 !
       return
@@ -1040,8 +1250,8 @@
       subroutine em_nrccie_pec_solver_guru(npatches, norders, ixyzs, &
       iptype, npts, srccoefs, srcvals, eps, zpars, numit, &
       einc, hinc, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
-      novers, nptso, ixyzso, srcover, whtsover, eps_gmres, niter, &
-      errs, rres, zjvec, rho)
+      ifcorr, novers, nptso, ixyzso, srcover, whtsover, eps_gmres, &
+      niter, errs, rres, zjvec, rho)
 !
 !
 !  This subroutine solves the Scattering Maxwell p.e.c. problem.
@@ -1174,6 +1384,11 @@
 !        * wnear(8,:) stores corrections for
 !         (-ik n \cdot S_{k} + \alpha \nabla \cdot S_{k})[j_{v} \rv]
 !        * wnear(9,:) stores corrections for S_{k}'[\rho]        
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_em_nrccie_pec
+!          * ifcorr = 1, from getnearcorr_em_nrccie_pec with the
+!            same novers, the subtraction step is skipped
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -1215,6 +1430,7 @@
       integer *8, intent(in) :: nnz, nquad, nker
       integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz), iquad(nnz+1)
       complex *16, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: novers(npatches), ixyzso(npatches+1)
       real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
@@ -1233,7 +1449,7 @@
       integer *8 i, j, k, l, ndim, idim, lwork
 
       procedure (), pointer :: fker
-      external lpcomp_em_nrccie_pec_addsub
+      external lpcomp_em_nrccie_pec_addsub, lpcomp_em_nrccie_pec_corr
 
       allocate(rhs(3,npts), soln(3,npts))
       allocate(ru(3,npts), rv(3,npts), wts(npts))
@@ -1272,6 +1488,7 @@
       lwork = 0
 
       fker => lpcomp_em_nrccie_pec_addsub
+      if (ifcorr.eq.1) fker => lpcomp_em_nrccie_pec_corr
 
       ndim = 3
 
@@ -1494,13 +1711,85 @@
       end
 !
 !
+!
+!
+!
+      subroutine getnearcorr_em_nrccie_pec_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_em_nrccie_pec_eval, minus the smooth quadrature rule
+!  oversampled to novers for each of the four kernels, i.e. the near
+!  quadrature corrections for em_nrccie_eval_addsub with ifcorr = 1
+!  and the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars,
+!      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_em_nrccie_pec_eval
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: complex *16(4,nquad)
+!        The near quadrature corrections, in the same order as in
+!        getnearquad_em_nrccie_pec_eval
+!
+      implicit none
+      integer *8, intent(in) :: npatches, norders(npatches), npts, nquad
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg, ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      complex *16, intent(in) :: zpars(1)
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(4,nquad)
+
+      integer *8 ndd, ndz, ndi, nker, j, ipars(1)
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external h3d_slp, h3d_sgradx, h3d_sgrady, h3d_sgradz
+
+      call getnearquad_em_nrccie_pec_eval(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+
+      ndd = 0
+      ndz = 1
+      ndi = 0
+      nker = 4
+      do j = 1,4
+        if (j.eq.1) fker => h3d_slp
+        if (j.eq.2) fker => h3d_sgradx
+        if (j.eq.3) fker => h3d_sgrady
+        if (j.eq.4) fker => h3d_sgradz
+        call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+          srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+          dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, &
+          nquad, nker, j, wnear)
+      enddo
+
+      return
+      end
+!
+!
 
 !
 !                  
       subroutine em_nrccie_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, &
         nptso, ixyzso, srcover, whtsover, lwork, work, idensflag, &
         ndim_s, sigma, ipotflag, ndim_p, pot)
 
@@ -1607,6 +1896,12 @@
 !        * wnear(2,:) stores corrections for \nabla_{x_{1}} S_{k} 
 !        * wnear(3,:) stores corrections for \nabla_{x_{2}} S_{k}
 !        * wnear(3,:) stores corrections for \nabla_{x_{3}} S_{k}
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_em_nrccie_pec_eval, the
+!            oversampled smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_em_nrccie_pec_eval with the
+!            same novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -1671,6 +1966,7 @@
         
       integer *8, intent(in) :: nker
       complex *16, intent(in) :: wnear(nker,nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: nptso
       integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
@@ -1725,7 +2021,7 @@
       call em_debye_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zparsuse, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, &
         nptso, ixyzso, srcover, whtsover, lwork, work, idensflaguse, &
         ndim_s_use, sigmause, ipotflag, ndim_p, pot)
 
@@ -1854,7 +2150,7 @@
       integer *8 ikerorder, iquadtype, npts_over
       complex *16 ima
       integer *8 ndtarg0
-      integer *8 idensflag, ipotflag
+      integer *8 idensflag, ipotflag, ifcorr
 
       ima=(0.0d0,1.0d0)
 !
@@ -1936,6 +2232,7 @@
       if(ife.eq.1.and.ifh.eq.1) ipotflag = 3
       ndim_s = 4
       ndim_p = 6
+      ifcorr = 0
       allocate(sigmause(ndim_s,npts), potuse(ndim_p,ntarg))
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
@@ -1947,7 +2244,7 @@
       call em_nrccie_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, &
         npts_over, ixyzso, srcover, wover, lwork, work, idensflag, &
         ndim_s, sigmause, ipotflag, ndim_p, potuse)
 
@@ -2292,10 +2589,84 @@ end subroutine fker_em_nrccie_pec_s
 !
 !
 !
+      subroutine getnearcorr_em_nrccie_pec_targ(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_em_nrccie_pec_targ, minus the smooth quadrature rule
+!  oversampled to novers for each of the nine kernels, i.e. the near
+!  quadrature corrections for lpcomp_em_nrccie_pec_addsub_targ with
+!  ifcorr = 1 and the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, zpars,
+!      iquadtype, nnz, row_ptr, col_ind, iquad, rfac0, nquad:
+!        as in getnearquad_em_nrccie_pec_targ
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: complex *16(9,nquad)
+!        The near quadrature corrections, in the same order as in
+!        getnearquad_em_nrccie_pec_targ
+!
+      implicit none
+      integer *8, intent(in) :: npatches, norders(npatches), npts, nquad
+      integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+      real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
+      integer *8, intent(in) :: ndtarg, ntarg
+      real *8, intent(in) :: targs(ndtarg, ntarg)
+      integer *8, intent(in) :: ipatch_id(ntarg)
+      real *8, intent(in) :: uvs_targ(2,ntarg)
+      real *8, intent(in) :: rfac0
+      integer *8, intent(in) :: iquadtype, nnz
+      integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
+      integer *8, intent(in) :: iquad(nnz+1)
+      complex *16, intent(in) :: zpars(2)
+      integer *8, intent(in) :: novers(npatches)
+      complex *16, intent(out) :: wnear(9,nquad)
+
+      integer *8 ndd, ndz, ndi, nker, iker, i, j, ipars(2)
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external fker_em_nrccie_pec_s
+
+      call getnearquad_em_nrccie_pec_targ(npatches, norders, ixyzs, &
+        iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+        ipatch_id, uvs_targ, eps, zpars, iquadtype, nnz, row_ptr, &
+        col_ind, iquad, rfac0, nquad, wnear)
+
+      fker => fker_em_nrccie_pec_s
+      ndd = 0
+      ndz = 2
+      ndi = 2
+      nker = 9
+      do j = 1,3
+        do i = 1,3
+          ipars(1) = j
+          ipars(2) = i
+          iker = (j-1)*3 + i
+          call zgetnearquadsub(npatches, norders, ixyzs, iptype, npts, &
+            srccoefs, srcvals, ndtarg, ntarg, targs, novers, fker, ndd, &
+            dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, &
+            iquad, nquad, nker, iker, wnear)
+        enddo
+      enddo
+
+      return
+      end subroutine getnearcorr_em_nrccie_pec_targ
+!
+!
+!
+!
+!
       subroutine lpcomp_em_nrccie_pec_addsub_targ(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
         novers, nptso, ixyzso, srcover, whtsover, lwork, work, &
         ndim, sigma, pot)
 !
@@ -2431,6 +2802,12 @@ end subroutine fker_em_nrccie_pec_s
 !        * wnear(8,:) stores corrections for
 !         (-ik n_t \cdot S_{k} + \alpha \nabla \cdot S_{k})[j_{v} \rv]
 !        * wnear(9,:) stores corrections for S_{k}'[\rho]
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_em_nrccie_pec_targ, the
+!            oversampled smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_em_nrccie_pec_targ with the
+!            same novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -2491,6 +2868,7 @@ end subroutine fker_em_nrccie_pec_s
 
       integer *8, intent(in) :: nker
       complex *16 wnear(nker, nquad)
+      integer *8, intent(in) :: ifcorr
 
       integer *8, intent(in) :: lwork
       real *8, intent(in) :: work(lwork)
@@ -2660,31 +3038,33 @@ end subroutine fker_em_nrccie_pec_s
       allocate(srctmp2(3,nmax), ctmp(nduse,nmax))
       call cpu_time(t1)
 !$      t1 = omp_get_wtime()
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, nss, j, jpatch, l)  &
 !$OMP PRIVATE(srctmp2, ctmp, zpottmp, zgradtmp, pottmp)
-      do i=1,ntarg
-        nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch), ixyzso(jpatch+1)-1
-            nss = nss + 1
-            srctmp2(1:3,nss) = sources(1:3,l)
-            ctmp(1:nduse,nss) = charges(1:nduse,l)
+        do i=1,ntarg
+          nss = 0
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch), ixyzso(jpatch+1)-1
+              nss = nss + 1
+              srctmp2(1:3,nss) = sources(1:3,l)
+              ctmp(1:nduse,nss) = charges(1:nduse,l)
+            enddo
           enddo
+          zpottmp(1:4) = 0
+          zgradtmp(1:4,1:3) = 0
+          pottmp(1:3) = 0
+          call h3ddirectcg(nduse, zk, srctmp2, ctmp, nss, &
+            targtmp(1,i), ntarg0, zpottmp, zgradtmp, thresh)
+
+          call get_nrccie_inteq_comps_from_potgrad(zk, alpha, &
+              targs(1,i), ru(1,i), rv(1,i), zpottmp, zgradtmp, &
+              pottmp)
+
+          pot(1:3,i) = pot(1:3,i) - pottmp(1:3)
         enddo
-        zpottmp(1:4) = 0
-        zgradtmp(1:4,1:3) = 0
-        pottmp(1:3) = 0
-        call h3ddirectcg(nduse, zk, srctmp2, ctmp, nss, &
-          targtmp(1,i), ntarg0, zpottmp, zgradtmp, thresh)
-
-        call get_nrccie_inteq_comps_from_potgrad(zk, alpha, &
-            targs(1,i), ru(1,i), rv(1,i), zpottmp, zgradtmp, &
-            pottmp)
-
-        pot(1:3,i) = pot(1:3,i) - pottmp(1:3)
-      enddo
 !$OMP END PARALLEL DO
+      endif
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()
 

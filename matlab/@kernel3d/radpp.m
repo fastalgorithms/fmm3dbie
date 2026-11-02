@@ -352,6 +352,8 @@ else
 end
 obj.get_overs_orders = @(S, t, eps) kernel3d.kernel3d_getnear_overs(S, ...
                            t, eps, obj.zk, obj.kernel_order);
+% getquad subtracts the oversampled smooth rule itself (opts.corrections)
+obj.getquad_sub = true;
 
 end
 
@@ -859,7 +861,9 @@ end
 
 
 function spmat = radpp_getquad(S, eps, p, ifcomplex, ri, targinfo, opts)
-% near quadrature: target locations followed by the weights of each row
+% near quadrature: target locations followed by the weights of each row.
+% With opts.corrections, the smooth rule oversampled to opts.nover
+% (scalar or (npatches,1); NaN or absent for none) is subtracted.
 
 if nargin < 6 || isempty(targinfo), targinfo = S;        end
 if nargin < 7 || isempty(opts),     opts     = struct(); end
@@ -886,15 +890,30 @@ if isempty(patch_id)
     uvs_targ = zeros(2, ntarg);
 end
 
-if ifcomplex
-    nq = @getnearquad_radpp;
+if isfield(opts, 'corrections') && opts.corrections
+    % near quadrature minus the smooth rule oversampled to opts.nover
+    nover = norders;
+    if isfield(opts, 'nover') && ~isempty(opts.nover) && ~any(isnan(opts.nover))
+        nover = opts.nover(:) .* ones(S.npatches, 1);
+    end
+    wnear = getnearcorr_radpp(S.npatches, norders, ixyzs, iptype, ...
+        S.npts, srccoefs, srcvals, targs, patch_id, uvs_targ, eps, p.ipv, ...
+        rsc.nnz, rsc.row_ptr, rsc.col_ind, rsc.iquad, rsc.rfac0, nquad, ...
+        p.dpars, p.ipars, nover);
+    if ~ifcomplex
+        wnear = real(wnear);
+    end
 else
-    nq = @getnearquad_radpp_d;
+    if ifcomplex
+        nq = @getnearquad_radpp;
+    else
+        nq = @getnearquad_radpp_d;
+    end
+    wnear = nq(S.npatches, norders, ixyzs, iptype, S.npts, ...
+        srccoefs, srcvals, targs, patch_id, uvs_targ, eps, p.ipv, rsc.nnz, ...
+        rsc.row_ptr, rsc.col_ind, rsc.iquad, rsc.rfac0, nquad, p.dpars, ...
+        p.ipars);
 end
-wnear = nq(S.npatches, norders, ixyzs, iptype, S.npts, ...
-    srccoefs, srcvals, targs, patch_id, uvs_targ, eps, p.ipv, rsc.nnz, ...
-    rsc.row_ptr, rsc.col_ind, rsc.iquad, rsc.rfac0, nquad, p.dpars, ...
-    p.ipars);
 
 spmat = conv_rsc_to_spmat(S, rsc.row_ptr, rsc.col_ind, wnear, ri);
 

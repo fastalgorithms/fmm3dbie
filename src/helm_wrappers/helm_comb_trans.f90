@@ -8,7 +8,14 @@
 !    - helm_comb_trans_solver_guru:
 !    - helm_comb_trans_eval_guru:
 !    - lpcomp_helm_comb_trans_addsub:
+!    - lpcomp_helm_comb_trans_corr: same as
+!        lpcomp_helm_comb_trans_addsub, with the near quadrature from
+!        getnearcorr_helm_comb_trans
 !    - getnearquad_helm_comb_trans: quadrature for on-surface
+!    - getnearcorr_helm_comb_trans: same as getnearquad_helm_comb_trans,
+!        minus the smooth quadrature rule oversampled to user-provided
+!        orders, so that the solver can skip the subtraction step
+!        (ifcorr = 1)
 !    - getnearquad_helm_comb_trans_eval:
 !
       subroutine getnearquad_helm_comb_trans(npatches, norders, &
@@ -295,12 +302,114 @@
 !
 !
 !
+      subroutine getnearcorr_helm_comb_trans(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, zpars, iquadtype, nnz, row_ptr, col_ind, &
+        iquad, rfac0, nquad, novers, wnear)
+!
+!  This subroutine generates the near quadrature of
+!  getnearquad_helm_comb_trans, minus the smooth quadrature rule
+!  oversampled to novers for each of the four kernels, i.e. the near
+!  quadrature corrections for helm_comb_trans_solver_guru and
+!  lpcomp_helm_comb_trans_corr, with the same novers.
+!
+!  Input arguments:
+!    - npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals,
+!      eps, zpars, iquadtype, nnz, row_ptr, col_ind, iquad, rfac0,
+!      nquad:
+!        as in getnearquad_helm_comb_trans
+!    - novers: integer *8(npatches)
+!        order of discretization for oversampled sources
+!
+!  Output arguments
+!    - wnear: complex *16(4,nquad)
+!        The near quadrature corrections, in the same order as in
+!        getnearquad_helm_comb_trans
+!
+      implicit none
+      integer *8 npatches,norders(npatches),npts,nquad
+      integer *8 ixyzs(npatches+1),iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps,rfac0
+      integer *8 iquadtype
+      complex *16 zpars(6)
+      integer *8 nnz
+      integer *8 row_ptr(npts+1),col_ind(nnz),iquad(nnz+1)
+      integer *8 novers(npatches)
+      complex *16 wnear(4,nquad)
+
+      complex *16 zpars_tmp(4),zk0,zk1,alpha0,alpha1,beta0,beta1
+      complex *16 ima,z
+      integer *8 ndtarg,ndd,ndz,ndi,nker,ipars(1)
+      real *8 dpars(1)
+      procedure (), pointer :: fker
+      external h3d_sprime_diff,h3d_slp_diff,h3d_dlp_diff
+      external h3d_dprime_diff
+      data ima/(0.0d0,1.0d0)/
+
+      call getnearquad_helm_comb_trans(npatches,norders,ixyzs,iptype, &
+        npts,srccoefs,srcvals,eps,zpars,iquadtype,nnz,row_ptr,col_ind, &
+        iquad,rfac0,nquad,wnear)
+
+      zk0 = zpars(1)
+      alpha0 = zpars(2)
+      beta0 = zpars(3)
+      zk1 = zpars(4)
+      alpha1 = zpars(5)
+      beta1 = zpars(6)
+      z = -(ima*zk0 + ima*zk1) / (alpha0/beta0 + alpha1/beta1)
+
+      ndd = 0
+      ndi = 0
+      ndtarg = 12
+      nker = 4
+      zpars_tmp(1) = zk0
+      zpars_tmp(2) = zk1
+
+      ndz = 4
+      fker => h3d_slp_diff
+      zpars_tmp(3) = z*ima*zk0*alpha0/beta0
+      zpars_tmp(4) = z*ima*zk1*alpha1/beta1
+      call zgetnearquadsub(npatches,norders,ixyzs,iptype,npts, &
+        srccoefs,srcvals,ndtarg,npts,srcvals,novers,fker,ndd,dpars, &
+        ndz,zpars_tmp,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad, &
+        nker,1_8,wnear)
+
+      fker => h3d_dlp_diff
+      zpars_tmp(3) = z*alpha0/beta0
+      zpars_tmp(4) = z*alpha1/beta1
+      call zgetnearquadsub(npatches,norders,ixyzs,iptype,npts, &
+        srccoefs,srcvals,ndtarg,npts,srcvals,novers,fker,ndd,dpars, &
+        ndz,zpars_tmp,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad, &
+        nker,2_8,wnear)
+
+      fker => h3d_sprime_diff
+      zpars_tmp(3) = ima*zk0
+      zpars_tmp(4) = ima*zk1
+      call zgetnearquadsub(npatches,norders,ixyzs,iptype,npts, &
+        srccoefs,srcvals,ndtarg,npts,srcvals,novers,fker,ndd,dpars, &
+        ndz,zpars_tmp,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad, &
+        nker,3_8,wnear)
+
+      ndz = 2
+      fker => h3d_dprime_diff
+      call zgetnearquadsub(npatches,norders,ixyzs,iptype,npts, &
+        srccoefs,srcvals,ndtarg,npts,srcvals,novers,fker,ndd,dpars, &
+        ndz,zpars_tmp,ndi,ipars,nnz,row_ptr,col_ind,iquad,nquad, &
+        nker,4_8,wnear)
+
+      return
+      end subroutine getnearcorr_helm_comb_trans
+!
+!
+!
+!
+!
 !
 
-      subroutine lpcomp_helm_comb_trans_addsub(npatches, norders, &
+      subroutine lpcomp_helm_comb_trans_guru(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
-        row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, nptso, &
         ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
 
 !
@@ -434,6 +543,12 @@
 !          * the second kernel is z*alpha0/beta0 D_{k0} - z*alpha1/beta1 D_{k1}
 !          * the third kernel is i*k0 S_{k0}' - i*k1 S_{k1}'
 !          * the fourth kernel is D_{k0}'- D_{k1}'
+!    - ifcorr: integer *8
+!        type of near quadrature in wnear
+!          * ifcorr = 0, from getnearquad_helm_comb_trans, the
+!            oversampled smooth rule is subtracted here
+!          * ifcorr = 1, from getnearcorr_helm_comb_trans with the
+!            same novers, no subtraction is needed
 !    - novers: integer *8(npatches)
 !        order of discretization for oversampled sources and
 !        density
@@ -478,6 +593,7 @@
       integer *8 iquad(nnz+1)
       complex *16 sigma(ndim,npts)
       complex *16 wnear(nker,nquad)
+      integer *8 ifcorr
 
       integer *8 novers(npatches)
       integer *8 nover,npolso,nptso
@@ -679,57 +795,152 @@
 !     Remove near contribution of the FMM
 !
 
+      if (ifcorr.ne.1) then
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,jpatch,srctmp2) &
 !$OMP PRIVATE(ctmp0,dtmp0,ctmp1,dtmp1,l,jstart,nss,pottmp,gradtmp)
-      do i=1,npts
-        nss = 0
-        do j=row_ptr(i),row_ptr(i+1)-1
-          jpatch = col_ind(j)
-          do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
-            nss = nss+1
-            srctmp2(1,nss) = srcover(1,l)
-            srctmp2(2,nss) = srcover(2,l)
-            srctmp2(3,nss) = srcover(3,l)
+        do i=1,npts
+          nss = 0
+          do j=row_ptr(i),row_ptr(i+1)-1
+            jpatch = col_ind(j)
+            do l=ixyzso(jpatch),ixyzso(jpatch+1)-1
+              nss = nss+1
+              srctmp2(1,nss) = srcover(1,l)
+              srctmp2(2,nss) = srcover(2,l)
+              srctmp2(3,nss) = srcover(3,l)
 
-            ctmp0(nss)=charges0(l)
-            ctmp1(nss)=charges1(l)
+              ctmp0(nss)=charges0(l)
+              ctmp1(nss)=charges1(l)
 
-            dtmp0(1,nss)=dipvec0(1,l)
-            dtmp0(2,nss)=dipvec0(2,l)
-            dtmp0(3,nss)=dipvec0(3,l)
+              dtmp0(1,nss)=dipvec0(1,l)
+              dtmp0(2,nss)=dipvec0(2,l)
+              dtmp0(3,nss)=dipvec0(3,l)
 
-            dtmp1(1,nss)=dipvec1(1,l)
-            dtmp1(2,nss)=dipvec1(2,l)
-            dtmp1(3,nss)=dipvec1(3,l)
+              dtmp1(1,nss)=dipvec1(1,l)
+              dtmp1(2,nss)=dipvec1(2,l)
+              dtmp1(3,nss)=dipvec1(3,l)
+            enddo
           enddo
+
+          pottmp = 0
+          gradtmp(1) = 0
+          gradtmp(2) = 0
+          gradtmp(3) = 0
+
+          call h3ddirectcdg(nd,zk0,srctmp2,ctmp0,dtmp0,nss,srctmp(1,i), &
+            ntarg0,pottmp,gradtmp,thresh)
+          pot(1,i) = pot(1,i)  - pottmp
+          pot(2,i) = pot(2,i) - (gradtmp(1)*srcvals(10,i)+  &
+            gradtmp(2)*srcvals(11,i)+gradtmp(3)*srcvals(12,i))*zlp0inv
+
+          pottmp = 0
+          gradtmp(1) = 0
+          gradtmp(2) = 0
+          gradtmp(3) = 0
+
+          call h3ddirectcdg(nd,zk1,srctmp2,ctmp1,dtmp1,nss,srctmp(1,i), &
+            ntarg0,pottmp,gradtmp,thresh)
+          pot(1,i) = pot(1,i)  + pottmp
+          pot(2,i) = pot(2,i) + (gradtmp(1)*srcvals(10,i)+  &
+            gradtmp(2)*srcvals(11,i)+gradtmp(3)*srcvals(12,i))*zlp1inv
         enddo
-
-        pottmp = 0
-        gradtmp(1) = 0
-        gradtmp(2) = 0
-        gradtmp(3) = 0
-
-        call h3ddirectcdg(nd,zk0,srctmp2,ctmp0,dtmp0,nss,srctmp(1,i), &
-          ntarg0,pottmp,gradtmp,thresh)
-        pot(1,i) = pot(1,i)  - pottmp
-        pot(2,i) = pot(2,i) - (gradtmp(1)*srcvals(10,i)+  &
-          gradtmp(2)*srcvals(11,i)+gradtmp(3)*srcvals(12,i))*zlp0inv
-
-        pottmp = 0
-        gradtmp(1) = 0
-        gradtmp(2) = 0
-        gradtmp(3) = 0
-
-        call h3ddirectcdg(nd,zk1,srctmp2,ctmp1,dtmp1,nss,srctmp(1,i), &
-          ntarg0,pottmp,gradtmp,thresh)
-        pot(1,i) = pot(1,i)  + pottmp
-        pot(2,i) = pot(2,i) + (gradtmp(1)*srcvals(10,i)+  &
-          gradtmp(2)*srcvals(11,i)+gradtmp(3)*srcvals(12,i))*zlp1inv
-      enddo
 !$OMP END PARALLEL DO
+      endif
+
+      return
+      end subroutine lpcomp_helm_comb_trans_guru
+!
+!
+!
+!
+!
+      subroutine lpcomp_helm_comb_trans_addsub(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, &
+        ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
+!
+!  This subroutine evaluates the transmission data of the combined field
+!  representation, with wnear from getnearquad_helm_comb_trans.
+!
+!  Calling sequence as required by zgmres_guru, see
+!  lpcomp_helm_comb_trans_guru for the arguments.
+!
+      implicit none
+      integer *8 npatches,npts
+      integer *8 norders(npatches),ixyzs(npatches+1),iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps
+      integer *8 ndd,ndz,ndi
+      real *8 dpars(*)
+      complex *16 zpars(ndz)
+      integer *8 ipars(*)
+      integer *8 nnz,row_ptr(npts+1),col_ind(nnz),iquad(nnz+1),nquad
+      integer *8 nker
+      complex *16 wnear(nker,nquad)
+      integer *8 novers(npatches),nptso,ixyzso(npatches+1)
+      real *8 srcover(12,nptso),whtsover(nptso)
+      integer *8 lwork
+      real *8 work(*)
+      integer *8 ndim
+      complex *16 sigma(ndim,npts),pot(ndim,npts)
+
+      integer *8 ifcorr
+
+      ifcorr = 0
+      call lpcomp_helm_comb_trans_guru(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, nptso, &
+        ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
 
       return
       end subroutine lpcomp_helm_comb_trans_addsub
+!
+!
+!
+!
+!
+      subroutine lpcomp_helm_comb_trans_corr(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, &
+        ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
+!
+!  This subroutine evaluates the transmission data of the combined field
+!  representation, with wnear from getnearcorr_helm_comb_trans (computed
+!  with the same novers), so that no subtraction is needed.
+!
+!  Calling sequence as required by zgmres_guru, see
+!  lpcomp_helm_comb_trans_guru for the arguments.
+!
+      implicit none
+      integer *8 npatches,npts
+      integer *8 norders(npatches),ixyzs(npatches+1),iptype(npatches)
+      real *8 srccoefs(9,npts),srcvals(12,npts),eps
+      integer *8 ndd,ndz,ndi
+      real *8 dpars(*)
+      complex *16 zpars(ndz)
+      integer *8 ipars(*)
+      integer *8 nnz,row_ptr(npts+1),col_ind(nnz),iquad(nnz+1),nquad
+      integer *8 nker
+      complex *16 wnear(nker,nquad)
+      integer *8 novers(npatches),nptso,ixyzso(npatches+1)
+      real *8 srcover(12,nptso),whtsover(nptso)
+      integer *8 lwork
+      real *8 work(*)
+      integer *8 ndim
+      complex *16 sigma(ndim,npts),pot(ndim,npts)
+
+      integer *8 ifcorr
+
+      ifcorr = 1
+      call lpcomp_helm_comb_trans_guru(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, &
+        eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, &
+        row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, nptso, &
+        ixyzso, srcover, whtsover, lwork, work, ndim, sigma, pot)
+
+      return
+      end subroutine lpcomp_helm_comb_trans_corr
 !
 !
 !
@@ -858,7 +1069,7 @@
       real *8, allocatable :: targs(:,:)
       integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_targ(:,:)
-      integer *8 ndtarg,ntarg,nker,numit
+      integer *8 ndtarg,ntarg,nker,numit,ifcorr
 
       real *8 errs(numit+1)
       real *8 rres,eps2
@@ -1007,10 +1218,10 @@
       call cpu_time(t1)
 !$      t1 = omp_get_wtime()
 
-      call getnearquad_helm_comb_trans(npatches,norders,&
+      call getnearcorr_helm_comb_trans(npatches,norders,&
        ixyzs,iptype,npts,srccoefs,srcvals, &
        eps,zpars,iquadtype,nnz,row_ptr,col_ind,&
-       iquad,rfac0,nquad,wnear)
+       iquad,rfac0,nquad,novers,wnear)
 
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()
@@ -1019,10 +1230,11 @@
 
       print *, "done generating near quadrature, now starting gmres"
 
+      ifcorr = 1
       call helm_comb_trans_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, zpars, numit, &
-        rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
-        npts_over, ixyzso, srcover, wover, eps_gmres, niter, &
+        rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
+        novers, npts_over, ixyzso, srcover, wover, eps_gmres, niter, &
         errs, rres, soln)
 !
       return
@@ -1039,10 +1251,15 @@
 
       subroutine helm_comb_trans_solver_guru(npatches, norders, ixyzs, &
         iptype, npts, srccoefs, srcvals, eps, zpars, numit, &
-        rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
-        nptso, ixyzso, srcover, whtsover, eps_gmres, niter, &
+        rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, &
+        novers, nptso, ixyzso, srcover, whtsover, eps_gmres, niter, &
         errs, rres, soln)
-
+!
+!  ifcorr: type of near quadrature in wnear
+!    * ifcorr = 0, from getnearquad_helm_comb_trans
+!    * ifcorr = 1, from getnearcorr_helm_comb_trans with the same
+!      novers, the subtraction step is skipped
+!
       implicit none
       integer *8 npatches,npts
       integer *8 norders(npatches),ixyzs(npatches+1)
@@ -1061,6 +1278,7 @@
       integer *8 ipars,nker
 
       complex *16 wnear(nker,nquad)
+      integer *8 ifcorr
 
       real *8 srcover(12,nptso),whtsover(nptso)
       integer *8 ixyzso(npatches+1),novers(npatches)
@@ -1074,13 +1292,14 @@
       real *8, allocatable :: wts(:)
       integer *8 ndd, ndz, ndi, lwork, ndim
       procedure (), pointer :: fker
-      external lpcomp_helm_comb_trans_addsub
+      external lpcomp_helm_comb_trans_addsub, lpcomp_helm_comb_trans_corr
 
       ima=(0.0d0,1.0d0)
 
       zid = -(ima*zpars(1)+ima*zpars(4))/2
 
       fker => lpcomp_helm_comb_trans_addsub
+      if (ifcorr.eq.1) fker => lpcomp_helm_comb_trans_corr
       ndd = 0
       ndi = 0
       ndz = 6
@@ -1385,7 +1604,7 @@
       integer *8, allocatable :: ixyzso(:), novers(:)
       integer *8 ipars(1)
       real *8 dpars(1), work(1)
-      integer *8 idensflag, ipotflag
+      integer *8 idensflag, ipotflag, ifcorr
       integer *8 ndd, ndi, ndz, lwork
       integer *8 ndim_s, ndim_p
 
@@ -1471,10 +1690,11 @@
       idensflag = 1
       ipotflag = 1
 
+      ifcorr = 0
       call helm_comb_wdd_eval_addsub(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
         eps, ndd, dpars, ndz, zpars, ndi, ipars, &
-        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, &
+        nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, ifcorr, novers, &
         npts_over, ixyzso, srcover, wover, lwork, work, idensflag, &
         ndim_s, sigma, ipotflag, ndim_p, pot)
 
