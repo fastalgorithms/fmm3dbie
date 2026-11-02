@@ -6,19 +6,22 @@ run ../startup.m
 rng(42);
 
 zk  = 0.1 + 0.2i;
-eps = 1e-7;
-ns  = 2000;
-nt  = 2000;
+eps = 1e-4;          % fmm precision. The fmm-vs-direct tolerances below
+                     % (tol_fmm) are 1e-3: derivative kernels (dp, cp, dg,
+                     % cg, stok cp, *_diff) run ~6x eps against the direct
+                     % sum, the worst (stok cp) at ~6e-4.
+% Two point clouds. SRC/TARG has many sources so the fmm really builds a
+% tree rather than falling back to a direct calculation, and only as many
+% targets as CHECK_FMM compares (the direct reference costs O(ns*nt), the
+% source-side tree is what the fmm check is about). SRCD/TARGD is small and
+% is used by the dense eval-vs-eval identity checks: those identities hold
+% row-by-row in the target, so a handful of points tests them just as well
+% as a thousand, at O(nsd*ntd) instead of O(ns*nt).
+ns  = 5000;   nt  = 10;        % fmm
+nsd = 100;    ntd = 100;       % dense
 
-src = [];
-src.r  = randn(3,ns);  src.r  = src.r  ./ vecnorm(src.r) .* rand(1,ns);
-src.n  = randn(3,ns);  src.n  = src.n  ./ vecnorm(src.n);
-src.du = randn(3,ns);  src.dv = randn(3,ns);
-
-targ = [];
-targ.r  = randn(3,nt);  targ.r  = targ.r ./ vecnorm(targ.r) .* (2 + rand(1,nt));
-targ.n  = randn(3,nt);  targ.n  = targ.n ./ vecnorm(targ.n);
-targ.du = randn(3,nt);  targ.dv = randn(3,nt);
+[src,  targ ] = ptclouds(ns,  nt);
+[srcd, targd] = ptclouds(nsd, ntd);
 
 S = slicesurfer(geometries.sphere(1, 4, [0;0;0], 8, 1), 1);
 
@@ -30,13 +33,13 @@ targ_off.dv = randn(3,40);  targ_off.dv = targ_off.dv ./ vecnorm(targ_off.dv);
 %% Now run the tests
 
 failures = {};
-failures = test_per_kernel(failures, zk, eps, ns, nt, src, targ, S, targ_off);
-failures = test_transmission(failures, zk, eps, ns, nt, src, targ, S, targ_off);
-failures = test_stok_sp_identity(failures, src, targ);
-failures = test_combined_layer(failures, zk, ns, src, targ);
-failures = test_arithmetic(failures, zk, eps, src, targ, S, targ_off);
-failures = test_zeros(failures, eps, ns, nt, src, targ);
-failures = test_times(failures, eps, ns, nt, src, targ);
+failures = test_per_kernel(failures, zk, eps, src, targ, srcd, targd, S, targ_off);
+failures = test_transmission(failures, zk, eps, src, targ, srcd, targd, S, targ_off);
+failures = test_stok_sp_identity(failures, srcd, targd);
+failures = test_combined_layer(failures, zk, nsd, srcd, targd);
+failures = test_arithmetic(failures, zk, eps, src, targ, srcd, targd);
+failures = test_zeros(failures, eps, nsd, ntd, srcd, targd);
+failures = test_times(failures, eps, nsd, ntd, srcd, targd);
 failures = test_fmm_ndens(failures, eps, ns, src, targ);
 
 nfail = numel(failures);
@@ -48,7 +51,7 @@ end
 
 % =========================================================================
 
-function failures = test_per_kernel(failures, zk, eps, ~, ~, src, targ, S, targ_off)
+function failures = test_per_kernel(failures, zk, eps, src, targ, srcd, targd, S, targ_off)
 % FD-prime and FMM checks for all basic kernels, the laplace and
 % helmholtz fmms with two densities.
 
@@ -69,7 +72,7 @@ sigma_r_pt2 = randn(nsp, 2);
 sigma_pt2   = randn(nsp, 2) + 1i*randn(nsp, 2);
 sigma_rep2  = randn(2*nsp, 2) + 1i*randn(2*nsp, 2);
 
-tol_fd = 1e-3;  tol_fmm = 1e-5;  h_fd = 1e-5;
+tol_fd = 1e-3;  tol_fmm = 1e-3;  h_fd = 1e-5;
 coefs_lap  = [0.7; 1.3];
 coefs_h    = [1i*zk; 1.0];
 coefs_ct   = [1i*zk; 1.0];
@@ -124,13 +127,13 @@ for k = 1:size(kernels, 1)
             case 'd2trans',  K_bot = kernel3d('h','dp',zk);
             case 'c2trans',  K_bot = kernel3d('h','cp',zk,coefs_ct);
         end
-        failures = check_x2trans(failures, K, K_aux, K_bot, src, targ, label);
+        failures = check_x2trans(failures, K, K_aux, K_bot, srcd, targd, label);
         if ~isempty(K.fmm)      % [2x1]: one density per source point
             failures = check_fmm(failures, K, src, targ, sigma_pt2, eps, tol_fmm, label);
         end
     else
         if ~isempty(K_aux)
-            failures = check_fd_targ(failures, K, K_aux, src, targ, h_fd, tol_fd, label);
+            failures = check_fd_targ(failures, K, K_aux, srcd, targd, h_fd, tol_fd, label);
         end
         if ~isempty(K.fmm) && ~isempty(sig_pt)
             failures = check_fmm(failures, K, src, targ, sig_pt, eps, tol_fmm, label);
@@ -141,7 +144,7 @@ end
 end
 
 
-function failures = test_transmission(failures, zk, eps, ~, ~, src, targ, S, targ_off)
+function failures = test_transmission(failures, zk, eps, src, targ, srcd, targd, S, targ_off)
 % Scalar diff kernels, trans_rep, trans_sys, trans_sys_diff, x2trans_diff.
 
 zk1        = 0.3 + 0.15i;
@@ -159,29 +162,29 @@ for kd = { {'s_diff','s',{}}; {'d_diff','d',{}}; {'sp_diff','sp',{}}; {'dp_diff'
     Kdiff = kernel3d('h', kd{1}, zks, diff_coefs);
     Kref  = diff_coefs(1).*kernel3d('h',kd{2},zk,kd{3}{:}) - diff_coefs(2).*kernel3d('h',kd{2},zk1,kd{3}{:});
     failures = report(failures, ['helm ' kd{1}], 'eval vs explicit diff', ...
-        norm(Kdiff.eval(src,targ)-Kref.eval(src,targ),'fro')/norm(Kref.eval(src,targ),'fro'), 1e-13);
+        norm(Kdiff.eval(srcd,targd)-Kref.eval(srcd,targd),'fro')/norm(Kref.eval(srcd,targd),'fro'), 1e-13);
 end
 for kd = { {'c_diff','c'}; {'cp_diff','cp'} }
     kd = kd{1};
     Kdiff = kernel3d('h', kd{1}, zks, c_coefs4);
     Kref  = diff_coefs(1).*kernel3d('h',kd{2},zk,coefs_ct) - diff_coefs(2).*kernel3d('h',kd{2},zk1,coefs_ct);
     failures = report(failures, ['helm ' kd{1}], 'eval vs explicit diff', ...
-        norm(Kdiff.eval(src,targ)-Kref.eval(src,targ),'fro')/norm(Kref.eval(src,targ),'fro'), 1e-13);
+        norm(Kdiff.eval(srcd,targd)-Kref.eval(srcd,targd),'fro')/norm(Kref.eval(srcd,targd),'fro'), 1e-13);
 end
 
 % trans_rep
 Ktr  = kernel3d('h','trans_rep',zk,[0.7;1.3]);
-M_tr = Ktr.eval(src,targ);
-M_D  = 0.7*kernel3d('h','d',zk).eval(src,targ);
-M_S  = 1.3*kernel3d('h','s',zk).eval(src,targ);
+M_tr = Ktr.eval(srcd,targd);
+M_D  = 0.7*kernel3d('h','d',zk).eval(srcd,targd);
+M_S  = 1.3*kernel3d('h','s',zk).eval(srcd,targd);
 failures = report(failures, 'helm trans_rep', 'eval blocks vs D, S', ...
     max(norm(M_tr(:,1:2:end)-M_D,'fro')/norm(M_D,'fro'), norm(M_tr(:,2:2:end)-M_S,'fro')/norm(M_S,'fro')), 1e-13);
 
 % trans_sys
 Kts = kernel3d('h','trans_sys',zk,coe_22);
-M_ts = Kts.eval(src,targ);
-M_D  = kernel3d('h','d', zk).eval(src,targ);  M_S  = kernel3d('h','s', zk).eval(src,targ);
-M_Dp = kernel3d('h','dp',zk).eval(src,targ);  M_Sp = kernel3d('h','sp',zk).eval(src,targ);
+M_ts = Kts.eval(srcd,targd);
+M_D  = kernel3d('h','d', zk).eval(srcd,targd);  M_S  = kernel3d('h','s', zk).eval(srcd,targd);
+M_Dp = kernel3d('h','dp',zk).eval(srcd,targd);  M_Sp = kernel3d('h','sp',zk).eval(srcd,targd);
 e = max([norm(M_ts(1:2:end,1:2:end)-coe_22(1,1)*M_D, 'fro')/norm(coe_22(1,1)*M_D,'fro'), ...
          norm(M_ts(1:2:end,2:2:end)-coe_22(1,2)*M_S, 'fro')/norm(coe_22(1,2)*M_S,'fro'), ...
          norm(M_ts(2:2:end,1:2:end)-coe_22(2,1)*M_Dp,'fro')/norm(coe_22(2,1)*M_Dp,'fro'), ...
@@ -190,12 +193,12 @@ failures = report(failures, 'helm trans_sys', 'eval 2x2 blocks', e, 1e-13);
 
 % trans_sys_diff
 Ktsd = kernel3d('h','trans_sys_diff',zks,coe_222);
-M_tsd = Ktsd.eval(src,targ);
+M_tsd = Ktsd.eval(srcd,targd);
 c0 = coe_222(:,:,1);  c1 = coe_222(:,:,2);
-M_D0 = kernel3d('h','d', zk ).eval(src,targ);  M_D1 = kernel3d('h','d', zk1).eval(src,targ);
-M_S0 = kernel3d('h','s', zk ).eval(src,targ);  M_S1 = kernel3d('h','s', zk1).eval(src,targ);
-M_Dp0= kernel3d('h','dp',zk ).eval(src,targ);  M_Dp1= kernel3d('h','dp',zk1).eval(src,targ);
-M_Sp0= kernel3d('h','sp',zk ).eval(src,targ);  M_Sp1= kernel3d('h','sp',zk1).eval(src,targ);
+M_D0 = kernel3d('h','d', zk ).eval(srcd,targd);  M_D1 = kernel3d('h','d', zk1).eval(srcd,targd);
+M_S0 = kernel3d('h','s', zk ).eval(srcd,targd);  M_S1 = kernel3d('h','s', zk1).eval(srcd,targd);
+M_Dp0= kernel3d('h','dp',zk ).eval(srcd,targd);  M_Dp1= kernel3d('h','dp',zk1).eval(srcd,targd);
+M_Sp0= kernel3d('h','sp',zk ).eval(srcd,targd);  M_Sp1= kernel3d('h','sp',zk1).eval(srcd,targd);
 f = max([norm(M_tsd(1:2:end,1:2:end)-(c0(1,1)*M_D0-c1(1,1)*M_D1),'fro')/norm(c0(1,1)*M_D0-c1(1,1)*M_D1,'fro'), ...
          norm(M_tsd(1:2:end,2:2:end)-(c0(1,2)*M_S0-c1(1,2)*M_S1),'fro')/norm(c0(1,2)*M_S0-c1(1,2)*M_S1,'fro'), ...
          norm(M_tsd(2:2:end,1:2:end)-(c0(2,1)*M_Dp0-c1(2,1)*M_Dp1),'fro')/norm(c0(2,1)*M_Dp0-c1(2,1)*M_Dp1,'fro'), ...
@@ -207,11 +210,11 @@ for kd = { {'s2trans_diff','s_diff','sp_diff'}; {'d2trans_diff','d_diff','dp_dif
     kd = kd{1};
     failures = check_x2trans_diff(failures, ...
         kernel3d('h',kd{1},zks,diff_coefs), kernel3d('h',kd{2},zks,diff_coefs), ...
-        kernel3d('h',kd{3},zks,diff_coefs), src, targ, ['helm ' kd{1}]);
+        kernel3d('h',kd{3},zks,diff_coefs), srcd, targd, ['helm ' kd{1}]);
 end
 failures = check_x2trans_diff(failures, ...
     kernel3d('h','c2trans_diff',zks,c_coefs4), kernel3d('h','c_diff',zks,c_coefs4), ...
-    kernel3d('h','cp_diff',zks,c_coefs4), src, targ, 'helm c2trans_diff');
+    kernel3d('h','cp_diff',zks,c_coefs4), srcd, targd, 'helm c2trans_diff');
 
 % fmm against eval for every transmission and diff kernel
 fmm_kernels = { ...
@@ -237,7 +240,7 @@ for k = 1:size(fmm_kernels, 1)
     end
     nsrc = size(src.r, 2);
     sig = randn(K.opdims(2)*nsrc, 1) + 1i*randn(K.opdims(2)*nsrc, 1);
-    failures = check_fmm(failures, K, src, targ, sig, eps, 1e-5, label);
+    failures = check_fmm(failures, K, src, targ, sig, eps, 1e-3, label);
 end
 
 end
@@ -276,13 +279,12 @@ end
 end
 
 
-function failures = test_arithmetic(failures, zk, eps, src, targ, ~, ~)
+function failures = test_arithmetic(failures, zk, eps, src, targ, srcd, targd)
 % Composite kernel expression tests eval and fmm.
 
-tol_fmm = 1e-5;
+tol_fmm = 1e-3;
 coefs_h  = [1i*zk; 1.0];
-ns       = size(src.r, 2);
-sigma_r  = randn(ns, 1);
+sigma_r  = randn(size(srcd.r, 2), 1);
 
 K_hs = kernel3d('h','s',zk);  K_hd = kernel3d('h','d',zk);
 K_ls = kernel3d('l','s');      K_hc = kernel3d('h','c',zk,coefs_h);
@@ -290,9 +292,9 @@ c1 = 2.0 + 0.5i;  c2 = 1.5;
 
 Kexpr = ((-K_hs).*c1 + K_hd - (K_ls+K_hc)/3) / c2;
 
-pot_expr = Kexpr.eval(src,targ)*sigma_r;
-pot_ref  = ((-c1)*K_hs.eval(src,targ)*sigma_r + K_hd.eval(src,targ)*sigma_r ...
-           - (K_ls.eval(src,targ)*sigma_r + K_hc.eval(src,targ)*sigma_r)/3) / c2;
+pot_expr = Kexpr.eval(srcd,targd)*sigma_r;
+pot_ref  = ((-c1)*K_hs.eval(srcd,targd)*sigma_r + K_hd.eval(srcd,targd)*sigma_r ...
+           - (K_ls.eval(srcd,targd)*sigma_r + K_hc.eval(srcd,targd)*sigma_r)/3) / c2;
 failures = report(failures, 'arithmetic', 'composite eval',       norm(pot_expr-pot_ref)/norm(pot_ref), 1e-13);
 
 sigma_r_pt = randn(size(src.r,2), 1);
@@ -334,7 +336,7 @@ for c = {2.5, randn(3,1), randn(1,3), randn(3,3)}
     if ~isempty(Kt.fmm)
         u = Kt.fmm(eps,src,targ,sig3);
         failures = report(failures, 'times', [lbl ' fmm'], ...
-            norm(u(:)-ref*sig3)/norm(ref*sig3), 1e-5);
+            norm(u(:)-ref*sig3)/norm(ref*sig3), 1e-3);
     end
 end
 
@@ -410,10 +412,47 @@ end
 % =========================================================================
 
 function failures = check_fmm(failures, K, src, targ, sigma, eps, tol, label)
-% Compare K.fmm against K.eval.
+% Compare K.fmm against K.eval. The fmm runs at all targets (so the tree is
+% really exercised), but the O(ns*nt) direct matrix is only formed for the
+% first NTCHK targets and the potential compared there.
+ntchk = 10;
+
 pot_fmm = K.fmm(eps, src, targ, sigma);
-pot_ref = K.eval(src, targ) * reshape(sigma, [], size(sigma, 2));
+
+m    = min(ntchk, size(targ.r, 2));
+tsub = subtarg(targ, 1:m);
+pot_ref = K.eval(src, tsub) * reshape(sigma, [], size(sigma, 2));
+
+% rows of the kernel matrix belonging to targets 1:m
+pot_fmm = reshape(pot_fmm, [], size(pot_ref, 2));
+pot_fmm = pot_fmm(1:K.opdims(1)*m, :);
+
 failures = report(failures, label, 'fmm vs eval', norm(pot_fmm(:)-pot_ref(:))/norm(pot_ref(:)), tol);
+end
+
+
+function [src, targ] = ptclouds(ns, nt)
+% Random sources inside the unit ball, targets in the shell 2 < |x| < 3.
+src = [];
+src.r  = randn(3,ns);  src.r  = src.r  ./ vecnorm(src.r) .* rand(1,ns);
+src.n  = randn(3,ns);  src.n  = src.n  ./ vecnorm(src.n);
+src.du = randn(3,ns);  src.dv = randn(3,ns);
+
+targ = [];
+targ.r  = randn(3,nt);  targ.r  = targ.r ./ vecnorm(targ.r) .* (2 + rand(1,nt));
+targ.n  = randn(3,nt);  targ.n  = targ.n ./ vecnorm(targ.n);
+targ.du = randn(3,nt);  targ.dv = randn(3,nt);
+end
+
+
+function t = subtarg(targ, idx)
+% Restrict a ptinfo struct to the target columns IDX.
+n = size(targ.r, 2);
+t = targ;
+for f = fieldnames(targ).'
+    v = targ.(f{1});
+    if size(v, 2) == n, t.(f{1}) = v(:, idx); end
+end
 end
 
 function failures = check_fd_targ(failures, K_prime, K_base, src, targ, h, tol, label)

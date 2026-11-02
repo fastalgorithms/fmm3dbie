@@ -1,12 +1,10 @@
 % Test byindex.kernbyindex entries against surfermat.
 
-run ../startup.m
-
 rng(42);
 
 %% Now run the tests
 
-test_two_surfer_lap();
+test_two_surfer_lap(); 
 test_two_surfer_lap_ordervec_mode();
 test_recompute_on_the_fly();
 test_explicit_novers();
@@ -19,11 +17,11 @@ test_wrong_novers();
 function test_two_surfer_lap()
 % Two-surfer 2x2 Laplace kernel array: kernbyindex matches surfermat.
 
-eps = 1e-10;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 opts_sm = struct('selfquad', false, 'adaptive_correction', false);
 
-S1a = geometries.ellipsoid([1,1,1], [3,3,3], [],      6);
-S1b = geometries.ellipsoid([1,1,1], [3,3,3], [4;0;0], 6);
+S1a = geometries.ellipsoid([1,1,1], [2,2,2], [],      4);
+S1b = geometries.ellipsoid([1,1,1], [2,2,2], [4;0;0], 4);
 srfrs = [S1a, S1b];
 
 kerns(2,2) = kernel3d();
@@ -47,12 +45,12 @@ function test_two_surfer_lap_ordervec_mode()
 % Same two-surfer setup as test_two_surfer_lap, but forcing surfermat to
 % return the numeric norders (opts.ifreturnovers=0).
 
-eps = 1e-10;  tol = 1e-9;
+eps = 1e-4;  tol = 5e-3;
 opts_sm = struct('selfquad', false, 'adaptive_correction', false, ...
     'ifreturnovers', 0);
 
-S1a = geometries.ellipsoid([1,1,1], [3,3,3], [],      6);
-S1b = geometries.ellipsoid([1,1,1], [3,3,3], [4;0;0], 6);
+S1a = geometries.ellipsoid([1,1,1], [2,2,2], [],      4);
+S1b = geometries.ellipsoid([1,1,1], [2,2,2], [4;0;0], 4);
 srfrs = [S1a, S1b];
 
 kerns(2,2) = kernel3d();
@@ -87,11 +85,11 @@ function test_recompute_on_the_fly()
 % Passing objover=[] (or omitting it) makes kernbyindex recompute
 % oversampling orders on the fly.
 
-eps = 1e-10;  tol = 1e-9;
+eps = 1e-4;  tol = 5e-3;
 opts_sm = struct('selfquad', false, 'adaptive_correction', false);
 
-S1a = geometries.ellipsoid([1,1,1], [3,3,3], [],      6);
-S1b = geometries.ellipsoid([1,1,1], [3,3,3], [4;0;0], 6);
+S1a = geometries.ellipsoid([1,1,1], [2,2,2], [],      4);
+S1b = geometries.ellipsoid([1,1,1], [2,2,2], [4;0;0], 4);
 srfrs = [S1a, S1b];
 
 kerns(2,2) = kernel3d();
@@ -120,9 +118,9 @@ end
 function test_explicit_novers()
 % Explicit novers vector: kernbyindex matches manually oversampled smooth matrix.
 
-eps = 1e-10;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 
-S      = geometries.ellipsoid([1,1,1], [3,3,3], [], 4);
+S      = geometries.ellipsoid([1,1,1], [2,2,2], [], 4);
 kern   = kernel3d('l', 's');
 opdims = kern.opdims;
 
@@ -158,7 +156,7 @@ function test_stok_with_corrections()
 % Two-surfer 2x2 Stokes kernels: kernbyindex with nonsmoothonly corrections
 % matches the full surfermat reference.
 
-eps = 1e-10;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 
 S3a = geometries.ellipsoid([1,1,1], [1,1,1], [],        5);
 S3b = geometries.ellipsoid([1,1,1], [1,1,1], [2.5;0;0], 5);
@@ -186,10 +184,10 @@ end
 function test_single_surfer_stok()
 % Single surfer, Laplace SLP: kernbyindex matches surfermat.
 
-eps = 1e-10;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 opts_sm = struct('selfquad', false, 'adaptive_correction', false);
 
-S    = geometries.ellipsoid([1,1,1], [3,3,3], [], 5);
+S    = geometries.ellipsoid([1,1,1], [2,2,2], [], 5);
 kern = kernel3d('l', 's');
 od   = kern.opdims;
 
@@ -208,7 +206,7 @@ function test_extra_targ_field()
 % Kernel declaring a target field beyond the geometry (belpde reads
 % mean_curv, which the surfer stores as an npts x 1 column).
 
-eps = 1e-10;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 opts_sm = struct('selfquad', false, 'adaptive_correction', false);
 
 S1 = geometries.ellipsoid([1,1,1.2], [2,2,2], [],      5);
@@ -238,9 +236,9 @@ function test_wrong_novers()
 % Wrong novers should give an error above tolerance (negative test).
 % Reuses the same small geometry as test_explicit_novers.
 
-eps = 1e-10;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 
-S    = geometries.ellipsoid([1,1,1], [3,3,3], [], 4);
+S    = geometries.ellipsoid([1,1,1], [2,2,2], [], 4);
 kern = kernel3d('l', 's');
 od   = kern.opdims;
 

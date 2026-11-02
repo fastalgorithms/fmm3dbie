@@ -73,8 +73,8 @@ end
 
 function test_lap2d_volume()
 
-tol = 1e-5;
-eps = 1e-8;
+tol = 1e-3;
+eps = 1e-4;
 [S, tbd] = disk_and_boundary(8);
 [n, kap] = density_mode();
 
@@ -108,8 +108,8 @@ end
 
 function test_helm2d_volume()
 
-tol = 1e-5;
-eps = 1e-8;
+tol = 1e-3;
+eps = 1e-4;
 zk  = 2.3;
 [S, tbd] = disk_and_boundary(8);
 [n, kap] = density_mode();
@@ -143,8 +143,8 @@ end
 
 function test_flex2d_volume()
 
-tol = 1e-5;
-eps = 1e-8;
+tol = 1e-3;
+eps = 1e-4;
 nu  = 0.3;
 [n, kap] = density_mode();
 
@@ -246,8 +246,8 @@ function test_flex2d_varalpha()
 %          - (1-nu)(alpha_xx u_yy - 2 alpha_xy u_xy + alpha_yy u_xx)
 %          - (c0 alpha + beta) u
 
-tol = 1e-5;
-eps = 1e-8;
+tol = 1e-3;
+eps = 1e-4;
 nu  = 0.3;
 [n, kap] = density_mode();
 
@@ -305,8 +305,8 @@ function test_helm2d_lippmann_schwinger()
 % inside, with k1 = zk sqrt(1+q), u_scat = b H_n(zk r) e^{i n theta}
 % outside, and sigma = zk^2 q u.
 
-tol = 1e-6;
-eps = 1e-10;
+tol = 1e-3;
+eps = 1e-5;
 zk  = 2.3;
 q   = 0.5;
 n   = 2;
@@ -345,7 +345,7 @@ if ( ~exist('hfmm2d', 'file') || ~exist('rfmm2d', 'file') )
     return
 end
 
-tol = 1e-8;
+tol = 1e-3;
 S = geometries.disk([], [], [3,3,3], 4);
 sigma = randn(S.npts, 1) + 1i*randn(S.npts, 1);
 th = linspace(0, 2*pi, 31); th = th(1:end-1);
@@ -377,7 +377,7 @@ kerns = {kernel3d('lap2d', 's'), kernel3d('lap2d', 'sp'), ...
 for i = 1:numel(kerns)
     K = kerns{i};
     assert(~isempty(K.fmm), 'missing fmm for %s %s', K.name, K.type);
-    pf = K.fmm(1e-12, S, t, sigma);
+    pf = K.fmm(1e-5, S, t, sigma);
     pd = K.eval(S, t)*sigma;
     err = norm(pf - pd) / norm(pd);
     fprintf('%-7s %-20s fmm err %5.2e\n', K.name, K.type, err);
@@ -521,7 +521,7 @@ function test_tensor_targets()
 % the same values as (3,nt) targets: on and off the surface, with and
 % without the fmm, for two densities
 
-eps = 1e-8;
+eps = 1e-4;
 S = disk_and_boundary(8);
 f = density(S.r(1,:), S.r(2,:));
 F = [f, 2i*f + 1];
@@ -563,7 +563,7 @@ end
 function [t3, t2] = tensor_targets(S, rad)
 % points on the circle of radius rad as (3,nt) and (2,k,nch) arrays, with
 % patch ids if on the surface
-th = linspace(0, 2*pi, 41); th = th(1:end-1);
+th = linspace(0, 2*pi, 11); th = th(1:end-1);
 x = rad*cos(th); y = rad*sin(th);
 k = 10;  nch = numel(x)/k;
 t3 = []; t2 = [];

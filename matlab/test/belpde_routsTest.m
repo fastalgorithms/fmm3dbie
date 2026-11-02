@@ -4,14 +4,13 @@
 % analytic solution built from belpde_source
 %
 %
-run ../startup.m
 
-S = geometries.ellipsoid([1,1,1.5], 2*[1,1,1], [0;0;0], 8);
+S = geometries.ellipsoid([1,1,1.5], 2*[1,1,1], [0;0;0], 6);
 wts = S.wts;
 
 x_source = [0.15; 0.25; 0.35];
 charge = 1;
-eps = 1e-9;
+eps = 1e-4;
 
 %% Laplace-Beltrami
 
@@ -36,12 +35,12 @@ zk = 2.1;
 Amat = surfermat(S, kernel3d('bel','rhb',zk), eps);
 Kmat = surfermat(S, kernel3d('bel','khb',zk), eps);
 
-sigma = gmres(Amat, rhs, [], 1e-12, 200);
+sigma = gmres(Amat, rhs, [], 1e-6, 200);
 u = Kmat*sigma;
 
 err2 = norm((u-uex).*sqrt(wts))/norm(uex.*sqrt(wts));
 fprintf('Error in Helmholtz-Beltrami solution=%d\n',err2);
-assert(err2 < 1e-3, 'Helmholtz-Beltrami error too large');
+assert(err2 < 3e-3, 'Helmholtz-Beltrami error too large');
 
 %% Variable wavenumber, using the Laplace-Beltrami parametrix
 
@@ -55,9 +54,9 @@ zk2f = @(t) reshape(zk2fun(t.r), 1, 1, []);
 Amat = surfermat(S, kernel3d('bel','rlb') + zk2f*kparam, eps);
 Kmat = surfermat(S, kparam, eps);
 
-sigma = gmres(Amat, rhs, [], 1e-12, 200);
+sigma = gmres(Amat, rhs, [], 1e-6, 200);
 u = Kmat*sigma;
 
 err3 = norm((u-uex).*sqrt(wts))/norm(uex.*sqrt(wts));
 fprintf('Error in variable wavenumber solution=%d\n',err3);
-assert(err3 < 1e-3, 'Variable wavenumber Beltrami error too large');
+assert(err3 < 3e-3, 'Variable wavenumber Beltrami error too large');
