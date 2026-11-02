@@ -1,10 +1,10 @@
-function [sol, flag, relres, iter, resvec, times] = surfermatsolve(surferobj, kern, rhs, eps, tol, maxit, objover, cors, opts)
+function [sol, flag, relres, iter, resvec, times] = surfermatsolve(surferobj, kern, rhs, eps, objover, cors, opts)
 %SURFERMATSOLVE Solve the integral equation system for given kernel and
 % surfer array, using the solver selected by opts.solver.
 %
 % Syntax: sol = surfermatsolve(surferobj, kern, rhs)
 %         [sol,flag,relres,iter,resvec,times] = surfermatsolve(surferobj, kern, rhs, ...
-%             eps, tol, maxit, objover, cors, opts)
+%             eps, objover, cors, opts)
 %
 % Input:
 %   surferobj - array of surfer objects describing boundary
@@ -13,8 +13,6 @@ function [sol, flag, relres, iter, resvec, times] = surfermatsolve(surferobj, ke
 %
 % Optional input:
 %   eps     - (1e-6) quadrature tolerance
-%   tol     - (eps) gmres relative residual tolerance
-%   maxit   - (min(nrows,200)) maximum number of gmres iterations
 %   objover - oversampling specification, see surfermat
 %   cors    - sparse matrix of near-field quadrature corrections, from
 %             surfermat with corrections=true.
@@ -29,6 +27,8 @@ function [sol, flag, relres, iter, resvec, times] = surfermatsolve(surferobj, ke
 %                   The FLAM solvers need FLAM on the path, and do not
 %                   take objover, cors or opts.l2scale. Quadrature options
 %                   go in opts.flamfuns.quadopts.
+%       opts.epsgmres = (eps) gmres relative residual tolerance
+%       opts.maxit  = (min(nrows,200)) maximum gmres iterations
 %       opts.precond = ('none') preconditioner for 'gmres' and 'ifmm',
 %                     built from the matrix without oversampling:
 %                     'rskelf'      - rskelf factorization
@@ -39,7 +39,7 @@ function [sol, flag, relres, iter, resvec, times] = surfermatsolve(surferobj, ke
 %                   The rskelf preconditioners need FLAM on the path.
 %       opts.precond_tol = (sqrt(eps)) rank tolerance of the rskelf
 %                     preconditioners
-%       opts.occ    = (64) FLAM leaf occupancy
+%       opts.occ    = (2048) FLAM leaf occupancy
 %       opts.flamopts = options for rskelf/ifmm, e.g. symm or
 %                     proxybylevel. For 'ifmm', store defaults to 'a'.
 %       opts.flamfuns = options for byindex.flamfuns
@@ -52,6 +52,7 @@ function [sol, flag, relres, iter, resvec, times] = surfermatsolve(surferobj, ke
 %   sol    - solution, nrows x nrhs
 %   flag   - nrhs x 1, solver convergence flag for each right-hand side
 %   relres - nrhs x 1, relative residual for each right-hand side
+%            ('rskelf': of the compressed matrix)
 %   iter   - nrhs x 1, gmres iteration count (0 for dense and rskelf)
 %   resvec - 1 x nrhs cell array of gmres residual history vectors
 %   times  - (nrhs+1) x 1, times(1) is the precomputation time, 
@@ -61,15 +62,15 @@ function [sol, flag, relres, iter, resvec, times] = surfermatsolve(surferobj, ke
 %
 % Author: Tristan Goodwill
 
-if nargin < 4, eps = 1e-6; end
-if nargin < 5, tol = eps; end
-if nargin < 6, maxit = []; end
-if nargin < 7, objover = []; end
-if nargin < 8, cors = []; end
-if nargin < 9, opts = []; end
+if nargin < 4 || isempty(eps), eps = 1e-6; end
+if nargin < 5, objover = []; end
+if nargin < 6, cors = []; end
+if nargin < 7, opts = []; end
 
-solver = 'gmres';
-if isfield(opts,'solver'), solver = lower(opts.solver); end
+epsgmres = get_opt(opts, 'epsgmres', eps);
+maxit    = get_opt(opts, 'maxit', []);
+
+solver = lower(get_opt(opts, 'solver', 'gmres'));
 if ~any(strcmp(solver,{'gmres','dense','rskelf','ifmm'}))
     error('surfermatsolve: unsupported solver ''%s''', solver);
 end
@@ -96,8 +97,9 @@ if any(strcmp(precname,{'rskelf','blockrskelf'}))
 end
 for f = flamneeds
     if exist(f{1}, 'file') ~= 2
-        error('surfermatsolve: solver ''%s'' with preconditioner ''%s'' needs FLAM on the path', ...
-            solver, precname);
+        if any(strcmp(solver,{'rskelf','ifmm'})), use = ['solver ''' solver ''''];
+        else, use = ['preconditioner ''' precname '''']; end
+        error('FLAM not detected. Please load fastalgorithms/FLAM to use %s', use);
     end
 end
 if any(strcmp(solver,{'rskelf','ifmm'}))
@@ -109,8 +111,7 @@ if any(strcmp(solver,{'rskelf','ifmm'}))
     end
 end
 
-checkcors = ~isempty(cors);
-if isfield(opts,'checkcors'), checkcors = checkcors && opts.checkcors; end
+checkcors = ~isempty(cors) && get_opt(opts, 'checkcors', true);
 
 surfers = surferobj;
 if ~iscell(surfers), surfers = num2cell(surferobj(:).',1); end
@@ -125,9 +126,10 @@ times  = zeros(nrhs+1, 1);
 tprecomp = tic;
 switch solver
 case 'gmres'
-    % With a single kernel, uniform oversampling lets each apply use one FMM
-    if numel(kern) == 1 && ~isfield(opts, 'unif_nover'), opts.unif_nover = 1; end
+    % A supplied cors keeps the caller's oversampling. Otherwise, with one
+    % kernel, oversample uniformly so each apply is one FMM.
     if isempty(cors)
+        opts.unif_nover = get_opt(opts, 'unif_nover', numel(kern) == 1);
         coropts = opts;
         coropts.corrections = 1;
         [cors,objover] = surfermat(surferobj,kern,eps,coropts);
@@ -144,10 +146,10 @@ case 'gmres'
     for i = 1:nrhs
         tsolve = tic;
         if nargout < 2
-            sol(:,i) = gmres(sysapply, rhs(:,i), [], tol, maxit, M);
+            sol(:,i) = gmres(sysapply, rhs(:,i), [], epsgmres, maxit, M);
         else
             [sol(:,i), flag(i), relres(i), iter(i,:), resvec{i}] = ...
-                gmres(sysapply, rhs(:,i), [], tol, maxit, M);
+                gmres(sysapply, rhs(:,i), [], epsgmres, maxit, M);
         end
         times(1+i) = toc(tsolve);
     end
@@ -198,11 +200,12 @@ case 'rskelf'
 case 'ifmm'
     fopts = get_opt(opts, 'flamfuns', []);
     fopts.type = 'ifmm';
+    fopts.occ  = get_opt(opts, 'occ', 2048);
     flamopts = get_opt(opts, 'flamopts', []);
-    if ~isfield(flamopts, 'store'), flamopts.store = 'a'; end
-    if isfield(flamopts, 'symm'), fopts.symm = flamopts.symm; end
+    flamopts.store = get_opt(flamopts, 'store', 'a');
+    fopts.symm = get_opt(flamopts, 'symm', get_opt(fopts, 'symm', 'n'));
     funs = byindex.flamfuns([surfers{:}], kern, eps, [], fopts);
-    F = ifmm(funs.Afun, funs.rx, funs.cx, get_opt(opts, 'occ', 64), eps, ...
+    F = ifmm(funs.Afun, funs.rx, funs.cx, funs.occ, eps, ...
         funs.pxyfun, flamopts);
     sysapply = @(x) ifmm_mv(F, funs.xinterp*x, funs.Afun) + funs.Q*x;
 
@@ -215,8 +218,12 @@ case 'ifmm'
 
     for i = 1:nrhs
         tsolve = tic;
-        [sol(:,i), flag(i), relres(i), iter(i,:), resvec{i}] = ...
-            gmres(sysapply, rhs(:,i), [], tol, maxit, M);
+        if nargout < 2
+            sol(:,i) = gmres(sysapply, rhs(:,i), [], epsgmres, maxit, M);
+        else
+            [sol(:,i), flag(i), relres(i), iter(i,:), resvec{i}] = ...
+                gmres(sysapply, rhs(:,i), [], epsgmres, maxit, M);
+        end
         times(1+i) = toc(tsolve);
     end
 end
@@ -230,10 +237,11 @@ function [F, funs] = flam_rskelf(surfers, kern, eps, tol, opts)
 % tolerance tol
 fopts = get_opt(opts, 'flamfuns', []);
 fopts.type = 'rskelf';
+fopts.occ  = get_opt(opts, 'occ', 2048);
 flamopts = get_opt(opts, 'flamopts', []);
-if isfield(flamopts, 'symm'), fopts.symm = flamopts.symm; end
+fopts.symm = get_opt(flamopts, 'symm', get_opt(fopts, 'symm', 'n'));
 funs = byindex.flamfuns([surfers{:}], kern, eps, [], fopts);
-F = rskelf(funs.Afun, funs.x, get_opt(opts, 'occ', 64), tol, funs.pxyfun, ...
+F = rskelf(funs.Afun, funs.x, funs.occ, tol, funs.pxyfun, ...
     flamopts);
 end
 

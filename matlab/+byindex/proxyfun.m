@@ -11,9 +11,13 @@ function [Kpxy, nbr] = proxyfun(surfers, kern, targs, proxy, varargin)
 %   pxyfunlvl   = pxyfun(lvl)                             % opts.proxybylevel
 %
 % The last form is used by the fastalgorithms fork of FLAM with
-% opts.proxybylevel = true, and rebuilds the proxy surface for a box of
-% size proxy.width/2^(lvl-1). For a surface built for a smaller box, set
-% proxy.lvl to its level (see byindex.flamfuns).
+% opts.proxybylevel = true, and rebuilds the proxy surface for that level.
+%
+% The proxy shells are stretched with FLAM's boxes, so a box l and its
+% neighbors are a unit cube and its neighbors in x./l. proxy is either one
+% surface from byindex.proxy_points, used for boxes of the same shape, or
+% the table of FLAM's levels from byindex.flamfuns. Other box shapes are
+% an error.
 %
 % Matrix indices follow byindex.kernbyindex (targs = []) or
 % byindex.kernbyindexeval (off-surface targs).
@@ -25,7 +29,8 @@ function [Kpxy, nbr] = proxyfun(surfers, kern, targs, proxy, varargin)
 %             nsurfers x nsurfers; otherwise as in byindex.kernbyindexeval.
 %   targs   - [] for on-surface matrices, or off-surface targets as in
 %             byindex.kernbyindexeval
-%   proxy   - proxy surface from byindex.proxy_points
+%   proxy   - proxy surface from byindex.proxy_points, or funs.proxy
+%             from byindex.flamfuns
 %
 %   FLAM arguments:
 %   x, rx, cx - point for each row/column index
@@ -46,15 +51,23 @@ function [Kpxy, nbr] = proxyfun(surfers, kern, targs, proxy, varargin)
 %          For lvl, the proxy function for that level.
 %   nbr  - nbr without the indices outside the proxy surface
 
-% Proxy function for level lvl. Levels up to proxy.lvl (default 1) keep
-% the given surface, finer levels rebuild it.
+% Proxy function for level lvl, rebuilding the surface for levels below
+% the one it was built for (proxy.lvl, default 1, for a single surface)
 if numel(varargin) == 1
     lvl = varargin{1};
     p = proxy;
-    lvl0 = 1;
-    if isfield(proxy, 'lvl'), lvl0 = proxy.lvl; end
-    if lvl > lvl0
-        p = byindex.proxy_points(kern, proxy.width/2^(lvl-1), proxy.eps, proxy.opts);
+    if isfield(p, 'lvls')
+        if lvl <= size(p.lvls, 2) && p.isurf(lvl) > 0 && p.surflvl(p.isurf(lvl)) < lvl
+            p.surf{end+1}  = byindex.proxy_points(kern, p.leff(:, lvl), p.eps, p.opts);
+            p.surflvl(end+1) = lvl;
+            p.isurf(lvl)   = numel(p.surf);
+        end
+    else
+        lvl0 = 1;
+        if isfield(p, 'lvl'), lvl0 = p.lvl; end
+        if lvl > lvl0
+            p = byindex.proxy_points(kern, proxy.width/2^(lvl-1), proxy.eps, proxy.opts);
+        end
     end
     Kpxy = @(varargin) byindex.proxyfun(surfers, kern, targs, p, varargin{:});
     nbr = [];
@@ -100,12 +113,33 @@ for k = 1:nrow
     irowlocs(k+1) = irowlocs(k) + size(targs(k).r(:,:), 2) * opdims_mat(1, k, 1);
 end
 
+% Surface for this box: from the table by FLAM's box size, or the given
+% one. leff is l, except that sides FLAM never split may be longer.
+l = l(:) .* ones(3, 1);
+if isfield(proxy, 'lvls')
+    k = find(all(abs(proxy.lvls - l) <= 1e-10*max(l), 1), 1);
+    if isempty(k)
+        error(['BYINDEX.PROXYFUN: box size %s is not one of FLAM''s levels ' ...
+            'from byindex.flamfuns; pass FLAM the same points and no opts.ext'], ...
+            mat2str(l.', 4));
+    end
+    leff = proxy.leff(:, k);
+    p = proxy.surf{proxy.isurf(k)};
+else
+    leff = l;
+    p = proxy;
+end
+if any(abs(leff/max(leff) - p.width/max(p.width)) > 1e-8)
+    error('BYINDEX.PROXYFUN: box shape %s does not match the proxy surface %s', ...
+        mat2str(leff.'/max(leff), 4), mat2str(p.width.'/max(p.width), 4));
+end
+
 % Scale proxy points/weights
-lmax = max(l);
+sc = max(leff)/max(p.width);
 pxy = [];
-pxy.r = proxy.r*lmax + ctr(:);
-pxy.n = proxy.n;
-pw = proxy.w*lmax^2;
+pxy.r = p.r*sc + ctr(:);
+pxy.n = p.n;
+pw = p.w*sc^2;
 npxy = size(pxy.r, 2);
 
 % Keep only the neighbors inside the proxy surface. For rc = 'c' these
@@ -115,7 +149,7 @@ if rc == 'c'
 else
     xnbr = cx(:, nbr);
 end
-nbr = nbr(vecnorm((xnbr - ctr(:))/lmax, 2, 1) < proxy.radius);
+nbr = nbr(vecnorm((xnbr - ctr(:))./leff, 2, 1) < p.radius);
 
 % One copy of the proxy points per block row (rc = 'c') or block column
 % (rc = 'r'), or a single copy for a single kernel

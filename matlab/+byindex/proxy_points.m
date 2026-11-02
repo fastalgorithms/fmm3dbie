@@ -5,8 +5,9 @@ function proxy = proxy_points(kern, width, eps, opts)
 % proxy = byindex.proxy_points(kern, width, eps, opts)
 %
 % Adapted from the proxy selection in pcfft's dx_nproxy. Sources fill a
-% box of side width, and the proxy surface is nshell concentric spheres,
-% the innermost of radius crad*sqrt(3)*width/2:
+% box with sides width, and the proxy surface is nshell concentric shells,
+% spheres stretched with the box, the innermost through crad*sqrt(3)/2
+% box sizes along each axis:
 %
 %   1. Each shell has the fewest points that resolve K(.,x) to eps on it,
 %      judged from the spherical harmonic tails of the kernel.
@@ -15,29 +16,30 @@ function proxy = proxy_points(kern, width, eps, opts)
 %
 % Input:
 %   kern  - kernel3d object or array; the surface works for all of them
-%   width - side length of the box, e.g. the largest side of the
-%           bounding box of all points passed to FLAM
+%   width - side lengths of the box, scalar for a cube or 3-vector
 %   eps   - tolerance
 %   opts  - (optional) options struct
 %     opts.nshell_max - maximum number of shells (default 20)
 %     opts.nproxy_max - maximum number of proxy points per shell (default 6000)
-%     opts.crad       - innermost radius crad*sqrt(3)*width/2 (default
-%                       sqrt(3)); FLAM needs crad <= sqrt(3)
+%     opts.crad       - innermost shell at crad*sqrt(3)/2 box sizes
+%                       (default sqrt(3)); FLAM needs crad <= sqrt(3)
 %     opts.ifaddtrans - (false) proxyfun also returns the transpose block
 %                       to rskelf, for non-symmetric matrices
 %     opts.rmax       - largest distance from the box center to a point
-%                       outside it (default Inf); the shells stop there
+%                       outside it (default Inf); the shells reach it
 %
 % Output:
-%   proxy - proxy surface in units of the box size, i.e. for a box of size
-%           l centered at ctr the proxy points are proxy.r*l + ctr
+%   proxy - proxy surface for the box centered at 0. For the same shape
+%           scaled by s, the points are proxy.r*s + ctr
 %     proxy.r, proxy.n - (3, sum(nproxy)) points and outward normals
 %     proxy.w          - (sum(nproxy), 1) area weights
-%     proxy.radius     - innermost radius; closer points stay neighbors
+%     proxy.radius     - innermost radius in box sizes, i.e. a point x
+%                        is inside if norm((x - ctr)./width) < radius
 %     proxy.nproxy     - (1, nshell) points on each shell, innermost first
 %     proxy.nshell, proxy.crad, proxy.ifaddtrans
-%     proxy.width, proxy.eps, proxy.opts - the inputs, from which
-%                        byindex.proxyfun rebuilds the surface per level
+%     proxy.width      - (3, 1) box sides
+%     proxy.eps, proxy.opts - the inputs, from which byindex.proxyfun
+%                        rebuilds the surface per level
 
 if nargin < 4, opts = []; end
 
@@ -85,13 +87,15 @@ rng_state = rng;
 cleanup = onCleanup(@() rng(rng_state));
 rng(0);
 
-halfside = width/2;
-radius   = crad*sqrt(3)*halfside;
-rmax     = max(rmax, 2*radius);
+% Radii are in box sizes, i.e. a shell of radius rho is rho*(u.*width)
+% for u on the unit sphere
+width  = width(:) .* ones(3, 1);
+radius = crad*sqrt(3)/2;
+rmax   = max(rmax/min(width), 2*radius);
 
 % Random sources in the box with random unit normals
 src = [];
-src.r = (rand(3, nsrc) - 0.5)*width;
+src.r = (rand(3, nsrc) - 0.5).*width;
 src.n = randn(3, nsrc);
 src.n = src.n ./ vecnorm(src.n);
 
@@ -100,7 +104,7 @@ src.n = src.n ./ vecnorm(src.n);
 % Add the box corners before checking resolution
 [A, B, C] = ndgrid([-1 1], [-1 1], [-1 1]);
 srcres = [];
-srcres.r = [src.r, halfside*[A(:).'; B(:).'; C(:).']];
+srcres.r = [src.r, width/2 .* [A(:).'; B(:).'; C(:).']];
 srcres.n = randn(3, nsrc + 8);
 srcres.n = srcres.n ./ vecnorm(srcres.n);
 
@@ -121,7 +125,7 @@ for l = 0:Lmax
     sph.W{l+1} = wt(:) .* legendre(l, ct.', 'norm').';
 end
 
-[nproxy1, tail_big] = nproxy_at(kerns, srcres, radius, sph, eps, Lbig);
+[nproxy1, tail_big] = nproxy_at(kerns, srcres, radius, width, sph, eps, Lbig);
 if tail_big >= eps
     % Warn if the largest allowed nproxy is within a factor of ten
     if tail_big < 10*eps
@@ -142,7 +146,7 @@ yv = linspace(1/ntarget - 1, 1 - 1/ntarget, ntarget);
 rv = sqrt(1 - yv.^2);
 th = pi*(sqrt(5) - 1)*(0:ntarget-1);
 targ = [];
-targ.r = 1.01*radius*(1 + rand(1, ntarget)) .* [cos(th).*rv; yv; sin(th).*rv];
+targ.r = 1.01*radius*(1 + rand(1, ntarget)) .* [cos(th).*rv; yv; sin(th).*rv] .* width;
 targ.n = randn(3, ntarget);
 targ.n = targ.n ./ vecnorm(targ.n);
 
@@ -154,9 +158,9 @@ for ns = 1:nshell_max
     rads = 1./sr;
     nproxy = nproxy1*ones(1, ns);
     for is = 2:ns
-        nproxy(is) = min(nproxy1, nproxy_at(kerns, srcres, rads(is), sph, eps, Lbig));
+        nproxy(is) = min(nproxy1, nproxy_at(kerns, srcres, rads(is), width, sph, eps, Lbig));
     end
-    pxy = shells(rads, nproxy);
+    pxy = shells(rads, nproxy, width);
 
     err = 0;
     for k = 1:numel(kerns)
@@ -175,7 +179,7 @@ for ns = 1:nshell_max
                     nsrc = 2*nsrc;
                 end
                 nsrc  = min(nsrc, ceil(nrows/(rank_frac*cps)));
-                src.r = (rand(3, nsrc) - 0.5)*width;
+                src.r = (rand(3, nsrc) - 0.5).*width;
                 src.n = randn(3, nsrc);
                 src.n = src.n ./ vecnorm(src.n);
             end
@@ -243,10 +247,10 @@ if nshell == 0
 end
 
 proxy = [];
-proxy.r      = pxy.r/width;
+proxy.r      = pxy.r;
 proxy.n      = pxy.n;
-proxy.w      = repelem(4*pi*rads(:).^2./nproxy(:), nproxy)/width^2;
-proxy.radius = radius/width;
+proxy.w      = pxy.w;
+proxy.radius = radius;
 proxy.nproxy = nproxy;
 proxy.nshell = nshell;
 proxy.crad   = crad;
@@ -258,13 +262,14 @@ proxy.opts       = opts;
 end
 
 
-function [n, tail_big] = nproxy_at(kerns, src, radius, sph, eps, Lbig)
-% Points resolving the kernels to eps on a sphere of the given radius,
+function [n, tail_big] = nproxy_at(kerns, src, radius, width, sph, eps, Lbig)
+% Points resolving the kernels to eps on the shell of the given radius,
 % capped at degree Lbig; tail_big is the tail there if the cap is hit.
 ngrid = sph.ntheta*sph.nphi;
 grd = [];
-grd.r = radius*sph.n;
-grd.n = sph.n;
+grd.r = radius*sph.n .* width;
+grd.n = sph.n ./ width;
+grd.n = grd.n ./ vecnorm(grd.n);
 n = 0;
 tail_big = 0;
 for k = 1:numel(kerns)
@@ -298,18 +303,25 @@ end
 end
 
 
-function pxy = shells(rads, nproxy)
-% Golden angle spirals with nproxy(k) points of radius rads(k)
-pxy = [];
-pxy.r = zeros(3, sum(nproxy));
+function pxy = shells(rads, nproxy, width)
+% Golden angle spirals with nproxy(k) points on shell rads(k), stretched
+% with the box, with their normals and area weights
+u = zeros(3, sum(nproxy));
+w = zeros(sum(nproxy), 1);
 i0 = 0;
 for k = 1:numel(rads)
     n  = nproxy(k);
     yv = linspace(1/n - 1, 1 - 1/n, n);
     rv = sqrt(1 - yv.^2);
     th = pi*(sqrt(5) - 1)*(0:n-1);
-    pxy.r(:, i0+(1:n)) = rads(k)*[cos(th).*rv; yv; sin(th).*rv];
+    u(:, i0+(1:n)) = [cos(th).*rv; yv; sin(th).*rv];
+    w(i0+(1:n))    = 4*pi*rads(k)^2/n;
     i0 = i0 + n;
 end
-pxy.n = pxy.r ./ vecnorm(pxy.r);
+rr = repelem(rads(:).', nproxy);
+pxy = [];
+pxy.r = rr .* u .* width;
+pxy.n = u ./ width;
+pxy.w = w .* prod(width) .* vecnorm(pxy.n).';
+pxy.n = pxy.n ./ vecnorm(pxy.n);
 end
