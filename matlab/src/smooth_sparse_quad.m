@@ -1,10 +1,9 @@
-function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,val2over)
+function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 %
 %  SMOOTH_SPARSE_QUAD
 %
 %  Syntax:
 %    Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
-%    Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,val2over)
 %
 %  This subroutine returns a sparse matrix of smooth quadrature
 %  corrections for the interactions between a set of targets and
@@ -26,9 +25,8 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,va
 %        patch indices of the non-zero target-patch interactions,
 %        sorted by target number
 %    * nover: integer
-%        quadrature order to use when oversampling each source patch
-%    * S_over, val2over: (optional) S oversampled to nover and the
-%        interpolation matrix from S.oversample, to avoid recomputing them
+%        quadrature order to use when oversampling each source patch,
+%        or a cell {S_over, val2over} with val2over an opdims-aware interpolation matrix
 %
 %  Output arguments:
 %    * Asmth: sparse matrix of size (opdim(1)*ntarg, opdim(2)*S.npts)
@@ -40,19 +38,21 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,va
 
     kern = kernel3d(kern);
 
-    ntarg = size(targs.r, 2);
+    ntarg = size(targs.r(:,:), 2);
 
-    if nargin >= 8
-        % precomputed oversampling
-    elseif ismethod(S,'oversample') && ~any(isnan(nover))
-        [S_over, val2over] = oversample(S, nover);
+    opdims = kern.opdims;
+    if iscell(nover)
+        [S_over, val2over] = nover{:};
     else
-        S_over = S; val2over = eye(size(S.r(:,:),2));
+        if ismethod(S,'oversample') && ~any(isnan(nover))
+            [S_over, val2over] = oversample(S, nover);
+        else
+            S_over = S; val2over = eye(size(S.r(:,:),2));
+        end
+        val2over = kron(val2over,eye(opdims(2)));
     end
 
     ixyzs = S_over.ixyzs;
-    opdims = kern.opdims;
-    val2over = kron(val2over,eye(opdims(2)));
 
     % Convert rsc -> csc so we can loop over patches (columns)
     rsc = [];
@@ -62,6 +62,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,va
     npatches = S.npatches;
     nnz_rsc  = length(col_ind);
     npols = ixyzs(2:end) - ixyzs(1:end-1);  % pts per patch (oversampled)
+    npols = npols(:);
     rsc.iquad = [1; 1 + cumsum(npols(col_ind(:)))];
     csc = conv_rsc_to_csc(npatches, rsc);
 
@@ -127,6 +128,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,va
 end
 
 function v = slice_field(A, idx, npts)
+if ~ismatrix(A), A = A(:,:); end
 if size(A, 2) == npts
     v = A(:, idx);
 elseif size(A, 1) == npts

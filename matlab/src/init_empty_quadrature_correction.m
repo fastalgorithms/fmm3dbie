@@ -3,7 +3,7 @@ function Q = init_empty_quadrature_correction(targinfo,opts)
         opts = [];
     end
     Q = [];
-    [~,ntarg] = size(targinfo.r);
+    ntarg = size(targinfo.r(:,:), 2);
     Q.targinfo = targinfo;
     Q.row_ptr = ones(ntarg+1,1);
     Q.nnz = 0;

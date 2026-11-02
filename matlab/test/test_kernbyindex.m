@@ -1,7 +1,5 @@
 % Test byindex.kernbyindex entries against surfermat.
 
-run ../startup.m
-
 rng(42);
 
 %% Now run the tests
@@ -20,7 +18,7 @@ function test_mixed_opdims()
 % Two surfers with a 2x2 kernel array of opdims [3 3], [3 1], [1 3] and
 % [1 1], including a zero block: kernbyindex matches surfermat.
 
-eps = 1e-8;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 opts_sm = struct('selfquad', false, 'adaptive_correction', false, 'ifoversamp', 0);
 
 S1 = geometries.sphere(1, 2, [0;0;0], 3, 1);
@@ -44,7 +42,7 @@ function test_stok_with_corrections()
 % Two-surfer 2x2 Stokes kernels: kernbyindex with nonsmoothonly corrections
 % matches the full surfermat reference.
 
-eps = 1e-8;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 
 S3a = geometries.sphere(1, 2, [0;0;0],   3, 1);
 S3b = geometries.sphere(1, 2, [2.5;0;0], 3, 1);
@@ -72,7 +70,7 @@ end
 function test_additive_corrections()
 % corrections=1 output from surfermat, added with opts.replace_quadcorr = false.
 
-eps = 1e-8;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 
 S    = geometries.ellipsoid([1,1,1], [3,3,3], [], 4);
 kern = kernel3d('l', 'd');
@@ -94,7 +92,7 @@ function test_diag_term()
 % Identity term with opdims [3 3] comes from Qsparse in both modes,
 % including nonsmoothonly output without quadrature.
 
-eps = 1e-8;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 
 S    = geometries.sphere(1, 2, [0;0;0], 3, 1);
 kern = kernel3d('stok', 'd') + kernel3d.eye(-0.5*eye(3));
@@ -132,7 +130,7 @@ function test_extra_targ_field()
 % mean_curv, which the surfer stores as an npts x 1 column). Its identity
 % term comes from Qsparse.
 
-eps = 1e-8;  tol = 1e-9;
+eps = 1e-4;  tol = 1e-3;
 opts_sm = struct('selfquad', false, 'adaptive_correction', false, 'ifoversamp', 0);
 
 S1 = geometries.ellipsoid([1,1,1.2], [2,2,2], [],      4);

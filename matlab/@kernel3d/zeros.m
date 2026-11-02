@@ -33,9 +33,10 @@ obj.targ_fields = {};
 m = opdims(1);
 n = opdims(2);
 
-obj.eval = @(s,t) zeros(m * size(t.r,2), n * size(s.r,2));
+obj.eval = @(s,t) zeros(m * size(t.r(:,:), 2), n * size(s.r(:,:), 2));
 
-obj.fmm = @(eps,src,targ,sigma) zeros(m * size(targ.r,2), 1);
+obj.fmm = @(eps,src,targ,sigma) zeros(m * size(targ.r(:,:), 2), ...
+                                      numel(sigma)/(n * size(src.r(:,:), 2)));
 
 obj.getquad = @(S,eps,varargin) build_empty_quad(m, n, S, varargin);
 
@@ -50,7 +51,7 @@ if ~isempty(args) && ~isempty(args{1})
     if isa(targ, 'surfer')
         ntarg = targ.npts;
     elseif isstruct(targ) && isfield(targ, 'r')
-        ntarg = size(targ.r, 2);
+        ntarg = size(targ.r(:,:), 2);
     else
         ntarg = S.npts;
     end

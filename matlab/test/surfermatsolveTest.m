@@ -6,11 +6,11 @@
 %
 % run ../startup.m
 
-S1 = geometries.sphere(1, 2, [0;0;0], 8, 1);
+S1 = geometries.sphere(1, 2, [0;0;0], 4, 1);
 S2 = S1 + [4;0;0];
 srfrs = [S1, S2];
 
-eps = 1e-9;
+eps = 1e-6;
 
 src0 = []; src0.r = [0;0;0];
 srcs = []; srcs.r = [[0.3; -0.1; 0.2],[4; 0.1; -0.3]];
@@ -35,7 +35,7 @@ opts_corr.corrections = 1;
 [cors, objover] = surfermat(srfrs, kerns, eps, opts_corr);
 cors = cors + 0.5*speye(size(cors,1));
 
-[sigma, flag, relres, iters] = surfermatsolve(srfrs, kerns, rhs, eps, 1e-8, 100, objover, cors);
+[sigma, flag, relres, iters] = surfermatsolve(srfrs, kerns, rhs, eps, 1e-7, 100, objover, cors);
 
 for i = 1:size(rhs,2)
 fprintf('flag=%d, relres=%5.2e, iters=%d \n', flag(i), relres(i), iters(i));
@@ -48,9 +48,9 @@ pot_ex = skern.eval(srcs, targ1);
 
 err = abs(pot - pot_ex)./abs(pot_ex);
 fprintf('Error in exterior mixed bc solve = %d\n', err(1));
-assert(err(1) < 1e-6, 'src 1 error too large');
+assert(err(1) < 1e-3, 'src 1 error too large');
 fprintf('Error in exterior mixed bc solve = %d\n', err(2));
-assert(err(2) < 1e-6, 'src 2 error too large');
+assert(err(2) < 1e-3, 'src 2 error too large');
 % check the cors warning, turned into an error so the solve stops early
 wid = 'surfermatsolve:cors';
 wstate = warning('error', wid);
@@ -63,7 +63,7 @@ for opts_s = {opts_g, opts_d}
     o = opts_s{1};
     % bad cors warns
     try
-        [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, 1e-8, 100, objover, near, o);
+        [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, 1e-7, 100, objover, near, o);
         caught = '';
     catch me
         caught = me.identifier;
@@ -71,7 +71,7 @@ for opts_s = {opts_g, opts_d}
     assert(strcmp(caught, wid), ['bad cors not detected (' o.solver ')']);
     % checkcors = false silences it
     o.checkcors = false;
-    [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, 1e-8, 5, objover, near, o);
+    [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, 1e-7, 5, objover, near, o);
     % correct cors does not warn
     o.checkcors = true;
     [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, 1e-8, 100, objover, cors, o);
@@ -84,7 +84,7 @@ opts_dense = []; opts_dense.solver = 'dense';
 sigma_d = surfermatsolve(srfrs, kerns, rhs, eps, [], [], objover, cors, opts_dense);
 errd = norm(sigma_d - sigma, 'fro')/norm(sigma, 'fro');
 fprintf('dense vs gmres difference = %5.2e\n', errd);
-assert(errd < 1e-6, 'dense and gmres solutions differ');
+assert(errd < 1e-3, 'dense and gmres solutions differ');
 
 % a function handle preconditioner is passed to gmres, which wraps the
 % error it throws

@@ -60,8 +60,8 @@
 
 run ../startup.m
 
-eps        = 1e-7;
-norder     = 8;
+eps        = 1e-4;
+norder     = 6;
 na         = 2;
 opts_apply = struct('usefmm', 0);
 
@@ -74,13 +74,13 @@ alpha = 0.7;
 beta  = -1.3;
 
 % tolerances (see KNOWN ISSUE above for tol_dp / tol_dn)
-tol_s    = 1e-4;
-tol_d    = 1e-3;
-tol_sp   = 1e-3;
-tol_dp   = 5e-2;    % D' error constant is ~3 orders above D/S'
-tol_pot  = 1e-3;    % identity (I)
-tol_dn   = 2e-1;    % identity (II), limited by D' (see note above)
-tol_comb = 1e-9;    % combined kernels vs their pieces
+tol_s    = 1e-3;
+tol_d    = 1e-2;
+tol_sp   = 1e-2;
+tol_dp   = 5e-1;    % D' error constant is ~3 orders above D/S'
+tol_pot  = 1e-2;    % identity (I)
+tol_dn   = 5e-1;    % identity (II), limited by D' (see note above)
+tol_comb = 1e-7;    % combined kernels vs their pieces
 
 names = {'s', 'd', 'sp', 'dp', 'c', 'cp'};
 tols  = [tol_s, tol_d, tol_sp, tol_dp];

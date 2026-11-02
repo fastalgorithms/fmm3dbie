@@ -48,7 +48,7 @@ function [objout,varargout] = oversample(obj,nover)
     nuni = size(ntmp_uni,1);
     
     vmats = cell(nuni,1);
-    umats = cell(nuni,1);
+    bmats = cell(nuni,1);
     ispl = cell(nuni,1);
     for i=1:nuni
         
@@ -60,7 +60,7 @@ function [objout,varargout] = oversample(obj,nover)
             rnodes_over = koorn.rv_nodes(nover);
 
             vmats{i} = koorn.coefs2vals(norder,rnodes_over);
-            umats{i} = koorn.vals2coefs(norder,rnodes);  
+            bmats{i} = koorn.coefs2vals(norder,rnodes);
             
                 
             
@@ -68,12 +68,12 @@ function [objout,varargout] = oversample(obj,nover)
             rnodes = polytens.lege.nodes(norder);
             rnodes_over = polytens.lege.nodes(nover);
             vmats{i} = polytens.lege.coefs2vals(norder,rnodes_over);
-            umats{i} = polytens.lege.vals2coefs(norder,rnodes);
+            bmats{i} = polytens.lege.coefs2vals(norder,rnodes);
         elseif(iptype == 12)
             rnodes = polytens.cheb.nodes(norder);
             rnodes_over = polytens.cheb.nodes(nover);
             vmats{i} = polytens.cheb.coefs2vals(norder,rnodes_over);
-            umats{i} = polytens.cheb.vals2coefs(norder,rnodes);
+            bmats{i} = polytens.cheb.coefs2vals(norder,rnodes);
         end
         if(norder>nover)
             [lia,iindb] = ismembertol(rnodes_over',rnodes',1e-7,'ByRows',true);
@@ -112,7 +112,7 @@ function [objout,varargout] = oversample(obj,nover)
         jsysmat_all = cell(nuni,1);
         vsysmat_all = cell(nuni,1);
         for i=1:nuni
-            xinterpmat{i} = vmats{i}*umats{i};
+            xinterpmat{i} = vmats{i}/bmats{i};
             if(~isempty(ispl{i}))
                 i1 = ispl{i}(:,1);
                 i2 = ispl{i}(:,2);

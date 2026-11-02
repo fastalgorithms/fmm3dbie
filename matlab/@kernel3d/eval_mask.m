@@ -6,6 +6,9 @@ val = obj.eval(src,targ);
 % times the largest edge of the bounding box of the sources and targets
 src_r  = src.r(:,:);
 targ_r = targ.r(:,:);
+d = max(size(src_r,1), size(targ_r,1));
+src_r(end+1:d,:)  = 0;
+targ_r(end+1:d,:) = 0;
 r = [src_r, targ_r];
 thresh = 2^-51 * max(max(r, [], 2) - min(r, [], 2));
 if thresh == 0, thresh = realmin; end

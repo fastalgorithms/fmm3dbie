@@ -36,11 +36,11 @@ function pot = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 %                               sigma (4*ns x 1): [J_x; J_y; J_z; rho] Cartesian
 %                               pot   (6*nt x 1): [E_x; E_y; E_z; H_x; H_y; H_z]
 %
-%   sigma    - density
+%   sigma    - density, one column per density
 %   alpha    - (optional) CFIE regularisation parameter (only for 'nrccie-bc')
 %
 % Output:
-%   pot - potential column vector:
+%   pot - potential, one column per density:
 %         nrccie-bc:   (3*nt x 1)
 %         nrccie-eval: (6*nt x 1)
 %         mfie, curls: (3*nt x 1)
@@ -52,6 +52,19 @@ function pot = fmm(eps, zk, srcinfo, targinfo, type, sigma, varargin)
 
 src  = srcinfo.r;
 [~, ns] = size(src);
+
+ncomp = 3;
+if strcmpi(type, 'nrccie-eval'), ncomp = 4; end
+ndens = numel(sigma)/(ncomp*ns);
+if ndens > 1
+    sigma = reshape(sigma, ncomp*ns, ndens);
+    pot = em3d.fmm(eps, zk, srcinfo, targinfo, type, sigma(:,1), varargin{:});
+    pot = [pot, zeros(numel(pot), ndens-1)];
+    for j = 2:ndens
+        pot(:,j) = em3d.fmm(eps, zk, srcinfo, targinfo, type, sigma(:,j), varargin{:});
+    end
+    return
+end
 
 try
     targ = targinfo.r(:,:);

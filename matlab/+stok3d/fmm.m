@@ -14,12 +14,25 @@ function U = fmm(eps, src, targ, type, sigma, coefs)
 %              'd'           double layer D
 %              'sp','sprime' traction of S at target (S')
 %              'c'           combined layer coefs(1)*S + coefs(2)*D
-%   sigma    - density (3 x ns)
+%   sigma    - density (3*ns x ndens)
 %   coefs    - [alpha; beta] for combined layer (type 'c' only)
 %
 % Output:
-%   U    - potential column vector (3*nt x 1), ordered point by point
+%   U    - potential (3*nt x ndens), ordered point by point
 %          (u1,u2,u3 at target 1, then target 2, ...)
+
+ns = size(src.r, 2);
+ndens = numel(sigma)/(3*ns);
+if ndens > 1
+    sigma = reshape(sigma, 3*ns, ndens);
+    c = {};
+    if nargin > 5, c = {coefs}; end
+    U = zeros(3*size(targ.r, 2), ndens);
+    for j = 1:ndens
+        U(:,j) = stok3d.fmm(eps, src, targ, type, sigma(:,j), c{:});
+    end
+    return
+end
 
 sigma = reshape(sigma,3,[]);
 switch lower(type)
