@@ -31,7 +31,7 @@ p2 = byindex.proxy_points(kern, 1, eps, struct('nshell_max', 1, 'ifaddtrans', tr
 
 assert(p1.nshell == 1 && p2.nshell == 1, 'Laplace should need one shell');
 assert(p2.ifaddtrans && ~p1.ifaddtrans, 'ifaddtrans not stored');
-npxy = p1.nproxy*p1.nshell;
+npxy = sum(p1.nproxy);
 assert(isequal(size(p1.r), [3 npxy]) && isequal(size(p1.n), [3 npxy]) && ...
     numel(p1.w) == npxy, 'wrong proxy sizes');
 assert(abs(p1.radius - 1.5) < 1e-12, 'default radius should be 1.5 box sizes');
@@ -70,14 +70,14 @@ kern = kernel3d('l', 's');
 wstate = warning('off', 'BYINDEX:proxy_points:nproxy');
 cleanup = onCleanup(@() warning(wstate));
 lastwarn('');
-p = byindex.proxy_points(kern, 1, 1e-6, struct('nproxy_max', 500));
+p = byindex.proxy_points(kern, 1, 1e-6, struct('nproxy_max', 400));
 [~, id] = lastwarn;
-assert(strcmp(id, 'BYINDEX:proxy_points:nproxy') && p.nproxy <= 500, ...
+assert(strcmp(id, 'BYINDEX:proxy_points:nproxy') && all(p.nproxy <= 400), ...
     'expected a warning and nproxy <= nproxy_max');
 
 caught = false;
 try
-    byindex.proxy_points(kern, 1, 1e-6, struct('nproxy_max', 400));
+    byindex.proxy_points(kern, 1, 1e-6, struct('nproxy_max', 300));
 catch
     caught = true;
 end
@@ -87,6 +87,11 @@ assert(caught, 'missing eps by more than a factor of ten should raise an error')
 kern = kernel3d(@logg, 's');
 p = byindex.proxy_points(kern, 1, 1e-5);
 assert(p.nshell > 1, 'log kernel should need more than one shell');
+assert(all(diff(p.nproxy) <= 0), 'outer shells should not need more points');
+
+% Shells stop at rmax
+p = byindex.proxy_points(kern, 1, 1e-5, struct('rmax', 4));
+assert(max(vecnorm(p.r)) <= 4 + 1e-12, 'shells should stop at rmax');
 
 warning('off', 'BYINDEX:proxy_points:nshell');
 lastwarn('');
@@ -240,7 +245,7 @@ pxyfunlvl = pxyfun(lvl);
 assert(isa(pxyfunlvl, 'function_handle'), 'expected a function handle for lvl');
 
 plvl = byindex.proxy_points(kern, width/2^(lvl-1), eps);
-assert(plvl.nproxy < proxy.nproxy, 'smaller boxes should need fewer proxies');
+assert(plvl.nproxy(1) < proxy.nproxy(1), 'smaller boxes should need fewer proxies');
 
 ctr = [2; 0; 0];  l = width/2^(lvl-1);
 dist    = vecnorm(S.r - ctr);

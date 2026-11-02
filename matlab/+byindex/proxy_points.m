@@ -5,11 +5,11 @@ function proxy = proxy_points(kern, width, eps, opts)
 % proxy = byindex.proxy_points(kern, width, eps, opts)
 %
 % Adapted from the proxy selection in pcfft's dx_nproxy. Sources fill a
-% box of side width, and the proxy surface is nshell concentric spheres of
-% nproxy points each, the innermost of radius crad*sqrt(3)*width/2:
+% box of side width, and the proxy surface is nshell concentric spheres,
+% the innermost of radius crad*sqrt(3)*width/2:
 %
-%   1. nproxy resolves K(.,x) to eps on one sphere, judged from the
-%      spherical harmonic tails of the kernel, with a margin.
+%   1. Each shell has the fewest points that resolve K(.,x) to eps on it,
+%      judged from the spherical harmonic tails of the kernel.
 %   2. nshell is the smallest number of shells for which a skeleton of
 %      random sources reproduces their interactions with targets outside to eps.
 %
@@ -25,14 +25,17 @@ function proxy = proxy_points(kern, width, eps, opts)
 %                       sqrt(3)); FLAM needs crad <= sqrt(3)
 %     opts.ifaddtrans - (false) proxyfun also returns the transpose block
 %                       to rskelf, for non-symmetric matrices
+%     opts.rmax       - largest distance from the box center to a point
+%                       outside it (default Inf); the shells stop there
 %
 % Output:
 %   proxy - proxy surface in units of the box size, i.e. for a box of size
 %           l centered at ctr the proxy points are proxy.r*l + ctr
-%     proxy.r, proxy.n - (3, nproxy*nshell) points and outward normals
-%     proxy.w          - (nproxy*nshell, 1) area weights
+%     proxy.r, proxy.n - (3, sum(nproxy)) points and outward normals
+%     proxy.w          - (sum(nproxy), 1) area weights
 %     proxy.radius     - innermost radius; closer points stay neighbors
-%     proxy.nproxy, proxy.nshell, proxy.crad, proxy.ifaddtrans
+%     proxy.nproxy     - (1, nshell) points on each shell, innermost first
+%     proxy.nshell, proxy.crad, proxy.ifaddtrans
 %     proxy.width, proxy.eps, proxy.opts - the inputs, from which
 %                        byindex.proxyfun rebuilds the surface per level
 
@@ -46,10 +49,12 @@ crad = sqrt(3);
 if isfield(opts, 'crad'), crad = opts.crad; end
 nsrc = 117;
 if isfield(opts, 'nsrc'), nsrc = opts.nsrc; end
-rank_frac = 0.5;
+rank_frac = 0.75;
 if isfield(opts, 'rank_frac'), rank_frac = opts.rank_frac; end
 ifaddtrans = false;
 if isfield(opts, 'ifaddtrans'), ifaddtrans = opts.ifaddtrans; end
+rmax = Inf;
+if isfield(opts, 'rmax'), rmax = opts.rmax; end
 
 if crad > sqrt(3)*(1 + 1e-12)
     error(['BYINDEX.PROXY_POINTS: opts.crad = %g puts non-neighbor boxes ' ...
@@ -82,6 +87,7 @@ rng(0);
 
 halfside = width/2;
 radius   = crad*sqrt(3)*halfside;
+rmax     = max(rmax, 2*radius);
 
 % Random sources in the box with random unit normals
 src = [];
@@ -89,7 +95,7 @@ src.r = (rand(3, nsrc) - 0.5)*width;
 src.n = randn(3, nsrc);
 src.n = src.n ./ vecnorm(src.n);
 
-%% Step 1: find nproxy that resolves the kernels on one sphere
+%% Step 1: points resolving the kernels on the innermost shell
 
 % Add the box corners before checking resolution
 [A, B, C] = ndgrid([-1 1], [-1 1], [-1 1]);
@@ -98,87 +104,37 @@ srcres.r = [src.r, halfside*[A(:).'; B(:).'; C(:).']];
 srcres.n = randn(3, nsrc + 8);
 srcres.n = srcres.n ./ vecnorm(srcres.n);
 
-% Tensor grid resolving every degree up to Lmax
-Lmax   = ceil(sqrt(nproxy_max/1.05));
-ntheta = Lmax + 1;
-nphi   = 2*Lmax + 2;
-[ct, wt] = polytens.lege.pts(ntheta);
+% Tensor grid on the unit sphere, with W{l+1} the weighted Legendre functions
+Lbig = floor(sqrt(nproxy_max/1.05)) - 1;   % largest degree allowed
+Lmax = Lbig + 1;
+sph = [];
+sph.ntheta = Lmax + 1;
+sph.nphi   = 2*Lmax + 2;
+[ct, wt] = polytens.lege.pts(sph.ntheta);
 ct = ct(:);
-wt = wt(:);
 st  = sqrt(1 - ct.^2);
-phi = (0:nphi-1)*(2*pi/nphi);
-
-grd = [];
-grd.n = [reshape(st*cos(phi), 1, []); reshape(st*sin(phi), 1, []); ...
-         reshape(repmat(ct, 1, nphi), 1, [])];
-grd.r = radius*grd.n;
-ngrid = ntheta*nphi;
-
-% Quadrature weights times normalized associated Legendre functions,
-% W{l+1}(:, m+1) for degree l and order m
-W = cell(Lmax+1, 1);
+phi = (0:sph.nphi-1)*(2*pi/sph.nphi);
+sph.n = [reshape(st*cos(phi), 1, []); reshape(st*sin(phi), 1, []); ...
+         reshape(repmat(ct, 1, sph.nphi), 1, [])];
+sph.W = cell(Lmax+1, 1);
 for l = 0:Lmax
-    W{l+1} = wt .* legendre(l, ct.', 'norm').';
+    sph.W{l+1} = wt(:) .* legendre(l, ct.', 'norm').';
 end
 
-nproxy = 0;
-for k = 1:numel(kerns)
-    F    = kerns{k}.eval(srcres, grd);
-    nder = size(F, 1)/ngrid;
-    ncol = size(F, 2);
-
-    % Largest spherical harmonic coefficient of each degree, kept per
-    % column so each is normalized by its own peak. Each kernel component
-    % is treated as its own function on the sphere.
-    deg_energy = zeros(Lmax+1, ncol);
-    for id = 1:nder
-        G = fft(reshape(F(id:nder:end, :), ntheta, nphi, ncol), [], 2)/nphi;
-        for l = 0:Lmax
-            cp = sum(G(:, 1:l+1, :) .* W{l+1}, 1);
-            cn = sum(G(:, [1, nphi:-1:nphi-l+1], :) .* W{l+1}, 1);
-            e  = max(max(abs(cp), [], 2), max(abs(cn), [], 2));
-            deg_energy(l+1, :) = max(deg_energy(l+1, :), reshape(e, 1, ncol));
-        end
+[nproxy1, tail_big] = nproxy_at(kerns, srcres, radius, sph, eps, Lbig);
+if tail_big >= eps
+    % Warn if the largest allowed nproxy is within a factor of ten
+    if tail_big < 10*eps
+        warning('BYINDEX:proxy_points:nproxy', ['BYINDEX.PROXY_POINTS: ' ...
+            'nproxy_max = %d only resolves the kernels to %.1e > eps = %.1e'], ...
+            nproxy_max, tail_big, eps);
+    else
+        error('BYINDEX.PROXY_POINTS: nproxy did not converge below nproxy_max = %d', ...
+            nproxy_max);
     end
-
-    scl = max(deg_energy, [], 1);
-    scl(scl == 0) = 1;
-    tail = max(flipud(cummax(flipud(deg_energy), 1)) ./ scl, [], 2);
-
-    % Largest degree with at most nproxy_max points
-    Lbig = min(Lmax, floor(sqrt(nproxy_max/1.05))) - 1;
-    nproxy_k = 0;
-    for L = 0:Lbig
-        Lc = L - max(3, ceil(0.25*L));
-        if Lc >= 0 && tail(Lc+2) < eps
-            nproxy_k = ceil(1.05*(L+1)^2);
-            break
-        end
-    end
-    if nproxy_k == 0
-        % Warn if the largest allowed nproxy is within a factor of ten
-        Lc = Lbig - max(3, ceil(0.25*Lbig));
-        tail_big = tail(max(Lc, 0)+2);
-        if tail_big < 10*eps
-            warning('BYINDEX:proxy_points:nproxy', ['BYINDEX.PROXY_POINTS: ' ...
-                'nproxy_max = %d only resolves kernel %d to %.1e > eps = %.1e'], ...
-                nproxy_max, k, tail_big, eps);
-            nproxy_k = ceil(1.05*(Lbig+1)^2);
-        else
-            error('BYINDEX.PROXY_POINTS: nproxy did not converge below nproxy_max = %d', ...
-                nproxy_max);
-        end
-    end
-    nproxy = max(nproxy, nproxy_k);
 end
 
 %% Step 2: find the number of shells
-
-% Unit sphere points, approximately uniform (golden angle spiral)
-yv = linspace(1/nproxy - 1, 1 - 1/nproxy, nproxy);
-rv = sqrt(1 - yv.^2);
-th = pi*(sqrt(5) - 1)*(0:nproxy-1);
-p0 = [cos(th).*rv; yv; sin(th).*rv];
 
 % Targets spread over the annulus [1.01, 2.02]*radius
 ntarget = 500;
@@ -193,7 +149,14 @@ targ.n = targ.n ./ vecnorm(targ.n);
 nshell   = 0;
 err_best = Inf;
 for ns = 1:nshell_max
-    [pxy, rads] = shells(p0, radius, ns);
+    % Chebyshev-like spacing in 1/r from radius to rmax
+    sr = 1/rmax + (cos((0:ns-1)/ns*pi) + 1)/2*(1/radius - 1/rmax);
+    rads = 1./sr;
+    nproxy = nproxy1*ones(1, ns);
+    for is = 2:ns
+        nproxy(is) = min(nproxy1, nproxy_at(kerns, srcres, rads(is), sph, eps, Lbig));
+    end
+    pxy = shells(rads, nproxy);
 
     err = 0;
     for k = 1:numel(kerns)
@@ -216,17 +179,28 @@ for ns = 1:nshell_max
                 src.n = randn(3, nsrc);
                 src.n = src.n ./ vecnorm(src.n);
             end
-            Kp = kerns{k}.eval(src, pxy);
-            [nrows, ncol] = size(Kp);
-            % Randomized ID on a row sketch. The first can resolve the
-            % rank, later ones only test rank <= rank_frac*ncol
+            m     = kerns{k}.opdims(1);
+            nrows = m*size(pxy.r, 2);
+            ncol  = kerns{k}.opdims(2)*nsrc;
+            % Row sketch; later passes only test rank <= rank_frac*ncol
             if isinf(nsk)
                 nsk = min(nrows, ncol);
             else
                 nsk = min(nrows, ceil(1.25*rank_frac*ncol) + 10);
             end
-            if nsk < nrows
-                Kp = randn(nsk, nrows)*Kp;
+            nb = max(1, floor(2e6/(m*ncol)));   % proxy points per block
+            Kp = zeros(nsk, ncol);
+            for i0 = 1:nb:size(pxy.r, 2)
+                idx = i0:min(i0+nb-1, size(pxy.r, 2));
+                pb = [];
+                pb.r = pxy.r(:, idx);
+                pb.n = pxy.n(:, idx);
+                Kb = kerns{k}.eval(src, pb);
+                if nsk < nrows
+                    Kp = Kp + randn(nsk, size(Kb, 1))*Kb;
+                else
+                    Kp(m*(idx(1)-1)+1:m*idx(end), :) = Kb;
+                end
             end
             [~, R, p] = qr(Kp, 0);
             d = abs(diag(R));
@@ -247,6 +221,9 @@ for ns = 1:nshell_max
     if err < err_best
         err_best = err;
         ns_best  = ns;
+        pxy_best = pxy;
+        rads_best   = rads;
+        nproxy_best = nproxy;
     end
 end
 if nshell == 0
@@ -256,7 +233,9 @@ if nshell == 0
             'proxy surface with up to %d shells reaches eps = %.1e, using %d ' ...
             'shells with error %.1e'], nshell_max, eps, ns_best, err_best);
         nshell = ns_best;
-        [pxy, rads] = shells(p0, radius, nshell);
+        pxy    = pxy_best;
+        rads   = rads_best;
+        nproxy = nproxy_best;
     else
         error('BYINDEX.PROXY_POINTS: no proxy surface with up to %d shells reaches eps = %g', ...
             nshell_max, eps);
@@ -266,7 +245,7 @@ end
 proxy = [];
 proxy.r      = pxy.r/width;
 proxy.n      = pxy.n;
-proxy.w      = reshape(repmat(4*pi*rads(:).^2/nproxy, 1, nproxy), [], 1)/width^2;
+proxy.w      = repelem(4*pi*rads(:).^2./nproxy(:), nproxy)/width^2;
 proxy.radius = radius/width;
 proxy.nproxy = nproxy;
 proxy.nshell = nshell;
@@ -279,17 +258,58 @@ proxy.opts       = opts;
 end
 
 
-function [pxy, rads] = shells(p0, radius, ns)
-% ns copies of the unit sphere points p0, with Chebyshev-like spacing in
-% 1/r starting from the innermost shell of the given radius
-if ns > 1
-    sr   = cos((1:ns-1)/ns*pi);
-    sr   = (sr(:) + 1)/2*(1/radius);
-    rads = [radius, 1./sr(:).'];
-else
-    rads = radius;
+function [n, tail_big] = nproxy_at(kerns, src, radius, sph, eps, Lbig)
+% Points resolving the kernels to eps on a sphere of the given radius,
+% capped at degree Lbig; tail_big is the tail there if the cap is hit.
+ngrid = sph.ntheta*sph.nphi;
+grd = [];
+grd.r = radius*sph.n;
+grd.n = sph.n;
+n = 0;
+tail_big = 0;
+for k = 1:numel(kerns)
+    F    = kerns{k}.eval(src, grd);
+    nder = size(F, 1)/ngrid;
+    ncol = size(F, 2);
+
+    % Largest coefficient of each degree, per column and kernel component
+    deg_energy = zeros(numel(sph.W), ncol);
+    for id = 1:nder
+        G = fft(reshape(F(id:nder:end, :), sph.ntheta, sph.nphi, ncol), [], 2)/sph.nphi;
+        for l = 0:numel(sph.W)-1
+            cp = sum(G(:, 1:l+1, :) .* sph.W{l+1}, 1);
+            cn = sum(G(:, [1, sph.nphi:-1:sph.nphi-l+1], :) .* sph.W{l+1}, 1);
+            e  = max(max(abs(cp), [], 2), max(abs(cn), [], 2));
+            deg_energy(l+1, :) = max(deg_energy(l+1, :), reshape(e, 1, ncol));
+        end
+    end
+
+    scl = max(deg_energy, [], 1);
+    scl(scl == 0) = 1;
+    tail = max(flipud(cummax(flipud(deg_energy), 1)) ./ scl, [], 2);
+
+    L = find(tail(1:Lbig+1) < eps, 1) - 1;
+    if isempty(L)
+        L = Lbig;
+        tail_big = max(tail_big, tail(Lbig+1));
+    end
+    n = max(n, ceil(1.05*(L+1)^2));
 end
+end
+
+
+function pxy = shells(rads, nproxy)
+% Golden angle spirals with nproxy(k) points of radius rads(k)
 pxy = [];
-pxy.r = reshape(rads .* reshape(p0, 3, 1, []), 3, []);
+pxy.r = zeros(3, sum(nproxy));
+i0 = 0;
+for k = 1:numel(rads)
+    n  = nproxy(k);
+    yv = linspace(1/n - 1, 1 - 1/n, n);
+    rv = sqrt(1 - yv.^2);
+    th = pi*(sqrt(5) - 1)*(0:n-1);
+    pxy.r(:, i0+(1:n)) = rads(k)*[cos(th).*rv; yv; sin(th).*rv];
+    i0 = i0 + n;
+end
 pxy.n = pxy.r ./ vecnorm(pxy.r);
 end

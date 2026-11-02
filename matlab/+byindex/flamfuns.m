@@ -90,7 +90,6 @@ if strcmp(type, 'rskelf')
     srcs  = surfers;
     trgs  = [];
     rows  = surfers;
-    proxylvl = 3;     % rskelf only uses proxies from level 3 down
 else
     % Smooth rule on the oversampled sources, corrections outside
     quadopts.corrections = true;
@@ -110,7 +109,6 @@ else
     end
     funs.Afun = @(i,j) byindex.kernbyindexeval(i, j, srcs, kern, trgs);
     rows = trgs;
-    proxylvl = 1;
 end
 
 % Point of each row and column
@@ -141,12 +139,14 @@ end
 % Root box, as in FLAM's hypoct
 xall  = [funs.rx, funs.cx];
 width = max(max(xall, [], 2) - min(xall, [], 2));
+proxylvl = 3;     % FLAM only uses proxies from level 3 down
 
 proxyopts.ifaddtrans = strcmp(type, 'rskelf') && symm == 'n';
 funs.proxy = byindex.proxy_points(kern, width/2^(proxylvl-1), eps, proxyopts);
-% byindex.proxyfun rebuilds the proxy surface below proxylvl from the root
+% byindex.proxyfun rebuilds it below proxylvl, with shells to the root diagonal
 funs.proxy.width = width;
 funs.proxy.lvl   = proxylvl;
+funs.proxy.opts.rmax = sqrt(3)*width;
 
 proxy = funs.proxy;
 funs.pxyfun = @(varargin) byindex.proxyfun(srcs, kern, trgs, proxy, varargin{:});
