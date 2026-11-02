@@ -50,41 +50,62 @@ function s = expsum(c, k, r, p, m)
 % exp(z) p(z) = T(z) + R(z), T its Taylor polynomial of degree m-1: the
 % singular part sum_n t_n (sum_j c_j (i k_j)^n) r^(n-m) uses exact
 % coefficient sums, and R(z) = O(z^m) comes from a series for |z| < 1
-N = 40;
-t = zeros(1, N+1);                               % Taylor coefficients
+
+% Taylor coefficients t_n = sum_q p_q/(n-q)!, n = 0..N. The |z| < 1 series
+% tail past N is bounded by sum|p|/(N-numel(p)+1)!, which at N = 30 is
+% O(1e-31) -- far below double precision.
+N  = 30;
+np = numel(p);
+invf = ones(1, N+1);                             % 1/n! by recurrence
+for n = 1:N, invf(n+1) = invf(n)/n; end
+t = zeros(1, N+1);
 for n = 0:N
-    for q = 0:min(n, numel(p) - 1)
-        t(n+1) = t(n+1) + p(q+1)/factorial(n - q);
+    for q = 0:min(n, np-1)
+        t(n+1) = t(n+1) + p(q+1)*invf(n-q+1);
     end
 end
+
+% r^(-1) .. r^(-m) by repeated multiplication rather than m calls to power
+ri = 1./r;
+rin = cell(1, m);  rin{1} = ri;
+for q = 2:m, rin{q} = rin{q-1}.*ri; end
 
 s = zeros(size(r));
 for n = 0:m-1
     Sn = sum(c.*(1i*k).^n);
     if Sn ~= 0
-        s = s + t(n+1)*Sn*r.^(n - m);
+        s = s + (t(n+1)*Sn)*rin{m-n};            % r^(n-m)
     end
 end
 
+ph = fliplr(p(:).');                             % descending, for Horner
 for j = 1:numel(c)
-    zz = 1i*k(j)*r;
+    ik = 1i*k(j);
+    % |z| < 1 <=> r < 1/|k|, since r >= 0: no complex abs over the array
+    if k(j) == 0
+        sm = true(size(r));
+    else
+        sm = r < 1/abs(k(j));
+    end
     R = zeros(size(r));
-    sm = abs(zz) < 1;
-    zs = zz(sm);
-    Rs = zeros(size(zs));
-    zn = zs.^m;
-    for n = m:N
-        Rs = Rs + t(n+1)*zn;
-        zn = zn.*zs;
-    end
-    R(sm) = Rs;
-    zb = zz(~sm);
-    T = zeros(size(zb));
-    for n = m-1:-1:0
-        T = T.*zb + t(n+1);
-    end
-    R(~sm) = exp(zb).*polyval(fliplr(p), zb) - T;
-    s = s + c(j)*R./r.^m;
+
+    % near: R = z^m * sum_{i=0}^{N-m} t_{m+i} z^i, by Horner
+    zs = ik*r(sm);
+    Rs = t(N+1);
+    for n = N-1:-1:m, Rs = Rs.*zs + t(n+1); end
+    zm = zs;
+    for q = 2:m, zm = zm.*zs; end
+    R(sm) = Rs.*zm;
+
+    % far: R = exp(z) p(z) - T(z), both by Horner
+    zb = ik*r(~sm);
+    P = ph(1);
+    for q = 2:numel(ph), P = P.*zb + ph(q); end
+    T = t(m);
+    for n = m-2:-1:0, T = T.*zb + t(n+1); end
+    R(~sm) = exp(zb).*P - T;
+
+    s = s + c(j)*(R.*rin{m});
 end
 
 end

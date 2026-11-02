@@ -252,7 +252,14 @@ subroutine get_centroid_rads_guru(norder,npols,iptype,srccoefs,cms,rads)
   integer *8 i,j,l,m,lpt,np,nv
 
   call get_boundary_vertices(iptype, uv, nv)
-  
+
+  if(nv.le.0) then
+    cms(1) = 0
+    cms(2) = 0
+    cms(3) = 0
+    rads = 0
+    return
+  endif
 
   allocate(pols(npols,nv))
   do i=1,nv

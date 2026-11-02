@@ -51,10 +51,14 @@ obj.diag      = dfun;
 obj.eval = @(s,t) zeros(m*size(t.r(:,:),2), n*size(s.r(:,:),2));
 
 obj.fmm = @fmm_;
-    function varargout = fmm_(eps, s, t, sigma) %#ok<INUSD>
+    function varargout = fmm_(eps, s, t, sigma) 
         if isstruct(t), nt = size(t.r(:,:),2); else, nt = size(t(:,:),2); end
-        if nargout > 0, varargout{1} = zeros(m*nt, 1); end
-        if nargout > 1, varargout{2} = zeros(3, m*nt); end
+        ndens = numel(sigma)/(n*size(s.r(:,:),2));
+        if nargout > 0, varargout{1} = zeros(m*nt, ndens); end
+        if nargout > 1
+            varargout{2} = zeros(3, m*nt);
+            if ndens > 1, varargout{2} = zeros(ndens, 3, m*nt); end
+        end
         if nargout > 2
             error('KERNEL3D:eye:fmm', 'Too many output arguments.');
         end

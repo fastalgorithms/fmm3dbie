@@ -13,10 +13,10 @@
 % S, D and S', hence the separate tolerances.
 %
 
-run ../startup.m
+% run ../startup.m
 
-eps    = 1e-7;
-norder = 8;
+eps    = 1e-4;
+norder = 5;
 na     = 2;
 zk     = 1.1;
 
@@ -25,7 +25,7 @@ src = [];  src.r = [3.5; 2.1; -1.7];
 coefs = [-1, 1; -1, 1];
 
 tol_phi = 1e-3;
-tol_psi = 2e-1;
+tol_psi = 1e-1;
 
 for iptype = [1, 11]
 

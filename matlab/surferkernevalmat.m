@@ -166,7 +166,7 @@ for j = 1:nsurfers
         sysmat_quad = ktmp.getquad(surferj,eps,targinfo);
         if corrections
             [rp, ci] = get_rsc_pattern(surferj, sysmat_quad, opdims);
-            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, rp, ci, noversj);
+            sysmat_smth = smooth_sparse_quad(ktmp, targinfo, surferj, rp, ci, {surferjover, xinterp});
             sysmat_quad = sysmat_quad-sysmat_smth;
         end
 

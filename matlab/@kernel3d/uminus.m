@@ -1,14 +1,19 @@
 function f = uminus(f)
+% - Unary negation for kernel3d class
 
-if kernel3d.radgreen('compatible', f)
+fdiag = f.diag;
+f.diag = [];
+if kernel3d.radgreen('summable', {f})
     f = kernel3d.radgreen('scale', f, -1);
+    if ~isempty(fdiag), f.diag = @(t) -fdiag(t); end
     return
 end
 if kernel3d.radpp('summable', {f})
     f = kernel3d.radpp('sum', {f}, -1);
+    if ~isempty(fdiag), f.diag = @(t) -fdiag(t); end
     return
 end
-% - Unary negation for kernel3d class
+f.diag = fdiag;
 
 f.eval = @(varargin) -f.eval(varargin{:});
 

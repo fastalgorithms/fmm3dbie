@@ -13,6 +13,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'true'
+      - name: Check out fmm2d
+        uses: actions/checkout@v4
+        with:
+          repository: flatironinstitute/fmm2d
+          ref: 550dae5b77b1e006c8ffae37fc832f8c2b536871
+          path: fmm2d
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v2
         with:
@@ -29,6 +35,8 @@ jobs:
           mex -setup:.github/workflows/mex_C_win64.xml C
           cp make.inc.windows.mexci make.inc
           /c/msys64/usr/bin/make matlab
+          cp make.inc fmm2d/
+          cd fmm2d && /c/msys64/usr/bin/make matlab
         shell: C:\msys64\usr\bin\bash.exe {0}
       - name: Generate macOS mex file
         if: runner.os == 'macOS'
@@ -37,14 +45,18 @@ jobs:
           sed 's/\/Applications\/MATLAB_R\*/\/Users\/runner\/hostedtoolcache\/MATLAB\/2023.2.999\/arm64\/MATLAB.app/' make.inc.macos_arm64.gnu > make.inc
           sed -i -e 's/MEXLIBS += \$(MLBLAS.*/MEXLIBS = `gfortran --print-file-name libquadmath.a` `gfortran --print-file-name libstdc++.a` `gfortran --print-file-name libatomic.a` `gfortran --print-file-name libgfortran.a` `gfortran --print-file-name libgomp.a` `gfortran --print-file-name libgcc.a` -ld_classic -lmwblas -lmwlapack/' makefile
           make matlab
+          cp make.inc fmm2d/
+          cd fmm2d && make matlab
       - name: Generate Linux mex file
         if: runner.os == 'Linux'
         run: |
           make matlab
+          [ ! -f make.inc ] || cp make.inc fmm2d/
+          cd fmm2d && make matlab
       - name: Run Matlab test
         uses: matlab-actions/run-command@v2
         with:
-          command: cd('matlab/test'), runtests;
+          command: addpath(fullfile(pwd, 'fmm2d', 'matlab')), cd('matlab/test'), runtests;
       - name: Upload mex files
         uses: actions/upload-artifact@v4
         with:

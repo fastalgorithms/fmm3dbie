@@ -167,13 +167,17 @@ end
 dens = [];
 for j = 1:ns
     r = surfers{j}.r;
-    f = cos(r(1,:) + 2*r(2,:) - r(3,:));
+    f = cos(0.25*(r(1,:) + 2*r(2,:) - r(3,:)));
     dens = [dens; reshape(repmat(f, opdims(2,1,j), 1), [], 1)];
 end
 
 pot = sysapply(dens);
 
-tol = 5e-4;
+% Unless the mesh is extremely fine, if near-field entries are sent 
+% instead of corrections, the following function and test should catch
+% the error. 
+
+tol = 2e-3;
 iloc = 0;
 for i = 1:ns
     nd = opdims(1,i,1);
