@@ -42,7 +42,7 @@ obj.eval = @(s,t) repmat(A, size(t.r(:,:),2), size(s.r(:,:),2));
 
 obj.fmm = @fmm_;
     function varargout = fmm_(eps, s, t, sigma) 
-        if isstruct(t), nt = size(t.r(:,:),2); else, nt = size(t(:,:),2); end
+        if isnumeric(t), nt = size(t(:,:),2); else, nt = size(t.r(:,:),2); end
         ns = size(s.r(:,:),2);
         ndens = numel(sigma)/(n*ns);
         blk = A * reshape(sum(reshape(sigma, n, ns, ndens), 2), n, ndens);

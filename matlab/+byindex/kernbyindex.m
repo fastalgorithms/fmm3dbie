@@ -134,7 +134,7 @@ info.r = obj.r(:, pts);
 for k = 1:numel(fields)
     f = fields{k};
     A = obj.(f);
-    if size(A, 2) == npts
+    if size(A(:,:), 2) == npts
         info.(f) = A(:, pts);
     elseif size(A, 1) == npts
         info.(f) = A(pts, :).';

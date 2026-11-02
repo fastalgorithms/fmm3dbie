@@ -204,14 +204,15 @@ end
 
 
 function info = ptinfo(obj, pts, fields)
-% Point info at pts. Fields may be stored as (:, npts) or (npts, :).
+% Point info at pts. Fields may be stored as (:, npts), (:, k, nch) as in
+% chunkers, or (npts, :).
 npts = size(obj.r(:,:), 2);
 info = [];
 info.r = obj.r(:, pts);
 for k = 1:numel(fields)
     f = fields{k};
     A = obj.(f);
-    if size(A, 2) == npts
+    if size(A(:,:), 2) == npts
         info.(f) = A(:, pts);
     elseif size(A, 1) == npts
         info.(f) = A(pts, :).';

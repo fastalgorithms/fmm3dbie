@@ -11,6 +11,7 @@ test_mixed_opdims();
 test_extra_targ_field();
 test_two_surfer_oversampled_decomposition();
 test_target_groups();
+test_chunker_targets();
 test_flam_ifmm_oversampled();
 
 
@@ -141,6 +142,32 @@ Aref = byindex.kernbyindex(i, j, srfrs, kerns);
 err = norm(byindex.kernbyindexeval(i, j, srfrs, kerns, srfrs) - Aref, 'fro') ...
     / norm(Aref, 'fro');
 assert(err < 1e-14, 'target groups: %.2e', err);
+
+end
+
+
+function test_chunker_targets()
+% In-plane targets with fields stored as (2, k, nch), as in chunkers, give
+% the same entries as (3, nt) targets.
+
+S = geometries.square([2 2], 4);
+kerns = {kernel3d('lap2d', 'sp'), kernel3d('flex2d', 'free_plate_bcs', 1.7, 0.3)};
+
+th = 2*pi*(0:19)/20;  x = 1.5*cos(th);  y = 1.5*sin(th);
+t3 = struct('r', [x; y; 0*x], 'n', [x; y; 0*x]/1.5, 'd', [-y; x; 0*x], ...
+            'd2', [-x; -y; 0*x]);
+t2 = struct('r', reshape([x; y], 2, 10, 2), 'n', reshape([x; y]/1.5, 2, 10, 2), ...
+            'd', reshape([-y; x], 2, 10, 2), 'd2', reshape([-x; -y], 2, 10, 2));
+
+for k = 1:numel(kerns)
+    od = kerns{k}.opdims;
+    i = randi(od(1)*20, 30, 1);
+    j = randi(od(2)*S.npts, 30, 1);
+    A3 = byindex.kernbyindexeval(i, j, S, kerns{k}, t3);
+    A2 = byindex.kernbyindexeval(i, j, S, kerns{k}, t2);
+    err = norm(A2 - A3, 'fro')/norm(A3, 'fro');
+    assert(err < 1e-14, 'chunker targets, %s: %.2e', kerns{k}.type, err);
+end
 
 end
 
