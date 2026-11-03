@@ -31,6 +31,9 @@ classdef kernel3d
 %                                        'supported_plate_bcs', 'free_plate_bcs',
 %                                        'flex_varalpha' ('varcoef')
 %                                        (2D, surfer in z = 0)
+%      'capillary' ('cap')               radpp types, 'cap_varbeta' (surface waves, z = 0)
+%      'iceflex'   ('ice_flex')          radpp types, 'flex_varalpha' (surface waves, z = 0)
+%      'gravity'   ('grav')              radpp types, 'floe' (surface waves, z = 0)
 %      'one'/'ones'                      (no type needed)
 %
 %   Some kernels accept extra parameters as trailing arguments, e.g.
@@ -131,6 +134,12 @@ classdef kernel3d
                         obj = kernel3d.helm2d(varargin{:});
                     case {'flex2d', 'plate'}
                         obj = kernel3d.flex2d(varargin{:});
+                    case {'capillary', 'cap'}
+                        obj = kernel3d.capillary(varargin{:});
+                    case {'iceflex', 'ice_flex'}
+                        obj = kernel3d.iceflex(varargin{:});
+                    case {'gravity', 'grav'}
+                        obj = kernel3d.gravity(varargin{:});
                     case {'o', 'one', 'ones'}
                         if ~isempty(varargin)
                             obj = kernel3d.ones(varargin{:});
@@ -186,6 +195,9 @@ classdef kernel3d
         obj    = lap2d(varargin);
         obj    = helm2d(varargin);
         obj    = flex2d(varargin);
+        obj    = capillary(type, beta, gamma, green, varargin);
+        obj    = iceflex(type, alpha, gamma, green, varargin);
+        obj    = gravity(type, g, green, varargin);
         obj    = ones(m, n);
         obj    = eye(dvals);
         K      = interleave(kerns);
