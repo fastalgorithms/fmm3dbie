@@ -44,6 +44,13 @@ ns = size(srcinfo.r, 2);
 % the densities, (ndens, ns), and the dipoles x_j n_j, (ndens, 3, ns)
 ndens = numel(sigma)/ns;
 q = reshape(sigma, ns, ndens).';
+
+% complex densities as real and imaginary parts, as lfmm3d is real
+isr = isreal(q);
+if ( ~isr )
+    q = [real(q); imag(q)];
+    ndens = 2*ndens;
+end
 nvec = @(x) reshape(x, ndens, 1, ns).*reshape(srcinfo.n(:,:), 1, 3, ns);
 
 switch lower(type)
@@ -79,13 +86,20 @@ end
 
 U = lfmm3d(eps, srcuse, pg, targuse, pgt);
 
+if ( ~isr )
+    ndens = ndens/2;
+    U.pottarg = combine(U.pottarg, ndens, nt);
+    if ( pgt > 1 ), U.gradtarg = combine(U.gradtarg, ndens, [3 nt]); end
+    if ( pgt > 2 ), U.hesstarg = combine(U.hesstarg, ndens, [6 nt]); end
+end
+
 % the potentials, (nt, ndens)
 if ( nargout > 0 )
     switch lower(type)
         case {'s', 'd', 'c', 'combined'}
             varargout{1} = reshape(U.pottarg, ndens, nt).';
         case {'sprime', 'sp', 'dprime', 'dp', 'cprime', 'cp'}
-            if ( ~isfield(targinfo, 'n') )
+            if ( ~isfield(targinfo, 'n') && ~isprop(targinfo, 'n') )
                 error('LAP3D:fmm:normals', ...
                     'targinfo.n required for kernel type ''%s''.', type);
             end
@@ -120,4 +134,12 @@ if ( nargout > 2 )
     end
 end
 
+end
+
+
+function W = combine(V, nd, sz)
+% recombine real and imaginary parts, in the shape lfmm3d returns for nd
+V = reshape(V, 2*nd, []);
+W = reshape(V(1:nd,:) + 1i*V(nd+1:end,:), [nd sz]);
+if ( nd == 1 && numel(sz) > 1 ), W = reshape(W, sz); end
 end

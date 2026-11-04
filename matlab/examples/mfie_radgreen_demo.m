@@ -26,7 +26,7 @@ rhs = cross(S.n, Hinc);
 % solve; densities are Cartesian, interleaved [Jx; Jy; Jz] per point
 tic;
 J = surfermatsolve(S, kernel3d.eye(0.5*eye(3)) - Kmfie, ...
-                                      rhs(:), eps, 1e-10);
+                   rhs(:), eps, [], [], struct('epsgmres', 1e-10));
 toc;
 J = reshape(J, 3, N);
 fprintf('max |n.J| / max |J|: %.1e\n', max(abs(sum(S.n.*J))) / max(abs(J(:))));
