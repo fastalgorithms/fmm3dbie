@@ -17,7 +17,7 @@ classdef kernel3d
 %                                        's2trans', 'd2trans', 'c2trans',
 %                                        's2trans_diff', 'd2trans_diff', 'c2trans_diff'
 %      'maxwell'   ('em3d', 'em')        'nrccie-bc', 'nrccie-eval'
-%      'stokes'    ('stok3d', 'stok')    's', 'd', 'c'
+%      'stokes'    ('stok3d', 'stok')    's', 'd', 'strac', 'dtrac', 'c', 'ctrac'
 %      'beltrami'  ('belpde', 'bel')     'klb', 'rlb', 'khb', 'rhb'
 %      kernel3d(@green, type, ...)       (radial Green's function with exact
 %                                         eval, see KERNEL3D.RADGREEN)

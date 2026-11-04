@@ -4,7 +4,9 @@ function obj = stok3d(type, coefs)
 %   KERNEL3D.STOK3D(type) or KERNEL3D.STOK3D(type, coefs), where type is:
 %      's'            - single layer (Stokeslet),    G_{ij}(x,y) = delta_ij/(8pi*r) + r_i r_j/(8pi*r^3)
 %      'd','traction'  - double layer (stresslet),    T_{ijk}(x,y) n_k(y) applied to source normal
-%      'sp','sprime'   - traction of S at target,     T_{ijk}(x,y) n_k(x) (target normal)
+%      'sp','sprime','strac' - traction of S at target,     T_{ijk}(x,y) n_k(x) (target normal)
+%      'dp','dprime','dtrac' - traction of D at target (requires source and target normals)
+%      'cp','cprime','ctrac' - traction of coefs(1)*S + coefs(2)*D
 %      'c'            - combined layer,              coefs(1)*S + coefs(2)*D  (default coefs=[1 1])
 %
 % Kernel evaluation:
@@ -15,7 +17,7 @@ function obj = stok3d(type, coefs)
 % Quadrature corrections:
 %   obj.getquad(S, eps, varargin)
 %
-% Kernel orders (obj.kernel_order):  s -> -1,  d -> 0,  sp -> 0,  c -> 0
+% Kernel orders (obj.kernel_order): s -> -1; d, sp, c -> 0; dp, cp -> 1
 %
 % Note: 'sp'/'sprime' requires targinfo.n (target normals).
 %
@@ -94,6 +96,10 @@ switch lower(type)
                           stok_getquad(S, eps, dpars_c, varargin{:}), S);
         obj.get_overs_orders = @(S,t,eps) kernel3d.kernel3d_getnear_overs(S, t, eps, obj.zk, obj.kernel_order);
         obj.src_fields = {'n'};
+
+    case {'dp', 'dprime', 'dtrac'}
+        obj = kernel3d.stok3d('ctrac', [0; 1]);
+        obj.type = 'dtrac';
 
     case {'cp', 'cprime', 'ctrac'}
         if nargin < 2
