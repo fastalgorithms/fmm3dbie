@@ -30,7 +30,10 @@ function [Kpxy, nbr] = proxyfun(surfers, kern, targs, proxy, varargin)
 %   targs   - [] for on-surface matrices, or off-surface targets as in
 %             byindex.kernbyindexeval
 %   proxy   - proxy surface from byindex.proxy_points, or funs.proxy
-%             from byindex.flamfuns
+%             from byindex.flamfuns. Optional fields:
+%     proxy.kern_out - (kern) kernel from slf to the proxies, spanning
+%                      the far field of kern
+%     proxy.kern_in  - (kern) kernel from the proxies to slf, likewise
 %
 %   FLAM arguments:
 %   x, rx, cx - point for each row/column index
@@ -44,8 +47,7 @@ function [Kpxy, nbr] = proxyfun(surfers, kern, targs, proxy, varargin)
 %
 % Output:
 %   Kpxy - interactions of slf with the proxy points, one copy of them per
-%          block row (rc = 'c') or column (rc = 'r') of kern, or one copy
-%          for a single kernel:
+%          block row of kern_out (rc = 'c') or column of kern_in (rc = 'r'):
 %            rc = 'c': slf sources to proxy targets
 %            rc = 'r': proxy sources (weighted by proxy.w) to slf targets
 %          For lvl, the proxy function for that level.
@@ -56,9 +58,13 @@ function [Kpxy, nbr] = proxyfun(surfers, kern, targs, proxy, varargin)
 if numel(varargin) == 1
     lvl = varargin{1};
     p = proxy;
+    kp = kern;
+    if isfield(p, 'kern_out'), kp = p.kern_out; end
+    searchopts = p.opts;
+    if isfield(p, 'kern_in'), searchopts.kern_in = p.kern_in; end
     if isfield(p, 'lvls')
         if lvl <= size(p.lvls, 2) && p.isurf(lvl) > 0 && p.surflvl(p.isurf(lvl)) < lvl
-            p.surf{end+1}  = byindex.proxy_points(kern, p.leff(:, lvl), p.eps, p.opts);
+            p.surf{end+1}  = byindex.proxy_points(kp, p.leff(:, lvl), p.eps, searchopts);
             p.surflvl(end+1) = lvl;
             p.isurf(lvl)   = numel(p.surf);
         end
@@ -66,7 +72,10 @@ if numel(varargin) == 1
         lvl0 = 1;
         if isfield(p, 'lvl'), lvl0 = p.lvl; end
         if lvl > lvl0
-            p = byindex.proxy_points(kern, proxy.width/2^(lvl-1), proxy.eps, proxy.opts);
+            p = byindex.proxy_points(kp, proxy.width/2^(lvl-1), proxy.eps, searchopts);
+            for f = intersect(fieldnames(proxy), {'kern_out', 'kern_in'}).'
+                p.(f{1}) = proxy.(f{1});
+            end
         end
     end
     Kpxy = @(varargin) byindex.proxyfun(surfers, kern, targs, p, varargin{:});
@@ -102,6 +111,46 @@ else
     kern = reshape(kern, nrow, nsurfers);
     opdims_mat = reshape([kern.opdims], 2, nrow, nsurfers);
 end
+% Kernels at the proxies. nout(k) is the number of rows per proxy point
+% of block row k of kout, and nin(k) the columns of block column k of kin,
+% counting a one-component kernel once per component of kern.
+kout = kern;
+kin  = kern;
+if isfield(proxy, 'kern_out'), kout = proxy.kern_out; end
+if isfield(proxy, 'kern_in'),  kin  = proxy.kern_in;  end
+if size(kout, 2) ~= 1 && size(kout, 2) ~= nsurfers
+    error('BYINDEX:proxyfun:proxyKernel', 'BYINDEX.PROXYFUN: kern_out needs one block column, or one per source surfer');
+end
+if size(kin, 1) ~= 1 && size(kin, 1) ~= nrow
+    error('BYINDEX:proxyfun:proxyKernel', 'BYINDEX.PROXYFUN: kern_in needs one block row, or one per target group');
+end
+nout = zeros(size(kout, 1), nsurfers);
+for j = 1:nsurfers
+    for k = 1:size(kout, 1)
+        od = kout(k, min(j, end)).opdims;
+        if od(2) ~= 1 && od(2) ~= opdims_mat(2, 1, j)
+            error('BYINDEX:proxyfun:proxyKernel', 'BYINDEX.PROXYFUN: kern_out(%d,%d) needs %d source components, or one', ...
+                k, j, opdims_mat(2, 1, j));
+        end
+        nout(k, j) = od(1)*(1 + (od(2) == 1)*(opdims_mat(2, 1, j) - 1));
+    end
+end
+nin = zeros(nrow, size(kin, 2));
+for i = 1:nrow
+    for k = 1:size(kin, 2)
+        od = kin(min(i, end), k).opdims;
+        if od(1) ~= 1 && od(1) ~= opdims_mat(1, i, 1)
+            error('BYINDEX:proxyfun:proxyKernel', 'BYINDEX.PROXYFUN: kern_in(%d,%d) needs %d target components, or one', ...
+                i, k, opdims_mat(1, i, 1));
+        end
+        nin(i, k) = od(2)*(1 + (od(1) == 1)*(opdims_mat(1, i, 1) - 1));
+    end
+end
+if any(nout ~= nout(:, 1), 'all') || any(nin ~= nin(1, :), 'all')
+    error('BYINDEX:proxyfun:proxyKernel', 'BYINDEX.PROXYFUN: each proxy block needs the same components for every surfer');
+end
+nout = nout(:, 1);
+nin  = nin(1, :);
 
 % Row and column offsets
 irowlocs = ones(nrow+1, 1);
@@ -114,8 +163,10 @@ for k = 1:nrow
 end
 
 % Surface for this box: from the table by FLAM's box size, or the given
-% one. leff is l, except that sides FLAM never split may be longer.
-l = l(:) .* ones(3, 1);
+% one. leff is l, except that sides FLAM never split may be longer. In 2D
+% (FLAM's points have two rows) the proxies are rings in the plane z = 0.
+dim = numel(ctr);
+l = l(:) .* ones(dim, 1);
 if isfield(proxy, 'lvls')
     k = find(all(abs(proxy.lvls - l) <= 1e-10*max(l), 1), 1);
     if isempty(k)
@@ -134,12 +185,16 @@ if any(abs(leff/max(leff) - p.width/max(p.width)) > 1e-8)
         mat2str(leff.'/max(leff), 4), mat2str(p.width.'/max(p.width), 4));
 end
 
-% Scale proxy points/weights
+% Scale proxy points/weights (lengths on rings, areas on shells)
 sc = max(leff)/max(p.width);
 pxy = [];
-pxy.r = p.r*sc + ctr(:);
+pxy.r = p.r*sc + [ctr(:); zeros(3-dim, 1)];
 pxy.n = p.n;
-pw = p.w*sc^2;
+pxy.du = p.du*sc;
+pxy.dv = p.dv*sc^(dim-2);
+if isfield(p, 'd'), pxy.d = p.d*sc; end
+pxy.mean_curv = zeros(size(p.r, 2), 1);
+pw = p.w*sc^(dim-1);
 npxy = size(pxy.r, 2);
 
 % Keep only the neighbors inside the proxy surface. For rc = 'c' these
@@ -151,22 +206,10 @@ else
 end
 nbr = nbr(vecnorm((xnbr - ctr(:))./leff, 2, 1) < p.radius);
 
-% One copy of the proxy points per block row (rc = 'c') or block column
-% (rc = 'r'), or a single copy for a single kernel
-if numel(kern) == 1
-    npr = 1;
-    npc = 1;
-else
-    npr = nrow;
-    npc = nsurfers;
-end
-
-% Sources in slf -> proxy targets
+% Sources in slf -> proxy targets, one copy of the proxy points per block
+% row of kout
 if rc == 'c'
-    prow = ones(npr+1, 1);
-    for k = 1:npr
-        prow(k+1) = prow(k) + npxy * opdims_mat(1, k, 1);
-    end
+    prow = [0; cumsum(npxy*nout)] + 1;
     Kpxy = zeros(prow(end)-1, length(slf));
 
     for isrc = 1:nsurfers
@@ -179,40 +222,37 @@ if rc == 'c'
         wsrc = repmat(srfj.wts(juni).', opdims_src, 1);
         wsrc = wsrc(:).';
 
-        srcp = ptinfo(srfj, juni, unique([{}, kern(:, min(isrc, end)).src_fields]));
+        srcp = ptinfo(srfj, juni, unique([{}, kout(:, min(isrc, end)).src_fields]));
 
-        for irow = 1:npr
-            ktmp = kern(min(irow, end), min(isrc, end));
-            matuni = ktmp.eval(srcp, pxy) .* wsrc;
+        for irow = 1:size(kout, 1)
+            ktmp = kout(irow, min(isrc, end));
+            matuni = ktmp.eval(srcp, pxy);
+            if ktmp.opdims(2) == 1, matuni = kron(matuni, eye(opdims_src)); end
+            matuni = matuni .* wsrc;
             Kpxy(prow(irow):prow(irow+1)-1, f_col) = matuni(:, ijuni2);
         end
     end
 end
 
-% Proxy sources -> targets in slf
+% Proxy sources -> targets in slf, one copy of the proxy points per block
+% column of kin
 if rc == 'r' || ifaddtrans
-    pcol = ones(npc+1, 1);
-    for k = 1:npc
-        pcol(k+1) = pcol(k) + npxy * opdims_mat(2, 1, k);
-    end
+    pcol = [0, cumsum(npxy*nin)] + 1;
     Ktrg = zeros(length(slf), pcol(end)-1);
 
     for irow = 1:nrow
         f_row = slf >= irowlocs(irow) & slf < irowlocs(irow+1);
         if ~any(f_row), continue; end
-        [iuni, iiuni2] = decode(double(slf(f_row)) - irowlocs(irow), ...
-            opdims_mat(1, irow, 1));
+        opdims_trg = opdims_mat(1, irow, 1);
+        [iuni, iiuni2] = decode(double(slf(f_row)) - irowlocs(irow), opdims_trg);
 
-        targinfo = ptinfo(targs(irow), iuni, unique([{}, kern(min(irow, end), :).targ_fields]));
+        targinfo = ptinfo(targs(irow), iuni, unique([{}, kin(min(irow, end), :).targ_fields]));
 
-        for isrc = 1:npc
-            ktmp = kern(min(irow, end), min(isrc, end));
-
-            opdims_src = opdims_mat(2, irow, isrc);
-            wpxy = repmat(pw(:).', opdims_src, 1);
-            wpxy = wpxy(:).';
-
-            matuni = ktmp.eval(pxy, targinfo) .* wpxy;
+        for isrc = 1:size(kin, 2)
+            ktmp = kin(min(irow, end), isrc);
+            matuni = ktmp.eval(pxy, targinfo);
+            if ktmp.opdims(1) == 1, matuni = kron(matuni, eye(opdims_trg)); end
+            matuni = matuni .* repelem(pw(:).', nin(isrc));
             Ktrg(f_row, pcol(isrc):pcol(isrc+1)-1) = matuni(iiuni2, :);
         end
     end

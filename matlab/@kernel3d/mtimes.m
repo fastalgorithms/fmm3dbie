@@ -170,10 +170,9 @@ end
         else
             targ = S;
         end
-        nt   = size(targ.r(:,:), 2);
         fval = h(targ);
-        Q3   = permute(reshape(full(Qinner), m, nt, q*S.npts), [1 3 2]);
-        Q    = sparse(reshape(permute(apply_left(fval, Q3), [1 3 2]), p*nt, q*S.npts));
+        if size(fval,1) == 1 && size(fval,2) == 1, fval = fval .* eye(m); end
+        Q = pageblkdiag(fval) * Qinner;
     end
 
     function D = diag_left(t)
@@ -205,15 +204,9 @@ end
 
     function Q = getquad_right(S, eps, varargin)
         Qinner = Kgetquad(S, eps, varargin{:});
-        ns   = S.npts;
         fval = h(S);
-        if ~isempty(varargin) && ~isempty(varargin{1}) && ~isnumeric(varargin{1})
-            nt = size(varargin{1}.r(:,:), 2);
-        else
-            nt = ns;
-        end
-        Q3 = reshape(full(Qinner), m*nt, q, ns);
-        Q  = sparse(reshape(apply_right(Q3, fval), m*nt, p*ns));
+        if size(fval,1) == 1 && size(fval,2) == 1, fval = fval .* eye(q); end
+        Q = Qinner * pageblkdiag(fval);
     end
 
     function D = diag_right(t)
@@ -247,6 +240,13 @@ function hn = normalize_handle(h, hr, hc, side)
         end
     end
 hn = @hwrap;
+end
+
+function B = pageblkdiag(F)
+% sparse block diagonal matrix from the pages of F, (a x b x n)
+[a, b, n] = size(F);
+[ii, jj, kk] = ndgrid(1:a, 1:b, 1:n);
+B = sparse(ii(:) + a*(kk(:)-1), jj(:) + b*(kk(:)-1), F(:), a*n, b*n);
 end
 
 function out = set_if_exist(cond, val)

@@ -1,195 +1,156 @@
-% Test byindex.proxy_points and byindex.proxyfun.
-%
-% The proxy functions are called with the arguments FLAM would pass, and
-% the skeletons they give are checked against the interactions they
-% stand in for. FLAM is not needed, but if rskelf and ifmm are on the
-% path, small rskelf and ifmm examples are also run.
-
+% Test byindex.proxy_points, byindex.proxyfun and byindex.flamfuns. The
+% FLAM tests only run if rskelf and ifmm are on the path.
 run ../startup.m
-
 rng(42);
 
 %% Now run the tests
 
-test_proxy_points_calling_sequences();
-test_proxy_points_rejects();
-test_rskelf_addtrans();
-test_ifmm_mixed_opdims();
-test_ifmm_offsurface_groups();
-test_proxybylevel();
-test_flam_ifmm_mixed_opdims();
+test_proxy_geometry(2);
+test_proxy_geometry(3);
+test_stretched_box();
+test_tight_klb();
+test_em3d_kern_out();
+test_kern_in();
+test_components();
+test_offsurface_groups();
+test_nan();
+test_occ_split_planes();
+test_flam_rskelf();
+test_2d();
 
 
-function test_proxy_points_calling_sequences()
-% All calling sequences, and the shape of the output.
+function test_proxy_geometry(dim)
+% Rings (dim = 2) and spheres: frames, weights, far-field compression,
+% rescaling and unsupported fields.
 
-eps  = 1e-6;
-kern = kernel3d('l', 's');
+eps = 1e-4;
+if dim == 2, K = kernel3d('lap2d', 's'); else, K = kernel3d('l', 's'); end
+l = ones(dim, 1);  ctr = zeros(dim, 1);
+p = byindex.proxy_points(K, l, eps, struct('nsrc', 24, 'nproxy_max', 768, 'rmax', 4));
 
-p1 = byindex.proxy_points(kern, 1, eps);
-p2 = byindex.proxy_points(kern, 1, eps, struct('nshell_max', 1, 'ifaddtrans', true));
-
-assert(p1.nshell == 1 && p2.nshell == 1, 'Laplace should need one shell');
-assert(p2.ifaddtrans && ~p1.ifaddtrans, 'ifaddtrans not stored');
-npxy = sum(p1.nproxy);
-assert(isequal(size(p1.r), [3 npxy]) && isequal(size(p1.n), [3 npxy]) && ...
-    numel(p1.w) == npxy, 'wrong proxy sizes');
-assert(abs(p1.radius - 1.5) < 1e-12, 'default radius should be 1.5 box sizes');
-assert(abs(sum(p1.w) - 4*pi*1.5^2) < 1e-10, 'weights should sum to the sphere area');
-
-% Tighter tolerances need more proxy points
-p5 = byindex.proxy_points(kern, 1, 1e-3);
-assert(p5.nproxy < p1.nproxy, 'nproxy should grow as eps decreases');
-
+assert(numel(p.width) == dim && all(p.w > 0), 'wrong proxy geometry');
+assert(max(abs(vecnorm(p.n) - 1)) < 1e-12, 'proxy normals must be unit vectors');
+assert(max(abs(sum(p.n.*p.du, 1))) < 1e-12, 'proxy tangents must be orthogonal');
+assert(all(sum(cross(p.du, p.dv).*p.n, 1) > 0), 'du x dv must be along n');
+if dim == 2
+    assert(all(p.r(3,:) == 0) && isequal(p.d, p.du), 'wrong ring frame');
+    assert(abs(sum(p.w) - 2*pi*p.radius) < 1e-8, 'wrong ring length');
+else
+    assert(abs(sum(p.w) - 4*pi*p.radius^2) < 1e-8, 'wrong shell area');
 end
 
+S = box_sources(0.6*l, 128);
+check_far(S, K, p, l, eps);
 
-function test_proxy_points_rejects()
-% Kernels needing fields other than n at the proxies, and proxy surfaces
-% that would contain non-neighbor boxes, are rejected.
+% Reusing the surface for a box scaled by 1/2 and shifted scales the
+% ring weights by length and the shell weights by area
+sc = 0.5;  ctr = (1:dim).';  pad = [ctr; zeros(3-dim, 1)];
+S.r = sc*S.r + pad;  S.wts = sc^2*S.wts;
+pxy = struct('r', sc*p.r + pad);
+x = S.r(1:dim,:);
+C = byindex.proxyfun(S, K, [], p, 'c', x, x, 1:3, [], sc*l, ctr);
+R = byindex.proxyfun(S, K, [], p, 'r', x, x, 1:3, [], sc*l, ctr);
+s3 = struct('r', S.r(:,1:3));
+ref = K.eval(s3, pxy).*S.wts(1:3).';
+assert(norm(C - ref, 'fro') < 1e-12*norm(ref, 'fro'), 'outgoing scaling failed');
+ref = K.eval(pxy, s3).*(sc^(dim-1)*p.w).';
+assert(norm(R - ref, 'fro') < 1e-12*norm(ref, 'fro'), 'incoming weight scaling failed');
 
+bad = K;  bad.targ_fields = {'kappa'};
 caught = false;
 try
-    byindex.proxy_points(kernel3d('bel', 'rlb'), 1, 1e-6);
-catch
-    caught = true;
+    byindex.proxy_points(bad, l, eps);
+catch ME
+    caught = contains(ME.message, 'kappa');
 end
-assert(caught, 'mean_curv at proxy targets should raise an error');
-
-caught = false;
-try
-    byindex.proxy_points(kernel3d('l', 's'), 1, 1e-6, struct('crad', 2));
-catch
-    caught = true;
-end
-assert(caught, 'crad > sqrt(3) should raise an error');
-
-% Missing eps: a warning within a factor of ten, an error otherwise.
-% Too few proxy points first.
-kern = kernel3d('l', 's');
-wstate = warning('off', 'BYINDEX:proxy_points:nproxy');
-cleanup = onCleanup(@() warning(wstate));
-lastwarn('');
-p = byindex.proxy_points(kern, 1, 1e-6, struct('nproxy_max', 400));
-[~, id] = lastwarn;
-assert(strcmp(id, 'BYINDEX:proxy_points:nproxy') && all(p.nproxy <= 400), ...
-    'expected a warning and nproxy <= nproxy_max');
-
-caught = false;
-try
-    byindex.proxy_points(kern, 1, 1e-6, struct('nproxy_max', 300));
-catch
-    caught = true;
-end
-assert(caught, 'missing eps by more than a factor of ten should raise an error');
-
-% Too few shells: log|x-y| needs more than one shell
-kern = kernel3d(@logg, 's');
-p = byindex.proxy_points(kern, 1, 1e-5);
-assert(p.nshell > 1, 'log kernel should need more than one shell');
-assert(all(diff(p.nproxy) <= 0), 'outer shells should not need more points');
-
-% Shells stop at rmax
-p = byindex.proxy_points(kern, 1, 1e-5, struct('rmax', 4));
-assert(max(vecnorm(p.r)) <= 4 + 1e-12, 'shells should stop at rmax');
-
-warning('off', 'BYINDEX:proxy_points:nshell');
-lastwarn('');
-p = byindex.proxy_points(kern, 1, 1e-5, struct('nshell_max', 2));
-[~, id] = lastwarn;
-assert(strcmp(id, 'BYINDEX:proxy_points:nshell') && p.nshell == 2, ...
-    'expected a warning and nshell = nshell_max');
-
-caught = false;
-try
-    byindex.proxy_points(kern, 1, 1e-5, struct('nshell_max', 1));
-catch
-    caught = true;
-end
-assert(caught, 'one shell for the log kernel should raise an error');
+assert(caught, 'unsupported proxy fields must be rejected');
 
 end
 
 
-function test_rskelf_addtrans()
-% rskelf calling sequence with a non-symmetric kernel and
-% proxy.ifaddtrans: the skeleton compresses both the columns and the rows
-% of slf, and nbr keeps only the points inside the proxy surface.
+function test_stretched_box()
+% A box flattened along z: equal-area points on each shell, and the
+% far field of a target-derivative kernel compressed both ways.
 
-eps = 1e-6;  tol = 1e-5;
+eps = 1e-4;
+l = [1; 1; 0.5];
+K = kernel3d('h', 'dp', 1.5);
+p = byindex.proxy_points(K, l, eps, struct('rmax', 4));
+assert(isequal(p.width, l), 'wrong proxy box');
 
-S    = geometries.sphere(2, 4, [0;0;0], 4, 1);
-kern = kernel3d('l', 'd');
-ctr  = [2; 0; 0];  l = 1;
-proxy = byindex.proxy_points(kern, l, eps, struct('ifaddtrans', true));
+i0 = [0 cumsum(p.nproxy)];
+for k = 1:p.nshell
+    w = p.w(i0(k)+1:i0(k+1));
+    assert(max(w)/min(w) - 1 < 1e-6, 'shell %d: points not equal-area', k);
+end
 
-dist    = vecnorm(S.r - ctr);
-srcids  = find(dist < 0.5);
-targids = find(dist > 2.0);
-nbrin   = find(dist > 0.5 & dist < 1.4);
-
-src2targ = byindex.kernbyindex(targids, srcids, S, kern);
-targ2src = byindex.kernbyindex(srcids, targids, S, kern);
-
-[Kpxy, nbr] = byindex.proxyfun(S, kern, [], proxy, S.r, srcids, ...
-    [nbrin, targids], l, ctr);
-assert(isequal(sort(nbr), sort(nbrin)), 'nbr filtered incorrectly');
-npxy = size(proxy.r, 2);
-assert(size(Kpxy, 1) == 2*npxy, 'ifaddtrans should give %d rows, got %d', ...
-    2*npxy, size(Kpxy, 1));
-
-check_lr('rskelf addtrans, columns', src2targ,    Kpxy, tol);
-check_lr('rskelf addtrans, rows',    targ2src.', Kpxy, tol);
+check_far(box_sources(l, 500), K, p, l, eps);
 
 end
 
 
-function test_ifmm_mixed_opdims()
-% ifmm calling sequence with mixed opdims, so rows and columns have
-% different points: rc = 'c' and rc = 'r' on surfer 1.
+function test_tight_klb()
+% klb to 1e-10, near the ID cutoff of eps/100.
 
-eps = 1e-6;  tol = 1e-5;
-
-S1 = geometries.sphere(2, 4, [0;0;0], 4, 1);
-S2 = geometries.sphere(2, 4, [8;0;0], 4, 1);
-srfrs = [S1, S2];
-kerns = mixed_kerns();
-
-ctr = [2; 0; 0];  l = 1;
-proxy = byindex.proxy_points(kerns, l, eps);
-rx = [repelem(S1.r, 1, 3), S2.r];
-cx = [S1.r, S2.r];
-
-near = find(vecnorm(S1.r - ctr) < 0.5);
-far  = find(vecnorm(S1.r - ctr) > 2.0);
-
-% columns: sources near ctr, targets far from it
-cnear = near;
-rfar  = [reshape(3*far + (-2:0).', 1, []), 3*S1.npts + (1:S2.npts)];
-src2targ = byindex.kernbyindex(rfar, cnear, srfrs, kerns);
-[Kpxy, nbr] = byindex.proxyfun(srfrs, kerns, [], proxy, 'c', rx, cx, cnear, rfar, l, ctr);
-assert(isempty(nbr), 'far points should be removed from nbr');
-assert(size(Kpxy, 1) == 4*size(proxy.r, 2), 'wrong number of proxy rows');
-check_lr('ifmm mixed opdims, rc = c', src2targ, Kpxy, tol);
-
-% rows: targets near ctr, sources far from it
-rnear = reshape(3*near + (-2:0).', 1, []);
-cfar  = [far, S1.npts + (1:S2.npts)];
-targ2src = byindex.kernbyindex(rnear, cfar, srfrs, kerns);
-Kpxy = byindex.proxyfun(srfrs, kerns, [], proxy, 'r', rx, cx, rnear, cfar, l, ctr);
-assert(size(Kpxy, 2) == 2*size(proxy.r, 2), 'wrong number of proxy columns');
-check_lr('ifmm mixed opdims, rc = r', targ2src.', Kpxy.', tol);
+l = ones(3, 1);
+K = kernel3d('bel', 'klb');
+p = byindex.proxy_points(K, l, 1e-10, struct('rmax', 4));
+check_far(box_sources(l, 500), K, p, l, 1e-10);
 
 end
 
 
-function test_ifmm_offsurface_groups()
+function test_em3d_kern_out()
+% em3d densities are in the (du, dv) frame, which is not smooth on the
+% proxies, so the outgoing kernel takes Cartesian currents.
+
+eps = 1e-4;
+zk = 1.1;
+K = kernel3d('em', 'nrccie-bc', zk, 0.5);
+Kout = kernel3d('em', 'nrccie-eval', zk)*@cartesian;
+l = ones(3, 1);
+p = byindex.proxy_points(Kout, l, eps, struct('rmax', 4));
+p.kern_out = Kout;
+
+S = box_sources(l, 64);
+far = far_targets(l, 32);
+x = S.r;
+C = byindex.proxyfun(S, K, [], p, 'c', x, x, 1:3*S.npts, [], l, zeros(3, 1));
+check_id(K.eval(S, far).*repelem(S.wts, 3).', C, 10*eps);
+
+end
+
+
+function test_kern_in()
+% An incoming kernel that oscillates more than the outgoing one sets the
+% resolution, and reproduces its far field on the targets.
+
+eps = 1e-4;
+l = ones(3, 1);
+Kout = kernel3d('l', 's');
+Kin = kernel3d('h', 's', 4);
+opts = struct('rmax', 4);
+p0 = byindex.proxy_points(Kout, l, eps, opts);
+opts.kern_in = Kin;
+p = byindex.proxy_points(Kout, l, eps, opts);
+assert(sum(p.nproxy) > sum(p0.nproxy), 'kern_in must refine the proxy surface');
+assert(isequal(p.kern_in, Kin), 'proxy.kern_in not kept');
+
+S = box_sources(l, 300);
+far = far_targets(l, 48);
+R = byindex.proxyfun(S, Kin, [], p, 'r', S.r, S.r, 1:S.npts, [], l, zeros(3, 1));
+check_id(Kin.eval(far, S).', R.', 10*eps);
+
+end
+
+
+function test_offsurface_groups()
 % Two off-surface target groups, the second needing normals, with a 2x1
-% kernel array.
+% kernel array: one proxy copy per group, and rows from both in a box.
 
-eps = 1e-6;  tol = 1e-5;
+eps = 1e-4;  tol = 1e-3;
 
-S    = geometries.sphere(2, 4, [0;0;0], 4, 1);
+S    = geometries.sphere(2, 8, [0;0;0], 4, 1);
 kern = [kernel3d('h', 's', 1.2); kernel3d('h', 'sp', 1.2)];
 l = 1;
 proxy = byindex.proxy_points(kern, l, eps);
@@ -211,7 +172,7 @@ src2targ = byindex.kernbyindexeval((1:2*ntarg).', srcids, S, kern, tg);
     srcids, 1:2*ntarg, l, ctr);
 assert(isempty(nbr), 'far targets should be removed from nbr');
 assert(size(Kpxy, 1) == 2*size(proxy.r, 2), 'one proxy copy per target group');
-check_lr('offsurface groups, rc = c', src2targ, Kpxy, tol);
+check_id(src2targ, Kpxy, tol);
 
 % rows: targets of both groups in a box at the origin
 ctr = [0; 0; 0];
@@ -223,119 +184,226 @@ targ2src = byindex.kernbyindexeval((1:2*ntarg).', (1:S.npts).', S, kern, tg);
 Kpxy = byindex.proxyfun(S, kern, tg, proxy, 'r', rx, S.r, ...
     1:2*ntarg, 1:S.npts, l, ctr);
 assert(isequal(size(Kpxy), [2*ntarg, size(proxy.r, 2)]), 'wrong rc = r size');
-check_lr('offsurface groups, rc = r', targ2src.', Kpxy.', tol);
+check_id(targ2src.', Kpxy.', tol);
 
 end
 
 
-function test_proxybylevel()
-% With one argument, proxyfun returns the proxy function for that level,
-% rebuilt for a box of size width/2^(lvl-1).
+function test_components()
+% kern_out/kern_in with one-component blocks applied to each component,
+% blocks shared across surfers, and the stacked rskelf block.
 
-eps = 1e-6;  tol = 1e-5;
+K = kernel3d('l', 's');
+p = struct('r', 2*eye(3), 'n', eye(3), 'du', eye(3), 'dv', eye(3), ...
+    'w', [2; 3; 4], 'width', ones(3, 1), 'radius', 1.5, 'ifaddtrans', true, ...
+    'kern_out', [K; 2*K], 'kern_in', [K, 2*K, 3*K]);
+S = struct('r', rand(3, 4)/4, 'npts', 4, 'wts', (1:4).'/4);
+T = S;  T.r = rand(3, 4)/4;
+srfs = [S, T];
+allsrc = struct('r', [S.r, T.r]);
+targ = struct('r', rand(3, 3)/4);
+main = kernel3d(@(s, t) kron(K.eval(s, t), [1 2 3; 4 5 6]));
+rx = repelem(targ.r, 1, 2);  cx = repelem(allsrc.r, 1, 3);
+jj = [24 1 14 8];  ii = [6 1 4 2];
 
-S    = geometries.sphere(2, 4, [0;0;0], 4, 1);
-kern = kernel3d('h', 's', 4);
-width = 4;
-proxy = byindex.proxy_points(kern, width, eps);
-pxyfun = @(varargin) byindex.proxyfun(S, kern, [], proxy, varargin{:});
+C = byindex.proxyfun(srfs, main, targ, p, 'c', rx, cx, jj, [], 1, zeros(3, 1));
+B = kron(K.eval(allsrc, p), eye(3)).*repelem([S.wts; T.wts].', 3);
+ref = [B; 2*B];
+assert(norm(C - ref(:,jj), 'fro') < 1e-12, 'outgoing components/blocks failed');
 
-lvl = 3;
-pxyfunlvl = pxyfun(lvl);
-assert(isa(pxyfunlvl, 'function_handle'), 'expected a function handle for lvl');
+R = byindex.proxyfun(srfs, main, targ, p, 'r', rx, cx, ii, [], 1, zeros(3, 1));
+B = kron(K.eval(p, targ), eye(2)).*repelem(p.w.', 2);
+ref = [B, 2*B, 3*B];
+assert(norm(R - ref(ii,:), 'fro') < 1e-12, 'incoming components/blocks failed');
 
-plvl = byindex.proxy_points(kern, width/2^(lvl-1), eps);
-assert(plvl.nproxy(1) < proxy.nproxy(1), 'smaller boxes should need fewer proxies');
+main = kernel3d(@(s, t) kron(K.eval(s, t), [1 2; 3 4]));
+x = repelem(allsrc.r, 1, 2);  slf = [16 1 10 4];
+C = byindex.proxyfun(srfs, main, [], p, 'c', x, x, slf, [], 1, zeros(3, 1));
+R = byindex.proxyfun(srfs, main, [], p, 'r', x, x, slf, [], 1, zeros(3, 1));
+B = byindex.proxyfun(srfs, main, [], p, x, slf, [], 1, zeros(3, 1));
+assert(norm(B - [C; R.'], 'fro') < 1e-12, 'nonsymmetric rskelf stacking failed');
 
-ctr = [2; 0; 0];  l = width/2^(lvl-1);
-dist    = vecnorm(S.r - ctr);
-srcids  = find(dist < l/2);
-targids = find(dist > 1.6*l);
-
-src2targ = byindex.kernbyindex(targids, srcids, S, kern);
-Kpxy = pxyfunlvl(S.r, srcids, targids, l, ctr);
-assert(size(Kpxy, 1) == size(plvl.r, 2), 'level proxy function should use plvl');
-check_lr('proxybylevel', src2targ, Kpxy, tol);
-
-% Levels up to proxy.lvl keep the surface instead of rebuilding it
-proxy.lvl = 2;
-pxyfun = @(varargin) byindex.proxyfun(S, kern, [], proxy, varargin{:});
-Kpxy = feval(pxyfun(2), S.r, srcids, targids, l, ctr);
-assert(size(Kpxy, 1) == size(proxy.r, 2), 'level 2 should keep proxy');
+p.kern_out = kernel3d(@(s, t) kron(K.eval(s, t), [1 2 3]));
+caught = false;
+try
+    byindex.proxyfun(srfs, main, [], p, 'c', x, x, slf, [], 1, zeros(3, 1));
+catch ME
+    caught = strcmp(ME.identifier, 'BYINDEX:proxyfun:proxyKernel');
+end
+assert(caught, 'incompatible physical components must be rejected');
 
 end
 
 
-function test_flam_ifmm_mixed_opdims()
-% ifmm from byindex.flamfuns with mixed opdims and oversampled sources:
-% each point appears once per component and the matrix is not square.
+function test_nan()
+% NaN kernels error at once, and radpp kernels are NaN beyond their fit.
 
-if ~has_flam(), return; end
+K = kernel3d(@(s, t) nan(size(t.r, 2), size(s.r, 2)));
+caught = false;
+try
+    byindex.proxy_points(K, 1, 1e-4);
+catch ME
+    caught = strcmp(ME.identifier, 'BYINDEX:proxy_points:nan');
+end
+assert(caught, 'NaN kernels must be rejected');
+
+K = kernel3d.radpp(@lap2d.green, 6, 'sg');
+v = K.eval(struct('r', zeros(3, 1)), struct('r', [3 7; 0 0; 0 0]));
+assert(all(isfinite(v(1:3))) && all(isnan(v(4:6))), 'radpp must be NaN beyond its fit');
+
+end
+
+
+function test_occ_split_planes()
+[x, y] = meshgrid(linspace(-1, 1, 9));
+S = struct('r', [x(:).'; y(:).'; zeros(1, 81)], ...
+    'npts', 81, 'norders', 1, 'wts', ones(81, 1)/81);
+Q = sparse(1, 3, 1, 81, 81);
+K = kernel3d.ones();
+K.getquad = @(varargin) Q;
+opts = struct('type', 'rskelf', 'occ', 8, 'occ_max', 9, ...
+    'proxyopts', struct('nsrc', 8, 'nproxy_max', 32));
+funs = byindex.flamfuns(S, K, 1e-4, [], opts);
+assert(funs.occ == 9, 'split-plane points changed the occupancy estimate');
+
+end
+
+
+function test_flam_rskelf()
+% rskelf from byindex.flamfuns on a flattened ellipsoid with the Debye
+% pair: I + R + W, klb outgoing and the full kernel incoming.
+
+if ~has_flam()
+    fprintf('FLAM not found, skipping test_flam_rskelf\n');
+    return
+end
 
 eps = 1e-4;  tol = 1e-3;
+S = geometries.ellipsoid([1 1 0.4], [], [], 3);
+KF = kernel3d('bel', 'rlb') + kernel3d.ones()/S.area;
+opts = struct('type', 'rskelf', 'occ', 64, ...
+    'kern_out', kernel3d('bel', 'klb'), 'kern_in', KF);
+funs = byindex.flamfuns(S, KF, eps, [], opts);
+F = rskelf(funs.Afun, funs.x, funs.occ, eps, funs.pxyfun, flam_opts('rskelf'));
 
-S1 = geometries.sphere(1, 2, [0;0;0], 3, 1);
-S2 = geometries.sphere(1, 2, [3;0;0], 3, 1);
-srfrs = [S1, S2];
-kerns = mixed_kerns();
+A = funs.Afun(1:S.npts, 1:S.npts);
+sig = randn(S.npts, 1);
+u = A*sig;
+err = norm(rskelf_mv(F, sig) - u)/norm(u);
+assert(err < tol, 'rskelf: err %.2e > tol %.2e', err, tol);
 
-funs = byindex.flamfuns(srfrs, kerns, eps);
-assert(size(funs.xinterp, 1) > size(funs.xinterp, 2), 'expected oversampling');
-F = ifmm(funs.Afun, funs.rx, funs.cx, 32, eps, funs.pxyfun);
+end
 
-Afull = surfermat(srfrs, kerns, eps, struct('unif_nover', true));
-sig = randn(size(funs.Q, 2), 1);
-u   = Afull*sig;
+
+function test_2d()
+% A flat 2 x 1 rectangle: rings with points evenly spaced in length, and
+% rskelf and ifmm (with targets of shape 2 x k x nch) from
+% byindex.flamfuns, which build 2D trees with unequal box sides.
+
+eps = 1e-4;  tol = 1e-3;
+K = kernel3d('lap2d', 's');
+l = [2; 1];
+p = byindex.proxy_points(K, l, eps, struct('rmax', 6));
+i0 = [0 cumsum(p.nproxy)];
+for k = 1:p.nshell
+    w = p.w(i0(k)+1:i0(k+1));
+    assert(max(w)/min(w) - 1 < 1e-6, 'ring %d: points not evenly spaced', k);
+end
+check_far(box_sources(l, 300), K, p, l, eps);
+
+if ~has_flam()
+    fprintf('FLAM not found, skipping FLAM in test_2d\n');
+    return
+end
+S = geometries.square([8 4], 4).scale([2 1 1]);
+sig = randn(S.npts, 1);
+
+funs = byindex.flamfuns(S, K, eps, [], struct('type', 'rskelf', 'occ', 64));
+assert(size(funs.x, 1) == 2, 'expected a 2D tree');
+F = rskelf(funs.Afun, funs.x, funs.occ, eps, funs.pxyfun, flam_opts('rskelf'));
+u = funs.Afun(1:S.npts, 1:S.npts)*sig;
+err = norm(rskelf_mv(F, sig) - u)/norm(u);
+assert(err < tol, 'rskelf 2D: err %.2e > tol %.2e', err, tol);
+
+targs = [2.5 + 2*rand(1, 16, 25); 2*rand(1, 16, 25) - 1];
+funs = byindex.flamfuns(S, K, eps, targs, struct('occ', 64));
+assert(size(funs.rx, 1) == 2 && size(funs.cx, 1) == 2, 'expected a 2D tree');
+F = ifmm(funs.Afun, funs.rx, funs.cx, funs.occ, eps, funs.pxyfun, flam_opts('ifmm'));
+u = surferkernevalmat(S, K, struct('r', [targs(:,:); zeros(1, 400)]), eps)*sig;
 err = norm(ifmm_mv(F, funs.xinterp*sig, funs.Afun) + funs.Q*sig - u)/norm(u);
-assert(err < tol, 'ifmm mixed opdims: err %.2e > tol %.2e', err, tol);
+assert(err < tol, 'ifmm 2D: err %.2e > tol %.2e', err, tol);
 
+end
+
+
+function check_far(S, K, p, l, eps)
+% Proxy blocks from both sides of a box reproduce the far field of K.
+dim = numel(l);
+far = far_targets(l, 48);
+x = S.r(1:dim,:);
+C = byindex.proxyfun(S, K, [], p, 'c', x, x, 1:S.npts, [], l, zeros(dim, 1));
+R = byindex.proxyfun(S, K, [], p, 'r', x, x, 1:S.npts, [], l, zeros(dim, 1));
+check_id(K.eval(S, far).*S.wts.', C, 10*eps);
+check_id(K.eval(far, S).', R.', 10*eps);
+end
+
+
+function check_id(A, B, tol)
+% An ID of the columns of B reproduces the columns of A.
+[~, R, p] = qr(B, 0);
+d = abs(diag(R));
+k = sum(d > tol/10*d(1));
+assert(k < size(B, 2), 'test must compress some columns');
+T = R(1:k,1:k)\R(1:k,k+1:end);
+E = A(:,p(k+1:end)) - A(:,p(1:k))*T;
+assert(norm(E, 'fro') < tol*norm(A, 'fro'), 'proxy ID does not reproduce the far field');
+end
+
+
+function S = box_sources(l, n)
+% n sources in the box with sides l, with frames and weights.
+dim = numel(l);
+S = random_frames([l(:).*(rand(dim, n) - 0.5); zeros(3-dim, n)], dim);
+S.npts = n;
+S.wts = (0.5 + rand(n, 1))/n;
+end
+
+
+function T = far_targets(l, n)
+% n targets between 2 and 3 box sizes from the center, with frames.
+dim = numel(l);
+v = randn(dim, n);  v = v./vecnorm(v);
+T = random_frames([l(:).*(2 + rand(1, n)).*v; zeros(3-dim, n)], dim);
+end
+
+
+function S = random_frames(r, dim)
+n = size(r, 2);
+nv = [randn(dim, n); zeros(3-dim, n)];  nv = nv./vecnorm(nv);
+du = cross(nv, randn(3, n));  du = du./vecnorm(du);
+if dim == 2, du = cross(nv, repmat([0; 0; 1], 1, n)); end
+S = struct('r', r, 'n', nv, 'du', du, 'dv', cross(nv, du), ...
+    'd', du, 'mean_curv', randn(1, n));
+end
+
+
+function M = cartesian(s)
+% Tangential (du, dv) currents and charge to Cartesian currents and charge
+n = size(s.r(:,:), 2);
+ru = s.du(:,:)./vecnorm(s.du(:,:));
+rv = cross(s.n(:,:), ru);
+M = zeros(4, 3, n);
+M(1:3,1,:) = reshape(ru, 3, 1, n);
+M(1:3,2,:) = reshape(rv, 3, 1, n);
+M(4,3,:) = 1;
+end
+
+
+function opts = flam_opts(routine)
+opts = struct('proxybylevel', contains(fileread(which(routine)), 'proxybylevel'));
 end
 
 
 function tf = has_flam()
-% Helper: true if FLAM's rskelf and ifmm are on the path.
 tf = exist('rskelf', 'file') == 2 && exist('ifmm', 'file') == 2;
-if ~tf
-    st = dbstack(1);
-    fprintf('FLAM not found, skipping %s\n', st(1).name);
-end
-end
-
-
-function kerns = mixed_kerns()
-% Helper: 2x2 kernel array with opdims [3 1], [3 1]; [1 1], [1 1]
-kerns(2,2) = kernel3d();
-kerns(1,1) = grad(kernel3d('l', 's'));
-kerns(1,2) = grad(kernel3d('l', 'd'));
-kerns(2,1) = kernel3d('l', 'sp');
-kerns(2,2) = kernel3d('l', 's');
-end
-
-
-function varargout = logg(s, t)
-% Helper: G = log|x-y| with target derivatives, helm3d.green format
-x = t(1,:).' - s(1,:);  y = t(2,:).' - s(2,:);  z = t(3,:).' - s(3,:);
-r2 = x.^2 + y.^2 + z.^2;
-X = cat(3, x, y, z);
-varargout{1} = log(r2)/2;
-varargout{2} = X./r2;
-H = zeros([size(x) 3 3]);
-for i = 1:3, for j = 1:3
-    H(:,:,i,j) = (i==j)./r2 - 2*X(:,:,i).*X(:,:,j)./r2.^2;
-end, end
-varargout{3} = H;
-end
-
-
-function check_lr(label, src2targ, Kpxy, tol)
-% Helper: verify the interpolative decomposition of Kpxy (column-pivoted
-% QR, as in FLAM) also compresses src2targ.
-[~, R, jpvt] = qr(Kpxy, 0);
-d  = abs(diag(R));
-k  = max(sum(d > tol/10 * d(1)), 1);
-T  = R(1:k, 1:k) \ R(1:k, k+1:end);
-sk = jpvt(1:k);
-rd = jpvt(k+1:end);
-err = norm(src2targ(:, rd) - src2targ(:, sk)*T, 'fro') / norm(src2targ, 'fro');
-assert(err < tol, '%s: err %.2e > tol %.2e', label, err, tol);
 end

@@ -194,7 +194,7 @@ targs.r = (1.02 + 1.5*rand(1,ntarg)) .* dirs;
 
 funs = byindex.flamfuns(S, kern, eps, targs);
 opts_flam = struct('proxybylevel', contains(fileread(which('ifmm')), 'proxybylevel'));
-F = ifmm(funs.Afun, funs.rx, funs.cx, 32, eps, funs.pxyfun, opts_flam);
+F = ifmm(funs.Afun, funs.rx, funs.cx, funs.occ, eps, funs.pxyfun, opts_flam);
 
 Afull = surferkernevalmat(S, kern, targs, eps);
 sig = randn(S.npts, 1);
