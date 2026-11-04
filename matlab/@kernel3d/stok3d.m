@@ -124,9 +124,14 @@ end
 % -----------------------------------------------------------------------
 function spmat = rsc_to_sparse(Q, S)
 %RSC_TO_SPARSE  Convert Stokes getquad RSC output to a sparse matrix.
-% Stokes kernels use the symmetric 3x3 upper-triangle storage.
-spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear, ...
-    kernel3d.rsc_interleave_symmetric3());
+% Symmetric Stokes kernels store the 3x3 upper triangle (6 entries); the
+% combined traction stores the full block in row-major order (9 entries).
+if size(Q.wnear, 1) == 9
+    ri = kernel3d.rsc_interleave_full(3, 3);
+else
+    ri = kernel3d.rsc_interleave_symmetric3();
+end
+spmat = conv_rsc_to_spmat(S, Q.row_ptr, Q.col_ind, Q.wnear, ri);
 end
 
 function mat = stok_eval_reshape(submat)
