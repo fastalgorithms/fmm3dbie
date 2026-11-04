@@ -1,32 +1,32 @@
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
-!  Evaluator for the traction of the Stokes single layer (S' kernel)
+!  Evaluator for the traction of the Stokes combined layer
 !
-!  The S' operator (also written T[S] or st3d_strac) is the target-
-!  traction of the single-layer potential:
+!  For u = alpha S_{stok}[\sigma] + beta D_{stok}[\sigma], the traction
+!  at a target x with normal m = n(x) is
 !
-!    (S'[\sigma])_i(x) = n_k(x) \sigma_{ik}(u)(x)
-!                      = n_k(x)(-p(x)\delta_{ik}
-!                              + \partial_i u_k + \partial_k u_i)(x)
+!    t_i(x) = m_k(x) \sigma_{ik}(u)(x)
+!           = m_k(x)(-p(x)\delta_{ik} + \partial_i u_k + \partial_k u_i)(x)
 !
-!  where  u = S_{stok}[\sigma]  and  x  carries the target normal n(x).
+!  With r = x - y and n = n(y), the kernel (st3d_combtrac) is
+!  K_{ij} = alpha t(S)_{ij} + beta t(D)_{ij}, where
 !
-!  The kernel is t(S)_{ij}(x,y) = T_{ijk}(x,y) n_k(x):
+!    t(S)_{ij} = -3 (r.m) r_i r_j / r^5 / (4 pi)
 !
-!    t(S)_{ij}(x,y) = -3(r . n(x)) r_i r_j / r^5 / (4 pi)
+!    t(D)_{ij} = [ 2 m_i n_j / r^3
+!                  + 3 ( r_i m_j (r.n) + r_i r_j (m.n)
+!                      + delta_{ij} (m.r)(r.n) + n_i r_j (m.r)
+!                      - 10 r_i r_j (m.r)(r.n) / r^2 ) / r^5 ] / (4 pi)
 !
-!  with r = x - y.  This is the negative transpose of the Stokes
-!  double-layer kernel  D_{ij}(x,y) = T_{ijk}(x,y) n_k(y).
-!
-!  Because t(S)_{ij} = t(S)_{ji}, only the 6 lower-triangular entries
-!  of the 3x3 tensor are stored in wnear.
-!
+!  t(D) is not symmetric in (i,j), so all 9 entries of the 3x3 tensor
+!  are stored in wnear, in row-major order.
 !
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !  Advanced interfaces:
 !    - getnearquad_stok_combtrac: compute the near quadrature correction
-!        for evaluating S'[\sigma] at target points which can be either
+!        for evaluating the traction of alpha S + beta D at target
+!        points which can be either
 !        on-surface or off-surface, with user-provided near-information
 !        prescribed in row-sparse compressed format.
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -40,9 +40,8 @@
 !  This subroutine generates the near field quadrature for the
 !  traction of the Stokes combined field layer:
 !
-!    S'[\sigma](x) = dpars(1) * n_k(x) sigma_{ik}(S[\sigma])(x) 
-!                      + dpars(2) * n_k(x) sigma_{ik}(T[\sigma])(x)
-!
+!    t[\sigma](x) = dpars(1) * n_k(x) sigma_{ik}(S[\sigma])(x)
+!                     + dpars(2) * n_k(x) sigma_{ik}(D[\sigma])(x)
 !
 !  This routine handles both on-surface and off-surface targets.
 !  For on-surface targets, only the principal value part is returned;
@@ -125,15 +124,11 @@
 !        number of near-field quadrature entries per kernel component
 !
 !  Output arguments:
-!    - wnear: real *8(6,nquad)
-!        Near-field quadrature weights for S'. Since the tensor is
-!        symmetric only the 6 lower-triangular entries are stored:
-!        * wnear(1,:) - (1,1) entry
-!        * wnear(2,:) - (1,2) entry
-!        * wnear(3,:) - (1,3) entry
-!        * wnear(4,:) - (2,2) entry
-!        * wnear(5,:) - (2,3) entry
-!        * wnear(6,:) - (3,3) entry
+!    - wnear: real *8(9,nquad)
+!        Near-field quadrature weights. The tensor is not symmetric,
+!        so all 9 entries are stored in row-major order:
+!        * wnear(3*(i-1)+j,:) - (i,j) entry, i.e. the i-th traction
+!          component due to the j-th density component
 !
 
       implicit none
@@ -150,7 +145,7 @@
       integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz)
       integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(in) :: dpars(2)
-      real *8, intent(out) :: wnear(6,nquad)
+      real *8, intent(out) :: wnear(9,nquad)
 
       real *8, allocatable :: wneartmp(:)
       integer *8 ndd, ndi, ndz
@@ -158,7 +153,7 @@
       complex *16 zpars(1)
       integer *8 ipars(2)
 
-      integer *8 i, ipv, ii, ijloc(2,6)
+      integer *8 i, j, ipv, ii, ijloc(2,9)
 
       procedure (), pointer :: fker
       external st3d_combtrac
@@ -169,13 +164,13 @@
       fker => st3d_combtrac
       ipv = 2
 
-      ! (i,j) pairs for the 6 independent entries of the symmetric tensor
-      ijloc(1,1) = 1 ;  ijloc(2,1) = 1
-      ijloc(1,2) = 1 ;  ijloc(2,2) = 2
-      ijloc(1,3) = 1 ;  ijloc(2,3) = 3
-      ijloc(1,4) = 2 ;  ijloc(2,4) = 2
-      ijloc(1,5) = 2 ;  ijloc(2,5) = 3
-      ijloc(1,6) = 3 ;  ijloc(2,6) = 3
+      ! (i,j) pairs for the 9 entries of the tensor, row-major
+      do i = 1,3
+        do j = 1,3
+          ijloc(1,3*(i-1)+j) = i
+          ijloc(2,3*(i-1)+j) = j
+        enddo
+      enddo
 
       allocate(wneartmp(nquad))
 
@@ -187,7 +182,7 @@
         enddo
 !$OMP END PARALLEL DO
 
-        do i = 1,6
+        do i = 1,9
           call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
             iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
             ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &

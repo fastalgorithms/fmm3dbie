@@ -4635,8 +4635,12 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %   Q = stok3d.traction.get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %
 %  Operator:
-%     pot = S'_{stok}[\sigma]
-%         = n_k(x) sigma_{ik}(S[\sigma])(x)
+%     pot = n_k(x) sigma_{ik}(u)(x),   u = dpars(1) S[\sigma] + dpars(2) D[\sigma]
+%
+%  With opts.rep = 's' (default) the single-layer traction S' is
+%  returned (dpars is ignored, 6 symmetric entries per block); with
+%  opts.rep = 'c' the traction of the combined field (9 entries per
+%  block, hypersingular quadrature).
 %
 %  Note: for targets on surface, only the principal value part is returned
 %
@@ -4653,6 +4657,7 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
 %       targinfo.uvs_targ (2,nt) local uv coordinates on patch if on-surface
 %    * opts: options struct
 %        opts.format - storage format: 'rsc' (default), 'csc', 'sparse'
+%        opts.rep - 's' (default) for S', 'c' for the combined traction
 %        opts.quadtype - quadrature type; currently only 'ggq' supported
 %
 
@@ -4736,7 +4741,14 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     nnzp1   = nnz+1;
 
     nquad = iquad(nnz+1)-1;
-    nker = 6;
+    % S' is symmetric (6 entries); the combined traction is not (9 entries)
+    if strcmp(qtype,'s')
+      nker = 6;
+      ri = kernel3d.rsc_interleave_symmetric3();
+    else
+      nker = 9;
+      ri = kernel3d.rsc_interleave_full(3, 3);
+    end
     wnear = zeros(nker,nquad);
     iquadtype = 1;
     if(isfield(opts,'quadtype'))
@@ -4757,7 +4769,11 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
     Q.targinfo = targinfo;
     Q.ifcomplex = 0;
     Q.wavenumber = 0;
-    Q.kernel_order = 0;
+    if strcmp(qtype,'s')
+      Q.kernel_order = 0;
+    else
+      Q.kernel_order = 1;
+    end
     Q.rfac = rfac;
     Q.nquad = nquad;
     Q.format = ff;
@@ -4780,7 +4796,7 @@ function Q = get_quadrature_correction(S, eps, dpars, targinfo, opts)
         Q.col_ptr = col_ptr;
         Q.row_ind = row_ind;
     else
-        spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
+        spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear,ri);
         Q.spmat = spmat;
     end
 

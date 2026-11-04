@@ -128,13 +128,16 @@ case {'cprime'}
   beta  = varargin{2};
 
   % ---- sprime part ----
-  [~, grad] = stok3d.green(src, targ);
-  % grad(k,i,it,j,is) = (3/4pi) r_k r_i r_j / r^5
-  mx = reshape(repmat(targnorm(1,:).', 1, ns), [1, 1, nt, 1, ns]);
-  my = reshape(repmat(targnorm(2,:).', 1, ns), [1, 1, nt, 1, ns]);
-  mz = reshape(repmat(targnorm(3,:).', 1, ns), [1, 1, nt, 1, ns]);
-  sprime_mat = grad(1,:,:,:,:).*mx + grad(2,:,:,:,:).*my + grad(3,:,:,:,:).*mz;
-  sprime_mat = -reshape(sprime_mat, [3, nt, 3, ns]);
+  sprime_mat = 0;
+  if alpha ~= 0
+    [~, grad] = stok3d.green(src, targ);
+    % grad(k,i,it,j,is) = (3/4pi) r_k r_i r_j / r^5
+    mx = reshape(repmat(targnorm(1,:).', 1, ns), [1, 1, nt, 1, ns]);
+    my = reshape(repmat(targnorm(2,:).', 1, ns), [1, 1, nt, 1, ns]);
+    mz = reshape(repmat(targnorm(3,:).', 1, ns), [1, 1, nt, 1, ns]);
+    sprime_mat = grad(1,:,:,:,:).*mx + grad(2,:,:,:,:).*my + grad(3,:,:,:,:).*mz;
+    sprime_mat = -reshape(sprime_mat, [3, nt, 3, ns]);
+  end
 
   % ---- dprime part ----
   % Build r, scalar dot products (all shape (nt,ns))

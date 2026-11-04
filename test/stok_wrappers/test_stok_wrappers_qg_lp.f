@@ -23,6 +23,10 @@
       real *8 st2(3), du2(3), uconst(3)
       real *8 v(3), omega(3), r0(3), udiff(3,10), udiff2(3,10)      
       real *8, allocatable :: uval(:,:), tracval(:,:), soln(:,:)
+      real *8 targinfo(12), tin(3), tex(3), srcinfo2(12)
+      real *8 dk1(3,3), dk2(3,3), dkf(3,3)
+      real *8 stoklet(3), strslet(3), strsvec(3), thresh
+      integer *8 ijp(2), istress, i1_8
       complex * 16 zpars
 
       call prini(6,13)
@@ -327,8 +331,165 @@ c
       call prin2('rel err in Greens ID --- FMM, adaptive quadrature *',
      1     errl2,1)
 
-      ntests=2
-      nsuccess = i1+i2
+c
+c     traction kernel check: green's i.d. for the traction with
+c     smooth quad at 1 target. For x inside, with normal m at x,
+c
+c       t(x) = S'[t](x) - D'[u](x),
+c
+c     where S' = st3d_strac and D' = st3d_combtrac with dpars = (0,1).
+c     The traction kernels are more singular than the velocity kernels,
+c     so on this coarse mesh (norder = 3) the error is about 4e-3,
+c     below the threshold 1e-2; it is about 6e-6 at norder = 6.
+c     (The old, incorrect D' kernel gave 0.15 at any resolution.)
+c
+      targinfo = 0
+      targinfo(1) = xyz_in(1,1)
+      targinfo(2) = xyz_in(2,1)
+      targinfo(3) = xyz_in(3,1)
+      targinfo(10) = 0.36d0
+      targinfo(11) = 0.48d0
+      targinfo(12) = 0.8d0
+
+c     exact traction of the stokeslet at the target
+      call st3d_strac_vec(nd, xyz_out,i12_8,targinfo,i0_8,dpars,
+     1     i0_8,zpars,i0_8,ipars,stracmat)
+      do j = 1,3
+         tex(j) = stracmat(j,1)*sigout(1) + stracmat(j,2)*sigout(2)
+     1        + stracmat(j,3)*sigout(3)
+      enddo
+
+      dpars(1) = 0
+      dpars(2) = 1
+      i2_8 = 2
+      do j = 1,3
+         tin(j) = 0
+      enddo
+
+      do i = 1,npts
+         call st3d_strac_vec(nd, srcvals(1,i),i12_8,targinfo,i0_8,
+     1        dpars,i0_8,zpars,i0_8,ipars,stracmat)
+         do j = 1,3
+            do k = 1,3
+               ijp(1) = j
+               ijp(2) = k
+               call st3d_combtrac(srcvals(1,i),i12_8,targinfo,i2_8,
+     1              dpars,i0_8,zpars,i2_8,ijp,dval)
+               tin(j) = tin(j) + wts(i)*(stracmat(j,k)*tracval(k,i)
+     1              - dval*uval(k,i))
+            enddo
+         enddo
+      enddo
+
+      sum = 0
+      sumrel = 0
+      do i = 1,3
+         sum = sum + (tin(i)-tex(i))**2
+         sumrel = sumrel + tex(i)**2
+      enddo
+
+      i3 = 0
+      errl2 = sqrt(sum/sumrel)
+      if (errl2 .lt. 1d-2) i3 = 1
+
+      call prin2('rel err in traction Greens ID --- smooth quad *',
+     1     errl2,1)
+
+c
+c     D' kernel K_{ij}(x,m;y,n) (st3d_combtrac, dpars = (0,1)) at the
+c     target x above and the source node y = srcvals(:,1), used by the
+c     next two checks
+c
+      do i = 1,3
+         do j = 1,3
+            ijp(1) = i
+            ijp(2) = j
+            call st3d_combtrac(srcvals(1,1),i12_8,targinfo,i2_8,
+     1           dpars,i0_8,zpars,i2_8,ijp,dk1(i,j))
+         enddo
+      enddo
+
+c
+c     kernel check: reciprocity of the D' kernel,
+c     K_{ij}(x,m;y,n) = K_{ji}(y,n;x,m)
+c
+      do i = 1,12
+         srcinfo2(i) = targinfo(i)
+      enddo
+      do i = 1,3
+         do j = 1,3
+            ijp(1) = j
+            ijp(2) = i
+            call st3d_combtrac(srcinfo2,i12_8,srcvals(1,1),i2_8,
+     1           dpars,i0_8,zpars,i2_8,ijp,dk2(i,j))
+         enddo
+      enddo
+
+      sum = 0
+      sumrel = 0
+      do i = 1,3
+         do j = 1,3
+            sum = sum + (dk1(i,j)-dk2(i,j))**2
+            sumrel = sumrel + dk1(i,j)**2
+         enddo
+      enddo
+
+      i4 = 0
+      errl2 = sqrt(sum/sumrel)
+      if (errl2 .lt. 1d-12) i4 = 1
+
+      call prin2('rel err in reciprocity of D'' kernel *',errl2,1)
+
+c
+c     kernel check: D' kernel vs the traction of the FMM3D stresslet
+c     at y with strength e_j and orientation n (st3ddirectstokstrsg),
+c     t_i = m_k (-p delta_{ik} + d_i u_k + d_k u_i)
+c
+      i1_8 = 1
+      istress = 1
+      thresh = 0
+      do k = 1,3
+         stoklet(k) = 0
+         strsvec(k) = srcvals(9+k,1)
+      enddo
+      do j = 1,3
+         do k = 1,3
+            strslet(k) = 0
+            vel(k) = 0
+            do l = 1,3
+               velgrad(k,l) = 0
+            enddo
+         enddo
+         strslet(j) = 1
+         pre = 0
+         call st3ddirectstokstrsg(i1_8,srcvals(1,1),stoklet,istress,
+     1        strslet,strsvec,i1_8,targinfo,i1_8,vel,pre,velgrad,thresh)
+         do i = 1,3
+            dkf(i,j) = -pre*targinfo(9+i)
+            do k = 1,3
+               dkf(i,j) = dkf(i,j) + targinfo(9+k)*(velgrad(i,k)
+     1              + velgrad(k,i))
+            enddo
+         enddo
+      enddo
+
+      sum = 0
+      sumrel = 0
+      do i = 1,3
+         do j = 1,3
+            sum = sum + (dk1(i,j)-dkf(i,j))**2
+            sumrel = sumrel + dk1(i,j)**2
+         enddo
+      enddo
+
+      i5 = 0
+      errl2 = sqrt(sum/sumrel)
+      if (errl2 .lt. 1d-12) i5 = 1
+
+      call prin2('rel err in D'' kernel vs FMM3D stresslet *',errl2,1)
+
+      ntests=5
+      nsuccess = i1+i2+i3+i4+i5
 
       open(unit=33,file='../../print_testres.txt',access='append')
       write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,

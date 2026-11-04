@@ -23,13 +23,13 @@
 !     (without the 1/4pi scaling) are
 !
 !     G_{ij}(x,y) = (r_i r_j)/(2r^3) + delta_{ij}/(2r)
-!     P_j(x,y) = -r_j/r^3
+!     P_j(x,y) = r_j/r^3
 !
 !     The (Type I) stresslet, T_{ijk}, and its associated pressure
 !     tensor, PI_{jk}, (without the 1/4pi scaling) are
-!     
+!
 !     T_{ijk}(x,y) = -3 r_i r_j r_k/ r^5
-!     PI_{jk} = -2 delta_{jk} + 6 r_j r_k/r^5      
+!     PI_{jk} = -2 delta_{jk}/r^3 + 6 r_j r_k/r^5
 !
 !
 
@@ -577,18 +577,27 @@ subroutine st3d_combtrac(srcinfo,ndt,targinfo,ndd,dpars, &
   dxj = dr(j)
   sni = srcnorm(i)
   snj = srcnorm(j)
+  tni = targnorm(i)
+  tnj = targnorm(j)
+  dij = 0
+  if (i .eq. j) dij = 1
 
   ! --- 1. Stokeslet Contribution ---
   val_stok = -3.0d0 * dxi * dxj * dprod_targ * rinv5
 
   ! --- 2. Stresslet Contribution ---
-  ! Term A: -15 * dx_i * dx_j * (dr . srcnorm) * (dr . targnorm) / r^7
-  termA = -15.0d0 * dxi * dxj * dprod_src * dprod_targ * rinv7
+  ! Traction of the double layer, with m = targnorm, n = srcnorm:
+  !   2 m_i n_j / r^3
+  !   + 3 [ r_i m_j (r.n) + r_i r_j (m.n) + delta_ij (m.r)(r.n)
+  !         + n_i r_j (m.r) - 10 r_i r_j (m.r)(r.n) / r^2 ] / r^5
+  ! The pressure gives the 2 m_i n_j / r^3 term; its m_i r_j (r.n) / r^5
+  ! part cancels against the velocity gradient. Unlike the Stokeslet
+  ! part, this kernel is not symmetric in (i,j).
+  termA = 2.0d0 * tni * snj * rinv3
 
-  ! Term B: 3 * [ srcnorm_i * dx_j * (dr . targnorm) + 
-  !               dx_i * srcnorm_j * (dr . targnorm) + 
-  !               dx_i * dx_j * (srcnorm . targnorm) ] / r^5
-  termB = 3.0d0 * (sni*dxj*dprod_targ + dxi*snj*dprod_targ + dxi*dxj*snorm_tnorm) * rinv5
+  termB = 3.0d0 * (dxi*tnj*dprod_src + dxi*dxj*snorm_tnorm &
+       + dij*dprod_targ*dprod_src + sni*dxj*dprod_targ &
+       - 10.0d0*dxi*dxj*dprod_targ*dprod_src*rinv2) * rinv5
 
   val_stress = termA + termB
 
