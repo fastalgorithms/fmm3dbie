@@ -41,9 +41,9 @@ c     i.e., this strategy guarantees that the interpolated function
 c     approximates the function with relative lp accuracy of \eps
 c     
 c     This code has 2 main user callable routines
-c     make_vol_tree_mem -> Returns the memory requirements, 
+c     surf_tree_mem -> Returns the memory requirements, 
 c     tree length, number of boxes, number of levels
-c     make_vol_tree -> Makes the actual tree, returns centers of boxes,
+c     surf_tree_build -> Makes the actual tree, returns centers of boxes,
 c     colleague info, function values on leaf boxes
 c     
 c     
@@ -256,39 +256,47 @@ c     rsc = boxlen**2/4
             call fun(nd,xy,dpars,zpars,ipars,fvals(1,i,k))
             if(iptype.eq.0) then
                do idim=1,nd
-                  if(abs(fvals(idim,i,k)).gt.rintbs(idim,1)) then
-                     rintbs(idim,1) = abs(fvals(idim,i,k))
+                  if(abs(fvals(idim,i,k)).gt.rintbs(idim,k)) then
+                     rintbs(idim,k) = abs(fvals(idim,i,k))
                   endif
                enddo
             endif
 
             if(iptype.eq.1) then
                do idim=1,nd
-                  rintbs(idim,1) = rintbs(idim,1) 
+                  rintbs(idim,k) = rintbs(idim,k) 
      1                 + abs(fvals(idim,i,k))*wts2(i)*rscbs
                enddo
             endif
 
             if(iptype.eq.2) then
                do idim=1,nd
-                  rintbs(idim,1) = rintbs(idim,1)
+                  rintbs(idim,k) = rintbs(idim,k)
      1                 + fvals(idim,i,k)**2*wts2(i)*rscbs
                enddo
             endif
          enddo
       enddo
 
-      if(iptype.eq.0.or.iptype.eq.1) then
-         do idim=1,nd
-            rint(idim) = rintbs(idim,1)
-         enddo
-      endif
-      if(iptype.eq.2) then
+c     if(iptype.eq.0.or.iptype.eq.1) then
+c         do idim=1,nd
+c            rint(idim) = rintbs(idim,1)
+c         enddo
+c      endif
+c      if(iptype.eq.2) then
 c         rint = sqrt(rintbs(1))
-         do idim=1,nd
-            rint(idim) = sqrt(rintbs(idim,1))
+c         do idim=1,nd
+c     rint(idim) = sqrt(rintbs(idim,1))
+c     enddo
+c     endif
+      do idim=1,nd
+         rint(idim) = 0
+         do k=1,nroot
+            if(iptype.eq.0) rint(idim) = max(rint(idim),rintbs(idim,k))
+            if(iptype.ne.0) rint(idim) = rint(idim) + rintbs(idim,k)
          enddo
-      endif
+         if(iptype.eq.2) rint(idim) = sqrt(rint(idim))
+      enddo
 
       do idim=1,nd
          rintl(idim,0) = rint(idim)
@@ -320,7 +328,7 @@ c         rint = sqrt(rintbs(1))
            rsc(idim) = rscbs*rint(idim)
         enddo
 
-        print *, ilev, rint, rsc
+c        print *, ilev, rint, rsc
         
         call surf_tree_find_box_refine(nd,iptype,eta,eps,zk,norder,
      1       npbox,fvals,npols,umat,boxsize(1,ilev),nbmax,ifirstbox,
@@ -442,9 +450,9 @@ c
      1        iparent,nchild,ichild,iper,nnbors,nbors)
 
         if(nlevels.ge.2) then
-c         call vol_tree_fix_lr(fun,nd,dpars,zpars,ipars,norder,npbox,
-c     1         fvals,grid,centers,nlevels,nboxes,boxsize,nbmax,nlmax,
-c     2         laddr,ilevel,iparent,nchild,ichild,nnbors,nbors)
+         call surf_tree_fix_lr(fun,nd,dpars,zpars,ipars,norder,npbox,
+     1         fvals,grid,centers,nlevels,nboxes,boxsize,nbmax,nlmax,
+     2         laddr,ilevel,iparent,nchild,ichild,nnbors,nbors)
         endif
       endif
 
@@ -731,11 +739,11 @@ c     populate output array to matlab
       enddo
       
       if(nlevels.ge.2) then
-c         call vol_tree_fix_lr(fun,nd,dpars,zpars,ipars,norder,npbox,
-c     1       fvals,grid,centers,nlevels,nboxes0,boxsize,nboxes,nlevels,
-c     2       itree(iptr(1)),itree(iptr(2)),itree(iptr(3)),
-c     3       itree(iptr(4)),itree(iptr(5)),itree(iptr(6)),
-c     4       itree(iptr(7)))
+         call surf_tree_fix_lr(fun,nd,dpars,zpars,ipars,norder,npbox,
+     1       fvals,grid,centers,nlevels,nbctr,boxsize,nboxes,nlevels,
+     2       itree(iptr(1)),itree(iptr(2)),itree(iptr(3)),
+     3       itree(iptr(4)),itree(iptr(5)),itree(iptr(6)),
+     4       itree(iptr(7)))
       endif
       
       return
@@ -1273,8 +1281,414 @@ c
 c
 c
 c
-c-------------------------------------------------------------      
-      subroutine surf_tree_fix_lr(fun,nd,dpars,zpars,ipars,norder,
+c-------------------------------------------------------------
+            subroutine surf_tree_fix_lr(fun,nd,dpars,zpars,ipars,norder,
+     1       npbox,fvals,grid,centers,nlevels,nboxes,boxsize,
+     2       nbmax,nlmax,laddr,ilevel,iparent,nchild,ichild,nnbors,
+     3       nbors)
+c
+c
+c       convert an adaptive tree into a level restricted tree
+c
+      implicit none
+      integer *8 nd,ipars(*),norder,npbox,nlevels,nboxes,nlmax
+      integer *8 nbmax
+      real *8 dpars(*),fvals(nd,npbox,nbmax),grid(2,npbox)
+      real *8 centers(2,nbmax),boxsize(2,0:nlmax)
+      complex *16 zpars
+      integer *8 laddr(2,0:nlmax),ilevel(nbmax),iparent(nbmax)
+      integer *8 nchild(nbmax),ichild(4,nbmax),nnbors(nbmax)
+      integer *8 nbors(9,nbmax)
+      integer *8 laddrtail(2,0:nlmax),isum
+      integer *8, allocatable :: iflag(:)
+
+      integer *8 i,j,k,l,ibox,jbox,kbox,ilev,idad,igranddad
+      integer *8 nbloc,ict,iper,ipass,m,ibeg,iend
+      real *8 xdis,ydis,xdistest,ydistest
+      real *8 xmin,xmax,ymin,ymax,xper,yper
+      integer *8 laddr2(2,0:nlmax+2),laddrtail2(2,0:nlmax+2)
+
+      external fun
+
+c     Set iper=1 for periodic trees, iper=0 otherwise.
+c     The original interface does not supply a periodicity flag.
+      iper = 1
+      allocate(iflag(nbmax))
+      xmin = minval(centers(1,laddr(1,0):laddr(2,0)))
+     1     - boxsize(1,0)/2
+      xmax = maxval(centers(1,laddr(1,0):laddr(2,0)))
+     1     + boxsize(1,0)/2
+      ymin = minval(centers(2,laddr(1,0):laddr(2,0)))
+     1     - boxsize(2,0)/2
+      ymax = maxval(centers(2,laddr(1,0):laddr(2,0)))
+     1     + boxsize(2,0)/2
+      xper = xmax-xmin
+      yper = ymax-ymin
+c     Disabling wrapping by doubling the period preserves the
+c     original nonperiodic center-distance comparisons.
+      if(iper.eq.0) then
+         xper = 2*xper
+         yper = 2*yper
+      endif
+
+c     Initialize flag array
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
+      do i=1,nboxes
+         iflag(i) = 0
+      enddo
+C$OMP END PARALLEL DO     
+
+
+
+      do ipass=1,3
+c     Construct all colleagues using periodic minimum-image distances
+      do ibox=laddr(1,0),laddr(2,0)
+         nnbors(ibox)=0
+         do jbox=laddr(1,0),laddr(2,0)
+            xdis=abs(centers(1,jbox)-centers(1,ibox))
+            ydis=abs(centers(2,jbox)-centers(2,ibox))
+            if(min(xdis,xper-xdis).le.1.05d0*boxsize(1,0)
+     1         .and.min(ydis,yper-ydis).le.
+     2                     1.05d0*boxsize(2,0)) then
+               nnbors(ibox)=nnbors(ibox)+1
+               nbors(nnbors(ibox),ibox)=jbox
+            endif
+         enddo
+      enddo
+      do ilev=1,nlevels
+         do ibox=laddr(1,ilev),laddr(2,ilev)
+            nnbors(ibox)=0
+            idad=iparent(ibox)
+            do i=1,nnbors(idad)
+               jbox=nbors(i,idad)
+               do j=1,4
+                  kbox=ichild(j,jbox)
+                  if(kbox.gt.0) then
+                     xdis=abs(centers(1,kbox)-centers(1,ibox))
+                     ydis=abs(centers(2,kbox)-centers(2,ibox))
+                     if(min(xdis,xper-xdis).le.
+     1                    1.05d0*boxsize(1,ilev).and.
+     2                  min(ydis,yper-ydis).le.
+     3                    1.05d0*boxsize(2,ilev)) then
+                        nnbors(ibox)=nnbors(ibox)+1
+                        nbors(nnbors(ibox),ibox)=kbox
+                     endif
+                  endif
+               enddo
+            enddo
+         enddo
+      enddo
+      if(ipass.eq.1) then
+c     Flag boxes that violate level restriction by "1"
+c     Violatioin refers to any box that is directly touching
+c     a box that is more than one level finer
+c
+c     Method:
+c     1) Carry out upward pass. For each box B, look at
+c     the colleagues of B's grandparent
+c     2) See if any of those colleagues are childless and in
+c     contact with B.
+c
+c     Note that we only need to get up to level two, as
+c     we will not find a violation at level 0 and level 1
+c
+c     For such boxes, we set iflag(i) = 1
+c
+      do ilev=nlevels,2,-1
+c        This is the distance to test if two boxes separated
+c        by two levels are touching
+         xdistest = 1.05d0*(boxsize(1,ilev-1) + boxsize(1,ilev-2))/2.0d0
+         ydistest = 1.05d0*(boxsize(2,ilev-1) + boxsize(2,ilev-2))/2.0d0
+C$OMP PARALLEL DO DEFAULT(SHARED)
+C$OMP$ PRIVATE(ibox,idad,igranddad,i,jbox)
+C$OMP$ PRIVATE(ict,xdis,ydis)
+         do ibox = laddr(1,ilev),laddr(2,ilev) 
+            idad = iparent(ibox)
+            igranddad = iparent(idad)
+            
+c           Loop over colleagues of granddad            
+            do i=1,nnbors(igranddad)
+               jbox = nbors(i,igranddad)
+c              Check if the colleague of grandad
+c              is a leaf node. This automatically
+c              eliminates the granddad
+               if(nchild(jbox).eq.0.and.iflag(jbox).eq.0) then
+                   xdis = centers(1,jbox) - centers(1,idad)
+                   ydis = centers(2,jbox) - centers(2,idad)
+                   ict = 0
+                   if(min(abs(xdis),xper-abs(xdis)).le.
+     1                xdistest) ict = ict + 1
+                   if(min(abs(ydis),yper-abs(ydis)).le.
+     1                ydistest) ict = ict + 1
+                   if(ict.eq.2) then
+                      iflag(jbox) = 1
+                   endif
+               endif
+c              End of checking criteria for the colleague of
+c              granddad
+            enddo
+c           End of looping over colleagues of
+c           granddad
+         enddo
+c        End of looping over boxes at ilev         
+C$OMP END PARALLEL DO
+      enddo
+c     End of looping over levels and flagging boxes
+
+
+c     Find all boxes that need to be given a flag+
+c     A flag+ box will be denoted by setting iflag(box) = 2
+c     This refers to any box that is not already flagged and
+c     is bigger than and is contacting a flagged box
+c     or another box that has already been given a flag +.
+c     It is found by performing an upward pass and looking
+c     at the flagged box's parents colleagues and a flag+
+c     box's parents colleagues and seeing if they are
+c     childless and present the case where a bigger box 
+c     is contacting a flagged or flag+ box.
+
+      do ilev = nlevels,1,-1
+c        This is the distance to test if two boxes separated
+c        by one level are touching
+         xdistest = 1.05d0*(boxsize(1,ilev) + boxsize(1,ilev-1))/2.0d0
+         ydistest = 1.05d0*(boxsize(2,ilev) + boxsize(2,ilev-1))/2.0d0
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ibox,idad,i,jbox,xdis,ydis)
+C$OMP$PRIVATE(ict)
+         do ibox = laddr(1,ilev),laddr(2,ilev)
+            if(iflag(ibox).eq.1.or.iflag(ibox).eq.2) then
+               idad = iparent(ibox)
+c              Loop over dad's colleagues               
+               do i=1,nnbors(idad)
+                  jbox = nbors(i,idad)
+c                 Check if the colleague of dad
+c                 is a leaf node. This automatically
+c                 eliminates the dad
+                  if(nchild(jbox).eq.0.and.iflag(jbox).eq.0) then
+                     xdis = centers(1,jbox) - centers(1,ibox)
+                     ydis = centers(2,jbox) - centers(2,ibox)
+                     ict = 0
+                     if(min(abs(xdis),xper-abs(xdis)).le.
+     1                xdistest) ict = ict + 1
+                     if(min(abs(ydis),yper-abs(ydis)).le.
+     1                ydistest) ict = ict + 1
+                     if(ict.eq.2) then
+                        iflag(jbox) = 2
+                     endif
+                  endif
+c                 End of checking criteria for the colleague of
+c                dad
+               enddo
+c              End of looping over dad's colleagues               
+            endif
+c           End of checking if current box is relevant for
+c           flagging flag+ boxes
+         enddo
+c        End of looping over boxes at ilev        
+C$OMP END PARALLEL DO 
+      enddo
+c     End of looping over levels
+
+c     Subdivide all flag and flag+ boxes. Flag all the children
+c     of flagged boxes as flag++. Flag++ boxes are denoted
+c     by setting iflag(box) = 3. The flag++ boxes need 
+c     to be checked later to see which of them need further
+c     refinement. While creating new boxes, we will
+c     need to update all the tree structures as well.
+c     Note that all the flagged boxes live between
+c     levels 1 and nlevels - 2. We process the boxes via a
+c     downward pass. We first determine the number of boxes
+c     that are going to be subdivided at each level and 
+c     everything else accordingly
+      do ilev = 0,nlevels
+         laddrtail(1,ilev) = 0
+         laddrtail(2,ilev) = -1
+      enddo
+ 
+      do ilev = 0,nlevels-2
+c        First subdivide all the flag and flag+
+c        boxes with boxno nboxes+1, nboxes+ 2
+c        and so on. In the second step, we reorganize
+c        all the structures again to bring it back
+c        in the standard format
+
+         laddrtail(1,ilev+1) = nboxes+1
+
+         nbloc = laddr(2,ilev)-laddr(1,ilev)+1
+
+         call surf_tree_refine_boxes_flag(iflag,nd,npbox,fvals,
+     1    fun,dpars,zpars,ipars,grid,nbmax,laddr(1,ilev),nbloc,
+     2    centers,boxsize(1,ilev+1),nboxes,ilev,ilevel,iparent,nchild,
+     3    ichild)
+
+         laddrtail(2,ilev+1) = nboxes
+      enddo
+c     Reorganize the tree to get it back in the standard format
+
+c     Reorganize level 1 too, if any root has been refined
+      if(laddrtail(2,1).ge.laddrtail(1,1)) then
+         do ilev=0,nlevels
+            laddr2(1,ilev+2)=laddr(1,ilev)
+            laddr2(2,ilev+2)=laddr(2,ilev)
+            laddrtail2(1,ilev+2)=laddrtail(1,ilev)
+            laddrtail2(2,ilev+2)=laddrtail(2,ilev)
+         enddo
+         do ilev=0,1
+            laddr2(1,ilev)=1
+            laddr2(2,ilev)=0
+            laddrtail2(1,ilev)=1
+            laddrtail2(2,ilev)=0
+         enddo
+         call surf_tree_reorg(nboxes,nd,npbox,centers,nlevels+2,
+     1        laddr2,laddrtail2,ilevel,iparent,nchild,ichild,
+     2        fvals,iflag)
+         do ilev=0,nlevels
+            laddr(1,ilev)=laddr2(1,ilev+2)
+            laddr(2,ilev)=laddr2(2,ilev+2)
+         enddo
+      else
+         call surf_tree_reorg(nboxes,nd,npbox,centers,nlevels,laddr,
+     1          laddrtail,ilevel,iparent,nchild,ichild,fvals,iflag)
+      endif
+
+      else if(ipass.eq.2) then
+c     Processing of flag and flag+ boxes is done
+c     Start processing flag++ boxes. We will use a similar
+c     strategy as before. We keep checking the flag++
+c     boxes that require subdivision if they still
+c     violate the level restriction criterion, create
+c     the new boxes, append them to the end of the list to begin
+c     with and in the end reorganize the tree structure.
+c     We shall accomplish this via a downward pass
+c     as new boxes that get added in the downward pass
+c     will also be processed simultaneously.
+c     We shall additionally also need to keep on updating
+c     the colleague information as we proceed in the 
+c     downward pass
+
+c     Reset the flags array to remove all the flag and flag+
+c     cases. This is to ensure reusability of the subdivide
+c     _flag routine to handle the flag++ case
+
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ibox)
+      do ibox=1,nboxes
+         if(iflag(ibox).ne.3) iflag(ibox) = 0
+      enddo
+C$OMP END PARALLEL DO      
+ 
+      do ilev = 0,nlevels
+         laddrtail(1,ilev) = 0
+         laddrtail(2,ilev) = -1
+      enddo
+
+      do ilev = 1,nlevels-2
+c     Step 1: Determine which of the flag++ boxes need
+c     further division. In the even a flag++ box needs
+c     further subdivision then flag the box with iflag(box) = 1
+c     This will again ensure that the subdivide_flag routine
+c     will take care of handling the flag++ case
+         xdistest = 1.05d0*(boxsize(1,ilev) +
+     1                           boxsize(1,ilev+1))/2
+         ydistest = 1.05d0*(boxsize(2,ilev) +
+     1                           boxsize(2,ilev+1))/2
+         do m=1,2
+            ibeg=laddr(1,ilev)
+            iend=laddr(2,ilev)
+            if(m.eq.2) then
+               ibeg=laddrtail(1,ilev)
+               iend=laddrtail(2,ilev)
+            endif
+            do ibox=ibeg,iend
+               if(iflag(ibox).eq.3) then
+                  iflag(ibox)=0
+                  do i=1,nnbors(ibox)
+                     jbox=nbors(i,ibox)
+                     do j=1,4
+                        kbox=ichild(j,jbox)
+                        if(kbox.gt.0) then
+                           if(nchild(kbox).gt.0) then
+                              xdis=centers(1,kbox)-centers(1,ibox)
+                              ydis=centers(2,kbox)-centers(2,ibox)
+                              if(min(abs(xdis),xper-abs(xdis)).le.
+     1                           xdistest.and.
+     2                           min(abs(ydis),yper-abs(ydis)).le.
+     3                           ydistest) then
+                                 iflag(ibox)=1
+                                 exit
+                              endif
+                           endif
+                        endif
+                     enddo
+                     if(iflag(ibox).eq.1) exit
+                  enddo
+               endif
+            enddo
+         enddo
+
+c      Step 2: Subdivide all the boxes that need subdivision
+c      in the laddr set and the laddrtail set as well
+         laddrtail(1,ilev+1) = nboxes + 1
+
+         nbloc = laddr(2,ilev)-laddr(1,ilev)+1
+         call surf_tree_refine_boxes_flag(iflag,nd,npbox,fvals,
+     1    fun,dpars,zpars,ipars,grid,nbmax,laddr(1,ilev),nbloc,
+     2    centers,boxsize(1,ilev+1),nboxes,ilev,ilevel,iparent,nchild,
+     3    ichild)
+
+         nbloc = laddrtail(2,ilev)-laddrtail(1,ilev)+1
+
+         if(nbloc.gt.0) call surf_tree_refine_boxes_flag(
+     1    iflag,nd,npbox,fvals,fun,dpars,zpars,ipars,grid,nbmax,
+     2    laddrtail(1,ilev),nbloc,centers,boxsize(1,ilev+1),nboxes,
+     3    ilev,ilevel,iparent,nchild,ichild)
+
+          laddrtail(2,ilev+1) = nboxes         
+c      Step 3: Update the colleague information for the newly
+c      created boxes
+
+C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ibox,i,idad,jbox,j,kbox)
+          do ibox = laddrtail(1,ilev+1),laddrtail(2,ilev+1)
+            nnbors(ibox) = 0
+c           Find the parent of the current box         
+            idad = iparent(ibox)
+c           Loop over the neighbors of the parent box
+c           to find out colleagues
+            do i=1,nnbors(idad)
+                jbox = nbors(i,idad)
+                do j=1,4
+c               ichild(j,jbox) is one of the children of the
+c               neighbors of the parent of the current
+c               box
+                   kbox = ichild(j,jbox)
+                   if(kbox.gt.0) then
+c               Check if kbox is a nearest neighbor or in list 2
+                      if((min(abs(centers(1,kbox)-centers(1,ibox)),
+     1                 xper-abs(centers(1,kbox)-centers(1,ibox))).le.
+     2                 1.05*boxsize(1,ilev+1)).and.
+     3                   (min(abs(centers(2,kbox)-centers(2,ibox)),
+     4                 yper-abs(centers(2,kbox)-centers(2,ibox))).le.
+     5                 1.05*boxsize(2,ilev+1))) then
+                     
+                         nnbors(ibox) = nnbors(ibox)+1
+                         nbors(nnbors(ibox),ibox) = kbox
+                      endif
+                   endif
+                enddo
+            enddo
+c           End of computing colleagues of box i
+         enddo
+C$OMP END PARALLEL DO         
+      enddo
+
+c     Reorganize tree once again and we are all done      
+      call surf_tree_reorg(nboxes,nd,npbox,centers,nlevels,laddr,
+     1          laddrtail,ilevel,iparent,nchild,ichild,fvals,iflag)
+
+      endif
+      enddo
+      return
+      end
+
+      subroutine surf_tree_fix_lr_noper(fun,nd,dpars,zpars,ipars,norder,
      1       npbox,fvals,grid,centers,nlevels,nboxes,boxsize,
      2       nbmax,nlmax,laddr,ilevel,iparent,nchild,ichild,nnbors,
      3       nbors)
@@ -1466,8 +1880,8 @@ C$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j)
 C$OMP END PARALLEL DO     
       iper = 0
       call computecoll2d(nlevels,nboxes,laddr, boxsize,
-     1                   centers,iparent,nchild,
-     2                   ichild,iper,nnbors,nbors)
+     1     centers,iparent,nchild,
+     2     ichild,iper,nnbors,nbors)
 
 c     Processing of flag and flag+ boxes is done
 c     Start processing flag++ boxes. We will use a similar
@@ -2091,14 +2505,24 @@ c     Temp variables
 
 
 c     Setting parameters for level = 0
-      nnbors(1) = 1
-      nbors(1,1) = 1
+      do ibox = laddr(1,0),laddr(2,0)
+         nnbors(ibox) = 0
+         do jbox = laddr(1,0),laddr(2,0)
+            if(abs(centers(1,jbox)-centers(1,ibox)).le.
+     1           1.05d0*boxsize(1,0).and.
+     2           abs(centers(2,jbox)-centers(2,ibox)).le.
+     3           1.05d0*boxsize(2,0)) then
+               nnbors(ibox) = nnbors(ibox)+1
+               nbors(nnbors(ibox),ibox) = jbox
+            endif
+         enddo
+      enddo
       do ilev = 1,nlevels
-c        Find the first and the last box at level ilev      
+c     Find the first and the last box at level ilev      
          ifirstbox = laddr(1,ilev)
          ilastbox = laddr(2,ilev)
-c        Loop over all boxes to evaluate neighbors, list1 and updating
-c        hunglists of targets
+c     Loop over all boxes to evaluate neighbors, list1 and updating
+c     hunglists of targets
 
 C$OMP PARALLEL DO DEFAULT(SHARED)
 C$OMP$PRIVATE(ibox,dad,i,jbox,j,kbox)
@@ -2601,8 +3025,6 @@ c     scale to s,t in [0,2\pi]\times[-pi/2,\pi/2]
       complex *16 zpars
 
       pi = 4*datan(1.0d0)
-
-      print *,"IN HERE W TORUS"
       
 c     assume that xy is in [-1/2,1/2]^2
 c     scale to s,t in [0,2\pi]\times[0,2\pi]
@@ -2732,7 +3154,9 @@ c     scale to s,t in [0,2\pi]\times[0,2\pi]
       pi = 4*datan(1.0d0)
 
 c     scale from [-1/2,1/2]^2 to [0,2*pi]^2. Will be removed.
-      s = (st(1) + 0.5d0)*pi*2.0d0
+c      s = (st(1) + 0.5d0)*pi*2.0d0
+c     poloidal direction reversed, so that x_s x x_t points outward
+      s = (0.5d0 - st(1))*pi*2.0d0
       t = (st(2) + 0.5d0)*pi*2.0d0
       
       nfp = ipars(3)
@@ -2750,9 +3174,13 @@ c     scale from [-1/2,1/2]^2 to [0,2*pi]^2. Will be removed.
       f(3) = xyz(3)
 
       if (nd.gt.3) then
-         f(4) = dxyzdst(1,1)
-         f(5) = dxyzdst(2,1)
-         f(6) = dxyzdst(3,1)
+c         f(4) = dxyzdst(1,1)
+c         f(5) = dxyzdst(2,1)
+c         f(6) = dxyzdst(3,1)
+
+         f(4) = -dxyzdst(1,1)
+         f(5) = -dxyzdst(2,1)
+         f(6) = -dxyzdst(3,1)
          
          f(7) = dxyzdst(1,2)
          f(8) = dxyzdst(2,2)
@@ -2936,7 +3364,7 @@ c     scale from [-1/2,1/2]^2 to [0,2*pi]^2. Will be removed.
          denom = 2.0d0*(e1*g1 - f1*f1)
          hmean = (e2*g1 - 2.0d0*f2*f1 + g2*e1)/denom
 
-         f(10) = hmean
+         f(10) = -hmean
 
       endif
 
