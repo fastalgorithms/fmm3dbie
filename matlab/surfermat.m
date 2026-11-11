@@ -148,6 +148,18 @@ else
     vsysmat = [];
 end
 
+% Oversample each source surfer once if its orders are the same for all
+% targets, e.g. with unif_nover, otherwise once per pair below
+sover_j = cell(1, nsurfers);
+xover_j = cell(1, nsurfers);
+for j = 1:nsurfers
+    nj = novers{1,j};
+    if ismethod(surfers{j},'oversample') && ~any(isnan(nj)) && ...
+            all(cellfun(@(n) isequaln(n, nj), novers(:,j)))
+        [sover_j{j}, xover_j{j}] = surfers{j}.oversample(nj);
+    end
+end
+
 %% Now build quadratures
 
 for i = 1:nsurfers
@@ -181,14 +193,17 @@ for i = 1:nsurfers
         wts = wts(:).';
 
         noversj = novers{i,j};
-        if ismethod(surferj,'oversample') && ~any(isnan(noversj))
-            [surferjover, xinterp] = surferj.oversample(noversj);
-            xinterp = kron(xinterp, eye(opdims(2)));
+        if ~isempty(sover_j{j})
+            surferjover = sover_j{j};
+            xraw = xover_j{j};
+        elseif ismethod(surferj,'oversample') && ~any(isnan(noversj))
+            [surferjover, xraw] = surferj.oversample(noversj);
         else
             novers{i,j} = NaN;
             surferjover = surferj;
-            xinterp = eye(numel(wts));
+            xraw = speye(surferj.npts);
         end
+        xinterp = kron(xraw, eye(opdims(2)));
         surfers_over{i,j} = surferjover;
         xinterps{i,j}     = xinterp;
 
@@ -247,7 +262,7 @@ for i = 1:nsurfers
             sysmat_quad = ktmp.getquad(surferj,eps,surferi_targ);
             if corrections
                 [rp, ci] = get_rsc_pattern(surferj, sysmat_quad, opdims);
-                sysmat_smth = smooth_sparse_quad(ktmp, surferi_targ, surferj, rp, ci, noversj);
+                sysmat_smth = smooth_sparse_quad(ktmp, surferi_targ, surferj, rp, ci, noversj, surferjover, xraw);
                 sysmat_quad = sysmat_quad-sysmat_smth;
             end
 
@@ -284,12 +299,10 @@ for i = 1:nsurfers
             icolinds = icollocs(j):(icollocs(j+1)-1);
             sysmat(irowinds,icolinds) = sysmat_tmp;
         else
-            if adaptive_correction
-                [isys,jsys,vsys] = find(sysmat_tmp);
-                isysmat = [isysmat;isys+irowlocs(i)-1];
-                jsysmat = [jsysmat;jsys+icollocs(j)-1];
-                vsysmat = [vsysmat;vsys];
-            end
+            [isys,jsys,vsys] = find(sysmat_tmp);
+            isysmat = [isysmat;isys+irowlocs(i)-1];
+            jsysmat = [jsysmat;jsys+icollocs(j)-1];
+            vsysmat = [vsysmat;vsys];
         end
     
     end

@@ -19,6 +19,12 @@ jobs:
           repository: flatironinstitute/fmm2d
           ref: 550dae5b77b1e006c8ffae37fc832f8c2b536871
           path: fmm2d
+      - name: Check out FLAM
+        uses: actions/checkout@v4
+        with:
+          repository: fastalgorithms/FLAM
+          ref: 73b7accda7c1a933517b008831d8404d8d3cc764
+          path: FLAM
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v2
         with:
@@ -56,7 +62,7 @@ jobs:
       - name: Run Matlab test
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath(fullfile(pwd, 'fmm2d', 'matlab')), cd('matlab/test'), runtests;
+          command: addpath(fullfile(pwd, 'fmm2d', 'matlab')), run('FLAM/startup.m'), cd('matlab/test'), runtests;
       - name: Upload mex files
         uses: actions/upload-artifact@v4
         with:

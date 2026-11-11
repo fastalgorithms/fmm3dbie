@@ -173,7 +173,7 @@ classdef kernel3d
 
         end
 
-        val    = eval_mask(obj,src,targ);
+        val    = eval_mask(obj,src,targ,L);
 
     end
 

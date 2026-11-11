@@ -165,7 +165,7 @@ end
 
     function Q = getquad_left(S, eps, varargin)
         Qinner = Kgetquad(S, eps, varargin{:});
-        if ~isempty(varargin) && isstruct(varargin{1})
+        if ~isempty(varargin) && ~isempty(varargin{1}) && ~isnumeric(varargin{1})
             targ = varargin{1};
         else
             targ = S;
@@ -207,8 +207,8 @@ end
         Qinner = Kgetquad(S, eps, varargin{:});
         ns   = S.npts;
         fval = h(S);
-        if ~isempty(varargin) && isstruct(varargin{1})
-            nt = size(varargin{1}.r, 2);
+        if ~isempty(varargin) && ~isempty(varargin{1}) && ~isnumeric(varargin{1})
+            nt = size(varargin{1}.r(:,:), 2);
         else
             nt = ns;
         end

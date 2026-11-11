@@ -6,6 +6,7 @@ test_apply_paths();
 test_eval_paths();
 test_objover_modes();
 test_block_kernels();
+test_batched_kerneval();
 
 
 function test_apply_paths()
@@ -261,5 +262,27 @@ for i = 1:3
         'stacked surfermat: row block %d mismatch', i);
 end
 assert(norm(smat(4:4:end,:) - smat2, 1) < tol_blk*norm(smat2,1), 'stacked surfermat: bottom block mismatch');
+
+end
+
+
+function test_batched_kerneval()
+% Targets as a numeric array give the same matrix as a struct, and
+% surferkerneval with a single kernel uses one FMM for all surfers.
+
+S1 = geometries.sphere(1, 1, [0;0;0], 4, 1);
+S2 = geometries.sphere(1, 1, [3;0;0], 4, 1);
+eps = 1e-6;
+kern = kernel3d('h', 'c', 1.0, [-1i; 1]);
+
+targs = [1.5*randn(3, 40), [3;0;0] + 1.5*randn(3, 40)];
+A = surferkernevalmat([S1, S2], kern, struct('r', targs), eps);
+An = surferkernevalmat([S1, S2], kern, targs, eps);
+assert(norm(An - A, 'fro') <= 1e-14*norm(A, 'fro'), ...
+    'surferkernevalmat: numeric targets differ from struct targets');
+dens = randn(size(A, 2), 1);
+u = surferkerneval([S1, S2], kern, dens, targs, eps);
+err = norm(u - A*dens) / norm(A*dens);
+assert(err < 1e-5, 'batched surferkerneval: err %.2e', err);
 
 end
