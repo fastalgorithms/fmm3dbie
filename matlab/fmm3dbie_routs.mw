@@ -5835,41 +5835,28 @@ end
 %
 %
 %
-@ src/find_nearest_surf_point.m
-function [nearest_pnts, nearest_uvs,dists,flags] = find_nearest_surf_point(S,targs,idx_init,tol,maxiter)
+@ src/findnear_surface_point.m
+function [nearest_pnts,nearest_uvs,dists,flags] = ...
+    findnear_surface_point(S,targs,idx_init,tol,maxiter)
 
-    [srcvals,srccoefs,norders,ixyzs,~,~] = extract_arrays(S);
-        
-    npts = S.npts;
+    [srcvals,srccoefs,norders,ixyzs,iptype,~] = extract_arrays(S);
 
-    
-    ndtarg = size(targs,1); 
-    ntarg = size(targs,2);
+    ipatch_id = S.patch_id;
+    uvs_src   = S.uvs_targ;
+    ipts_init = idx_init(:);
 
-    n2 = 2;
-    n9 = size(srccoefs,1);
-    n12 = size(srcvals,1);
+    npts     = S.npts;
+    npatches = S.npatches;
+    npatp1   = npatches + 1;
 
-%   assume the same order for all patches
-    norder = S.norders(1);
-%   assume triangular patch with VR-nodes    
-    npols = (norder+1)*(norder+2)/2;
+    [ndtarg,ntarg] = size(targs);
 
-% redo with ixyzs
-%    idx_init_patch_pnt = mod(idx_init + (npols-1),npols) + 1
-    %idx_init_patch_idx = idx_init - idx_init_patch_pnt + 1;
-    idx_init_patch_pnt = mod(idx_init-1,npols) + 1;
-    idx_init_patch_idx = ixyzs(S.patch_id(idx_init));
+    nearest_pnts = zeros(3,ntarg);
+    nearest_uvs  = zeros(2,ntarg);
+    dists        = zeros(ntarg,1);
+    flags        = zeros(ntarg,1);
 
-% itvec = ixyzs, lpatchidxvec = index on that patch
-
-% output
-  nearest_pnts = zeros(ndtarg,ntarg);
-  nearest_uvs = zeros(2,ntarg);
-  dists = zeros(ntarg,1);
-  flags = zeros(ntarg,1);
-
-  # FORTRAN findnearsrfcpnt(int64_t[1] ntarg, double[ndtarg,ntarg] targs, int64_t[1] npts, int64_t[1] norder, int64_t[1] npols, int64_t[1] maxiter, double[n12,npts] srcvals, double[n9,npts] srccoefs, double[1] tol, int64_t[ntarg] idx_init_patch_pnt, int64_t[ntarg] idx_init_patch_idx, inout double[ndtarg,ntarg] nearest_pnts, inout double[n2,ntarg] nearest_uvs, inout double[ntarg] dists, inout int64_t[ntarg] flags);
+    # FORTRAN findnear_surface_point(int64_t[1] ntarg, int64_t[1] ndtarg, double[ndtarg,ntarg] targs, int64_t[1] npatches, int64_t[npatches] norders, int64_t[npatp1] ixyzs, int64_t[npatches] iptype, int64_t[1] npts, double[9,npts] srccoefs, double[12,npts] srcvals, int64_t[npts] ipatch_id, double[2,npts] uvs_src, int64_t[ntarg] ipts_init, int64_t[1] maxiter, double[1] tol, inout double[3,ntarg] nearest_pnts, inout double[2,ntarg] nearest_uvs, inout double[ntarg] dists, inout int64_t[ntarg] flags);
 
 return
 

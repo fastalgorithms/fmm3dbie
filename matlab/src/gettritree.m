@@ -69,7 +69,7 @@ function [tritree] = gettritree(srccoefs, targinfo, rfac, opts)
     ier = 0;
     ntri = 0;
     nlev = 0;
-    mex_id_ = 'gettritree(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c io int64_t[x], c io int64_t[x], c io int64_t[x], c io double[x], c io double[xx], c io double[xx], c io double[xx], c io int64_t[xx], c io int64_t[x])';
+    mex_id_ = 13;
 [ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier] = fmm3dbie_routs(mex_id_, npatches, norder, npols, ndsc, srccoefs, ntarg, targs, itargptr, ntargptr, ntrimax, nlevmax, rfac, ntri, nlev, ichild_start, da, tricm, trirad, tverts, itrirel, ier, 1, 1, 1, 1, ndsc, ncoef, 1, 3, ntarg, npatches, npatches, 1, 1, 1, 1, 1, ntrimax, ntrimax, 3, ntrimaxp, npatches, ntrimax, 6, ntrimax, ntarg, ntrimax, 1);
    
     tritree = [];

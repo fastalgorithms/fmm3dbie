@@ -45,7 +45,7 @@ function [novers,varargout] = get_oversampling_parameters(S,Q,eps)
     rfac = Q.rfac;
 
 
-    mex_id_ = 'get_far_order(c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i int64_t[x], c i double[xx], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c io int64_t[x], c io int64_t[x])';
+    mex_id_ = 8;
 [novers, ixyzso] = fmm3dbie_routs(mex_id_, eps, npatches, norders, ixyzs, iptype, cms, rads, npts, srccoefs, ndtarg, ntarg, targs, ikerorder, zk, nnz, row_ptr, col_ind, rfac, novers, ixyzso, 1, 1, npatches, npatp1, npatches, 3, npatches, npatches, 1, n9, npts, 1, 1, ndtarg, ntarg, 1, 1, 1, ntp1, nnz, 1, npatches, npatp1);
     varargout{1} = ixyzso;
 

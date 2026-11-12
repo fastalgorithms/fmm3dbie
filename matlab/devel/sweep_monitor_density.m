@@ -32,12 +32,12 @@ opts.ref_max_levels = 3;     % stop with an error if convergence fails
 
 % Start with smoke mode to check the complete workflow on a small problem.
 % Change to 'full' for the 81-case accuracy experiment configured above.
-run_mode = 'full';
+run_mode = 'smoke';
 switch run_mode
     case 'smoke'
         opts.norder = 3;
         tols = 1e-2;
-        etas = 0;
+        etas = 2;
         nd_monitors = 3;
         % All three norms are still exercised (three sweep cases).
         opts.tol_solve = 1e-6;
