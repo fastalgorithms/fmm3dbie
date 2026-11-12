@@ -50,21 +50,6 @@ switch run_mode
         opts.ref_density_tol = 5e-2;
         opts.ref_max_levels = 2;
     case 'full'
-opts.tol_solve = 1e-12;
-opts.tol_gmres = 1e-12;
-opts.tol_residual = 1e-11;
-opts.norder = 6;
-opts.maxit = 1000;
-
-tols = [1e-5, 1e-6, 1e-7];
-etas = [0, 1, 2];
-
-opts.ref_nd_monitor = 10;
-opts.ref_tol_geom = 1e-8;
-opts.ref_order = 8;
-opts.ref_density_tol = min(tols)/10;  % 1e-8
-opts.ref_max_levels = 3;
-
         % Use the full settings above.
     otherwise
         error('monitor_sweep_density:RunMode','Unknown run mode: %s',run_mode);
