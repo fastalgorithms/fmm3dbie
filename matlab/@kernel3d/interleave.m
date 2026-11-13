@@ -12,12 +12,10 @@ function K = interleave(kerns)
 %     - K.diag is the interleaved combination of the sub-kernel diags
 %       (if any sub-kernel has one).
 %
+%   If the blocks other than identity and zero blocks are compatible
+%   radgreen kernels, K is a single radgreen kernel.
+%
 %   See also KERNEL3D.PLUS, KERNEL3D.TIMES
-
-if kernel3d.radgreen('compatible', kerns)
-    K = kernel3d.radgreen('interleave', kerns);
-    return
-end
 
 [m, n] = size(kerns);
 
@@ -26,6 +24,22 @@ coldims   = arrayfun(@(l) kerns(1,l).opdims(2), 1:n);
 rowstarts = [0 cumsum(rowdims)];
 colstarts = [0 cumsum(coldims)];
 opdims    = [sum(rowdims) sum(coldims)];
+
+% radial blocks interleave into one radial kernel. e.g. [K, I; K2, K3] stays radial.
+smooth = cell(m, n);
+isnull = false(m, n);
+for ki = 1:numel(kerns)    % not k: the nested functions share it
+    smooth{ki} = kerns(ki);
+    smooth{ki}.diag = [];
+    isnull(ki) = kerns(ki).iszero || strcmp(kerns(ki).name, 'eye');
+end
+if any(~isnull(:)) && kernel3d.radgreen('compatible', smooth(~isnull))
+    K = kernel3d.radgreen('interleave', smooth);
+    if any(arrayfun(@(k) isa(kerns(k).diag, 'function_handle'), 1:numel(kerns)))
+        K.diag = @diag_;
+    end
+    return
+end
 
 % Worst-case kernel order across all sub-kernels
 kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
@@ -56,10 +70,10 @@ kernel_order = max(arrayfun(@(k) kerns(k).kernel_order, 1:numel(kerns)));
     end
 
     function varargout = fmm_(eps, s, t, sigma)
-        if isstruct(t)
-            nt = size(t.r(:,:), 2);
-        else
+        if isnumeric(t)
             [~, nt] = size(t);
+        else
+            nt = size(t.r(:,:), 2);
         end
         ns = size(s.r(:,:), 2);
         [ridx, cidx] = make_idx(nt, ns);

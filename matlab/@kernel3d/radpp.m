@@ -976,19 +976,16 @@ end
 
 
 function tf = summable(Ks)
-% Compatible fitted kernels, with identity terms ignored.
-tf = ~isempty(Ks) && all(cellfun(@(K) isequal(K.opdims,Ks{1}.opdims),Ks));
-if ~tf, return; end
-Ks = radpp_sum_parts(Ks);
-if isempty(Ks), return; end
+% radpp kernels of one built-in type, parameters and fit order, with fits
+% that overlap
 tf = all(cellfun(@(K) strcmp(K.name, 'radpp'), Ks));
 if ~tf, return; end
 p = Ks{1}.params;
-if numel(Ks) == 1
-    tf = ~p.gmode;
+if isscalar(Ks)     % a multiple of one kernel scales its fit
+    tf = isempty(Ks{1}.diag) && ~p.gmode;
     return
 end
-same = @(K) ~K.params.gmode && ~strcmp(K.params.spec.name, 'custom') && ...
+same = @(K) isempty(K.diag) && ~K.params.gmode && ~strcmp(K.params.spec.name, 'custom') && ...
     strcmp(K.params.spec.name, p.spec.name) && ...
     isequal(K.params.kcoefs, p.kcoefs) && isequal(K.params.nu, p.nu) && ...
     K.params.dim == p.dim && isequal(K.params.ipv, p.ipv) && ...
@@ -1003,18 +1000,6 @@ end
 function K = ppsum(Ks, cs)
 % sum_k cs(k)*Ks{k}: a sum is refitted on the green sum_k cs(k)*green_k
 % over the distances common to the fits; a multiple scales the fit
-opdims = Ks{1}.opdims;
-[Ks,cs,diagonal] = radpp_sum_parts(Ks,cs);
-if isempty(Ks)
-    K = kernel3d.zeros(opdims);
-    if ~isempty(diagonal), K = kernel3d.eye(zeros(opdims)); end
-    K.diag = diagonal;
-    return
-elseif numel(Ks) == 1 && cs == 1
-    K = Ks{1};
-    K.diag = diagonal;
-    return
-end
 p = Ks{1}.params;
 greens = cellfun(@(K) K.params.green, Ks, 'UniformOutput', false);
 % the fmm of the sum of the greens
@@ -1041,7 +1026,6 @@ if isempty(fmm) && all(cellfun(@(Kk) isa(Kk.fmm, 'function_handle'), Ks))
     fmms = cellfun(@(Kk) Kk.fmm, Ks, 'UniformOutput', false);
     K.fmm = radpp_sum(cs, fmms{:});
 end
-K.diag = diagonal;
 end
 
 

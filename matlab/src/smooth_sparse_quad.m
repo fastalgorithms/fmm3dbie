@@ -1,9 +1,10 @@
-function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
+function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,val2over)
 %
 %  SMOOTH_SPARSE_QUAD
 %
 %  Syntax:
 %    Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
+%    Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,val2over)
 %
 %  This subroutine returns a sparse matrix of smooth quadrature
 %  corrections for the interactions between a set of targets and
@@ -33,9 +34,9 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 %    * nover: integer, or (npatches,1) integers
 %        quadrature order to use when oversampling each source patch.
 %        If NaN, or if S cannot be oversampled, the nodes of S are used.
-%        It may instead be the cell {S_over, kron(xinterp, eye(opdims(2)))}
-%        built in SURFERMAT from oversample, so that S is not oversampled
-%        again.
+%    * S_over, val2over: (optional) S oversampled to nover and the
+%        interpolation matrix from S.oversample (not kron'd with the
+%        operator dimension), to avoid recomputing them
 %
 %  Output arguments:
 %    * Asmth: sparse matrix of size (opdim(1)*ntarg, opdim(2)*S.npts)
@@ -57,19 +58,25 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
     ixyzs = S.ixyzs(:);
     npols = ixyzs(2:end) - ixyzs(1:end-1);
 
-    % interpolation from S to S_over, kron'd with eye(n) like the
-    % density, so a patch's components occupy a contiguous index range
-    if iscell(nover)
-        [S_over, xinterp] = nover{:};
+    if nargin >= 8
+        % precomputed oversampling
     elseif ismethod(S,'oversample') && ~any(isnan(nover))
-        [S_over, xinterp] = oversample(S, nover);
-        xinterp = kron(xinterp, eye(n));
+        [S_over, val2over] = oversample(S, nover);
     else
         S_over = S;
-        xinterp = [];
+        val2over = [];
     end
     ixyzso = S_over.ixyzs(:);
-    wover  = repelem(S_over.wts(:), n);
+    wover  = S_over.wts(:);
+
+    % Use the full FMM box size for every patch's self-interaction mask.
+    src_r = S_over.r(:,:);
+    targ_r = targs.r(:,:);
+    targ_r(end+1:size(src_r,1),:) = 0;
+    lo = min(min(src_r,[],2), min(targ_r,[],2));
+    hi = max(max(src_r,[],2), max(targ_r,[],2));
+    L = max(hi-lo);
+    clear src_r targ_r
 
     % targets of each source patch
     rsc = [];
@@ -102,14 +109,17 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
             srcp.(field{1}) = slice_field(S_over.(field{1}), src_inds, S_over.npts);
         end
 
-        % weighted interpolation: oversampled values -> nodes of patch p
-        jo = n*(ixyzso(p)-1)+1 : n*(ixyzso(p+1)-1);
-        icols_p = (n*(ixyzs(p)-1)+1 : n*(ixyzs(p+1)-1)).';
-        if isempty(xinterp)
-            Wp = diag(wover(jo));
+        % weighted interpolation: oversampled values -> nodes of patch p,
+        % expanded to the n components of the density
+        icols = ixyzs(p):ixyzs(p+1)-1;
+        if isempty(val2over)
+            Wp = diag(wover(src_inds));
         else
-            Wp = wover(jo) .* full(xinterp(jo, icols_p));      % (n*npo, n*np)
+            Wp = wover(src_inds) .* full(val2over(src_inds, icols));
         end
+        Wp = kron(Wp, eye(n));                                   % (n*npo, n*np)
+        icols_p = (1:n).' + n*(icols - 1);
+        icols_p = icols_p(:);
 
         nchunk = max(1, floor(maxblk / (m*n*npo)));
         for c0 = cstart:nchunk:cend
@@ -121,7 +131,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
                 targp.(field{1}) = slice_field(targs.(field{1}), targ_inds, ntarg);
             end
 
-            B = kern.eval_mask(srcp, targp) * Wp;              % (m*nt, n*np)
+            B = kern.eval_mask(srcp, targp, L) * Wp;              % (m*nt, n*np)
             irows_p = (1:m).' + m*(targ_inds - 1);             % (m, nt)
 
             nb = numel(B);

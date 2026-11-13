@@ -34,10 +34,24 @@ pairs = {K+I, I+K; ...
 for k = 1:size(pairs,1)
     check_same(pairs{k,1},pairs{k,2},src,targ,do_matrix);
 end
-assert(kernel3d.radgreen('summable',{K,I}));
-assert(kernel3d.radgreen('summable',{I,K}));
-assert(kernel3d.radgreen('summable',{K,J}));
-assert(~kernel3d.radgreen('summable',{K,kernel3d.eye(eye(2))}));
+assert(strcmp((K+J).name,'radgreen'));
+assert(strcmp((K+kernel3d.zeros([1 1])).name,'radgreen'));
+caught = false;
+try, K + kernel3d.eye(eye(2)); catch, caught = true; end
+assert(caught, 'dimension mismatch not caught');
+
+% interleave: identity terms on radial blocks, and identity or zero
+% blocks, keep one radial kernel
+K2 = kernel3d(g, 's', 'fmm', @lfmm3d);
+K3 = 2*K;
+Z  = kernel3d.zeros([1 1]);
+blocks = {[K, I; K2, K3], [J, K2; K2, K3+I], [K, Z; I, K3]};
+for k = 1:numel(blocks)
+    B = blocks{k};
+    A = kernel3d.interleave(B);
+    assert(strcmp(A.name,'radgreen'), 'interleave lost radial kernel family');
+    check_interleave(A, B, src, targ, do_matrix);
+end
 
 % The same identity operation must preserve fitted radial kernels too.
 R = kernel3d.radpp(g,[1e-6 4],'sp');
@@ -45,18 +59,26 @@ Q = R-0.5*I;
 assert(strcmp(Q.name,'radpp'));
 assert(isequal(Q.params.ipars,R.params.ipars));
 assert(isequal(Q.params.dpars,R.params.dpars));
-assert(kernel3d.radpp('summable',{R,I}));
-assert(kernel3d.radpp('summable',{I,R}));
-assert(kernel3d.radpp('summable',{R,Q}));
+assert(strcmp((R+Q).name,'radpp'));
 check_same(R+I,I+R,src,targ,do_matrix);
 check_same(R+(R+I),(R+R)+I,src,targ,do_matrix);
 Rc = kernel3d.radpp(g,[1e-6 4],@(t) [zeros(size(t.r,2),1),t.n.'], ...
     'nderiv',1,'targ_fields',{'n'},'ifcomplex',false);
-assert(kernel3d.radpp('summable',{Rc,I}));
+assert(strcmp((Rc+I).name,'radpp'));
 check_same(Rc+I,I+Rc,src,targ,do_matrix);
 check_same(2*(Rc+I),2*Rc+2*I,src,targ,do_matrix);
 
 if ~do_matrix, return; end
+% interleaved [K, I; K2, K3] against the blocks
+S = slicesurfer(geometries.sphere(1,2,[],4,1),1);
+eps = 1e-7;
+A = surfermat(S,kernel3d.interleave([K, I; K2, K3]),eps);
+A11 = surfermat(S,K,eps);  A21 = surfermat(S,K2,eps);  A22 = surfermat(S,K3,eps);
+B = zeros(2*S.npts);
+B(1:2:end,1:2:end) = A11;  B(1:2:end,2:2:end) = eye(S.npts);
+B(2:2:end,1:2:end) = A21;  B(2:2:end,2:2:end) = A22;
+assert(norm(A-B,'fro') < 1e-8*norm(B,'fro'));
+
 S = slicesurfer(geometries.sphere(1,2,[],4,1),1);
 eps = 1e-7;
 A = surfermat(S,K,eps);
@@ -86,4 +108,32 @@ if do_fmm && ~isempty(A.fmm) && ~isempty(B.fmm)
     sigma=ones(size(src.r,2)*A.opdims(2),1);
     assert(norm(A.fmm(1e-10,src,targ,sigma)-B.fmm(1e-10,src,targ,sigma)) < 1e-12);
 end
+end
+
+function check_interleave(A,B,src,targ,do_fmm)
+% A = interleave(B) against the blocks of B
+[m,n] = size(B);
+ns = size(src.r,2);  nt = size(targ.r,2);
+EA = A.eval(src,targ);
+DA = zeros(m*nt,n);
+if ~isempty(A.diag), DA = A.diag(targ); end
+DA = reshape(DA,m,nt,n);
+for k = 1:m
+    for l = 1:n
+        assert(norm(EA(k:m:end,l:n:end)-B(k,l).eval(src,targ),'fro') < 1e-12);
+        Dkl = zeros(nt,1);
+        if ~isempty(B(k,l).diag), Dkl = B(k,l).diag(targ); end
+        assert(norm(reshape(DA(k,:,l),[],1)-Dkl) < 1e-12);
+    end
+end
+if ~do_fmm, return; end
+sigma = ones(n*ns,1);
+pot = A.fmm(1e-10,src,targ,sigma);
+ref = zeros(m*nt,1);
+for k = 1:m
+    for l = 1:n
+        ref(k:m:end) = ref(k:m:end) + B(k,l).fmm(1e-10,src,targ,ones(ns,1));
+    end
+end
+assert(norm(pot-ref) < 1e-10*max(1,norm(ref)));
 end

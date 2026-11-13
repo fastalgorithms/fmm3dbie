@@ -85,3 +85,73 @@ sigma_d = surfermatsolve(srfrs, kerns, rhs, eps, [], [], objover, cors, opts_den
 errd = norm(sigma_d - sigma, 'fro')/norm(sigma, 'fro');
 fprintf('dense vs gmres difference = %5.2e\n', errd);
 assert(errd < 1e-6, 'dense and gmres solutions differ');
+
+% a function handle preconditioner is passed to gmres, which wraps the
+% error it throws
+opts_m = struct('solver', 'gmres', 'precond', @throw_precond);
+try
+    surfermatsolve(srfrs, kerns, rhs(:,1), eps, 1e-8, 5, objover, cors, opts_m);
+    caught = '';
+catch me
+    caught = me.identifier;
+    if ~isempty(me.cause), caught = me.cause{1}.identifier; end
+end
+assert(strcmp(caught, 'test:precond'), 'function handle preconditioner not used');
+opts_m.solver = 'dense';
+caught = false;
+try
+    surfermatsolve(srfrs, kerns, rhs(:,1), eps, [], [], objover, cors, opts_m);
+catch
+    caught = true;
+end
+assert(caught, 'dense solver should reject a preconditioner');
+
+% Preconditioners and FLAM solvers on a smaller problem. The identity term
+% goes in the kernels since the FLAM solvers do not take cors.
+S1 = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S2 = S1 + [4;0;0];
+srfrs = [S1, S2];
+eps = 1e-4;
+rhs = [skern.eval(srcs, S1); spkern.eval(srcs, S2)];
+
+kernsI = kerns;
+kernsI(1,1) = kerns(1,1) + kernel3d.eye(0.5);
+kernsI(2,2) = kerns(2,2) + kernel3d.eye(0.5);
+
+labels = {'gmres + blocklu'};
+opts_f = {struct('solver', 'gmres', 'precond', 'blocklu')};
+if exist('rskelf', 'file') == 2 && exist('ifmm', 'file') == 2
+    labels = [labels, {'rskelf', 'ifmm + blockrskelf'}];
+    opts_f = [opts_f, {struct('solver', 'rskelf'), ...
+              struct('solver', 'ifmm', 'precond', 'blockrskelf')}];
+else
+    fprintf('FLAM not found, skipping the rskelf and ifmm solvers\n');
+    for o = {struct('solver', 'rskelf'), struct('solver', 'ifmm'), ...
+             struct('precond', 'blockrskelf')}
+        caught = false;
+        try
+            surfermatsolve(srfrs, kernsI, rhs, eps, eps, 10, [], [], o{1});
+        catch
+            caught = true;
+        end
+        assert(caught, 'FLAM options without FLAM should raise an error');
+    end
+end
+
+iters_f = zeros(1, numel(opts_f));
+for k = 1:numel(opts_f)
+    tic
+    [sigma_f, flag, ~, iter] = surfermatsolve(srfrs, kernsI, rhs, eps, ...
+        eps, 100, [], [], opts_f{k});
+    assert(all(flag == 0), '%s did not converge', labels{k});
+    iters_f(k) = max(iter);
+    pot = surferkerneval(srfrs, kerns(1,:), sigma_f, targ1, eps);
+    err = max(abs(pot - pot_ex)./abs(pot_ex));
+    fprintf('%s: error %5.2e, iters %d, %.1fs\n', labels{k}, err, iters_f(k), toc);
+    assert(err < 1e-3, '%s error too large', labels{k});
+end
+
+
+function y = throw_precond(x)
+error('test:precond', 'called');
+end
