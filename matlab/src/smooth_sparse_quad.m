@@ -12,6 +12,12 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 %  to order nover and the kernel is evaluated at every oversampled
 %  source point.
 %
+%  The kernel is evaluated one patch at a time, in chunks of targets,
+%  and each block is mapped back to the nodes of S with that patch's
+%  weighted block of the interpolation matrix before it is stored.
+%  Memory is therefore proportional to the number of entries of the
+%  result, not of the oversampled matrix.
+%
 %  Input arguments:
 %    * kern: kernel function handle, or a struct with field kern.eval
 %        containing such a handle
@@ -24,8 +30,12 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 %    * col_ind: (nnz,1) integer array
 %        patch indices of the non-zero target-patch interactions,
 %        sorted by target number
-%    * nover: integer
-%        quadrature order to use when oversampling each source patch
+%    * nover: integer, or (npatches,1) integers
+%        quadrature order to use when oversampling each source patch.
+%        If NaN, or if S cannot be oversampled, the nodes of S are used.
+%        It may instead be the cell {S_over, kron(xinterp, eye(opdims(2)))}
+%        built in SURFERMAT from oversample, so that S is not oversampled
+%        again.
 %
 %  Output arguments:
 %    * Asmth: sparse matrix of size (opdim(1)*ntarg, opdim(2)*S.npts)
@@ -36,91 +46,102 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover)
 %
 
     kern = kernel3d(kern);
+    m = kern.opdims(1);
+    n = kern.opdims(2);
 
-    ntarg = size(targs.r(:,:), 2);
-
-    if ismethod(S,'oversample') && ~any(isnan(nover))
-        [S_over, val2over] = oversample(S, nover);
-    else
-        S_over = S; val2over = eye(size(S.r(:,:),2));
+    if isnumeric(targs)
+        targs = struct('r', targs);
     end
+    ntarg = size(targs.r(:,:), 2);
+    npatches = S.npatches;
+    ixyzs = S.ixyzs(:);
+    npols = ixyzs(2:end) - ixyzs(1:end-1);
 
-    ixyzs = S_over.ixyzs;
-    opdims = kern.opdims;
-    val2over = kron(val2over,eye(opdims(2)));
+    % interpolation from S to S_over, kron'd with eye(n) like the
+    % density, so a patch's components occupy a contiguous index range
+    if iscell(nover)
+        [S_over, xinterp] = nover{:};
+    elseif ismethod(S,'oversample') && ~any(isnan(nover))
+        [S_over, xinterp] = oversample(S, nover);
+        xinterp = kron(xinterp, eye(n));
+    else
+        S_over = S;
+        xinterp = [];
+    end
+    ixyzso = S_over.ixyzs(:);
+    wover  = repelem(S_over.wts(:), n);
 
-    % Convert rsc -> csc so we can loop over patches (columns)
+    % targets of each source patch
     rsc = [];
     rsc.row_ptr = row_ptr;
     rsc.col_ind = col_ind;
-
-    npatches = S.npatches;
-    nnz_rsc  = length(col_ind);
-    npols = ixyzs(2:end) - ixyzs(1:end-1);  % pts per patch (oversampled)
-    npols = npols(:);
-    rsc.iquad = [1; 1 + cumsum(npols(col_ind(:)))];
+    rsc.iquad   = [1; 1 + cumsum(npols(col_ind(:)))];
     csc = conv_rsc_to_csc(npatches, rsc);
 
-    % Accumulate sparse entries patch by patch
-    irow_vals = [];
-    icol_vals = [];
-    vals      = [];
+    % triplets, preallocated to the size of the result
+    ntot = m*n*(rsc.iquad(end) - 1);
+    irow = zeros(ntot, 1);
+    icol = zeros(ntot, 1);
+    vals = zeros(ntot, 1);
+    ipos = 0;
 
+    % bound the size of a single kernel block (in entries)
+    maxblk = 2^22;
     for p = 1:npatches
-        ptstart = csc.col_ptr(p);
-        ptend   = csc.col_ptr(p+1) - 1;
-        if ptstart > ptend
+        cstart = csc.col_ptr(p);
+        cend   = csc.col_ptr(p+1) - 1;
+        if cstart > cend
             continue
         end
 
-        % Targets interacting with patch p
-        targ_inds = csc.row_ind(ptstart:ptend);   % (ntarg_p,1)
-
-        % Oversampled source points on patch p
-        src_inds  = ixyzs(p):(ixyzs(p+1)-1);      % (npts_p,1)
-
-        % Extract source and target sub-structs
+        src_inds = ixyzso(p):(ixyzso(p+1)-1);
+        npo = numel(src_inds);
         srcp = [];
         srcp.r = S_over.r(:,src_inds);
         for field = kern.src_fields(:).'
             srcp.(field{1}) = slice_field(S_over.(field{1}), src_inds, S_over.npts);
         end
 
-
-        targp = [];
-        targp.r = targs.r(:,targ_inds);
-        for field = kern.targ_fields(:).'
-            targp.(field{1}) = slice_field(targs.(field{1}), targ_inds, ntarg);
+        % weighted interpolation: oversampled values -> nodes of patch p
+        jo = n*(ixyzso(p)-1)+1 : n*(ixyzso(p+1)-1);
+        icols_p = (n*(ixyzs(p)-1)+1 : n*(ixyzs(p+1)-1)).';
+        if isempty(xinterp)
+            Wp = diag(wover(jo));
+        else
+            Wp = wover(jo) .* full(xinterp(jo, icols_p));      % (n*npo, n*np)
         end
 
-        % Evaluate kernel. Use eval_mask to zero out self interactions
-        Kblock = kern.eval_mask(srcp, targp);
+        nchunk = max(1, floor(maxblk / (m*n*npo)));
+        for c0 = cstart:nchunk:cend
+            targ_inds = csc.row_ind(c0:min(c0+nchunk-1, cend));
+            targ_inds = targ_inds(:).';
+            targp = [];
+            targp.r = targs.r(:,targ_inds);
+            for field = kern.targ_fields(:).'
+                targp.(field{1}) = slice_field(targs.(field{1}), targ_inds, ntarg);
+            end
 
-        % Weight columns by quadrature weights of oversampled patch
-        wts_p = repmat(S_over.wts(src_inds).', opdims(2), 1);
-        wts_p = wts_p(:).';
-        Kblock = Kblock .* wts_p;
+            B = kern.eval_mask(srcp, targp) * Wp;              % (m*nt, n*np)
+            irows_p = (1:m).' + m*(targ_inds - 1);             % (m, nt)
 
-        % Build global row/col indices (before val2over projection)
-        % rows: opdims(1) entries per target
-        irows_p = (1:opdims(1)).' + opdims(1)*(targ_inds(:).'-1);
-        irows_p = irows_p(:);  % (opdims(1)*ntarg_p, 1)
-        % cols: opdims(2) entries per oversampled source point
-        icols_p = (1:opdims(2)).' + opdims(2)*(src_inds(:).'-1);
-        icols_p = icols_p(:);  % (opdims(2)*npts_p, 1)
-
-        [ii, jj, vv] = find(sparse(Kblock));
-        irows_p = irows_p(ii);
-        irow_vals = [irow_vals; irows_p(:)];
-        icol_vals = [icol_vals; icols_p(jj)];
-        vals      = [vals;      vv(:)];
+            nb = numel(B);
+            idx = ipos + (1:nb);
+            [ii, jj] = ndgrid(irows_p(:), icols_p);
+            irow(idx) = ii(:);
+            icol(idx) = jj(:);
+            if ~isreal(B) && isreal(vals)
+                vals = complex(vals);
+            end
+            vals(idx) = B(:);
+            ipos = ipos + nb;
+        end
     end
 
-    Asmth = sparse(irow_vals, icol_vals, vals, ...
-        opdims(1)*ntarg, opdims(2)*S_over.npts);
+    Asmth = sparse(irow(1:ipos), icol(1:ipos), vals(1:ipos), ...
+        m*ntarg, n*S.npts);
 
-    Asmth = Asmth * val2over;
 end
+
 
 function v = slice_field(A, idx, npts)
 if ~ismatrix(A), A = A(:,:); end
