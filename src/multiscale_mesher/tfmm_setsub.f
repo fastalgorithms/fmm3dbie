@@ -279,7 +279,7 @@ C$OMP$PRIVATE(itstart,itend,itt,itarg,nl1,il1,il1m2,il2m1)
 C$OMP$PRIVATE(jpatch,l,jpt,lpt,n1m2,n2m1,ii,val,vgrad,npover)
 C$OMP$PRIVATE(dtmp1,dtmp2,srctmp1,srctmp2)
 C$OMP$PRIVATE(isrc,iss,ilev,rtest,ilevup,ncoll,lbox,xdis,ydis)
-C$OMP$PRIVATE(zdis,llev,distest,rr)
+C$OMP$PRIVATE(zdis,llev,distest,rr,jlev)
 C$OMP$SCHEDULE(DYNAMIC)
       do ibox = 1,nboxes
         nchild = itree(ipointer(4)+ibox-1)
@@ -364,6 +364,9 @@ c
               lbox = list1(l,jbox)
               llev = itree(ipointer(2)+lbox-1)
               if(llev.lt.jlev) then
+                xdis = abs(centers(1,lbox)-targs(1,itarg))
+                ydis = abs(centers(2,lbox)-targs(2,itarg))
+                zdis = abs(centers(3,lbox)-targs(3,itarg))
                 distest = 8*sigma(itarg)+boxsize(llev)/2
                 if((xdis.le.distest).and.(ydis.le.distest).and.
      1              (zdis.le.distest)) then
