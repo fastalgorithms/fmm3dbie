@@ -25,6 +25,9 @@ function pot = surfermatapply(surferobj, kern, dens, eps, objover, cors, opts)
 %           opts.usefmm     = (1) use FMM for smooth quadrature
 %           opts.unif_nover = (0) if nonzero, enforce uniform oversampling
 %
+% A single kern uses one FMM for all surfers when each surfer is
+% oversampled the same way for all targets (e.g. opts.unif_nover = 1).
+%
 % Output:
 %   pot  - result of applying the operator to dens, length nrows
 %
@@ -184,7 +187,35 @@ end
 nrows = irowlocs(end)-1;
 ncols = icollocs(end)-1;
 
+if objover_mode
+    srcover = @(i,j,nd,d) over_src(surfers{j}, surfers_over{i,j}, xinterps{i,j}, nd, d);
+    ovkey = @(i,j) surfers_over{i,j}.norders;
+else
+    srcover = @(i,j,nd,d) over_src(surfers{j}, objover{i,j}, [], nd, d);
+    ovkey = @(i,j) objover{i,j};
+end
+
+% One FMM for all pairs for a single kernel, if each source surfer is
+% oversampled the same way for all targets
+batch = numel(kern) == 1 && usefmm && ~isempty(kern.fmm) && all(lsurfer > 0);
+for j = 1:nsurfers
+    for i = 2:nsurfers
+        batch = batch && isequaln(ovkey(i,j), ovkey(1,j));
+    end
+end
+
 pot = zeros(nrows, 1);
+
+if batch
+    src = cell(1, nsurfers);
+    sig = cell(nsurfers, 1);
+    for j = 1:nsurfers
+        [src{j}, sig{j}] = srcover(1, j, kern.opdims(2), dens(icollocs(j):(icollocs(j+1)-1)));
+    end
+    pot = kern.fmm(eps, merge([src{:}]), merge([surfers{:}]), cell2mat(sig));
+    pot = pot(:) + cors * dens;
+    return
+end
 
 for i = 1:nsurfers
     surferi = surfers{i};
@@ -215,23 +246,7 @@ for i = 1:nsurfers
         icolinds = icollocs(j):(icollocs(j+1)-1);
         irowinds = irowlocs(i):(irowlocs(i+1)-1);
 
-        dens_j = dens(icolinds);
-
-            if objover_mode
-                surferjover = surfers_over{i,j};
-                xinterp     = xinterps{i,j};
-            else
-                noversj = objover{i,j};
-                if ismethod(surferj,'oversample') && ~any(isnan(noversj))
-                    [surferjover, xinterp] = surferj.oversample(noversj);
-                    xinterp = kron(xinterp, eye(ktmp.opdims(2)));
-                else
-                    surferjover = surferj;
-                    xinterp = eye(ktmp.opdims(2)*surferj.npts);
-                end
-            end
-            wtsover = repmat(surferjover.wts(:).', ktmp.opdims(2), 1);
-            dens_j = wtsover(:).*(xinterp*dens_j);
+        [surferjover, dens_j] = srcover(i, j, ktmp.opdims(2), dens(icolinds));
             if usefmm && ~isempty(ktmp.fmm)
                 pot_ij = ktmp.fmm(eps,surferjover,surferi_targ,dens_j);
             elseif i == j
@@ -278,6 +293,24 @@ end
 %% Add near-field correction
 pot = pot + cors * dens;
 
+end
+
+function [sover, sig] = over_src(surf, ov, xinterp, nd, dens)
+% Oversampled source and its weighted density; ov is the oversampled
+% surfer (with xinterp) or the oversampling orders (xinterp empty)
+if isempty(xinterp)
+    if ismethod(surf,'oversample') && ~any(isnan(ov))
+        [sover, xinterp] = surf.oversample(ov);
+        xinterp = kron(xinterp, eye(nd));
+    else
+        sover = surf;
+        xinterp = speye(nd*surf.npts);
+    end
+else
+    sover = ov;
+end
+wtsover = repmat(sover.wts(:).', nd, 1);
+sig = wtsover(:).*(xinterp*dens);
 end
 
 function v = slice_field(A, idx)

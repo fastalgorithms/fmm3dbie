@@ -35,7 +35,8 @@ opts_corr.corrections = 1;
 [cors, objover] = surfermat(srfrs, kerns, eps, opts_corr);
 cors = cors + 0.5*speye(size(cors,1));
 
-[sigma, flag, relres, iters] = surfermatsolve(srfrs, kerns, rhs, eps, 1e-7, 100, objover, cors);
+opts_gm = struct('epsgmres', 1e-7, 'maxit', 100);
+[sigma, flag, relres, iters] = surfermatsolve(srfrs, kerns, rhs, eps, objover, cors, opts_gm);
 
 for i = 1:size(rhs,2)
 fprintf('flag=%d, relres=%5.2e, iters=%d \n', flag(i), relres(i), iters(i));
@@ -61,9 +62,11 @@ opts_g = []; opts_g.solver = 'gmres';
 opts_d = []; opts_d.solver = 'dense';
 for opts_s = {opts_g, opts_d}
     o = opts_s{1};
+    o.epsgmres = 1e-7;
+    o.maxit = 100;
     % bad cors warns
     try
-        [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, 1e-7, 100, objover, near, o);
+        [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, objover, near, o);
         caught = '';
     catch me
         caught = me.identifier;
@@ -71,17 +74,94 @@ for opts_s = {opts_g, opts_d}
     assert(strcmp(caught, wid), ['bad cors not detected (' o.solver ')']);
     % checkcors = false silences it
     o.checkcors = false;
-    [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, 1e-7, 5, objover, near, o);
+    o.maxit = 5;
+    [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, objover, near, o);
     % correct cors does not warn
     o.checkcors = true;
-    [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, 1e-8, 100, objover, cors, o);
+    o.epsgmres = 1e-8;
+    o.maxit = 100;
+    [~,~] = surfermatsolve(srfrs, kerns, rhs(:,1), eps, objover, cors, o);
 end
 warning(wstate);
 fprintf('cors check passed\n');
 
 % dense solve with the same corrections should match gmres
 opts_dense = []; opts_dense.solver = 'dense';
-sigma_d = surfermatsolve(srfrs, kerns, rhs, eps, [], [], objover, cors, opts_dense);
+sigma_d = surfermatsolve(srfrs, kerns, rhs, eps, objover, cors, opts_dense);
 errd = norm(sigma_d - sigma, 'fro')/norm(sigma, 'fro');
 fprintf('dense vs gmres difference = %5.2e\n', errd);
 assert(errd < 1e-3, 'dense and gmres solutions differ');
+
+% a function handle preconditioner is passed to gmres, which wraps the
+% error it throws
+opts_m = struct('solver', 'gmres', 'precond', @throw_precond, ...
+    'epsgmres', 1e-8, 'maxit', 5);
+try
+    surfermatsolve(srfrs, kerns, rhs(:,1), eps, objover, cors, opts_m);
+    caught = '';
+catch me
+    caught = me.identifier;
+    if ~isempty(me.cause), caught = me.cause{1}.identifier; end
+end
+assert(strcmp(caught, 'test:precond'), 'function handle preconditioner not used');
+opts_m = rmfield(opts_m, {'epsgmres', 'maxit'});
+opts_m.solver = 'dense';
+caught = false;
+try
+    surfermatsolve(srfrs, kerns, rhs(:,1), eps, objover, cors, opts_m);
+catch
+    caught = true;
+end
+assert(caught, 'dense solver should reject a preconditioner');
+
+% Preconditioners and FLAM solvers on a smaller problem. The identity term
+% goes in the kernels since the FLAM solvers do not take cors.
+S1 = geometries.sphere(1, 2, [0;0;0], 4, 1);
+S2 = S1 + [4;0;0];
+srfrs = [S1, S2];
+eps = 1e-4;
+rhs = [skern.eval(srcs, S1); spkern.eval(srcs, S2)];
+
+kernsI = kerns;
+kernsI(1,1) = kerns(1,1) + kernel3d.eye(0.5);
+kernsI(2,2) = kerns(2,2) + kernel3d.eye(0.5);
+
+labels = {'gmres + blocklu'};
+opts_f = {struct('solver', 'gmres', 'precond', 'blocklu')};
+if exist('rskelf', 'file') == 2 && exist('ifmm', 'file') == 2
+    labels = [labels, {'rskelf', 'ifmm + blockrskelf'}];
+    opts_f = [opts_f, {struct('solver', 'rskelf'), ...
+              struct('solver', 'ifmm', 'precond', 'blockrskelf')}];
+else
+    fprintf('FLAM not found, skipping the rskelf and ifmm solvers\n');
+    for o = {struct('solver', 'rskelf'), struct('solver', 'ifmm'), ...
+             struct('precond', 'blockrskelf')}
+        caught = false;
+        try
+            o{1}.maxit = 10;
+            surfermatsolve(srfrs, kernsI, rhs, eps, [], [], o{1});
+        catch
+            caught = true;
+        end
+        assert(caught, 'FLAM options without FLAM should raise an error');
+    end
+end
+
+iters_f = zeros(1, numel(opts_f));
+for k = 1:numel(opts_f)
+    tic
+    o = opts_f{k};
+    o.maxit = 100;
+    [sigma_f, flag, ~, iter] = surfermatsolve(srfrs, kernsI, rhs, eps, [], [], o);
+    assert(all(flag == 0), '%s did not converge', labels{k});
+    iters_f(k) = max(iter);
+    pot = surferkerneval(srfrs, kerns(1,:), sigma_f, targ1, eps);
+    err = max(abs(pot - pot_ex)./abs(pot_ex));
+    fprintf('%s: error %5.2e, iters %d, %.1fs\n', labels{k}, err, iters_f(k), toc);
+    assert(err < 1e-3, '%s error too large', labels{k});
+end
+
+
+function y = throw_precond(x)
+error('test:precond', 'called');
+end

@@ -791,6 +791,9 @@ else
     % the fit
     if p.usemex
         comps = radpp_eval_derivs(dx, dy, dz, p.ipars, p.dpars);
+        % NaN outside the fit, as in radpp_eval
+        r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
+        comps(r < p.breaks(1) | r > p.breaks(end), :) = NaN;
     else
         r = sqrt(dx(:).^2 + dy(:).^2 + dz(:).^2);
         prof = radpp_eval(r, p.breaks, p.coefs);
