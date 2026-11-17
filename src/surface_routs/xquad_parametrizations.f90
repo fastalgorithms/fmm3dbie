@@ -544,8 +544,8 @@ subroutine xquad_axissym_circ_eval(iquad, u, v, xyz, dxyzduv, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), ptcoefs(6,*), srccoefs2d(6,*)
-  real *8 :: pols(500), pars(*)
   integer *8 :: ipars(*)
+  real *8 :: pols(max((ipars(3)+1)*(ipars(3)+2),ipars(2))), pars(*)
   integer *8 :: norder, iptype, istart
   real *8 :: uv(2)
   real *8 a0, b0
@@ -754,8 +754,8 @@ subroutine xquad_axissym_fun_circ_eval(iquad, u, v, xyz, dxyzduv, &
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
   real *8 :: xyz(3), dxyzduv(3,2), ptcoefs(6,*)
-  real *8 :: pols(500), pars(*)
   integer *8 :: ipars(*)
+  real *8 :: pols((ipars(2)+1)*(ipars(2)+2)), pars(*)
   integer *8 :: np, norder, iptype, istart
   real *8 :: uv(2)
   external fcurve

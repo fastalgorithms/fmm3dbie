@@ -133,7 +133,7 @@ subroutine surf_fun_error(nd,npatches,norders,ixyzs,iptype, &
   rl2tails = 0
 
 
-  nmax = 20
+  nmax = maxval(norders(1:npatches))
   npmax = (nmax+1)*(nmax+2)
 
   allocate(uvs(2,npmax),pols(npmax),itailcoefs(npmax))
@@ -644,7 +644,8 @@ subroutine fun_surf_interp_coefs(nd, npatches, norders, ixyzs, iptype, &
   real *8 uvs_targ(2,ntarg)
   real *8 uover(nd,ntarg)
   integer *8 i,istart,istarto,npols,npolso
-  real *8 pols(500)
+  real *8 pols((maxval(norders(1:npatches))+1)* &
+    (maxval(norders(1:npatches))+2))
   integer *8 ipat,l,idim
 
   do i=1,ntarg

@@ -72,6 +72,12 @@ ifreturnovers = 1;
 if isfield(opts,'ifreturnovers'), ifreturnovers = opts.ifreturnovers; end
 nsurfers = length(surfers);
 
+nordmax = max(cellfun(@(s) max(s.norders), surfers));
+if nordmax >= 20
+    warning('surfermat:highorder', ...
+        'Singular quadrature is not available for patch order %d >= 20', nordmax);
+end
+
 lsurfer    = zeros(nsurfers,1);
 for i=1:nsurfers
     lsurfer(i) = surfers{i}.npts;
