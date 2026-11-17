@@ -369,6 +369,8 @@ subroutine get_far_order_guru(eps,norder,npols,iptype,cm,rad,srccoefs, &
   nomax = 16
 
   npmax = (nomax+1)*(nomax+1)
+!  the work arrays also hold the source patch nodes
+  npmax = max(npmax,npols)
   allocate(srctmp(12,npmax),sigmatmp(npmax),pmat(npols,npmax))
   allocate(uvs(2,npmax),wts(npmax),qwts(npmax))
 
