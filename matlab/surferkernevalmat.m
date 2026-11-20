@@ -118,10 +118,10 @@ ncols = icollocs(end)-1;
 if (~nonsmoothonly)
     sysmat = zeros(nrows,ncols);
 else
-    sysmat = sparse(nrows,ncols);
-    isysmat = [];
-    jsysmat = [];
-    vsysmat = [];
+    blocks = cell(1, nsurfers);
+    for j = 1:nsurfers
+        blocks{j} = sparse(nrows, icollocs(j+1)-icollocs(j));
+    end
 end
 
 %% Now build quadratures
@@ -178,15 +178,14 @@ for j = 1:nsurfers
         end
     end
 
+    clear sysmat_quad sysmat_smth
+
     if (~nonsmoothonly)
         icolinds = icollocs(j):(icollocs(j+1)-1);
         sysmat(1:nrows,icolinds) = sysmat_tmp;
     else
         if adaptive_correction && ~isempty(ktmp.getquad)
-            [isys,jsys,vsys] = find(sysmat_tmp);
-            isysmat = [isysmat;isys];
-            jsysmat = [jsysmat;jsys+icollocs(j)-1];
-            vsysmat = [vsysmat;vsys];
+            blocks{j} = sparse(sysmat_tmp);
         end
     end
 
@@ -194,7 +193,9 @@ end
 
 
 if (nonsmoothonly)
-    sysmat = sparse(isysmat,jsysmat,vsysmat,nrows,ncols);
+    clear sysmat_tmp
+    sysmat = horzcat(blocks{:});
+    clear blocks
 end
 
 if ifreturnovers

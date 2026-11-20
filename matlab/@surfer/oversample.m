@@ -124,15 +124,16 @@ function [objout,varargout] = oversample(obj,nover)
             end
             [isysmat_all{i},jsysmat_all{i},vsysmat_all{i}] = find(xinterpmat{i});
         end
-        isysmat = [];
-        jsysmat = [];
-        vsysmat = [];
+        isysmat = cell(npatches,1);
+        jsysmat = cell(npatches,1);
+        vsysmat = cell(npatches,1);
         for i=1:npatches
-            isysmat = [isysmat;isysmat_all{intmp(i)}+ixyzso(i)-1];
-            jsysmat = [jsysmat;jsysmat_all{intmp(i)}+obj.ixyzs(i)-1];
-            vsysmat = [vsysmat;vsysmat_all{intmp(i)}];            
+            isysmat{i} = isysmat_all{intmp(i)}+ixyzso(i)-1;
+            jsysmat{i} = jsysmat_all{intmp(i)}+obj.ixyzs(i)-1;
+            vsysmat{i} = vsysmat_all{intmp(i)};
         end
-        varargout{1} = sparse(isysmat,jsysmat,vsysmat,nptso,obj.npts);  
+        varargout{1} = sparse(vertcat(isysmat{:}),vertcat(jsysmat{:}), ...
+            vertcat(vsysmat{:}),nptso,obj.npts);
     end
     
     

@@ -33,53 +33,31 @@ function spmat = conv_rsc_to_spmat(S, row_ptr, col_ind, wnear, ri)
         wnear = reshape(wnear, 1, nquad);
     end
 
-    m    = ri.m;
-    n    = ri.n;
-    npts = S.npts;
-
-    ixyzs    = S.ixyzs(:);
-    npatches = S.npatches;
-    npols    = ixyzs(2:end) - ixyzs(1:end-1);   % points per patch
-
-    npts_col = npols(col_ind);
-
-    ntarg   = numel(row_ptr) - 1;
-    istarts = row_ptr(1:end-1);
-    iends   = row_ptr(2:end) - 1;
-
-    % Build point-level (irow_ind_scalar, icol_ind) indices
-    isrcinds = cell(npatches, 1);
-    for i = 1:npatches
-        isrcinds{i} = ixyzs(i):(ixyzs(i+1)-1);
+    m = ri.m;
+    n = ri.n;
+    ntarg = numel(row_ptr) - 1;
+    if isempty(col_ind)
+        spmat = sparse(m*ntarg, n*S.npts);
+        return
     end
 
-    total_pts = sum(npts_col);
-    icol_ind        = zeros(total_pts, 1);
-    irow_ind_scalar = zeros(total_pts, 1);
+    ixyzs = S.ixyzs(:);
+    npols = ixyzs(2:end) - ixyzs(1:end-1);
+    npts_col = npols(col_ind(:));
+    istart = [1; 1 + cumsum(npts_col)];
 
-    istart = 1;
-    for i = 1:ntarg
-        if istarts(i) > iends(i), continue; end
-        iinds  = horzcat(isrcinds{col_ind(istarts(i):iends(i))});
-        nelem  = numel(iinds);
-        icol_ind(istart:istart+nelem-1)        = iinds;
-        irow_ind_scalar(istart:istart+nelem-1) = i;
-        istart = istart + nelem;
-    end
+    icol = reshape(repelem(ixyzs(col_ind(:)) - istart(1:end-1), npts_col), [], 1) + (1:nquad).';
+    irow = reshape(repelem((1:ntarg).', diff(istart(row_ptr(:)))), [], 1);
 
-    ne = numel(ri.entries);
-    np = numel(icol_ind);
-    NZ = np * ne;
-    II = zeros(NZ, 1);
-    JJ = zeros(NZ, 1);
-    VV = complex(zeros(NZ, 1));
-    off = 0;
-    for ei = 1:ne
-        e = ri.entries(ei);
-        II(off+1:off+np) = m*(irow_ind_scalar-1) + e.row_id;
-        JJ(off+1:off+np) = n*(icol_ind-1)        + e.col_id;
-        VV(off+1:off+np) = e.coef * wnear(e.ker_id, :).';
-        off = off + np;
+    e = ri.entries;
+    irow = m*(irow-1) + [e.row_id];
+    icol = n*(icol-1) + [e.col_id];
+    kid = [e.ker_id];
+    coef = [e.coef];
+    if isequal(kid, 1:size(wnear, 1)) && all(coef == 1)
+        vals = wnear.';
+    else
+        vals = wnear(kid,:).' .* coef;
     end
-    spmat = sparse(II, JJ, VV, m*ntarg, n*npts);
+    spmat = sparse(irow(:), icol(:), vals(:), m*ntarg, n*S.npts);
 end

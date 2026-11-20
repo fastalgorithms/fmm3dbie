@@ -34,8 +34,10 @@ pairs = {K+I, I+K; ...
 for k = 1:size(pairs,1)
     check_same(pairs{k,1},pairs{k,2},src,targ,do_matrix);
 end
-assert(strcmp((K+J).name,'radgreen'));
-assert(strcmp((K+kernel3d.zeros([1 1])).name,'radgreen'));
+A = K+J;
+assert(strcmp(A.name,'radgreen'));
+A = K+kernel3d.zeros([1 1]);
+assert(strcmp(A.name,'radgreen'));
 caught = false;
 try, K + kernel3d.eye(eye(2)); catch, caught = true; end
 assert(caught, 'dimension mismatch not caught');
@@ -59,12 +61,14 @@ Q = R-0.5*I;
 assert(strcmp(Q.name,'radpp'));
 assert(isequal(Q.params.ipars,R.params.ipars));
 assert(isequal(Q.params.dpars,R.params.dpars));
-assert(strcmp((R+Q).name,'radpp'));
+A = R+Q;
+assert(strcmp(A.name,'radpp'));
 check_same(R+I,I+R,src,targ,do_matrix);
 check_same(R+(R+I),(R+R)+I,src,targ,do_matrix);
 Rc = kernel3d.radpp(g,[1e-6 4],@(t) [zeros(size(t.r,2),1),t.n.'], ...
     'nderiv',1,'targ_fields',{'n'},'ifcomplex',false);
-assert(strcmp((Rc+I).name,'radpp'));
+A = Rc+I;
+assert(strcmp(A.name,'radpp'));
 check_same(Rc+I,I+Rc,src,targ,do_matrix);
 check_same(2*(Rc+I),2*Rc+2*I,src,targ,do_matrix);
 

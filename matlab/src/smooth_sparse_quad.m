@@ -89,7 +89,7 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,va
     ntot = m*n*(rsc.iquad(end) - 1);
     irow = zeros(ntot, 1);
     icol = zeros(ntot, 1);
-    vals = zeros(ntot, 1);
+    vals = [];
     ipos = 0;
 
     % bound the size of a single kernel block (in entries)
@@ -139,7 +139,9 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,va
             [ii, jj] = ndgrid(irows_p(:), icols_p);
             irow(idx) = ii(:);
             icol(idx) = jj(:);
-            if ~isreal(B) && isreal(vals)
+            if isempty(vals)
+                vals = zeros(ntot, 1, 'like', B);
+            elseif ~isreal(B) && isreal(vals)
                 vals = complex(vals);
             end
             vals(idx) = B(:);
@@ -147,8 +149,13 @@ function Asmth = smooth_sparse_quad(kern,targs,S,row_ptr,col_ind,nover,S_over,va
         end
     end
 
-    Asmth = sparse(irow(1:ipos), icol(1:ipos), vals(1:ipos), ...
-        m*ntarg, n*S.npts);
+    if ipos < ntot
+        irow = irow(1:ipos);
+        icol = icol(1:ipos);
+        vals = vals(1:ipos);
+    end
+    if isempty(vals), vals = zeros(0, 1); end
+    Asmth = sparse(irow, icol, vals, m*ntarg, n*S.npts);
 
 end
 

@@ -24,44 +24,17 @@ function [row_ptr, col_ind] = get_rsc_pattern(S, spmat, opdims)
 
     m = opdims(1);
     n = opdims(2);
-
-    ixyzs    = S.ixyzs(:);
+    ntarg = size(spmat, 1) / m;
     npatches = S.npatches;
-    ntarg    = size(spmat, 1) / m;
+    patch_of_pt = repelem((1:npatches).', diff(S.ixyzs(:)));
 
-    % Union the nonzero pattern across every (block-row, block-col) sub-block.
-    row_s = [];
-    col_s = [];
-    for bi = 1:m
-        for bj = 1:n
-            spmat_bij = spmat(bi:m:end, bj:n:end);
-            [row_b, col_b] = find(spmat_bij);
-            row_s = [row_s; row_b]; 
-            col_s = [col_s; col_b]; 
-        end
-    end
+    [itarg, ipatch] = find(spmat);
+    itarg = floor((itarg(:) - 1) / m) + 1;
+    ipatch = patch_of_pt(floor((ipatch(:) - 1) / n) + 1);
 
-    if isempty(row_s)
-        row_ptr = ones(ntarg+1, 1);
-        col_ind = zeros(0, 1);
-        return
-    end
-
-    % Map point column indices to patch indices via binary search on the
-    % sorted patch-start offsets (avoids materializing an O(nnz x npatches)
-    % dense array, which a naive bsxfun(@ge, col_s, ixyzs(1:end-1).')
-    % outer-product approach would do -- this blows up memory badly for
-    % large nnz and/or large npatches).
-    patch_of_col = discretize(col_s, [ixyzs; inf]);
-
-    % Deduplicate (target,patch) pairs by accumulating into a sparse
-    % ntarg x npatches indicator matrix.
-    T = sparse(row_s, patch_of_col, 1, ntarg, npatches);
-    [patch_inds, targ_inds] = find(T.');   % find on transpose -> sorted by target (col-major over T.')
-    patch_inds = patch_inds(:);
-    targ_inds  = targ_inds(:);
-
-    counts  = accumarray(targ_inds, 1, [ntarg, 1]);
-    row_ptr = [1; 1 + cumsum(counts)];
-    col_ind = patch_inds;
+    T = sparse(ipatch, itarg, true, npatches, ntarg);
+    clear itarg ipatch
+    [col_ind, targ] = find(T);
+    col_ind = col_ind(:);
+    row_ptr = [1; 1 + cumsum(accumarray(targ(:), 1, [ntarg, 1]))];
 end

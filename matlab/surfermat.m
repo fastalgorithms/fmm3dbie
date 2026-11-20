@@ -141,11 +141,13 @@ ncols = icollocs(end)-1;
 
 if (~nonsmoothonly)
     sysmat = zeros(nrows,ncols);
-else 
-    sysmat = sparse(nrows,ncols);
-    isysmat = [];
-    jsysmat = [];
-    vsysmat = [];
+else
+    blocks = cell(nsurfers, nsurfers);
+    for i = 1:nsurfers
+        for j = 1:nsurfers
+            blocks{i,j} = sparse(irowlocs(i+1)-irowlocs(i), icollocs(j+1)-icollocs(j));
+        end
+    end
 end
 
 % Oversample each source surfer once if its orders are the same for all
@@ -274,6 +276,8 @@ for i = 1:nsurfers
             end
         end
 
+        clear sysmat_quad sysmat_smth
+
         if isempty(sysmat_tmp) && i == j && isa(ktmp.diag, 'function_handle')
             % no quadrature was built, but the identity term is still needed
             sysmat_tmp = sparse(opdims(1)*surferi.npts, opdims(2)*surferj.npts);
@@ -299,17 +303,20 @@ for i = 1:nsurfers
             icolinds = icollocs(j):(icollocs(j+1)-1);
             sysmat(irowinds,icolinds) = sysmat_tmp;
         else
-            [isys,jsys,vsys] = find(sysmat_tmp);
-            isysmat = [isysmat;isys+irowlocs(i)-1];
-            jsysmat = [jsysmat;jsys+icollocs(j)-1];
-            vsysmat = [vsysmat;vsys];
+            blocks{i,j} = sparse(sysmat_tmp);
         end
     
     end
 end
 
 if (nonsmoothonly)
-    sysmat = sparse(isysmat,jsysmat,vsysmat,nrows,ncols);
+    clear sysmat_tmp
+    for j = 1:nsurfers
+        blocks{1,j} = vertcat(blocks{:,j});
+        blocks(2:end,j) = {[]};
+    end
+    sysmat = horzcat(blocks{1,:});
+    clear blocks
 end
 
 if ifreturnovers
