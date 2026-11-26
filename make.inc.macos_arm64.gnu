@@ -39,7 +39,15 @@ WLDLEND =
 #MATLAB interface:
 FDIR=$$(dirname `gfortran --print-file-name libgfortran.dylib`)
 MFLAGS +=-L${FDIR}
-MEX = $(shell ls -d /Applications/MATLAB_R* | sort | tail -1)/bin/mex
+MATLAB_ROOT := $(shell ls -d /Applications/MATLAB_R* | sort | tail -1)
+MEX = $(MATLAB_ROOT)/bin/mex
+
+# Link the mex against MATLAB's own OpenMP runtime (LLVM libomp) instead
+# of libgomp. MATLAB's OpenBLAS is built against this libomp; with libgomp
+# it cannot see our OpenMP parallel regions and multithreads from inside
+# them, which gives wrong results. libomp provides the GOMP_* entry points
+# that gfortran -fopenmp code calls.
+MOMPLIBS = -L$(MATLAB_ROOT)/bin/maca64 -lomp
 
 #MWRAP location
 MWRAP=~/git/mwrap/mwrap

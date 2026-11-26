@@ -33,7 +33,13 @@ WLDLEND =
 #MATLAB interface:
 FDIR=$$(dirname `gfortran --print-file-name libgfortran.dylib`)
 MFLAGS +=-L${FDIR}
-MEX = $(shell ls -d /Applications/MATLAB_R* | sort | tail -1)/bin/mex
+MATLAB_ROOT := $(shell ls -d /Applications/MATLAB_R* | sort | tail -1)
+MEX = $(MATLAB_ROOT)/bin/mex
+
+# Link the mex against MATLAB's copy of Intel's OpenMP runtime (libiomp5),
+# so that only one OpenMP runtime is loaded and MATLAB's BLAS/LAPACK (MKL)
+# can see our OpenMP parallel regions.
+MOMPLIBS = -L$(MATLAB_ROOT)/bin/maci64 -liomp5
 
 #MWRAP location
 MWRAP=~/git/mwrap/mwrap

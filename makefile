@@ -19,9 +19,12 @@ FFLAGS2 = -fPIC -march=native -std=legacy
 OMPFLAGS =-fopenmp
 OMPLIBS =-lgomp 
 
-# extra flags for multithreaded: C/Fortran, MATLAB
-OMPFLAGS =-fopenmp
-OMPLIBS =-lgomp 
+# OpenMP libs for linking the MATLAB mex file. Defaults to OMPLIBS
+# (including any OMPLIBS set in make.inc); override in make.inc to link
+# the mex against MATLAB's own OpenMP runtime, so that MATLAB's
+# multithreaded BLAS can detect the OpenMP parallel regions it is
+# called from.
+MOMPLIBS = $(OMPLIBS)
 
 # flags for MATLAB MEX compilation..
 MFLAGS=-largeArrayDims -DMWF77_UNDERSCORE1 "CFLAGS=-std=gnu17 -Wno-implicit-function-declaration -fPIC" 
@@ -97,7 +100,7 @@ ifneq ($(OMP),OFF)
   LIBS += $(OMPLIBS)
   DYLIBS += $(OMPLIBS)
   F2PYDYLIBS += $(OMPLIBS)
-  MEXLIBS += $(OMPLIBS)
+  MEXLIBS += $(MOMPLIBS)
 endif
 
 LIBS += $(LBLAS) $(LDBLASINC)

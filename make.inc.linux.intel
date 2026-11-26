@@ -17,3 +17,14 @@ OMPLIBS = -qopenmp
 OMPFLAGS = -qopenmp
 
 LBLAS = -mkl
+
+#MATLAB interface:
+# latest MATLAB in the default install location; override on the command
+# line if installed elsewhere, e.g. make matlab MATLAB_ROOT=/opt/MATLAB/R2025a
+MATLAB_ROOT := $(shell ls -d /usr/local/MATLAB/R* | sort | tail -1)
+MEX = $(MATLAB_ROOT)/bin/mex
+
+# Link the mex against MATLAB's copy of Intel's OpenMP runtime (libiomp5),
+# so that only one OpenMP runtime is loaded and MATLAB's BLAS/LAPACK (MKL)
+# can see our OpenMP parallel regions.
+MOMPLIBS = -L$(MATLAB_ROOT)/bin/glnxa64 -liomp5
