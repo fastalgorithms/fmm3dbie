@@ -18,4 +18,4 @@ MEX = $(MATLAB_ROOT)/bin/mex
 # (libiomp5); with libgomp it cannot see our OpenMP parallel regions and
 # multithreads from inside them (oversubscription). libiomp5 provides the
 # GOMP_* entry points that gfortran -fopenmp code calls.
-MOMPLIBS = -L$(MATLAB_ROOT)/bin/glnxa64 -liomp5
+MOMPLIBS = -L$(MATLAB_ROOT)/sys/os/glnxa64 -liomp5
